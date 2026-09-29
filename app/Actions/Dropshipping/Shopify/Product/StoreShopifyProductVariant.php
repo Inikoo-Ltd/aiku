@@ -21,6 +21,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Sentry;
 
 class StoreShopifyProductVariant extends RetinaAction
@@ -92,10 +93,9 @@ class StoreShopifyProductVariant extends RetinaAction
         if ($replacedVariantOwner !== null) {
             $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
 
-            UpdatePortfolio::run($portfolio, array_merge(
-                ['errors_response' => $this->portfolioErrorResponse($errorMessage)],
-                $replacedVariantOwner === false ? [] : ['platform_product_id' => null, 'platform_product_variant_id' => null, 'platform_status' => false]
-            ));
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
 
             return [false, $errorMessage];
         }
@@ -255,21 +255,22 @@ class StoreShopifyProductVariant extends RetinaAction
 
     /**
      * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product.
-     * When another active portfolio of the channel is linked to that product, with or without a stored
-     * variant id, that variant is its listing, so adding this one would silently take it away.
+     * When other active portfolios of the channel are linked to that product and its only variant is not
+     * this portfolio's (not its stored variant, not carrying its code or sku), that variant is another
+     * product's listing, so adding this one would silently take it away.
      *
-     * @return string|false|null  the product code of the portfolio whose variant would be replaced, false when it could not be checked
+     * @return string|false|null  the product code of the portfolio the variant belongs to, false when it could not be checked
      */
     public static function ownerOfStandaloneVariantThatWouldBeReplaced(Portfolio $portfolio, string $productId): string|false|null
     {
-        $siblingCode = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+        $siblings = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
             ->where('id', '!=', $portfolio->id)
             ->where('status', true)
             ->where('platform_product_id', $productId)
             ->orderBy('id')
-            ->value('item_code');
+            ->get(['id', 'item_code', 'sku', 'platform_product_variant_id']);
 
-        if ($siblingCode === null) {
+        if ($siblings->isEmpty()) {
             return null;
         }
 
@@ -286,6 +287,7 @@ class StoreShopifyProductVariant extends RetinaAction
               edges {
                 node {
                   id
+                  sku
                 }
               }
             }
@@ -309,13 +311,31 @@ class StoreShopifyProductVariant extends RetinaAction
             return false;
         }
 
-        return count(Arr::get($body, 'data.product.variants.edges', [])) === 1 ? $siblingCode : null;
+        $variants = Arr::get($body, 'data.product.variants.edges', []);
+
+        if (count($variants) !== 1) {
+            return null;
+        }
+
+        $variantId  = (string)Arr::get($variants, '0.node.id');
+        $variantSku = Str::lower(trim((string)Arr::get($variants, '0.node.sku')));
+        $carriesSku = fn ($candidate) => $variantSku !== '' && in_array($variantSku, array_map(fn ($sku) => Str::lower(trim((string)$sku)), [$candidate->item_code, $candidate->sku]), true);
+
+        if ($portfolio->platform_product_variant_id === $variantId || $carriesSku($portfolio)) {
+            return null;
+        }
+
+        $owner = $siblings->first(fn (Portfolio $sibling) => $sibling->platform_product_variant_id === $variantId)
+            ?? $siblings->first(fn (Portfolio $sibling) => $carriesSku($sibling))
+            ?? $siblings->first();
+
+        return (string)$owner->item_code;
     }
 
     public static function replacedVariantMessage(string|false $replacedVariantOwner): string
     {
         return $replacedVariantOwner === false
             ? 'Could not check the variants of this Shopify product, nothing was changed'
-            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so it was not added. Upload this product as its own listing instead';
+            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so nothing was changed. This product needs a listing of its own';
     }
 }

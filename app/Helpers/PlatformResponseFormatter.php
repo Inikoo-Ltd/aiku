@@ -106,7 +106,7 @@ class PlatformResponseFormatter
         'request timeout'                    => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
         'timeout was reached'                => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
         'curl error 28'                      => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
-        'error in api response: true'        => 'The channel did not give a usable answer. Nothing is wrong with your product, try again in a few minutes.',
+        'error in api response: true'        => 'The channel did not give a usable answer. Nothing is wrong with your product: try again in a few minutes, and if it keeps happening check that your store is open and our app is still installed.',
         'internal error'                     => 'The channel hit a problem on its own side. Nothing is wrong on your side, try again in a few minutes.',
     ];
 

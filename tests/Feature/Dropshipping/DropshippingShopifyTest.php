@@ -2062,13 +2062,15 @@ test('a product is never added to a shopify product whose only variant belongs t
     [$stored, $message] = StoreShopifyProductVariant::run($uploaded->refresh());
 
     expect($matched->refresh()->platform_product_id)->toBeNull()
-        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so it was not added. Upload this product as its own listing instead')
+        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. This product needs a listing of its own')
         ->and($stored)->toBeFalse()
         ->and($message)->toBe($matched->errors_response['message'])
         ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([])
-        ->and($uploaded->refresh()->platform_product_id)->toBeNull()
+        ->and($uploaded->refresh()->platform_product_id)->toBe('gid://shopify/Product/7900')
         ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900');
-    $uploaded->update(['platform_product_id' => 'gid://shopify/Product/7900']);
+
+    ShopifyFake::fake(['productOnlyVariant' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8950', 'sku' => 'upload-1']]]]]])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
 
     ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
@@ -2087,7 +2089,7 @@ test('a product is never added to a shopify product whose only variant belongs t
         ->and(ShopifyFake::calls('productOnlyVariant'))->toBe([]);
 });
 
-test('repair leaves disabled portfolios and portfolios already on their own listing alone', function () {
+test('repair leaves disabled portfolios alone, and only corrects the variant id of a portfolio already on its own listing, without marking it adopted', function () {
     Queue::fake();
     $channel   = shopifyProductChannel($this, 'repair-skips-own-listing')->customerSalesChannel;
     $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
@@ -2101,10 +2103,15 @@ test('repair leaves disabled portfolios and portfolios already on their own list
         'products'           => [$productId => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8401', 'sku' => $code, 'at_location' => false]]]],
         'product_ids_by_sku' => [$code => [$productId => true]],
     ];
-    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9402'));
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9402'));
 
     expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
         ->and($portfolio->refresh()->isShopifyVariantAdopted())->toBeFalse();
+
+    $portfolio->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/stale']);
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8401')
+        ->and($portfolio->isShopifyVariantAdopted())->toBeFalse();
 
     \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $portfolio->id)->update(['status' => false]);
     expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)

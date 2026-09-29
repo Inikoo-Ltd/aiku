@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Re-points the active portfolios the reconciliation found broken (linked to a product that is gone,
  * archived or does not carry their sku, or never linked) onto the one active product of the shop
- * whose variant carries their SKU (HELP-3205, CUS-1746). A portfolio already linked to that product is
- * left as it is.
+ * whose variant carries their SKU (HELP-3205, CUS-1746). A portfolio already on that product only gets the
+ * right variant id: it is not marked adopted, the listing is its own.
  *
  * Only our own portfolio rows are written, nothing is sent to Shopify. The product being linked to is
  * the merchant's own listing, so the portfolio is marked as an adopted variant: title, description,
@@ -79,7 +79,7 @@ class RepairShopifyPortfolioConnections
         }
 
         foreach ($report['rows'] as $row) {
-            if ($row['repair'] !== 'repairable' || !isset($activePortfolioIds[$row['portfolio_id']]) || $row['platform_product_id'] === $row['repair_product_id']) {
+            if ($row['repair'] !== 'repairable' || !isset($activePortfolioIds[$row['portfolio_id']])) {
                 continue;
             }
 
@@ -103,8 +103,14 @@ class RepairShopifyPortfolioConnections
                 continue;
             }
 
+            $portfolio = Portfolio::find($row['portfolio_id']);
+
+            if ($portfolio->platform_product_id === $row['repair_product_id'] && $portfolio->platform_product_variant_id === $row['repair_variant_id']) {
+                continue;
+            }
+
             if (!$dryRun) {
-                $this->repoint(Portfolio::find($row['portfolio_id']), $row);
+                $this->repoint($portfolio, $row);
             }
 
             $takenVariantIds[$row['repair_variant_id']] = $row['portfolio_id'];
@@ -133,6 +139,16 @@ class RepairShopifyPortfolioConnections
 
     private function repoint(Portfolio $portfolio, array $row): void
     {
+        if ($portfolio->platform_product_id === $row['repair_product_id']) {
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_variant_id' => $row['repair_variant_id'],
+                'platform_status'             => $row['repair_at_location'],
+                'errors_response'             => null
+            ]);
+
+            return;
+        }
+
         DB::transaction(function () use ($portfolio, $row) {
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id'         => $row['repair_product_id'],
