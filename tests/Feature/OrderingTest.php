@@ -5098,3 +5098,25 @@ test('a claim refunded to balance is paid out of the card payment and leaves not
         $this->product->orgStocks()->detach($attachedOrgStock->id);
     }
 });
+
+test('staff see the customer balance on a basket so a phone payment can use it first', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $basket = StoreOrder::make()->action($this->customer, $modelData);
+    $originalBalance = $this->customer->balance;
+    $this->customer->update(['balance' => 10.46]);
+
+    try {
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', fn ($balance) => (float) $balance === 10.46)->etc());
+
+        $basket->update(['state' => OrderStateEnum::IN_WAREHOUSE]);
+
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', null)->etc());
+    } finally {
+        $this->customer->update(['balance' => $originalBalance]);
+    }
+});
