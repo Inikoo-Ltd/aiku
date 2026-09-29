@@ -13,6 +13,9 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
 use App\Models\Helpers\Country;
+use App\Models\Helpers\Tag;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitGpsr;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitLabelInfo;
@@ -950,4 +953,31 @@ test('the trade unit edit form offers the publish toggle switched off by default
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('formData.blueprint', fn ($blueprint) => data_get($publishToggle($blueprint), 'value') === true)
             ->etc());
+});
+
+test('a tag attached to a trade unit reaches its products', function () {
+    $tag = Tag::create([
+        'group_id' => $this->group->id,
+        'name'     => 'Made In '.uniqid(),
+        'scope'    => TagScopeEnum::PRODUCT_PROPERTY,
+    ]);
+
+    AttachTagsToModel::make()->action($this->bottle, ['tags_id' => [$tag->id]]);
+
+    expect($this->product->refresh()->tags->pluck('id'))->toContain($tag->id);
+});
+
+test('a product takes the tags of the trade units it is made of', function () {
+    $tag = Tag::create([
+        'group_id' => $this->group->id,
+        'name'     => 'Made In '.uniqid(),
+        'scope'    => TagScopeEnum::PRODUCT_PROPERTY,
+    ]);
+    $this->plug->tags()->attach($tag->id);
+
+    SyncProductTradeUnits::run($this->product->refresh(), [['id' => $this->bottle->id, 'quantity' => 1]]);
+    expect($this->product->refresh()->tags->pluck('id'))->not->toContain($tag->id);
+
+    SyncProductTradeUnits::run($this->product->refresh(), [['id' => $this->plug->id, 'quantity' => 1]]);
+    expect($this->product->refresh()->tags->pluck('id'))->toContain($tag->id);
 });
