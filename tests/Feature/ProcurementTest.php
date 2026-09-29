@@ -6029,6 +6029,38 @@ test('attach a supplier product to an org stock that has none, first one becomes
         ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(2);
 });
 
+test('an org stock can not be linked to another organisation\'s supplier product', function () {
+    $stock             = $this->stocks[1];
+    $otherOrganisation = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    $otherOrgStock     = createOrgStocks($otherOrganisation, [$stock])[0];
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+        'code'             => 'cross-org-link',
+        'name'             => 'Cross org link',
+        'cost'             => 12,
+        'stock_id'         => $stock->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $this->organisation->id)->where('supplier_product_id', $supplierProduct->id)->first()
+        ?? StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+
+    $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+        ['stock_id' => $stock->id, 'supplier_product_id' => $supplierProduct->id],
+        ['available' => true, 'priority' => 0]
+    );
+
+    expect(fn () => App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSupplierProduct::make()->action(
+        stockHasSupplierProduct: $stockHasSupplierProduct,
+        orgStock: $otherOrgStock,
+        orgSupplierProduct: $orgSupplierProduct,
+        modelData: ['status' => true, 'local_priority' => 0],
+        strict: false
+    ))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $otherOrgStock->id)->where('org_supplier_product_id', $orgSupplierProduct->id)->exists())->toBeFalse();
+});
+
 test('every organisation and group top menu subsection carries a label', function () {
     $unlabelled = function (array $navigation) {
         return collect($navigation)

@@ -64,6 +64,12 @@ class StoreOrgStockHasOrgSupplierProduct extends OrgAction
                 'Org/Supplier Product '.$this->orgSupplierProduct->id.'->'.$this->orgSupplierProduct->supplier_product_id.'   does not belong to this stock'.$this->stockHasSupplierProduct->id
             );
         }
+        if ($this->orgSupplierProduct->organisation_id != $this->orgStock->organisation_id) {
+            $validator->errors()->add(
+                'org_supplier_product_id',
+                'Org/Supplier Product '.$this->orgSupplierProduct->id.' belongs to another organisation than Org Stock '.$this->orgStock->id
+            );
+        }
     }
 
 
