@@ -604,6 +604,7 @@ test('uploading a product creates it, creates one variant with the right stock a
     $created = shopifyProductNode('gid://shopify/Product/7100', 'gid://shopify/ProductVariant/8100', '');
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'               => ShopifyFake::graphql(['productCreate' => ['product' => $created, 'userErrors' => []]]),
         'ProductVariantsList'         => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8100', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product']]]]]]),
         'ProductVariantsCreate'       => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8101', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -641,6 +642,7 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
     ]);
 
@@ -653,6 +655,7 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
         ->and($portfolio->errors_response['message'])->toBe('Title cannot be blank');
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]]),
     ]);
     StoreNewProductToCurrentShopify::make()->handle($portfolio, []);
@@ -680,6 +683,7 @@ test('an upload records a portfolio log that ends ok when shopify accepts the pr
     $portfolio->update(['sku' => 'LOG-1']);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
     ]);
 
@@ -694,6 +698,7 @@ test('an upload records a portfolio log that ends ok when shopify accepts the pr
     $created = shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', $portfolio->sku);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'                 => ShopifyFake::graphql(['productCreate' => ['product' => $created, 'userErrors' => []]]),
         'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8300', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product']]]]]]),
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8301', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -1167,6 +1172,7 @@ test('an upload throwing a non-Exception error records it on the portfolio inste
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => fn () => throw new Error('Call to a member function on null'),
     ]);
 
@@ -1612,6 +1618,7 @@ test('an upload creates the product again when the one the portfolio points to i
 
     ShopifyFake::fake([
         'getProductExistence'   => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'         => ShopifyFake::graphql(['productCreate' => ['product' => shopifyProductNode('gid://shopify/Product/7601', 'gid://shopify/ProductVariant/8600', ''), 'userErrors' => []]]),
         'ProductVariantsList'   => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'ProductVariantsCreate' => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8601', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -1879,4 +1886,27 @@ test('repair tries the product code when the sku a portfolio carries only matche
     expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
         ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9101')
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101');
+});
+
+test('an upload is refused when the shopify store already has a product with the same sku, whatever its status', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-sku-taken');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'TAKEN-1', 'platform_product_id' => 'gid://shopify/Product/7800']);
+
+    ShopifyFake::fake([
+        'getProductExistence'    => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => [
+            ['node' => ['sku' => 'TAKEN-10', 'product' => ['handle' => 'other', 'status' => 'ACTIVE']]],
+            ['node' => ['sku' => 'taken-1', 'product' => ['handle' => 'reed-diffuser', 'status' => 'ARCHIVED']]],
+        ]]]),
+    ]);
+
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('Your Shopify store already has a product with the sku TAKEN-1 (archived, reed-diffuser). Match this product to it instead of uploading a new one')
+        ->and(ShopifyFake::calls('productCreate'))->toBe([])
+        ->and(ShopifyFake::calls('productVariantsWithSku')[0]['variables']['query'])->toBe('sku:"TAKEN-1"')
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/7800');
 });
