@@ -49,16 +49,23 @@ class FetchShopMailboxMessages
             $newHistoryId = $client->profile()['historyId'];
         }
 
+        $spamIds    = $client->listInboxMessageIds($this->spamSweepQuery($shop), 25);
         $messageIds = array_unique(array_merge(
             $messageIds,
             $client->listInboxMessageIds($this->sweepQuery($shop), 100),
-            $client->listInboxMessageIds($this->spamSweepQuery($shop), 25)
+            $spamIds
         ));
 
         $dispatched = 0;
 
         foreach ($messageIds as $messageId) {
             if (ChatMessage::where('metadata->gmail_message_id', $messageId)->exists()) {
+                // Mail Gmail moved to spam after it came in would be listed on every sweep, one of
+                // the 25 places each time, until enough of them stopped the backlog altogether.
+                if (in_array($messageId, $spamIds, true)) {
+                    $client->fileAway($messageId, ProcessInboundEmail::SPAM_CHECKED_LABEL, markRead: false);
+                }
+
                 continue;
             }
 

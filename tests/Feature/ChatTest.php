@@ -10309,6 +10309,9 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
             ['id' => 'LU', 'name' => 'aiku/unmatched'],
             ['id' => 'LC', 'name' => 'aiku/spam-checked'],
         ]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => fn ($request) => \Illuminate\Support\Facades\Http::response(
+            str_contains($request->data()['q'] ?? '', 'in:spam') ? ['messages' => [['id' => 'sp1']]] : []
+        ),
         'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
@@ -10345,6 +10348,10 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
 
     \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop->fresh());
+
+    $relabelled = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), 'messages/sp1/modify'))->map(fn ($pair) => $pair[0]->data())->last();
+
+    expect($relabelled)->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
 
     $spamSweep = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains(urldecode($request->url()), 'in:spam'))->first()[0];
 
