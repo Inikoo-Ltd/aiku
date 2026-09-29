@@ -8,7 +8,7 @@ import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { notify } from '@kyvg/vue3-notification'
 import { set } from 'lodash-es'
 import axios from 'axios'
-import { faCircle, faPlus, faMinus } from '@fas'
+import { faCircle, faPlus, faMinus, faMedal } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faEnvelope, faImage } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -160,6 +160,9 @@ const familyOffer = (product: ProductResource) => {
     return bestOffer?.type === 'Category Quantity Ordered Order Interval' ? bestOffer : null
 }
 
+const goldPercentageOff = (product: ProductResource): number =>
+    Number(product.offers_data?.best_percentage_off?.percentage_off) || 0
+
 const isFamilyOfferLocked = (product: ProductResource): boolean =>
     Boolean(familyOffer(product)) && offerPercentageOff(product) <= 0
 
@@ -195,16 +198,16 @@ const appliedDiscount = (product: ProductResource): { percentageOff: number, sou
         : { percentageOff: step, source: 'step' }
 }
 
-const discountLabel = (product: ProductResource): string => {
-    const discount = appliedDiscount(product)
+const isGoldPriceDiscount = (product: ProductResource): boolean =>
+    appliedDiscount(product).source === 'offer'
+    && getBestOffer(product.offers_data)?.type === 'Category Quantity Ordered Order Interval'
 
-    if (discount.source === 'step') {
+const discountLabel = (product: ProductResource): string => {
+    if (appliedDiscount(product).source === 'step') {
         return product.step_discount?.label || ctrans('Buy more, save more')
     }
 
-    return getBestOffer(product.offers_data)?.type === 'Category Quantity Ordered Order Interval'
-        ? ctrans('Gold price')
-        : ctrans('Offer price')
+    return isGoldPriceDiscount(product) ? ctrans('Gold price') : ctrans('Offer price')
 }
 
 const priceTiers = (product: ProductResource): { minQuantity: number, percentageOff: number, unitPrice: number }[] => {
@@ -387,7 +390,12 @@ const onCancel = () => {
                         @click="onSelectRow(variant)">
                         <div class="min-w-0">
                             <div class="variant-row-label text-base font-semibold text-gray-900">{{ variant.variant_label || variant.code }}</div>
-                            <div v-if="isLoggedIn && selectedQuantity(variant) > 0 && appliedDiscount(variant).percentageOff > 0"
+                            <span v-if="isLoggedIn && familyOffer(variant)" class="gold-badge mt-1"
+                                :class="{ 'gold-badge-off': isFamilyOfferLocked(variant) }">
+                                <FontAwesomeIcon :icon="faMedal" fixed-width aria-hidden="true" />
+                                -{{ percentageLabel(goldPercentageOff(variant)) }}
+                            </span>
+                            <div v-else-if="isLoggedIn && selectedQuantity(variant) > 0 && appliedDiscount(variant).percentageOff > 0"
                                 class="text-xs font-medium text-orange-500">
                                 -{{ percentageLabel(appliedDiscount(variant).percentageOff) }}
                             </div>
@@ -441,12 +449,17 @@ const onCancel = () => {
                         <template v-if="appliedDiscount(activeProduct).percentageOff > 0">
                             <span class="text-lg font-bold text-orange-500">{{ formatPrice(discountedUnitPrice(activeProduct)) }} / {{ activeProduct.unit }}</span>
                             <span class="text-sm text-gray-400 line-through">{{ formatPrice(activeProduct.price_per_unit ?? activeProduct.price) }}</span>
-                            <span class="text-xs text-orange-500">
+                            <span v-if="!isGoldPriceDiscount(activeProduct)" class="text-xs text-orange-500">
                                 {{ discountLabel(activeProduct) }} · -{{ percentageLabel(appliedDiscount(activeProduct).percentageOff) }}
                             </span>
                         </template>
                         <span v-else class="text-lg font-bold text-gray-900">{{ formatPrice(activeProduct.price_per_unit ?? activeProduct.price) }} / {{ activeProduct.unit }}</span>
                         <span class="text-xs text-gray-500">{{ ctrans('excl. VAT') }}</span>
+                        <span v-if="familyOffer(activeProduct)" class="gold-badge self-center"
+                            :class="{ 'gold-badge-off': isFamilyOfferLocked(activeProduct) }">
+                            <FontAwesomeIcon :icon="faMedal" fixed-width aria-hidden="true" />
+                            {{ ctrans('Gold price') }} -{{ percentageLabel(goldPercentageOff(activeProduct)) }}
+                        </span>
                     </div>
 
                     <div v-if="isFamilyOfferLocked(activeProduct) && isOrderable(activeProduct)" class="flex flex-wrap items-center gap-2">
@@ -513,6 +526,25 @@ const onCancel = () => {
 </template>
 
 <style scoped>
+.gold-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: fit-content;
+    border-radius: 9999px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1rem;
+    color: #E87928;
+    background-color: #FDF1E8;
+}
+
+.gold-badge-off {
+    color: #9ca3af;
+    background-color: #f3f4f6;
+}
+
 .variant-row {
     display: grid;
     grid-template-columns: minmax(40px, 0.6fr) minmax(0, 1fr) auto;
