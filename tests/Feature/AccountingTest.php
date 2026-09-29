@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Payment\CancelPayment;
+use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Accounting\Payment\RefundPaymentManual;
 use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use Illuminate\Validation\ValidationException;
@@ -3862,4 +3864,80 @@ test('the repair of unlinked refunds lists a payment bigger than the refund owes
 
     expect((float) $slightlyOverpaid->refresh()->payment_amount)->toBe(0.0)
         ->and((float) $exact->refresh()->payment_amount)->toBe(-30.0);
+});
+
+test('cancelling a refund to balance gives the money back to the payment once, even when the cancel is sent twice', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    $refund       = RefundPaymentToBalance::make()->handle($payment, ['amount' => 20]);
+    $balanceAfter = (float) $customer->refresh()->balance;
+    $firstCopy    = Payment::find($refund->id);
+    $secondCopy   = Payment::find($refund->id);
+
+    CancelPayment::make()->handle($firstCopy);
+
+    expect(fn () => CancelPayment::make()->handle($secondCopy))->toThrow(ValidationException::class, 'already cancelled')
+        ->and($refund->refresh()->state)->toBe(PaymentStateEnum::CANCELLED)
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
+        ->and(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceAfter - 20, 2));
+});
+
+test('a credit note whose balance entry fails leaves no credit note and no payment behind', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $invoices = Invoice::where('customer_id', $customer->id)->count();
+    $payments = Payment::where('customer_id', $customer->id)->count();
+
+    StoreCreditTransaction::mock()->shouldReceive('action')->andThrow(new RuntimeException('balance entry failed'));
+
+    expect(fn () => IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount'            => 12,
+        'reason'            => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'issue_credit_note' => true,
+    ]))->toThrow(RuntimeException::class, 'balance entry failed')
+        ->and(Invoice::where('customer_id', $customer->id)->count())->toBe($invoices)
+        ->and(Payment::where('customer_id', $customer->id)->count())->toBe($payments);
+});
+
+test('an order payment that can not be linked to its order leaves no payment behind', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $payments       = Payment::where('customer_id', $customer->id)->count();
+    $entries        = CreditTransaction::where('customer_id', $customer->id)->count();
+
+    AttachPaymentToOrder::mock()->shouldReceive('action')->andThrow(new RuntimeException('link failed'));
+
+    expect(fn () => PayOrder::make()->action($order, $paymentAccount, ['amount' => 10]))->toThrow(RuntimeException::class, 'link failed')
+        ->and(Payment::where('customer_id', $customer->id)->count())->toBe($payments)
+        ->and(CreditTransaction::where('customer_id', $customer->id)->count())->toBe($entries);
+});
+
+test('cancelling a payment made from the balance gives the money back to the balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $balanceBefore  = (float) $customer->refresh()->balance;
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 15,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+    expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore - 15, 2));
+
+    CancelPayment::make()->handle($payment);
+
+    expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore, 2));
 });

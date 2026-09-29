@@ -21,8 +21,11 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -37,48 +40,56 @@ class CancelPayment extends OrgAction
      */
     public function handle(Payment $payment): Payment
     {
-        if ($payment->state === PaymentStateEnum::CANCELLED) {
-            throw ValidationException::withMessages([
-                'message' => __('Unable to cancel this payment as it is already cancelled.'),
+        return DB::transaction(function () use ($payment) {
+            if ($payment->original_payment_id) {
+                Payment::lockForUpdate()->find($payment->original_payment_id);
+            }
+            $payment = Payment::lockForUpdate()->findOrFail($payment->id);
+            Order::whereIn('id', $payment->orders()->pluck('orders.id'))->orderBy('id')->lockForUpdate()->get();
+            Invoice::whereIn('id', $payment->invoices()->pluck('invoices.id'))->orderBy('id')->lockForUpdate()->get();
+
+            if ($payment->state === PaymentStateEnum::CANCELLED) {
+                throw ValidationException::withMessages([
+                    'message' => __('Unable to cancel this payment as it is already cancelled.'),
+                ]);
+            }
+
+            $payment->update([
+                'state' => PaymentStateEnum::CANCELLED,
             ]);
-        }
 
-        $payment->update([
-            'state' => PaymentStateEnum::CANCELLED,
-        ]);
+            $originalPayment = $payment->originalPayment;
 
-        $originalPayment = $payment->originalPayment;
+            if ($payment->type == PaymentTypeEnum::REFUND && $originalPayment) {
+                // If the refund is cancelled. Original payment total refund will be updated
+                $totalRefund = abs($originalPayment->refunds()->whereNot('state', PaymentStateEnum::CANCELLED->value)->sum('amount'));
+                $originalPayment->update([
+                    'total_refund' => $totalRefund,
+                ]);
+            }
 
-        if ($payment->type == PaymentTypeEnum::REFUND && $originalPayment) {
-            // If the refund is cancelled. Original payment total refund will be updated
-            $totalRefund = abs($originalPayment->refunds()->whereNot('state', PaymentStateEnum::CANCELLED->value)->sum('amount'));
-            $originalPayment->update([
-                'total_refund' => $totalRefund,
-            ]);
-        }
+            if ($payment->paymentAccount->type === PaymentAccountTypeEnum::ACCOUNT) {
+                UpdateBalanceCustomer::make()->action($payment->customer, [
+                    'type'   => ($payment->amount < 0 ? CreditTransactionTypeEnum::MONEY_BACK : CreditTransactionTypeEnum::PAY_RETURN)->value,
+                    'amount' => $payment->amount,
+                    'notes'  => __('Balance updated due to payment cancellation').": [Ref: $payment->reference]",
+                    'reason' => CreditTransactionReasonEnum::OTHER
+                ]);
+                CustomerHydrateCreditTransactions::run($payment->customer_id);
+            }
 
-        if ($payment->paymentAccount->type === PaymentAccountTypeEnum::ACCOUNT) {
-            // if cancel refund, should still return minus no? so this is correct. No need to modify the amount as it is already negative when it is a refund
-            UpdateBalanceCustomer::make()->action($payment->customer, [
-                'type'   => CreditTransactionTypeEnum::PAY_RETURN->value,
-                'amount' => $payment->amount,
-                'notes'  => __('Balance updated due to payment cancellation').": [Ref: $payment->reference]",
-                'reason' => CreditTransactionReasonEnum::OTHER
-            ]);
-            CustomerHydrateCreditTransactions::run($payment->customer_id);
-        }
+            foreach ($payment->invoices as $invoice) {
+                UpdateInvoicePaymentState::run($invoice);
+            }
 
-        foreach ($payment->invoices as $invoice) {
-            UpdateInvoicePaymentState::run($invoice);
-        }
+            foreach ($payment->orders as $order) {
+                UpdateOrderPaymentsStatus::run($order);
+            }
 
-        foreach ($payment->orders as $order) {
-            UpdateOrderPaymentsStatus::run($order);
-        }
+            $this->hydratePaymentSideEffects($payment);
 
-        $this->hydratePaymentSideEffects($payment);
-
-        return $payment;
+            return $payment;
+        });
     }
 
     /**
