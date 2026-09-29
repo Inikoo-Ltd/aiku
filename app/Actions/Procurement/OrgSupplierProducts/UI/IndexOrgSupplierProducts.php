@@ -262,7 +262,7 @@ class IndexOrgSupplierProducts extends OrgAction
             'Procurement/OrgSupplierProducts',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Supplier Products'),
+                'title'       => '(' . $this->parent->supplier->code . ') ' . __('Supplier Products'),
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
