@@ -1,8 +1,8 @@
 ---
 title: Starostlivosť o zákazníkov
 summary: Zorientujte sa v zozname zákazníkov obchodu, pridajte nového zákazníka, prečítajte si stránku zákazníka a pochopte stavy, prihlásenia a prospektov, ktoré ju obklopujú.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-29
+source_date: 2026-09-29
 tags: crm, customers
 category: crm
 ---
@@ -13,9 +13,17 @@ Každý obchod si drží vlastný zoznam <b>Customers</b>, dostupný zo sekcie *
 
 ## Zoznam zákazníkov
 
-Otvorte obchod a prejdite na **CRM → Customers**. Zoznam zobrazuje každého zákazníka daného obchodu, so stĺpcami **Ref**, **Name**, dátum pridania (**Since**), dátum **Last Invoice**, počet **Invoices** a **Sales**. Zoznam môžete vyhľadávať a zoraďovať podľa ktoréhokoľvek z týchto stĺpcov.
+Otvorte obchod a prejdite na **CRM → Customers**. Zoznam zobrazuje každého zákazníka daného obchodu, so stĺpcami **Ref**, **Name**, dátum pridania (**Since**), dátum **Last Invoice**, odhadovaný dátum **Next order** (ďalšia objednávka), počet **Invoices** a **Sales**. Zoznam môžete vyhľadávať a zoraďovať podľa ktoréhokoľvek z týchto stĺpcov.
 
-Zoznam môžete filtrovať pomocou globálneho vyhľadávacieho poľa (zodpovedá menám a poštovým smerovacím číslam, ak ich zadáte), podľa **Tag**, podľa **Country** a podľa toho, či zákazník niekedy zadal objednávku.
+Zoznam môžete filtrovať pomocou globálneho vyhľadávacieho poľa (zodpovedá menám a poštovým smerovacím číslam, ak ich zadáte), podľa **Tag**, podľa **Country** a podľa toho, či zákazník niekedy zadal objednávku. Panel filtrov nad zoznamom pridáva ďalšie, vrátane **Due to Reorder** (na dokúpenie).
+
+## Zákazníci na dokúpenie
+
+Pre každého zákazníka s aspoň dvoma objednávkami, fakturovanými za posledný rok, si aiku vypočíta, koľko dní si zvyčajne necháva medzi objednávkami: počet dní od prvej po poslednú faktúru vydelený počtom medzier medzi nimi. Viacero faktúr v ten istý deň sa počíta ako jedna objednávka a dobropisy nie sú objednávky.
+
+Ich odhadovaný **Next order** je dátum poslednej faktúry plus tento zvyčajný odstup. Zobrazuje sa v zozname zákazníkov aj na **Overview** zákazníka a prepočítava sa znova každú noc a vždy, keď je zákazníkovi vystavená faktúra.
+
+Zákazník je **due to reorder** (na dokúpenie), keď tento dátum pripadá na najbližších 7 dní, alebo už uplynul, ale o menej než jeden ich zvyčajný odstup. Zákazník, ktorému uplynulo viac, sa skôr vzďaľuje, než že by bol na dokúpenie. Zákazník, ktorý už má podanú objednávku na ceste skladom, sa už dokúpil, takže na dokúpenie nie je. Filter **Due to Reorder** v zozname zákazníkov zobrazí tých na dokúpenie, zoradenie podľa **Next order** ukáže, kto je na rade prvý, a ten istý filter môžete použiť aj na výber príjemcov mailshotu.
 
 ## Pridanie zákazníka
 
@@ -41,6 +49,7 @@ Otvorením zákazníka zo zoznamu sa dostanete na jeho stránku, ktorá je uspor
 - **Attachments** — súbory priložené k zákazníkovi.
 - **Payments**
 - **Credit transactions**
+- **Reorders** (dokúpenia) — produkty, ktoré si zákazník kúpil aspoň v dvoch rôznych dňoch: koľkokrát, priemerné množstvo, priemerný počet dní medzi objednávkami daného produktu, kedy ho objednal naposledy a kedy si ho pravdepodobne objedná nabudúce. Produkty, ktoré má na dokúpenie, nesú označenie **Due**.
 - **Favourites** — produkty, ktoré si zákazník obľúbil.
 - **Reminders**
 - **Dispatched emails** — e-maily, ktoré mu aiku odoslalo.

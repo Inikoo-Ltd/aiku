@@ -18,6 +18,9 @@ use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
+use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
@@ -1962,4 +1965,45 @@ describe('who can erase a customer', function () {
         expect(Customer::find($customer->id))->toBeNull()
             ->and(AnonymiseCustomer::isAnonymised(Customer::withTrashed()->find($customer->id)))->toBeTrue();
     });
+});
+
+test('reorder estimates skip refunds and flag customers and products due to reorder', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+
+    foreach ([90, 60, 30] as $daysAgo) {
+        $invoice = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), ['in_process' => false]));
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now()->subDays($daysAgo),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 2,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+        DB::table('invoices')->where('id', $invoice->id)->update(['created_at' => now()->subDays($daysAgo)]);
+    }
+    $refund = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), ['in_process' => false]));
+    DB::table('invoices')->where('id', $refund->id)->update(['type' => 'refund', 'net_amount' => -10]);
+
+    CustomerHydrateClv::run($customer->id);
+    $stats = $customer->stats()->first();
+
+    $dueCustomerIds = fn () => GetCustomersQueryByRecipe::run($this->shop->id, ['due_to_reorder' => ['value' => ['value' => true]]], false)->pluck('customers.id');
+
+    expect((int) $stats->average_time_between_orders)->toBe(30)
+        ->and(Carbon::parse($stats->expected_date_of_next_order)->isToday())->toBeTrue()
+        ->and($dueCustomerIds())->toContain($customer->id);
+
+    get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $customer->slug, 'tab' => 'reorders']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('reorders.data.0.code', $product->code)
+            ->where('reorders.data.0.times_ordered', 3)
+            ->where('reorders.data.0.average_days_between', 30)
+            ->where('reorders.data.0.is_due', true)
+            ->etc());
+
+    $order = StoreOrder::make()->action($customer, []);
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::SUBMITTED->value]);
+
+    expect($dueCustomerIds())->not->toContain($customer->id);
 });

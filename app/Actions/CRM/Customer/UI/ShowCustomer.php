@@ -35,6 +35,7 @@ use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
+use App\Http\Resources\CRM\CustomerReorderProductsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -269,6 +270,9 @@ class ShowCustomer extends OrgAction
                 $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::optional(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
+                $tabs::REORDERS->value            => $this->tab == $tabs::REORDERS->value ?
+                    fn () => CustomerReorderProductsResource::collection(IndexCustomerReorderProducts::run($customer, $tabs::REORDERS->value))
+                    : Inertia::optional(fn () => CustomerReorderProductsResource::collection(IndexCustomerReorderProducts::run($customer, $tabs::REORDERS->value))),
                 $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
                     fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
                     : Inertia::optional(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
@@ -284,6 +288,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexOrders::make()->tableStructure($customer))
         ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
         ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
+        ->table(IndexCustomerReorderProducts::make()->tableStructure($tabs::REORDERS->value))
         ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
         ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))

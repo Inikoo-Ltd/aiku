@@ -25,6 +25,7 @@ import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
 import RetinaTableApiRequests from "@/Components/Tables/Retina/RetinaTableApiRequests.vue"
 import TableCustomerFavourites from "@/Components/Tables/Grp/Org/CRM/TableCustomerFavourites.vue"
+import TableCustomerReorderProducts from "@/Components/Tables/Grp/Org/CRM/TableCustomerReorderProducts.vue"
 import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/TableCustomerBackInStockReminders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
@@ -83,6 +84,7 @@ const props = defineProps<{
     attachments?: {}
     attachmentRoutes?: {}
     favourites?: {}
+    reorders?: {}
     reminders?: {}
     timeline?: {}
     journey?: {}
@@ -165,6 +167,7 @@ const component = computed(() => {
         api_requests: RetinaTableApiRequests,
         web_users: TableWebUsers,
         favourites: TableCustomerFavourites,
+        reorders: TableCustomerReorderProducts,
         reminders: TableCustomerBackInStockReminders,
         attachments: TableAttachments,
         credit_transactions: TableCreditTransactions,

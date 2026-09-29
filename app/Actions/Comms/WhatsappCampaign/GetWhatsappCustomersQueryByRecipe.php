@@ -15,6 +15,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterByLocation;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
+use App\Actions\Comms\Mailshot\Filters\FilterDueToReorder;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersCollection;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
@@ -55,6 +56,7 @@ class GetWhatsappCustomersQueryByRecipe
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);
         (new FilterByFamilyNeverOrdered())->apply($query, $filters);
         (new FilterGoldRewardStatus())->apply($query, $filters);
+        (new FilterDueToReorder())->apply($query, $filters);
         (new FilterOrdersInBasket())->apply($query, $filters);
         (new FilterByOrderValue())->apply($query, $filters);
         (new FilterBySubdepartment())->apply($query, $filters);

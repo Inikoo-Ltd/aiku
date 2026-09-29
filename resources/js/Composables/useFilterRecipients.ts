@@ -2,7 +2,7 @@ import { ref, computed, reactive, watch } from 'vue'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 
 export function useFilterRecipients(props: any) {
@@ -47,10 +47,11 @@ export function useFilterRecipients(props: any) {
     }
 
      const FILTER_CONFLICTS: Record<string, string[]> = {
-        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_departments'],
+        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','due_to_reorder','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_departments'],
         orders_in_basket: ['registered_never_ordered'],
         by_order_value: ['registered_never_ordered'],
         orders_collection: ['registered_never_ordered'],
+        due_to_reorder: ['registered_never_ordered'],
         by_family: ['registered_never_ordered'],
         by_subdepartment: ['registered_never_ordered'],
         by_family_never_ordered: ['registered_never_ordered'],
@@ -72,7 +73,7 @@ export function useFilterRecipients(props: any) {
         const conflictWith = hasConflict(key)
         if (conflictWith) {
             notify({
-                title: trans("Filter conflict"),
+                title: ctrans("Filter conflict"),
                 text: `"${config.label}" cannot be combined with "${activeFilters.value[conflictWith].config.label}"`,
                 type: "error"
             })
@@ -449,14 +450,14 @@ export function useFilterRecipients(props: any) {
             .then((response) => {
 
                 notify({
-                    title: trans('Success!'),
-                    text: trans('Success to save filter'),
+                    title: ctrans('Success!'),
+                    text: ctrans('Success to save filter'),
                     type: 'success',
                 })
             })
             .catch((error) => {
                 notify({
-                    title: trans("Failed to save filter"),
+                    title: ctrans("Failed to save filter"),
                     type: "error",
                 })
             })
@@ -536,11 +537,11 @@ export function useFilterRecipients(props: any) {
             const v = filter.value
 
             if (!String(v.location ?? '').trim()) {
-                errors[key] = trans('Enter a location first')
+                errors[key] = ctrans('Enter a location first')
             } else if (!v.radius) {
-                errors[key] = trans('Select a radius first')
+                errors[key] = ctrans('Select a radius first')
             } else if (v.radius === 'custom' && !(Number(v.radius_custom) > 0)) {
-                errors[key] = trans('Enter a custom radius in km first')
+                errors[key] = ctrans('Enter a custom radius in km first')
             }
         })
 

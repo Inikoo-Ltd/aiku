@@ -1,8 +1,8 @@
 ---
 title: Odoslanie mailshotu
 summary: Vytvorte marketingový email, vyberte príjemcov, navrhnite ho v e-mailovej dielni a prevedťe ho od návrhu až po odoslanie — vrátane pohľadu na to, čo v skutočnosti spúšťajú "publish" a "send".
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-29
+source_date: 2026-09-29
 tags: marketing, mailshots, email
 category: marketing
 ---
@@ -23,7 +23,7 @@ Stlačte **Mailshot** navrchu zoznamu Mailshots (alebo **New Newsletter** v zozn
 
 ## Výber príjemcov
 
-Obrazovka príjemcov vám umožňuje filtrovať, komu mailshot pôjde. Predvolene je nový mailshot nastavený na **all customers**, ale môžete si výber zúžiť — podľa rodiny produktov, záujmu, lokality (krajina, PSČ alebo okruh okolo bodu), oddelenia či pododdelenia, hodnoty objednávky, položiek aktuálne v košíku, minulých kolekcií objednávok, objednávok zo showroomu, statusu gold reward, alebo na zákazníkov, ktorí sa zaregistrovali, ale nikdy neobjednali. Pri úprave filtra obrazovka zobrazuje odhadovaný počet príjemcov, takže veľkosť publika vidíte ešte pred potvrdením.
+Obrazovka príjemcov vám umožňuje filtrovať, komu mailshot pôjde. Predvolene je nový mailshot nastavený na **all customers**, ale môžete si výber zúžiť — podľa rodiny produktov, záujmu, lokality (krajina, PSČ alebo okruh okolo bodu), oddelenia či pododdelenia, hodnoty objednávky, položiek aktuálne v košíku, minulých kolekcií objednávok, objednávok zo showroomu, statusu gold reward, na zákazníkov na dokúpenie (**due to reorder**), alebo na zákazníkov, ktorí sa zaregistrovali, ale nikdy neobjednali. Pri úprave filtra obrazovka zobrazuje odhadovaný počet príjemcov, takže veľkosť publika vidíte ešte pred potvrdením.
 
 Odtiaľto pokračujte stlačením **Compose email**, čím prejdete na návrh samotného emailu.
 

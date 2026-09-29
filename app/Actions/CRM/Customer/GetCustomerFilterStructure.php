@@ -124,6 +124,12 @@ class GetCustomerFilterStructure
                             ]
                         ]
                     ],
+                    'due_to_reorder' => [
+                        'label'       => 'Due to Reorder',
+                        'type'        => 'boolean',
+                        'description' => 'Targets repeat customers whose estimated next order, from their average time between orders, is due within a week or has passed by less than one of their usual intervals, and who have no order in progress.',
+                        'options'     => [],
+                    ],
                     'orders_collection' => [
                         'label'       => 'Orders Collection',
                         'type'        => 'boolean',

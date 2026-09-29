@@ -20,6 +20,7 @@ enum CustomerTabsEnum: string
     case TIMELINE            = 'timeline';
     case JOURNEY             = 'journey';
     case RETINA_DASHBOARD    = 'retina_dashboard';
+    case REORDERS            = 'reorders';
 
     case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
@@ -83,6 +84,10 @@ enum CustomerTabsEnum: string
                 'title' => __('Payments'),
                 'icon'  => 'fal fa-money-bill',
                 'type'  => 'icon',
+            ],
+            CustomerTabsEnum::REORDERS => [
+                'title' => __('Reorders'),
+                'icon'  => 'fal fa-repeat',
             ],
             CustomerTabsEnum::FAVOURITES => [
                 'title' => __('Favourites'),
