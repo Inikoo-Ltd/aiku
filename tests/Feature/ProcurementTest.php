@@ -2631,6 +2631,18 @@ test('UI stock delivery items without a supplier product sort by the SKO code', 
     );
 });
 
+test('UI placed stock delivery costing tab shows every item on one page', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'COSTING-ONE-PAGE', [10, 10]);
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+
+    $this->withoutExceptionHandling();
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.meta.per_page', config('ui.table.max_records_per_page'))
+            ->has(StockDeliveryTabsEnum::ITEMS->value.'.data.0.updateCostRoute'));
+});
+
 test('UI edit stock delivery', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));

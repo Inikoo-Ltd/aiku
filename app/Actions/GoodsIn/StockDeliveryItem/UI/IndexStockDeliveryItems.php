@@ -45,7 +45,7 @@ class IndexStockDeliveryItems extends OrgAction
         ];
     }
 
-    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null): LengthAwarePaginator
+    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null, ?int $numberOfRecords = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -142,7 +142,7 @@ class IndexStockDeliveryItems extends OrgAction
                 'unit_quantity',
             ])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
             ->withQueryString();
     }
 

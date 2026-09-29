@@ -588,11 +588,13 @@ class ShowStockDelivery extends OrgAction
 
     private function getItems(StockDelivery $stockDelivery): AnonymousResourceCollection
     {
-        $items = IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value);
+        if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
+            return StockDeliveryItemCostResource::collection(
+                IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value, numberOfRecords: config('ui.table.max_records_per_page'))
+            );
+        }
 
-        return $stockDelivery->state === StockDeliveryStateEnum::PLACED
-            ? StockDeliveryItemCostResource::collection($items)
-            : StockDeliveryItemResource::collection($items);
+        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value));
     }
 
     private function getCosting(StockDelivery $stockDelivery): array
