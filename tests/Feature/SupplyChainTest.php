@@ -752,15 +752,22 @@ test('UI supply chain overview', function () {
             ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
             ->missing('staleOrders')
             ->missing('search_demand')
-            ->has('breadcrumbs', 3);
+            ->missing('poJourney')
+            ->has('breadcrumbs', 3)
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->where('poJourney.route.name', 'grp.supply-chain.dashboard')
+                ->has('poJourney.summary.open')
+                ->has('poJourney.summary.overdue')
+                ->has('poJourney.blockages'));
     });
 });
 
 test('supply chain navigation separates agent suppliers from free suppliers', function () {
     $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
 
-    expect(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.dashboard')
-        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.overview')
+    expect(data_get($navigation, 'supply-chain.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.dashboard')
         ->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
         'name' => 'grp.supply-chain.agent_suppliers.index',
     ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.4.route'))->toBe([

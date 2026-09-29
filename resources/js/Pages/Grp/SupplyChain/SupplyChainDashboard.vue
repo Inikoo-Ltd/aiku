@@ -28,6 +28,8 @@ import {
     faRadar,
     faShoppingBasket,
     faChartNetwork,
+    faRoute,
+    faExclamationTriangle,
 } from "@fal"
 
 library.add(
@@ -41,7 +43,9 @@ library.add(
     faArrowRight,
     faRadar,
     faShoppingBasket,
-    faChartNetwork
+    faChartNetwork,
+    faRoute,
+    faExclamationTriangle
 )
 
 const props = defineProps<{
@@ -50,7 +54,48 @@ const props = defineProps<{
     dashboardCards: any[]
     search_demand?: any
     shoppingLists?: any
+    poJourney?: {
+        currency: string
+        summary: {
+            open: number
+            open_value: number
+            on_track: number
+            at_risk: number
+            overdue: number
+            completed: number
+        }
+        blockages: { stage: string; label: string; count: number; max_days_overdue: number }[]
+        route: { name: string; parameters: Record<string, any> }
+    }
 }>()
+
+const poJourneyTiles = computed(() => {
+    const journey = props.poJourney
+    if (!journey) {
+        return []
+    }
+
+    return [
+        { label: ctrans("Open orders"), value: journey.summary.open.toLocaleString(), class: "text-gray-900", status: null },
+        {
+            label: ctrans("Open value"),
+            value: new Intl.NumberFormat("en-GB", { style: "currency", currency: journey.currency, notation: "compact", maximumFractionDigits: 2 }).format(journey.summary.open_value),
+            class: "text-gray-900",
+            status: null
+        },
+        { label: ctrans("On track"), value: journey.summary.on_track, class: "text-emerald-600", status: "on_track" },
+        { label: ctrans("At risk"), value: journey.summary.at_risk, class: "text-amber-500", status: "at_risk" },
+        { label: ctrans("Overdue"), value: journey.summary.overdue, class: "text-red-600", status: "overdue" },
+        { label: ctrans("Completed"), value: journey.summary.completed, class: "text-blue-600", status: "completed" }
+    ]
+})
+
+function poJourneyHref(query: Record<string, string | null> = {}): string {
+    const journeyRoute = props.poJourney!.route
+    const filters = Object.fromEntries(Object.entries(query).filter(([, value]) => value))
+
+    return route(journeyRoute.name, { ...journeyRoute.parameters, ...filters })
+}
 
 const shoppingListTotalItems = computed(() =>
     (props.shoppingLists?.withItems ?? []).reduce((sum: number, cart: any) => sum + cart.count, 0)
@@ -65,6 +110,58 @@ const shoppingListTotalItems = computed(() =>
     </div>
 
     <div class="mx-4 mt-4 flex flex-col gap-4">
+        <Deferred data="poJourney">
+            <template #fallback>
+                <div class="h-24 animate-pulse rounded-lg border border-gray-200 bg-gray-100" />
+            </template>
+
+            <DashboardWidgetBox v-if="poJourney" storageKey="sc_po_journey_collapsed">
+                <template #header>
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-route" class="text-indigo-600" fixed-width aria-hidden="true" />
+                        {{ ctrans("PO journey") }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        {{ poJourney.summary.open }} {{ ctrans("open orders") }}
+                        · {{ poJourney.summary.overdue }} {{ ctrans("overdue") }}
+                    </span>
+                </template>
+
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                    <Link
+                        v-for="tile in poJourneyTiles"
+                        :key="tile.label"
+                        :href="poJourneyHref({ status: tile.status })"
+                        class="rounded-md border border-gray-200 bg-white px-3 py-2 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">
+                        <span class="block text-xs text-gray-500">{{ tile.label }}</span>
+                        <span class="block text-lg font-semibold tabular-nums" :class="tile.class">{{ tile.value }}</span>
+                    </Link>
+                </div>
+
+                <div v-if="poJourney.blockages.length" class="mt-3 flex flex-wrap items-center gap-2">
+                    <span class="flex items-center gap-1.5 text-xs text-gray-400">
+                        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
+                        {{ ctrans("Urgent blockages:") }}
+                    </span>
+                    <Link
+                        v-for="blockage in poJourney.blockages.slice(0, 3)"
+                        :key="blockage.stage"
+                        :href="poJourneyHref({ stage: blockage.stage, status: 'overdue' })"
+                        class="inline-flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100">
+                        <span class="font-semibold">{{ blockage.count }}</span>
+                        {{ blockage.label }}
+                    </Link>
+                </div>
+
+                <div class="mt-3 flex justify-end">
+                    <Link :href="poJourneyHref()" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                        {{ ctrans("See full report") }}
+                        <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
+                    </Link>
+                </div>
+            </DashboardWidgetBox>
+        </Deferred>
+
         <Deferred data="shoppingLists">
             <template #fallback>
                 <div class="h-16 animate-pulse rounded-lg border border-gray-200 bg-gray-100" />

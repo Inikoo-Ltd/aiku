@@ -33,6 +33,20 @@ class ShowSupplyChainDashboard extends OrgAction
         $this->initialisationFromGroup(app('group'), $request);
     }
 
+    private function getPurchaseOrderJourneySummary(ActionRequest $request): array
+    {
+        $journey = ShowSupplyChainPurchaseOrderJourney::make()
+            ->initialisationFromGroup($this->group, $request)
+            ->handle($request);
+
+        return [
+            'currency'  => $this->group->currency->code,
+            'summary'   => $journey['summary'],
+            'blockages' => $journey['blockages'],
+            'route'     => $this->dashboardRoute('grp.supply-chain.dashboard'),
+        ];
+    }
+
     private function getDashboardCards(): array
     {
         $stats = $this->group->supplyChainStats;
@@ -246,7 +260,7 @@ class ShowSupplyChainDashboard extends OrgAction
         ];
     }
 
-    public function htmlResponse(): Response
+    public function htmlResponse(mixed $result, ActionRequest $request): Response
     {
         return Inertia::render(
             'SupplyChain/SupplyChainDashboard',
@@ -269,6 +283,7 @@ class ShowSupplyChainDashboard extends OrgAction
                     'title' => __('Overview'),
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
+                'poJourney'      => Inertia::defer(fn () => $this->getPurchaseOrderJourneySummary($request)),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
             ]
@@ -284,7 +299,7 @@ class ShowSupplyChainDashboard extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.supply-chain.dashboard',
+                            'name' => 'grp.supply-chain.overview',
                         ],
                         'label' => __('Supply chain'),
                     ],
