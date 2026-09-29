@@ -1852,6 +1852,7 @@ test('UI show org supplier', function () {
             ->where('pageHead.subNavigation.1.number', 86)
             ->where('pageHead.actions.0.label', __('Purchase Order'))
             ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
+            ->where('pageHead.actions.1.route.name', 'grp.org.procurement.org_suppliers.edit')
             ->where('showcase.stats.0.count', 86)
             ->where('showcase.stats.0.route.name', 'grp.org.procurement.org_suppliers.show.supplier_products.index')
             ->where('showcase.stats.1.route.name', 'grp.org.procurement.org_suppliers.show.purchase_orders.index')
