@@ -26,11 +26,18 @@ const document = computed(() => `<!doctype html><html><head><meta charset="utf-8
 </style></head><body>${props.html}</body></html>`)
 
 const measure = () => {
-    const body = frame.value?.contentDocument?.body
+    const page = frame.value?.contentDocument
+    const body = page?.body
 
-    if (body) {
-        height.value = Math.min(Math.max(body.scrollHeight + 8, 60), 1600)
+    if (!page || !body) {
+        return
     }
+
+    body.style.zoom = "1"
+    const fitToWidth = Math.min(1, page.documentElement.clientWidth / Math.max(body.scrollWidth, 1))
+    body.style.zoom = String(fitToWidth)
+
+    height.value = Math.min(Math.max(Math.ceil(body.getBoundingClientRect().height) + 8, 60), 1600)
 }
 
 // Images arrive after the frame reports it has loaded, and each one changes the height.

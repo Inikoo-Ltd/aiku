@@ -6,7 +6,9 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
 use App\Enums\CRM\Livechat\ChatRetractionReasonEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatMessageResource extends JsonResource
@@ -23,18 +25,25 @@ class ChatMessageResource extends JsonResource
      */
     public const PRIVATE_METADATA = ['edit_history', 'retraction_note'];
 
+    /** A picture small enough to be written into an email's body instead of stored as a file. */
+    public const EMBEDDED_PICTURE = '/<img\b[^>]*\ssrc="data:[^"]*"[^>]*>/i';
+
     public function toArray($request): array
     {
         $chatMessage = $this;
 
         $translations = $chatMessage->translations;
 
+        $files = $chatMessage->attachedFiles();
+
+        [$htmlBody, $inlineMediaIds] = $this->resolveEmailPictures($chatMessage->html_body, $files);
+
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
             // Already purified when it was stored, and shown inside a sandboxed frame. The text
             // above stays the message of record: it is what search and translation read.
-            'html_body' => $chatMessage->html_body,
+            'html_body' => $htmlBody,
             'original' => [
                 'text'          => $chatMessage->original_text,
                 'language_name' => $chatMessage->originalLanguage?->name,
@@ -86,7 +95,7 @@ class ChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
-            'attachments' => $chatMessage->attachedFiles()->map(function ($media) {
+            'attachments' => $files->map(function ($media) use ($inlineMediaIds) {
                 $isArchived = (bool) $media->getCustomProperty('archived_at');
                 $isImage    = str_starts_with((string) $media->mime_type, 'image/') && !$isArchived;
                 $download   = route('grp.api.chats.chat.attachment.download', ['ulid' => $media->ulid]);
@@ -95,6 +104,7 @@ class ChatMessageResource extends JsonResource
                     'id'             => $media->id,
                     'is_image'       => $isImage,
                     'is_archived'    => $isArchived,
+                    'is_inline'      => in_array($media->id, $inlineMediaIds, true),
                     'media_url'      => $isImage ? GetPictureSources::run($media->getImage()->resize(0, 0)) : null,
                     'original_url'   => $isArchived ? $download : $media->getUrl(),
                     'file_name'      => $media->name ?: $media->file_name,
@@ -108,6 +118,7 @@ class ChatMessageResource extends JsonResource
                     ],
                 ];
             })->values(),
+            'has_embedded_pictures' => (bool) preg_match(self::EMBEDDED_PICTURE, (string) $htmlBody),
             'reactions' => $chatMessage->reactions
                 ->groupBy('emoji')
                 ->map(function ($group, $emoji) {
@@ -129,5 +140,72 @@ class ChatMessageResource extends JsonResource
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp
         ];
+    }
+
+    /**
+     * An email addresses its pictures by the Content-ID they travel under (cid:...), and mail
+     * stored between 22 and 28 Sep 2026 by the file's path on our disk. A browser can fetch
+     * neither, so each is pointed, at the time of showing, at wherever the file is served from
+     * now: the picture service, or the download route once the file has been archived. A picture
+     * whose file is gone, redacted or not fetched yet is left out rather than shown broken.
+     *
+     * @param  Collection<int, Media>  $files
+     * @return array{0: ?string, 1: array<int, int>}
+     */
+    private function resolveEmailPictures(?string $html, Collection $files): array
+    {
+        if (! $html) {
+            return [$html, []];
+        }
+
+        $byReference = [];
+        foreach ($files as $media) {
+            $byReference['file:'.strtolower((string) $media->file_name)] = $media;
+
+            if ($contentId = $media->getCustomProperty('content_id')) {
+                $byReference['cid:'.strtolower($contentId)] = $media;
+            }
+        }
+
+        $inlineMediaIds = [];
+
+        $html = preg_replace_callback('/<img\b[^>]*>/i', function (array $tag) use ($byReference, &$inlineMediaIds) {
+            if (! preg_match('/\ssrc="([^"]*)"/i', $tag[0], $source)) {
+                return $tag[0];
+            }
+
+            $address = rawurldecode(html_entity_decode($source[1]));
+
+            if (preg_match('#^(https?:|data:)#i', $address)) {
+                return $tag[0];
+            }
+
+            $reference = str_starts_with(strtolower($address), 'cid:')
+                ? strtolower($address)
+                : 'file:'.strtolower(basename($address));
+
+            $media = $byReference[$reference] ?? null;
+
+            if (! $media) {
+                return '';
+            }
+
+            $inlineMediaIds[] = $media->id;
+
+            $resolved = str_replace($source[0], ' src="'.e($this->pictureAddress($media)).'"', $tag[0]);
+
+            return preg_replace_callback('/\salt="cid:[^"]*"/i', fn () => ' alt="'.e((string) $media->name).'"', $resolved);
+        }, $html);
+
+        return [$html, array_values(array_unique($inlineMediaIds))];
+    }
+
+    private function pictureAddress(Media $media): string
+    {
+        if (str_starts_with((string) $media->mime_type, 'image/') && ! $media->getCustomProperty('archived_at')) {
+            return GetPictureSources::run($media->getImage()->resize(0, 0))['original'];
+        }
+
+        return route('grp.api.chats.chat.attachment.download', ['ulid' => $media->ulid, 'inline' => 1]);
     }
 }

@@ -26,6 +26,7 @@ use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
 use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -103,6 +104,8 @@ use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Models\Production\JobOrder;
@@ -142,6 +145,7 @@ use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
@@ -169,6 +173,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
@@ -2408,6 +2413,26 @@ test('UI Index stock deliveries', function () {
     });
 });
 
+test('UI Index stock deliveries shows the expected received date', function () {
+    $stockDelivery = StoreStockDelivery::make()->action(
+        $this->orgAgent,
+        [
+            'reference'   => 'EXPECTED-DATE-1',
+            'date'        => date('Y-m-d'),
+            'currency_id' => $this->organisation->currency_id,
+        ],
+        strict: false,
+    );
+    UpdateStockDelivery::make()->action($stockDelivery, ['estimated_receiving_date' => '2026-10-15']);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.index', [$this->organisation->slug]).'?sort=estimated_receiving_date');
+
+    $data = $response->viewData('page')['props']['data'];
+    $row  = collect($data['data'] ?? $data)->firstWhere('id', $stockDelivery->id);
+    expect($row['estimated_receiving_date'])->toBe('2026-10-15');
+});
+
 test('UI Index org agent stock deliveries shows deliveries with empty between filter', function () {
     $agentStockDelivery = StoreStockDelivery::make()->action(
         $this->orgAgent,
@@ -2859,6 +2884,35 @@ test('stock delivery item is booked in to a location the org stock did not have 
         ->and($stockDeliveryItem->sowings()->where('location_id', $location->id)->count())->toBe(2)
         ->and((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+});
+
+test('stock delivery item booked in with set as picking location flags that location as the picking location', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-SET-PICKING', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $warehouse         = Warehouse::where('organisation_id', $this->organisation->id)->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $location          = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->update([
+        'default_wholesale_picking_location'    => false,
+        'default_dropshipping_picking_location' => false,
+    ]);
+
+    expect((new StockDeliveryItemResource($stockDeliveryItem))->resolve()['has_picking_location'])->toBeFalse();
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, [
+        'quantity'                => 4,
+        'location_id'             => $location->id,
+        'set_as_picking_location' => true,
+    ]);
+
+    $locationOrgStock = LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->first();
+
+    expect($locationOrgStock->default_wholesale_picking_location)->toBeTrue()
+        ->and($locationOrgStock->default_dropshipping_picking_location)->toBeTrue()
+        ->and((new StockDeliveryItemResource($stockDeliveryItem->fresh()))->resolve()['has_picking_location'])->toBeTrue();
 });
 
 test('stock delivery item is checked and placed in SKOs while its quantities stay in units', function () {
@@ -3931,15 +3985,127 @@ describe('partner shopping list', function () {
             ->and($child->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('cherry pick remainder joins the open line already waiting for the same stock', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+        $waiting = $item->replicate()->fill(['quantity' => 5]);
+        $waiting->save();
+
+        CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id, 'quantity' => 12]]
+        );
+
+        expect($item->refresh()->children()->count())->toBe(0)
+            ->and((float) $waiting->refresh()->quantity)->toBe(23.0)
+            ->and(PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->count())->toBe(1);
+    });
+
+    test('a line the seller deletes from the partner order goes back on the buyer list', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 25,
+        ]);
+        CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        DeleteTransaction::make()->action($item->refresh()->transaction);
+
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($item->transaction_id)->toBeNull()
+            ->and((float) $item->quantity)->toBe(25.0);
+    });
+
+    test('a deleted partner order line joins the open line left by a partial pick', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+        CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id, 'quantity' => 12]]);
+
+        DeleteTransaction::make()->action($item->refresh()->transaction);
+
+        $openLines = PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->get();
+
+        expect(PartnerShoppingListItem::find($item->id))->toBeNull()
+            ->and($openLines)->toHaveCount(1)
+            ->and((float) $openLines->first()->quantity)->toBe(30.0);
+    });
+
+    test('cancelling a partner order puts its lines back on the buyer list', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 8,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        CancelOrder::make()->action($result['orders'][0]);
+
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($item->transaction_id)->toBeNull();
+    });
+
+    test('a partner request is on its way: what the partner holds is dated from picking, the rest from production', function () {
+        $this->sellerProduct->orgStocks()->first()->update(['quantity_available' => 4]);
+        StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 10]);
+
+        $lines = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->where('type', 'partner_request')->values();
+        $inStock      = $lines->first(fn ($line) => str_starts_with($line['state_label'], 'In stock at'));
+        $notScheduled = $lines->first(fn ($line) => str_starts_with($line['state_label'], 'Not scheduled yet'));
+
+        expect($lines)->toHaveCount(2)
+            ->and($inStock['quantity'])->toBe(4.0)
+            ->and($notScheduled['quantity'])->toBe(6.0)
+            ->and($lines->every(fn ($line) => $line['is_estimate'] && $line['eta'] >= now()->addDay()->toDateString()))->toBeTrue()
+            ->and($notScheduled['eta'] >= $inStock['eta'])->toBeTrue();
+    });
+
+    test('a picked partner request is listed with its order until the order reaches the warehouse', function () {
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($line['reference'])->toBe($result['orders'][0]->reference)
+            ->and($line['state_label'])->toStartWith('Picked by')
+            ->and($line['quantity'])->toBe(3.0);
+    });
+
+    test('a partner request in production shows its job order and who is making it', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $sellerOrgStock->update(['quantity_available' => 0]);
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $employeeData                    = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
+        $employeeData['worker_number']   = 'W'.rand(1000, 9999);
+        $employeeData['alias']           = 'Alias '.rand(1000, 9999);
+        $employeeData['type']            = EmployeeTypeEnum::EMPLOYEE;
+        $employeeData['employment_type'] = EmploymentTypeEnum::FULL_TIME;
+        $employeeData['state']           = EmployeeStateEnum::WORKING;
+        $artisan = StoreEmployee::make()->action($seller, $employeeData);
+        AttachArtisan::make()->action($artefact, ['employee_id' => $artisan->id]);
+
+        $item     = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $jobOrder = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id])['job_orders'][0];
+
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($line['reference'])->toBe($jobOrder->reference)
+            ->and($line['state_label'])->toContain($artisan->contact_name)
+            ->and($line['quantity'])->toBe(5.0)
+            ->and($line['is_estimate'])->toBeTrue();
+    });
+
     test('cherry pick reuses in-process intercompany order across picks', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
         ]);
+        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
+
         $itemB = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 7,
         ]);
-
-        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
         $resultB = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemB->id]]);
 
         expect($resultA['orders'][0]->id)->toBe($resultB['orders'][0]->id);
@@ -3988,6 +4154,43 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->items()->count())->toBe(1)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id)
             ->and((float) $stockDelivery->items()->first()->net_amount)->toBe((float) $order->deliveryNotes()->first()->deliveryNoteItems()->first()->transaction->net_amount);
+    });
+
+    test('mirror stock delivery counts units, not the SKOs on the delivery note', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $packedIn       = $sellerOrgStock->packed_in;
+        $sellerOrgStock->update(['packed_in' => 4]);
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 12,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $stockDelivery    = SendPartnerOrderToWarehouse::make()->action($order);
+        $deliveryNote     = $order->deliveryNotes()->first();
+        $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
+
+        expect((float) $stockDelivery->items()->first()->unit_quantity)->toBe((float) $deliveryNoteItem->quantity_required * 4);
+
+        $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect((float) $stockDelivery->items()->first()->refresh()->unit_quantity)->toBe(8.0);
+
+        $stockDelivery->items()->first()->update(['unit_quantity_checked' => 4, 'checked_at' => now()]);
+        request()->setRouteResolver(fn () => (new Illuminate\Routing\Route('GET', 'under-over', []))->name('under-over'));
+        $underOverDelivered = IndexStockDeliveryUnderOverDeliveredItems::make()->handle($stockDelivery)->first();
+
+        expect((float) $underOverDelivered->difference_skos)->toBe(-1.0);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+        $sellerOrgStock->update(['packed_in' => $packedIn]);
     });
 
     test('send partner order to warehouse rejects non-creating order', function () {
@@ -4200,9 +4403,9 @@ describe('partner shopping list', function () {
     });
 
     test('delete all open partner shopping list items keeps items already taken', function () {
-        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $open = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
 
         actingAs($this->adminGuest->getUser());
         $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))
@@ -4982,7 +5185,15 @@ test('partner shopping list org stocks json feed', function () {
     $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]));
     $row = collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id);
 
+    $expectedPricePerSko = round(
+        (float) $sellerProduct->price / (float) $sellerOrgStock->pivot->quantity
+        * $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner),
+        4
+    );
+
     expect((float) $row['quantity_ordered'])->toBe(5.0)
+        ->and(round((float) $row['price_per_sko'], 4))->toBe($expectedPricePerSko)
+        ->and($response->json('currency'))->toBe($this->orgPartner->organisation->currency->code)
         ->and($row['saveRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.update')
         ->and($row['deleteRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.destroy');
 });
@@ -5723,6 +5934,21 @@ test('every organisation and group top menu subsection carries a label', functio
 
     expect($unlabelled(GetOrganisationNavigation::run($user, $this->organisation)))->toBe([])
         ->and($unlabelled(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)))->toBe([]);
+});
+
+test('organisation navigation leaves out the menu of closed shops', function () {
+    [$organisation, $user, $shop] = createShop();
+
+    $originalState = $shop->state;
+    $navigationPath = 'shops_fulfilments_navigation.shops_navigation.navigation.'.$shop->slug.'.subNavigation';
+
+    $shop->update(['state' => ShopStateEnum::OPEN]);
+    expect(data_get(GetOrganisationNavigation::run($user->fresh(), $organisation), $navigationPath))->not->toBeEmpty();
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
+    expect(data_get(GetOrganisationNavigation::run($user->fresh(), $organisation), $navigationPath))->toBe([]);
+
+    $shop->update(['state' => $originalState]);
 });
 
 test('incoming stock tells the customer when an out of stock product is expected back', function () {

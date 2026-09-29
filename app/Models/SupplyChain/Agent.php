@@ -15,6 +15,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
@@ -53,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency|null $currency
  * @property-read Group|null $group
@@ -85,6 +87,7 @@ class Agent extends Model implements HasMedia, Auditable
     use HasFactory;
     use HasHistory;
     use HasImage;
+    use HasAttachments;
     use InGroup;
     use HasSearch;
 

@@ -11,6 +11,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProcurementSettings extends OrgAction
@@ -24,6 +25,11 @@ class UpdateProcurementSettings extends OrgAction
         'whatsapp_message_template'        => 'message_template',
         'whatsapp_purchase_order_template' => 'purchase_order_template',
         'whatsapp_template_language'       => 'template_language',
+    ];
+
+    private const array WHATSAPP_TEMPLATE_FIELDS = [
+        'whatsapp_message_template'        => 'message_template',
+        'whatsapp_purchase_order_template' => 'purchase_order_template',
     ];
 
     public function authorize(ActionRequest $request): bool
@@ -41,7 +47,44 @@ class UpdateProcurementSettings extends OrgAction
             }
         }
 
+        $organisation->settings = $settings;
+
+        foreach (self::WHATSAPP_TEMPLATE_FIELDS as $field => $key) {
+            if (! array_key_exists($field, $modelData)) {
+                continue;
+            }
+
+            $name  = data_get($settings, "procurement.whatsapp.$key");
+            $fetch = $name ? FetchProcurementWhatsappTemplate::run($organisation, $name) : null;
+
+            data_set($settings, "procurement.whatsapp.{$key}_meta", $fetch);
+
+            if (blank(data_get($settings, 'procurement.whatsapp.template_language')) && filled(Arr::get($fetch, 'template.language'))) {
+                data_set($settings, 'procurement.whatsapp.template_language', $fetch['template']['language']);
+            }
+        }
+
         return $this->update($organisation, ['settings' => $settings]);
+    }
+
+    /**
+     * @param  array{fetch_status: string, error: string|null, template: array<string, mixed>|null}  $fetch
+     * @return array{status: string, title: string, description: string}
+     */
+    public static function fetchNotification(string $name, array $fetch): array
+    {
+        if ($fetch['fetch_status'] !== 'found') {
+            return ['status' => 'error', 'title' => __('Template :name not fetched from Meta', ['name' => $name]), 'description' => (string) $fetch['error']];
+        }
+
+        $status      = (string) Arr::get($fetch, 'template.status');
+        $description = __('Status :status, language :language.', ['status' => $status, 'language' => Arr::get($fetch, 'template.language')]);
+
+        if ($status !== 'APPROVED') {
+            return ['status' => 'warning', 'title' => __('Template :name is not approved yet', ['name' => $name]), 'description' => $description];
+        }
+
+        return ['status' => 'success', 'title' => __('Template :name fetched from Meta', ['name' => $name]), 'description' => $description];
     }
 
     public function rules(): array
@@ -60,7 +103,15 @@ class UpdateProcurementSettings extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        $this->handle($organisation, $this->validatedData);
+        $organisation = $this->handle($organisation, $this->validatedData);
+
+        foreach (self::WHATSAPP_TEMPLATE_FIELDS as $field => $key) {
+            $fetch = Arr::get($organisation->settings, "procurement.whatsapp.{$key}_meta");
+
+            if (array_key_exists($field, $this->validatedData) && $fetch) {
+                return back()->with('notification', self::fetchNotification(Arr::get($organisation->settings, "procurement.whatsapp.$key"), $fetch));
+            }
+        }
 
         return back();
     }

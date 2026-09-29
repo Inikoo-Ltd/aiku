@@ -79,6 +79,7 @@ const props = defineProps<{
 			state_label: string
 			quantity: number
 			eta: string | null
+			is_estimate: boolean
 		}[]
 		brands: {}[]
 		tags: {}[]
@@ -320,11 +321,11 @@ const getTooltips = () => {
 			<div class="mb-4 px-2">
 				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ ctrans("On its way") }}</div>
 				<table class="w-full text-sm">
-					<tr v-for="incoming in data.incoming_stock" :key="incoming.type + incoming.reference + incoming.org_stock_code" class="border-b border-gray-100 last:border-0">
-						<td class="py-1 font-medium" v-tooltip="incoming.type === 'purchase_order' ? ctrans('Purchase order') : ctrans('Stock delivery')">{{ incoming.reference }}</td>
+					<tr v-for="incoming in data.incoming_stock" :key="incoming.type + incoming.reference + incoming.org_stock_code + incoming.state_label" class="border-b border-gray-100 last:border-0">
+						<td class="py-1 font-medium" v-tooltip="{ purchase_order: ctrans('Purchase order'), stock_delivery: ctrans('Stock delivery') }[incoming.type] ?? ctrans('Partner request')">{{ incoming.reference }}</td>
 						<td class="py-1 text-gray-500">{{ incoming.state_label }}</td>
 						<td class="py-1 text-right tabular-nums">{{ locale.number(incoming.quantity) }}</td>
-						<td class="py-1 text-right text-gray-500 whitespace-nowrap">{{ incoming.eta ? useFormatTime(incoming.eta, { formatTime: "mdy" }) : "—" }}</td>
+						<td class="py-1 text-right text-gray-500 whitespace-nowrap" v-tooltip="incoming.is_estimate ? ctrans('Estimated from how far it got and past lead times') : undefined">{{ incoming.eta ? (incoming.is_estimate ? "~ " : "") + useFormatTime(incoming.eta, { formatTime: "mdy" }) : "—" }}</td>
 					</tr>
 				</table>
 				<div v-if="!data.incoming_stock?.length" class="text-sm text-gray-500">{{ ctrans("Nothing on order") }}</div>

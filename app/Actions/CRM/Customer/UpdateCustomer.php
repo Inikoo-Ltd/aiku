@@ -227,14 +227,14 @@ class UpdateCustomer extends OrgAction
                                 ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
                         });
                 })
-                ->with(['organisation', 'billingAddress', 'deliveryAddress'])
+                ->with(['organisation', 'billingAddress', 'deliveryAddress', 'shop.collectionAddress'])
                 ->each(function ($order) use ($customer) {
                     $order->update([
                         'tax_category_id' => GetTaxCategory::run(
                             country: $order->organisation->country,
                             taxNumber: $customer->taxNumber,
                             billingAddress: $order->billingAddress,
-                            deliveryAddress: $order->deliveryAddress,
+                            deliveryAddress: $order->taxableDeliveryAddress($customer->taxNumber),
                             isRe: $customer->is_re,
                         )->id,
                     ]);

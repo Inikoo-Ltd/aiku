@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
@@ -91,7 +90,6 @@ class GetCustomerAddressManagement
             'isCannotSelect'                 => true,
             'address_list'                   => $addressCollection,
             'options'                        => [
-                'countriesAddressData' => GetAddressData::run()
             ],
             'pinned_address_id'              => $customer->delivery_address_id,
             'home_address_id'                => $customer->address_id,

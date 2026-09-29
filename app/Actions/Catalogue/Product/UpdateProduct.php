@@ -492,8 +492,8 @@ class UpdateProduct extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
-            'gross_weight'          => ['sometimes', 'numeric'],
-            'marketing_weight'      => ['sometimes', 'numeric'],
+            'gross_weight'          => ['sometimes', 'integer', 'min:0'],
+            'marketing_weight'      => ['sometimes', 'integer', 'min:0'],
             'marketing_dimensions'  => ['sometimes'],
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],

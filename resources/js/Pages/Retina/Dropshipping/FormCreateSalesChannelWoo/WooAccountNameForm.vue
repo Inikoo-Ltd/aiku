@@ -15,7 +15,7 @@ import axios from "axios";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 
 const goNext = inject("goNext");
-const closeCreateWooModal = inject("closeCreateWooModal");
+const cancelCreateWooModal = inject("cancelCreateWooModal");
 
 const isLoadingStep = ref(false)
 const errors = ref({
@@ -51,7 +51,7 @@ const submitForm = async () => {
         <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="closeCreateWooModal">{{ trans("Cancel") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateWooModal">{{ trans("Cancel") }}</Button>
             <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPriceTips;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\OrgAction;
@@ -78,6 +79,7 @@ class IndexMasterProductsPricing extends OrgAction
                 'master_assets.master_prices',
                 'master_assets.master_rrps',
                 'master_assets.units_review',
+                'master_assets.price_review',
                 'master_assets.effective_cost',
                 'currencies.code as currency_code',
                 'master_asset_stats.number_current_assets as used_in',
@@ -114,6 +116,7 @@ class IndexMasterProductsPricing extends OrgAction
                    and model_has_trade_units.model_id = master_assets.id",
                 'trade_units_label'
             )
+            ->selectSub(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql(), 'family_unit_price_median')
             ->defaultSort('code')
             ->allowedSorts(['code', 'name', 'price', 'rrp'])
             ->allowedFilters([$globalSearch]);
@@ -143,8 +146,9 @@ class IndexMasterProductsPricing extends OrgAction
         $isDropship = $parent->masterShop->type == ShopTypeEnum::DROPSHIPPING;
 
         $masterAssets->getCollection()->each(function (MasterAsset $masterAsset) use ($priceTips, $isDropship) {
-            $masterAsset->price_tip   = $priceTips[$masterAsset->id] ?? null;
-            $masterAsset->is_dropship = $isDropship;
+            $masterAsset->price_tip     = $priceTips[$masterAsset->id] ?? null;
+            $masterAsset->is_dropship   = $isDropship;
+            $masterAsset->price_outlier = GetMasterAssetPriceOutlier::run($masterAsset->price, $masterAsset->units, $masterAsset->family_unit_price_median);
         });
 
         return $masterAssets;

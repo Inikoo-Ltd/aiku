@@ -17,11 +17,11 @@ enum SupplierTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-    case INBOX    = 'inbox';
-    case HISTORY  = 'history';
+    case INBOX       = 'inbox';
+    case ATTACHMENTS = 'attachments';
+    case HISTORY     = 'history';
 
     // case PURCHASES_SALES = 'purchase_sales';
-    // case ATTACHMENTS     = 'attachments';
     // case SYSTEM_USERS    = 'system_users';
     // case IMAGES          = 'images';
     // case FEEDBACKS       = 'feedbacks';
@@ -37,6 +37,12 @@ enum SupplierTabsEnum: string
                 'title' => __('Inbox'),
                 'icon'  => 'fal fa-inbox',
             ],
+            SupplierTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             SupplierTabsEnum::HISTORY => [
                 'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
@@ -47,12 +53,6 @@ enum SupplierTabsEnum: string
             // SupplierTabsEnum::PURCHASES_SALES => [
             //     'title' => __('Purchases/Sales'),
             //     'icon'  => 'fal fa-money-bill',
-            // ],
-            // SupplierTabsEnum::ATTACHMENTS => [
-            //     'title' => __('Attachments'),
-            //     'icon'  => 'fal fa-paperclip',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
             // ],
             // SupplierTabsEnum::SYSTEM_USERS => [
             //     'title' => __('System Users'),

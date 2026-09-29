@@ -12,6 +12,7 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInOrder
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
@@ -44,6 +45,12 @@ class UpdateOrder extends OrgAction
 
     private Order $order;
 
+    private function isTaxStillOpen(Order $order): bool
+    {
+        return !in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])
+            && !$order->invoices()->exists();
+    }
+
     public function handle(Order $order, array $modelData): Order
     {
         $this->guardCustomerShipperLock($order, $modelData);
@@ -62,6 +69,18 @@ class UpdateOrder extends OrgAction
 
         if (Arr::has($changes, 'collection_address_id')) {
             OrderHydrateShipments::run($order->id);
+            if (!Arr::has($modelData, 'tax_category_id') && $order->billingAddress && $this->isTaxStillOpen($order)) {
+                $taxNumber = $order->customer?->taxNumber;
+                $order->update([
+                    'tax_category_id' => GetTaxCategory::run(
+                        country: $order->organisation->country,
+                        taxNumber: $taxNumber,
+                        billingAddress: $order->billingAddress,
+                        deliveryAddress: $order->taxableDeliveryAddress($taxNumber),
+                        isRe: $order->is_re,
+                    )->id
+                ]);
+            }
             CalculateOrderTotalAmounts::run(
                 order: $order,
                 calculateShipping: true,

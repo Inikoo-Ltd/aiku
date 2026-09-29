@@ -620,20 +620,39 @@ trait WithWooCommerceApiRequest
      */
     public function checkConnection(): bool
     {
+        return $this->checkConnectionWithError()['success'];
+    }
+
+    /**
+     * Same probe as checkConnection(), but also surfaces the reason for a failed connection
+     * instead of collapsing it to a bare bool.
+     *
+     * @return array{success: bool, message: string|null}
+     */
+    public function checkConnectionWithError(): array
+    {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
-            if ($this->isSettingsGroupList($this->makeWooCommerceRequest('GET', 'settings'))) {
-                return true;
+
+            $settings = $this->makeWooCommerceRequest('GET', 'settings');
+            if ($this->isSettingsGroupList($settings)) {
+                return ['success' => true, 'message' => null];
             }
 
             $orders = $this->makeWooCommerceRequest('GET', 'orders', ['per_page' => 1]);
+            if (is_array($orders) && array_is_list($orders) && ($orders === [] || Arr::has($orders, '0.id'))) {
+                return ['success' => true, 'message' => null];
+            }
 
-            return is_array($orders) && array_is_list($orders) && ($orders === [] || Arr::has($orders, '0.id'));
+            $message = Arr::get($orders, '0.message') ?? Arr::get($settings, '0.message');
+
+            return ['success' => false, 'message' => $message];
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
-            return false;
+
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 

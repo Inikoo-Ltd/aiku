@@ -25,6 +25,7 @@ type ViewerType = "user" | "agent"
 interface ChatAttachment {
     id: number
     is_image: boolean
+    is_inline?: boolean
     media_url: {
         original: string
         webp?: string
@@ -46,6 +47,7 @@ interface Message {
     sender_type: SenderType
     message_text: string
     html_body?: string | null
+    has_embedded_pictures?: boolean
     created_at: string
     media_url?: {
         original: string
@@ -353,13 +355,10 @@ const fileMime = computed(() => props.message.file_mime ?? props.message.media_u
 
 const attachmentList = computed<ChatAttachment[]>(() => {
     // A picture the email already shows in its own body is not listed again underneath it,
-    // where it would read as a second, separate photograph.
+    // where it would read as a second, separate photograph. With the body folded away behind a
+    // summary, the list is the only place left to see it.
     if (props.message.attachments?.length) {
-        const body = props.message.html_body ?? ""
-
-        return props.message.attachments.filter(
-            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
-        )
+        return props.message.attachments.filter((attachment) => !(attachment.is_inline && isShowingEmailBody.value))
     }
 
     if (!props.message.media_url && !props.message.download_route) return []
@@ -382,7 +381,7 @@ const isAttachmentRedactable = computed(() =>
     !!props.message.id &&
     !isRetracted.value &&
     props.message.is_attachment_redacted !== true &&
-    attachmentList.value.length > 0
+    (attachmentList.value.length > 0 || !!props.message.attachments?.length || props.message.has_embedded_pictures === true)
 )
 
 const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
@@ -516,6 +515,8 @@ const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
 const emailSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
 const showFullEmail = ref(false)
+
+const isShowingEmailBody = computed(() => showEmailBody.value && !(emailSummary.value && !showFullEmail.value))
 
 // Customers put the order reference in the subject line, so it is the first thing read.
 const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
@@ -887,7 +888,7 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="relative max-w-[70%]">
+        <div class="relative" :class="isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
             <div v-if="showHoverToolbar"
                 class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
                 :class="isFromViewer ? 'right-0' : 'left-0'">
@@ -942,7 +943,7 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
-                :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
+                :class="[bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
                 <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" fixed-width />

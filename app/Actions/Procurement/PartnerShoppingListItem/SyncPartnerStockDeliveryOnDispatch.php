@@ -39,7 +39,7 @@ class SyncPartnerStockDeliveryOnDispatch
             ->with('orgStock')
             ->get()
             ->groupBy(fn ($item) => $item->orgStock?->stock_id)
-            ->map(fn ($items) => (float) $items->sum('quantity_dispatched'));
+            ->map(fn ($items) => (float) $items->sum(fn ($item) => (float) $item->quantity_dispatched * (float) ($item->orgStock?->packed_in ?: 1)));
 
         foreach ($stockDelivery->items as $item) {
             $item->update([

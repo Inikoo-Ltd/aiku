@@ -23,6 +23,7 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\ReopenPartnerShoppingListItemsOfTransactions;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -99,6 +100,8 @@ class CancelOrder extends OrgAction
 
             $transaction->update($transactionData);
         }
+
+        ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
 
         /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
         $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);

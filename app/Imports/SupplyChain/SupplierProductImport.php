@@ -24,16 +24,30 @@ use App\Models\Helpers\Country;
 use App\Models\Helpers\Upload;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Models\SysAdmin\Organisation;
+use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Procurement\OrgSupplierProduct;
+use Illuminate\Validation\ValidationException;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Events\AfterImport;
+use Maatwebsite\Excel\Events\BeforeImport;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Throwable;
 
-class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
+class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents, WithMultipleSheets, WithCalculatedFormulas
 {
     use WithImport;
 
@@ -43,6 +57,451 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     {
         $this->upload = $upload;
         $this->scope  = $supplier;
+    }
+
+    protected ?Collection $productRows = null;
+
+    /** @var array<int, array<int, mixed>>|null */
+    protected ?array $orderSheetRows = null;
+
+    /** @var Collection<int, Organisation>|null */
+    protected ?Collection $supplierOrganisations = null;
+
+    public function sheets(): array
+    {
+        return [0 => $this];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            BeforeImport::class => fn (BeforeImport $event) => $this->orderSheetRows = $this->orderSheetRows($event->getReader()->getDelegate()),
+            AfterImport::class  => fn () => $this->processSheets(),
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>|null
+     */
+    protected function orderSheetRows(Spreadsheet $spreadsheet): ?array
+    {
+        foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
+            if (strcasecmp(trim($worksheet->getTitle()), 'order') === 0) {
+                try {
+                    return $worksheet->toArray(null, true, false, false);
+                } catch (Throwable) {
+                    return $worksheet->toArray(null, false, false, false);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public function collection(Collection $collection): void
+    {
+        $this->productRows = $collection
+            ->map(fn (Collection $row) => $this->cleanRow($row))
+            ->filter(fn (Collection $row) => $row->contains(fn ($value) => $this->cleanString($value) !== null));
+    }
+
+    public function processSheets(): void
+    {
+        $rows  = $this->productRows ?? collect();
+        $order = $this->orderSheetRows === null ? null : $this->readOrderSheet($this->orderSheetRows);
+
+        $this->upload->update(['number_rows' => $rows->count()]);
+
+        $mistakes      = $this->sheetMistakes($rows);
+        $orderMistakes = $order === null ? [] : $this->orderSheetMistakes($order, $rows);
+
+        if ($mistakes === [] && $orderMistakes === []) {
+            foreach ($rows as $index => $row) {
+                $this->storeModel($row, $this->createUploadRecord($row, $index + 2));
+            }
+
+            if ($order !== null) {
+                $this->createDraftPurchaseOrders($order);
+            }
+
+            return;
+        }
+
+        foreach ($rows as $index => $row) {
+            $this->setRecordAsFailed(
+                $this->createUploadRecord($row, $index + 2),
+                $mistakes[$index] ?? [__('Not created: other rows in this sheet have mistakes. Fix them and upload the whole sheet again.')]
+            );
+        }
+
+        foreach ($orderMistakes as $mistake) {
+            $this->addSheetRecord(['sheet' => 'ORDER'], UploadRecordStatusEnum::FAILED, [$mistake]);
+        }
+    }
+
+    /**
+     * @param array<int, array<int, mixed>> $sheetRows
+     *
+     * @return array{missing?: string, headings: array<int, string>, organisations: array<int, Organisation>, lines: array<int, array{code: string, cost: ?string, carton: ?string, cartons: array<int, ?string>}>, totals: array<int, array<int, ?string>>}
+     */
+    protected function readOrderSheet(array $sheetRows): array
+    {
+        $order = ['headings' => [], 'organisations' => [], 'lines' => [], 'totals' => []];
+
+        $headerIndex = collect($sheetRows)->search(fn (array $cells) => collect($cells)->contains(fn ($cell) => in_array($this->heading($cell), ['product code', 'code'], true)));
+        if ($headerIndex === false) {
+            return $order + ['missing' => __('ORDER tab: there is no "Product Code" column heading.')];
+        }
+
+        $headings     = array_map(fn ($cell) => $this->heading($cell), $sheetRows[$headerIndex]);
+        $codeColumn   = array_search('product code', $headings, true);
+        $codeColumn   = $codeColumn === false ? array_search('code', $headings, true) : $codeColumn;
+        $costColumn   = array_search('unit cost', $headings, true);
+        $cartonColumn = array_search('carton', $headings, true);
+
+        foreach ($headings as $column => $heading) {
+            $organisation = $this->organisationForHeading($heading);
+            if ($organisation && !collect($order['organisations'])->contains('id', $organisation->id)) {
+                $order['organisations'][$column] = $organisation;
+                $order['headings'][$column]      = $this->cleanString($sheetRows[$headerIndex][$column]);
+            }
+        }
+
+        foreach (array_slice($sheetRows, $headerIndex + 1, null, true) as $index => $cells) {
+            $cartons = [];
+            foreach (array_keys($order['organisations']) as $column) {
+                $cartons[$column] = $this->cleanString($cells[$column] ?? null);
+            }
+
+            $code = $this->cleanString($cells[$codeColumn] ?? null);
+            if ($code !== null) {
+                $order['lines'][$index + 1] = [
+                    'code'    => $code,
+                    'cost'    => $costColumn === false ? null : $this->cleanString($cells[$costColumn] ?? null),
+                    'carton'  => $cartonColumn === false ? null : $this->cleanString($cells[$cartonColumn] ?? null),
+                    'cartons' => $cartons,
+                ];
+            } elseif (array_filter($cartons, fn ($value) => $value !== null) !== []) {
+                $order['totals'][$index + 1] = $cartons;
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * @param array{missing?: string, headings: array<int, string>, organisations: array<int, Organisation>, lines: array<int, array{code: string, cost: ?string, carton: ?string, cartons: array<int, ?string>}>, totals: array<int, array<int, ?string>>} $order
+     * @param Collection<int, Collection> $productRows
+     *
+     * @return list<string>
+     */
+    protected function orderSheetMistakes(array $order, Collection $productRows): array
+    {
+        if (isset($order['missing'])) {
+            return [$order['missing']];
+        }
+
+        if ($order['organisations'] === []) {
+            return [__('ORDER tab: no column heading matches an organisation buying from this supplier (:organisations).', [
+                'organisations' => $this->supplierOrganisations()->pluck('code')->implode(', '),
+            ])];
+        }
+
+        $productsTab = $productRows
+            ->filter(fn (Collection $row) => $this->cleanString($row->get('suppliers_product_code')) !== null)
+            ->mapWithKeys(fn (Collection $row, int $index) => [
+                strtolower($this->cleanString($row->get('suppliers_product_code'))) => [
+                    'source'           => __('products tab row :row', ['row' => $index + 2]),
+                    'cost'             => $this->cleanString($row->get('unit_cost')),
+                    'units_per_carton' => (((int)$row->get('units_per_sko')) ?: 1) * (((int)$row->get('skos_per_carton')) ?: 1),
+                ],
+            ]);
+
+        $mistakes = [];
+        $seen     = [];
+        $sums     = array_fill_keys(array_keys($order['organisations']), 0.0);
+
+        foreach ($order['lines'] as $row => $line) {
+            $at  = __('ORDER tab row :row', ['row' => $row]);
+            $key = strtolower($line['code']);
+
+            if (isset($seen[$key])) {
+                $mistakes[] = __(':at: :code is also on row :other.', ['at' => $at, 'code' => $line['code'], 'other' => $seen[$key]]);
+            }
+            $seen[$key] = $row;
+
+            $product = $productsTab->get($key) ?? $this->existingProductFacts($line['code']);
+            if (!$product) {
+                $mistakes[] = __(':at: :code is not in the products tab and is not a product of this supplier.', ['at' => $at, 'code' => $line['code']]);
+
+                continue;
+            }
+
+            if (is_numeric($line['cost']) && is_numeric($product['cost']) && abs((float)$line['cost'] - (float)$product['cost']) > 0.005) {
+                $mistakes[] = __(':at: unit cost is :cost, but :source says :expected.', ['at' => $at, 'cost' => (float)$line['cost'], 'source' => $product['source'], 'expected' => (float)$product['cost']]);
+            }
+
+            if (is_numeric($line['carton']) && (int)$line['carton'] !== (int)$product['units_per_carton']) {
+                $mistakes[] = __(':at: :carton pieces per carton, but :source says :expected.', ['at' => $at, 'carton' => (int)$line['carton'], 'source' => $product['source'], 'expected' => (int)$product['units_per_carton']]);
+            }
+
+            foreach ($line['cartons'] as $column => $cartons) {
+                if ($cartons === null) {
+                    continue;
+                }
+
+                if (!is_numeric($cartons) || (float)$cartons < 0) {
+                    $mistakes[] = __(':at: :heading quantity ":value" is not a number of cartons.', ['at' => $at, 'heading' => $order['headings'][$column], 'value' => $cartons]);
+
+                    continue;
+                }
+
+                $sums[$column] += (float)$cartons;
+            }
+        }
+
+        foreach ($order['totals'] as $row => $totals) {
+            foreach ($totals as $column => $total) {
+                if (is_numeric($total) && abs((float)$total - $sums[$column]) > 0.0001) {
+                    $mistakes[] = __('ORDER tab row :row: the :heading total is :total cartons, but the lines add up to :sum.', ['row' => $row, 'heading' => $order['headings'][$column], 'total' => (float)$total, 'sum' => $sums[$column]]);
+                }
+            }
+        }
+
+        return $mistakes;
+    }
+
+    /**
+     * @return array{source: string, cost: mixed, units_per_carton: int}|null
+     */
+    protected function existingProductFacts(string $code): ?array
+    {
+        $supplierProduct = $this->supplierProductByCode($code);
+
+        return $supplierProduct ? [
+            'source'           => __("the supplier's product"),
+            'cost'             => $supplierProduct->cost,
+            'units_per_carton' => (int)$supplierProduct->units_per_carton,
+        ] : null;
+    }
+
+    protected function supplierProductByCode(string $code): ?SupplierProduct
+    {
+        return $this->scope->supplierProducts()->whereRaw('lower(code) = lower(?)', [$code])->first();
+    }
+
+    /**
+     * @param array{missing?: string, headings: array<int, string>, organisations: array<int, Organisation>, lines: array<int, array{code: string, cost: ?string, carton: ?string, cartons: array<int, ?string>}>, totals: array<int, array<int, ?string>>} $order
+     */
+    protected function createDraftPurchaseOrders(array $order): void
+    {
+        foreach ($order['organisations'] as $column => $organisation) {
+            $heading = $order['headings'][$column];
+            $lines   = array_filter($order['lines'], fn (array $line) => (float)($line['cartons'][$column] ?? 0) > 0);
+            if ($lines === []) {
+                continue;
+            }
+
+            $orgSupplier = $this->scope->orgSuppliers()->where('organisation_id', $organisation->id)->first();
+            $parent      = $orgSupplier->org_agent_id ? $orgSupplier->orgAgent : $orgSupplier;
+
+            try {
+                $purchaseOrder = $parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first()
+                    ?? StorePurchaseOrder::make()->action($parent, array_filter(['buyer_id' => $this->upload->user_id]));
+            } catch (Throwable $e) {
+                $this->addSheetRecord(['sheet' => 'ORDER', 'organisation' => $heading], UploadRecordStatusEnum::FAILED, [
+                    __('Draft order for :heading not created: :error', ['heading' => $heading, 'error' => $this->errorText($e)]),
+                ]);
+
+                continue;
+            }
+
+            $numberLines = 0;
+            foreach ($lines as $row => $line) {
+                try {
+                    $supplierProduct    = $this->supplierProductByCode($line['code']);
+                    $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $organisation->id)->where('supplier_product_id', $supplierProduct?->id)->firstOrFail();
+                    $quantity           = (float)$line['cartons'][$column] * $supplierProduct->units_per_carton;
+                    $transaction        = $purchaseOrder->purchaseOrderTransactions()->where('supplier_product_id', $supplierProduct->id)->first();
+
+                    if ($transaction) {
+                        UpdatePurchaseOrderTransaction::make()->action($transaction, ['quantity_ordered' => $quantity]);
+                    } else {
+                        StorePurchaseOrderTransaction::make()->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, ['quantity_ordered' => $quantity]);
+                    }
+                    $numberLines++;
+                } catch (Throwable $e) {
+                    $this->addSheetRecord(['sheet' => 'ORDER', 'row' => $row, 'organisation' => $heading], UploadRecordStatusEnum::FAILED, [
+                        __('ORDER tab row :row: :code not added to :reference (:heading): :error', ['row' => $row, 'code' => $line['code'], 'reference' => $purchaseOrder->reference, 'heading' => $heading, 'error' => $this->errorText($e)]),
+                    ]);
+                }
+            }
+
+            $this->addSheetRecord([
+                'sheet'          => 'ORDER',
+                'organisation'   => $heading,
+                'purchase_order' => $purchaseOrder->reference,
+                'lines'          => $numberLines,
+            ], UploadRecordStatusEnum::COMPLETE);
+        }
+    }
+
+    protected function errorText(Throwable $e): string
+    {
+        return $e instanceof ValidationException ? collect($e->errors())->flatten()->implode(' ') : $e->getMessage();
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     * @param list<string>         $errors
+     */
+    protected function addSheetRecord(array $values, UploadRecordStatusEnum $status, array $errors = []): void
+    {
+        $this->upload->records()->create([
+            'values' => $values,
+            'status' => $status,
+            'errors' => $errors,
+        ]);
+        $this->updateStats();
+    }
+
+    /**
+     * @return Collection<int, Organisation>
+     */
+    protected function supplierOrganisations(): Collection
+    {
+        return $this->supplierOrganisations ??= Organisation::whereIn('id', $this->scope->orgSuppliers()->select('organisation_id'))
+            ->with('country')
+            ->orderBy('id')
+            ->get();
+    }
+
+    protected function organisationForHeading(string $heading): ?Organisation
+    {
+        $heading = strtoupper($heading);
+        if ($heading === '') {
+            return null;
+        }
+
+        $organisations = $this->supplierOrganisations();
+
+        $organisation = $organisations->first(fn (Organisation $organisation) => strtoupper($organisation->code) === $heading || strtoupper($organisation->slug) === $heading);
+        if ($organisation) {
+            return $organisation;
+        }
+
+        $countryCode = $heading === 'UK' ? 'GB' : $heading;
+
+        return $organisations->first(fn (Organisation $organisation) => $organisation->country?->code === $countryCode);
+    }
+
+    protected function heading(mixed $cell): string
+    {
+        return strtolower(preg_replace('/\s+/', ' ', trim((string)$cell)));
+    }
+
+    /**
+     * @param Collection<int, Collection> $rows
+     *
+     * @return array<int, list<string>>
+     */
+    protected function sheetMistakes(Collection $rows): array
+    {
+        $mistakes = [];
+        $newRows  = $rows->filter(fn (Collection $row) => strtolower((string)$this->cleanString($row->get('id_supplier_part_key'))) === 'new');
+
+        foreach ($newRows as $index => $row) {
+            $code = $this->cleanString($row->get('suppliers_product_code'));
+            if ($code === null) {
+                $mistakes[$index][] = __("Supplier's product code is missing.");
+            } elseif ($this->scope->supplierProducts()->whereRaw('lower(code) = lower(?)', [$code])->exists()) {
+                $mistakes[$index][] = __(':code already exists for this supplier, use its Id instead of "new".', ['code' => $code]);
+            }
+
+            if ($this->cleanString($row->get('part_reference')) === null) {
+                $mistakes[$index][] = __('Part reference is missing.');
+            }
+
+            $cost = $this->cleanString($row->get('unit_cost'));
+            if (!is_numeric($cost) || (float)$cost <= 0) {
+                $mistakes[$index][] = __('Unit cost must be a number above zero, found ":cost".', ['cost' => $cost]);
+            }
+        }
+
+        foreach ($rows as $index => $row) {
+            $barcode = $this->cleanString($row->get('unit_barcode_ean_13_for_website'));
+            if ($barcode !== null && strtolower($barcode) !== 'auto' && $this->gtinOrNull($barcode) === null) {
+                $mistakes[$index][] = __('Unit barcode ":barcode" is not a barcode (8 to 14 digits).', ['barcode' => $barcode]);
+            }
+        }
+
+        foreach (['suppliers_product_code' => __("Supplier's product code"), 'part_reference' => __('Part reference')] as $column => $label) {
+            $newRows->groupBy(fn (Collection $row) => strtolower((string)$this->cleanString($row->get($column))), true)
+                ->filter(fn (Collection $group, string $value) => $value !== '' && $group->count() > 1)
+                ->each(function (Collection $group) use (&$mistakes, $column, $label) {
+                    foreach ($group->keys() as $index) {
+                        $mistakes[$index][] = __(':label :value appears in rows :rows.', ['label' => $label, 'value' => $group->first()->get($column), 'rows' => $this->rowList($group->keys())]);
+                    }
+                });
+        }
+
+        $newRows->groupBy(fn (Collection $row) => (string)$this->codePrefix($row->get('part_reference')), true)
+            ->filter(fn (Collection $group, string $prefix) => $prefix !== '')
+            ->each(function (Collection $group, string $prefix) use (&$mistakes) {
+                $families = $group->groupBy(fn (Collection $row) => (string)$this->cleanString($row->get('family')), true);
+
+                if ($families->count() > 1) {
+                    $summary = $families->map(fn (Collection $rows, string $family) => ($family ?: __('no family')).' ('.__('rows').' '.$this->rowList($rows->keys()).')')->implode(', ');
+                    foreach ($group->keys() as $index) {
+                        $mistakes[$index][] = __(':prefix products have different families in this sheet: :summary. Use one family.', ['prefix' => $prefix, 'summary' => $summary]);
+                    }
+
+                    return;
+                }
+
+                $familyCode = $families->keys()->first();
+                $family     = $familyCode === '' ? null : StockFamily::where('group_id', $this->scope->group_id)->where('code', $familyCode)->first();
+                if (!$family) {
+                    return;
+                }
+
+                $familyPrefixes = $family->stocks()->pluck('code')->map(fn ($code) => $this->codePrefix($code))->filter()->unique();
+                if ($familyPrefixes->isNotEmpty() && !$familyPrefixes->contains($prefix)) {
+                    foreach ($group->keys() as $index) {
+                        $mistakes[$index][] = __('Family :family holds :prefixes products, :prefix does not look like it belongs there.', ['family' => $familyCode, 'prefixes' => $familyPrefixes->implode(', '), 'prefix' => $prefix]);
+                    }
+                }
+            });
+
+        return $mistakes;
+    }
+
+    protected function codePrefix(mixed $code): ?string
+    {
+        $code = $this->cleanString($code);
+        if ($code === null || !str_contains($code, '-')) {
+            return null;
+        }
+
+        return strtoupper(substr($code, 0, strrpos($code, '-')));
+    }
+
+    /**
+     * @param Collection<int, int> $indexes
+     */
+    protected function rowList(Collection $indexes): string
+    {
+        $ranges = [];
+        foreach ($indexes->map(fn (int $index) => $index + 2)->sort()->values() as $row) {
+            $last = array_key_last($ranges);
+            if ($last !== null && $ranges[$last][1] === $row - 1) {
+                $ranges[$last][1] = $row;
+            } else {
+                $ranges[] = [$row, $row];
+            }
+        }
+
+        return collect($ranges)->map(fn (array $range) => $range[0] === $range[1] ? $range[0] : $range[0].'-'.$range[1])->implode(', ');
     }
 
     public function storeModel(Collection $row, $uploadRecord): void
@@ -201,7 +660,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             'code'        => $reference,
             'name'        => Arr::get($data, 'unit_label'),
             'description' => Arr::get($data, 'unit_recommended_description_website'),
-            'barcode'     => Arr::get($data, 'unit_barcode_ean_13_for_website'),
+            'barcode'     => $this->gtinOrNull(Arr::get($data, 'unit_barcode_ean_13_for_website')),
             'tariff_code' => Arr::get($data, 'tariff_code'),
         ]);
 
@@ -334,6 +793,13 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     protected function onlyFilled(array $modelData): array
     {
         return array_filter($modelData, fn ($value) => $value !== null && $value !== '');
+    }
+
+    protected function gtinOrNull(mixed $value): ?string
+    {
+        $value = $this->cleanString($value);
+
+        return $value !== null && preg_match('/^\d{8,14}$/', $value) ? $value : null;
     }
 
     protected function cleanString(mixed $value): ?string

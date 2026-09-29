@@ -91,6 +91,6 @@ class ProcessSendMailshot
         UpdateMailshotRecipientsStoredAt::run($mailshot);
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2)->onQueue($mailshot->is_second_wave ? 'ses-low' : 'ses-send');
     }
 }

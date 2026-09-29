@@ -39,7 +39,7 @@ class StoreOrgSupplierFromFreeSupplier extends OrgAction
         }
     }
 
-    protected function getOrganisations(Supplier $supplier): Collection
+    public function getOrganisations(Supplier $supplier): Collection
     {
         $countryId = $supplier->address?->country_id;
 

@@ -47,7 +47,7 @@ class UpdateCustomerOrderTaxCategory extends RetinaAction
                 country: $order->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $order->billingAddress,
-                deliveryAddress: $order->deliveryAddress,
+                deliveryAddress: $order->taxableDeliveryAddress($taxNumber),
                 isRe: $order->customer->is_re,
             )->id;
         } catch (Exception $e) {

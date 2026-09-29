@@ -85,6 +85,10 @@ class EditOrgSupplier extends OrgAction
                 'parameters' => $orgSupplier->id,
             ];
 
+        if ($this->canEditSupplier($orgSupplier) && $request->user()->authTo('supply-chain.edit')) {
+            $blueprint[] = $this->supplierAgentSection($supplier);
+        }
+
         $blueprint = array_merge($blueprint, $this->procurementSerialReferenceSections($orgSupplier, [
             'name'       => 'grp.models.org_supplier.update',
             'parameters' => $orgSupplier->id,

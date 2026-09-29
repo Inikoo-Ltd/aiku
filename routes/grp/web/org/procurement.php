@@ -74,6 +74,8 @@ use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\Settings\UI\EditProcurementSettings;
 use App\Actions\Procurement\Settings\UpdateProcurementSettings;
+use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
+use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
 use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
 use App\Actions\Comms\Mailbox\DisconnectProcurementMailbox;
@@ -100,6 +102,8 @@ Route::prefix('settings')->as('settings.')->group(function () {
     Route::patch('', UpdateProcurementSettings::class)->name('update');
     Route::get('mailbox/connect', ConnectProcurementMailbox::class)->name('mailbox.connect');
     Route::post('mailbox/disconnect', DisconnectProcurementMailbox::class)->name('mailbox.disconnect');
+    Route::post('whatsapp-phone/status', [GetWhatsappPhoneNumberStatus::class, 'inProcurement'])->name('whatsapp_phone.status');
+    Route::post('whatsapp-app/subscribed', [GetWhatsappSubscribedApps::class, 'inProcurement'])->name('whatsapp_app.subscribed');
 });
 
 Route::prefix('emails')->as('supplier_messages.')->group(function () {

@@ -739,7 +739,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
             ->has('delivery_note')
             ->has("timelines")
             ->has("box_stats")
-            ->has("box_stats.address.options.countriesAddressData")
+            ->missing("box_stats.address.options.countriesAddressData")
             ->missing("box_stats.shipping_fields.address.options")
             ->has("address.delivery")
             ->missing("address.options")

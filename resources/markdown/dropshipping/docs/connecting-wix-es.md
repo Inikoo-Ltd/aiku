@@ -2,7 +2,7 @@
 title: Conectar tu tienda Wix
 summary: Instala nuestra aplicación en tu sitio Wix para enlazarlo con tu cuenta de dropshipping, comprueba las tres marcas que indican que está lista, y arregla un canal que dice que no está conectado.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-09-28
 tags: wix, wix stores, canal de ventas, conectar
 category: sales-channels
 series: wix
@@ -17,6 +17,8 @@ Ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y luego <b>Conectar</b
 ## Antes de empezar
 
 - Necesitas un sitio Wix con <b>Wix Stores</b> instalado. Añadimos productos a Wix Stores y leemos tus pedidos desde ahí. Puedes instalar nuestra aplicación en un sitio sin Wix Stores, pero el canal se queda sin estar listo hasta que lo añadas.
+- AW Connect funciona con sitios creados con el <b>Wix Editor</b> y con <b>Wix Studio</b>. Tu tienda también necesita el catálogo más nuevo de Wix Stores. La mayoría de las tiendas ya lo tienen; si la tuya no, Wix no te dejará instalar AW Connect. Consulta <b>Cuando algo va mal</b> más abajo para ver cómo comprobarlo.
+- Un plan gratuito de Wix no es un problema: AW Connect se instala tanto en planes gratuitos como de pago de Wix.
 - Inicia sesión en Wix en el mismo navegador, con la cuenta que es propietaria del sitio.
 - Wix está disponible en todas nuestras webs de dropshipping. Conéctalo desde la web donde tienes tu cuenta de dropshipping.
 
@@ -57,6 +59,17 @@ El panel también muestra recuadros para <b>Pedidos</b> y <b>Productos</b>. Puls
 Cada sitio Wix es su propio canal. Para añadir otro sitio, vuelve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y <b>Conectar</b> en la tarjeta de Wix otra vez, y elige el otro sitio en Wix.
 
 ## Cuando algo va mal
+
+<b>Wix dice: AW Connect isn't supported with your site</b>
+Este mensaje viene de Wix, antes incluso de llegar a nuestra aplicación: Wix no permite añadir AW Connect a ese sitio en concreto. Comprueba lo siguiente:
+
+- <b>Wix Stores</b> debe estar instalado en el sitio. Sin él, Wix bloquea la instalación.
+- Tu tienda debe estar en el catálogo más nuevo de Wix Stores. En el panel de tu sitio Wix, abre <b>Store Products</b>: si ves un aviso para pasar al nuevo motor de tienda, tu tienda todavía usa el catálogo antiguo y hay que actualizarla primero. Si no sabes cuál tienes, contáctanos por el chat de nuestra web y lo comprobamos por ti.
+- Un plan gratuito de Wix no es problema. AW Connect no necesita un plan de pago de Wix, así que este mensaje no tiene que ver con tu plan.
+
+<!-- screenshot: the Wix page saying AW Connect isn't supported with your site -->
+
+Si ya has comprobado todo lo anterior y el mensaje sigue apareciendo, contáctanos por el chat de nuestra web con la dirección de tu sitio y lo investigaremos.
 
 <b>La página dice: Wix Stores is not installed on this site. Add the Wix Stores app to the site, then reconnect the channel.</b>
 Tu sitio no tiene tienda online. En Wix, añade la aplicación Wix Stores al sitio. Luego abre el canal en tu cuenta de dropshipping y pulsa <b>Intenta reconectarte</b>.

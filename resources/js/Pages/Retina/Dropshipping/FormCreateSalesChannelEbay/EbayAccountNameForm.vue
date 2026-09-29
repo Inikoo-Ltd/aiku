@@ -16,7 +16,7 @@ const goNext = inject("goNext");
 const ebayId = inject("ebayId");
 const customerSalesChannelId = inject("customerSalesChannelId");
 const ebayName = inject("ebayName");
-const closeCreateEbayModal = inject("closeCreateEbayModal");
+const cancelCreateEbayModal = inject("cancelCreateEbayModal");
 
 const isLoadingStep = ref(false)
 const errors = ref({})
@@ -57,7 +57,7 @@ const submitForm = async () => {
         <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
             <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>

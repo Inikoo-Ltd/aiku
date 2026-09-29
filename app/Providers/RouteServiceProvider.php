@@ -132,6 +132,18 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(6000)->by($request->ip());
         });
 
+        /*
+         * Opening a chat or leaving an out of hours message needs no login, and each one lands in
+         * an agent's queue. A vulnerability scanner posted about six thousand offline messages from
+         * one address in an hour, filling the Slovak inbox with 318 conversations saying "e" (HELP-3467).
+         */
+        RateLimiter::for('chat-guest', function (Request $request) {
+            return [
+                Limit::perMinute(10)->by('chat-guest-minute:'.$request->ip()),
+                Limit::perHour(40)->by('chat-guest-hour:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('web-vitals', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());
         });
