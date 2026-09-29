@@ -659,7 +659,7 @@ let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
 
-const { call: whatsappCall, busy: isWhatsappCallBusy, dial: dialWhatsapp } = useWhatsappCall()
+const { activeCall: whatsappCall, busy: isWhatsappCallBusy, dial: dialWhatsapp } = useWhatsappCall()
 const startWhatsappCall = () => {
     dialWhatsapp(String((route().params as Record<string, any>)?.organisation ?? ''), props.session.ulid)
 }

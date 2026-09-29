@@ -26,11 +26,38 @@ export type WhatsappCall = {
 export const WHATSAPP_VIDEO_AVAILABLE = false
 
 // One call at a time per agent, so the state is module-level: the dock and the conversation
-// are two windows onto the same call rather than two calls.
-const state = reactive<{ call: WhatsappCall | null; micReady: boolean }>({
+// are two windows onto the same call rather than two calls. Customers can still ring at the
+// same moment, so every incoming call waits in its own slot until somebody takes it.
+const state = reactive<{ call: WhatsappCall | null; ringing: WhatsappCall[]; micReady: boolean }>({
     call: null,
+    ringing: [],
     micReady: false,
 })
+
+// Meta gives up on an unanswered call after about a minute; a lost terminate webhook must not
+// leave a customer listed as ringing for ever.
+const RING_TIMEOUT_MS = 90_000
+
+const removeRinging = (callId: number) => {
+    state.ringing = state.ringing.filter((ringing) => ringing.id !== callId)
+}
+
+const notifyAnsweredElsewhere = (payload: WhatsappCall) =>
+    notify({
+        title: ctrans("WhatsApp call answered"),
+        text: ctrans(":name is handling the call from :phone", {
+            name: payload.user_name ?? ctrans("Another customer service"),
+            phone: payload.phone_number ?? "",
+        }),
+        type: "info",
+    })
+
+const upsertRinging = (payload: WhatsappCall) => {
+    if (state.ringing.some((ringing) => ringing.id === payload.id)) return
+
+    state.ringing = [...state.ringing, payload]
+    setTimeout(() => removeRinging(payload.id), RING_TIMEOUT_MS)
+}
 
 const busy = ref(false)
 const tick = ref(Date.now())
@@ -150,8 +177,10 @@ const fetchRemoteSdp = (organisation: string, metaChatCallId: number): Promise<s
         .then((response) => response.data?.data?.remote_sdp)
 
 export const useWhatsappCall = () => {
-    const call = computed(() => state.call)
-    const isRinging = computed(() => state.call?.status === "ringing")
+    const activeCall = computed(() => state.call)
+    const ringingCalls = computed(() => state.ringing)
+    const call = computed(() => state.call ?? state.ringing[0] ?? null)
+    const isRinging = computed(() => call.value?.status === "ringing")
     const isLive = computed(() => state.call?.status === "in_progress")
 
     const elapsedSeconds = computed(() => {
@@ -170,7 +199,7 @@ export const useWhatsappCall = () => {
         return `${minutes}:${seconds}`
     })
 
-    const isOutgoing = computed(() => state.call?.direction === "business_initiated")
+    const isOutgoing = computed(() => call.value?.direction === "business_initiated")
 
     const statusLabel = computed(() => {
         if (isRinging.value) return isOutgoing.value ? ctrans("Calling…") : ctrans("Incoming WhatsApp call")
@@ -182,40 +211,46 @@ export const useWhatsappCall = () => {
     // in another tab has to close this one's media too, or the agent keeps a dead line open.
     // A tab with the conversation open hears the same event on the session and the shop channel.
     const applyBroadcast = (payload: WhatsappCall, organisation?: string) => {
-        if (state.call?.id === payload.id && state.call.status === payload.status) {
+        const isMine = state.call?.id === payload.id
+
+        if (isMine && state.call!.status === payload.status) {
             return
         }
 
-        if (state.call && state.call.id !== payload.id && state.call.status === "in_progress") {
+        if (["completed", "missed", "rejected", "failed"].includes(payload.status)) {
+            removeRinging(payload.id)
+
+            if (isMine) {
+                teardownMedia()
+                state.call = null
+            }
+
+            return
+        }
+
+        // An outgoing call belongs only to the tab that dialled it, the one holding the offer.
+        if (payload.direction === "business_initiated" && !isMine && !(peer && !state.call)) {
+            return
+        }
+
+        if (payload.status === "ringing" && payload.direction === "user_initiated") {
+            if (!isMine) upsertRinging(payload)
+
             return
         }
 
         // Only the tab that answered holds the media. Everywhere else the ringing stops and
         // the agent is told who picked it up, instead of being shown a line they are not on.
-        if (payload.status === "in_progress" && payload.direction === "user_initiated" && !peer) {
-            if (state.call?.id === payload.id) {
-                state.call = null
-                notify({
-                    title: ctrans("WhatsApp call answered"),
-                    text: ctrans(":name is handling the call from :phone", {
-                        name: payload.user_name ?? ctrans("Another customer service"),
-                        phone: payload.phone_number ?? "",
-                    }),
-                    type: "info",
-                })
+        if (payload.status === "in_progress" && payload.direction === "user_initiated" && !isMine) {
+            if (state.ringing.some((ringing) => ringing.id === payload.id)) {
+                removeRinging(payload.id)
+                notifyAnsweredElsewhere(payload)
             }
 
             return
         }
 
         state.call = payload
-
-        if (["completed", "missed", "rejected", "failed"].includes(payload.status)) {
-            teardownMedia()
-            state.call = null
-
-            return
-        }
 
         if (payload.status === "in_progress") {
             startTicker()
@@ -229,13 +264,34 @@ export const useWhatsappCall = () => {
         }
     }
 
-    const answer = async (organisation: string) => {
-        if (!state.call || busy.value) return
+    const answer = async (organisation: string, callId?: number) => {
+        const incoming = state.ringing.find((ringing) => callId === undefined || ringing.id === callId)
+
+        if (!incoming || state.call || busy.value) return
 
         busy.value = true
+        state.call = incoming
+        removeRinging(incoming.id)
+
+        // Two agents can press Answer together; the loser has by then heard the winner's
+        // broadcast, so the call is reported as taken rather than put back to ring.
+        const giveBack = (message: string) => {
+            const takenByColleague = state.call?.status === "in_progress" ? state.call : null
+            teardownMedia()
+            state.call = null
+
+            if (takenByColleague) {
+                notifyAnsweredElsewhere(takenByColleague)
+
+                return
+            }
+
+            upsertRinging(incoming)
+            notify({ title: ctrans("Something went wrong"), text: message, type: "error" })
+        }
 
         try {
-            const offer = await fetchRemoteSdp(organisation, state.call.id)
+            const offer = await fetchRemoteSdp(organisation, incoming.id)
 
             if (!offer) throw new Error("missing offer")
 
@@ -244,26 +300,20 @@ export const useWhatsappCall = () => {
             const { data } = await axios.post(
                 route("grp.org.chat.agents.whatsapp.calls.answer", {
                     organisation,
-                    metaChatCall: state.call.id,
+                    metaChatCall: incoming.id,
                 }),
                 { sdp }
             )
 
             if (!data?.ok) {
-                teardownMedia()
-                notify({ title: ctrans("Something went wrong"), text: data?.message ?? "", type: "error" })
+                giveBack(data?.message ?? "")
 
                 return
             }
 
             startTicker()
         } catch (error) {
-            teardownMedia()
-            notify({
-                title: ctrans("Something went wrong"),
-                text: ctrans("The call could not be answered."),
-                type: "error",
-            })
+            giveBack(ctrans("The call could not be answered."))
         } finally {
             busy.value = false
         }
@@ -301,15 +351,17 @@ export const useWhatsappCall = () => {
         }
     }
 
-    const end = async (organisation: string) => {
-        if (!state.call || busy.value) return
+    const end = async (organisation: string, callId?: number) => {
+        const target = callId === undefined ? call.value : [state.call, ...state.ringing].find((candidate) => candidate?.id === callId)
+
+        if (!target || busy.value) return
 
         busy.value = true
-        const callId = state.call.id
+        const isMine = state.call?.id === target.id
 
         try {
             await axios.post(
-                route("grp.org.chat.agents.whatsapp.calls.end", { organisation, metaChatCall: callId })
+                route("grp.org.chat.agents.whatsapp.calls.end", { organisation, metaChatCall: target.id })
             )
         } catch (error) {
             notify({
@@ -318,14 +370,21 @@ export const useWhatsappCall = () => {
                 type: "error",
             })
         } finally {
-            teardownMedia()
-            state.call = null
+            removeRinging(target.id)
+
+            if (isMine) {
+                teardownMedia()
+                state.call = null
+            }
+
             busy.value = false
         }
     }
 
     return {
         call,
+        activeCall,
+        ringingCalls,
         isRinging,
         isLive,
         busy: computed(() => busy.value),
