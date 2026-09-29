@@ -83,6 +83,8 @@ class ShowTicketsDashboard extends OrgAction
                 'failed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::FAILED)->count(),
                 'requested'   => $qaUrgent()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
             ];
+
+            $data['qa_checking'] = $this->tickets($qaUrgent()->where('qa_status', TicketQaStatusEnum::CHECKING)->orderByDesc('updated_at'));
         }
 
         if ($canManage) {

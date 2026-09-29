@@ -3418,3 +3418,40 @@ test('an engineer writes an incident post-mortem on a ticket and customers canno
     expect(fn () => StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'mine', 'type' => 'post_mortem'], false))
         ->toThrow(Illuminate\Validation\ValidationException::class);
 });
+
+test('the QA list hides the status filter, keeps tickets being QA checked whatever their status, and the dashboard lists who is checking what', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $checkingOpen    = StoreTicket::make()->action($this->group, ['subject' => 'Checked while still in progress']);
+    $checkingByOther = StoreTicket::make()->action($this->group, ['subject' => 'Another checker has it']);
+    $openUnchecked   = StoreTicket::make()->action($this->group, ['subject' => 'Still in progress, not in QA']);
+    $done            = StoreTicket::make()->action($this->group, ['subject' => 'Done, waiting for QA']);
+    Ticket::whereKey($checkingOpen->id)->update(['status' => TicketStatusEnum::IN_PROGRESS, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($checkingByOther->id)->update(['status' => TicketStatusEnum::ASSIGNED, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $otherQa->id]);
+    Ticket::whereKey($openUnchecked->id)->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+    Ticket::whereKey($done->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+
+    actingAs($qa);
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) {
+        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+        expect($keys)->not->toContain('status')
+            ->and(array_slice($keys, 0, 2))->toBe(['qa_checker', 'qa_status']);
+    });
+    expect($qaListIds())->toContain($checkingOpen->id, $done->id)->not->toContain($openUnchecked->id, $checkingByOther->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($checkingByOther->id)
+        ->and($qaListIds(['elements' => ['status' => 'in_progress', 'qa_status' => '']]))->not->toContain($openUnchecked->id);
+
+    get(route('grp.tickets.list'))->assertInertia(function (AssertableInertia $page) {
+        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+        expect($keys[array_search('status', $keys) + 1])->toBe('qa_status');
+    });
+
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['qa_checking'])->pluck('id')->all())
+        ->toContain($checkingOpen->id, $checkingByOther->id)->not->toContain($done->id));
+});
