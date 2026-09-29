@@ -25,7 +25,7 @@ trait TranslateJsonbField
             return $field;
         }
 
-        $translatedField = Translate::run(json_encode($field), $english, $shopLanguage, 'gpt-5-nano');
+        $translatedField = Translate::run(json_encode($field), $english, $shopLanguage, 'catalogue');
         if (!is_string($translatedField)) {
             return $field;
         }

@@ -445,6 +445,7 @@ it('names ai features the way staff talk about them', function () {
 
     expect($dashboard->featureLabel('ChatGPT5Driver'))->toBe('Translations')
         ->and($dashboard->featureLabel('DetectLanguageWithAI'))->toBe('Language detection')
+        ->and($dashboard->featureLabel('Translate'))->toBe('Translation checks')
         ->and($dashboard->featureLabel('ReadPOFromAIVendorPDF'))->toBe('Read po from ai vendor pdf')
         ->and($dashboard->modelLabel('typesafe/jev-1.13-20260917'))->toBe('Jev 1.13')
         ->and($dashboard->modelLabel('openai/gpt-6-sol'))->toBe('GPT-6-sol');

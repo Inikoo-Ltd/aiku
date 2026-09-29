@@ -31,22 +31,22 @@ class TranslateModel
 
 
         if ($model instanceof Product && Arr::get($translationData, 'unit') && (!$model->unit || $overwrite)) {
-            data_set($modelData, 'unit', Translate::run($translationData['unit'], $english, $shopLanguage, 'gpt-5-nano'));
+            data_set($modelData, 'unit', Translate::run($translationData['unit'], $english, $shopLanguage, 'catalogue'));
         }
         if (Arr::get($translationData, 'name') && (!$model->is_name_reviewed || $overwrite)) {
-            data_set($modelData, 'name', Translate::run($translationData['name'], $english, $shopLanguage, 'gpt-5-nano'));
+            data_set($modelData, 'name', Translate::run($translationData['name'], $english, $shopLanguage, 'catalogue'));
         }
         if (Arr::get($translationData, 'description') && (!$model->is_description_reviewed || $overwrite)) {
-            data_set($modelData, 'description', Translate::run($translationData['description'], $english, $shopLanguage, 'gpt-5-nano'));
+            data_set($modelData, 'description', Translate::run($translationData['description'], $english, $shopLanguage, 'catalogue'));
         }
         if (Arr::get($translationData, 'description_title') && (!$model->is_description_title_reviewed || $overwrite)) {
-            data_set($modelData, 'description_title', Translate::run($translationData['description_title'], $english, $shopLanguage, 'gpt-5-nano'));
+            data_set($modelData, 'description_title', Translate::run($translationData['description_title'], $english, $shopLanguage, 'catalogue'));
         }
         if (Arr::get($translationData, 'description_extra') && (!$model->is_description_extra_reviewed || $overwrite)) {
-            data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage, 'gpt-5-nano'));
+            data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage, 'catalogue'));
         }
         if (Arr::get($translationData, 'faq') && $model instanceof ProductCategory) {
-            $translatedFaq = Translate::run(json_encode($model->faq), $english, $shopLanguage, 'gpt-5-nano');
+            $translatedFaq = Translate::run(json_encode($model->faq), $english, $shopLanguage, 'catalogue');
             if (is_string($translatedFaq)) {
                 data_set($modelData, 'faq', json_decode($translatedFaq, true));
             }

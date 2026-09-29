@@ -62,7 +62,7 @@ class TranslateProductGpsrText implements ShouldBeUnique
                 continue;
             }
 
-            $attributes[$field] = Translate::run($englishText, $english, $shopLanguage, 'gpt-5-nano');
+            $attributes[$field] = Translate::run($englishText, $english, $shopLanguage, 'catalogue');
         }
 
         if (!$attributes) {

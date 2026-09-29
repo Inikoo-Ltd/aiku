@@ -11,6 +11,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 use App\Actions\Helpers\Translations\Translate;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Events\BroadcastRealtimeChat;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatMessageTranslation;
@@ -169,7 +170,7 @@ class TranslateChatMessage
             return;
         }
 
-        $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode);
+        $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode, $this->translationDriver($message));
 
         if ($translatedText && $translatedText !== $text) {
             ChatMessageTranslation::updateOrCreate(
@@ -211,7 +212,16 @@ class TranslateChatMessage
     }
 
 
-    private function performTranslationHelper(string $text, string $sourceCode, string $targetCode): ?string
+    /**
+     * Nobody waits on an email, so it can take the cheap model checked by Jev; live website chat
+     * goes straight to the default driver.
+     */
+    public function translationDriver(ChatMessage $message): ?string
+    {
+        return $message->chatSession?->channel === ChatChannelEnum::EMAIL ? 'email' : null;
+    }
+
+    private function performTranslationHelper(string $text, string $sourceCode, string $targetCode, ?string $translationDriver = null): ?string
     {
         try {
             $sourceCode = strtolower(trim($sourceCode));
@@ -237,7 +247,7 @@ class TranslateChatMessage
                 return $text;
             }
 
-            return Translate::run($text, $languageFrom, $languageTo);
+            return Translate::run($text, $languageFrom, $languageTo, $translationDriver);
         } catch (Throwable $e) {
             Sentry::captureException($e);
 

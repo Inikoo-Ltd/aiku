@@ -279,7 +279,7 @@ class UpdateMasterAsset extends OrgAction
                 }
 
                 UpdateProduct::run($product, [
-                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'catalogue'),
                 ]);
             }
         }
