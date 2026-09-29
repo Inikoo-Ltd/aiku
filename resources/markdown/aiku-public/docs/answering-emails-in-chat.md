@@ -1,6 +1,6 @@
 ---
 title: Answering emails in Chat
-summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments.
+summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments. Real customers that Gmail put in spam come in too, with their files held back for safety.
 date: 2026-09-29
 tags: crm, chat, email
 category: crm
@@ -24,14 +24,28 @@ An email joins <b>Waiting</b> like any conversation, and <b>Assign to me</b> mak
 
 Some conversations in the email list started on the website. When a shop has <b>Answer offline messages by email</b> switched on, a message left in the widget outside working hours is moved to email so the answer reaches the customer. Open one and the customer's message shows an <b>Offline message</b> label; from there it is answered like any other email. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
 
+## Email that Gmail put in spam
+
+Gmail sometimes puts a real customer's email in its spam folder. aiku checks that folder too, so you do not have to:
+
+- Mail from a customer of this shop who has bought from us, or a reply in a conversation you already have, always comes in.
+- Mail from anybody else is read automatically and comes in only when it looks like a customer asking about an order or a new customer who wants to buy. Adverts, suppliers selling to us, scams and automatic mail stay in Gmail's spam, and Gmail deletes them after 30 days.
+
+Somebody who registered on the website but has never bought is treated like anybody else, because anybody can register.
+
+An email that came out of spam has an amber note at the top. It starts with what aiku took the email for, such as <b>New customer enquiry</b>, <b>Customer request</b> or <b>Possible scam</b>, so read it with that in mind.
+
+Its attachments stay in Gmail for your safety: files in spam can carry viruses or fake invoices. The email shows <b>attachment(s) kept in Gmail for safety</b>, and they come into the conversation only when you click <b>Show attachments</b>. Replying does not bring them in. Only open them if you were expecting them. If the email turns out to be junk, <b>Report spam</b> blocks the sender.
+
 ## Mail that never arrives
 
-aiku reads only the mailbox's inbox, and files mail that is not customer work into folders of its own instead of the chat list. When a mail seems missing, see the Gmail folders in <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a>.
+aiku reads the mailbox's inbox and its spam folder, and files mail that is not customer work into folders of its own instead of the chat list. When a mail seems missing, see the Gmail folders in <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a>. A genuine mail that stayed in Gmail's spam can still be brought in: open it in Gmail and click <b>Not spam</b>, and it arrives in a few minutes.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>Connect the mailbox:</b> the shop's <b>Settings</b> &rarr; <b>Customer mailbox</b>.</li>
 <li><b>Answer an email:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; light the email square for your shop &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
-<li><b>Find a mail that never reached the inbox:</b> the shop's Gmail &rarr; <b>aiku/filtered</b>.</li>
+<li><b>Open the files of an email that came out of spam:</b> the email in the conversation &rarr; <b>Show attachments</b>.</li>
+<li><b>Find a mail that never reached the inbox:</b> the shop's Gmail &rarr; <b>aiku/filtered</b>, then Gmail's <b>Spam</b>.</li>
 </ul>
 </aside>

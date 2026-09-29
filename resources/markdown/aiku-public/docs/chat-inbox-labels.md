@@ -1,6 +1,6 @@
 ---
 title: What the labels in the chat inbox mean
-summary: Every list, count, colour and tag in the customer inbox in plain words - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, and the aiku folders in the shop's Gmail.
+summary: Every list, count, colour and tag in the customer inbox in plain words - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, the note on email taken out of Gmail spam, and the aiku folders in the shop's Gmail.
 date: 2026-09-29
 tags: crm, chat
 category: crm
@@ -58,6 +58,7 @@ Whoever oversees chat sees the agents down the side: who is there, who is on a p
 ## Labels on a message
 
 - <b>Offline message</b> - the customer wrote it in the website widget outside working hours. When the shop has <b>Answer offline messages by email</b> switched on, the whole conversation is moved to the email channel so the answer reaches them, which is why a website visitor can turn up in the email list. The label is on the message only; the row in the list has no mark. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
+- <b>Amber note: Gmail put this email in its spam folder</b> - aiku took this email out of Gmail's spam because it looks like a real customer. The note starts with what aiku took it for, such as <b>New customer enquiry</b> or <b>Possible scam</b>. Its attachments stay in Gmail for safety until you click <b>Show attachments</b>. See <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>.
 
 ## Your own state
 
@@ -72,10 +73,11 @@ aiku reads the shop's Gmail inbox and files every mail it has read into a folder
 - <b>aiku/unmatched</b> - mail from somebody we could not match to a customer. It is in the chat inbox as a guest.
 - <b>aiku/filtered</b> - mail that is not work: from our own staff and shop addresses, no-reply senders, bounces, delivery reports, and out-of-office replies to mail we never sent. It is not in the chat inbox.
 - <b>aiku/spam</b> - mail from senders blocked with <b>Report spam</b>. It is not in the chat inbox.
+- <b>aiku/spam-checked</b> - mail in Gmail's own Spam folder that aiku read and left there, because it did not look like a customer. It is not in the chat inbox, and Gmail deletes it after 30 days.
 
 Once filed, the mail leaves the Gmail inbox and is marked as read, so an empty Gmail inbox is normal, not lost mail. Nothing is deleted: when a mail seems missing, look in <b>aiku/filtered</b> first.
 
-aiku reads only the Gmail inbox. Mail that Gmail puts in its own Spam folder, or that a Gmail filter moves past the inbox, never reaches aiku. Colleagues should write to each other directly, not through a shop mailbox: their mail is filtered.
+aiku also reads Gmail's own Spam folder, but takes from it only mail from customers who have bought, replies in our conversations, and mail that looks like a customer or a new customer writing. Everything else stays in Gmail's Spam, where Gmail deletes it after 30 days - see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>. Mail that a Gmail filter moves past the inbox never reaches aiku. Colleagues should write to each other directly, not through a shop mailbox: their mail is filtered.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

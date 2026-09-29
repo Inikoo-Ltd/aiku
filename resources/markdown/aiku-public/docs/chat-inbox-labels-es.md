@@ -1,6 +1,6 @@
 ---
 title: Qué significan las etiquetas de la bandeja de chat
-summary: Cada lista, contador, color y etiqueta de la bandeja de clientes explicados en palabras sencillas - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, y las carpetas de aiku en el Gmail de la tienda.
+summary: Cada lista, contador, color y etiqueta de la bandeja de clientes explicados en palabras sencillas - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, la nota del correo sacado del spam de Gmail, y las carpetas de aiku en el Gmail de la tienda.
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat
@@ -59,6 +59,7 @@ Quien supervisa el chat ve a los agentes en la columna lateral: quién está ah�
 ## Etiquetas en un mensaje
 
 - <b>Offline message</b> (Mensaje fuera de horario) - el cliente lo escribió en el widget de la web fuera del horario de trabajo. Cuando la tienda tiene activado <b>Answer offline messages by email</b> (Responder mensajes fuera de horario por correo), toda la conversación se traslada al canal de email para que la respuesta le llegue, por eso un visitante de la web puede aparecer en la lista de correo. La etiqueta está solo en el mensaje; la fila de la lista no lleva ninguna marca. Consulta <a href="/docs/live-chat-on-the-website-es">Chat en directo en la web</a>.
+- <b>Amber note: Gmail put this email in its spam folder</b> (Nota ámbar: Gmail puso este correo en su carpeta de spam) - aiku sacó este correo del spam de Gmail porque parece un cliente real. La nota empieza con lo que aiku pensó que era, como <b>New customer enquiry</b> (Nueva consulta de cliente) o <b>Possible scam</b> (Posible estafa). Sus adjuntos se quedan en Gmail por seguridad hasta que haces clic en <b>Show attachments</b> (Mostrar adjuntos). Consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a>.
 
 ## Tu propio estado
 
@@ -73,10 +74,11 @@ aiku lee la bandeja de Gmail de la tienda y archiva cada correo que ha leído en
 - <b>aiku/unmatched</b> - correo de alguien que no se pudo emparejar con un cliente. Está en la bandeja de chat como invitado.
 - <b>aiku/filtered</b> - correo que no es trabajo: de nuestro propio personal y direcciones de la tienda, remitentes de no-reply, rebotes, avisos de entrega y respuestas de fuera de oficina a correo que nunca enviamos. No está en la bandeja de chat.
 - <b>aiku/spam</b> - correo de remitentes bloqueados con <b>Report spam</b>. No está en la bandeja de chat.
+- <b>aiku/spam-checked</b> - correo de la propia carpeta de Spam de Gmail que aiku leyó y dejó ahí, porque no parecía de un cliente. No está en la bandeja de chat, y Gmail lo borra a los 30 días.
 
 Una vez archivado, el correo sale de la bandeja de Gmail y se marca como leído, así que una bandeja de Gmail vacía es normal, no correo perdido. No se borra nada: cuando parezca que falta un correo, mira primero en <b>aiku/filtered</b>.
 
-aiku solo lee la bandeja de Gmail. El correo que Gmail pone en su propia carpeta de Spam, o que un filtro de Gmail mueve antes de llegar a la bandeja, nunca llega a aiku. Los compañeros deben escribirse directamente entre ellos, no a través del buzón de una tienda: su correo se filtra.
+aiku también lee la propia carpeta de Spam de Gmail, pero de ahí solo toma el correo de clientes que ya nos han comprado, las respuestas en nuestras conversaciones, y el correo que parece de un cliente o de un cliente nuevo escribiendo. Todo lo demás se queda en el Spam de Gmail, donde Gmail lo borra a los 30 días - consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a>. El correo que un filtro de Gmail mueve antes de llegar a la bandeja nunca llega a aiku. Los compañeros deben escribirse directamente entre ellos, no a través del buzón de una tienda: su correo se filtra.
 
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>

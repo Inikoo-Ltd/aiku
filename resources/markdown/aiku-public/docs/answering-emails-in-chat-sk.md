@@ -1,6 +1,6 @@
 ---
 title: Odpovedanie na e-maily v Chate
-summary: Pošta do schránky obchodu príde ako konverzácia vedľa webového chatu a WhatsAppu, aj s celým vláknom, a vaša odpoveď odchádza z tej istej adresy s vaším podpisom a prílohami.
+summary: Pošta do schránky obchodu príde ako konverzácia vedľa webového chatu a WhatsAppu, aj s celým vláknom, a vaša odpoveď odchádza z tej istej adresy s vaším podpisom a prílohami. Skutoční zákazníci, ktorých Gmail označil ako spam, sa dostanú dnu tiež, ich súbory sa pre bezpečnosť zadržia.
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat, email
@@ -25,14 +25,28 @@ E-mail sa pripojí do <b>Waiting</b> (čaká) ako ktorákoľvek konverzácia a <
 
 Niektoré konverzácie v e-mailovom zozname sa začali na webe. Keď má obchod zapnuté <b>Answer offline messages by email</b> (odpovedať na offline správy e-mailom), správa zanechaná vo widgete mimo pracovnej doby sa presunie na e-mail, aby sa odpoveď dostala k zákazníkovi. Otvorte ju a zákazníkova správa ukáže značku <b>Offline message</b> (offline správa); odtiaľ sa vybavuje ako ktorýkoľvek iný e-mail. Pozrite si <a href="/docs/live-chat-on-the-website-sk">Živý chat na webe</a>.
 
+## Pošta, ktorú Gmail označil ako spam
+
+Gmail niekedy zaradí e-mail skutočného zákazníka do priečinka spam. aiku kontroluje aj tento priečinok, aby ste to nemuseli robiť vy:
+
+- Pošta od zákazníka tohto obchodu, ktorý si u nás už kúpil, alebo odpoveď v konverzácii, ktorú už máte, príde vždy.
+- Pošta od kohokoľvek iného sa automaticky prečíta a príde len vtedy, keď vyzerá ako zákazník pýtajúci sa na objednávku alebo nový zákazník, ktorý chce nakúpiť. Reklamy, dodávatelia ponúkajúci nám tovar, podvody a automatická pošta zostávajú v Gmail spame, a Gmail ich po 30 dňoch vymaže.
+
+Niekto, kto sa zaregistroval na webe, ale nikdy nenakúpil, sa považuje za kohokoľvek iného, pretože registrovať sa môže ktokoľvek.
+
+E-mail, ktorý sa dostal zo spamu, má hore oranžovú poznámku. Začína tým, za čo ho aiku považoval, napríklad <b>New customer enquiry</b> (nová otázka od zákazníka), <b>Customer request</b> (žiadosť zákazníka) alebo <b>Possible scam</b> (možný podvod), takže ho čítajte s týmto na pamäti.
+
+Jeho prílohy zostávajú pre vašu bezpečnosť v Gmaile: súbory v spame môžu obsahovať vírusy alebo falošné faktúry. E-mail ukazuje <b>attachment(s) kept in Gmail for safety</b> (prílohy uchované v Gmaile pre bezpečnosť) a do konverzácie sa dostanú, až keď kliknete na <b>Show attachments</b> (Zobraziť prílohy). Odpovedanie ich nepridá. Otvárajte ich, len ak ste ich čakali. Ak sa e-mail ukáže ako nevyžiadaná pošta, <b>Report spam</b> (nahlásiť spam) zablokuje odosielateľa.
+
 ## Pošta, ktorá nikdy nepríde
 
-aiku číta iba doručenú poštu schránky a poštu, ktorá nie je prácou so zákazníkom, ukladá do vlastných priečinkov namiesto zoznamu chatu. Keď sa zdá, že pošta chýba, pozrite si Gmail priečinky v <a href="/docs/chat-inbox-labels-sk">Čo znamenajú označenia v schránke chatu</a>.
+aiku číta doručenú poštu schránky aj jej priečinok spam, a poštu, ktorá nie je prácou so zákazníkom, ukladá do vlastných priečinkov namiesto zoznamu chatu. Keď sa zdá, že pošta chýba, pozrite si Gmail priečinky v <a href="/docs/chat-inbox-labels-sk">Čo znamenajú označenia v schránke chatu</a>. Skutočnú poštu, ktorá zostala v Gmail spame, možno stále dostať dnu: otvorte ju v Gmaile a kliknite na <b>Not spam</b> (nie je spam), a do pár minút príde.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Pripojiť schránku:</b> <b>Settings</b> (nastavenia) obchodu &rarr; <b>Customer mailbox</b> (schránka zákazníkov).</li>
 <li><b>Odpovedať na e-mail:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; rozsvieťte štvorček email pre svoj obchod &rarr; konverzácia v zozname <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
-<li><b>Nájsť poštu, ktorá sa nedostala do schránky:</b> Gmail obchodu &rarr; <b>aiku/filtered</b>.</li>
+<li><b>Otvoriť súbory e-mailu, ktorý sa dostal zo spamu:</b> e-mail v konverzácii &rarr; <b>Show attachments</b> (Zobraziť prílohy).</li>
+<li><b>Nájsť poštu, ktorá sa nedostala do schránky:</b> Gmail obchodu &rarr; <b>aiku/filtered</b>, potom Gmail <b>Spam</b>.</li>
 </ul>
 </aside>
