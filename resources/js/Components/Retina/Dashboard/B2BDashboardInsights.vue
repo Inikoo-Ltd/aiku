@@ -5,13 +5,13 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus } from "@fal"
+import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy } from "@fal"
 import Image from "@common/Components/Image.vue"
 import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus)
+library.add(faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy)
 
 type StockStatus = "in_stock" | "low" | "out_of_stock" | "unavailable"
 
@@ -64,6 +64,17 @@ interface RecentOrder {
     invoice: string | null
 }
 
+interface Voucher {
+    code: string
+    name: string
+    percentage_off: number | null
+    amount_off: number | null
+    is_free_shipping: boolean
+    is_whole_order: boolean
+    min_amount: number | null
+    expires_at: string | null
+}
+
 interface Insights {
     currency_code: string
     kpis: {
@@ -77,6 +88,7 @@ interface Insights {
         is_lapsed: boolean
     }
     gold_reward: { label: string, days_left: number, expires_at: string } | null
+    vouchers: Voucher[]
     regulars: Regular[]
     favourites: Favourite[]
     recent_orders: RecentOrder[]
@@ -299,6 +311,39 @@ const repeatOrder = async (order: RecentOrder) => {
     }
 }
 
+const voucherBenefit = (voucher: Voucher) => {
+    const parts: string[] = []
+    if (voucher.percentage_off) {
+        parts.push(ctrans(":percentage off", { percentage: `${Math.round(voucher.percentage_off * 100)}%` }))
+    } else if (voucher.amount_off) {
+        parts.push(ctrans(":amount off", { amount: money(voucher.amount_off) }))
+    } else if (voucher.is_free_shipping) {
+        parts.push(ctrans("Free shipping"))
+    }
+    if (!voucher.is_whole_order && !voucher.is_free_shipping) {
+        parts.push(ctrans("on selected products"))
+    }
+    if (voucher.min_amount) {
+        parts.push(ctrans("on orders over :amount", { amount: money(voucher.min_amount) }))
+    }
+    if (voucher.expires_at) {
+        parts.push(ctrans("until :date", { date: shortDate(voucher.expires_at) }))
+    }
+    return parts.join(" · ")
+}
+
+const copiedVoucherCode = ref<string | null>(null)
+
+const copyVoucherCode = async (code: string) => {
+    try {
+        await navigator.clipboard.writeText(code)
+        copiedVoucherCode.value = code
+        setTimeout(() => { if (copiedVoucherCode.value === code) copiedVoucherCode.value = null }, 2000)
+    } catch {
+        notify({ title: ctrans("Could not copy, the code is :code", { code }), type: "warning" })
+    }
+}
+
 const orderStateChip = (state: string) => {
     if (["dispatched", "finalised"].includes(state)) return "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
     if (state === "cancelled") return "bg-stone-100 text-stone-600 ring-stone-500/20"
@@ -367,6 +412,25 @@ const overview = computed(() => {
                 {{ ctrans(":count days left", { count: String(insights.gold_reward.days_left) }) }} · {{ ctrans("Expires :date", { date: longDate(insights.gold_reward.expires_at) }) }}
             </p>
         </div>
+
+        <ul v-if="insights.vouchers?.length" class="divide-y divide-[#a0694a]/15 rounded-lg border border-dashed border-[#a0694a]/40">
+            <li v-for="voucher in insights.vouchers" :key="voucher.code" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                <FontAwesomeIcon :icon="faTicketAlt" class="text-[#a0694a]" fixed-width aria-hidden="true" />
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-[#7a4f33]">{{ voucher.name }}</p>
+                    <p class="text-sm text-stone-600">{{ voucherBenefit(voucher) }}</p>
+                </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md bg-[#f8efe4] px-3 py-1.5 font-mono text-sm font-semibold tracking-wide text-[#7a4f33] hover:bg-[#f1e2cf]"
+                    :aria-label="ctrans('Copy voucher code :code', { code: voucher.code })"
+                    @click="copyVoucherCode(voucher.code)"
+                >
+                    {{ voucher.code }}
+                    <FontAwesomeIcon :icon="copiedVoucherCode === voucher.code ? faCheck : faCopy" fixed-width aria-hidden="true" />
+                </button>
+            </li>
+        </ul>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:divide-x lg:divide-stone-200">
             <section v-if="orderAgainRows.length" class="lg:col-span-2">

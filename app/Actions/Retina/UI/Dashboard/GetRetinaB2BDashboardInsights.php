@@ -16,11 +16,14 @@ use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -108,6 +111,7 @@ class GetRetinaB2BDashboardInsights
             'currency_code'          => $customer->shop->currency->code,
             'kpis'                   => $this->getKpis($customer, $lastYearOrders, $orders, $today),
             'gold_reward'            => $this->getGoldReward($customer, $today),
+            'vouchers'               => $this->getVouchers($customer),
             'regulars'               => $this->getRegulars($customer, $productSales->take(self::PURCHASED_PRODUCTS), $today),
             'favourites'             => $this->getFavourites($customer),
             'recent_orders'          => $this->getRecentOrders($customer),
@@ -174,6 +178,50 @@ class GetRetinaB2BDashboardInsights
             'days_left'  => $daysLeft,
             'expires_at' => $today->copy()->addDays($daysLeft)->toDateString(),
         ];
+    }
+
+    /**
+     * Vouchers staff chose to show on the dashboard, running now, and not yet used by this customer unless
+     * they can be used again. Codes sent only by email stay hidden, so their use still measures the email.
+     */
+    private function getVouchers(Customer $customer): array
+    {
+        $vouchers = Offer::query()
+            ->where('shop_id', $customer->shop_id)
+            ->whereNotNull('voucher')
+            ->where('status', true)
+            ->where('settings->show_on_customer_dashboard', true)
+            ->where(fn ($query) => $query->whereNull('start_at')->orWhere('start_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('end_at')->orWhere('end_at', '>', now()))
+            ->with('offerAllowances')
+            ->orderBy('end_at')
+            ->get();
+
+        $usedVoucherIds = DB::table('orders')
+            ->where('customer_id', $customer->id)
+            ->whereIn('offer_voucher_id', $vouchers->pluck('id'))
+            ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
+            ->pluck('offer_voucher_id')
+            ->flip();
+
+        return $vouchers
+            ->reject(fn (Offer $voucher) => $usedVoucherIds->has($voucher->id) && !data_get($voucher->settings, 'can_customer_reuse', false))
+            ->map(function (Offer $voucher) {
+                $allowance = $voucher->offerAllowances->first();
+
+                return [
+                    'code'               => $voucher->code,
+                    'name'               => $voucher->name,
+                    'percentage_off'     => $allowance?->type == OfferAllowanceType::PERCENTAGE_OFF ? (float) data_get($allowance->data, 'percentage_off') : null,
+                    'amount_off'         => $allowance?->type == OfferAllowanceType::AMOUNT_OFF ? (float) data_get($allowance->data, 'amount_off') : null,
+                    'is_free_shipping'   => $allowance?->type == OfferAllowanceType::SHIPPING,
+                    'is_whole_order'     => in_array($allowance?->target_type, [OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER, OfferAllowanceTargetTypeEnum::ORDER], true),
+                    'min_amount'         => (float) data_get($voucher->trigger_data, 'item_amount', 0) ?: null,
+                    'expires_at'         => $voucher->end_at?->toDateString(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**
