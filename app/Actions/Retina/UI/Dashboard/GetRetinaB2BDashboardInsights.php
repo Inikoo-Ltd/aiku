@@ -45,6 +45,11 @@ class GetRetinaB2BDashboardInsights
     use WithCustomerPurchasableProduct;
 
     private const int REGULAR_PRODUCTS = 20;
+
+    /**
+     * ponytail: the order again picker lists the top spend products only, 99% of customers bought fewer.
+     */
+    private const int PURCHASED_PRODUCTS = 300;
     private const int RECENT_ORDERS = 5;
     private const int FAVOURITES = 4;
 
@@ -103,7 +108,7 @@ class GetRetinaB2BDashboardInsights
             'currency_code'          => $customer->shop->currency->code,
             'kpis'                   => $this->getKpis($customer, $lastYearOrders, $orders, $today),
             'gold_reward'            => $this->getGoldReward($customer, $today),
-            'regulars'               => $this->getRegulars($customer, $productSales->take(self::REGULAR_PRODUCTS), $today),
+            'regulars'               => $this->getRegulars($customer, $productSales->take(self::PURCHASED_PRODUCTS), $today),
             'favourites'             => $this->getFavourites($customer),
             'recent_orders'          => $this->getRecentOrders($customer),
             'recommendations'        => $recommendations,

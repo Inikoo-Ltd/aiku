@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus } from "@fal"
 import Image from "@common/Components/Image.vue"
+import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
@@ -22,6 +23,7 @@ interface Regular {
     url: string | null
     price: number
     unit: string | null
+    units: number
     available_quantity: number
     stock_status: StockStatus
     eta: string | null
@@ -127,15 +129,44 @@ const orderAgainSortRank = (regular: Regular) => {
     return 1
 }
 
+const orderableRegulars = computed(() => props.insights.regulars.filter((regular) => regular.stock_status !== "unavailable"))
+
+const pickedIds = ref<number[]>([])
+
 const orderAgainRows = computed(() => {
     const limit = props.insights.kpis.orders >= HEAVY_BUYER_ORDERS ? 10 : 5
-    return props.insights.regulars
-        .filter((regular) => regular.stock_status !== "unavailable")
+    const picked = pickedIds.value
+        .map((id) => orderableRegulars.value.find((regular) => regular.id === id))
+        .filter((regular): regular is Regular => !!regular)
+    const suggested = orderableRegulars.value
+        .filter((regular) => !pickedIds.value.includes(regular.id))
         .map((regular, index) => ({ regular, index }))
         .sort((a, b) => orderAgainSortRank(a.regular) - orderAgainSortRank(b.regular) || a.index - b.index)
-        .slice(0, limit)
+        .slice(0, Math.max(0, limit - picked.length))
         .map(({ regular }) => regular)
+    return [...picked, ...suggested]
 })
+
+const pickerOptions = computed(() => orderableRegulars.value.filter((regular) => !orderAgainRows.value.some((row) => row.id === regular.id)))
+
+const pickProduct = (id: number | null) => {
+    if (id && !pickedIds.value.includes(id)) {
+        pickedIds.value = [id, ...pickedIds.value]
+    }
+}
+
+const packLine = (price: number, units: number | null | undefined, unit: string | null | undefined) => {
+    const unitLabel = unit || ctrans("unit")
+    if (!units || units <= 1) {
+        return ctrans(":price per :unit", { price: money(price), unit: unitLabel })
+    }
+    return ctrans(":price for :count · :unit_price per :unit", {
+        price: money(price),
+        count: String(Number(units.toFixed(3))),
+        unit_price: money(price / units),
+        unit: unitLabel,
+    })
+}
 
 const canAdd = (item: { is_purchasable: boolean, stock_status: StockStatus }) => item.is_purchasable && (item.stock_status === "in_stock" || item.stock_status === "low")
 
@@ -342,6 +373,25 @@ const overview = computed(() => {
                 <h3 class="text-xl font-bold text-stone-900">{{ isLapsed ? ctrans("Review and order again") : ctrans("Order again") }}</h3>
                 <p class="text-sm text-stone-500">{{ ctrans("Your most ordered products. Check the quantity and add them to your basket.") }}</p>
 
+                <Select
+                    v-if="pickerOptions.length"
+                    :modelValue="null"
+                    :options="pickerOptions"
+                    optionValue="id"
+                    optionLabel="name"
+                    filter
+                    :filterFields="['code', 'name']"
+                    :placeholder="ctrans('Find a product you have ordered before')"
+                    :disabled="readOnly"
+                    class="mt-3 w-full"
+                    @update:modelValue="pickProduct"
+                >
+                    <template #option="{ option }">
+                        <span class="truncate">{{ option.name }}</span>
+                        <span class="ml-2 flex-none text-xs text-stone-500">{{ option.code }}</span>
+                    </template>
+                </Select>
+
                 <ul class="mt-3 divide-y divide-stone-200">
                     <li v-for="regular in orderAgainRows" :key="regular.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:flex-nowrap">
                         <div class="h-14 w-14 flex-none overflow-hidden rounded-md bg-stone-50" :class="{ 'opacity-60': regular.stock_status === 'out_of_stock' }">
@@ -351,7 +401,7 @@ const overview = computed(() => {
                             <a v-if="regular.url && !readOnly" :href="regular.url" class="block truncate font-medium text-stone-900 hover:underline">{{ regular.name }}</a>
                             <span v-else class="block truncate font-medium text-stone-900">{{ regular.name }}</span>
                             <p class="text-xs text-stone-500">
-                                {{ regular.code }} · {{ money(regular.price) }}
+                                {{ regular.code }} · {{ packLine(regular.price, regular.units, regular.unit) }}
                             </p>
                             <p class="text-xs" :class="regular.stock_status === 'low' ? 'font-medium text-amber-800' : 'text-stone-500'">{{ rowHint(regular) }}</p>
                         </div>
@@ -518,8 +568,9 @@ const overview = computed(() => {
                         />
                     </a>
                     <a :href="readOnly ? undefined : product.url" class="mt-2 line-clamp-2 text-sm font-medium text-stone-900 hover:underline">{{ product.name }}</a>
-                    <div class="mt-auto flex items-center justify-between pt-1">
-                        <p class="text-sm tabular-nums text-stone-700">{{ money(product.discounted_price ?? product.price) }}</p>
+                    <p class="text-xs text-stone-500">{{ product.code }}</p>
+                    <div class="mt-auto flex items-center justify-between gap-2 pt-1">
+                        <p class="text-xs tabular-nums text-stone-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
                         <button
                             type="button"
                             class="rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
