@@ -446,12 +446,14 @@ test('a channel is marked blocked only when the store refuses the connection its
     wooFake(['GET settings' => $connectionRefused, 'GET orders' => $connectionRefused]);
     $channel = CheckWooChannel::run($wooCommerceUser);
     expect($channel->platform_status)->toBeFalse()
-        ->and($channel->is_blocked)->toBeTrue();
+        ->and($channel->is_blocked)->toBeTrue()
+        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toContain('blocking connections');
 
     wooFake(wooDown(wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)));
     $channel = CheckWooChannel::run($wooCommerceUser->refresh());
     expect($channel->platform_status)->toBeFalse()
-        ->and($channel->is_blocked)->toBeFalse();
+        ->and($channel->is_blocked)->toBeFalse()
+        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toContain('fresh WooCommerce REST API key');
 });
 
 test('connecting the same store again reuses the channel and, after a close, brings it back with its portfolio', function () {

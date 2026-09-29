@@ -195,6 +195,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.is_blocked" v-tooltip="trans('Store is blocking our connection, not a bad key')" icon="fal fa-ban" class="text-orange-500" fixed-width aria-hidden="true" />
                 </template>
             </template>
             <template v-else>
