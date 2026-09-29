@@ -1488,26 +1488,53 @@ test('shop products json carries the outer size from the stock, not the product 
     expect($multi->packed_in)->toBeNull();
 });
 
-test('shop products json flags on-demand products so the UI can show them as always available', function () {
+test('an on-demand stock never caps a product, and the shop products json reports what is on the shelf', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
     $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
 
-    $orgStock = $this->orgStock1;
-    $orgStock->update(['is_on_demand' => true, 'has_been_in_warehouse' => true]);
+    $onDemandStock      = $this->orgStock1;
+    $stockedStock       = $this->orgStock2;
+    $stockAttributes    = ['is_on_demand', 'has_been_in_warehouse', 'quantity_available'];
+    $originalOnDemand   = $onDemandStock->only($stockAttributes);
+    $originalStocked    = $stockedStock->only($stockAttributes);
+    $originalIsForSale  = $product->is_for_sale;
+    $originalStockLinks = $product->orgStocks->mapWithKeys(fn ($orgStock) => [$orgStock->id => ['quantity' => $orgStock->pivot->quantity]])->all();
 
-    $product->update(['is_for_sale' => true]);
-    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
-    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    $shelfRow = function () use ($shop, $product): ?array {
+        $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
+        $data     = \App\Http\Resources\Catalogue\ProductsWebpageResource::collection($products)->response()->getData(true)['data'];
 
-    expect($product->is_on_demand)->toBeTrue();
+        return collect($data)->firstWhere('id', $product->id);
+    };
 
-    $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
-    $data     = \App\Http\Resources\Catalogue\ProductsWebpageResource::collection($products)->response()->getData(true)['data'];
-    $row      = collect($data)->firstWhere('id', $product->id);
+    try {
+        $product->update(['is_for_sale' => true]);
+        $onDemandStock->update(['is_on_demand' => true, 'has_been_in_warehouse' => true, 'quantity_available' => 0]);
+        $stockedStock->update(['is_on_demand' => false, 'has_been_in_warehouse' => true, 'quantity_available' => 7]);
 
-    expect($row)->not->toBeNull()
-        ->and($row['is_on_demand'])->toBeTrue();
+        $product->orgStocks()->sync([$onDemandStock->id => ['quantity' => 20]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+        $product->refresh();
+
+        expect($product->is_on_demand)->toBeTrue()
+            ->and($product->available_quantity)->toBe(ProductHydrateAvailableQuantity::ON_DEMAND_QUANTITY)
+            ->and($shelfRow())->toMatchArray(['is_on_demand' => true, 'shelf_quantity' => 0]);
+
+        $product->orgStocks()->sync([$onDemandStock->id => ['quantity' => 1], $stockedStock->id => ['quantity' => 1]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+        $product->refresh();
+
+        expect($product->is_on_demand)->toBeFalse()
+            ->and($product->available_quantity)->toBe(7)
+            ->and($shelfRow())->toMatchArray(['is_on_demand' => false, 'stock' => 7, 'shelf_quantity' => 0]);
+    } finally {
+        $onDemandStock->update($originalOnDemand);
+        $stockedStock->update($originalStocked);
+        $product->update(['is_for_sale' => $originalIsForSale]);
+        $product->orgStocks()->sync($originalStockLinks);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+    }
 });
 
 test('faire case size change flags the product for units review until its trade units are saved', function () {
