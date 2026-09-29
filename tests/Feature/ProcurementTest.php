@@ -7059,3 +7059,27 @@ test('agent organisations get the purchase order outbox, and only that one, so a
         ->and($outboxes->first()->emailOngoingRun)->not->toBeNull()
         ->and($outboxes->first()->org_post_room_id)->not->toBeNull();
 });
+
+test('purchase orders and stock deliveries from an agent use the agent organisation currency', function () {
+    $rupee = Currency::where('code', 'INR')->firstOrFail();
+    $date  = now()->format('Y-m-d');
+    foreach (['INR' => 93.1234, 'GBP' => 0.8, 'EUR' => 1.1654, 'USD' => 1.3187] as $code => $exchange) {
+        DB::table('currency_exchanges')->upsert(
+            ['currency_id' => Currency::where('code', $code)->value('id'), 'date' => $date, 'exchange' => $exchange, 'source' => 'M', 'created_at' => now(), 'updated_at' => now()],
+            ['currency_id', 'date'],
+            ['exchange']
+        );
+    }
+
+    $agentOrganisation         = $this->orgAgent->agent->organisation;
+    $agentOrganisationCurrency = $agentOrganisation->currency_id;
+    $agentOrganisation->update(['currency_id' => $rupee->id]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent->refresh(), []);
+    $stockDelivery = StoreStockDelivery::make()->action($this->orgAgent, ['reference' => 'AGENT-INR-'.uniqid(), 'date' => now()], strict: false);
+
+    $agentOrganisation->update(['currency_id' => $agentOrganisationCurrency]);
+
+    expect($purchaseOrder->currency_id)->toBe($rupee->id)
+        ->and($stockDelivery->currency_id)->toBe($rupee->id);
+});
