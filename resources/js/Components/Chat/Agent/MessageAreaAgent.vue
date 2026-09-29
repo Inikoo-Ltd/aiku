@@ -1226,7 +1226,7 @@ const onViewMessageDetails = () => {
 
 const translateConversation = async () => {
     isMenuOpen.value = false
-    const languageId = layout.user?.language_id
+    const languageId = layout.user?.chat_language_id ?? layout.user?.language_id
     if (!chatSession.value?.ulid || !languageId) return
 
     try {

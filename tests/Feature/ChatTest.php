@@ -710,6 +710,22 @@ test('can store a new agent', function () {
     expect(\App\Models\Chat\ShopHasChatAgent::where('chat_agent_id', $agent->id)->exists())->toBeFalse();
 });
 
+test('chat translations follow the agent chat language, not the app language', function () {
+    $spanishId = \App\Models\Helpers\Language::where('code', 'es')->value('id');
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id, 'language_id' => 68]);
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($user)['chat_language_id'])->toBe(68);
+
+    StoreAgent::make()->handle([
+        'organisation_id'      => $this->organisation->id,
+        'user_id'              => $user->id,
+        'language_id'          => $spanishId,
+        'max_concurrent_chats' => 5,
+    ]);
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($user->fresh())['chat_language_id'])->toBe($spanishId);
+});
+
 test('cannot store an agent for a user that is already active', function () {
     $user = User::factory()->create(['group_id' => $this->organisation->group_id]);
 

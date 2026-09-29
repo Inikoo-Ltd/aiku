@@ -492,7 +492,7 @@ const showTranslation = ref(true)
 // it from a list of every language we support, every time, on every message, was asking a
 // question with one answer.
 const selectedLanguageId = computed(() =>
-    getLanguageIdByCode(selectedLanguage.value) || layout.user?.language_id || null
+    getLanguageIdByCode(selectedLanguage.value) || layout.user?.chat_language_id || layout.user?.language_id || null
 )
 
 const activeMessage = computed<Message>(() => {
