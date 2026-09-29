@@ -38,7 +38,7 @@ class AnswerWhatsappCall
             ->update([
                 'status'      => MetaChatCallStatusEnum::IN_PROGRESS,
                 'user_id'     => $user->id,
-                'answered_at' => now(),
+                'answered_at' => $metaChatCall->fromDateTime(now()),
             ]);
 
         if ($claimed === 0) {

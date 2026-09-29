@@ -9,6 +9,7 @@ namespace App\Events;
 
 use App\Models\Chat\MetaChatCall;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -22,19 +23,33 @@ class BroadcastWhatsappCallEvent implements ShouldBroadcastNow
 
     public string $ulid;
 
+    public ?int $shopId;
+
+    public ?string $organisationSlug;
+
     public function __construct(public MetaChatCall $metaChatCall)
     {
-        $this->ulid = $metaChatCall->metaChatSession->ulid;
+        $metaChatSession        = $metaChatCall->metaChatSession;
+        $this->ulid             = $metaChatSession->ulid;
+        $this->shopId           = $metaChatSession->shop_id;
+        $this->organisationSlug = $metaChatSession->shop?->organisation?->slug;
     }
 
     /**
-     * @return array<int, PrivateChannel>
+     * The shop's chat list is joined by every agent tab on every page, so a customer ringing
+     * reaches whoever works the shop's chat even when nobody has the conversation open.
+     *
+     * @return array<int, PrivateChannel|PresenceChannel>
      */
     public function broadcastOn(): array
     {
-        return [
-            new PrivateChannel("meta-chat-session.{$this->ulid}"),
-        ];
+        $channels = [new PrivateChannel("meta-chat-session.{$this->ulid}")];
+
+        if ($this->shopId) {
+            $channels[] = new PresenceChannel("chat-list.{$this->shopId}");
+        }
+
+        return $channels;
     }
 
     public function broadcastAs(): string
@@ -51,6 +66,7 @@ class BroadcastWhatsappCallEvent implements ShouldBroadcastNow
     {
         return [
             'id'               => $this->metaChatCall->id,
+            'organisation'     => $this->organisationSlug,
             'wa_call_id'       => $this->metaChatCall->wa_call_id,
             'status'           => $this->metaChatCall->status->value,
             'direction'        => $this->metaChatCall->direction->value,

@@ -51,6 +51,8 @@ class MetaChatCall extends Model
 
     protected $guarded = [];
 
+    protected $dateFormat = 'Y-m-d H:i:sP';
+
     protected function casts(): array
     {
         return [
@@ -78,7 +80,7 @@ class MetaChatCall extends Model
             $query->where('status', MetaChatCallStatusEnum::IN_PROGRESS)
                 ->orWhere(function (Builder $query) {
                     $query->where('status', MetaChatCallStatusEnum::RINGING)
-                        ->where('ringing_at', '>', now()->subSeconds(self::RING_TIMEOUT_SECONDS));
+                        ->where('ringing_at', '>', $this->fromDateTime(now()->subSeconds(self::RING_TIMEOUT_SECONDS)));
                 });
         });
     }

@@ -5,27 +5,11 @@ import { faPhoneVolume, faPhoneSlash, faVideo, faMicrophone } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { useWhatsappCall } from "@/Composables/useWhatsappCall"
 
-const props = defineProps<{ organisation: string }>()
+const props = defineProps<{ organisation?: string }>()
 
-const { call, isRinging, isLive, busy, micReady, elapsedSeconds, answer, end } = useWhatsappCall()
+const { call, isRinging, isLive, isOutgoing, busy, micReady, formattedElapsed, statusLabel, answer, end } = useWhatsappCall()
 
-const formattedElapsed = computed(() => {
-    const total = elapsedSeconds.value
-    const minutes = Math.floor(total / 60)
-        .toString()
-        .padStart(2, "0")
-    const seconds = (total % 60).toString().padStart(2, "0")
-
-    return `${minutes}:${seconds}`
-})
-
-const isOutgoing = computed(() => call.value?.direction === "business_initiated")
-
-const label = computed(() => {
-    if (isRinging.value) return isOutgoing.value ? ctrans("Calling…") : ctrans("Incoming WhatsApp call")
-
-    return micReady.value ? ctrans("On the call") : ctrans("Connecting…")
-})
+const organisation = computed(() => props.organisation ?? call.value?.organisation ?? "")
 </script>
 
 <template>
@@ -41,7 +25,7 @@ const label = computed(() => {
         />
 
         <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-medium text-green-900">{{ label }}</div>
+            <div class="truncate text-sm font-medium text-green-900">{{ statusLabel }}</div>
             <div class="truncate text-xs text-green-700">
                 {{ call.phone_number }}
                 <span v-if="isLive"> · {{ formattedElapsed }}</span>
@@ -73,7 +57,7 @@ const label = computed(() => {
             type="button"
             :disabled="busy"
             class="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-            @click="answer(props.organisation)"
+            @click="answer(organisation)"
         >
             {{ ctrans("Answer") }}
         </button>
@@ -82,7 +66,7 @@ const label = computed(() => {
             type="button"
             :disabled="busy"
             class="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-            @click="end(props.organisation)"
+            @click="end(organisation)"
         >
             <FontAwesomeIcon :icon="faPhoneSlash" aria-hidden="true" />
             <span class="ml-1">{{ isRinging ? (isOutgoing ? ctrans("Cancel") : ctrans("Decline")) : ctrans("Hang up") }}</span>

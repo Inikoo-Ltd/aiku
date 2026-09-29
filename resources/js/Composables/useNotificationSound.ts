@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { openChatPane } from "@/Composables/useChatPane"
 import { useLayoutStore } from "@/Stores/layout"
 import { ctrans } from "@/Composables/useTrans"
+import { useWhatsappCall, type WhatsappCall } from "@/Composables/useWhatsappCall"
 
 export type NotificationSoundOptions = {
 	frequency?: number
@@ -443,12 +444,30 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		})
 	}
 
+	const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
+	const onCallEvent = (call: WhatsappCall) => {
+		if (!call?.id) return
+		applyCallBroadcast(call, call.organisation ?? undefined)
+
+		if (call.status !== "ringing" || call.direction !== "user_initiated") return
+		alertOnce({
+			key: `whatsapp-call:${call.id}`,
+			title: ctrans("Incoming WhatsApp call"),
+			body: call.phone_number ?? "",
+			tag: `whatsapp-call-${call.id}`,
+			sound: chosenAlertSound("whatsapp"),
+			spoken: ctrans("Incoming WhatsApp call"),
+			sticky: true,
+		})
+	}
+
 	const subscribe = () => {
 		const shopIds: number[] = Array.isArray(layout.user?.agent_shops) ? layout.user.agent_shops : []
 		shopIds.forEach((shopId) => {
 			window.Echo.join(`chat-list.${shopId}`)
 				.listen(".chatlist", onChatListEvent)
 				.listen(".meta-chatlist", onChatListEvent)
+				.listen(".call", onCallEvent)
 		})
 	}
 	const echoReady = setInterval(() => {

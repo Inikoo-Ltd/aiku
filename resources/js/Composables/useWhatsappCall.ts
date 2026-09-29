@@ -9,6 +9,7 @@ import { ctrans } from "@/Composables/useTrans"
 
 export type WhatsappCall = {
     id: number
+    organisation?: string | null
     wa_call_id: string
     status: "ringing" | "in_progress" | "completed" | "missed" | "rejected" | "failed"
     direction: "user_initiated" | "business_initiated"
@@ -159,9 +160,31 @@ export const useWhatsappCall = () => {
         return Math.max(0, Math.floor((Date.now() - new Date(state.call.answered_at).getTime()) / 1000))
     })
 
+    const formattedElapsed = computed(() => {
+        const minutes = Math.floor(elapsedSeconds.value / 60)
+            .toString()
+            .padStart(2, "0")
+        const seconds = (elapsedSeconds.value % 60).toString().padStart(2, "0")
+
+        return `${minutes}:${seconds}`
+    })
+
+    const isOutgoing = computed(() => state.call?.direction === "business_initiated")
+
+    const statusLabel = computed(() => {
+        if (isRinging.value) return isOutgoing.value ? ctrans("Calling…") : ctrans("Incoming WhatsApp call")
+
+        return state.micReady ? ctrans("On the call") : ctrans("Connecting…")
+    })
+
     // The broadcast is the one source of truth for a call's state: a call answered or hung up
     // in another tab has to close this one's media too, or the agent keeps a dead line open.
+    // A tab with the conversation open hears the same event on the session and the shop channel.
     const applyBroadcast = (payload: WhatsappCall, organisation?: string) => {
+        if (state.call?.id === payload.id && state.call.status === payload.status) {
+            return
+        }
+
         if (state.call && state.call.id !== payload.id && state.call.status === "in_progress") {
             return
         }
@@ -289,6 +312,9 @@ export const useWhatsappCall = () => {
         busy: computed(() => busy.value),
         micReady: computed(() => state.micReady),
         elapsedSeconds,
+        formattedElapsed,
+        isOutgoing,
+        statusLabel,
         videoAvailable: WHATSAPP_VIDEO_AVAILABLE,
         applyBroadcast,
         answer,
