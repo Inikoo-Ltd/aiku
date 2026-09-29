@@ -49,12 +49,20 @@ class FetchShopMailboxMessages
             $newHistoryId = $client->profile()['historyId'];
         }
 
-        $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds($this->sweepQuery($shop), 100)));
+        $messageIds = array_unique(array_merge(
+            $messageIds,
+            $client->listInboxMessageIds($this->sweepQuery($shop), 100),
+            $client->listInboxMessageIds($this->spamSweepQuery($shop), 100)
+        ));
 
         $dispatched = 0;
 
         foreach ($messageIds as $messageId) {
             if (ChatMessage::where('metadata->gmail_message_id', $messageId)->exists()) {
+                continue;
+            }
+
+            if (Cache::has(ProcessInboundEmail::leftInSpamKey($shop, $messageId))) {
                 continue;
             }
 
@@ -86,6 +94,11 @@ class FetchShopMailboxMessages
         }
 
         return 'in:inbox after:'.Carbon::parse($connectedAt)->format('Y/m/d');
+    }
+
+    private function spamSweepQuery(Shop $shop): string
+    {
+        return str_replace('in:inbox', 'in:spam', $this->sweepQuery($shop));
     }
 
     /**

@@ -19,6 +19,9 @@ return [
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
 
+    // Hiding a real customer is worse than showing a junk mail, so the bar is low.
+    'spam_rescue_min_probability' => (float) env('CHAT_SPAM_RESCUE_MIN_PROBABILITY', 0.3),
+
     'urgent_model' => env('CHAT_URGENT_MODEL', 'gpt-4o'),
 
     'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),

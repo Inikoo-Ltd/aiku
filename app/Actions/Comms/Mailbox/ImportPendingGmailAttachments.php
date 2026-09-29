@@ -37,7 +37,10 @@ class ImportPendingGmailAttachments
 
     public function handle(ChatSession $chatSession): int
     {
-        $messages = $chatSession->messages()->whereNotNull('metadata->gmail_pending_attachments')->get();
+        $messages = $chatSession->messages()
+            ->whereNotNull('metadata->gmail_pending_attachments')
+            ->where('is_rescued_from_spam', false)
+            ->get();
 
         if ($messages->isEmpty() || ! $client = GmailClient::forShop($chatSession->shop)) {
             return 0;

@@ -5706,5 +5706,7 @@
     "workplace": "lugar de trabajo",
     "workshop": "taller",
     "your order number": "tu número de pedido",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.": "Gmail puso este correo en su carpeta de spam. Aiku lo ha traído porque parece de un cliente real, pero sus archivos adjuntos se quedan en Gmail por tu seguridad: los archivos en spam pueden llevar virus o facturas falsas. Ábrelos solo si los esperabas.",
+    ":count attachment(s) kept in Gmail for safety": ":count archivo(s) guardado(s) en Gmail por seguridad"
 }

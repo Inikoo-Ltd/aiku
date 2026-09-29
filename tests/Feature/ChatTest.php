@@ -10211,3 +10211,121 @@ test('a website guest on a test email domain is put in spam by rule', function (
         ->and($scanner->noise_source)->toBe('rule')
         ->and($rule)->toBeNull();
 });
+
+test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam and is never read twice', function () {
+    Bus::fake();
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => 'spam-buyer@example.com']));
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $message = fn (string $id, string $from, string $subject, array $extraHeaders = []) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => "t$id",
+        'labelIds' => ['SPAM', 'UNREAD'],
+        'payload'  => [
+            'mimeType' => 'multipart/mixed',
+            'headers'  => array_merge([['name' => 'From', 'value' => $from], ['name' => 'Subject', 'value' => $subject]], $extraHeaders),
+            'parts'    => [
+                ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('Hello')]],
+                ['mimeType' => 'application/pdf', 'filename' => 'invoice.pdf', 'body' => ['attachmentId' => 'att1', 'size' => 2000]],
+            ],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp0*' => $message('sp0', 'Buyer <spam-buyer@example.com>', 'Just registered'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp1*' => $message('sp1', 'Buyer <spam-buyer@example.com>', 'Where is my order?'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp2*' => $message('sp2', 'Deals <deals@promo.example.net>', 'Grow your SEO', [['name' => 'List-Unsubscribe', 'value' => '<mailto:x@promo.example.net>']]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp3*' => $message('sp3', 'New Shop <owner@newshop.example.net>', 'Wholesale account'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp4*' => $message('sp4', 'Prince <prince@scam.example.net>', 'Urgent transfer'),
+        'openrouter.ai/api/alpha/decisions'                    => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]]]])
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'scam', 'probabilities' => ['scam' => 0.6, 'prospect' => 0.25, 'customer_request' => 0.15]]]])
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'scam', 'probabilities' => ['scam' => 0.8, 'prospect' => 0.2]]]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
+            ['id' => 'LI', 'name' => 'aiku/imported'],
+            ['id' => 'LU', 'name' => 'aiku/unmatched'],
+        ]]),
+        'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+
+    $inbound = \App\Actions\Comms\Mailbox\ProcessInboundEmail::class;
+
+    expect($inbound::run($this->shop, 'sp0'))->toBeNull();
+
+    $this->customer->stats()->update(['number_invoices_type_invoice' => 1]);
+
+    $fromCustomer = $inbound::run($this->shop, 'sp1');
+
+    expect($fromCustomer)->toBeInstanceOf(ChatMessage::class)
+        ->and($fromCustomer->is_rescued_from_spam)->toBeTrue()
+        ->and($fromCustomer->attachedFiles())->toHaveCount(0)
+        ->and(Arr::get($fromCustomer->metadata, 'gmail_pending_attachments'))->toBe(1)
+        ->and(\App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::make()->handle($fromCustomer->chatSession))->toBe(0)
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($fromCustomer)->resolve()['is_rescued_from_spam'])->toBeTrue()
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($fromCustomer)->resolve()['spam_rescue_kind_label'])->toBeNull()
+        ->and($inbound::run($this->shop, 'sp2'))->toBeNull()
+        ->and($stranger = $inbound::run($this->shop, 'sp3'))->toBeInstanceOf(ChatMessage::class)
+        ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::SCAM)
+        ->and($fromCustomer->spam_rescue_kind)->toBeNull()
+        ->and($inbound::run($this->shop, 'sp4'))->toBeNull()
+        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp0')))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp1')))->toBeFalse()
+        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp2')))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp4')))->toBeTrue();
+
+    $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
+        ->map(fn ($pair) => $pair[0]->data())->first();
+
+    expect($filed('sp1'))->toBe(['addLabelIds' => ['LI'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
+        ->and($filed('sp3'))->toBe(['addLabelIds' => ['LU'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
+        ->and($filed('sp2'))->toBeNull()
+        ->and($filed('sp4'))->toBeNull();
+
+    $asked = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->first()[0]->data();
+
+    expect($asked['questions']['answer']['type'])->toBe('choice')
+        ->and($asked['questions']['answer']['criteria'])->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::definitions());
+});
+
+test('jev answers yes/no, choice and score questions through openrouter, and nothing without a key', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => ['answer' => ['type' => 'noul', 'noul' => 0.91]]])
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'billing', 'probabilities' => ['billing' => 0.8, 'sales' => 0.2]]]])
+            ->push(['answers' => ['answer' => ['type' => 'score', 'score' => 2, 'probabilities' => [0.1, 0.2, 0.7]]]])
+            ->push([], 500),
+    ]);
+
+    $jev = \App\Actions\Helpers\AI\AskJev::make();
+
+    expect($jev->noul('My payouts failed', 'Is it urgent?', 'Time-sensitive', 'No urgency'))->toBe(0.91)
+        ->and($jev->choice('Refund please', 'Which team?', ['billing' => 'Payments', 'sales' => 'New accounts']))
+        ->toBe(['choice' => 'billing', 'probabilities' => ['billing' => 0.8, 'sales' => 0.2]])
+        ->and($jev->score('This is outrageous!', 'How frustrated?', ['Calm', 'Frustrated', 'Very angry']))
+        ->toBe(['score' => 2, 'probabilities' => [0.1, 0.2, 0.7]])
+        ->and($jev->noul('x', 'y', 'a', 'b'))->toBeNull();
+
+    $sent = \Illuminate\Support\Facades\Http::recorded()->map(fn ($pair) => $pair[0]->data())->values();
+
+    expect($sent[0]['model'])->toBe('~typesafe/jev-latest')
+        ->and($sent[0]['questions']['answer'])->toBe(['type' => 'noul', 'instructions' => 'Is it urgent?', 'criteria' => ['true' => 'Time-sensitive', 'false' => 'No urgency']])
+        ->and($sent[2]['questions']['answer']['criteria'])->toBe(['Calm', 'Frustrated', 'Very angry']);
+
+    config()->set('services.openrouter.api_key', null);
+
+    expect($jev->noul('x', 'y', 'a', 'b'))->toBeNull();
+});

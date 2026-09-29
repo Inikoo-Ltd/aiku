@@ -270,7 +270,10 @@ final class GmailClient
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
                 'addLabelIds'    => [$labelId],
-                'removeLabelIds' => $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
+                'removeLabelIds' => array_merge(
+                    $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
+                    in_array('SPAM', $priorLabelIds, true) ? ['SPAM'] : []
+                ),
             ]);
     }
 

@@ -15,6 +15,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\SummarizeLongEmail;
+use App\Actions\Helpers\AI\AskJev;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -22,6 +23,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Enums\CRM\Livechat\ChatSpamRescueKindEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
@@ -49,6 +51,9 @@ class ProcessInboundEmail
      * stops it being fetched again, so it came back every couple of minutes all day.
      */
     private const int GONE_TTL_DAYS = 7;
+
+    /** Gmail empties its spam folder after 30 days, so a decision never needs to outlive it. */
+    public const int LEFT_IN_SPAM_TTL_DAYS = 31;
 
     private const array MACHINE_SENDER_DOMAINS = [
         'luigisbox.com', 'email-abuse.amazonses.com',
@@ -119,6 +124,25 @@ class ProcessInboundEmail
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
+        $isRescuedFromSpam = in_array('SPAM', Arr::get($raw, 'labelIds', []), true);
+        $spamRescueKind    = null;
+
+        if ($isRescuedFromSpam) {
+            $rescue = $this->rescueFromSpam($shop, $raw, $from, $subject, $body, $threadId);
+
+            if ($rescue instanceof ChatSpamRescueKindEnum) {
+                $spamRescueKind = $rescue;
+            } elseif ($rescue !== true) {
+                Cache::put(
+                    self::leftInSpamKey($shop, $gmailMessageId),
+                    true,
+                    $rescue === false ? now()->addDays(self::LEFT_IN_SPAM_TTL_DAYS) : now()->addHour()
+                );
+
+                return null;
+            }
+        }
+
         $mailboxAddress = Arr::get($shop->settings, 'gmail.email');
         // Filed away like anything else we decide not to take in: left in the inbox it would be
         // offered again by every sweep, and read as mail that never came through.
@@ -181,12 +205,13 @@ class ProcessInboundEmail
 
         // Pictures come in whoever sent them: with the markup discarded they are the only thing
         // left to look at, and mail whose images are missing reads as broken. A stranger's other
-        // files still wait in Gmail until an agent has replied.
+        // files still wait in Gmail until an agent has replied, and so do the files of anything that
+        // came out of Gmail spam: those wait until an agent asks for them.
         $contentIds  = [];
         $attachments = ImportPendingGmailAttachments::make()
-            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser, contentIds: $contentIds);
+            ->download($client, $gmailMessageId, $raw, trusted: $webUser && ! $isRescuedFromSpam, contentIds: $contentIds);
 
-        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: (bool) $webUser);
+        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: $webUser && ! $isRescuedFromSpam);
 
         $session = $existing
             ? $this->reuseSession($existing, $from, $isAutoReply)
@@ -213,6 +238,8 @@ class ProcessInboundEmail
         }
 
         $message->update([
+            'is_rescued_from_spam' => $isRescuedFromSpam,
+            'spam_rescue_kind'     => $spamRescueKind,
             'metadata' => array_merge(
                 $message->metadata ?? [],
                 [
@@ -326,6 +353,52 @@ class ProcessInboundEmail
             'email_reply_to_name' => $from['name'],
             'email_participants'  => $participants,
         ];
+    }
+
+    public static function leftInSpamKey(Shop $shop, string $gmailMessageId): string
+    {
+        return "gmail-message-left-in-spam:{$shop->id}:$gmailMessageId";
+    }
+
+    /**
+     * Gmail's spam folder holds the odd customer or prospect among hundreds of junk mails. Customers
+     * who have bought from us and replies to our own conversations always come in; anybody can
+     * register, so a customer who never bought is asked about like a stranger. Newsletters and machines
+     * never do. A stranger's email is shown to Jev once, which says what kind of email it is, and
+     * it comes in when a customer request or a prospect is likely enough; the kind comes back so
+     * the agent sees what Aiku thought it was. The rest stays in Gmail's spam, where Gmail deletes
+     * it. Null means there was no answer, and the question is asked again an hour later rather
+     * than on every sweep.
+     *
+     * @param  array{address: ?string, name: ?string}  $from
+     */
+    private function rescueFromSpam(Shop $shop, array $raw, array $from, ?string $subject, ?string $body, string $threadId): ChatSpamRescueKindEnum|bool|null
+    {
+        if ($this->matchWebUser($shop, $from['address'])?->customer?->stats?->number_invoices_type_invoice || $this->findSessionByThread($shop, $threadId)) {
+            return true;
+        }
+
+        if (GmailMessageParser::header($raw, 'List-Unsubscribe') || self::isAutomatedMail($from['address'], $subject)) {
+            return false;
+        }
+
+        $answer = AskJev::make()->choice(
+            "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000),
+            'This email reached the customer service mailbox of a wholesale giftware supplier that sells to shops, including dropshipping. What kind of email is it?',
+            ChatSpamRescueKindEnum::definitions()
+        );
+
+        $kind = ChatSpamRescueKindEnum::tryFrom((string) Arr::get($answer, 'choice'));
+
+        if (! $kind) {
+            return null;
+        }
+
+        $wanted = collect(ChatSpamRescueKindEnum::cases())
+            ->filter(fn (ChatSpamRescueKindEnum $case) => $case->isWanted())
+            ->sum(fn (ChatSpamRescueKindEnum $case) => (float) Arr::get($answer, "probabilities.$case->value", 0));
+
+        return $wanted >= config('chat.spam_rescue_min_probability') ? $kind : false;
     }
 
     private function claimKey(string $gmailMessageId): string
