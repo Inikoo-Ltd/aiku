@@ -81,7 +81,7 @@ const familyRoute = (family: { slug: string }) =>
     
     <div
         v-if="moveToDepartment && selectedIds.length"
-        class="sticky top-0 z-10 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-slate-300 bg-slate-50 px-4 py-2.5 mb-2"
+        class="sticky top-0 z-10 mx-4 mt-4 mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-slate-300 bg-slate-50 px-4 py-2.5"
         role="region"
         :aria-label="ctrans('Bulk actions')">
         <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
@@ -89,7 +89,7 @@ const familyRoute = (family: { slug: string }) =>
             {{ selectedIds.length === 1 ? ctrans('1 family selected') : ctrans(':count families selected', { count: selectedIds.length }) }}
         </span>
 
-        <button type="button" class="text-xs xtext-indigo-100 underline underline-offset-2 hover:text-red-500" @click="clearSelection">
+        <button type="button" class="text-xs underline underline-offset-2 hover:text-red-500" @click="clearSelection">
             {{ ctrans('Clear') }}
         </button>
 
