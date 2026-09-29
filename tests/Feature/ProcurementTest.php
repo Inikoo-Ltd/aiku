@@ -855,8 +855,21 @@ test('all supplier products list shows the other open purchase orders each produ
     $ownRows = collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $purchaseOrder)->items())->keyBy('id');
     expect($ownRows->get($orgSupplierProductId)->other_open_purchase_orders)->toBeEmpty();
 
+    $transaction       = $purchaseOrder->purchaseOrderTransactions()->first();
+    $supplierProductId = $transaction->supplier_product_id;
+    $stockHasSupplierProductId = DB::table('stock_has_supplier_products')->insertGetId([
+        'stock_id'            => DB::table('org_stocks')->where('id', $transaction->org_stock_id)->value('stock_id'),
+        'supplier_product_id' => $supplierProductId,
+    ]);
+    $transaction->updateQuietly(['org_supplier_product_id' => null, 'supplier_product_id' => null]);
+    $rowMatchedByOrgStock = collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $newPurchaseOrder)->items())->keyBy('id')->get($orgSupplierProductId);
+    $transaction->updateQuietly(['org_supplier_product_id' => $orgSupplierProductId, 'supplier_product_id' => $supplierProductId]);
+    DB::table('stock_has_supplier_products')->delete($stockHasSupplierProductId);
     $newPurchaseOrder->forceDelete();
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS]);
+
+    expect($rowMatchedByOrgStock->org_stock_id)->toBe($transaction->org_stock_id)
+        ->and($rowMatchedByOrgStock->other_open_purchase_orders->pluck('reference')->all())->toBe([$purchaseOrder->reference]);
 })->depends('add more items to purchase order');
 
 
