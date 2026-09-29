@@ -386,6 +386,7 @@ it('records each ai call under its feature, rolls it into the ai time series and
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     Cache::forget('ai:openrouter_balance');
     DB::table('ai_usages')->delete();
+    Event::fake([App\Events\BroadcastAiUsageChanged::class]);
 
     Http::fake([
         'openrouter.ai/api/v1/chat/completions' => Http::response([
@@ -406,6 +407,8 @@ it('records each ai call under its feature, rolls it into the ai time series and
         ->and($usages->first()->model)->toBe('openai/gpt-4o-mini')
         ->and((float) $usages->first()->cost)->toBe(0.0021);
 
+    Event::assertDispatched(App\Events\BroadcastAiUsageChanged::class, 2);
+
     $monthly = App\Models\Helpers\AiTimeSeries::where('feature', 'DetectLanguageWithAI')->where('frequency', 'monthly')->first()->records()->first();
     expect($monthly->number_calls)->toBe(2)
         ->and((float) $monthly->cost)->toBe(0.0042)
@@ -418,8 +421,33 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->where('balance.left', 9.5)
             ->where('balance.is_low', false)
             ->where('features.0.feature', 'DetectLanguageWithAI')
+            ->where('features.0.label', 'Language detection')
             ->where('features.0.calls_month', 2)
-            ->has('daily', 1));
+            ->has('daily', 1)
+            ->where('models.0.label', 'GPT-4o-mini')
+            ->where('models.0.calls', 2));
+
+    $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Ai/Feature')
+            ->where('title', 'Language detection')
+            ->where('description', 'Works out the language a customer writes in.')
+            ->where('spend.calls_month', 2)
+            ->where('models.0.label', 'GPT-4o-mini')
+            ->has('calls', 2)
+            ->where('calls.0.prompt_tokens', 50));
+
+    $this->get(route('grp.ai.features.show', ['feature' => 'NotAFeature']))->assertNotFound();
+});
+
+it('names ai features the way staff talk about them', function () {
+    $dashboard = App\Actions\Helpers\AI\UI\ShowAiDashboard::make();
+
+    expect($dashboard->featureLabel('ChatGPT5Driver'))->toBe('Translations')
+        ->and($dashboard->featureLabel('DetectLanguageWithAI'))->toBe('Language detection')
+        ->and($dashboard->featureLabel('ReadPOFromAIVendorPDF'))->toBe('Read po from ai vendor pdf')
+        ->and($dashboard->modelLabel('typesafe/jev-1.13-20260917'))->toBe('Jev 1.13')
+        ->and($dashboard->modelLabel('openai/gpt-6-sol'))->toBe('GPT-6-sol');
 });
 
 it('alerts discord once when the ai credit left drops below the threshold', function () {

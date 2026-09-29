@@ -23,7 +23,7 @@ class GetOpenRouterBalance
     use AsAction;
 
     /**
-     * @return array{credits_total: float, credits_used: float, credits_left: float, key_limit: float|null, key_limit_remaining: float|null, key_limit_reset: string|null, spent_today: float, spent_week: float, spent_month: float, left: float, low_credit_alert: float, is_low: bool}|null
+     * @return array{credits_total: float, credits_used: float, credits_left: float, key_limit: float|null, key_limit_remaining: float|null, key_limit_reset: string|null, left: float, low_credit_alert: float, is_low: bool}|null
      */
     public function handle(bool $fresh = false): ?array
     {
@@ -60,9 +60,6 @@ class GetOpenRouterBalance
                 'key_limit'           => isset($key['limit']) ? (float) $key['limit'] : null,
                 'key_limit_remaining' => $keyLimitRemaining,
                 'key_limit_reset'     => $key['limit_reset'] ?? null,
-                'spent_today'         => (float) ($key['usage_daily'] ?? 0),
-                'spent_week'          => (float) ($key['usage_weekly'] ?? 0),
-                'spent_month'         => (float) ($key['usage_monthly'] ?? 0),
                 'left'                => $left,
                 'low_credit_alert'    => $lowCreditAlert,
                 'is_low'              => $left < $lowCreditAlert,

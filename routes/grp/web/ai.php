@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Helpers\AI\UI\ShowAiDashboard;
+use App\Actions\Helpers\AI\UI\ShowAiFeature;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowAiDashboard::class)->name('dashboard');
+Route::get('/features/{feature}', ShowAiFeature::class)->name('features.show');

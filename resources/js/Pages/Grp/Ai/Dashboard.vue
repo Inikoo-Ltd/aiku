@@ -5,10 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
+import { usd } from "@/Composables/formatUsd"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import AiDailySpend from "@/Components/Ai/AiDailySpend.vue"
+import AiModelSpend from "@/Components/Ai/AiModelSpend.vue"
+import AiLiveBadge from "@/Components/Ai/AiLiveBadge.vue"
+import { useLiveAiUsage } from "@/Composables/useLiveAiUsage"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faRobot, faExclamationTriangle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -27,9 +32,6 @@ const props = defineProps<{
         key_limit: number | null
         key_limit_remaining: number | null
         key_limit_reset: string | null
-        spent_today: number
-        spent_week: number
-        spent_month: number
         left: number
         low_credit_alert: number
         is_low: boolean
@@ -45,11 +47,8 @@ const props = defineProps<{
         tokens_month: number
     }[]
     daily: { day: string, cost: number, calls: number }[]
+    models: { model: string, label: string, cost: number, calls: number, tokens: number }[]
 }>()
-
-const usd = (value: number) => value > 0 && value < 0.01 ? "<$0.01" : "$" + value.toFixed(2)
-
-const maxDailyCost = computed(() => Math.max(...props.daily.map(d => d.cost), 0.000001))
 
 const totals = computed(() => props.features.reduce((sum, feature) => ({
     today: sum.today + feature.today,
@@ -59,6 +58,8 @@ const totals = computed(() => props.features.reduce((sum, feature) => ({
     calls_month: sum.calls_month + feature.calls_month,
     tokens_month: sum.tokens_month + feature.tokens_month,
 }), { today: 0, week: 0, month: 0, year: 0, calls_month: 0, tokens_month: 0 }))
+
+const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "balance"])
 </script>
 
 <template>
@@ -66,6 +67,8 @@ const totals = computed(() => props.features.reduce((sum, feature) => ({
     <PageHeading :data="pageHead" />
 
     <div class="space-y-6 p-4 text-sm text-gray-700">
+        <AiLiveBadge :is-live="isLive" :last-update="lastUpdate" />
+
         <div v-if="balance?.is_low" class="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
             <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5" fixed-width aria-hidden="true" />
             <div>
@@ -77,44 +80,38 @@ const totals = computed(() => props.features.reduce((sum, feature) => ({
             </div>
         </div>
 
-        <div v-if="!balance" class="rounded-lg border border-gray-200 p-4 text-gray-500">
-            {{ ctrans("OpenRouter balance not available: the key is not set or OpenRouter did not answer.") }}
-        </div>
-
-        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <div class="rounded-lg border p-4" :class="balance.is_low ? 'border-red-300' : 'border-gray-200'">
-                <div class="text-xs text-gray-500">{{ ctrans("Left to spend") }}</div>
-                <div class="mt-1 text-sm font-semibold tabular-nums" :class="balance.is_low ? 'text-red-700' : 'text-gray-900'">{{ usd(balance.left) }}</div>
-            </div>
-            <div class="rounded-lg border border-gray-200 p-4">
-                <div class="text-xs text-gray-500">{{ ctrans("Account credit") }}</div>
-                <div class="mt-1 font-medium tabular-nums">{{ usd(balance.credits_left) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.credits_total) }}</span></div>
-            </div>
-            <div v-if="balance.key_limit !== null" class="rounded-lg border border-gray-200 p-4">
-                <div class="text-xs text-gray-500">{{ ctrans("Key limit") }} <span v-if="balance.key_limit_reset">({{ balance.key_limit_reset }})</span></div>
-                <div class="mt-1 font-medium tabular-nums">{{ usd(balance.key_limit_remaining ?? 0) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.key_limit) }}</span></div>
-            </div>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <div class="rounded-lg border border-gray-200 p-4">
                 <div class="text-xs text-gray-500">{{ ctrans("Spent today") }}</div>
-                <div class="mt-1 font-medium tabular-nums">{{ usd(balance.spent_today) }}</div>
+                <div class="mt-1 font-medium tabular-nums">{{ usd(totals.today) }}</div>
             </div>
             <div class="rounded-lg border border-gray-200 p-4">
                 <div class="text-xs text-gray-500">{{ ctrans("Spent this month") }}</div>
-                <div class="mt-1 font-medium tabular-nums">{{ usd(balance.spent_month) }}</div>
+                <div class="mt-1 text-sm font-semibold tabular-nums text-gray-900">{{ usd(totals.month) }}</div>
+            </div>
+            <template v-if="balance">
+                <div class="rounded-lg border p-4" :class="balance.is_low ? 'border-red-300' : 'border-gray-200'">
+                    <div class="text-xs text-gray-500">{{ ctrans("OpenRouter left to spend") }}</div>
+                    <div class="mt-1 font-medium tabular-nums" :class="balance.is_low ? 'text-red-700' : ''">{{ usd(balance.left) }}</div>
+                </div>
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <div class="text-xs text-gray-500">{{ ctrans("OpenRouter credit") }}</div>
+                    <div class="mt-1 font-medium tabular-nums">{{ usd(balance.credits_left) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.credits_total) }}</span></div>
+                </div>
+                <div v-if="balance.key_limit !== null" class="rounded-lg border border-gray-200 p-4">
+                    <div class="text-xs text-gray-500">{{ ctrans("Key limit") }} <span v-if="balance.key_limit_reset">({{ balance.key_limit_reset }})</span></div>
+                    <div class="mt-1 font-medium tabular-nums">{{ usd(balance.key_limit_remaining ?? 0) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.key_limit) }}</span></div>
+                </div>
+            </template>
+            <div v-else class="col-span-2 rounded-lg border border-gray-200 p-4 text-xs text-gray-500 sm:col-span-3">
+                {{ ctrans("OpenRouter balance not available: the key is not set or OpenRouter did not answer.") }}
             </div>
         </div>
+        <p class="-mt-4 text-xs text-gray-500">{{ ctrans("Spend includes what OpenAI charges on our own OpenAI key (BYOK); the OpenRouter boxes only show OpenRouter credit.") }}</p>
 
-        <div v-if="daily.length" class="max-w-3xl rounded-lg border border-gray-200 p-4">
-            <div class="flex items-baseline justify-between text-xs text-gray-500">
-                <span>{{ ctrans("Daily spend, last 30 days") }}</span>
-                <span class="tabular-nums">{{ ctrans("peak") }} {{ usd(maxDailyCost) }}</span>
-            </div>
-            <div class="mt-3 flex h-24 items-end gap-0.5">
-                <div v-for="day in daily" :key="day.day" class="flex-1 rounded-t bg-indigo-400 hover:bg-indigo-600"
-                    :style="{ height: Math.max((day.cost / maxDailyCost) * 100, 2) + '%' }"
-                    :title="`${day.day}: ${usd(day.cost)}, ${day.calls} ${ctrans('calls')}`" />
-            </div>
-        </div>
+        <AiDailySpend v-if="daily.length" :daily="daily" />
+
+        <AiModelSpend v-if="models.length" :models="models" />
 
         <div class="overflow-x-auto rounded-lg border border-gray-200">
             <table class="min-w-full text-xs">
@@ -130,8 +127,10 @@ const totals = computed(() => props.features.reduce((sum, feature) => ({
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-for="feature in features" :key="feature.feature">
-                        <td class="px-3 py-2">{{ feature.label }}</td>
+                    <tr v-for="feature in features" :key="feature.feature" class="hover:bg-gray-50">
+                        <td class="px-3 py-2">
+                            <Link :href="route('grp.ai.features.show', { feature: feature.feature })" class="text-indigo-600 hover:underline">{{ feature.label }}</Link>
+                        </td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.today) }}</td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.week) }}</td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.month) }}</td>

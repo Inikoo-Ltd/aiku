@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Events\BroadcastAiUsageChanged;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Helpers\AiTimeSeries;
 use App\Models\Helpers\AiTimeSeriesRecord;
@@ -20,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Rolls the calls saved in ai_usages up into one time series per feature. Dispatched for today after
- * every AI call, so the dashboard is current, and swept nightly.
+ * every AI call and swept nightly; each run tells open AI dashboards over the websocket to reload.
  */
 class ProcessAiTimeSeriesRecords implements ShouldBeUniqueUntilProcessing
 {
@@ -40,6 +41,8 @@ class ProcessAiTimeSeriesRecords implements ShouldBeUniqueUntilProcessing
         foreach ($frequency ? [$frequency] : TimeSeriesFrequencyEnum::cases() as $processFrequency) {
             $this->processFrequency($processFrequency, $from, $to);
         }
+
+        BroadcastAiUsageChanged::dispatch();
     }
 
     protected function processFrequency(TimeSeriesFrequencyEnum $frequency, string $from, string $to): void

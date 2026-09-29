@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -25,6 +26,7 @@ use Throwable;
 class AskJev
 {
     use AsAction;
+    use WithAIGateway;
 
     /**
      * Several questions about one state in a single call.
@@ -47,6 +49,7 @@ class AskJev
                 ->timeout(20)
                 ->retry(2, 500, fn (Throwable $exception) => $exception instanceof ConnectionException)
                 ->withHeaders(['X-Title' => 'Aiku'])
+                ->withMiddleware($this->aiUsageMiddleware())
                 ->post('https://openrouter.ai/api/alpha/decisions', [
                     'model'     => config('services.openrouter.decision_model'),
                     'state'     => $state,
