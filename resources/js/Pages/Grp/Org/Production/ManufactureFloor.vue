@@ -14,6 +14,18 @@ import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 
+interface FloorStep {
+    id: number
+    task_name: string
+    state: string
+    quantity_made: number
+    quantity_required: number
+    blocked_by_step: string | null
+    worked_by: string[]
+    working_on_by: string[]
+    seconds: number
+}
+
 interface FloorTask {
     id: number
     state: string
@@ -29,6 +41,7 @@ interface FloorTask {
     working_on_by: string[]
     blocked_by_step: string | null
     can_start: boolean
+    steps: FloorStep[]
     quantity_required: number
     quantity_made: number
     start_route: { name: string, parameters: object }
@@ -168,6 +181,26 @@ function formatDuration(seconds: number) {
     return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function formatWorked(seconds: number) {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.round((seconds % 3600) / 60)
+    return h ? `${h}h ${m}m` : `${m}m`
+}
+
+function stepStatus(step: FloorStep) {
+    const units = `${step.quantity_made}/${step.quantity_required} ${ctrans('units')}`
+    if (step.state == 'done') {
+        return [ctrans('Done'), units, formatWorked(step.seconds), step.worked_by.join(', ')].filter(Boolean).join(' · ')
+    }
+    if (step.working_on_by.length) {
+        return `${ctrans('In progress')} · ${units} · ${step.working_on_by.join(', ')}`
+    }
+    if (step.blocked_by_step) {
+        return `${ctrans('Waiting for')} ${step.blocked_by_step}`
+    }
+    return `${ctrans('Ready')} · ${units}`
+}
+
 function startTask(task: FloorTask) {
     processing.value = true
     router.post(
@@ -304,6 +337,30 @@ function startTask(task: FloorTask) {
                     @click="startTask(selectedTask)">
                     {{ ctrans('START') }}
                 </button>
+
+                <div class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
+                    <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600">
+                        {{ ctrans('Steps for this product') }} ·
+                        {{ ctrans(':done of :total complete', { done: selectedTask.steps.filter(step => step.state == 'done').length, total: selectedTask.steps.length }) }}
+                    </div>
+                    <button v-for="step in selectedTask.steps" :key="step.id" type="button"
+                        class="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 text-left disabled:cursor-default"
+                        :class="step.id == selectedTask.id ? 'bg-indigo-50' : 'hover:bg-gray-50'"
+                        :disabled="!tasks.some(task => task.id == step.id)"
+                        @click="selectedTaskId = step.id">
+                        <FontAwesomeIcon v-if="step.state == 'done'" icon="fas fa-check-circle" fixed-width class="text-green-600" aria-hidden="true" />
+                        <FontAwesomeIcon v-else-if="step.blocked_by_step" icon="fas fa-lock" fixed-width class="text-gray-400" aria-hidden="true" />
+                        <FontAwesomeIcon v-else-if="step.working_on_by.length" icon="fas fa-play" fixed-width class="text-amber-500" aria-hidden="true" />
+                        <span v-else class="inline-block w-5" />
+                        <div class="min-w-0">
+                            <div class="font-medium" :class="step.state == 'done' ? 'text-gray-500' : ''">{{ step.task_name }}</div>
+                            <div class="text-xs text-gray-500">{{ stepStatus(step) }}</div>
+                        </div>
+                    </button>
+                    <div class="px-4 py-2 text-xs text-gray-400">
+                        {{ ctrans('Only the steps in the recipe of :code are shown', { code: selectedTask.artefact_code }) }}
+                    </div>
+                </div>
             </div>
 
             <div v-else class="flex-1 flex items-center text-gray-400 text-lg">

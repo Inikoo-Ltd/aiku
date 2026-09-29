@@ -1215,7 +1215,9 @@ test('floor marks a later step as blocked until the earlier step is done, then f
         ->viewData('page')['props'];
     $blockedTask = collect($props['tasks'])->firstWhere('id', $secondJobTask->id);
     expect($blockedTask['blocked_by_step'])->toBe($this->manufactureTask->name)
-        ->and($blockedTask['can_start'])->toBeFalse();
+        ->and($blockedTask['can_start'])->toBeFalse()
+        ->and(collect($blockedTask['steps'])->pluck('task_name')->all())->toBe([$this->manufactureTask->name, $secondTask->name])
+        ->and(collect($blockedTask['steps'])->pluck('blocked_by_step')->all())->toBe([null, $this->manufactureTask->name]);
 
     $notReady = collect($props['tasks'])->map(fn (array $task) => !$task['can_start'] || count($task['waiting_for']) > 0)->values();
     expect($notReady->all())->toBe($notReady->sort()->values()->all());
@@ -1230,7 +1232,10 @@ test('floor marks a later step as blocked until the earlier step is done, then f
         ->viewData('page')['props']['tasks'])->firstWhere('id', $secondJobTask->id);
     expect($seenByFirstUser['working_on_by'])->toBe([$secondUser->contact_name ?: $secondUser->username])
         ->and($seenByFirstUser['blocked_by_step'])->toBeNull()
-        ->and($seenByFirstUser['can_start'])->toBeFalse();
+        ->and($seenByFirstUser['can_start'])->toBeFalse()
+        ->and($seenByFirstUser['steps'][0]['worked_by'])->toBe([$firstUser->contact_name ?: $firstUser->username])
+        ->and($seenByFirstUser['steps'][0]['quantity_made'])->toEqual(5)
+        ->and($seenByFirstUser['steps'][1]['working_on_by'])->toBe([$secondUser->contact_name ?: $secondUser->username]);
 
     actingAs($secondUser);
     $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
