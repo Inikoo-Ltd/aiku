@@ -86,7 +86,7 @@ class DraftChatReply implements ShouldBeUnique
             return null;
         }
 
-        $customer = $this->customer($chatSession);
+        $customer = self::knownCustomer($chatSession);
         $facts    = array_filter([
             'order_facts'   => $customer ? GetChatOrderFacts::run($customer, $text) : null,
             'product_facts' => GetChatProductFacts::run($shop, $text) ?: null,
@@ -211,7 +211,7 @@ class DraftChatReply implements ShouldBeUnique
      * Order facts only for somebody aiku already knows as this customer: logged in on the
      * website, or a WhatsApp number or email already linked to them. Never a stranger's say-so.
      */
-    private function customer(ChatSession|MetaChatSession $chatSession): ?Customer
+    public static function knownCustomer(ChatSession|MetaChatSession $chatSession): ?Customer
     {
         $customer = $chatSession instanceof ChatSession ? $chatSession->webUser?->customer : $chatSession->customer;
 

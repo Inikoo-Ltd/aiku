@@ -6917,6 +6917,8 @@ test('website chat out of hours is answered in the conversation, but not after t
         ->and($sentTab->pluck('kind')->contains('noise_check'))->toBeFalse();
 
     $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect($dashboard['readings'])->toHaveKeys(['read', 'helped', 'drafts', 'guides', 'guides_used', 'facts', 'engineer', 'engineer_used']);
+    expect($dashboard['review'])->toBeArray();
     expect($dashboard['daily'])->toHaveCount(30)
         ->and(collect($dashboard['by_kind'])->firstWhere('kind', 'out_of_hours')['total'])->toBeGreaterThanOrEqual(1);
 
@@ -7585,6 +7587,8 @@ test('when only a programmer can fix it staff get one click: the customer joins 
     expect($turn['engineer'])->toMatchArray(['probability' => 0.72, 'platform_label' => 'Shopify', 'ticket' => ['reference' => $known->reference, 'subject' => 'Shopify stock not updating']]);
 
     $added = \App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent);
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $sameBug->id)->latest('id')->first()->only(['engineer', 'used', 'engineer_ticket']))
+        ->toBe(['engineer' => true, 'used' => 'engineer', 'engineer_ticket' => $known->reference]);
     expect($added)->toMatchArray(['reference' => $known->reference, 'added' => true])
         ->and($known->comments()->latest('id')->value('body'))->toContain('My Shopify stock shows 0')
         ->and(\App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent))->toBeNull()
@@ -7603,6 +7607,18 @@ test('when only a programmer can fix it staff get one click: the customer joins 
         ->and($ticket->description)->toContain('Our Shopify stock is wrong again');
 
     expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($newSession('The Shopify stock is broken'))['engineer'])->not->toBeNull();
+
+    $act = fn (string $act, float $p, float $wants = 0.1) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::nextStep(['wants_something' => ['noul' => $wants], 'act' => ['choice' => $act, 'probabilities' => [$act => $p]]]);
+    expect($act('closing', 0.82))->toBe(['kind' => 'close', 'probability' => 0.82])
+        ->and($act('informing', 0.9)['kind'])->toBe('wait')
+        ->and($act('pending', 0.75)['kind'])->toBe('owed')
+        ->and($act('closing', 0.5))->toBeNull()
+        ->and($act('closing', 0.95, 0.8))->toBeNull();
+
+    $reply = $newBug->messages()->create(['message_text' => 'Passed to our developers, we will be back to you', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($newBug, $reply);
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $newBug->id)->latest('id')->first()->only(['reply_message_id', 'reply', 'customer_wrote']))
+        ->toBe(['reply_message_id' => $reply->id, 'reply' => 'Passed to our developers, we will be back to you', 'customer_wrote' => 'Our Shopify stock is wrong again']);
 
     $guides = ['a' => ['title' => 'A', 'summary' => '', 'url' => 'https://shop.test/docs/a'], 'b' => ['title' => 'B', 'summary' => '', 'url' => 'https://shop.test/docs/b']];
     $picked = fn (array $probabilities) => array_column(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestedGuides($guides, ['guide' => ['probabilities' => $probabilities]], 'en'), 'title');
@@ -10496,7 +10512,10 @@ test('jev works out what the customer wants in rounds, and only a clear single q
     ]);
     $classify = fn (string $text) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::run($session, $text, '(nothing yet)');
 
-    $whenBack = $classify('When is NSBag-09 back in stock?');
+    $readingsBefore = \App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->count();
+    $whenBack       = $classify('When is NSBag-09 back in stock?');
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->count())->toBe($readingsBefore + 1)
+        ->and(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->latest('id')->first()->branch)->toBe('stock');
     expect($whenBack['branch'])->toBe('stock')
         ->and($whenBack['topic'])->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::STOCK_AVAILABILITY)
         ->and($session->refresh()->metadata['ai_turn']['answers']['stock_ask'])->toBe(['choice' => 'when_back', 'probability' => 0.9]);
@@ -10531,7 +10550,7 @@ test('jev works out what the customer wants in rounds, and only a clear single q
 
     $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
     $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'guides' => [$hint], 'engineer' => null]], 'last_agent_message_at' => now()->subMinute()]);
-    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBe(['guides' => [$hint], 'engineer' => null])
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBe(['guides' => [$hint], 'engineer' => null, 'facts' => [], 'next_step' => null])
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::guideMessage($hint, 'en'))->toContain("helps:\nConnecting WooCommerce\nhttps://shop.test/docs/connecting-woocommerce\n");
     $session->update(['last_agent_message_at' => now()->addMinute()]);
     expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBeNull();

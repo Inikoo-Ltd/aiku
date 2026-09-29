@@ -11,7 +11,7 @@ import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt, faClock } from "@fal"
+import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt, faClock, faHandsHelping } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 
@@ -23,6 +23,8 @@ interface Dashboard {
     put_aside: number
     overruled: number
     promises: { made: number, kept: number }
+    review: { id: number, at: string, shop: string, branch: string | null, customer: string | null, suggested: { guides?: string[], facts?: string[], engineer?: string, next_step?: string }, draft: string | null, draft_status: string | null, used: string | null, reply: string | null }[]
+    readings: { read: number, helped: number, drafts: number, drafts_used: number, guides: number, guides_used: number, facts: number, engineer: number, engineer_used: number }
 }
 
 const props = defineProps<{
@@ -49,6 +51,19 @@ const cards = computed(() => [
     { label: ctrans("Sent without staff"), value: props.draftStats.auto_sent, note: props.autoSend.enabled ? ctrans("Switched on where earned") : ctrans("Switched off"), icon: faBolt, color: "text-emerald-600" },
     { label: ctrans("Promises kept"), value: `${props.dashboard.promises.kept} / ${props.dashboard.promises.made}`, note: ctrans("Answered within an hour of opening"), icon: faClock, color: "text-sky-600" },
 ])
+
+const percentOf = (count: number, total: number) => total ? Math.round(100 * count / total) + "%" : "—"
+
+const helpRows = computed(() => {
+    const readings = props.dashboard.readings
+
+    return [
+        { label: ctrans("AI draft replies"), offered: readings.drafts, used: readings.drafts_used },
+        { label: ctrans("Guides"), offered: readings.guides, used: readings.guides_used },
+        { label: ctrans("Facts from aiku"), offered: readings.facts, used: null },
+        { label: ctrans("Programmers card"), offered: readings.engineer, used: readings.engineer_used },
+    ]
+})
 
 const dayLabel = (date: string) => new Date(date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short" })
 
@@ -123,6 +138,65 @@ const colorOf = (index: number) => donutChart.value.datasets[0].backgroundColor[
             </template>
             <div class="h-72">
                 <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
+            </div>
+        </DashboardWidgetBox>
+
+        <DashboardWidgetBox storageKey="chat_ai_dashboard_help_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon :icon="faHandsHelping" class="text-emerald-600" fixed-width />
+                    {{ ctrans("Help offered in the inbox, last 30 days") }}
+                </span>
+            </template>
+            <p class="text-sm text-gray-700">
+                {{ ctrans(":share of :count customer messages had something to offer", { share: percentOf(dashboard.readings.helped, dashboard.readings.read), count: dashboard.readings.read }) }}
+            </p>
+            <table class="mt-2 w-full text-sm tabular-nums">
+                <thead>
+                    <tr class="text-left text-xs text-gray-500">
+                        <th class="py-1 font-normal"></th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Offered") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Of all messages") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Used by staff") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in helpRows" :key="row.label" class="border-b border-gray-100 last:border-0">
+                        <td class="py-1.5 text-gray-700">{{ row.label }}</td>
+                        <td class="py-1.5 text-right">{{ row.offered }}</td>
+                        <td class="py-1.5 text-right text-gray-500">{{ percentOf(row.offered, dashboard.readings.read) }}</td>
+                        <td class="py-1.5 text-right">{{ row.used === null ? "—" : `${row.used} (${percentOf(row.used, row.offered)})` }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </DashboardWidgetBox>
+
+        <DashboardWidgetBox storageKey="chat_ai_dashboard_review_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon :icon="faHandsHelping" class="text-sky-600" fixed-width />
+                    {{ ctrans("Suggested and what staff wrote, latest 30") }}
+                </span>
+            </template>
+            <p v-if="!dashboard.review.length" class="text-sm text-gray-500">{{ ctrans("Nothing answered yet.") }}</p>
+            <div v-for="row in dashboard.review" :key="row.id" class="grid gap-3 border-b border-gray-100 py-2 text-xs last:border-0 md:grid-cols-3">
+                <div>
+                    <div class="text-[11px] text-gray-400">{{ row.shop }} · {{ row.branch ?? ctrans("no area") }}</div>
+                    <p class="line-clamp-4 whitespace-pre-line text-gray-800" :title="row.customer ?? ''">{{ row.customer }}</p>
+                </div>
+                <div>
+                    <div class="text-[11px] text-gray-400">{{ ctrans("Suggested") }}<span v-if="row.used || row.draft_status"> · {{ row.used ?? row.draft_status }}</span></div>
+                    <p v-if="row.draft" class="line-clamp-4 whitespace-pre-line text-indigo-800">{{ row.draft }}</p>
+                    <p v-for="guide in row.suggested.guides ?? []" :key="guide" class="text-emerald-800">{{ guide }}</p>
+                    <p v-for="fact in row.suggested.facts ?? []" :key="fact" class="text-sky-800">{{ fact }}</p>
+                    <p v-if="row.suggested.engineer" class="text-amber-800">{{ row.suggested.engineer }}</p>
+                    <p v-if="row.suggested.next_step" class="text-gray-700">{{ row.suggested.next_step }}</p>
+                    <p v-if="!row.draft && !Object.keys(row.suggested).length" class="text-gray-400">{{ ctrans("Nothing") }}</p>
+                </div>
+                <div>
+                    <div class="text-[11px] text-gray-400">{{ ctrans("Staff wrote") }}</div>
+                    <p class="line-clamp-4 whitespace-pre-line text-gray-800" :title="row.reply ?? ''">{{ row.reply }}</p>
+                </div>
             </div>
         </DashboardWidgetBox>
 

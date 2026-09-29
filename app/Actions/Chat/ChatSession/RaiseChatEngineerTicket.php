@@ -61,6 +61,7 @@ class RaiseChatEngineerTicket
         $metadata = $chatSession->metadata ?? [];
         data_set($metadata, ClassifyChatTurn::KEY.'.engineer.raised', $ticket->reference);
         $chatSession->update(['metadata' => $metadata]);
+        ClassifyChatTurn::markUsed($chatSession, 'engineer', $ticket->reference);
 
         return ['reference' => $ticket->reference, 'url' => route('grp.tickets.show', $ticket->reference), 'added' => (bool) $known];
     }

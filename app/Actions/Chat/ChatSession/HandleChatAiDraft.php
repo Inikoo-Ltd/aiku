@@ -14,6 +14,7 @@ use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -34,6 +35,27 @@ class HandleChatAiDraft
     public function inMetaChatSession(MetaChatSession $metaChatSession): JsonResponse
     {
         return $this->show($metaChatSession);
+    }
+
+    public function suggestionUsed(ChatSession $chatSession, Request $request): JsonResponse
+    {
+        return $this->recordUse($chatSession, $request);
+    }
+
+    public function suggestionUsedInMetaChatSession(MetaChatSession $metaChatSession, Request $request): JsonResponse
+    {
+        return $this->recordUse($metaChatSession, $request);
+    }
+
+    private function recordUse(ChatSession|MetaChatSession $chatSession, Request $request): JsonResponse
+    {
+        if (!$this->getAuthorisedChatAgent($chatSession)) {
+            return response()->json(['success' => false], 403);
+        }
+
+        ClassifyChatTurn::markUsed($chatSession, $request->validate(['kind' => ['required', 'in:guide,close,closing_message,wait']])['kind']);
+
+        return response()->json(['success' => true]);
     }
 
     public function take(ChatAiDraft $chatAiDraft): JsonResponse

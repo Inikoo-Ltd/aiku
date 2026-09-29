@@ -28,6 +28,8 @@ class SettleChatAiDraft
 
     public function handle(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): ?ChatAiDraft
     {
+        ClassifyChatTurn::recordReply($chatSession, $reply);
+
         $draft = DraftChatReply::pendingDraft($chatSession);
 
         if (!$draft) {

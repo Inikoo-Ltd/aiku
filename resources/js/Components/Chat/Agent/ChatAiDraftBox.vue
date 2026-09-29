@@ -8,7 +8,7 @@
 import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRobot, faBookOpen, faBug } from "@fal"
+import { faRobot, faBookOpen, faBug, faDatabase, faCommentCheck } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -18,7 +18,7 @@ const props = defineProps<{
     preview?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string): void }>()
+const emit = defineEmits<{ (e: "use", text: string): void, (e: "action", action: "close" | "wait"): void }>()
 
 interface Draft {
     id: number
@@ -46,6 +46,8 @@ interface Engineer {
 const draft = ref<Draft | null>(null)
 const guides = ref<Guide[]>([])
 const engineer = ref<Engineer | null>(null)
+const facts = ref<string[]>([])
+const nextStep = ref<{ kind: "close" | "wait" | "owed", probability: number, message?: string | null } | null>(null)
 const raising = ref(false)
 const raised = ref<{ reference: string, url: string, added: boolean } | null>(null)
 const busy = ref(false)
@@ -56,6 +58,8 @@ const load = async () => {
     draft.value = null
     guides.value = []
     engineer.value = null
+    facts.value = []
+    nextStep.value = null
     if (!props.sessionUlid || props.readOnly) return
 
     try {
@@ -66,6 +70,8 @@ const load = async () => {
         draft.value = data?.data ?? null
         guides.value = data?.suggestions?.guides ?? []
         engineer.value = data?.suggestions?.engineer ?? null
+        facts.value = data?.suggestions?.facts ?? []
+        nextStep.value = data?.suggestions?.next_step ?? null
     } catch {
         draft.value = null
         guides.value = []
@@ -77,14 +83,38 @@ const usedKey = ref<string | null>(null)
 const suggestionsKey = computed(() => [draft.value?.id ?? "", ...guides.value.map((guide) => guide.url)].join("|"))
 const used = computed(() => usedKey.value !== null && usedKey.value === suggestionsKey.value)
 const shownGuides = computed(() => used.value ? [] : guides.value.filter((guide) => !draft.value?.text.includes(guide.url)))
-const main = computed<"draft" | "guide" | "engineer" | null>(() => {
+const main = computed<"draft" | "guide" | "engineer" | "next" | null>(() => {
     if (used.value) return null
 
-    return draft.value ? "draft" : shownGuides.value.length ? "guide" : engineer.value ? "engineer" : null
+    return draft.value ? "draft" : shownGuides.value.length ? "guide" : engineer.value ? "engineer" : nextStep.value ? "next" : null
 })
 const useText = (text: string) => {
     usedKey.value = suggestionsKey.value
     emit("use", text)
+}
+
+const recordUse = (kind: "guide" | "close" | "closing_message" | "wait") => {
+    if (!props.sessionUlid) return
+    const url = props.whatsapp
+        ? route("grp.api.chats.meta.sessions.suggestion_used", [props.sessionUlid])
+        : route("grp.api.chats.sessions.suggestion_used", [props.sessionUlid])
+    axios.post(url, { kind }).catch(() => null)
+}
+
+const suggestGuide = (guide: Guide) => {
+    useText(guide.message ?? `${guide.title}\n${guide.url}`)
+    recordUse("guide")
+}
+
+const takeNextStep = (action: "close" | "wait") => {
+    recordUse(action)
+    usedKey.value = suggestionsKey.value
+    emit("action", action)
+}
+
+const useGoodbye = (message: string) => {
+    recordUse("closing_message")
+    useText(message)
 }
 const alsoGuides = computed(() => main.value === "guide" ? shownGuides.value.slice(1) : shownGuides.value)
 const raisedReference = computed(() => raised.value?.reference ?? engineer.value?.raised ?? null)
@@ -152,7 +182,11 @@ onBeforeUnmount(stopListening)
 </script>
 
 <template>
-    <div v-if="main || (used && engineer)" class="mb-1.5 text-xs">
+    <div v-if="main || (used && engineer) || facts.length" class="mb-1.5 text-xs">
+        <div v-if="facts.length" class="mb-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 text-[11px] text-gray-500">
+            <span class="flex items-center gap-1"><FontAwesomeIcon :icon="faDatabase" fixed-width class="text-sky-600" />{{ ctrans("In aiku:") }}</span>
+            <span v-for="fact in facts" :key="fact" class="text-gray-700">{{ fact }}</span>
+        </div>
         <div v-if="main === 'draft' && draft" class="rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2">
             <div class="flex items-center gap-1.5 text-[11px] text-indigo-700">
                 <FontAwesomeIcon :icon="faRobot" fixed-width />
@@ -183,7 +217,7 @@ onBeforeUnmount(stopListening)
                     class="rounded-md px-2.5 py-0.5 text-[11px] text-emerald-800 ring-1 ring-inset ring-emerald-300 hover:bg-white">
                     {{ ctrans("Read guide") }}
                 </a>
-                <button v-if="!preview" type="button" @click="useText(shownGuides[0].message ?? `${shownGuides[0].title}\n${shownGuides[0].url}`)"
+                <button v-if="!preview" type="button" @click="suggestGuide(shownGuides[0])"
                     class="rounded-md bg-emerald-600 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-500">
                     {{ ctrans("Suggest it to the customer") }}
                 </button>
@@ -215,12 +249,35 @@ onBeforeUnmount(stopListening)
             </div>
         </div>
 
+        <div v-else-if="main === 'next' && nextStep" class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+            <div class="flex items-center gap-1.5 text-[11px] text-gray-600">
+                <FontAwesomeIcon :icon="faCommentCheck" fixed-width />
+                <span>{{ nextStep.kind === "close" ? ctrans("The customer seems to be done") : nextStep.kind === "wait" ? ctrans("The customer is sending us something") : ctrans("We still owe this customer something") }} · {{ ctrans(":percent% sure", { percent: Math.round(nextStep.probability * 100) }) }}</span>
+            </div>
+            <p v-if="nextStep.kind === 'close' && nextStep.message" class="mt-1 whitespace-pre-line text-gray-800">{{ nextStep.message }}</p>
+            <p v-else-if="nextStep.kind === 'owed'" class="mt-1 text-gray-600">{{ ctrans("Check what we promised before closing.") }}</p>
+            <div v-if="!preview && nextStep.kind !== 'owed'" class="mt-2 flex gap-2">
+                <button v-if="nextStep.kind === 'close' && nextStep.message" type="button" @click="useGoodbye(nextStep.message)"
+                    class="rounded-md bg-gray-700 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-gray-600">
+                    {{ ctrans("Use goodbye message") }}
+                </button>
+                <button v-if="nextStep.kind === 'close'" type="button" @click="takeNextStep('close')"
+                    class="rounded-md px-2.5 py-0.5 text-[11px] text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-white">
+                    {{ ctrans("End chat") }}
+                </button>
+                <button v-if="nextStep.kind === 'wait'" type="button" @click="takeNextStep('wait')"
+                    class="rounded-md bg-gray-700 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-gray-600">
+                    {{ ctrans("Wait 3 days for them") }}
+                </button>
+            </div>
+        </div>
+
         <div v-if="alsoGuides.length || (engineer && main !== 'engineer')" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 text-[11px] text-gray-500">
             <span v-if="main">{{ ctrans("Also:") }}</span>
             <span v-for="guide in alsoGuides" :key="guide.url" class="flex items-center gap-1">
                 <FontAwesomeIcon :icon="faBookOpen" fixed-width class="text-emerald-600" />
                 <a :href="guide.url" target="_blank" rel="noopener" class="text-gray-700 hover:underline" :title="guide.summary">{{ guide.title }}</a>
-                <button v-if="!preview" type="button" class="text-emerald-700 underline" @click="useText(guide.message ?? `${guide.title}\n${guide.url}`)">{{ ctrans("suggest") }}</button>
+                <button v-if="!preview" type="button" class="text-emerald-700 underline" @click="suggestGuide(guide)">{{ ctrans("suggest") }}</button>
             </span>
             <span v-if="engineer && main !== 'engineer'" class="flex items-center gap-1">
                 <FontAwesomeIcon :icon="faBug" fixed-width class="text-amber-600" />
