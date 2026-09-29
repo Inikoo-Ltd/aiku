@@ -21,6 +21,7 @@ use App\Models\Accounting\PaymentAccount;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class PayInvoice extends OrgAction
@@ -31,26 +32,27 @@ class PayInvoice extends OrgAction
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Payment
     {
 
-        $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
+        return DB::transaction(function () use ($invoice, $paymentAccount, $modelData) {
+            $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
 
-        if ($paymentAccount->is_accounts) {
-            $creditTransactionData = [
-                'amount'     => -$payment->amount,
-                'type'       => CreditTransactionTypeEnum::PAYMENT,
-                'payment_id' => $payment->id,
-            ];
-            StoreCreditTransaction::make()->action($invoice->customer, $creditTransactionData);
-        }
+            if ($paymentAccount->is_accounts) {
+                $creditTransactionData = [
+                    'amount'     => -$payment->amount,
+                    'type'       => CreditTransactionTypeEnum::PAYMENT,
+                    'payment_id' => $payment->id,
+                ];
+                StoreCreditTransaction::make()->action($invoice->customer, $creditTransactionData);
+            }
 
-        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-        if ($invoice->order) {
-            AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
-        }
+            AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+            if ($invoice->order) {
+                AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
+            }
 
-        ProcessInvoicePaidNotification::dispatch($invoice->id);
+            ProcessInvoicePaidNotification::dispatch($invoice->id);
 
-
-        return $payment;
+            return $payment;
+        });
     }
 
     public function rules(): array

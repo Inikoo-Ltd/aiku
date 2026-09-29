@@ -19,6 +19,7 @@ use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\OmegaInvoice;
 use App\Actions\Accounting\Invoice\OmegaManyInvoice;
+use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
@@ -3764,4 +3765,36 @@ test('a payment can not be refunded against another customer\'s invoice, when it
     } catch (ValidationException $e) {
         expect($e->errors())->toBe(['amount' => ['Only a successful payment can be refunded, this one is In Process']]);
     }
+});
+
+test('money paid out to a refund by any route stops at what the refund still owes, and a refused payment leaves nothing behind', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $refund         = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), [
+        'type'         => InvoiceTypeEnum::REFUND,
+        'gross_amount' => -20,
+        'net_amount'   => -20,
+        'total_amount' => -20,
+        'in_process'   => false,
+    ]));
+    $refundPayment = fn (float $amount) => [
+        'amount' => -$amount,
+        'type'   => PaymentTypeEnum::REFUND->value,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ];
+    $paymentsBefore = Payment::count();
+
+    PayInvoice::make()->action($refund, $paymentAccount, $refundPayment(12));
+
+    expect(fn () => PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8.01)))->toThrow(ValidationException::class, 'left to pay on this refund')
+        ->and(Payment::count())->toBe($paymentsBefore + 1)
+        ->and(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(12.0);
+
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8));
+
+    expect(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(20.0)
+        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID);
 });

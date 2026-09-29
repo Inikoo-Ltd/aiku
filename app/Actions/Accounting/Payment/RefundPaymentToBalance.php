@@ -15,7 +15,6 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -123,12 +122,7 @@ class RefundPaymentToBalance extends OrgAction
             Order::lockForUpdate()->findOrFail($invoice->order_id);
         }
 
-        if ($invoice->type === InvoiceTypeEnum::REFUND) {
-            $refund = Invoice::lockForUpdate()->findOrFail($invoice->id);
-            if ($amount > round(abs((float) $refund->total_amount) - abs((float) $refund->payment_amount), 2)) {
-                throw ValidationException::withMessages(['amount' => __('The amount is more than is left to pay on this refund')]);
-            }
-        }
+        AttachPaymentToInvoice::lockRefundToPay($invoice, $amount);
 
         return $payment;
     }
