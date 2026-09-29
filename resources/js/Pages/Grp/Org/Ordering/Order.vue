@@ -1994,7 +1994,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
+                    <div v-if="isChargeEditable && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
