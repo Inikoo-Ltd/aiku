@@ -40,7 +40,7 @@ class ArchiveShopMailbox
 {
     use AsAction;
 
-    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--q|queue : Run every mailbox side by side on the queue}';
+    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--queue : Run every mailbox side by side on the queue}';
 
     private const int TEXT_LIMIT = 20000;
 

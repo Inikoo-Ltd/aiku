@@ -7000,7 +7000,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
 });
 
 test('a question about an order gets a draft written from that customer\'s order, and what staff do with it is counted', function () {
-    config(['chat.ai_drafts' => true, 'askbot-laravel.openai_api_key' => 'test-key', 'auto-translations.default_driver_detect_language' => 'gpt-5-nano', 'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key']);
+    config(['chat.ai_drafts' => true, 'askbot-laravel.openai_api_key' => 'test-key']);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
 
     $customer  = createOwnCustomer($this->shop, 'ai-draft-orders');
@@ -7207,8 +7207,6 @@ test('a draft goes to the customer without staff only out of hours, only once ea
         'chat.ai_auto_send.enabled'        => true,
         'chat.ai_auto_send.min_decided'    => 3,
         'askbot-laravel.openai_api_key'    => 'test-key',
-        'auto-translations.default_driver_detect_language' => 'gpt-5-nano',
-        'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key',
     ]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
     $schedule = outOfHoursTestSchedule($this->shop);
@@ -7314,8 +7312,6 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         'chat.ai_auto_send.enabled'      => true,
         'chat.ai_auto_send.min_decided'  => 3,
         'askbot-laravel.openai_api_key'  => 'test-key',
-        'auto-translations.default_driver_detect_language' => 'gpt-5-nano',
-        'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key',
     ]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
     $schedule = outOfHoursTestSchedule($this->shop);
@@ -7628,6 +7624,9 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->count())->toBe(2)
         ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
     \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
+
+    $this->artisan('mailbox:archive', ['shop' => $this->shop->slug, '--queue' => true])->expectsOutput($this->shop->slug.': queued')->assertExitCode(0);
+    \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(2);
 
     \App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->delete();
     \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12));
