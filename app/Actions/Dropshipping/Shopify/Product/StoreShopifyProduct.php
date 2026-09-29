@@ -398,6 +398,7 @@ class StoreShopifyProduct extends RetinaAction
 
         $otherPortfolios = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
             ->where('id', '!=', $portfolio->id)
+            ->where('status', true)
             ->where(fn ($query) => $query->whereIn('platform_product_variant_id', array_column($listings, 'variant_id'))->orWhereIn('platform_product_id', array_column($listings, 'product_id')))
             ->get(['platform_product_id', 'platform_product_variant_id', 'sku']);
 

@@ -156,17 +156,20 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 [$senderId, $ordersReachSender] = self::sharedListingSender($holders, $shopifyData['sku']);
 
                 if ($senderId !== $portfolio->id || isset($variantsSent[$variantId])) {
+                    $otherCodes = array_filter(array_column(array_diff_key($holders, [$portfolio->id => true]), 'code'));
                     $portfolio->update(['stock_last_fail_updated_at' => now()]);
                     UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
                         'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                        'response' => 'This Shopify listing is also linked to '.implode(', ', array_filter(array_column(array_diff_key($holders, [$portfolio->id => true]), 'code'))).', so its stock is not sent'
+                        'response' => $otherCodes
+                            ? 'This Shopify listing is also linked to '.implode(', ', $otherCodes).', so its stock is not sent'
+                            : 'This Shopify listing already got its stock from another product, so its stock is not sent'
                     ]);
                     continue;
                 }
 
                 if (!$ordersReachSender) {
                     $availableQuantity = 0;
-                    $sharedListingNote = 'Several products are linked to this Shopify listing and none of them alone carries its sku, so it can not be told which product it sells and 0 is sent';
+                    $sharedListingNote = 'Several products are linked to this Shopify listing and it can not be told which of them it sells, so 0 is sent';
                 }
             }
 
@@ -259,7 +262,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $portfolio?->update([
                     'stock_last_fail_updated_at' => now(),
                 ]);
-                if ($portfolio && str_contains($failedIndices[$index], 'not stocked at the location')) {
+                if ($portfolio && str_contains($failedIndices[$index], 'not stocked at the location') && !$portfoliosToUpdateData[$portfolioId]['note']) {
                     StoreShopifyLocationToProductVariant::dispatch($portfolio);
                 }
                 if ($log) {

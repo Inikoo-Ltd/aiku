@@ -1936,6 +1936,13 @@ test('an upload is refused when the shopify store has a listing with the same sk
     StoreShopifyProduct::run($portfolio->refresh());
     expect(ShopifyFake::calls('productCreate'))->toHaveCount(1);
 
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $sibling->id)->update(['status' => false]);
+    $fake(['7801']);
+    [$stored] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and(ShopifyFake::calls('productCreate'))->toBe([]);
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $sibling->id)->update(['status' => true]);
+
     $sibling->update(['sku' => 'taken-1-bundle']);
     $fake(['7801']);
     [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
@@ -2055,11 +2062,13 @@ test('a product is never added to a shopify product whose only variant belongs t
     [$stored, $message] = StoreShopifyProductVariant::run($uploaded->refresh());
 
     expect($matched->refresh()->platform_product_id)->toBeNull()
-        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product as its own listing instead')
+        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so it was not added. Upload this product as its own listing instead')
         ->and($stored)->toBeFalse()
         ->and($message)->toBe($matched->errors_response['message'])
         ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([])
+        ->and($uploaded->refresh()->platform_product_id)->toBeNull()
         ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900');
+    $uploaded->update(['platform_product_id' => 'gid://shopify/Product/7900']);
 
     ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
@@ -2067,4 +2076,37 @@ test('a product is never added to a shopify product whose only variant belongs t
 
     ShopifyFake::fake(['productOnlyVariant' => ShopifyFake::graphql([], [['message' => 'Throttled']])]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeFalse();
+
+    $holder->update(['platform_product_variant_id' => null]);
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8999'])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $holder->id)->update(['status' => false]);
+    ShopifyFake::fake([]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
+        ->and(ShopifyFake::calls('productOnlyVariant'))->toBe([]);
+});
+
+test('repair leaves disabled portfolios and portfolios already on their own listing alone', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'repair-skips-own-listing')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/9401', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8401', 'platform_status' => true]);
+    $code = Str::lower($this->product->code);
+
+    $snapshot = fn (string $productId) => [
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 1,
+        'products'           => [$productId => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8401', 'sku' => $code, 'at_location' => false]]]],
+        'product_ids_by_sku' => [$code => [$productId => true]],
+    ];
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9402'));
+
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
+        ->and($portfolio->refresh()->isShopifyVariantAdopted())->toBeFalse();
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $portfolio->id)->update(['status' => false]);
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9401');
 });

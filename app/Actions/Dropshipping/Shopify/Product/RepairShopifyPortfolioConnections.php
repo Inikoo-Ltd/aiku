@@ -13,13 +13,16 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Re-points the portfolios the reconciliation found linked to a product that is gone from the shop
- * onto the one active product whose single variant carries the same SKU (HELP-3205).
+ * Re-points the active portfolios the reconciliation found broken (linked to a product that is gone,
+ * archived or does not carry their sku, or never linked) onto the one active product of the shop
+ * whose variant carries their SKU (HELP-3205, CUS-1746). A portfolio already linked to that product is
+ * left as it is.
  *
  * Only our own portfolio rows are written, nothing is sent to Shopify. The product being linked to is
  * the merchant's own listing, so the portfolio is marked as an adopted variant: title, description,
@@ -63,15 +66,20 @@ class RepairShopifyPortfolioConnections
             ->pluck('id', 'platform_product_variant_id')
             ->all();
 
-        $portfolioIdsBySku = [];
-        foreach ($customerSalesChannel->portfolios()->select(['id', 'item_code', 'sku'])->cursor() as $portfolio) {
+        $portfolioIdsBySku  = [];
+        $activePortfolioIds = [];
+        foreach ($customerSalesChannel->portfolios()->select(['id', 'item_code', 'sku', 'status'])->cursor() as $portfolio) {
+            if ($portfolio->status) {
+                $activePortfolioIds[$portfolio->id] = true;
+            }
+
             foreach (array_filter([$portfolio->item_code, $portfolio->sku]) as $sku) {
                 $portfolioIdsBySku[Str::lower(trim($sku))][$portfolio->id] = true;
             }
         }
 
         foreach ($report['rows'] as $row) {
-            if ($row['repair'] !== 'repairable') {
+            if ($row['repair'] !== 'repairable' || !isset($activePortfolioIds[$row['portfolio_id']]) || $row['platform_product_id'] === $row['repair_product_id']) {
                 continue;
             }
 
@@ -125,14 +133,16 @@ class RepairShopifyPortfolioConnections
 
     private function repoint(Portfolio $portfolio, array $row): void
     {
-        UpdatePortfolio::run($portfolio, [
-            'platform_product_id'         => $row['repair_product_id'],
-            'platform_product_variant_id' => $row['repair_variant_id'],
-            'platform_status'             => $row['repair_at_location'],
-            'errors_response'             => null
-        ]);
+        DB::transaction(function () use ($portfolio, $row) {
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_id'         => $row['repair_product_id'],
+                'platform_product_variant_id' => $row['repair_variant_id'],
+                'platform_status'             => $row['repair_at_location'],
+                'errors_response'             => null
+            ]);
 
-        $portfolio->markShopifyVariantAdopted(true);
+            $portfolio->markShopifyVariantAdopted(true);
+        });
     }
 
     public function asCommand(Command $command): int

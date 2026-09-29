@@ -92,9 +92,10 @@ class StoreShopifyProductVariant extends RetinaAction
         if ($replacedVariantOwner !== null) {
             $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
 
-            UpdatePortfolio::run($portfolio, [
-                'errors_response' => $this->portfolioErrorResponse($errorMessage)
-            ]);
+            UpdatePortfolio::run($portfolio, array_merge(
+                ['errors_response' => $this->portfolioErrorResponse($errorMessage)],
+                $replacedVariantOwner === false ? [] : ['platform_product_id' => null, 'platform_product_variant_id' => null, 'platform_status' => false]
+            ));
 
             return [false, $errorMessage];
         }
@@ -253,22 +254,22 @@ class StoreShopifyProductVariant extends RetinaAction
     }
 
     /**
-     * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product that
-     * has no options. When another portfolio of the channel is linked to that variant, adding this one
-     * would silently take its listing away.
+     * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product.
+     * When another active portfolio of the channel is linked to that product, with or without a stored
+     * variant id, that variant is its listing, so adding this one would silently take it away.
      *
      * @return string|false|null  the product code of the portfolio whose variant would be replaced, false when it could not be checked
      */
     public static function ownerOfStandaloneVariantThatWouldBeReplaced(Portfolio $portfolio, string $productId): string|false|null
     {
-        $siblings = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+        $siblingCode = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
             ->where('id', '!=', $portfolio->id)
             ->where('status', true)
             ->where('platform_product_id', $productId)
-            ->whereNotNull('platform_product_variant_id')
-            ->pluck('item_code', 'platform_product_variant_id');
+            ->orderBy('id')
+            ->value('item_code');
 
-        if ($siblings->isEmpty()) {
+        if ($siblingCode === null) {
             return null;
         }
 
@@ -308,19 +309,13 @@ class StoreShopifyProductVariant extends RetinaAction
             return false;
         }
 
-        $variantIds = Arr::pluck(Arr::get($body, 'data.product.variants.edges', []), 'node.id');
-
-        if (count($variantIds) !== 1) {
-            return null;
-        }
-
-        return $siblings->get($variantIds[0]);
+        return count(Arr::get($body, 'data.product.variants.edges', [])) === 1 ? $siblingCode : null;
     }
 
     public static function replacedVariantMessage(string|false $replacedVariantOwner): string
     {
         return $replacedVariantOwner === false
             ? 'Could not check the variants of this Shopify product, nothing was changed'
-            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product as its own listing instead';
+            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so it was not added. Upload this product as its own listing instead';
     }
 }
