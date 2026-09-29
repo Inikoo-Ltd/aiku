@@ -18,6 +18,7 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockTabsEnum;
+use App\Http\Resources\Goods\StockTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
@@ -142,6 +143,10 @@ class ShowStock extends OrgAction
                     Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock)), 'sales_analysis_teaser')
                     : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock))),
 
+                StockTabsEnum::SALES->value => $this->tab == StockTabsEnum::SALES->value ?
+                    fn () => StockTimeSeriesResource::collection(IndexStockTimeSeries::run($stock, StockTabsEnum::SALES->value))
+                    : Inertia::optional(fn () => StockTimeSeriesResource::collection(IndexStockTimeSeries::run($stock, StockTabsEnum::SALES->value))),
+
                 StockTabsEnum::ORG_STOCKS->value => $this->tab == StockTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))
                     : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
@@ -158,7 +163,8 @@ class ShowStock extends OrgAction
             ]
         )->table(IndexTradeUnitsInStock::make()->tableStructure(prefix: StockTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInStock::make()->tableStructure(prefix: StockTabsEnum::ORG_STOCKS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: StockTabsEnum::HISTORY->value));
+            ->table(IndexStockTimeSeries::make()->tableStructure(prefix: StockTabsEnum::SALES->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: StockTabsEnum::HISTORY->value, model: $stock));
     }
 
 
