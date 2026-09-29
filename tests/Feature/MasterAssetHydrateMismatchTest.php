@@ -775,3 +775,14 @@ test('a product that does not follow its master parts keeps its own complete set
 
     expect($rebel->refresh()->is_indivisible)->toBeTrue();
 });
+
+test('a master change still cascades to its products when the save also rehydrates the single trade unit flag', function () {
+    $product = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    $product->updateQuietly(['is_golden_product' => false]);
+    $this->masterAsset->updateQuietly(['is_single_trade_unit' => false, 'is_golden_product' => false]);
+
+    App\Actions\Masters\MasterAsset\UpdateMasterAsset::make()->action($this->masterAsset->refresh(), ['is_golden_product' => true]);
+
+    expect($this->masterAsset->refresh()->is_single_trade_unit)->toBeTrue()
+        ->and($product->refresh()->is_golden_product)->toBeTrue();
+});

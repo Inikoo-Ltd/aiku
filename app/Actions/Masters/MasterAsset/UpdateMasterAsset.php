@@ -196,7 +196,9 @@ class UpdateMasterAsset extends OrgAction
 
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
-        $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+        $changes = [];
+
+        $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits, &$changes) {
             $oldTradeUnitData = $masterAsset->tradeUnits;
 
             /** @var MasterAsset $masterAsset */
@@ -221,6 +223,7 @@ class UpdateMasterAsset extends OrgAction
             }
 
             $this->update($masterAsset, $modelData);
+            $changes = $masterAsset->getChanges();
             $masterAsset->refresh();
 
             if (Arr::has($modelData, 'master_prices')) {
@@ -235,6 +238,8 @@ class UpdateMasterAsset extends OrgAction
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
+        $wasChanged = fn (string|array $attributes): bool => (bool) array_intersect((array) $attributes, array_keys($changes));
+
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
 
         if ($oldMismatchDetected != $masterAsset->mismatch_detected) {
@@ -248,7 +253,7 @@ class UpdateMasterAsset extends OrgAction
             MasterShopHydrateNumberMismatches::run($masterAsset->masterShop);
         }
 
-        if ($masterAsset->wasChanged('unit')) {
+        if ($wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
 
             /**
@@ -281,7 +286,7 @@ class UpdateMasterAsset extends OrgAction
 
         $changedGpsrTexts = array_filter(
             array_keys(TranslateProductGpsrText::REVIEW_FLAGS),
-            fn (string $field) => $masterAsset->wasChanged($field)
+            $wasChanged
         );
 
         if ($changedGpsrTexts) {
@@ -293,7 +298,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('units')) {
+        if ($wasChanged('units')) {
             foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,
@@ -301,7 +306,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('is_for_sale')) {
+        if ($wasChanged('is_for_sale')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::run($product, [
                     'is_for_sale'              => $masterAsset->is_for_sale,
@@ -310,7 +315,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('master_family_id')) {
+        if ($wasChanged('master_family_id')) {
             if ($masterAsset->masterFamily) {
                 foreach ($masterAsset->products as $product) {
                     $family = $masterAsset->masterFamily->productCategories()->where('shop_id', $product->shop_id)->first();
@@ -327,14 +332,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
+        if ($wasChanged(['master_prices', 'master_rrps'])) {
             MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset);
         }
 
-        if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {
+        if ($wasChanged(['price', 'rrp', 'status'])) {
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
 
-            if ($masterAsset->wasChanged('status')) {
+            if ($wasChanged('status')) {
                 GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
                 if ($masterAsset->masterdepartment) {
                     MasterDepartmentHydrateMasterAssets::dispatch($masterAsset->masterDepartment)->delay($this->hydratorsDelay);
@@ -345,7 +350,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('tax_category')) {
+        if ($wasChanged('tax_category')) {
             foreach ($masterAsset->assets as $asset) {
                 UpdateAsset::run($asset, [
                     'tax_category' => $masterAsset->tax_category
@@ -415,7 +420,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('barcode')) {
+        if ($wasChanged('barcode')) {
             SyncBarcodeToMasterAsset::run($masterAsset);
 
             /** A child that has had its own barcode chosen keeps it, like every other override. */
@@ -426,7 +431,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('is_golden_product')) {
+        if ($wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
                     'is_golden_product' => $masterAsset->is_golden_product,
@@ -434,7 +439,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->is_indivisible != $oldMasterAsset->is_indivisible) {
+        if ($wasChanged('is_indivisible')) {
             foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
                 UpdateProduct::make()->action($product, [
                     'is_indivisible' => $masterAsset->is_indivisible,
@@ -442,14 +447,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        PropagateMasterContentToProducts::run($masterAsset, array_keys($masterAsset->getChanges()));
+        PropagateMasterContentToProducts::run($masterAsset, array_keys($changes));
 
-        if ($masterAsset->wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
+        if ($wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
             MasterAssetHydrateAssets::run($masterAsset->id);
         }
 
 
-        if ($masterAsset->wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
+        if ($wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
             CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
             foreach ($masterAsset->products as $product) {
                 CloneProductImagesFromTradeUnits::run($product);
