@@ -78,7 +78,7 @@ class ShowJobOrder extends OrgAction
                     'name'       => 'grp.models.job-order-item.update',
                     'parameters' => ['jobOrderItem' => $item->id],
                 ] : null,
-                'produced_quantity' => (float)($item->tasks->sortByDesc('position')->first()->quantity_made ?? 0),
+                'produced_quantity' => (float)($item->tasks->last()->quantity_made ?? 0),
                 'waiting_for'       => GetJobOrderItemMissingMixes::run($item),
                 'tasks'             => $item->tasks->map(fn (JobOrderItemTask $task) => [
                     'id'                => $task->id,

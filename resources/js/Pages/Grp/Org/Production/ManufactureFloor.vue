@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
@@ -27,6 +27,8 @@ interface FloorTask {
     is_mine: boolean
     waiting_for: string[]
     working_on_by: string[]
+    blocked_by_step: string | null
+    can_start: boolean
     quantity_required: number
     quantity_made: number
     start_route: { name: string, parameters: object }
@@ -137,11 +139,11 @@ const sections = computed(() => {
     const mine = props.tasks.filter(task => task.is_mine)
     const open = props.tasks.filter(task => !task.is_mine)
     if (!props.can_pick_open_jobs) {
-        return [{ key: 'mine', title: trans('Your jobs'), tasks: mine, empty: trans('No jobs addressed to you yet') }]
+        return [{ key: 'mine', title: ctrans('Your jobs'), tasks: mine, empty: ctrans('No jobs addressed to you yet') }]
     }
-    const list = [{ key: 'open', title: trans('Open jobs'), tasks: open, empty: trans('No open jobs right now') }]
+    const list = [{ key: 'open', title: ctrans('Open jobs'), tasks: open, empty: ctrans('No open jobs right now') }]
     if (props.artisan) {
-        list.unshift({ key: 'mine', title: trans('Your jobs'), tasks: mine, empty: trans('No jobs addressed to you, pick one from the open jobs') })
+        list.unshift({ key: 'mine', title: ctrans('Your jobs'), tasks: mine, empty: ctrans('No jobs addressed to you, pick one from the open jobs') })
     }
     return list
 })
@@ -185,11 +187,11 @@ function startTask(task: FloorTask) {
             <div class="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200 bg-white text-center">
                 <div class="py-2">
                     <div class="text-xl font-semibold tabular-nums">{{ today.quantity_made }}</div>
-                    <div class="text-xs text-gray-500">{{ trans('Units today') }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans('Units today') }}</div>
                 </div>
                 <div class="py-2">
                     <div class="text-xl font-semibold tabular-nums">{{ today.sessions }}</div>
-                    <div class="text-xs text-gray-500">{{ trans('Tasks finished') }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans('Tasks finished') }}</div>
                 </div>
             </div>
 
@@ -215,22 +217,25 @@ function startTask(task: FloorTask) {
                         <span>{{ task.task_name }} · {{ task.job_order_reference }}</span>
                         <span class="tabular-nums">{{ task.quantity_made }}/{{ task.quantity_required }}</span>
                     </div>
-                    <div v-if="task.working_on_by.length || task.waiting_for.length" class="text-xs text-amber-600 font-medium truncate">
-                        <span v-if="task.waiting_for.length">{{ trans('Waiting for mix') }}: {{ task.waiting_for.join(', ') }}</span>
-                        <span v-else>{{ trans('Working') }}: {{ task.working_on_by.join(', ') }}</span>
+                    <div v-if="task.blocked_by_step" class="text-xs text-gray-400 font-medium truncate flex items-center gap-1">
+                        <FontAwesomeIcon icon="fas fa-lock" fixed-width aria-hidden="true" /> {{ ctrans('Waiting for') }} {{ task.blocked_by_step }}
+                    </div>
+                    <div v-else-if="task.working_on_by.length || task.waiting_for.length" class="text-xs text-amber-600 font-medium truncate">
+                        <span v-if="task.waiting_for.length">{{ ctrans('Waiting for mix') }}: {{ task.waiting_for.join(', ') }}</span>
+                        <span v-else>{{ ctrans('Working') }}: {{ task.working_on_by.join(', ') }}</span>
                     </div>
                 </button>
             </div>
 
-            <h2 class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ trans('Finished today') }}</h2>
-            <div v-if="!finished_today.length" class="px-3 py-3 text-sm text-gray-400">{{ trans('Nothing finished yet today') }}</div>
+            <h2 class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans('Finished today') }}</h2>
+            <div v-if="!finished_today.length" class="px-3 py-3 text-sm text-gray-400">{{ ctrans('Nothing finished yet today') }}</div>
             <div v-for="session in finished_today" :key="session.id"
                 class="px-3 py-2 border-b border-gray-200 flex justify-between gap-2 text-sm">
                 <div class="min-w-0">
                     <div class="font-semibold truncate">{{ session.artefact_code }}</div>
                     <div class="text-xs text-gray-500 truncate">
                         {{ session.task_name }} · {{ formatDuration(session.seconds) }}
-                        <span v-if="session.quantity_rejected" class="text-red-600">· {{ session.quantity_rejected }} {{ trans('rejected') }}</span>
+                        <span v-if="session.quantity_rejected" class="text-red-600">· {{ session.quantity_rejected }} {{ ctrans('rejected') }}</span>
                     </div>
                 </div>
                 <div class="font-semibold tabular-nums text-green-700 shrink-0">{{ session.quantity_made }}</div>
@@ -242,32 +247,32 @@ function startTask(task: FloorTask) {
 
             <div v-if="open_break" class="w-full max-w-5xl rounded-2xl border-2 border-amber-400 bg-amber-50 p-8 flex items-center justify-between gap-6">
                 <div>
-                    <div class="text-xs uppercase tracking-wide text-amber-700">{{ trans('On break') }} · {{ open_break.planned_minutes }} {{ trans('min') }}</div>
+                    <div class="text-xs uppercase tracking-wide text-amber-700">{{ ctrans('On break') }} · {{ open_break.planned_minutes }} {{ ctrans('min') }}</div>
                     <div class="text-7xl font-mono tabular-nums text-amber-700">{{ breakCountdown }}</div>
                 </div>
                 <button type="button"
                     class="rounded-xl bg-amber-600 text-white text-2xl font-semibold px-10 py-5 disabled:opacity-40"
                     :disabled="breakProcessing" @click="endBreak">
-                    {{ trans('Finish break now') }}
+                    {{ ctrans('Finish break now') }}
                 </button>
             </div>
 
             <div v-else-if="pendingBreak !== null" class="w-full max-w-5xl rounded-lg border border-amber-300 bg-amber-50 p-4 flex items-center justify-between gap-4">
-                <div class="text-2xl">{{ trans('Start a :minutes minute break?', { minutes: pendingBreak }) }}</div>
+                <div class="text-2xl">{{ ctrans('Start a :minutes minute break?', { minutes: pendingBreak }) }}</div>
                 <div class="flex gap-3">
                     <button type="button" class="rounded-lg bg-amber-600 text-white text-xl font-semibold px-8 py-4 disabled:opacity-40"
                         :disabled="breakProcessing" @click="startBreak">
-                        {{ trans('Yes, start break') }}
+                        {{ ctrans('Yes, start break') }}
                     </button>
                     <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-6 py-4"
                         @click="pendingBreak = null">
-                        {{ trans('Cancel') }}
+                        {{ ctrans('Cancel') }}
                     </button>
                 </div>
             </div>
 
             <div v-else class="w-full max-w-5xl flex items-center gap-3">
-                <span class="text-lg text-gray-600">{{ trans('Break') }}:</span>
+                <span class="text-lg text-gray-600">{{ ctrans('Break') }}:</span>
                 <button v-for="minutes in break_options" :key="minutes" type="button"
                     class="rounded-lg border-2 border-amber-300 bg-white text-amber-800 text-xl font-semibold px-6 py-3 hover:bg-amber-50"
                     @click="pendingBreak = minutes">
@@ -275,31 +280,34 @@ function startTask(task: FloorTask) {
                 </button>
             </div>
 
-            <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ trans('Finish your break to continue working') }}</div>
+            <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ ctrans('Finish your break to continue working') }}</div>
 
             <ManufactureWorkingCard v-else-if="open_session" :session="open_session" class="w-full max-w-5xl" />
 
             <div v-else-if="selectedTask" class="flex-1 flex flex-col justify-center w-full max-w-2xl text-center">
                 <div v-if="startError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ startError }}</div>
-                <div class="text-sm text-gray-500">{{ selectedTask.task_name }} · {{ trans('Job order') }} {{ selectedTask.job_order_reference }}</div>
+                <div class="text-sm text-gray-500">{{ selectedTask.task_name }} · {{ ctrans('Job order') }} {{ selectedTask.job_order_reference }}</div>
                 <div class="text-3xl font-semibold mt-2">{{ selectedTask.artefact_code }}</div>
                 <div class="text-xl text-gray-600">{{ selectedTask.artefact_name }}</div>
                 <div class="text-5xl font-semibold tabular-nums my-6">
                     {{ selectedTask.quantity_made }} <span class="text-gray-400 text-3xl">/ {{ selectedTask.quantity_required }}</span>
                 </div>
-                <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ trans('For') }} {{ selectedTask.artisan }}</div>
-                <div v-if="selectedTask.waiting_for.length" class="text-amber-600 font-medium mb-2">{{ trans('Waiting for mix') }}: {{ selectedTask.waiting_for.join(', ') }}</div>
-                <div v-if="selectedTask.working_on_by.length" class="text-amber-600 font-medium mb-2">{{ trans('Working') }}: {{ selectedTask.working_on_by.join(', ') }}</div>
-                <button type="button"
+                <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
+                <div v-if="selectedTask.waiting_for.length" class="text-amber-600 font-medium mb-2">{{ ctrans('Waiting for mix') }}: {{ selectedTask.waiting_for.join(', ') }}</div>
+                <div v-if="selectedTask.blocked_by_step" class="text-gray-500 font-medium mb-2 flex items-center justify-center gap-1">
+                    <FontAwesomeIcon icon="fas fa-lock" fixed-width aria-hidden="true" /> {{ ctrans('Waiting for') }} {{ selectedTask.blocked_by_step }}
+                </div>
+                <div v-else-if="selectedTask.working_on_by.length" class="text-amber-600 font-medium mb-2">{{ ctrans('Working') }}: {{ selectedTask.working_on_by.join(', ') }}</div>
+                <button v-if="selectedTask.can_start" type="button"
                     class="rounded-xl bg-indigo-600 text-white text-2xl font-semibold px-16 py-5 disabled:opacity-40"
                     :disabled="processing"
                     @click="startTask(selectedTask)">
-                    {{ trans('START') }}
+                    {{ ctrans('START') }}
                 </button>
             </div>
 
             <div v-else class="flex-1 flex items-center text-gray-400 text-lg">
-                {{ tasks.length ? trans('Pick a job from the list') : trans('No tasks to do right now') }}
+                {{ tasks.length ? ctrans('Pick a job from the list') : ctrans('No tasks to do right now') }}
             </div>
         </main>
     </div>

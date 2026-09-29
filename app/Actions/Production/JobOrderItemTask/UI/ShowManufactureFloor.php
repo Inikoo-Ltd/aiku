@@ -33,6 +33,9 @@ class ShowManufactureFloor extends OrgAction
 {
     private ?Employee $employee = null;
 
+    /** @var array<int, string[]> */
+    private array $missingMixes = [];
+
     public function handle(Production $production): Production
     {
         return $production;
@@ -87,9 +90,9 @@ class ShowManufactureFloor extends OrgAction
 
         $canPickOpenJobs = $this->canPickOpenJobs($user, $production);
 
-        $tasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
+        $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->live()
             ->where(function ($query) {
@@ -102,10 +105,24 @@ class ShowManufactureFloor extends OrgAction
             ->when(!$canPickOpenJobs, fn ($query) => $query->where('job_orders.employee_id', $this->employee?->id ?? 0))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
+            ->orderBy('job_order_item_tasks.id')
             ->select('job_order_item_tasks.*')
-            ->get()
-            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])])
-            ->sortBy(fn (array $task) => count($task['waiting_for']) > 0)
+            ->get();
+
+        $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
+
+        $tasks = $openTasks
+            ->map(function (JobOrderItemTask $task) use ($openTasksByJobOrderItem, $workingOnBy) {
+                $blockingStep = $task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id));
+                $workingOn    = $workingOnBy->get($task->id, []);
+
+                return $this->serializeTask($task) + [
+                    'working_on_by'   => $workingOn,
+                    'blocked_by_step' => $blockingStep?->manufactureTask->name,
+                    'can_start'       => !$blockingStep && !$workingOn,
+                ];
+            })
+            ->sortBy(fn (array $task) => !$task['can_start'] || count($task['waiting_for']))
             ->values();
 
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
@@ -241,7 +258,7 @@ class ShowManufactureFloor extends OrgAction
             'job_order_reference' => $task->jobOrder->reference,
             'artisan'             => $task->jobOrder->employee?->contact_name,
             'is_mine'             => $this->employee && $task->jobOrder->employee_id == $this->employee->id,
-            'waiting_for'         => array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
+            'waiting_for'         => $this->missingMixes[$task->job_order_item_id] ??= array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
             'quantity_required'   => (float)$task->quantity_required,
             'quantity_made'       => (float)$task->quantity_made,
             'start_route'         => [
