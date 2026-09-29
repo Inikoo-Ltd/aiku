@@ -11,17 +11,18 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
-use OpenAI;
 use Throwable;
 
 class GetGeneratedProductDescription extends OrgAction
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public function handle(string $prompt, array $metadata = []): string
     {
-        $client   = OpenAI::client(config('services.openai.api_key'));
+        $client   = $this->aiClient();
         $language = $metadata['language'] ?? 'English';
         $tone     = $metadata['tone'] ?? 'professional';
         $images   = $metadata['images'] ?? [];
@@ -44,7 +45,7 @@ class GetGeneratedProductDescription extends OrgAction
 
         try {
             $response = $client->chat()->create([
-                'model'      => 'gpt-4o',
+                'model'      => $this->aiModel('gpt-4o'),
                 'messages'   => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user',   'content' => $userContent],

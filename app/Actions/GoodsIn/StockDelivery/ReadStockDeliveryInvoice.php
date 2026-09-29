@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
@@ -17,7 +18,6 @@ use App\Models\Helpers\Media;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -32,6 +32,7 @@ class ReadStockDeliveryInvoice extends OrgAction
 {
     use WithProcurementEditAuthorisation;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public int $jobTimeout = 300;
 
@@ -101,10 +102,10 @@ class ReadStockDeliveryInvoice extends OrgAction
             ."\nSet is_invoice to false when the document is not an invoice or proforma."
             ."\nFor reference, the products we expect on it (our supplier code — name):\n".$expected;
 
-        $response = Http::withToken(config('services.openai.api_key'))
+        $response = $this->aiRequest()
             ->timeout(240)
-            ->post('https://api.openai.com/v1/chat/completions', [
-                'model'           => self::MODEL,
+            ->post('chat/completions', [
+                'model'           => $this->aiModel(self::MODEL),
                 'messages'        => [['role' => 'user', 'content' => [['type' => 'text', 'text' => $prompt], $this->documentPart($media)]]],
                 'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => 'supplier_invoice', 'strict' => true, 'schema' => self::schema()]],
             ]);

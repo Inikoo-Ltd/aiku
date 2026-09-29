@@ -3,8 +3,8 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
-use Illuminate\Support\Facades\Http;
 use App\Exceptions\AICreditException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -12,6 +12,7 @@ use Throwable;
 class AskToAi extends OrgAction
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     /**
      * Send a prompt to AI and get a string response.
@@ -56,18 +57,16 @@ class AskToAi extends OrgAction
             $apiKey = config('askbot-laravel.openai_api_key');
         }
 
-        return $apiKey;
+        return $this->aiApiKey($apiKey);
     }
 
     private function sendRequest(string $apiKey, string $model, string $prompt): ?string
     {
-        $url = 'https://api.openai.com/v1/chat/completions';
-
-        $response = Http::withToken($apiKey)
+        $response = $this->aiRequest($apiKey)
             ->connectTimeout(10)
             ->timeout(30)
-            ->post($url, array_merge([
-                'model' => $model,
+            ->post('chat/completions', array_merge([
+                'model' => $this->aiModel($model),
                 'messages' => [
                     [
                         'role' => 'system',

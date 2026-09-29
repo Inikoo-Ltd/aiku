@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
@@ -23,7 +24,6 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -31,6 +31,7 @@ use Throwable;
 class SuggestPartnerShoppingList extends OrgAction
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -56,7 +57,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ));
         }
 
-        $lines = $instruction && config('services.openai.api_key')
+        $lines = $instruction && $this->aiApiKey()
             ? $this->aiPick($candidates, $budget, $instruction)
             : [];
 
@@ -353,10 +354,10 @@ class SuggestPartnerShoppingList extends OrgAction
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                $response = Http::withToken(config('services.openai.api_key'))
+                $response = $this->aiRequest()
                     ->timeout(300)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model'            => 'gpt-5-nano',
+                    ->post('chat/completions', [
+                        'model'            => $this->aiModel('gpt-5-nano'),
                         'reasoning_effort' => 'low',
                         'messages'         => [['role' => 'user', 'content' => $prompt]],
                     ]);

@@ -9,9 +9,9 @@
 namespace App\Actions\Helpers\Translations;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Exceptions\AICreditException;
 use Exception;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
 use Sentry;
 use Throwable;
@@ -21,6 +21,7 @@ use VildanBina\LaravelAutoTranslation\Contracts\TranslationDriver;
 class ChatGPT5Driver implements TranslationDriver
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     private const BUFFER_FACTOR = 2;
 
@@ -173,13 +174,10 @@ EOL
     {
         $prompt = $this->buildPrompt($texts, $sourceLang, $targetLang);
 
-        $response = Http::baseUrl('https://api.openai.com')
-            ->withHeaders([
-                'Authorization' => 'Bearer '.$this->config['api_key'],
-            ])
+        $response = $this->aiRequest($this->config['api_key'] ?? null)
             ->timeout($this->config['http_timeout'] ?? 30)
-            ->post('/v1/chat/completions', [
-                'model' => $this->config['model'] ?? 'gpt-5-nano',
+            ->post('chat/completions', [
+                'model' => $this->aiModel($this->config['model'] ?? 'gpt-5-nano'),
                 'messages' => $prompt,
                 'temperature' => 1,
                 'max_completion_tokens' => $this->config['max_tokens'] ?? 1000,

@@ -10394,3 +10394,28 @@ test('jev answers yes/no, choice and score questions through openrouter, and not
 
     expect($jev->noul('x', 'y', 'a', 'b'))->toBeNull();
 });
+
+test('ai calls go through openrouter with the provider prefix, and straight to openai without its key', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    config()->set('askbot-laravel.openai_api_key', 'openai-key');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => 'via openrouter']]]]),
+        'api.openai.com/v1/chat/completions'    => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => 'via openai']]]]),
+    ]);
+
+    expect(\App\Actions\Helpers\AI\AskToAi::run('hi', 'gpt-4o-mini'))->toBe('via openrouter');
+
+    $request = \Illuminate\Support\Facades\Http::recorded()->last()[0];
+    expect($request->data()['model'])->toBe('openai/gpt-4o-mini')
+        ->and($request->data()['temperature'])->toBe(0.3)
+        ->and($request->hasHeader('Authorization', 'Bearer or-key'))->toBeTrue();
+
+    config()->set('services.openrouter.api_key', null);
+
+    expect(\App\Actions\Helpers\AI\AskToAi::run('hi', 'gpt-4o-mini'))->toBe('via openai');
+
+    $request = \Illuminate\Support\Facades\Http::recorded()->last()[0];
+    expect($request->data()['model'])->toBe('gpt-4o-mini')
+        ->and($request->hasHeader('Authorization', 'Bearer openai-key'))->toBeTrue();
+});
