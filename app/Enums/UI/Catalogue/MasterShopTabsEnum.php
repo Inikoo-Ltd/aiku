@@ -18,6 +18,7 @@ enum MasterShopTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case SHOPS = 'shops';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -30,6 +31,10 @@ enum MasterShopTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            MasterShopTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             MasterShopTabsEnum::SALES => [
                 'title' => __('Sales'),

@@ -191,8 +191,37 @@ class ShowOrder extends OrgAction
 
     public function getOrderNotes(Order $order): array
     {
+        $noteList = [];
+
+        if ($order->has_gift_message) {
+            $giftMessagePdf = $order->gift_message
+                ? null
+                : $order->attachments()->wherePivot('scope', 'GiftMessage')->first();
+
+            $noteList[] = [
+                "label"       => __("Gift message"),
+                "note"        => $order->gift_message ?: __("PDF uploaded"),
+                "information" => __("The gift message the customer asked to be printed with the order."),
+                "editable"    => false,
+                "field"       => "gift_message",
+                "bgColor"       => "#ececec",
+                "pdf_preview" => $giftMessagePdf ? [
+                    "label" => $order->giftMessagePdfName() ?? __("Gift message"),
+                    "route" => [
+                        "name"       => "grp.media.download",
+                        "parameters" => [
+                            "media"  => $giftMessagePdf->ulid,
+                            "inline" => 1,
+                        ],
+                    ],
+                ] : null,
+                // "textColor"     => "#ececec",
+            ];
+        }
+
         return [
             "note_list" => [
+                ...$noteList,
                 [
                     "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',
@@ -258,6 +287,28 @@ class ShowOrder extends OrgAction
             $order->shop->type == ShopTypeEnum::DROPSHIPPING => GetDropshippingOrderActions::run($order, $canEdit),
             default => GetEcomOrderActions::run($order, $canEdit),
         };
+
+        if (!$canEdit
+            && !$lockedInAurora
+            && $order->state == OrderStateEnum::SUBMITTED
+            && $order->pay_status != OrderPayStatusEnum::PAID
+            && $order->transactions()->exists()
+            && $request->user()->authTo("org-supervisor.{$order->organisation_id}.accounting")) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'key'     => 'send-unpaid-to-warehouse',
+                'label'   => __('Send to warehouse (unpaid)'),
+                'tooltip' => __('Release this order to the warehouse before it is fully paid, e.g. for a customer on payment terms'),
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.state.in-warehouse-unpaid',
+                    'parameters' => [
+                        'order' => $order->id,
+                    ],
+                ],
+            ];
+        }
 
         $allowOrderModification = $canEdit
             && $order->shop->type != ShopTypeEnum::EXTERNAL

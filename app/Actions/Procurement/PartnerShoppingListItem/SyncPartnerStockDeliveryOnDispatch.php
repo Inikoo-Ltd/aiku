@@ -20,7 +20,8 @@ class SyncPartnerStockDeliveryOnDispatch
 
     public function handle(DeliveryNote $deliveryNote): ?StockDelivery
     {
-        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first();
+        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first()
+            ?? StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote);
         if (!$stockDelivery) {
             return null;
         }
@@ -38,7 +39,7 @@ class SyncPartnerStockDeliveryOnDispatch
             ->with('orgStock')
             ->get()
             ->groupBy(fn ($item) => $item->orgStock?->stock_id)
-            ->map(fn ($items) => (float) $items->sum('quantity_dispatched'));
+            ->map(fn ($items) => (float) $items->sum(fn ($item) => (float) $item->quantity_dispatched * (float) ($item->orgStock?->packed_in ?: 1)));
 
         foreach ($stockDelivery->items as $item) {
             $item->update([

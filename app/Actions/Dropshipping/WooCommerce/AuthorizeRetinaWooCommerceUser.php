@@ -169,7 +169,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         return match (true) {
             str_contains($message, 'could not resolve host'), str_contains($message, 'name or service not known') => 'dns_failure',
             str_contains($message, 'ssl certificate problem'), str_contains($message, 'certificate verify failed'), str_contains($message, 'ssl'), str_contains($message, 'tls') => 'ssl_failure',
-            str_contains($message, 'connection refused') => 'connection_refused',
+            str_contains($message, 'connection refused'), str_contains($message, "couldn't connect to server") => 'connection_refused',
             str_contains($message, 'timed out'), str_contains($message, 'timeout') => 'timeout',
             str_contains($message, 'too many redirects'), str_contains($message, 'redirect') => 'redirect_loop',
             default => 'connection_failure',
@@ -181,8 +181,8 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         return match ($this->connectionFailureReason($e)) {
             'dns_failure' => __('We could not resolve your store domain, please check the store url is spelled correctly and the domain is live.'),
             'ssl_failure' => __('Your store SSL certificate could not be verified, it may be expired, self signed or incomplete, please renew it with your hosting provider.'),
-            'connection_refused' => __('Your store refused our connection, please ask your hosting provider to allow requests to the WordPress REST API.'),
-            'timeout' => __('Your store did not answer within 10 seconds, this is usually a firewall blocking our server or a very slow host.'),
+            'connection_refused' => __('Your store refused our connection because its hosting or firewall is blocking our servers. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
+            'timeout' => __('Your store did not answer within 2 minutes. This is usually a firewall blocking our servers or a very slow host. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
             'redirect_loop' => __('Your store url redirects in a loop, please enter the final address of your store.'),
             default => __('Unable to connect to the WooCommerce store, please check your store url.'),
         };

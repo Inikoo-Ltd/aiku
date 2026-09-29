@@ -67,6 +67,14 @@ class EditCharge extends OrgAction
             $fields['amount'] = [
                 'type'  => 'input_number',
                 'label' => __('Amount'),
+                'bind'  => [
+                    'mode'              => 'currency',
+                    'currency'          => $charge->shop->currency->code,
+                    'min'               => 0,
+                    'step'              => 0.25,
+                    'minFractionDigits' => 2,
+                    'maxFractionDigits' => 2,
+                ],
                 'value' => Arr::get($charge->settings, 'amount')
             ];
 
@@ -105,6 +113,7 @@ class EditCharge extends OrgAction
                         'type'        => 'select',
                         'information' => __('The charge is only applied to orders while it is active'),
                         'label'       => __('State'),
+                        'required'    => true,
                         'value'       => $charge->state->value,
                         'options'     => Options::forEnum(ChargeStateEnum::class),
                     ],
@@ -131,6 +140,7 @@ class EditCharge extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'   => $charge->name,
+                    'model' => __('Charge'),
                     'icon'    => [
                         'title' => __('Charge'),
                         'icon'  => 'fal fa-charging-station'

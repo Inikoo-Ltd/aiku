@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use App\Models\Helpers\Ticket;
+use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
@@ -94,6 +95,7 @@ class ChatSession extends Model implements Auditable
         'rating' => 'decimal:1',
         'metadata' => 'array',
         'is_spam' => 'boolean',
+        'is_carrier' => 'boolean',
         'spam_at' => 'datetime',
         'is_highlighted' => 'boolean',
         'highlighted_at' => 'datetime',
@@ -139,6 +141,14 @@ class ChatSession extends Model implements Auditable
     public function tickets(): MorphMany
     {
         return $this->morphMany(Ticket::class, 'source');
+    }
+
+    /**
+     * Colleagues asked to do something for this conversation, e.g. chase a supplier for a document; the chat waits on the open ones.
+     */
+    public function staffTasks(): MorphMany
+    {
+        return $this->morphMany(StaffTask::class, 'model');
     }
 
     public function assignments(): HasMany

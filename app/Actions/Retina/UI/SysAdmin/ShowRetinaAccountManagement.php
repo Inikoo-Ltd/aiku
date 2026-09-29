@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -53,7 +54,20 @@ class ShowRetinaAccountManagement extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Account settings'),
                 'pageHead'    => [
-                    'title' => __('Account settings'),
+                    'title'   => __('Account settings'),
+                    'actions' => PdfCustomerLetterOfAuthorisation::isAvailable($customer->shop) ? [
+                        [
+                            'type'   => 'button',
+                            'style'  => 'secondary',
+                            'label'  => __('Letter of authorisation'),
+                            'icon'   => 'fal fa-file-pdf',
+                            'target' => '_blank',
+                            'route'  => [
+                                'name'       => 'retina.sysadmin.letter_of_authorisation.pdf',
+                                'parameters' => []
+                            ],
+                        ]
+                    ] : [],
                 ],
                 "formData"    => [
                     "blueprint" =>

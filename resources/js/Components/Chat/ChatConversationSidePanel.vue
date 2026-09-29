@@ -208,6 +208,33 @@ interface CustomerProfile {
     last_orders?: LastOrder[]
     previous_chats?: PreviousChat[]
     chat_topics?: { topic: string, label: string, count: number }[]
+    subscriptions?: {
+        channels: Record<string, { subscribed: boolean, unsubscribed_at: string | null }>
+        unsubscribed_in_an_email_at: string | null
+        marketing_emails_last_30_days: { sent_at: string, outbox: string }[]
+        unsubscribe: { name: string, parameters: Record<string, any> } | null
+    }
+    claim?: {
+        is_claim: boolean
+        order: { id: number, reference: string, state: string, named: boolean }
+        photos: number
+        lines: { id: number, transaction_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, mentioned: boolean }[]
+        reason: string
+        reasons: { value: string, label: string }[]
+        replacement: { name: string, parameters: Record<string, any> }
+        replacements: string[]
+        invoiced: Record<number, number>
+        tax_ratio: number
+        currency: string | null
+        refunds: string[]
+        refund: { name: string, parameters: Record<string, any> } | null
+    } | null
+    erasure?: {
+        orders: number
+        invoices: number
+        confirmation: string
+        route: { name: string, parameters: Record<string, any> } | null
+    }
 }
 
 const emptyCustomerProfile = (): CustomerProfile => ({ tags: [], stats: null, email: null, profile_url: null })
@@ -327,6 +354,159 @@ const createFollowUpOrder = async (order: LastOrder) => {
 }
 
 const orderGettingPaymentLink = ref<string | null>(null)
+
+const CHANNEL_LABELS: Record<string, string> = {
+    newsletter: ctrans("Newsletter"),
+    marketing: ctrans("Marketing"),
+    abandoned_cart: ctrans("Abandoned basket"),
+    reorder_reminder: ctrans("Reorder reminder"),
+    basket_low_stock: ctrans("Low stock in basket"),
+    basket_reminder: ctrans("Basket reminder"),
+    price_change_notification: ctrans("Price changes"),
+    gold_reward_reminder: ctrans("Gold reward reminder"),
+    whatsapp_newsletter: ctrans("WhatsApp newsletter"),
+}
+
+const subscribedChannels = computed(() => Object.entries(customerProfile.value.subscriptions?.channels ?? {})
+    .filter(([, channel]) => channel.subscribed)
+    .map(([key]) => CHANNEL_LABELS[key] ?? key))
+
+const lastUnsubscribedAt = computed(() => {
+    const subscriptions = customerProfile.value.subscriptions
+    const dates = [
+        ...Object.values(subscriptions?.channels ?? {}).map((channel) => channel.unsubscribed_at),
+        subscriptions?.unsubscribed_in_an_email_at,
+    ].filter(Boolean) as string[]
+
+    return dates.sort().pop() ?? null
+})
+
+const claimOpen = ref(false)
+const claimReason = ref("")
+const claimPicked = ref<Record<number, number>>({})
+const isReplacing = ref(false)
+
+watch(() => customerProfile.value.claim, (claim) => {
+    claimOpen.value = !!claim?.is_claim
+    claimReason.value = claim?.reason ?? "missing_from_parcel"
+    claimPicked.value = Object.fromEntries((claim?.lines ?? [])
+        .filter((line) => line.mentioned || line.dispatched < line.ordered)
+        .map((line) => [line.id, line.dispatched < line.ordered ? line.ordered - line.dispatched : line.ordered]))
+})
+
+const toggleClaimLine = (line: { id: number, ordered: number }) => {
+    const picked = { ...claimPicked.value }
+    if (line.id in picked) {
+        delete picked[line.id]
+    } else {
+        picked[line.id] = line.ordered
+    }
+    claimPicked.value = picked
+}
+
+const isRefunding = ref(false)
+
+const claimRefundAmount = computed(() => {
+    const claim = customerProfile.value.claim
+    if (!claim) return 0
+    const shares: Record<number, number> = {}
+    for (const line of claim.lines) {
+        const quantity = Number(claimPicked.value[line.id] ?? 0)
+        if (!line.transaction_id || !quantity || !line.ordered) continue
+        shares[line.transaction_id] = Math.max(shares[line.transaction_id] ?? 0, Math.min(1, quantity / line.ordered))
+    }
+    const net = Object.entries(shares).reduce((sum, [transactionId, share]) => sum + (claim.invoiced[Number(transactionId)] ?? 0) * share, 0)
+
+    return Math.round(net * claim.tax_ratio * 100) / 100
+})
+
+const refundClaimToBalance = async () => {
+    const claim = customerProfile.value.claim
+    const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
+    if (!claim?.refund || !items.length || isRefunding.value || !claimRefundAmount.value) return
+    if (!window.confirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
+    isRefunding.value = true
+    try {
+        const res = await axios.post(route(claim.refund.name, claim.refund.parameters), {
+            delivery_note_items: items.map(([id, quantity]) => ({ id: Number(id), quantity: Number(quantity) })),
+        })
+        notify({ title: ctrans("Refunded to balance"), text: `${res.data.reference}: ${Number(res.data.amount).toFixed(2)} ${res.data.currency ?? ""}`, type: "success" })
+        profileLoaded.value = false
+        await loadCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("The refund could not be made"), type: "error" })
+    } finally {
+        isRefunding.value = false
+    }
+}
+
+const createReplacement = async () => {
+    const claim = customerProfile.value.claim
+    const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
+    if (!claim || !items.length || isReplacing.value) return
+    if (!window.confirm(ctrans("Send :count lines again to the customer as a replacement of :order?", { count: String(items.length), order: claim.order.reference }))) return
+    isReplacing.value = true
+    try {
+        const res = await axios.post(route(claim.replacement.name, claim.replacement.parameters), {
+            delivery_note_items: items.map(([id, quantity]) => ({ id: Number(id), quantity: Number(quantity), reason: claimReason.value })),
+            private_warehouse_note: ctrans("Claim in chat conversation :ulid", { ulid: props.session.ulid }),
+        })
+        notify({ title: ctrans("Replacement created"), text: res.data?.reference ?? claim.order.reference, type: "success" })
+        profileLoaded.value = false
+        await loadCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("The replacement could not be created"), type: "error" })
+    } finally {
+        isReplacing.value = false
+    }
+}
+
+const erasureOpen = ref(false)
+const erasureReason = ref("")
+const erasureConfirmation = ref("")
+const isErasing = ref(false)
+
+const openErasure = () => {
+    erasureOpen.value = !erasureOpen.value
+    erasureReason.value ||= ctrans("Asked to have their data deleted, in chat conversation :ulid", { ulid: props.session?.ulid ?? "" })
+}
+
+const eraseCustomer = async () => {
+    const erasure = customerProfile.value.erasure
+    if (!erasure?.route || isErasing.value || erasureConfirmation.value !== erasure.confirmation) return
+    isErasing.value = true
+    try {
+        await axios.post(route(erasure.route.name, erasure.route.parameters), {
+            reason: erasureReason.value,
+            reference: erasureConfirmation.value,
+        })
+        notify({ title: ctrans("Personal data erased"), text: ctrans("Their name, contact details, addresses and conversations are gone; orders and invoices stay, without them"), type: "success" })
+        erasureOpen.value = false
+        customerProfile.value = emptyCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Their data could not be erased"), type: "error" })
+    } finally {
+        isErasing.value = false
+    }
+}
+
+const isUnsubscribing = ref(false)
+
+const unsubscribeFromMarketing = async () => {
+    const unsubscribe = customerProfile.value.subscriptions?.unsubscribe
+    if (!unsubscribe || isUnsubscribing.value) return
+    if (!window.confirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
+    isUnsubscribing.value = true
+    try {
+        const res = await axios.post(route(unsubscribe.name, unsubscribe.parameters))
+        customerProfile.value.subscriptions = { ...res.data.subscriptions, unsubscribe }
+        notify({ title: ctrans("Unsubscribed"), text: ctrans("They will get no more newsletters, marketing or reminders"), type: "success" })
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Could not unsubscribe"), type: "error" })
+    } finally {
+        isUnsubscribing.value = false
+    }
+}
 
 const createPaymentLink = async (order: LastOrder) => {
     if (!order.payment_link || orderGettingPaymentLink.value) return
@@ -783,6 +963,54 @@ const copyChatId = async () => {
                     </div>
                 </div>
 
+                <div v-if="!session.is_guest && customerProfile.claim" class="px-4 py-3 space-y-2 text-xs"
+                    :class="customerProfile.claim.is_claim ? 'bg-amber-50/60' : ''">
+                    <button type="button" class="flex w-full items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider"
+                        :class="customerProfile.claim.is_claim ? 'text-amber-700' : 'text-gray-400 hover:text-gray-600'" @click="claimOpen = !claimOpen">
+                        {{ customerProfile.claim.is_claim ? ctrans("Claim") : ctrans("Replacement") }}
+                        <span class="normal-case font-medium">{{ customerProfile.claim.order.reference }}</span>
+                        <span v-if="!customerProfile.claim.order.named" class="normal-case font-normal text-gray-400">{{ ctrans("(their last dispatched order)") }}</span>
+                    </button>
+                    <template v-if="claimOpen">
+                        <p class="text-gray-500">
+                            <span v-if="customerProfile.claim.photos">{{ ctrans(":count photos sent", { count: String(customerProfile.claim.photos) }) }} · </span>
+                            <span v-if="customerProfile.claim.replacements.length" class="text-amber-700">{{ ctrans("Already replaced") }}: {{ customerProfile.claim.replacements.join(", ") }}</span>
+                            <span v-if="customerProfile.claim.refunds.length" class="text-amber-700"> {{ ctrans("Already refunded") }}: {{ customerProfile.claim.refunds.join(", ") }}</span>
+                            <span v-else>{{ ctrans("Tick what to send again") }}</span>
+                        </p>
+                        <div class="max-h-56 space-y-1 overflow-y-auto">
+                            <label v-for="line in customerProfile.claim.lines" :key="line.id"
+                                class="flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-white"
+                                :class="line.mentioned ? 'font-medium' : ''">
+                                <input type="checkbox" :checked="line.id in claimPicked" @change="toggleClaimLine(line)" />
+                                <span class="shrink-0 text-gray-800">{{ line.code }}</span>
+                                <span class="truncate text-gray-500" :title="line.name ?? ''">{{ line.name }}</span>
+                                <span class="ml-auto shrink-0 tabular-nums" :class="line.dispatched < line.ordered ? 'text-red-600' : 'text-gray-400'"
+                                    v-tooltip="ctrans('Ordered, sent')">{{ line.ordered }}/{{ line.dispatched }}</span>
+                                <input v-if="line.id in claimPicked" v-model.number="claimPicked[line.id]" type="number" min="0" step="1"
+                                    class="w-12 shrink-0 rounded border-gray-300 px-1 py-0 text-xs" />
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select v-model="claimReason" class="flex-1 rounded border-gray-300 py-0.5 text-xs">
+                                <option v-for="reason in customerProfile.claim.reasons" :key="reason.value" :value="reason.value">{{ reason.label }}</option>
+                            </select>
+                            <button type="button" class="shrink-0 rounded px-2 py-1 font-medium text-white disabled:opacity-40"
+                                :style="{ backgroundColor: themePrimary }"
+                                :disabled="isReplacing || !Object.keys(claimPicked).length" @click="createReplacement">
+                                {{ isReplacing ? ctrans("Creating…") : ctrans("Create replacement") }}
+                            </button>
+                        </div>
+                        <div v-if="customerProfile.claim.refund" class="flex items-center justify-end gap-2">
+                            <span class="text-gray-500">{{ ctrans("or refund") }} <span class="font-medium tabular-nums text-gray-800">{{ claimRefundAmount.toFixed(2) }} {{ customerProfile.claim.currency }}</span></span>
+                            <button type="button" class="shrink-0 rounded border border-gray-300 px-2 py-1 font-medium text-gray-700 hover:bg-white disabled:opacity-40"
+                                :disabled="isRefunding || !claimRefundAmount" @click="refundClaimToBalance">
+                                {{ isRefunding ? ctrans("Refunding…") : ctrans("Refund to balance") }}
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
                 <div v-if="!session.is_guest" class="px-4 py-3 space-y-2">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Last orders") }}</p>
                     <div v-if="isLoadingProfile" class="space-y-2">
@@ -821,6 +1049,52 @@ const copyChatId = async () => {
                             :routeFetch="orderTakingItems.add_items.products" :isLoadingSubmit="isAddingItems"
                             withQuantity @submit="addItemsToOrder" />
                     </Modal>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.subscriptions" class="px-4 py-3 space-y-1.5 text-xs">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Emails we send them") }}</p>
+                    <p v-if="!subscribedChannels.length" class="font-medium text-gray-800">{{ ctrans("Unsubscribed from everything") }}</p>
+                    <p v-else class="text-gray-700">{{ ctrans("Subscribed to") }}: {{ subscribedChannels.join(", ") }}</p>
+                    <p v-if="lastUnsubscribedAt" class="text-gray-500">{{ ctrans("Last unsubscribed") }}: {{ formatStatDate(lastUnsubscribedAt) }}</p>
+                    <p class="text-gray-500"
+                        :class="!subscribedChannels.length && customerProfile.subscriptions.marketing_emails_last_30_days.length ? 'text-red-600 font-medium' : ''">
+                        {{ ctrans("Marketing emails in the last 30 days") }}: {{ customerProfile.subscriptions.marketing_emails_last_30_days.length }}<template v-if="customerProfile.subscriptions.marketing_emails_last_30_days.length">, {{ ctrans("last on") }} {{ formatStatDate(customerProfile.subscriptions.marketing_emails_last_30_days[0].sent_at) }}</template>
+                    </p>
+                    <button v-if="subscribedChannels.length && customerProfile.subscriptions.unsubscribe" type="button"
+                        class="font-medium hover:underline disabled:opacity-50" :style="{ color: themePrimary }"
+                        :disabled="isUnsubscribing" @click="unsubscribeFromMarketing">
+                        {{ isUnsubscribing ? ctrans("Unsubscribing…") : ctrans("Unsubscribe from everything") }}
+                    </button>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.erasure" class="px-4 py-3 space-y-2 text-xs">
+                    <button type="button" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hover:text-red-600" @click="openErasure">
+                        {{ ctrans("Erase their data (GDPR)") }}
+                    </button>
+                    <template v-if="erasureOpen">
+                        <p v-if="customerProfile.erasure.orders || customerProfile.erasure.invoices" class="rounded bg-amber-50 p-2 text-amber-800">
+                            {{ ctrans(":orders orders and :invoices invoices. They stay, as the law requires, but no longer say who the customer was.", { orders: String(customerProfile.erasure.orders), invoices: String(customerProfile.erasure.invoices) }) }}
+                        </p>
+                        <p class="text-gray-600">{{ ctrans("Erases their name, contact details, addresses, web logins and conversations, and unsubscribes them from everything. It cannot be undone.") }}</p>
+                        <p v-if="!customerProfile.erasure.route" class="text-gray-500">
+                            {{ customerProfile.erasure.orders || customerProfile.erasure.invoices
+                                ? ctrans("A customer with orders can only be erased by a CRM supervisor: ask one to open this conversation.")
+                                : ctrans("Erasing needs permission to edit customers: ask a CRM supervisor.") }}
+                        </p>
+                        <template v-else>
+                            <textarea v-model="erasureReason" rows="2" class="w-full rounded border-gray-300 text-xs" :placeholder="ctrans('Why')" />
+                            <label class="block text-gray-600">
+                                {{ ctrans("Type :text to confirm", { text: customerProfile.erasure.confirmation }) }}
+                                <input v-model="erasureConfirmation" type="text" class="mt-1 w-full rounded border-gray-300 text-xs" />
+                            </label>
+                            <button type="button"
+                                class="rounded bg-red-600 px-2 py-1 font-medium text-white disabled:opacity-40"
+                                :disabled="isErasing || !erasureReason.trim() || erasureConfirmation !== customerProfile.erasure.confirmation"
+                                @click="eraseCustomer">
+                                {{ isErasing ? ctrans("Erasing…") : ctrans("Erase their data") }}
+                            </button>
+                        </template>
+                    </template>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">

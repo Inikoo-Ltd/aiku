@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue';
+import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useLayoutStore } from "@/Stores/retinaLayout";
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange, faRocketLaunch, faLink, faUnlink } from '@fal';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans';
 import { useFormatTime } from '@/Composables/useFormatTime';
 import Modal from '@/Components/Utils/Modal.vue';
 
@@ -41,12 +42,28 @@ const describeAgent = (userAgent?: string): string => {
 const detailHistory = ref<any>(null);
 const isStaffApp = !String(route().current() ?? '').startsWith('retina.');
 
-defineProps<{
+const props = defineProps<{
     data?: object,
-    tab?: string
+    tab?: string,
+    historyScopeToggle?: boolean
 }>()
 
 const layout = useLayoutStore()
+
+const historyScope = ref<'self' | 'all'>(
+    new URLSearchParams(window.location.search).get('history_scope') === 'all' ? 'all' : 'self'
+)
+
+const setHistoryScope = (scope: 'self' | 'all') => {
+    if (historyScope.value === scope) {
+        return
+    }
+    historyScope.value = scope
+    router.reload({
+        data: { history_scope: scope === 'all' ? 'all' : undefined },
+        only: [props.tab ?? 'history'],
+    })
+}
 
 const getKeys = (oldValues: any, newValues: any): string[] => {
   const keys = new Set([
@@ -160,7 +177,30 @@ const getTradeUnitHistory = (oldData, newData) => {
 </script>
 
 <template>
+    <div v-if="historyScopeToggle" class="flex items-center gap-1 px-4 pt-4">
+        <button
+            type="button"
+            class="rounded-full border px-2.5 py-0.5 text-xs"
+            :class="historyScope === 'self' ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+            @click="setHistoryScope('self')"
+        >
+            {{ ctrans('This family only') }}
+        </button>
+        <button
+            type="button"
+            class="rounded-full border px-2.5 py-0.5 text-xs"
+            :class="historyScope === 'all' ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+            @click="setHistoryScope('all')"
+        >
+            {{ ctrans('Family and everything under it') }}
+        </button>
+    </div>
+
     <Table v-if="data" :resource="data" class="mt-5" :name="tab">
+        <template #cell(record)="{ item: history }">
+            <span class="whitespace-nowrap text-xs text-gray-600">{{ history.record }}</span>
+        </template>
+
         <template #cell(datetime)="{ item: history }">
             <span class="whitespace-nowrap">
                 <FontAwesomeIcon
@@ -175,7 +215,7 @@ const getTradeUnitHistory = (oldData, newData) => {
         </template>
 
         <template #cell(user_name)="{ item: history }">
-            <button type="button" @click="detailHistory = history" v-tooltip="trans('Details')" class="whitespace-nowrap cursor-pointer hover:underline">
+            <button type="button" @click="detailHistory = history" v-tooltip="ctrans('Details')" class="whitespace-nowrap cursor-pointer hover:underline">
                 {{ history.user_name }}
             </button>
         </template>
@@ -243,15 +283,15 @@ const getTradeUnitHistory = (oldData, newData) => {
                         class="text-sm space-y-1"
                     >
                         <div class="flex items-center space-x-2">
-                            <span class="font-bold text-gray-700">{{ trans("Shipper") }}:</span>
+                            <span class="font-bold text-gray-700">{{ ctrans("Shipper") }}:</span>
                             <span class="text-gray-600">{{ history.old_values?.shipper }}</span>
                             <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" size="xs" />
                             <span class="text-gray-800 font-semibold">{{ history.new_values?.shipper }}</span>
                         </div>
                         <div class="text-xs text-gray-500 italic">
                             {{ history.old_values?.locked_by == 'customer'
-                                ? trans("Overrode the shipper chosen by the customer")
-                                : trans("Overrode the lock set by the shipping rules for :scope", { scope: history.old_values?.locked_scope ?? '' }) }}
+                                ? ctrans("Overrode the shipper chosen by the customer")
+                                : ctrans("Overrode the lock set by the shipping rules for :scope", { scope: history.old_values?.locked_scope ?? '' }) }}
                         </div>
                     </div>
                     <div
@@ -273,7 +313,7 @@ const getTradeUnitHistory = (oldData, newData) => {
                                     <FontAwesomeIcon v-if="hasValue(history.new_values[key])" :icon="faArrowRight" fixed-width aria-hidden="true" size="xs" class="text-gray-300 mx-1.5" />
                                 </template>
                                 <span v-if="hasValue(history.new_values[key])">{{ formatValue(history.new_values[key], key) }}</span>
-                                <span v-else class="text-gray-400 italic">{{ trans("cleared") }}</span>
+                                <span v-else class="text-gray-400 italic">{{ ctrans("cleared") }}</span>
                             </span>
                         </template>
                     </div>
@@ -310,30 +350,30 @@ const getTradeUnitHistory = (oldData, newData) => {
 
     <Modal :isOpen="!!detailHistory" @onClose="detailHistory = null" width="w-full max-w-md">
         <div v-if="detailHistory" class="text-sm">
-            <div class="text-base mb-4">{{ trans("Change details") }}</div>
+            <div class="text-base mb-4">{{ ctrans("Change details") }}</div>
             <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                <dt class="text-gray-400 text-right">{{ trans("User") }}</dt>
+                <dt class="text-gray-400 text-right">{{ ctrans("User") }}</dt>
                 <dd>{{ detailHistory.user_name }}</dd>
-                <dt class="text-gray-400 text-right">{{ trans("Date") }}</dt>
+                <dt class="text-gray-400 text-right">{{ ctrans("Date") }}</dt>
                 <dd>{{ useFormatTime(detailHistory.datetime, { formatTime: 'hms' }) }}</dd>
-                <dt class="text-gray-400 text-right">{{ trans("Action") }}</dt>
+                <dt class="text-gray-400 text-right">{{ ctrans("Action") }}</dt>
                 <dd>{{ detailHistory.event?.replace(/_/g, ' ') }}</dd>
                 <template v-if="detailHistory.comments">
-                    <dt class="text-gray-400 text-right">{{ trans("Reason") }}</dt>
+                    <dt class="text-gray-400 text-right">{{ ctrans("Reason") }}</dt>
                     <dd>{{ detailHistory.comments }}</dd>
                 </template>
                 <template v-if="isStaffApp && detailHistory.ip_address">
-                    <dt class="text-gray-400 text-right">{{ trans("IP address") }}</dt>
+                    <dt class="text-gray-400 text-right">{{ ctrans("IP address") }}</dt>
                     <dd>{{ detailHistory.ip_address }}</dd>
                 </template>
                 <template v-if="isStaffApp && detailHistory.user_agent">
-                    <dt class="text-gray-400 text-right">{{ trans("Browser") }}</dt>
+                    <dt class="text-gray-400 text-right">{{ ctrans("Browser") }}</dt>
                     <dd>{{ describeAgent(detailHistory.user_agent) }}</dd>
-                    <dt class="text-gray-400 text-right">{{ trans("User agent") }}</dt>
+                    <dt class="text-gray-400 text-right">{{ ctrans("User agent") }}</dt>
                     <dd class="break-words text-gray-500 text-xs">{{ detailHistory.user_agent }}</dd>
                 </template>
                 <template v-if="isStaffApp && detailHistory.url">
-                    <dt class="text-gray-400 text-right">{{ trans("URL") }}</dt>
+                    <dt class="text-gray-400 text-right">{{ ctrans("URL") }}</dt>
                     <dd class="break-all text-gray-500 text-xs">{{ detailHistory.url }}</dd>
                 </template>
             </dl>

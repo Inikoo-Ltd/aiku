@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -20,9 +21,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\DB;
 
 class GetOrgStockShowcase
@@ -50,7 +49,7 @@ class GetOrgStockShowcase
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'barcodes'           => GetOrgStockBarcodes::run($orgStock),
-                'barcode_update_route' => [
+                'barcode_update_route' => request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation)) ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
                     'parameters' => [
                         'organisation' => $warehouse->organisation->slug,
@@ -58,7 +57,7 @@ class GetOrgStockShowcase
                         'orgStock'     => $orgStock->slug,
                     ],
                     'method'     => 'patch',
-                ],
+                ] : null,
                 'label_route'        => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                     'parameters' => [
@@ -177,59 +176,34 @@ class GetOrgStockShowcase
     }
 
     /**
-     * What is bought but not yet on the shelf: purchase order lines whose order is submitted
-     * or confirmed. Once the delivery is booked in the order settles and drops off this list.
-     *
-     * ponytail: shopping list items that nobody has turned into a purchase order yet are
-     * requests, not future orders, so they are not counted here
-     *
      * @return array<int, array<string, mixed>>
      */
     private function getFutureOrders(OrgStock $orgStock): array
     {
-        return DB::table('purchase_order_transactions')
-            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
-            ->join('organisations', 'organisations.id', 'purchase_orders.organisation_id')
-            ->where('purchase_order_transactions.org_stock_id', $orgStock->id)
-            ->whereNull('purchase_order_transactions.deleted_at')
-            ->whereNull('purchase_orders.deleted_at')
-            ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::SUBMITTED->value,
-                PurchaseOrderStateEnum::CONFIRMED->value,
-            ])
-            ->whereNotIn('purchase_order_transactions.state', [
-                PurchaseOrderTransactionStateEnum::CANCELLED->value,
-                PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value,
-            ])
-            ->orderBy('purchase_orders.estimated_received_at')
-            ->orderBy('purchase_orders.date')
-            ->select([
-                'purchase_order_transactions.id',
-                'purchase_order_transactions.quantity_ordered',
-                'purchase_order_transactions.quantity_cancelled',
-                'purchase_orders.reference',
-                'purchase_orders.slug',
-                'purchase_orders.parent_name',
-                'purchase_orders.delivery_state',
-                'purchase_orders.estimated_received_at',
-                'organisations.slug as organisation_slug',
-            ])
-            ->get()
-            ->map(fn ($row) => [
-                'id'                    => $row->id,
-                'reference'             => $row->reference,
-                'supplier_name'         => $row->parent_name,
-                'delivery_state_label'  => PurchaseOrderDeliveryStateEnum::labels()[$row->delivery_state] ?? $row->delivery_state,
-                'estimated_received_at' => $row->estimated_received_at,
-                'quantity'              => trimDecimalZeros((float) $row->quantity_ordered - (float) $row->quantity_cancelled),
-                'quantity_fractional'   => $this->getFractionalQuantity((float) $row->quantity_ordered - (float) $row->quantity_cancelled, $orgStock->packed_in),
-                'route'                 => [
-                    'name'       => 'grp.org.procurement.purchase_orders.show',
-                    'parameters' => [
-                        'organisation'  => $row->organisation_slug,
-                        'purchaseOrder' => $row->slug,
+        return collect(GetProductIncomingStock::make()->forOrgStocks([$orgStock->id]))
+            ->map(fn (array $line, int $index) => [
+                'id'                    => $line['type'].':'.$line['reference'].':'.$index,
+                'reference'             => $line['reference'],
+                'supplier_name'         => $line['type'] === 'partner_request' ? null : $line['supplier_name'],
+                'delivery_state_label'  => $line['state_label'],
+                'estimated_received_at' => $line['eta'],
+                'is_estimate'           => $line['is_estimate'],
+                'quantity'              => trimDecimalZeros($line['quantity']),
+                'quantity_fractional'   => $this->getFractionalQuantity($line['quantity'], $orgStock->packed_in),
+                'route'                 => match ($line['type']) {
+                    'purchase_order' => [
+                        'name'       => 'grp.org.procurement.purchase_orders.show',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'purchaseOrder' => $line['slug']],
                     ],
-                ],
+                    'stock_delivery' => [
+                        'name'       => 'grp.org.procurement.stock_deliveries.show',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'stockDelivery' => $line['slug']],
+                    ],
+                    default          => [
+                        'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'orgPartner' => $line['org_partner_id']],
+                    ],
+                },
             ])
             ->all();
     }

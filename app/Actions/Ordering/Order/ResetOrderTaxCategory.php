@@ -30,7 +30,7 @@ class ResetOrderTaxCategory
                 country: $order->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $order->billingAddress,
-                deliveryAddress: $order->deliveryAddress,
+                deliveryAddress: $order->taxableDeliveryAddress($taxNumber),
                 isRe: $order->is_re,
             );
             $command?->info("New tax category rate $tacCategory->rate");

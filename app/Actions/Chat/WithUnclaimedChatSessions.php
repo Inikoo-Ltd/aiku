@@ -67,6 +67,7 @@ trait WithUnclaimedChatSessions
         $query->whereHas('messages')
             ->where('is_spam', false)
             ->where('is_rubbish', false)
+            ->where('is_carrier', false)
             ->whereIn('status', [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value])
             ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
             ->where(function ($outer) {

@@ -12,7 +12,7 @@ import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons"
+import { faGoogle, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
@@ -49,6 +49,7 @@ import {
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFileSignature,
     faFilePdf,
     faTransporter,
     faCode,
@@ -82,7 +83,9 @@ import {
     faNotEqual,
     faCamera,
     faStamp,
-    faChevronDown
+    faChevronDown,
+    faGem,
+    faHashtag
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -93,7 +96,10 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faWhatsapp,
+    faHashtag,
     faChevronDown,
+    faGem,
     faTemperatureLow,
     faNotEqual,
     faMusic,
@@ -142,6 +148,7 @@ library.add(
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFileSignature,
     faFilePdf,
     faTransporter,
     faCode,
@@ -227,7 +234,10 @@ const props = defineProps<{
     }
 }>()
 
-const paramsSection = route().params['section'] || 0
+const firstSectionWithVisibleFields = Object.keys(props.formData?.blueprint ?? {}).find(
+    (sectionKey) => !Object.values(props.formData.blueprint[sectionKey].fields || {}).every((field: any) => field.hidden)
+)
+const paramsSection = route().params['section'] || firstSectionWithVisibleFields || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(

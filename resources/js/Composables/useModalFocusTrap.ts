@@ -9,7 +9,6 @@ import { nextTick, onBeforeUnmount, watch, type Ref } from "vue"
 
 const openTraps: HTMLElement[] = []
 let scrollLockCount = 0
-let previousHtmlOverflow = ""
 let previousBodyOverflow = ""
 
 const floatingLayerSelector = ".p-popover, .p-dialog, .p-overlay-mask, .p-connected-overlay, [role='dialog'], [role='listbox'], [role='menu']"
@@ -17,9 +16,9 @@ const focusableSelector = "a[href], button:not([disabled]), input:not([disabled]
 
 const lockPageScroll = () => {
     if (scrollLockCount === 0) {
-        previousHtmlOverflow = document.documentElement.style.overflow
+        // Body only, like PrimeVue's p-overflow-hidden: it propagates to the viewport, which keeps its offset.
+        // Hiding <html> too makes the h-full body clip itself to one screen, snapping the page back to the top.
         previousBodyOverflow = document.body.style.overflow
-        document.documentElement.style.overflow = "hidden"
         document.body.style.overflow = "hidden"
     }
     scrollLockCount++
@@ -28,7 +27,6 @@ const lockPageScroll = () => {
 const unlockPageScroll = () => {
     scrollLockCount = Math.max(0, scrollLockCount - 1)
     if (scrollLockCount === 0) {
-        document.documentElement.style.overflow = previousHtmlOverflow
         document.body.style.overflow = previousBodyOverflow
     }
 }

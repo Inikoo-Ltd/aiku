@@ -9,12 +9,17 @@
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Http\Resources\Procurement\SupplierMessagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Models\Procurement\OrgAgent;
@@ -107,11 +112,34 @@ class ShowOrgSupplier extends OrgAction
                     fn () => GetOrgSupplierShowcase::run($orgSupplier)
                     : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
 
+                SupplierTabsEnum::INBOX->value => $this->tab == SupplierTabsEnum::INBOX->value ?
+                    fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgSupplier, SupplierTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgSupplier)])
+                    : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgSupplier, SupplierTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgSupplier)])),
+
+                SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($orgSupplier->supplier, SupplierTabsEnum::ATTACHMENTS->value))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($orgSupplier->supplier, SupplierTabsEnum::ATTACHMENTS->value))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.supplier.attachment.attach',
+                        'parameters' => ['supplier' => $orgSupplier->supplier->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.supplier.attachment.detach',
+                        'parameters' => ['supplier' => $orgSupplier->supplier->id],
+                    ],
+                ],
+                'attachmentScopes' => SupplyChainAttachmentScopeEnum::options(),
+
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value))
+            ->table(IndexSupplierMessages::make()->tableStructure($orgSupplier, prefix: SupplierTabsEnum::INBOX->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: SupplierTabsEnum::ATTACHMENTS->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array

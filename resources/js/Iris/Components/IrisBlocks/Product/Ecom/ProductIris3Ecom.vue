@@ -464,16 +464,16 @@ onMounted(async () => {
                         </div>
 
                         <button v-if="layout?.iris?.is_logged_in && product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
-                            @click="product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                            @click="customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                             class="mt-2 flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                            <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
+                            <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                             <span>
                                 {{
-                                    product.is_back_in_stock
-                                        ? ctrans("will be notified when in Stock")
-                                        : ctrans("Remind me")
+                                    customerData?.back_in_stock
+                                        ? ctrans('Back in Stock Alert On')
+                                        : ctrans('Notify Me When Back in Stock')
                                 }}
                             </span>
                         </button>
@@ -521,7 +521,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
+                <div v-if="layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
                     <span>{{ ctrans("Profit") }}:</span>
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                     <span>({{ displayedMargin }})</span>
@@ -755,7 +755,7 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
+            <div v-if="layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
                 <span>{{ ctrans("Profit") }}:</span>
                 <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                 <span>({{ displayedMargin }})</span>
@@ -793,15 +793,15 @@ onMounted(async () => {
                 @selectQuantity="onSelectStepQuantityMobile" />
 
             <button v-if="layout?.iris?.is_logged_in && product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'"
-                @click="product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                @click="customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                 class="flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-2 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
+                <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
-                        product.is_back_in_stock
-                            ? ctrans('will be notified when in Stock')
-                            : ctrans('Remind me')
+                        customerData?.back_in_stock
+                            ? ctrans('Back in Stock Alert On')
+                            : ctrans('Notify Me When Back in Stock')
                     }}
                 </span>
             </button>

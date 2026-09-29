@@ -23,6 +23,7 @@ use App\Models\Helpers\Media;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,7 +31,7 @@ class DetachAttachmentFromModel extends OrgAction
 {
     use AsAction;
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory
+    public function handle(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory $model, Media $attachment): Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory
     {
         $model->attachments()->detach($attachment->id);
         $model->refresh();
@@ -43,7 +44,7 @@ class DetachAttachmentFromModel extends OrgAction
     }
 
 
-    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|TradeUnitFamily|ProductCategory $model, Media $attachment, int $hydratorsDelay = 0, bool $strict = true): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|TradeUnitFamily|ProductCategory
+    public function action(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|TradeUnitFamily|ProductCategory $model, Media $attachment, int $hydratorsDelay = 0, bool $strict = true): Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|TradeUnitFamily|ProductCategory
     {
         $this->asAction       = true;
         $this->strict         = $strict;
@@ -78,6 +79,12 @@ class DetachAttachmentFromModel extends OrgAction
     {
         $this->initialisationFromGroup($tradeUnit->group, []);
         $this->handle($tradeUnit, $attachment);
+    }
+
+    public function inAgent(Agent $agent, Media $attachment)
+    {
+        $this->initialisationFromGroup($agent->group, []);
+        $this->handle($agent, $attachment);
     }
 
     public function inSupplier(Supplier $supplier, Media $attachment)

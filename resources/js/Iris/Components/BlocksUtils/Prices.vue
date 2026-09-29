@@ -3,7 +3,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { inject } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -16,7 +16,8 @@ interface ProductResource {
   image?: {
     source: ImageTS,
   }
-  rpp?: number
+  rrp?: number
+  profit?: number
   unit: string
   stock: number
   rating: number
@@ -53,25 +54,25 @@ defineProps<{
     flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
     <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
     
-    <div v-if="product?.rrp_per_unit > 0" class="flex flex-col md:flex-row md:items-center md:justify-between">
+    <div v-if="product?.rrp > 0" class="flex flex-col md:flex-row md:items-center md:justify-between">
       <span class="font-medium">
-        {{ trans("Retail") }} :
+        {{ ctrans("Retail") }} :
       </span>
 
       <span class="font-semibold">
-        {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
-        <span class="text-gray-600">/{{ product.unit }}</span>
+        {{ locale.currencyFormatRrp(currency?.code, product.rrp) }}
+        <span class="text-gray-600">/{{ product.units == 1 ? product.unit : ctrans("outer") }}</span>
       </span>
     </div>
 
     <div class="flex flex-col md:flex-row md:items-center md:justify-between text-gray-500">
       <span class="font-medium">
-        {{ trans("Profit") }} :
+        {{ ctrans("Profit") }} :
       </span>
 
       <span class="font-semibold flex items-center">
-        {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}
-        <span v-tooltip="trans('Profit margin')" class="ml-1">
+        {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
+        <span v-tooltip="ctrans('Profit margin')" class="ml-1">
           ({{ product?.margin }})
         </span>
       </span>
@@ -82,7 +83,7 @@ defineProps<{
          flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
     <div v-if="product.units == 1" class="flex flex-col md:flex-row md:items-center md:justify-between">
       <span class="font-medium">
-        {{ trans("Price") }} :
+        {{ ctrans("Price") }} :
       </span>
 
       <span class="font-semibold">
@@ -93,7 +94,7 @@ defineProps<{
     <div v-else class="flex flex-col gap-1">
       <!-- Label -->
       <span class="font-medium">
-        {{ trans("Price") }} :
+        {{ ctrans("Price") }} :
       </span>
 
       <!-- Value row -->
@@ -103,18 +104,18 @@ defineProps<{
           <template v-if="Object.keys(product.offers_data || {})?.length">
             <span class="line-through text-xxs opacity-60">
               {{ locale.currencyFormat(currency?.code, product.price) }}
-              / {{ trans("outer") }}
+              / {{ ctrans("outer") }}
             </span>
             
             <span class="font-semibold block text-green-600">
               {{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}
-              / {{ trans("outer") }}
+              / {{ ctrans("outer") }}
             </span>
           </template>
 
           <span v-else class="font-semibold">
               {{ locale.currencyFormat(currency?.code, product.price) }}
-              / {{ trans("outer") }}
+              / {{ ctrans("outer") }}
             </span>
         </div>
 

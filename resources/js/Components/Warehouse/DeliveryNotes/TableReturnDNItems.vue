@@ -183,6 +183,26 @@ const GetQuantityToPickFractional = (item) => {
     } else return item.quantity_to_sow_fractional
 }
 
+const isPackedInMany = (item) => Number(item?.packed_in) > 1
+
+const isWholeSko = (quantity) => Math.abs(Number(quantity || 0) - Math.round(Number(quantity || 0))) < 0.0001
+
+const cutViewByItemId = reactive<Record<string, boolean>>({})
+
+const isCutView = (item) => {
+    if (!isPackedInMany(item)) {
+        return false
+    }
+
+    return cutViewByItemId[item.id] ?? ![item.total_item_returned, item.total_item_damaged, item.total_item_not_returned].every(isWholeSko)
+}
+
+const toggleCutView = (item) => {
+    cutViewByItemId[item.id] = !isCutView(item)
+}
+
+const GetReturnDenominator = (item) => isCutView(item) ? Number(item.packed_in) : undefined
+
 const routeItemsWaitingWarehouse = (item) => {
     if (!route().params.warehouse || !route().params.organisation) {
         return '#'
@@ -373,12 +393,15 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         <!-- Column: Total Item Damaged -->
         <template #cell(total_item_damaged)="{ item: itemValue, proxyItem }">
             <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
-                <NumberWithButtonSave
+                <div class="flex items-center gap-x-1">
+                    <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
                     @onError="(error: any) => {
                         proxyItem.errors = Object.values(error || {})
                     }"
+                    :denominator="GetReturnDenominator(itemValue)"
+                    :key="`${itemValue.id}-${isCutView(itemValue)}`"
                     :modelValue="itemValue.total_item_damaged"
                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                     saveOnForm
@@ -426,6 +449,16 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </div>
                     </template>
                 </NumberWithButtonSave>
+                    <span
+                        v-if="isPackedInMany(itemValue)"
+                        @click="toggleCutView(itemValue)"
+                        v-tooltip="ctrans('Cut view')"
+                        class="text-lg opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                        :class="isCutView(itemValue) ? 'text-orange-500' : ''"
+                    >
+                        <FontAwesomeIcon :icon="faFragile" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
             </div>
             <FractionDisplay v-else-if="itemValue.total_item_damaged" :fractionData="itemValue.total_item_damaged_fractional" :class="'text-orange-500'"/>
             <span v-else>
@@ -435,12 +468,15 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         <!-- Column: item not returned -->
         <template #cell(total_item_not_returned)="{ item: itemValue, proxyItem }">
             <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
-                <NumberWithButtonSave v-if="itemValue.has_available_qty"
+                <div class="flex items-center gap-x-1">
+                    <NumberWithButtonSave v-if="itemValue.has_available_qty"
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
                     @onError="(error: any) => {
                         proxyItem.errors = Object.values(error || {})
                     }"
+                    :denominator="GetReturnDenominator(itemValue)"
+                    :key="`${itemValue.id}-${isCutView(itemValue)}`"
                     :modelValue="itemValue.total_item_not_returned"
                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                     saveOnForm
@@ -488,6 +524,16 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </div>
                     </template>
                 </NumberWithButtonSave>
+                    <span
+                        v-if="isPackedInMany(itemValue)"
+                        @click="toggleCutView(itemValue)"
+                        v-tooltip="ctrans('Cut view')"
+                        class="text-lg opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                        :class="isCutView(itemValue) ? 'text-orange-500' : ''"
+                    >
+                        <FontAwesomeIcon :icon="faFragile" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
             </div>
             <FractionDisplay v-else-if="itemValue.total_item_not_returned_fractional" :fractionData="itemValue.total_item_not_returned_fractional" />
             <span v-else>
@@ -497,12 +543,15 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         <!-- Column: item returned -->
         <template #cell(total_item_returned)="{ item: itemValue, proxyItem }">
             <div class="grid justify-items-end gap-y-2" v-if="itemValue.has_available_qty && itemValue.state == 'handling' && is_editable">
-                <NumberWithButtonSave
+                <div class="flex items-center gap-x-1">
+                    <NumberWithButtonSave
                     vxif="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                     noUndoButton
                     @onError="(error: any) => {
                         proxyItem.errors = Object.values(error || {})
                     }"
+                    :denominator="GetReturnDenominator(itemValue)"
+                    :key="`${itemValue.id}-${isCutView(itemValue)}`"
                     :modelValue="itemValue.total_item_returned"
                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                     saveOnForm
@@ -550,6 +599,16 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </div>
                     </template>
                 </NumberWithButtonSave>
+                    <span
+                        v-if="isPackedInMany(itemValue)"
+                        @click="toggleCutView(itemValue)"
+                        v-tooltip="ctrans('Cut view')"
+                        class="text-lg opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                        :class="isCutView(itemValue) ? 'text-orange-500' : ''"
+                    >
+                        <FontAwesomeIcon :icon="faFragile" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
                 <LabelPickingLocation
                     :locations="itemValue.locations"
                     :selectedOrgStockId="get(selectedLocationCode, [itemValue.id], null)"

@@ -9,12 +9,9 @@
 namespace App\Actions\Chat\Agent\UI;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
-use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
 use App\Models\Chat\ChatAgent;
-use App\Models\Chat\ShopHasChatAgent;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,44 +130,6 @@ class EditAgent extends OrgAction
                                     'label'       => __('Available'),
                                     'value'       => (bool) $agent->is_available,
                                     'information' => __('Turn off to stop new chats being routed to this agent. It does not sign them out, and their current chats stay with them. Being online and under the max chats limit is still required on top of this.'),
-                                ],
-                            ],
-                        ],
-
-                        [
-                            'label'  => __('Organisation & Shop'),
-                            'title'  => __('Edit Organisation & Shop'),
-                            'fields' => [
-                                'organisation_id' => [
-                                    'type'  => 'select',
-                                    'label' => __('Organisation'),
-                                    'placeholder' => __('Select organisation'),
-                                    'options'  => GetOrganisationOptions::make()->filter($organisation->slug),
-                                    'value' => optional(
-                                        $agent->organisations
-                                            ->firstWhere('slug', $organisation->slug)
-                                    )->id,
-                                    'readonly'    => true,
-                                ],
-
-                                'shop_id' => [
-                                    'type'  => 'multiselect-tags',
-                                    'label' => __('Shop'),
-                                    'placeholder' => __('Select shop'),
-                                    'options'     => GetShopOptions::run($organisation->slug),
-                                    'value'       => ShopHasChatAgent::query()
-                                        ->where('chat_agent_id', $agent->id)
-                                        ->whereHas(
-                                            'organisation',
-                                            fn ($q) =>
-                                            $q->where('slug', $organisation->slug)
-                                        )
-                                        ->pluck('shop_id')
-                                        ->filter()
-                                        ->values()
-                                        ->toArray(),
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'value',
                                 ],
                             ],
                         ],

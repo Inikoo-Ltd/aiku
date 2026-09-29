@@ -10,10 +10,11 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
@@ -96,21 +97,18 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
 
         $currenciesRate = GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true);
 
+        $costPriceRatio = $masterShop->costPriceRatio();
+        $rrpPriceRatio  = $masterShop->rrpPriceRatio();
+
+        $masterCosts  = $currenciesRate->map(fn ($ratio) => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost));
         $masterPrices = $currenciesRate->map(fn ($ratio) => [
-            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost),
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), round($avgCost * $costPriceRatio, 2)),
             'independent' => false
         ]);
-        $masterRrps   = $currenciesRate->map(fn ($ratio) => [
-            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), round(($avgCost / $totalUnit) * 2.4, 2)),
+        $masterRrps = $currenciesRate->map(fn ($ratio) => [
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), round($avgCost * $costPriceRatio * $rrpPriceRatio, 2)),
             'independent' => false
         ]);
-
-
-        if ($masterShop->type == ShopTypeEnum::DROPSHIPPING) {
-            $costPriceRatio = 3.5;
-        } else {
-            $costPriceRatio = 2;
-        }
 
 
         $finalData = [];
@@ -124,9 +122,9 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
                 $price    = null;
                 $rrp      = null;
             } else {
-                $shopCost = $masterPrices->get($shopCurrencyCode)['value'];
+                $shopCost = $masterCosts->get($shopCurrencyCode);
                 $price    = round($shopCost * $costPriceRatio, 2);
-                $rrp      = round($price * 2.4, 2);
+                $rrp      = round($price * $rrpPriceRatio, 2);
             }
 
             $orgStocksData['org_value_in_warehouse_per_shop'] = GetCurrencyExchange::run($organisation->currency, $shop->currency) * $orgStocksData['org_value_in_warehouse'];
@@ -147,8 +145,18 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         data_set($finalData, 'total_units', $totalUnit);
         data_set($finalData, 'master_prices', $masterPrices);
         data_set($finalData, 'master_rrps', $masterRrps);
+        data_set($finalData, 'rrp_price_ratio', $rrpPriceRatio);
         data_set($finalData, 'org_data', $organisationData);
         data_set($finalData, 'avg_org_cost', $avgCost);
+        data_set($finalData, 'base_currency_code', $baseCurrency->code);
+        data_set($finalData, 'price_outlier_factor', GetMasterAssetPriceOutlier::FACTOR);
+        data_set(
+            $finalData,
+            'family_unit_price_median',
+            $masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY
+                ? GetMasterAssetPriceOutlier::familyUnitPriceMedian($masterProductCategory->id)
+                : null
+        );
 
         return $finalData;
     }

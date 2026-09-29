@@ -211,7 +211,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function comments(): HasMany
     {
-        return $this->hasMany(TicketComment::class)->where('type', TicketCommentTypeEnum::COMMENT);
+        return $this->hasMany(TicketComment::class)->whereIn('type', [TicketCommentTypeEnum::COMMENT, TicketCommentTypeEnum::POST_MORTEM]);
     }
 
     public function deployComment(): HasOne
@@ -241,6 +241,21 @@ class Ticket extends Model implements Auditable, HasMedia
     public static function canGiveQaVerdict(?User $user): bool
     {
         return $user !== null && $user->authTo('help-desk.qa');
+    }
+
+    public function canBeClaimedForQaBy(?User $user): bool
+    {
+        return self::canGiveQaVerdict($user)
+            && !$this->qa_status?->isVerdict()
+            && $this->qa_status !== TicketQaStatusEnum::CHECKING
+            && ($this->qa_user_id === null || $this->qa_user_id === $user->id);
+    }
+
+    public function isQaHeldByAnotherThan(?User $user): bool
+    {
+        return in_array($this->qa_status, [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING], true)
+            && $this->qa_user_id !== null
+            && $this->qa_user_id !== $user?->id;
     }
 
     public function canRequestQaBy(?User $user): bool

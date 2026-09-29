@@ -43,7 +43,7 @@ class OrgStockDiscontinuePreviewTool extends AikuOrgStockDiscontinueTool
             'organisation' => $organisation->code,
             'not_found'    => $missing,
             'note'         => 'Customer stores are never written to: once discontinued, each customer\'s own stock sync shows zero and they delist it themselves. Mailshots are not linked to products in aiku.',
-            'previews'     => GetOrgStockDiscontinuePreview::make()->action($organisation, $orgStocks->pluck('id')->all()),
+            'previews'     => GetOrgStockDiscontinuePreview::make()->action($organisation, $orgStocks->pluck('id')->all(), $request->user()),
         ]);
     }
 

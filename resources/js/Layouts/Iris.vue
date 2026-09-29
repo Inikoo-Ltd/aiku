@@ -9,7 +9,7 @@ import { usePage } from '@inertiajs/vue3'
 import { provide, ref, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 const ScreenWarning = defineAsyncComponent(() => import('@/Components/Utils/ScreenWarning.vue'))
 const Modal = defineAsyncComponent(() => import('@/Components/Utils/Modal.vue'))
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -26,13 +26,13 @@ import { recordWebVitals } from '@/Composables/recordWebVitals'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import { isAnnouncementVisible, useAnnouncementClock } from '@/Iris/Composables/useAnnouncementVisibility'
-const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
+import { createSidePanel } from '@/Iris/Composables/useSidePanel'
+import SidePanel from '@/Iris/Components/SidePanel.vue'
 
 interface ChatConfig {
     is_online: boolean
@@ -249,8 +249,11 @@ const fetchHasInBasket = async () => {
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
+        set(layout, 'rightbasket.tab', 'basket')
     }
 })
+
+createSidePanel(layout, screenType, !!useChat)
 
 const syncLoggedInClass = () => document.documentElement.classList.toggle('iris-logged-in', !!layout.iris?.is_logged_in)
 
@@ -258,11 +261,6 @@ onMounted(syncLoggedInClass)
 
 watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
 
-watch(() => layout.iris_variables?.cart_count, (newVal) => {
-    if (newVal <= 0) {
-        set(layout, 'rightbasket.show', false)
-    }
-})
 </script>
 
 <template>
@@ -270,7 +268,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         <component :is="'style'" v-if="containerPaddingCss">{{ containerPaddingCss }}</component>
 
         <ScreenWarning v-if="layout.app.environment === 'staging'">
-            {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+            {{ ctrans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>
 
         <Modal v-if="layout.app.environment === 'staging'" :isOpen="firstVisit"
@@ -367,18 +365,6 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                     <slot />
                 </div>
 
-                <!-- Layout: SideBasket (right) -->
-                <div
-                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
-                >
-                    <IrisRightSideBasket
-                        v-if="layout.iris_variables?.cart_count > 0"
-                        :isOpen="layout.rightbasket?.show"
-                    />  
-                </div>
-
                 <div
                     v-if="bundle.open.value"
                     :class="bundle.open.value
@@ -408,6 +394,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
             <Footer :colorThemed="theme" />
         </div>
+
     </div>
 
     <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
@@ -418,7 +405,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
+    <SidePanel :isChatEnabled="!!useChat" :chatConfig="chatConfig" />
 </template>
 
 <style lang="scss">
@@ -455,16 +442,6 @@ html {
     }
 }
 
-.basket-drawer {
-    width: min(92vw, 37%);
-    box-sizing: border-box;
-}
-
-@media (min-width: 1536px) {
-    .basket-drawer {
-        width: 25%;
-    }
-}
 
 // INI-562: live chat
 iframe#launcher {

@@ -25,6 +25,12 @@ class UpdateCustomerComms extends OrgAction
 
     public function handle(CustomerComms $customerComms, array $modelData, bool $updateAurora = true): CustomerComms
     {
+        foreach ($modelData as $column => $subscribed) {
+            if (str_starts_with($column, 'is_subscribed_to_') && !$subscribed && $customerComms->{$column}) {
+                $modelData[substr($column, strlen('is_subscribed_to_')).'_unsubscribed_at'] = now();
+            }
+        }
+
         $this->update($customerComms, $modelData);
 
         $changes = Arr::except($customerComms->getChanges(), ['updated_at', 'last_fetched_at']);

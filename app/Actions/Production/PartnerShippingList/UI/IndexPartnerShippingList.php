@@ -9,8 +9,10 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -44,6 +46,10 @@ class IndexPartnerShippingList extends OrgAction
 
     private int $hitchhikerCount = 0;
 
+    private bool $ignorePipeline = false;
+
+    private int $pipelineCount = 0;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo([
@@ -59,6 +65,7 @@ class IndexPartnerShippingList extends OrgAction
     public function handle(Organisation $seller): LengthAwarePaginator
     {
         $this->showHitchhikers = request()->boolean('hitchhikers');
+        $this->ignorePipeline  = request()->boolean('ignore_pipeline');
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -165,6 +172,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
@@ -363,16 +371,18 @@ class IndexPartnerShippingList extends OrgAction
             $preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all()
         );
 
+        $this->markSurplusInPipeline($backlogItems);
+
         $backlogItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
@@ -384,8 +394,45 @@ class IndexPartnerShippingList extends OrgAction
     }
 
     /**
+     * Oldest backlog lines claim the surplus first, the same order booking in fulfils them.
+     */
+    private function markSurplusInPipeline(Collection $backlogItems): void
+    {
+        if ($this->ignorePipeline) {
+            return;
+        }
+
+        $surplus = GetProductionSurplusInPipeline::run($backlogItems->pluck('org_stock_id')->filter()->unique()->values()->all());
+
+        $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus) {
+            $row = $surplus[$item->org_stock_id] ?? null;
+            if (!$row) {
+                return;
+            }
+
+            $needed         = (float) $item->quantity;
+            $pendingBooking = min($needed, $row['pending_booking']);
+            $inProduction   = min($needed - $pendingBooking, $row['in_production']);
+
+            if ($pendingBooking + $inProduction <= 0) {
+                return;
+            }
+
+            $surplus[$item->org_stock_id]['pending_booking'] -= $pendingBooking;
+            $surplus[$item->org_stock_id]['in_production']   -= $inProduction;
+
+            $item->pipeline = [
+                'pending_booking' => round($pendingBooking, 3),
+                'in_production'   => round($inProduction, 3),
+                'job_orders'      => $row['job_orders'],
+            ];
+            $this->pipelineCount++;
+        });
+    }
+
+    /**
      * @param  array<int, int>  $artefactIds
-     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, expiry_date: string|null, pdf_url: string}>>
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, run_sources: array<int, string>, expiry_date: string|null, pdf_url: string}>>
      */
     public function getPublishedLabelsByArtefact(array $artefactIds): Collection
     {
@@ -402,26 +449,11 @@ class IndexPartnerShippingList extends OrgAction
                 'id'          => $label->id,
                 'artefact_id' => $label->artefact_id,
                 'name'        => $label->name,
-                'batch_code'  => $this->getPrintedText($label, 'batch_code'),
+                'run_sources' => DownloadArtefactLabelPdf::getRunSources($label),
                 'expiry_date' => $this->getPrintedText($label, 'expiry_date'),
                 'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
             ])
             ->groupBy('artefact_id');
-    }
-
-    /**
-     * The batch code the artisan should mark the run with. What was typed when the run was prepared
-     * wins, then a published label that prints one, because the board must never contradict the
-     * sheet coming out of the printer. Nothing is invented when neither exists: the batch is named
-     * after the job order once it is made, and showing a guess here would name it twice.
-     */
-    private function getBatchCode(object $item): ?string
-    {
-        if ($item->run_batch_code) {
-            return $item->run_batch_code;
-        }
-
-        return collect($item->published_labels)->pluck('batch_code')->filter()->first();
     }
 
     private function getPrintedText(ArtefactLabel $label, string $source): ?string
@@ -537,6 +569,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],
+                'pipeline'     => ['count' => $this->pipelineCount, 'ignoring' => $this->ignorePipeline],
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,

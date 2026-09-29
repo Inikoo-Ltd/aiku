@@ -166,9 +166,9 @@ export const resetUnread = () => {
 
 export const ALERT_SOUNDS = ["chime", "bells", "dingdong", "pop", "marimba", "submarine", "voice", "bird", "boing", "fart", "silent"] as const
 export type AlertSound = typeof ALERT_SOUNDS[number]
-export type AlertSoundKind = "chat" | "whatsapp" | "email" | "colleague"
+export type AlertSoundKind = "chat" | "whatsapp" | "email" | "colleague" | "waiting"
 
-const DEFAULT_ALERT_SOUNDS: Record<AlertSoundKind, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba" }
+const DEFAULT_ALERT_SOUNDS: Record<Exclude<AlertSoundKind, "waiting">, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba" }
 
 export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	chime: ctrans("Chime"),
@@ -184,8 +184,15 @@ export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	silent: ctrans("Silent"),
 })
 
+const alertSoundsKey = (userId: number) => `aiku-alert-sounds-${userId}`
+
+const currentAlertSounds = (): Partial<Record<AlertSoundKind, AlertSound>> | null => {
+	const user = useLayoutStore().user
+	return (user?.id ? readStorage(alertSoundsKey(user.id)) : null) ?? user?.settings?.alert_sounds ?? null
+}
+
 export const chosenAlertSound = (kind: AlertSoundKind): AlertSound =>
-	useLayoutStore().user?.settings?.alert_sounds?.[kind] ?? DEFAULT_ALERT_SOUNDS[kind]
+	currentAlertSounds()?.[kind] ?? (kind === "waiting" ? chosenAlertSound("chat") : DEFAULT_ALERT_SOUNDS[kind])
 
 type Alert = {
 	key: string
@@ -369,6 +376,10 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	const baseUrl = layout.appUrl ?? ""
 	const tabId = Math.random().toString(36).slice(2)
 
+	if (myId) {
+		watch(() => layout.user?.settings?.alert_sounds, (sounds) => writeStorage(alertSoundsKey(myId), sounds ?? null), { immediate: true, deep: true })
+	}
+
 	const openUlids = () => [
 		...staff.openWindows.filter((openWindow) => !openWindow.minimised).map((openWindow) => openWindow.ulid),
 		...(staff.fullViewUlid ? [staff.fullViewUlid] : []),
@@ -449,7 +460,8 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 
 	/**
 	 * Email waits its turn. A website or WhatsApp customer who wrote in the last few minutes is
-	 * watching the screen, so the alert grows every 30 seconds until somebody reads the chat.
+	 * watching the screen, so the alert grows every 30 seconds until somebody reads the chat,
+	 * unless this person chose Silent for customers still waiting.
 	 */
 	const escalationStage = () => {
 		const since = chatsWaiting.value.live.oldest_at
@@ -457,7 +469,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	}
 	const escalationKey = () => `escalate:${chatsWaiting.value.live.oldest_at}:${escalationStage()}`
 	const escalateUnansweredChat = async () => {
-		if (escalationStage() < 1 || readStorage(ALERTS_KEY)?.[`popup:${escalationKey()}`]) return
+		if (chosenAlertSound("waiting") === "silent" || escalationStage() < 1 || readStorage(ALERTS_KEY)?.[`popup:${escalationKey()}`]) return
 		await refresh(10_000)
 		const stage = escalationStage()
 		if (stage < 1) return
@@ -467,7 +479,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 			body: ctrans(":count waiting, the longest for :wait", { count: chatsWaiting.value.live.sessions, wait: waitedFor(chatsWaiting.value.live.oldest_at) }),
 			tag: "customers-waiting",
 			url: chatsWaiting.value.live.url,
-			sound: chosenAlertSound("chat"),
+			sound: chosenAlertSound("waiting"),
 			spoken: ctrans("A customer is waiting"),
 			escalation: stage === 1 ? "louder" : "alarm",
 			sticky: stage > 1,

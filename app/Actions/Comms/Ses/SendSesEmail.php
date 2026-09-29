@@ -54,7 +54,7 @@ class SendSesEmail
     /**
      * @param array<int, array{content: string, filename: string}> $attachments
      */
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = []): DispatchedEmail
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = [], ?string $replyTo = null): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -106,7 +106,8 @@ class SendSesEmail
             $emailHtmlBody,
             $unsubscribeUrl,
             $senderName,
-            $attachments
+            $attachments,
+            $replyTo
         );
 
 
@@ -151,6 +152,7 @@ class SendSesEmail
                             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
                             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
                             OutboxCodeEnum::RENTAL_AGREEMENT,
+                            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
                         ])) {
                         StoreEmailCopy::make()->action($dispatchedEmail, [
                             'subject' => $subject,
@@ -236,7 +238,7 @@ class SendSesEmail
             + rand(0, self::THROTTLE_BACKOFF_JITTER_MICROSECONDS);
     }
 
-    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = []): array
+    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = [], ?string $replyTo = null): array
     {
         $message = [
             'Message' => [
@@ -269,6 +271,7 @@ class SendSesEmail
             'Message'     => $message['Message'],
             'Headers'     => $headers,
             'Attachments' => $attachments,
+            'ReplyTo'     => $replyTo,
         ];
     }
 
@@ -281,6 +284,10 @@ class SendSesEmail
 
         $mail->addAddress($emailData['Destination']['ToAddresses'][0]);
         $mail->setFrom($emailData['Source'], $emailData['SourceName'] ?? '');
+
+        if (Arr::get($emailData, 'ReplyTo')) {
+            $mail->addReplyTo($emailData['ReplyTo']);
+        }
 
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);

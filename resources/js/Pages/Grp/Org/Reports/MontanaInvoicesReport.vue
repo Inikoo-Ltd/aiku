@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -14,6 +14,14 @@ const props = defineProps<{
     title: string
     pageHead: object
 }>()
+
+const documentHref = (item: { slug: string, type: { code: string } }) => {
+    const organisation = route().params.organisation
+
+    return item.type.code === 'R'
+        ? route('grp.org.accounting.refunds.show', [organisation, item.slug])
+        : route('grp.org.accounting.invoices.show', [organisation, item.slug])
+}
 
 const exportExcel = () => {
     const params = route().params
@@ -54,9 +62,9 @@ const exportExcel = () => {
         </template>
 
         <template #cell(reference)="{ item }">
-            <span class="font-mono text-sm font-medium text-gray-900">
+            <Link :href="documentHref(item)" class="primaryLink font-mono text-sm">
                 {{ item.reference }}
-            </span>
+            </Link>
         </template>
 
         <template #cell(customer_name)="{ item }">

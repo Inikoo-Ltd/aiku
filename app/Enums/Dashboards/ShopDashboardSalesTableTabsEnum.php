@@ -18,14 +18,21 @@ enum ShopDashboardSalesTableTabsEnum: string
     use HasTabs;
 
     case DS_PLATFORMS = 'ds_platforms';
+    case DEPARTMENTS = 'departments';
     case BRANDS = 'brands';
 
     public function blueprint(): array
     {
         return match ($this) {
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS => [
+                'title' => __('Departments'),
+                'icon'  => 'fal fa-folder-tree',
+            ],
             ShopDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => [
                 'title' => __('DS Platforms'),
@@ -36,15 +43,18 @@ enum ShopDashboardSalesTableTabsEnum: string
 
     public function table(Shop $shop, array $timeSeriesData = []): array
     {
-        $brandTimeSeriesStats    = $timeSeriesData['brands'] ?? [];
+        $brandTimeSeriesStats      = $timeSeriesData['brands'] ?? [];
+        $departmentTimeSeriesStats = $timeSeriesData['departments'] ?? [];
         $platformTimeSeriesStats = $timeSeriesData['platforms'] ?? [];
 
         $header = match ($this) {
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS  => self::relabelHeader(json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true), __('Department')),
             ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true),
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
         };
 
         $body = match ($this) {
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS  => json_decode(DashboardBrandSalesResource::collection($departmentTimeSeriesStats)->toJson(), true),
             ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardBrandSalesResource::collection($brandTimeSeriesStats)->toJson(), true),
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
@@ -54,6 +64,7 @@ enum ShopDashboardSalesTableTabsEnum: string
         );
 
         $totals = match ($this) {
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS  => json_decode(DashboardTotalBrandSalesResource::make($departmentTimeSeriesStats)->toJson(), true),
             ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformRowsWithoutChannelChildren)->toJson(), true),
         };
@@ -63,6 +74,14 @@ enum ShopDashboardSalesTableTabsEnum: string
             'body'   => $body,
             'totals' => $totals,
         ];
+    }
+
+    private static function relabelHeader(array $header, string $label): array
+    {
+        data_set($header, 'columns.label.formatted_value', $label);
+        data_set($header, 'columns.label_minified.formatted_value', $label);
+
+        return $header;
     }
 
     /**

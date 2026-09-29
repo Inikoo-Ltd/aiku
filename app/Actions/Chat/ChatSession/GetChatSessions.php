@@ -15,8 +15,10 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatMessageSearch;
 use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +31,7 @@ class GetChatSessions
     use AsAction;
     use WithChatAgentAuthorisation;
     use WithUnclaimedChatSessions;
+    use WithChatMessageSearch;
     /**
      * How far back the closed list reaches, the same words the tickets board uses for its own
      * columns. Today is the default: the queue's closed capsule means what was finished today,
@@ -57,6 +60,8 @@ class GetChatSessions
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'carrier'         => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
@@ -147,7 +152,8 @@ class GetChatSessions
             'shop',
             'activeUserLanguage',
             'userLanguage',
-            'assignments.chatAgent.user'
+            'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])
             ->whereHas('messages')
             ->withCount([
@@ -169,7 +175,7 @@ class GetChatSessions
             ->withLastMessageTime();
 
         if (self::oldestFirst($filters)) {
-            $query->orderByRaw(GetChatReplyPromise::waitingSql('chat_sessions'));
+            $query->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'));
         }
 
         $query->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
@@ -206,6 +212,11 @@ class GetChatSessions
             $query->where('is_rubbish', $isRubbishView);
         }
 
+        // Couriers are answered from their own folder and nowhere else.
+        if (!$isTrashView) {
+            $query->where('is_carrier', !empty($filters['carrier']));
+        }
+
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
             $query->onlyTrashed();
@@ -231,6 +242,10 @@ class GetChatSessions
         // shop: which shops the person asking works is exactly what let these go unanswered.
         if (!empty($filters['unclaimed'])) {
             $this->scopeUnclaimedChatSessions($query);
+        }
+
+        if (!empty($filters['ds_kind'])) {
+            $query->where('metadata->'.FlagUrgentChatRequest::KIND_KEY, $filters['ds_kind']);
         }
 
         // Highlight view is additive: it keeps the normal status/assignment filters
@@ -333,15 +348,18 @@ class GetChatSessions
         }
 
         if (!empty($filters['search'])) {
-            $term = mb_strtolower($filters['search']);
-            $query->where(function ($q) use ($term) {
+            $term             = mb_strtolower($filters['search']);
+            $matchingMessages = $this->messagesMatching(ChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+
+            $query->where(function ($q) use ($term, $matchingMessages) {
                 $q->whereRaw('LOWER(chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereHas('webUser', function ($q2) use ($term) {
                         $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
                             ->orWhereHas('customer', function ($q3) use ($term) {
                                 $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
                             });
-                    });
+                    })
+                    ->orWhereHas('messages', fn ($messages) => $messages->whereIn('chat_messages.id', $matchingMessages));
             });
         }
 

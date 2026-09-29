@@ -19,7 +19,7 @@ class GetPlatformTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation|Shop $parent, $from_date = null, $to_date = null): array
+    public function handle(Group|Organisation|Shop $parent, $from_date = null, $to_date = null, bool $includePartners = false): array
     {
         $groupId = match (true) {
             $parent instanceof Group        => $parent->id,
@@ -59,7 +59,7 @@ class GetPlatformTimeSeriesStats
 
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'sales_external'              => 'sales_external',
                     'sales_org_currency_external' => 'sales_org_currency_external',
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
@@ -68,7 +68,7 @@ class GetPlatformTimeSeriesStats
                     'customers'                   => 'customers',
                     'portfolios'                  => 'portfolios',
                     'customer_clients'            => 'customer_clients',
-                ],
+                ], $includePartners),
                 'platform_time_series_records',
                 'platform_time_series_id',
                 $from_date,

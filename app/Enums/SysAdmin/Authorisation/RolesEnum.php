@@ -62,6 +62,7 @@ enum RolesEnum: string
 
 
     case GOODS_IN_CLERK = 'goods-in-clerk';
+    case RETURNS_CLERK = 'returns-clerk';
     case GOODS_IN_SUPERVISOR = 'goods-in-supervisor';
 
     case ACCOUNTING_CLERK = 'accounting-clerk';
@@ -187,6 +188,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER => __('Production product developer'),
             RolesEnum::GOODS_IN_SUPERVISOR => __('Goods in supervisor'),
             RolesEnum::GOODS_IN_CLERK => __('Goods in clerk'),
+            RolesEnum::RETURNS_CLERK => __('Returns clerk'),
             RolesEnum::SHOP_PPC => __('Shop PPC'),
         };
     }
@@ -300,6 +302,10 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::INCOMING,
                 OrganisationPermissionsEnum::INVENTORY_VIEW
             ],
+            RolesEnum::RETURNS_CLERK => [
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
+                WarehousePermissionsEnum::RETURNS,
+            ],
             RolesEnum::GOODS_IN_SUPERVISOR => [
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
                 WarehousePermissionsEnum::INCOMING,
@@ -322,7 +328,8 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
                 OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
-                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW,
+                OrganisationPermissionsEnum::PROCUREMENT_VIEW
             ],
             RolesEnum::ACCOUNTING_SUPERVISOR => [
                 OrganisationPermissionsEnum::ACCOUNTING,
@@ -331,7 +338,8 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
                 OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
-                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW,
+                OrganisationPermissionsEnum::PROCUREMENT_VIEW
             ],
             RolesEnum::PROCUREMENT_SUPERVISOR => [
                 OrganisationPermissionsEnum::PROCUREMENT,
@@ -492,8 +500,7 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => [
-                // Supervising is not working: somebody who should answer chats holds the
-                // customer service worker position, said out loud rather than implied.
+                ShopPermissionsEnum::CHAT,
                 ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::SUPERVISOR_CRM,
@@ -602,6 +609,7 @@ enum RolesEnum: string
             RolesEnum::DISPATCH_SUPERVISOR,
             RolesEnum::GOODS_IN_CLERK,
             RolesEnum::GOODS_IN_SUPERVISOR,
+            RolesEnum::RETURNS_CLERK,
             RolesEnum::STOCK_CONTROLLER => 'Warehouse',
 
             RolesEnum::MANUFACTURING_ADMIN,

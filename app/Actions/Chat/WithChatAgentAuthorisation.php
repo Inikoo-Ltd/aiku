@@ -17,7 +17,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 trait WithChatAgentAuthorisation
 {
@@ -111,6 +110,21 @@ trait WithChatAgentAuthorisation
             || $user->authTo(["org-admin.{$shop->organisation_id}"]);
     }
 
+    protected function userSupervisesChatOnOrganisation(User $user, Organisation $organisation): bool
+    {
+        if (!$user->status) {
+            return false;
+        }
+
+        $permissions = $organisation->shops()->pluck('shops.id')
+            ->map(fn ($shopId) => "chat-m.{$shopId}")
+            ->merge($organisation->fulfilments()->pluck('fulfilments.id')->map(fn ($id) => "fulfilment-chat-m.{$id}"))
+            ->push("org-admin.{$organisation->id}")
+            ->all();
+
+        return $user->authTo($permissions);
+    }
+
     /**
      * Working chat means being an agent: in the routing pool, in the rota, in the figures.
      */
@@ -124,24 +138,7 @@ trait WithChatAgentAuthorisation
             return true;
         }
 
-        if ($this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat')) {
-            return true;
-        }
-
-        // ponytail: shop_has_chat_agents is a second permission system being retired; it still
-        // grants while the customer service positions catch up. Every use is logged so the
-        // branch, and the table, can go when the log falls silent.
-        if ($user->chatAgent?->isAssignedToShop($shop->id, $shop->organisation_id)) {
-            Log::warning('chat_legacy_agent_grant', [
-                'user_id' => $user->id,
-                'shop_id' => $shop->id,
-                'missing' => "chat.{$shop->id}",
-            ]);
-
-            return true;
-        }
-
-        return false;
+        return $this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat');
     }
 
     protected function userCanViewChatOnShop(User $user, Shop $shop): bool
@@ -168,14 +165,7 @@ trait WithChatAgentAuthorisation
             )
             ->all();
 
-        if ($permissions && $user->authTo($permissions)) {
-            return true;
-        }
-
-        return (bool) $user->chatAgent?->shopAssignments()
-            ->whereNull('deleted_at')
-            ->where('organisation_id', $organisation->id)
-            ->exists();
+        return (bool) ($permissions && $user->authTo($permissions));
     }
 
     /**
@@ -238,11 +228,7 @@ trait WithChatAgentAuthorisation
             }
         }
 
-        // ponytail: the retired assignment table still counts while the positions catch up,
-        // same as userCanWorkChatOnShop. Goes with that branch.
-        $legacy = $user->chatAgent?->shopAssignments()->whereNull('deleted_at')->pluck('shop_id')->all() ?? [];
-
-        return array_values(array_unique(array_merge($shopIds, $legacy)));
+        return array_values(array_unique($shopIds));
     }
 
     /**

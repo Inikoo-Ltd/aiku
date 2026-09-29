@@ -82,6 +82,7 @@ class ChargeHydrateStats implements ShouldBeUnique
             ->where('model_type', 'Charge')
             ->where('model_id', $charge->id)
             ->whereNull('deleted_at')
+            ->where('in_process', false)
             ->first();
 
         return [

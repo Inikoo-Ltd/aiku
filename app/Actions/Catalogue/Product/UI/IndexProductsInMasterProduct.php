@@ -12,6 +12,7 @@ use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithListingsColumns;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -164,6 +165,8 @@ class IndexProductsInMasterProduct extends OrgAction
     public function tableStructure($prefix = null, ?MasterAsset $masterAsset = null): Closure
     {
         return function (InertiaTable $table) use ($prefix, $masterAsset) {
+            $isDropshipping = $masterAsset?->masterShop->type == ShopTypeEnum::DROPSHIPPING;
+
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -209,7 +212,7 @@ class IndexProductsInMasterProduct extends OrgAction
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
             } else {
                 $table->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: $isDropshipping ? 'rrp' : 'rrp_per_unit', label: $isDropshipping ? __('RRP/outer') : __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'actions', label: '', canBeHidden: false);
             }

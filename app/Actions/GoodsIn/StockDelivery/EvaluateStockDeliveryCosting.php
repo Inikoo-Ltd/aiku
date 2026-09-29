@@ -33,22 +33,24 @@ class EvaluateStockDeliveryCosting
 
         foreach ([StockDeliveryCostTypeEnum::SHIPPING, StockDeliveryCostTypeEnum::DUTY] as $type) {
             $row    = $costs->firstWhere('type', $type);
-            $amount = $row && !$row->is_na ? (float) $row->amount : 0;
+            $amount = $row && !$row->is_na ? $row->amountInDeliveryCurrency() : 0;
             DistributeStockDeliveryExtraCost::distribute($stockDelivery, $type->itemCostField(), $amount);
         }
 
         $extraAmount = $costs
             ->where('type', StockDeliveryCostTypeEnum::EXTRA)
             ->filter(fn (StockDeliveryCost $cost) => !$cost->is_na)
-            ->sum(fn (StockDeliveryCost $cost) => (float) $cost->amount);
+            ->sum(fn (StockDeliveryCost $cost) => $cost->amountInDeliveryCurrency());
         DistributeStockDeliveryExtraCost::distribute($stockDelivery, 'cost_extra', $extraAmount);
 
-        $stockDelivery->update(['is_costed' => $this->isCosted($costs)]);
+        $stockDelivery->update(['is_costed' => $stockDelivery->parent_type === 'OrgPartner' || $this->isCosted($costs)]);
 
         if ($stockDelivery->is_costed) {
             $stockDelivery->items()
                 ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
                 ->update(['is_costed' => true]);
+
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
         }
 
         StockDeliveriesHydrateCosts::run($stockDelivery);

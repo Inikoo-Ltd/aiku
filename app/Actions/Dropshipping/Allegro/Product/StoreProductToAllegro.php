@@ -68,7 +68,7 @@ class StoreProductToAllegro extends RetinaAction
 
             $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
 
-            $offerLanguage = $this->getAllegroOfferLanguage();
+            $offerLanguage = $this->getAllegroOfferLanguage($marketplaceId);
 
             $productSearch = [];
             if ($product->barcode) {

@@ -10,7 +10,9 @@ namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -68,13 +70,17 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'partner_shopping_list_items.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
+            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id').' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $paginator->getCollection()->transform(function ($row) {
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+
+        $paginator->getCollection()->transform(function ($row) use ($exchange) {
+            $row->price_per_sko        = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->order_quantum        = BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size);
             $row->buyer_days_of_cover  = $row->buyer_days_of_cover !== null ? (int) $row->buyer_days_of_cover : null;
 
@@ -178,6 +184,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
     {
         return [
             ...$orgStocks->toArray(),
+            'currency'            => $this->orgPartner->organisation->currency->code,
             'over_budget_message' => GetPartnerOrderCapacity::overBudgetMessage($this->orgPartner),
         ];
     }

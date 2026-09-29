@@ -11,13 +11,22 @@
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\CRM\Customer\GetShopCustomersDashboard;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
+use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -25,17 +34,27 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
+use App\Enums\UI\Catalogue\DepartmentTabsEnum;
+use App\Enums\UI\Catalogue\FamilyTabsEnum;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
 
 uses()->group('ui');
 
@@ -181,6 +200,38 @@ test('UI show department', function () {
     });
 });
 
+test('UI show department sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        'tab'         => DepartmentTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Department')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->department));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test('UI create department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.create', [$this->organisation->slug, $this->shop->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
@@ -248,6 +299,39 @@ test('UI show family in department', function () {
             )
             ->has('tabs');
     });
+});
+
+test('UI show family sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.families.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->family->slug,
+        'tab'         => FamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Family')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->family));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI edit family in department', function () {
@@ -512,6 +596,39 @@ test('UI show product in department', function () {
 });
 
 
+test('UI show product sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->product->slug,
+        'tab'         => ProductTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Product')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProduct($this->product));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test('UI Index catalogue sub department inside department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
@@ -549,6 +666,39 @@ test('UI show sub department in department', function () {
             )
             ->has('tabs');
     });
+});
+
+test('UI show sub department sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->subDepartment->slug,
+        'tab'         => DepartmentTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/SubDepartment')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->subDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI edit sub department in department', function () {
@@ -978,4 +1128,155 @@ test('customer portfolio showcase does not send the stock of each part', functio
     expect($showcase['org_stocks'][0]['id'])->toBe($orgStock->id)
         ->and($showcase['org_stocks'][0])->not->toHaveKeys(['quantity', 'quantity_available'])
         ->and($showcase['parts'][0])->not->toHaveKeys(['quantity', 'quantity_available']);
+});
+
+test('sales are visible to webmasters but not to staff unrelated to sales', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn () => StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    $unrelated = $newUser();
+    $unrelated->givePermissionTo('human-resources.'.$this->organisation->id.'.view');
+    actingAs($unrelated);
+    get(route('grp.org.shops.index', [$this->organisation->slug]))->assertForbidden();
+
+    $webmaster = $newUser();
+    $webmaster->givePermissionTo('web.'.$this->shop->id.'.view');
+    actingAs($webmaster);
+
+    get(route('grp.org.shops.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Catalogue/Shops'));
+
+    get(route('grp.dashboard.show'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')->has('dashboard.super_blocks', 1));
+});
+
+test('shop dashboard sales table shows departments, with brands as an icon on the right', function () {
+    $response = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Catalogue/Shop')
+            ->where('dashboard.super_blocks.0.blocks.0.tabs.departments.title', 'Departments')
+            ->has('dashboard.super_blocks.0.month_target.target')
+            ->where('dashboard.super_blocks.0.sections.current', 'target')
+            ->where('dashboard.super_blocks.0.sections.navigation', fn ($navigation) => array_keys($navigation->all()) === array_map(
+                fn (ShopDashboardSectionsEnum $section) => $section->value,
+                ShopDashboardSectionsEnum::forShop($this->shop)
+            ));
+    });
+
+    $departmentsTable = ShopDashboardSalesTableTabsEnum::DEPARTMENTS->table(
+        $this->shop,
+        ['departments' => GetDepartmentTimeSeriesStats::run($this->shop)]
+    );
+
+    expect($departmentsTable['header']['columns']['label']['formatted_value'])->toBe('Department')
+        ->and($departmentsTable)->toHaveKeys(['body', 'totals'])
+        ->and(ShopDashboardSalesTableTabsEnum::BRANDS->blueprint())->toMatchArray(['type' => 'icon', 'align' => 'right']);
+});
+
+test('shop month sales target defaults to last year plus growth until management sets it', function () {
+    $shop  = $this->shop;
+    $today = now('UTC')->startOfDay();
+
+    $block = GetShopMonthSalesTarget::run($shop, null, $today);
+    $lastYearTotal = $block['last_year_total'];
+
+    expect($block['target']['is_default'])->toBeTrue()
+        ->and($block['target']['amount'])->toBe($lastYearTotal > 0 ? round($lastYearTotal * (1 + config('marketing.default_sales_target_growth')), 2) : null)
+        ->and($block['chart']['this_year'])->toHaveCount($today->day)
+        ->and($block['can_edit'])->toBeFalse();
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 123456.78, 'month' => $today->format('Y-m')]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['is_default'])->toBeFalse()
+        ->and($block['target']['amount'])->toBe(123456.78)
+        ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
+});
+
+test('only organisation or group admins can change the shop sales target', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $routeParameters = ['organisation' => $this->shop->organisation_id, 'shop' => $this->shop->id];
+
+    $webmaster = StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $webmaster->givePermissionTo('web.'.$this->shop->id.'.view');
+    actingAs($webmaster);
+    patchJson(route('grp.models.org.shop.sales_target.update', $routeParameters), ['target_org_currency' => 1])->assertForbidden();
+
+    $admin = $this->user;
+    $admin->givePermissionTo('org-admin.'.$this->shop->organisation_id);
+    actingAs($admin);
+    patchJson(route('grp.models.org.shop.sales_target.update', $routeParameters), ['target_org_currency' => 50000])->assertSuccessful();
+
+    expect(ShopSalesTarget::where('shop_id', $this->shop->id)->where('month', now('UTC')->startOfMonth()->toDateString())->first())
+        ->target_org_currency->toBe('50000.00')
+        ->set_by_user_id->toBe($admin->id);
+});
+
+test('dropshipping shops get sales channels and platforms, wholesale shops get customers', function () {
+    $dropshipping = Shop::factory()->make(['type' => ShopTypeEnum::DROPSHIPPING]);
+    $wholesale    = Shop::factory()->make(['type' => ShopTypeEnum::B2B]);
+
+    expect(array_keys(ShopDashboardSectionsEnum::navigation($dropshipping)))->toBe(['target', 'sales', 'sales_analysis', 'sales_channels', 'platforms', 'marketing'])
+        ->and(array_keys(ShopDashboardSectionsEnum::navigation($wholesale)))->toBe(['target', 'sales', 'sales_analysis', 'customers', 'marketing'])
+        ->and(ShopDashboardSectionsEnum::current($wholesale, ['shop_dashboard_section' => 'platforms']))->toBe('target')
+        ->and(ShopDashboardSectionsEnum::current($dropshipping, ['shop_dashboard_section' => 'platforms']))->toBe('platforms')
+        ->and(ShopDashboardSectionsEnum::current($wholesale, ['shop_dashboard_section' => 'customers'], 'sales_analysis'))->toBe('sales_analysis');
+});
+
+test('sales analysis lives in the shop dashboard sales analysis tab', function () {
+    get(route('grp.org.shops.show.dashboard.sales_analysis', [$this->organisation->slug, $this->shop->slug, 'from' => '2026-01-01']))
+        ->assertRedirect(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'sales_analysis', 'from' => '2026-01-01']));
+
+    get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'sales_analysis']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('dashboard.super_blocks.0.sections.current', 'sales_analysis')
+            ->missing('sales_analysis')
+            ->reloadOnly('sales_analysis', fn (AssertableInertia $reload) => $reload->has('sales_analysis')));
+});
+
+test('shop customers tab reads the hydrated snapshot and matches sister shop buyers by email', function () {
+    $otherShop = Shop::where('id', '!=', $this->shop->id)->where('group_id', $this->shop->group_id)->first()
+        ?? StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+
+    $this->customer->update(['email' => 'Twin.Buyer@example.com', 'trade_state' => CustomerTradeStateEnum::MANY]);
+    $twin = createCustomer($otherShop);
+    $twin->update(['email' => '  twin.buyer@EXAMPLE.com ', 'trade_state' => CustomerTradeStateEnum::ONE]);
+
+    $this->shop->crmStats()->update(['customers_dashboard' => null]);
+    expect(GetShopCustomersDashboard::run($this->shop->refresh()))->toBe(['pending' => true]);
+
+    ShopHydrateCustomersDashboard::run($this->shop);
+    $data = GetShopCustomersDashboard::run($this->shop->refresh());
+
+    expect($data['base'])->toHaveKeys(['ordered', 'active', 'losing', 'lost', 'never_ordered'])
+        ->and($data['this_month'])->toHaveKeys(['registrations', 'registrations_with_orders'])
+        ->and($data['problems'])->toHaveKeys(['conversations', 'classified', 'problems', 'by_topic'])
+        ->and($data['problems_month_to_date'])->toHaveKeys(['since', 'problems', 'by_topic'])
+        ->and($data['sister_shops']['shared_buyers'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($data['sister_shops']['shops'])->pluck('code'))->toContain($otherShop->code);
+
+    get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'customers']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('customers_dashboard')
+            ->reloadOnly('customers_dashboard', fn (AssertableInertia $reload) => $reload->has('customers_dashboard.sister_shops')));
+});
+
+test('shop dashboard widgets compute only the widgets a tab asks for', function () {
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'only' => 'top_products,top_families,department_movers,family_movers,out_of_stock,out_of_stock_month,problems_month,customer_actions']))
+        ->assertOk();
+
+    expect($response->json())->toHaveKeys(['top_products', 'top_families', 'department_movers.growing', 'department_movers.falling', 'family_movers.period', 'out_of_stock.products', 'out_of_stock.estimated_lost', 'out_of_stock.rows', 'out_of_stock_month.estimated_lost', 'customer_actions.at_risk', 'customer_actions.overdue', 'routes'])
+        ->not->toHaveKeys(['marketing', 'email', 'channels']);
 });

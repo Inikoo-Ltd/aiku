@@ -138,15 +138,11 @@ function onSave(item) {
 
     if (!updated) return
 
+    const original = editingBackup.value[item.id] ?? {}
+
     router.patch(
         route("grp.models.product.update", { product: item.id }),
-        {
-            price: updated.price,
-            rrp: updated.rrp,
-            rrp_per_unit: updated.rrp_per_unit,
-            unit: updated.unit,
-            name: updated.name
-        },
+        Object.fromEntries(Object.entries(updated).filter(([field, value]) => value !== original[field])),
         {
             preserveScroll: true,
             onStart: () => {

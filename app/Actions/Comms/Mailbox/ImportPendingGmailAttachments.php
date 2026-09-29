@@ -51,18 +51,23 @@ class ImportPendingGmailAttachments
         $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
         // The pictures came in when the mail did. Downloading everything again would attach
-        // them a second time, so what is already here is left alone.
-        $already = $message->attachedFiles()->pluck('name')->all();
+        // them a second time, so what is already here is left alone. Outlook names every picture
+        // image001.png, so a file the markup addresses is recognised by its Content-ID instead.
+        $already = $message->attachedFiles()
+            ->map(fn ($media) => $media->getCustomProperty('content_id') ?: $media->name)
+            ->all();
 
-        $files = $this->download(
+        $contentIds = [];
+        $files      = $this->download(
             $client,
             $gmailMessageId,
             $client->getMessage($gmailMessageId),
-            skip: $already
+            skip: $already,
+            contentIds: $contentIds
         );
 
         if ($files) {
-            SendChatMessage::make()->processMessageAttachments($message, $files);
+            SendChatMessage::make()->processMessageAttachments($message, $files, $contentIds);
         }
 
         foreach ($files as $file) {
@@ -141,7 +146,7 @@ class ImportPendingGmailAttachments
                 continue;
             }
 
-            if (in_array(basename((string) $attachment['filename']), $skip, true)) {
+            if (in_array($attachment['contentId'], $skip, true) || in_array(basename((string) $attachment['filename']), $skip, true)) {
                 continue;
             }
 
@@ -163,6 +168,37 @@ class ImportPendingGmailAttachments
         }
 
         return $files;
+    }
+
+    /**
+     * A picture too small to be imported is still part of what was written when the markup points
+     * at it: a cropped screenshot of two invoice numbers is under 2 KB. It is written into the body
+     * itself rather than stored, so a signature logo stays in the signature instead of piling up
+     * among the attachments.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, string> Content-ID => data uri
+     */
+    public function smallInlineImages(GmailClient $client, string $gmailMessageId, array $raw): array
+    {
+        $images = [];
+
+        foreach (GmailMessageParser::attachments(Arr::get($raw, 'payload', [])) as $attachment) {
+            if (! $attachment['inline']
+                || ! $attachment['contentId']
+                || ! str_starts_with($attachment['mimeType'], 'image/')
+                || $attachment['size'] >= self::INLINE_IMAGE_MIN_BYTES) {
+                continue;
+            }
+
+            $content = $attachment['attachmentId']
+                ? $client->getAttachment($gmailMessageId, $attachment['attachmentId'])
+                : GmailMessageParser::decodeData((string) $attachment['data']);
+
+            $images[$attachment['contentId']] = 'data:'.$attachment['mimeType'].';base64,'.base64_encode($content);
+        }
+
+        return $images;
     }
 
     /**
@@ -218,6 +254,19 @@ class ImportPendingGmailAttachments
         return collect($this->candidates($client, $raw))
             ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true)
                 && ! $this->isWorthImporting($attachment, false))
+            ->count();
+    }
+
+    /**
+     * What "Show attachments" would bring in for a mail already in the mailbox. Drive links are
+     * left out: counting them means asking Drive about every one.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    public function countImportable(array $raw): int
+    {
+        return collect(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])))
+            ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true))
             ->count();
     }
 

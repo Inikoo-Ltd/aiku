@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\SysAdmin\Organisation;
 use App\Services\GoogleAds\GoogleAdsClient;
@@ -51,6 +52,12 @@ class UpdateGoogleAdsCampaign extends OrgAction
      */
     public function handle(TrafficSourceCampaign $campaign, array $modelData): TrafficSourceCampaign
     {
+        if ($campaign->state->isInProcess()) {
+            throw ValidationException::withMessages([
+                'status' => __('This campaign is not at Google yet. Publish it first.'),
+            ]);
+        }
+
         $shop   = $campaign->trafficSource->shop;
         $client = GoogleAdsClient::forShop($shop);
 
@@ -104,7 +111,18 @@ class UpdateGoogleAdsCampaign extends OrgAction
             return $campaign;
         }
 
-        $campaign->update(['data' => $data]);
+        /* Switching a campaign on or off here is the door between published and paused and published
+           and serving, so the state moves with it rather than waiting for the nightly fetch to notice.
+           `serving_at` is stamped the first time only, so the timeline reads as when it started. */
+        $state = GoogleAdsCampaignStateEnum::fromGoogleStatus(Arr::get($data, 'status'));
+
+        $campaign->update([
+            'data'       => $data,
+            'state'      => $state,
+            'serving_at' => $state === GoogleAdsCampaignStateEnum::PUBLISHED_SERVING
+                ? ($campaign->serving_at ?? now())
+                : $campaign->serving_at,
+        ]);
 
         $campaign->auditEvent     = 'updated';
         $campaign->isCustomEvent  = true;

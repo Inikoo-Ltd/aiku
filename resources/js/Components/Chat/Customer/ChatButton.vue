@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage, faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
+import { faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
 import {
     faWhatsapp,
     faFacebookF,
@@ -29,6 +29,7 @@ import { router, usePage } from "@inertiajs/vue3"
 import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
+import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import Image from "@common/Components/Image.vue"
 
 const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Customer/MessageArea.vue"))
@@ -98,12 +99,21 @@ const props = withDefaults(
     defineProps<{
         shopId?: number | null
         createSessionUrl?: string | null
+        docked?: boolean
+        active?: boolean
     }>(),
     {
         shopId: null,
         createSessionUrl: null,
+        docked: false,
+        active: false,
     }
 )
+
+const emit = defineEmits<{
+    (e: "unread", count: number): void
+    (e: "requestOpen"): void
+}>()
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -150,6 +160,7 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
+const isFullHeight = computed(() => isMobile.value || !!props.docked)
 
 const page = usePage()
 
@@ -221,7 +232,7 @@ const showContactOptions = computed(
 const contactOptionIcon = (option: ContactOption) => option.icon ?? faComments
 
 const contactOptionColor = (option: ContactOption) =>
-    brandColors[option.icon?.[1] ?? ""] ?? layout?.app?.theme?.[4]
+    brandColors[option.icon?.[1] ?? ""] ?? brandColor.value
 
 if (isClient) {
     watch(open, (val) => {
@@ -788,6 +799,7 @@ const handleChatFromUrl = async () => {
         hasOpenedLiveChat.value = true
         await startChat()
     }
+    emit("requestOpen")
 }
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
@@ -831,6 +843,7 @@ onMounted(() => {
         }
 
         if (
+            !props.docked &&
             open.value &&
             panelRef.value &&
             !isInside(panelRef.value, e) &&
@@ -864,6 +877,28 @@ defineExpose({
 })
 
 const bundle = useBundle()
+const brandColor = computed(() => layout?.iris?.theme?.color?.[4] ?? layout?.app?.theme?.[4])
+const brandTextColor = computed(() => layout?.iris?.theme?.color?.[5] ?? layout?.app?.theme?.[5])
+const floatingButtonsDrag = useFloatingButtonsDrag(layout)
+const floatingPanelStyle = computed(() => isMobile.value || props.docked ? undefined : {
+    bottom: `${88 + floatingButtonsDrag.offset.value}px`,
+    maxHeight: `calc(100dvh - ${104 + floatingButtonsDrag.offset.value}px)`,
+})
+
+const onChatButtonClick = () => {
+    if (floatingButtonsDrag.wasJustDragged()) {
+        return
+    }
+    toggle()
+}
+
+watch(() => props.active, async (isActive) => {
+    if (props.docked && !!isActive !== open.value) {
+        await toggle()
+    }
+}, { immediate: true })
+
+watch(unreadCount, (count) => emit("unread", count), { immediate: true })
 
 const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
     if (!isClient) return
@@ -889,14 +924,14 @@ const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
 
 if (isClient) {
     watch(
-        [() => bundle.open.value, () => layout?.rightbasket?.show],
+        [() => bundle.open.value],
         () => {
             waitForElement('#jsd-widget', (widget) => {
                 widget.style.setProperty(
                     'right',
-                    (bundle.open.value || layout?.rightbasket?.show)
-                        ? '420px'
-                        : '16px',
+                    props.docked
+                        ? 'calc(var(--iris-side-width, 0px) + 1rem)'
+                        : bundle.open.value ? '420px' : '16px',
                     'important'
                 )
             })
@@ -908,11 +943,17 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
-            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
+        <button v-if="!docked" ref="buttonRef" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] w-12 h-12 flex items-center justify-center rounded-full shadow-lg buttonPrimary transition-[right,background-color] duration-300 touch-none focus:outline-none" :class="bundle.open.value ? 'right-[470px]' : 'right-3'"
+            :style="{ bottom: `${24 + floatingButtonsDrag.offset.value}px` }"
+            @pointerdown="floatingButtonsDrag.onPointerDown"
+            @pointermove="floatingButtonsDrag.onPointerMove"
+            @pointerup="floatingButtonsDrag.onPointerUp"
+            @pointercancel="floatingButtonsDrag.onPointerUp"
+            @click="onChatButtonClick">
+            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faComments" class="text-base"
                 fixed-width aria-hidden="true" />
-            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
-               bg-red-500 text-white text-[10px] font-semibold
+            <span v-if="unreadCount > 0" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1
+               bg-white text-gray-800 text-[11px] font-semibold shadow
                rounded-full flex items-center justify-center">
                 {{ unreadCount }}
             </span>
@@ -921,17 +962,19 @@ if (isClient) {
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="contact-options">
-            <div v-if="open && showContactOptions" ref="panelRef"
-                class="fixed z-[70] flex flex-col overflow-hidden bg-white shadow-xl" :class="isMobile
-                    ? 'inset-0 h-[100dvh]'
-                    : ['bottom-[140px] w-[350px] rounded-2xl max-h-[calc(100dvh-12rem)]',
-                        (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+            <div v-if="open && showContactOptions" ref="panelRef" :style="floatingPanelStyle"
+                class="flex flex-col overflow-hidden bg-white" :class="docked
+                    ? 'h-full w-full pt-3'
+                    : isMobile
+                    ? 'fixed z-[70] shadow-xl inset-0 h-[100dvh]'
+                    : ['fixed z-[70] shadow-xl w-[350px] rounded-2xl',
+                        bundle.open.value ? 'right-[430px]' : 'right-3'
                     ]">
                 <div class="relative shrink-0 px-6 pb-16" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+1.5rem)]'
                     : 'pt-6'" :style="{
-                        backgroundColor: layout?.app?.theme[4],
-                        color: layout?.app?.theme[5],
+                        backgroundColor: brandColor,
+                        color: brandTextColor,
                     }">
                     <button v-if="isMobile" @click="open = false"
                         class="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10">
@@ -955,7 +998,7 @@ if (isClient) {
                             {{ ctrans("Select") }}
                         </p>
 
-                        <div class="min-h-0 flex-1 overflow-y-auto pb-2" :class="isMobile ? '' : 'max-h-[300px]'">
+                        <div class="min-h-0 flex-1 overflow-y-auto pb-2" :class="isFullHeight ? '' : 'max-h-[300px]'">
                             <button v-for="(contactOption, index) in contactOptions" :key="index"
                                 @click="selectContactOption(contactOption)"
                                 class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
@@ -972,10 +1015,12 @@ if (isClient) {
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
-            <div v-if="open && !showContactOptions" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
-                ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
-                : ['bottom-[140px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
-                    (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+            <div v-if="open && !showContactOptions" ref="panelRef" :style="floatingPanelStyle" class="bg-[#f6f6f7] flex flex-col" :class="docked
+                ? 'h-full w-full'
+                : isMobile
+                ? 'fixed z-[70] border shadow-xl inset-0 rounded-none h-[100dvh]'
+                : ['fixed z-[70] border shadow-xl w-[350px] rounded-md',
+                    bundle.open.value ? 'right-[430px]' : 'right-3'
                 ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
@@ -1001,8 +1046,8 @@ if (isClient) {
                                     ? 'text-white shadow-sm'
                                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'" :style="activeMenu === m
                                         ? {
-                                            backgroundColor: layout.app.theme[4],
-                                            color: layout.app.theme[5],
+                                            backgroundColor: brandColor,
+                                            color: brandTextColor,
                                         }
                                         : {}">
                                 {{ ctrans(m === 'chat' ? 'Chat' : 'History') }}
@@ -1042,7 +1087,7 @@ if (isClient) {
 
                     <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
                         :messages="messagesLocal" :session="chatSession" :loading="loading" :isRating="isRating"
-                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" :fullHeight="isFullHeight" @send-message="sendMessage"
                         @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
@@ -1050,7 +1095,7 @@ if (isClient) {
                         :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
                         :shopId="shopId" @session-created="handleOfflineSession" />
 
-                    <div v-if="activeMenu === 'history'" :class="isMobile
+                    <div v-if="activeMenu === 'history'" :class="isFullHeight
                         ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'
                         : 'bg-gray-50 scroll-smooth min-h-[350px] max-h-[calc(100vh-400px)] flex flex-col'">
                         <MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid"
@@ -1129,17 +1174,16 @@ if (isClient) {
 }
 
 .buttonPrimary {
-    background-color: v-bind("layout?.app?.theme[4]") !important;
-    color: v-bind("layout?.app?.theme[5]") !important;
-    border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
+    background-color: v-bind("`color-mix(in srgb, ${brandColor} 90%, transparent)`") !important;
+    color: v-bind("brandTextColor") !important;
 
     &:hover {
-        background-color: v-bind("`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
+        background-color: v-bind("`color-mix(in srgb, ${brandColor} 85%, black)`"
         ) !important;
     }
 
-    &:focus {
-        box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
+    &:focus-visible {
+        box-shadow: 0 0 0 2px white, 0 0 0 4px v-bind("brandColor") !important;
     }
 }
 </style>

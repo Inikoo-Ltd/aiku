@@ -39,7 +39,7 @@ class SuggestChatSessionCustomer
     public const string BASIS_MANUAL = 'manual';
     public const string BASIS_PREVIOUS_LINK = 'previous_link';
 
-    private const array FREE_MAIL_DOMAINS = [
+    public const array FREE_MAIL_DOMAINS = [
         'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'live.com', 'live.co.uk', 'msn.com',
         'yahoo.com', 'yahoo.co.uk', 'yahoo.de', 'yahoo.fr', 'yahoo.es', 'icloud.com', 'me.com', 'aol.com', 'btinternet.com',
         'sky.com', 'talktalk.net', 'virginmedia.com', 'protonmail.com', 'proton.me', 'gmx.de', 'gmx.net', 'web.de',
@@ -143,7 +143,10 @@ class SuggestChatSessionCustomer
         // ponytail: customers.phone has no index, so this scans the shop's customers. Fine for a
         // queued job at a few guests a day; index the normalised phone if that changes.
         if (strlen($phone) >= 10) {
-            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])->first();
+            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])
+                ->orderByRaw('last_invoiced_at desc nulls last')
+                ->orderByDesc('id')
+                ->first();
             if ($customer) {
                 return [$customer, self::BASIS_PHONE];
             }

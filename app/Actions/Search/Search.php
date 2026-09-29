@@ -8,6 +8,7 @@
 
 namespace App\Actions\Search;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -15,12 +16,15 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Masters\MasterShop;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
     protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat', 'tickets'];
     protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
@@ -113,8 +117,8 @@ class Search extends OrgAction
             if ($scope === 'master_shop' && $request->query('masterShop')) {
                 $options = ['master_shop_id' => MasterShop::where('slug', $request->query('masterShop'))->first()?->id];
             }
-            if ($scope === 'chat' && $request->query('organisation')) {
-                $options = ['organisation_id' => Organisation::where('slug', $request->query('organisation'))->first()?->id];
+            if ($scope === 'chat') {
+                $options = $this->chatSearchOptions($request);
             }
         } elseif (in_array($scope, self::ORGANISATION_SCOPES, true)) {
             $organisation = Organisation::where('slug', $request->query('organisation'))->where('group_id', $request->user()->group_id)->firstOrFail();
@@ -205,6 +209,40 @@ class Search extends OrgAction
     private function authoriseScope(ActionRequest $request, array $permissions): void
     {
         abort_unless($request->user()->authTo($permissions), 403);
+    }
+
+    /**
+     * Ctrl K only ever shows chat and WhatsApp snippets from shops the searching user may
+     * view chat on — the same rule the inbox itself uses. Narrowed first to the group, or to
+     * one organisation in it when the UI asked for that, so a shop from another tenant is
+     * never even offered to the permission check.
+     *
+     * @return array{organisation_id: int|null, shop_ids: array<int, int>}
+     */
+    private function chatSearchOptions(ActionRequest $request): array
+    {
+        $organisationId = null;
+
+        if ($request->query('organisation')) {
+            $organisationId = Organisation::where('slug', $request->query('organisation'))
+                ->where('group_id', $request->user()->group_id)
+                ->first()?->id;
+        }
+
+        $shops = Shop::where('group_id', $this->group->id)
+            ->when($organisationId, fn ($query) => $query->where('organisation_id', $organisationId))
+            ->get();
+
+        /** @var User $user */
+        $user = $request->user();
+
+        return [
+            'organisation_id' => $organisationId,
+            'shop_ids'        => $shops
+                ->filter(fn (Shop $shop) => $this->userCanViewChatOnShop($user, $shop))
+                ->pluck('id')
+                ->all(),
+        ];
     }
 
     private function isTicketReference(string $query): bool

@@ -25,6 +25,7 @@ type ViewerType = "user" | "agent"
 interface ChatAttachment {
     id: number
     is_image: boolean
+    is_inline?: boolean
     media_url: {
         original: string
         webp?: string
@@ -46,6 +47,7 @@ interface Message {
     sender_type: SenderType
     message_text: string
     html_body?: string | null
+    has_embedded_pictures?: boolean
     created_at: string
     media_url?: {
         original: string
@@ -337,6 +339,10 @@ const quotedLabel = computed(() => {
     return quoted.file_name || ctrans(quoted.message_type === "image" ? "Photo" : "Attachment")
 })
 
+const adReferral = computed(() => props.message.metadata?.wa_referral ?? null)
+const adReferralImage = computed(() => adReferral.value?.thumbnail_url || adReferral.value?.image_url || null)
+const isAdReferralImageBroken = ref(false)
+
 const quotedAuthor = computed(() =>
     props.message.replied_to?.sender_type === "agent"
         ? props.agentName ?? ctrans("Agent")
@@ -349,13 +355,10 @@ const fileMime = computed(() => props.message.file_mime ?? props.message.media_u
 
 const attachmentList = computed<ChatAttachment[]>(() => {
     // A picture the email already shows in its own body is not listed again underneath it,
-    // where it would read as a second, separate photograph.
+    // where it would read as a second, separate photograph. With the body folded away behind a
+    // summary, the list is the only place left to see it.
     if (props.message.attachments?.length) {
-        const body = props.message.html_body ?? ""
-
-        return props.message.attachments.filter(
-            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
-        )
+        return props.message.attachments.filter((attachment) => !(attachment.is_inline && isShowingEmailBody.value))
     }
 
     if (!props.message.media_url && !props.message.download_route) return []
@@ -378,7 +381,7 @@ const isAttachmentRedactable = computed(() =>
     !!props.message.id &&
     !isRetracted.value &&
     props.message.is_attachment_redacted !== true &&
-    attachmentList.value.length > 0
+    (attachmentList.value.length > 0 || !!props.message.attachments?.length || props.message.has_embedded_pictures === true)
 )
 
 const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
@@ -509,6 +512,11 @@ const displayText = computed(() => {
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
+
+const emailSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
+const showFullEmail = ref(false)
+
+const isShowingEmailBody = computed(() => showEmailBody.value && !(emailSummary.value && !showFullEmail.value))
 
 // Customers put the order reference in the subject line, so it is the first thing read.
 const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
@@ -880,7 +888,7 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="relative max-w-[70%]">
+        <div class="relative" :class="isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
             <div v-if="showHoverToolbar"
                 class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
                 :class="isFromViewer ? 'right-0' : 'left-0'">
@@ -935,7 +943,7 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
-                :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
+                :class="[bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
                 <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" fixed-width />
@@ -951,6 +959,20 @@ watch(selectedLanguage, async (val) => {
                 <div class="font-semibold opacity-70">{{ quotedAuthor }}</div>
                 <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>
+
+            <a v-if="adReferral" :href="adReferral.source_url || undefined" target="_blank" rel="noopener noreferrer"
+                class="mb-1 flex w-[260px] max-w-full gap-2 rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1.5 text-[11px] leading-snug transition hover:bg-black/10">
+                <img v-if="adReferralImage && !isAdReferralImageBroken" :src="adReferralImage" alt=""
+                    class="h-12 w-12 shrink-0 rounded object-cover" @error="isAdReferralImageBroken = true" />
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1 font-semibold opacity-70">
+                        <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" fixed-width />
+                        {{ adReferral.source_type === "post" ? ctrans("From a Facebook or Instagram post") : ctrans("From a Facebook or Instagram ad") }}
+                    </div>
+                    <div v-if="adReferral.headline" class="font-semibold line-clamp-2 break-words">{{ adReferral.headline }}</div>
+                    <div v-if="adReferral.body" class="opacity-70 line-clamp-3 break-words">{{ adReferral.body }}</div>
+                </div>
+            </a>
 
             <div v-if="sharedContacts.length" class="mb-1 flex w-[240px] max-w-full flex-col gap-1.5">
                 <div v-for="contact in sharedContacts" :key="contact.key"
@@ -1092,6 +1114,18 @@ watch(selectedLanguage, async (val) => {
                 <span>{{ displayText || ctrans("Unsupported message") }}</span>
             </div>
 
+            <div v-else-if="emailSummary && !showFullEmail" class="text-sm">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-indigo-500">{{ ctrans("Summary") }}</div>
+                <p class="whitespace-pre-wrap break-words">{{ emailSummary }}</p>
+                <button type="button" class="mt-1.5 text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = true">
+                    {{ ctrans("Show full email") }}
+                </button>
+            </div>
+
             <!-- A received email keeps its layout; everything else is text. -->
             <template v-else-if="showEmailBody">
                 <div v-if="emailSubject"
@@ -1107,6 +1141,10 @@ watch(selectedLanguage, async (val) => {
             <p v-else-if="!location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
+
+            <button v-if="emailSummary && showFullEmail" type="button" class="mt-1 w-fit text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = false">
+                {{ ctrans("Show summary") }}
+            </button>
 
             <div v-if="
                 message?.is_offline_message &&

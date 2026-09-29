@@ -11,6 +11,8 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
@@ -50,6 +52,13 @@ class ShowMasterFamily extends OrgAction
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
         return $masterFamily;
+    }
+
+    private function historyAuditScope(MasterProductCategory $masterFamily, ActionRequest $request): array
+    {
+        return $request->get('history_scope') === 'all'
+            ? SalesAnalysisScope::forMasterCategory($masterFamily)->audits
+            : [['type' => 'MasterProductCategory', 'labels' => [$masterFamily->id => $masterFamily->code], 'shops' => null]];
     }
 
 
@@ -118,6 +127,14 @@ class ShowMasterFamily extends OrgAction
                 fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))
                 : Inertia::optional(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))),
 
+            MasterFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterFamilyTabsEnum::SALES_ANALYSIS->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+            'sales_analysis_teaser' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily))),
+
             'salesData' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)
                 : Inertia::optional(fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)),
@@ -139,8 +156,8 @@ class ShowMasterFamily extends OrgAction
                 : Inertia::optional(fn () => GetRelatedMasterProducts::run($masterFamily)),
 
             MasterFamilyTabsEnum::HISTORY->value => $this->tab == MasterFamilyTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))),
+                fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($masterFamily, $request)))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($masterFamily, $request)))),
 
             MasterFamilyTabsEnum::VARIANTS->value => $this->tab === MasterFamilyTabsEnum::VARIANTS->value ?
                 fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))
@@ -318,7 +335,7 @@ class ShowMasterFamily extends OrgAction
             // ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterFamilyTabsEnum::SALES->value))
             ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value, withRecordColumn: true));
     }
 
 

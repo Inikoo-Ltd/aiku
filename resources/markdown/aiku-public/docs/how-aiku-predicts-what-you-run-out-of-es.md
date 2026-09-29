@@ -36,13 +36,12 @@ Esa única regla es la razón por la que un superventas a cero muestra un pedido
 No todos los artículos tienen la misma calidad de evidencia detrás, y ayuda saber en qué caso estás.
 
 - **Su propio historial reciente.** El caso normal, y el que hay que fiarse. Los artículos estables reciben una estimación que sigue la tendencia; los artículos lentos e irregulares — los que salen de tres en tres cada varias semanas — se miden de otra forma, por lo grande que suele ser el pedido ocasional y lo largos que son los huecos de silencio, que es la manera honesta de describirlos.
-- **Su propio historial más largo.** No hay suficiente movimiento reciente, pero el artículo tiene pasado. Razonable, algo más lento en reaccionar.
-- **El mismo artículo en una organización hermana.** Tú apenas lo has vendido; en otra parte del grupo sí. aiku toma prestado su ritmo y lo divide entre dos, porque un mercado distinto es una pista, no una medición. Trátalo como punto de partida.
-- **La familia a la que pertenece.** El caso más débil: una línea nueva sin historial en ningún sitio, estimada a partir de sus vecinos y muy rebajada. Esto es un sustituto de tu criterio mientras lo tengas, no un reemplazo de él.
+- **El mismo artículo en una organización hermana.** Aquí no se ha vendido en los últimos tres meses; en otra parte del grupo sí. aiku toma prestado su ritmo y lo divide entre dos, porque un mercado distinto es una pista, no una medición. Trátalo como punto de partida.
+- **La familia a la que pertenece.** El caso más débil: normalmente una línea nueva sin ventas recientes en ningún sitio, estimada a partir de sus vecinos y muy rebajada. Esto es un sustituto de tu criterio mientras lo tengas, no un reemplazo de él.
 
-También hay un ajuste estacional: aiku compara el mismo trimestre del año pasado contra la media de ese año y ajusta el ritmo al alza o a la baja, dentro de unos límites, para que un artículo navideño no se compre a su ritmo de agosto. Los límites importan — un trimestre atípico no puede desbocar el número por sí solo.
+Si ninguna de estas fuentes tiene nada en que basarse, no hay estimación: ni día de agotamiento ni cantidad sugerida. El historial más antiguo del propio artículo no se usa — un artículo que se vendió bien el año pasado pero no en los últimos tres meses no se da por hecho que vuelva a venderse donde lo dejó. Cuando se probó, pedía de más.
 
-La regla de los días vacíos se aplica también aquí, y tiene que hacerlo. La Navidad pasada solo es evidencia sobre la Navidad si tenías el artículo para vender; un trimestre que pasaste sobre todo sin stock no dice nada de la temporada, solo del suministro. Así que cada trimestre se mide por día en que el artículo estuvo realmente disponible, y cualquier trimestre en el que estuviste sin stock más de la mitad del tiempo se descarta por completo de la comparación. Si eso deja menos de cuatro trimestres utilizables, aiku no hace ningún ajuste estacional en vez de hacer uno confiado construido sobre cuatro trimestres flojos.
+**No hay ajuste estacional.** El ritmo es lo que el artículo vendió en sus días recientes con stock, así que un artículo navideño en agosto se prevé a su ritmo de agosto. Se probó corregir cada artículo por su temporada y los números empeoraron: la mayoría de los artículos no venden lo suficiente para que sus propias temporadas se vean con fiabilidad. Así que antes de un pico que sabes que llega — la subida hacia el Q4, una línea de verano, una feria — sube el pedido a mano. La sugerencia no lo hará por ti.
 
 ## Por qué un número puede parecer equivocado (y a menudo lo está)
 
@@ -51,6 +50,7 @@ El pronóstico lee historial. Cualquier cosa que pase fuera de ese historial, no
 - **Un pedido grande puntual.** Un cliente que te deja la estantería vacía de golpe parece exactamente popularidad repentina. Pásalo por alto.
 - **Una línea que estás descatalogando.** El historial dice que se vende; tu plan dice que pares. El sistema no conoce tu plan.
 - **Una promoción, una foto de catálogo, una ficha de marketplace que se publica.** Demanda a punto de cambiar por un motivo que todavía no ha ocurrido.
+- **Un pico conocido, como el Q4.** No hay ajuste estacional, así que la sugerencia se calcula con los meses tranquilos de antes. Sube el pedido a mano, con tiempo suficiente para el plazo de entrega.
 - **Un producto totalmente nuevo.** Ver el caso de la familia más arriba — ese número es una estimación con cara de seguridad.
 - **Algo que no se mueve nada pero vale dinero.** Cae en **Dead stock** del panel, y pide una decisión de una persona, no un reabastecimiento.
 

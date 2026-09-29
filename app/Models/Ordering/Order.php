@@ -38,6 +38,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Reviews\OrderReviewStat;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
@@ -139,12 +140,15 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderChargesEngineEnum $charges_engine
  * @property int|null $customer_sales_channel_id
  * @property string|null $platform_order_id
+ * @property \Illuminate\Support\Carbon|null $platform_order_created_at
  * @property string|null $shipping_notes
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
  * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
+ * @property bool|null $has_gift_message
+ * @property string|null $gift_message
  * @property array<array-key, mixed>|null $post_submit_modification_data
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
@@ -253,11 +257,12 @@ class Order extends Model implements HasMedia, Auditable
         'finalised_at'                  => 'datetime',
         'dispatched_at'                 => 'datetime',
         'cancelled_at'                  => 'datetime',
+        'platform_order_created_at'     => 'datetime',
         'settled_at'                    => 'datetime',
         'fetched_at'                    => 'datetime',
         'last_fetched_at'               => 'datetime',
-        'grp_exchange'                  => 'decimal:4',
-        'org_exchange'                  => 'decimal:4',
+        'grp_exchange'                  => 'decimal:10',
+        'org_exchange'                  => 'decimal:10',
         'gross_amount'                  => 'decimal:2',
         'goods_amount'                  => 'decimal:2',
         'services_amount'               => 'decimal:2',
@@ -374,6 +379,7 @@ class Order extends Model implements HasMedia, Auditable
         'is_premium_dispatch',
         'has_extra_packing',
         'has_insurance',
+        'has_gift_message',
         'is_shipping_tbc',
         'is_shipping_by_external',
         'with_replacement',
@@ -384,6 +390,7 @@ class Order extends Model implements HasMedia, Auditable
 
         // Notes
         'customer_notes',
+        'gift_message',
         'public_notes',
         'internal_notes',
         'shipping_notes',
@@ -423,6 +430,20 @@ class Order extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function giftMessagePdfName(): ?string
+    {
+        $caption = $this->attachments()->wherePivot('scope', 'GiftMessage')->first()?->pivot->caption;
+
+        return $caption === 'Gift message' ? null : $caption;
+    }
+
+    public function isGiftMessageMissing(): bool
+    {
+        return $this->has_gift_message
+            && !$this->gift_message
+            && !$this->attachments()->wherePivot('scope', 'GiftMessage')->exists();
     }
 
     public function getSlugOptions(): SlugOptions
@@ -506,6 +527,20 @@ class Order extends Model implements HasMedia, Auditable
     public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class);
+    }
+
+    /**
+     * A collection order is handed over at the shop's premises, so its tax follows that address, not the customer's (HELP-3494).
+     * A customer with a valid tax number keeps being taxed where they are based: a business collecting to take the goods
+     * abroad stays zero-rated
+     */
+    public function taxableDeliveryAddress(?TaxNumber $taxNumber): ?Address
+    {
+        if ($this->collection_address_id && !$taxNumber?->valid && $this->shop->collectionAddress) {
+            return $this->shop->collectionAddress;
+        }
+
+        return $this->deliveryAddress;
     }
 
     public function deliveryAddress(): BelongsTo

@@ -67,6 +67,7 @@ const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fiel
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import ToggleStateSystemPage from '@/Components/Forms/Fields/ToggleStateSystemPage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
+import DeleteCustomer from '@/Components/Forms/Fields/DeleteCustomer.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
@@ -184,6 +185,7 @@ export const componentsList: { [key: string]: Component } = {
     'toggle_state_webpage': ToggleStateWebpage,
     'toggle_state_system_page': ToggleStateSystemPage,
     'delete_webpage': DeleteWebpage,
+    'delete_customer': DeleteCustomer,
     'button': ButtonForm,
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,

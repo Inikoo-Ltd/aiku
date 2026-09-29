@@ -9,6 +9,7 @@
 namespace App\Models\Helpers;
 
 use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Traits\HasTicketImages;
@@ -55,6 +56,7 @@ class TicketComment extends Model implements HasMedia
             'is_internal' => 'boolean',
             'is_lead_only' => 'boolean',
             'type'         => TicketCommentTypeEnum::class,
+            'has_qa_verdict' => TicketQaStatusEnum::class,
         ];
     }
 

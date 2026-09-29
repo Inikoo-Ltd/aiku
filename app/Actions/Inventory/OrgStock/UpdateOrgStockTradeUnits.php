@@ -8,16 +8,12 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
-use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -57,7 +53,7 @@ class UpdateOrgStockTradeUnits extends OrgAction
             $stockStrategy = null;
         }
 
-        $conversionRatio = $stockedChange ? $this->conversionRatio($orgStock, $tradeUnitsData) : null;
+        $conversionRatio = $stockedChange ? SyncOrgStockTradeUnits::conversionRatio($orgStock, $tradeUnitsData) : null;
 
         if ($stockedChange && !in_array($stockStrategy, ['keep', 'convert'])) {
             $errors = [
@@ -83,27 +79,7 @@ class UpdateOrgStockTradeUnits extends OrgAction
             ]);
         }
 
-        $orgStock = DB::transaction(function () use ($orgStock, $tradeUnitsData, $stockStrategy, $stockedLocations, $conversionRatio) {
-            $orgStock = SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData, $stockStrategy);
-
-            if ($stockStrategy === 'convert') {
-                foreach ($stockedLocations as $locationOrgStock) {
-                    $convertedQuantity = round($locationOrgStock->quantity * $conversionRatio, 3);
-                    StoreOrgStockMovement::make()->action($orgStock, $locationOrgStock->location, [
-                        'quantity'         => $convertedQuantity - $locationOrgStock->quantity,
-                        'audited_quantity' => $convertedQuantity,
-                        'type'             => OrgStockMovementTypeEnum::AUDIT,
-                        'reason'           => OrgStockMovementReasonEnum::UOM,
-                        'note'             => __('Count converted after packing change'),
-                        'org_amount'       => 0,
-                        'user_id'          => $this->actingUserId,
-                        'date'             => now()->format('Y-m-d H:i:s.u'),
-                    ]);
-                }
-            }
-
-            return $orgStock;
-        });
+        $orgStock = SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData, $stockStrategy, $this->actingUserId);
 
         $orgStock->unsetRelation('products');
         $jobs = $orgStock->products
@@ -114,35 +90,6 @@ class UpdateOrgStockTradeUnits extends OrgAction
         Bus::chain($jobs)->dispatch();
 
         return $orgStock;
-    }
-
-    /**
-     * Physical pieces on the shelf don't move when the packing is redeclared, so the count
-     * converts by old/new pack size. Only defined where both sides are a real packing under
-     * the same rule the packed_in hydrators use: a single trade unit with a clean integer
-     * quantity between 1 and 50000 — anything else is "packing unknown" and must be counted.
-     */
-    private function conversionRatio(OrgStock $orgStock, array $tradeUnitsData): ?float
-    {
-        $currentPivot = $orgStock->tradeUnits()->pluck('model_has_trade_units.quantity', 'trade_units.id');
-        $newPivot     = collect($tradeUnitsData)->map(fn ($pivotData) => (float) $pivotData['quantity']);
-
-        if ($currentPivot->count() !== 1 || $newPivot->count() !== 1
-            || (int) $currentPivot->keys()->first() !== (int) $newPivot->keys()->first()
-        ) {
-            return null;
-        }
-
-        $oldPackSize = (float) $currentPivot->first();
-        $newPackSize = (float) $newPivot->first();
-
-        foreach ([$oldPackSize, $newPackSize] as $packSize) {
-            if (floor($packSize) != $packSize || $packSize <= 0 || $packSize > 50000) {
-                return null;
-            }
-        }
-
-        return $oldPackSize !== $newPackSize ? $oldPackSize / $newPackSize : null;
     }
 
     public function rules(): array

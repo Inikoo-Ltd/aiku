@@ -46,11 +46,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property OrderPayDetailedStatusEnum $pay_detailed_status
  * @property mixed $is_premium_dispatch
  * @property mixed $has_extra_packing
+ * @property mixed $has_gift_message
  * @property mixed $customer_sales_channel_id
  * @property mixed $customer_notes
  * @property mixed $internal_notes
  * @property mixed $public_notes
  * @property mixed $shipping_notes
+ * @property mixed $private_warehouse_note
  * @property mixed $to_be_paid_by
  * @property mixed $has_insurance
  * @property mixed $tracking
@@ -132,12 +134,14 @@ class OrdersResource extends JsonResource
             'handled_in_aurora'           => (bool)$this->handled_in_aurora,
             'has_extra_packing'           => $this->has_extra_packing,
             'has_insurance'               => $this->has_insurance,
+            'has_gift_message'            => $this->has_gift_message,
             'is_dropshipping'             => $this->customer_sales_channel_id !== null,
             'updated_by_customer_at'      => $this->updated_by_customer_at,
             'customer_notes'              => $this->customer_notes,
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
+            'private_warehouse_note'      => $this->private_warehouse_note,
             'shipping_data'               => $this->shipping_data,
             'with_replacement'            => $this->with_replacement,
             'platform_milestones'         => data_get($this->data, 'platform_milestones'),

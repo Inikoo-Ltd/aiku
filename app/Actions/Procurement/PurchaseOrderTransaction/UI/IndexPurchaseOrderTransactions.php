@@ -22,11 +22,13 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexPurchaseOrderTransactions extends OrgAction
 {
@@ -79,9 +81,14 @@ class IndexPurchaseOrderTransactions extends OrgAction
     public function handle(PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->whereHas('supplierProduct', function ($query) use ($value) {
-                $query->where('code', 'ILIKE', "%$value%")
-                    ->orWhere('name', 'ILIKE', "%$value%");
+            $query->where(function ($query) use ($value) {
+                $query->whereHas('supplierProduct', function ($query) use ($value) {
+                    $query->where('code', 'ILIKE', "%$value%")
+                        ->orWhere('name', 'ILIKE', "%$value%");
+                })->orWhereHas('orgStock', function ($query) use ($value) {
+                    $query->where('code', 'ILIKE', "%$value%")
+                        ->orWhere('name', 'ILIKE', "%$value%");
+                });
             });
         });
 
@@ -110,6 +117,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ');
 
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'purchase_order_transactions.supplier_product_id')
+            ->leftJoin('org_stocks as os', 'os.id', '=', 'purchase_order_transactions.org_stock_id')
             ->select('purchase_order_transactions.*')
             ->selectSub($weight, 'weight')
             ->selectRaw('round(sp.cbm * purchase_order_transactions.quantity_ordered / nullif(sp.units_per_carton, 0), 2) as volume');
@@ -129,7 +137,14 @@ class IndexPurchaseOrderTransactions extends OrgAction
             }
         }
 
-        $paginator = $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
+        $paginator = $query->allowedSorts([
+            AllowedSort::custom('code', new class () implements Sort {
+                public function __invoke(Builder $query, bool $descending, string $property): void
+                {
+                    $query->orderByRaw('coalesce(sp.code, os.code) '.($descending ? 'desc' : 'asc'));
+                }
+            }),
+        ])
             ->defaultSort('purchase_order_transactions.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

@@ -8,16 +8,18 @@
 namespace App\Actions\Chat\MetaChatSession\UI;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatMessageSearch;
 use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
-use App\Actions\Chat\ChatSession\GetChatReplyPromise;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +30,7 @@ class GetMetaChatSessions
     use AsAction;
     use WithChatAgentAuthorisation;
     use WithUnclaimedChatSessions;
+    use WithChatMessageSearch;
 
     public function rules(): array
     {
@@ -48,6 +51,7 @@ class GetMetaChatSessions
             'pairs'          => ['sometimes', 'array'],
             'pairs.*'        => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'highlighted'    => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'      => ['sometimes', 'boolean'],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
@@ -117,7 +121,8 @@ class GetMetaChatSessions
             },
             'customer',
             'shop',
-            'assignments.chatAgent.user'
+            'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])
             ->withCount([
                 'messages as unread_count' => function ($q) {
@@ -137,7 +142,7 @@ class GetMetaChatSessions
             ]);
 
         if (GetChatSessions::oldestFirst($filters)) {
-            $query->orderByRaw(GetChatReplyPromise::waitingSql('meta_chat_sessions'));
+            $query->orderByRaw(FlagUrgentChatRequest::waitingSql('meta_chat_sessions'));
         }
 
         $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
@@ -185,6 +190,10 @@ class GetMetaChatSessions
 
         if (!empty($filters['unclaimed'])) {
             $this->scopeUnclaimedMetaChatSessions($query);
+        }
+
+        if (!empty($filters['ds_kind'])) {
+            $query->where('metadata->'.FlagUrgentChatRequest::KIND_KEY, $filters['ds_kind']);
         }
 
         // Additive: keeps the normal status and assignment filters, just narrows to
@@ -269,14 +278,17 @@ class GetMetaChatSessions
         }
 
         if (!empty($filters['search'])) {
-            $term = mb_strtolower($filters['search']);
-            $query->where(function ($q) use ($term) {
+            $term             = mb_strtolower($filters['search']);
+            $matchingMessages = $this->messagesMatching(MetaChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+
+            $query->where(function ($q) use ($term, $matchingMessages) {
                 $q->whereRaw('LOWER(meta_chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.phone_number COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereHas('customer', function ($q2) use ($term) {
                         $q2->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"])
                             ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"]);
-                    });
+                    })
+                    ->orWhereHas('messages', fn ($messages) => $messages->whereIn('meta_chat_messages.id', $matchingMessages));
             });
         }
 

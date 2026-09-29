@@ -26,8 +26,11 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
     {
         $query = Invoice::query()
             ->with([
-                'customer.address',
-                'order',
+                'customer',
+                'address',
+                'deliveryAddress',
+                'order.deliveryAddress',
+                'originalInvoice',
                 'currency',
                 'taxCategory',
             ])
@@ -64,6 +67,8 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             'Tax code: ES-SR',
             'Tax code: ES-SR+RE',
             'Tax code: ES-RR+RE',
+            'País envío',
+            'Factura original',
         ];
     }
 
@@ -93,8 +98,8 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             return $this->emptyRow();
         }
 
-        $address     = $customer->address;
-        $countryCode = $address->country_code ?? '';
+        $countryCode         = $invoice->address->country_code ?? '';
+        $deliveryCountryCode = ($invoice->deliveryAddress ?? $order?->deliveryAddress)?->country_code ?? '';
 
         // Refund is already minus from DB, no need to times that by -1
         $isRefund   = $invoice->type === InvoiceTypeEnum::REFUND;
@@ -151,6 +156,8 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             $invoice->tax_category_id === 30 ? number_format($taxAmount, 2, '.', '') : '',
             $invoice->tax_category_id === 51 ? number_format($taxAmount, 2, '.', '') : '',
             $invoice->tax_category_id === 53 ? number_format($taxAmount, 2, '.', '') : '',
+            $deliveryCountryCode,
+            $invoice->originalInvoice->reference ?? '',
         ];
     }
 
@@ -212,6 +219,6 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
 
     protected function emptyRow(): array
     {
-        return array_fill(0, 20, '');
+        return array_fill(0, count($this->headings()), '');
     }
 }

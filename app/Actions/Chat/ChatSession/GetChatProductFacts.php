@@ -66,6 +66,7 @@ class GetChatProductFacts
             'name'            => $product->name,
             'availability'    => $availability,
             'available_now'   => $inStock ? (int) $product->available_quantity : null,
+            'sold_in_packs_of' => (float) $product->units > 1 ? (float) $product->units.' '.($product->unit ?: 'units').', so available_now counts packs, not pieces' : null,
             'last_ones'       => $inStock && $product->state === ProductStateEnum::DISCONTINUING ? 'being discontinued, only what is left' : null,
             'more_on_order'   => !$inStock && $product->state !== ProductStateEnum::DISCONTINUED && GetProductIncomingStock::make()->earliestEta($product) !== null
                 ? 'yes, no confirmed date'

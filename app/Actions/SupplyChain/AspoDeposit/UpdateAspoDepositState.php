@@ -24,7 +24,10 @@ class UpdateAspoDepositState extends OrgAction
         }
 
         if (str_starts_with($request->route()->getName(), 'grp.org.')) {
-            return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+            return $request->user()->authTo([
+                "procurement.{$this->organisation->id}.edit",
+                "accounting.{$this->organisation->id}.edit",
+            ]);
         }
 
         return $request->user()->authTo('supply-chain.edit');

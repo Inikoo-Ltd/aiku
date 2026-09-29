@@ -36,6 +36,21 @@ class GetPartnerOrdersInTheMaking
      */
     public function handle(Organisation $seller): array
     {
+        [$orders, $allocated] = $this->allocate($seller);
+
+        return $this->aggregate($orders, $allocated);
+    }
+
+    /**
+     * @return array<int, array{line: object, in_the_bay: float, on_the_shelves: float}>
+     */
+    public function allocations(Organisation $seller): array
+    {
+        return $this->allocate($seller)[1];
+    }
+
+    private function allocate(Organisation $seller): array
+    {
         $partners = OrgPartner::where('organisation_id', $seller->id)
             ->whereNotNull('goods_out_location_id')
             ->with(['partner', 'goodsOutLocation'])
@@ -43,7 +58,7 @@ class GetPartnerOrdersInTheMaking
             ->keyBy('partner_id');
 
         if ($partners->isEmpty()) {
-            return [];
+            return [[], []];
         }
 
         $lines = DB::table('partner_shopping_list_items')
@@ -163,6 +178,11 @@ class GetPartnerOrdersInTheMaking
             unset($allocation);
         }
 
+        return [$orders, $allocated];
+    }
+
+    private function aggregate(array $orders, array $allocated): array
+    {
         $lanes = ['in_the_bay', 'on_the_shelves', 'being_made', 'requested'];
         foreach ($allocated as $allocation) {
             $line    = $allocation['line'];

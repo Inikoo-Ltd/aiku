@@ -45,12 +45,17 @@ class IndexTickets extends OrgAction
         return $request->user() !== null;
     }
 
+    protected function elementGroupsBase(Group $group)
+    {
+        return $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo(request()->user()), $this->createdInterval(), 'tickets.created_at');
+    }
+
     protected function getElementGroups(Group $group): array
     {
         $user = request()->user();
-        $base = $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo($user), $this->createdInterval(), 'tickets.created_at');
+        $base = $this->elementGroupsBase($group);
 
-        $groups = [
+        return [
             'mine'   => [
                 'label'    => __('Ownership'),
                 'optional' => true,
@@ -129,43 +134,22 @@ class IndexTickets extends OrgAction
             'qa_status' => [
                 'label'    => __('QA status'),
                 'optional' => true,
-                'elements' => collect(TicketQaStatusEnum::cases())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
-                    $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
-                ])->all(),
-                'engine'   => function ($query, $elements) {
-                    $query->whereIn('tickets.qa_status', $elements);
-                },
-            ],
-        ];
-
-        if (Ticket::canCheckQa($user)) {
-            $groups['qa_checker'] = [
-                'label'    => __('QA assignee'),
-                'optional' => true,
                 'elements' => [
-                    'mine'     => [__('Mine'), (clone $base)->where('qa_user_id', $user->id)->count()],
-                    'anyone'   => [__('Anyone'), (clone $base)->whereNotNull('qa_status')->whereNull('qa_user_id')->count()],
-                    'everyone' => [__('Everyone'), (clone $base)->whereNotNull('qa_status')->count()],
+                    'none' => [__('No verdict'), (clone $base)->whereNull('qa_status')->count()],
+                    ...collect(TicketQaStatusEnum::cases())->filter(fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
+                        $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
+                    ])->all(),
                 ],
-                'engine'   => function ($query, $elements) use ($user) {
-                    $query->where(function ($query) use ($elements, $user) {
-                        if (in_array('everyone', $elements)) {
-                            $query->orWhereNotNull('tickets.qa_status');
-
-                            return;
-                        }
-                        if (in_array('mine', $elements)) {
-                            $query->orWhere('tickets.qa_user_id', $user->id);
-                        }
-                        if (in_array('anyone', $elements)) {
-                            $query->orWhere(fn ($query) => $query->whereNotNull('tickets.qa_status')->whereNull('tickets.qa_user_id'));
+                'engine'   => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        $query->whereIn('tickets.qa_status', [...array_diff($elements, ['none']), TicketQaStatusEnum::REQUESTED->value, TicketQaStatusEnum::CHECKING->value]);
+                        if (in_array('none', $elements)) {
+                            $query->orWhereNull('tickets.qa_status');
                         }
                     });
                 },
-            ];
-        }
-
-        return $groups;
+            ],
+        ];
     }
 
     /**
@@ -220,6 +204,12 @@ class IndexTickets extends OrgAction
             }
         });
 
+        $qaRequestedFilter = AllowedFilter::callback('qa_requested', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->where('tickets.qa_status', TicketQaStatusEnum::REQUESTED);
+            }
+        });
+
         $hasAssigneeFilter = AllowedFilter::callback('has_assignee', function ($query, $value) {
             if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
                 $query->whereNotNull('tickets.assignee_id');
@@ -266,7 +256,7 @@ class IndexTickets extends OrgAction
             ->where('tickets.group_id', $group->id)
             ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
-            ->with(['reporter', 'customer', 'assignee', 'collaborators', 'organisation', 'source']);
+            ->with(['reporter', 'customer', 'assignee', 'collaborators', 'organisation', 'source', 'qaUser']);
 
         $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
@@ -276,18 +266,34 @@ class IndexTickets extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                default: $key === 'mine' ? $this->savedMineFilter() : null,
+                default: $this->elementGroupDefault($key),
                 optional: $elementGroup['optional'] ?? false
             );
         }
 
+        $this->restrictRows($queryBuilder, $prefix);
+        $this->pinToTop($queryBuilder);
+
         return $queryBuilder
             ->select(['tickets.*', 'users.username as assignee_username'])
-            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
+            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $qaRequestedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
             ->defaultSort('-tickets.created_at')
-            ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
+            ->allowedSorts(['reference', 'subject', 'status', 'qa_status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function pinToTop($queryBuilder): void
+    {
+    }
+
+    protected function restrictRows($queryBuilder, ?string $prefix): void
+    {
+    }
+
+    protected function elementGroupDefault(string $key): ?string
+    {
+        return $key === 'mine' ? $this->savedMineFilter() : null;
     }
 
     public function savedMineFilter(): ?string
@@ -305,7 +311,7 @@ class IndexTickets extends OrgAction
             }
 
             foreach ($this->getElementGroups($group) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null, optional: $elementGroup['optional'] ?? false);
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $this->elementGroupDefault($key), optional: $elementGroup['optional'] ?? false);
             }
 
             $table
@@ -314,15 +320,39 @@ class IndexTickets extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
-                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center')
-                ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
-                ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'qa_status', label: __('QA verdict'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
+                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center');
+
+            if ($this->combinesKindAndModule()) {
+                $table->column(key: 'kind_module', label: __('Kind / Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+            } else {
+                $table
+                    ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                    ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+            }
+
+            $table
                 ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
-                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
-                ->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
+                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px');
+
+            if ($this->showsCreatedColumn()) {
+                $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px');
+            }
+
+            $table
                 ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->defaultSort('-created_at');
         };
+    }
+
+    protected function combinesKindAndModule(): bool
+    {
+        return false;
+    }
+
+    protected function showsCreatedColumn(): bool
+    {
+        return true;
     }
 
     public function jsonResponse(LengthAwarePaginator $tickets): AnonymousResourceCollection
@@ -335,11 +365,11 @@ class IndexTickets extends OrgAction
         return Inertia::render(
             'Tickets/Tickets',
             [
-                'breadcrumbs' => $this->ticketsListBreadcrumbs(),
-                'title'       => __('Tickets'),
+                'breadcrumbs' => $this->listBreadcrumbs(),
+                'title'       => $this->listTitle(),
                 'pageHead'    => [
-                    'title'   => __('Tickets'),
-                    'icon'    => ['fal', 'fa-life-ring'],
+                    'title'   => $this->listTitle(),
+                    'icon'    => $this->listIcon(),
                     'actions' => Ticket::canBeRaisedBy(request()->user()) ? [
                         [
                             'type'  => 'button',
@@ -373,9 +403,40 @@ class IndexTickets extends OrgAction
                 ],
                 'createdIntervals' => $this->createdIntervalOptions(),
                 'createdInterval'  => $this->createdInterval(),
+                'listTip'          => $this->listTip(),
+                'listTipTitle'     => $this->listTipTitle(),
             ]
         )->table($this->tableStructure($this->group));
     }
+
+    protected function listTitle(): string
+    {
+        return __('Tickets');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function listIcon(): array
+    {
+        return ['fal', 'fa-life-ring'];
+    }
+
+    protected function listBreadcrumbs(): array
+    {
+        return $this->ticketsListBreadcrumbs();
+    }
+
+    protected function listTip(): ?string
+    {
+        return null;
+    }
+
+    protected function listTipTitle(): ?string
+    {
+        return null;
+    }
+
 
     private const array HOURLY_INTERVALS = ['1h' => 1, '3h' => 3, '24h' => 24];
 

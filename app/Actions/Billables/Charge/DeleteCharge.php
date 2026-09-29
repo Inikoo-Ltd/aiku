@@ -8,6 +8,7 @@
 
 namespace App\Actions\Billables\Charge;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
@@ -47,6 +48,7 @@ class DeleteCharge extends OrgAction
         ShopHydrateCharges::dispatch($shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCharges::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCharges::dispatch($shop->group)->delay($this->hydratorsDelay);
+        PurgeIrisDocsFromVarnish::forShop($shop);
 
         return $charge;
     }

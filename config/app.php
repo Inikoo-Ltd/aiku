@@ -231,6 +231,7 @@ return [
     ])->toArray(),
 
     'server_name' => env('SERVER_NAME'),
+    'outgoing_ips' => env('OUTGOING_IPS', '65.109.156.60, 65.109.156.41, 65.109.156.59, 157.180.99.45'),
 
     'po_editor_api_key' => env('PO_EDITOR_READ_ONLY_API_KEY', ''),
     'aurora_image_path' => env('AURORA_IMAGE_PATH'),

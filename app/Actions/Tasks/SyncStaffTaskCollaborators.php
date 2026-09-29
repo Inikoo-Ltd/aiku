@@ -61,7 +61,7 @@ class SyncStaffTaskCollaborators
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffTask')->group_id === $request->user()->group_id;
+        return $request->route('staffTask')->isVisibleTo($request->user());
     }
 
     public function rules(): array

@@ -20,8 +20,8 @@ trait HasOrderFields
         $table->decimal('org_net_amount', 16)->nullable();
         $table->unsignedSmallInteger('tax_category_id')->index();
         $table->foreign('tax_category_id')->references('id')->on('tax_categories');
-        $table->decimal('grp_exchange', 16, 4)->nullable();
-        $table->decimal('org_exchange', 16, 4)->nullable();
+        $table->decimal('grp_exchange', 22, 10)->nullable();
+        $table->decimal('org_exchange', 22, 10)->nullable();
         return $table;
     }
 }

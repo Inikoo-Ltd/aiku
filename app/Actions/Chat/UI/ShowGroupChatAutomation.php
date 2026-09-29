@@ -160,13 +160,14 @@ class ShowGroupChatAutomation extends OrgAction
             ->join('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'meta_chat_messages.meta_chat_session_id')
             ->where('meta_chat_messages.sender_type', 'system')
             ->whereNull('meta_chat_messages.deleted_at')
-            ->whereRaw("coalesce(meta_chat_messages.metadata->>'claim_details_asked_at', meta_chat_messages.metadata->>'out_of_hours_replied_at', meta_chat_messages.metadata->>'asked_if_customer', meta_chat_messages.metadata->>'greeted_at', meta_chat_messages.metadata->>'greeting') is not null")
+            ->whereRaw("coalesce(meta_chat_messages.metadata->>'claim_details_asked_at', meta_chat_messages.metadata->>'out_of_hours_replied_at', meta_chat_messages.metadata->>'asked_if_customer', meta_chat_messages.metadata->>'greeted_at', meta_chat_messages.metadata->>'greeting', meta_chat_messages.metadata->>'automated') is not null")
             ->tap(fn ($query) => $shops($query, 'meta_chat_sessions'))
             ->select([
                 DB::raw("case
                     when meta_chat_messages.metadata->>'claim_details_asked_at' is not null then 'claim_details'
                     when meta_chat_messages.metadata->>'out_of_hours_replied_at' is not null then 'out_of_hours'
                     when meta_chat_messages.metadata->>'asked_if_customer' is not null then 'asked_if_customer'
+                    when meta_chat_messages.metadata->>'automated' is not null then meta_chat_messages.metadata->>'automated'
                     else 'greeting' end as kind"),
                 'meta_chat_messages.created_at as at',
                 DB::raw('null::integer as draft_id'),

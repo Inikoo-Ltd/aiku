@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="h"><text x="70" y="90" font-size="30">Supply Chain › PO journey</text></g>
+  <g class="w">
+    <path d="M250 170 L322 170 L334 203.0 L322 236 L250 236 L262 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M338 170 L410 170 L422 203.0 L410 236 L338 236 L350 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M426 170 L498 170 L510 203.0 L498 236 L426 236 L438 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M514 170 L586 170 L598 203.0 L586 236 L514 236 L526 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M602 170 L674 170 L686 203.0 L674 236 L602 236 L614 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M690 170 L762 170 L774 203.0 L762 236 L690 236 L702 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M778 170 L850 170 L862 203.0 L850 236 L778 236 L790 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M866 170 L938 170 L950 203.0 L938 236 L866 236 L878 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M954 170 L1026 170 L1038 203.0 L1026 236 L954 236 L966 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M1042 170 L1114 170 L1126 203.0 L1114 236 L1042 236 L1054 203.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M250 340 L322 340 L334 373.0 L322 406 L250 406 L262 373.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M778 340 L850 340 L862 373.0 L850 406 L778 406 L790 373.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M866 340 L938 340 L950 373.0 L938 406 L866 406 L878 373.0 Z" fill="#76b7c2" opacity="0.55"/>
+    <path d="M954 340 L1026 340 L1038 373.0 L1026 406 L954 406 L966 373.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M1042 340 L1114 340 L1126 373.0 L1114 406 L1042 406 L1054 373.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M250 510 L322 510 L334 543.0 L322 576 L250 576 L262 543.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M338 510 L410 510 L422 543.0 L410 576 L338 576 L350 543.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M426 510 L498 510 L510 543.0 L498 576 L426 576 L438 543.0 Z" fill="#9dcab0" opacity="0.55"/>
+    <path d="M514 510 L586 510 L598 543.0 L586 576 L514 576 L526 543.0 Z" fill="#e88a73" opacity="0.55"/>
+    <path d="M602 510 L674 510 L686 543.0 L674 576 L602 576 L614 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M690 510 L762 510 L774 543.0 L762 576 L690 576 L702 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M778 510 L850 510 L862 543.0 L850 576 L778 576 L790 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M866 510 L938 510 L950 543.0 L938 576 L866 576 L878 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M954 510 L1026 510 L1038 543.0 L1026 576 L954 576 L966 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M1042 510 L1114 510 L1126 543.0 L1114 576 L1042 576 L1054 543.0 Z" fill="#d9d4c7" opacity="0.35"/>
+    <path d="M250 690 l40 0 l8 12 l-8 12 l-40 0 l8 -12 z" fill="#9dcab0" opacity=".6"/>
+    <path d="M460 690 l40 0 l8 12 l-8 12 l-40 0 l8 -12 z" fill="#76b7c2" opacity=".6"/>
+    <path d="M670 690 l40 0 l8 12 l-8 12 l-40 0 l8 -12 z" fill="#e88a73" opacity=".6"/>
+    <path d="M880 690 l40 0 l8 12 l-8 12 l-40 0 l8 -12 z" fill="#d9d4c7" opacity=".6"/>
+  </g>
+  <g class="pen">
+    <path d="M250 170 L322 170 L334 203.0 L322 236 L250 236 L262 203.0 Z"/>
+    <path d="M338 170 L410 170 L422 203.0 L410 236 L338 236 L350 203.0 Z"/>
+    <path d="M426 170 L498 170 L510 203.0 L498 236 L426 236 L438 203.0 Z"/>
+    <path d="M514 170 L586 170 L598 203.0 L586 236 L514 236 L526 203.0 Z"/>
+    <path d="M602 170 L674 170 L686 203.0 L674 236 L602 236 L614 203.0 Z"/>
+    <path d="M690 170 L762 170 L774 203.0 L762 236 L690 236 L702 203.0 Z"/>
+    <path d="M778 170 L850 170 L862 203.0 L850 236 L778 236 L790 203.0 Z"/>
+    <path d="M866 170 L938 170 L950 203.0 L938 236 L866 236 L878 203.0 Z"/>
+    <path d="M954 170 L1026 170 L1038 203.0 L1026 236 L954 236 L966 203.0 Z"/>
+    <path d="M1042 170 L1114 170 L1126 203.0 L1114 236 L1042 236 L1054 203.0 Z"/>
+    <path d="M250 340 L322 340 L334 373.0 L322 406 L250 406 L262 373.0 Z"/>
+    <path d="M352 373.0 L408 373.0" class="soft"/>
+    <path d="M426 340 L498 340 L510 373.0 L498 406 L426 406 L438 373.0 Z" class="soft"/>
+    <path d="M514 340 L586 340 L598 373.0 L586 406 L514 406 L526 373.0 Z" class="soft"/>
+    <path d="M602 340 L674 340 L686 373.0 L674 406 L602 406 L614 373.0 Z" class="soft"/>
+    <path d="M690 340 L762 340 L774 373.0 L762 406 L690 406 L702 373.0 Z" class="soft"/>
+    <path d="M778 340 L850 340 L862 373.0 L850 406 L778 406 L790 373.0 Z"/>
+    <path d="M866 340 L938 340 L950 373.0 L938 406 L866 406 L878 373.0 Z"/>
+    <path d="M954 340 L1026 340 L1038 373.0 L1026 406 L954 406 L966 373.0 Z"/>
+    <path d="M1042 340 L1114 340 L1126 373.0 L1114 406 L1042 406 L1054 373.0 Z"/>
+    <path d="M250 510 L322 510 L334 543.0 L322 576 L250 576 L262 543.0 Z"/>
+    <path d="M338 510 L410 510 L422 543.0 L410 576 L338 576 L350 543.0 Z"/>
+    <path d="M426 510 L498 510 L510 543.0 L498 576 L426 576 L438 543.0 Z"/>
+    <path d="M514 510 L586 510 L598 543.0 L586 576 L514 576 L526 543.0 Z"/>
+    <path d="M602 510 L674 510 L686 543.0 L674 576 L602 576 L614 543.0 Z"/>
+    <path d="M690 510 L762 510 L774 543.0 L762 576 L690 576 L702 543.0 Z"/>
+    <path d="M778 510 L850 510 L862 543.0 L850 576 L778 576 L790 543.0 Z"/>
+    <path d="M866 510 L938 510 L950 543.0 L938 576 L866 576 L878 543.0 Z"/>
+    <path d="M954 510 L1026 510 L1038 543.0 L1026 576 L954 576 L966 543.0 Z"/>
+    <path d="M1042 510 L1114 510 L1126 543.0 L1114 576 L1042 576 L1054 543.0 Z"/>
+  </g>
+  <g class="h">
+    <text x="292" y="150" font-size="17" text-anchor="middle">Created</text>
+    <text x="380" y="150" font-size="17" text-anchor="middle">Sample</text>
+    <text x="468" y="150" font-size="17" text-anchor="middle">Deposit</text>
+    <text x="556" y="150" font-size="17" text-anchor="middle">Production</text>
+    <text x="644" y="150" font-size="17" text-anchor="middle">QC</text>
+    <text x="732" y="150" font-size="17" text-anchor="middle">Handover</text>
+    <text x="820" y="150" font-size="17" text-anchor="middle">Dispatched</text>
+    <text x="908" y="150" font-size="17" text-anchor="middle">Transit</text>
+    <text x="996" y="150" font-size="17" text-anchor="middle">Received</text>
+    <text x="1084" y="150" font-size="17" text-anchor="middle">Online</text>
+    <text x="70" y="200" font-size="26">PO-0001</text>
+    <text x="70" y="228" font-size="18" style="fill:#6b6776">agent a → supplier b</text>
+    <text x="294" y="210" font-size="20" text-anchor="middle">3 Jun</text>
+    <text x="382" y="210" font-size="20" text-anchor="middle">14 Jun</text>
+    <text x="470" y="210" font-size="20" text-anchor="middle">9 Jun</text>
+    <text x="558" y="210" font-size="20" text-anchor="middle">2 Jul</text>
+    <text x="646" y="210" font-size="20" text-anchor="middle">8 Jul</text>
+    <text x="734" y="210" font-size="20" text-anchor="middle">12 Jul</text>
+    <text x="822" y="210" font-size="20" text-anchor="middle">15 Jul</text>
+    <text x="910" y="210" font-size="20" text-anchor="middle">24 Aug</text>
+    <text x="998" y="210" font-size="20" text-anchor="middle">27 Aug</text>
+    <text x="1086" y="210" font-size="20" text-anchor="middle">2 Sep</text>
+    <text x="1126" y="266" font-size="19" text-anchor="end" style="fill:#3a6b52">completed</text>
+    <text x="70" y="370" font-size="26">PO-0002</text>
+    <text x="70" y="398" font-size="18" style="fill:#6b6776">direct supplier c</text>
+    <text x="294" y="380" font-size="20" text-anchor="middle">5 Aug</text>
+    <text x="822" y="380" font-size="20" text-anchor="middle">20 Aug</text>
+    <text x="910" y="380" font-size="20" text-anchor="middle">4 Oct</text>
+    <text x="998" y="380" font-size="20" text-anchor="middle">7 Oct</text>
+    <text x="1086" y="380" font-size="20" text-anchor="middle">14 Oct</text>
+    <text x="1126" y="436" font-size="19" text-anchor="end" style="fill:#3a6b52">on track · ETA 14 Oct</text>
+    <text x="70" y="540" font-size="26">PO-0003</text>
+    <text x="70" y="568" font-size="18" style="fill:#6b6776">agent a → supplier d</text>
+    <text x="294" y="550" font-size="20" text-anchor="middle">12 Jun</text>
+    <text x="382" y="550" font-size="20" text-anchor="middle">20 Jun</text>
+    <text x="470" y="550" font-size="20" text-anchor="middle">27 Jun</text>
+    <text x="558" y="550" font-size="20" text-anchor="middle" style="fill:#b53a2a">+12d</text>
+    <text x="646" y="550" font-size="20" text-anchor="middle" text-decoration="line-through">18 Aug</text>
+    <text x="734" y="550" font-size="20" text-anchor="middle" text-decoration="line-through">23 Aug</text>
+    <text x="822" y="550" font-size="20" text-anchor="middle">28 Aug</text>
+    <text x="910" y="550" font-size="20" text-anchor="middle">2 Oct</text>
+    <text x="998" y="550" font-size="20" text-anchor="middle">5 Oct</text>
+    <text x="1086" y="550" font-size="20" text-anchor="middle">12 Oct</text>
+    <text x="1126" y="606" font-size="19" text-anchor="end" style="fill:#b53a2a">overdue · in production</text>
+    <text x="308" y="709" font-size="20">done</text>
+    <text x="518" y="709" font-size="20">now, on time</text>
+    <text x="728" y="709" font-size="20">late</text>
+    <text x="938" y="709" font-size="20">planned</text>
+  </g>
+</svg>

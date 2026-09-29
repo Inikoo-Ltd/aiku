@@ -11,6 +11,7 @@ use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\StoreBuyXGetCheapestFree;
 use App\Actions\Discounts\Offer\StoreProductDiscount;
 use App\Actions\Discounts\Offer\StoreProductStepDiscount;
+use App\Actions\Discounts\Offer\StoreProductsStepDiscount;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
@@ -37,3 +38,4 @@ Route::post('offers/shop/{shop:id}/shipping-offer', StoreDiscountShipping::class
 Route::post('offers/shop/{shop:id}/bogo-offer', StoreBuyXGetCheapestFree::class)->name('bogo_offer.store');
 Route::post('offers/shop/{shop:id}/product-offer', StoreProductDiscount::class)->name('product_offer.store');
 Route::post('offers/shop/{shop:id}/step-discount', StoreProductStepDiscount::class)->name('step_discount.store');
+Route::post('offers/shop/{shop:id}/products-step-discount', StoreProductsStepDiscount::class)->name('products_step_discount.store');

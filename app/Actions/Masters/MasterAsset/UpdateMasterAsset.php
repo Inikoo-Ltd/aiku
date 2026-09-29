@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
+use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -34,6 +35,8 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
@@ -41,6 +44,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -60,6 +64,16 @@ class UpdateMasterAsset extends OrgAction
 
     /** Only a human editing in the UI is guarded against overlapping sweeps; the seeder sequences itself. */
     private bool $guardTaxSweep = false;
+
+    /**
+     * @param Collection<int, TradeUnit> $tradeUnits
+     *
+     * @return array<int, float>
+     */
+    private function compositionSignature(Collection $tradeUnits): array
+    {
+        return $tradeUnits->mapWithKeys(fn (TradeUnit $tradeUnit) => [$tradeUnit->id => (float) $tradeUnit->pivot->quantity])->sortKeys()->all();
+    }
 
     /**
      * @throws \Throwable
@@ -195,7 +209,7 @@ class UpdateMasterAsset extends OrgAction
                     data_set($modelData, 'units', $unitsFromTradeUnits['units']);
                 }
                 /** A label typed in this same save wins over the one the composition suggests. */
-                if (!Arr::has($modelData, 'unit')) {
+                if (!Arr::has($modelData, 'unit') && $unitsFromTradeUnits['unit']) {
                     data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
                 }
 
@@ -208,6 +222,12 @@ class UpdateMasterAsset extends OrgAction
 
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
+
+            if (Arr::has($modelData, 'master_prices')) {
+                $masterAsset->updateQuietly(['price_review' => null]);
+            } elseif ($this->compositionSignature($oldTradeUnitData) !== $this->compositionSignature($masterAsset->tradeUnits)) {
+                $masterAsset->updateQuietly(['price_review' => 'composition_changed']);
+            }
 
             $this->dispatchCustomAuditTradeUnit($masterAsset, $oldTradeUnitData);
 
@@ -396,6 +416,8 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($masterAsset->wasChanged('barcode')) {
+            SyncBarcodeToMasterAsset::run($masterAsset);
+
             /** A child that has had its own barcode chosen keeps it, like every other override. */
             foreach ($masterAsset->products()->where('products.independent_barcode', false)->get() as $product) {
                 UpdateProduct::run($product, [
@@ -487,13 +509,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
-            'barcode'                       => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:255',
-                Rule::exists('barcodes', 'number')->whereNull('deleted_at')
-            ],
+            'barcode'                       => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {
@@ -537,6 +553,23 @@ class UpdateMasterAsset extends OrgAction
     {
         if ($this->strict) {
             $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+
+        $this->validateBarcodeIsFree($validator, Arr::get($validator->getData(), 'barcode'));
+    }
+
+    /**
+     * A master's own GTIN identifies the bundle, so it comes from the pool and nobody else may
+     * carry it: a member trade unit's barcode would publish the cap as the tester.
+     */
+    private function validateBarcodeIsFree(Validator $validator, ?string $barcode): void
+    {
+        if (blank($barcode) || $barcode === $this->masterAsset->barcode) {
+            return;
+        }
+
+        if (!Barcode::where('group_id', $this->masterAsset->group_id)->where('number', $barcode)->free()->exists()) {
+            $validator->errors()->add('barcode', __('This barcode is not free in the barcode pool. Generate a new one.'));
         }
     }
 

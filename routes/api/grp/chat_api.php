@@ -14,6 +14,7 @@ use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Actions\Chat\ChatSession\GetChatAvailability;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\Chat\ChatSession\HandleChatRead;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
@@ -55,8 +56,8 @@ Route::get('/ping', function () {
 })->name('ping');
 
 
-Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
-Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
+Route::post('/sessions', StoreChatSession::class)->name('sessions.store')->middleware('throttle:chat-guest');
+Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store')->middleware('throttle:chat-guest');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)->name('sessions.update');
 Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asApiController'])->name('sessions.close');
@@ -66,6 +67,7 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 Route::post('/typing', HandleChatTyping::class)->name('typing');
 Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
+Route::get('/availability', GetChatAvailability::class)->name('availability');
 Route::get('/widget-config', GetChatWidgetConfig::class)->name('widget.config');
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)->name('chat.attachment.download');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');

@@ -14,12 +14,16 @@ use App\Actions\Goods\Stock\UI\EditStock;
 use App\Actions\Goods\Stock\UI\EditStockComposition;
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\Stock\UI\ShowStock;
+use App\Actions\Goods\Stock\UI\ShowStockLabels;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Goods\StockFamily\UI\IndexStockFamilies;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
+use App\Actions\Goods\UI\ExportGoodsDashboard;
+use App\Actions\Goods\UI\ShowGoodsAnalysis;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Actions\Goods\UI\ShowGoodsProductDetail;
 use App\Actions\Helpers\TariffCode\UI\IndexTariffCodes;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +32,9 @@ require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
+Route::get('/analysis', ShowGoodsAnalysis::class)->name('analysis');
+Route::get('/export', ExportGoodsDashboard::class)->name('export');
+Route::get('/products/{stock}', ShowGoodsProductDetail::class)->name('products.show');
 Route::get('tariff-codes', IndexTariffCodes::class)->name('tariff_codes.index');
 
 Route::prefix('stocks')->as('stocks.')->group(function () {
@@ -74,6 +81,7 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
         Route::get('', ShowStock::class)->name('show');
         Route::get('edit', EditStock::class)->name('edit');
         Route::get('composition', EditStockComposition::class)->name('composition');
+        Route::get('labels', ShowStockLabels::class)->name('show.labels');
     });
 });
 

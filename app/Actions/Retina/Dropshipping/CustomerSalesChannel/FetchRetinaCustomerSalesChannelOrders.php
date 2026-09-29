@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Shopify\Order\FetchShopifyOrdersFromApi;
 use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
+use App\Actions\Dropshipping\Wix\Order\GetWixOrdersFromApi;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\PlatformResponseFormatter;
@@ -127,6 +128,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             PlatformTypeEnum::AMAZON,
             PlatformTypeEnum::ALLEGRO,
             PlatformTypeEnum::MAGENTO,
+            PlatformTypeEnum::WIX,
         ]);
     }
 
@@ -143,6 +145,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             PlatformTypeEnum::AMAZON => GetRetinaOrdersFromAmazon::run($platformUser),
             PlatformTypeEnum::ALLEGRO => GetAllegroOrdersFromApi::run($platformUser),
             PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::run($platformUser),
+            PlatformTypeEnum::WIX => GetWixOrdersFromApi::run($platformUser),
             default => null,
         };
     }

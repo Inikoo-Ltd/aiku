@@ -20,7 +20,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import RibbonExpectedBackInStock from '@/Components/Iris/Products/RibbonExpectedBackInStock.vue'
+import ChipExpectedBackInStock from '@/Components/Iris/Products/ChipExpectedBackInStock.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 import { routeType } from '@/types/route'
 
@@ -235,8 +235,6 @@ defineExpose({
 
                 <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
-                <RibbonExpectedBackInStock v-if="layout?.iris?.is_logged_in" :product="product" />
-
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
                     class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
@@ -263,21 +261,24 @@ defineExpose({
                     </template>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2 flex items-center gap-1.5">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
-                    <button
-                        v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
-                        @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                        class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
-                        <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                            fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                    </button>
+                    <template v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
+                        <ChipExpectedBackInStock :product="product"
+                            @toggle="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)" />
+                        <button
+                            @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
+                            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                            <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                        </button>
+                    </template>
                 </div>
 
                 <div v-if="layout?.iris?.is_logged_in && product.variant"

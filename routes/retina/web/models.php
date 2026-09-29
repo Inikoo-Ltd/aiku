@@ -10,6 +10,7 @@ use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
+use App\Actions\Dropshipping\Allegro\Product\MatchRetinaPortfolioToCurrentAllegroProduct;
 use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\Wix\Product\MatchRetinaPortfolioToCurrentWixProduct;
 use App\Actions\Dropshipping\Wix\Product\StoreRetinaNewProductToCurrentWix;
@@ -93,7 +94,10 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTran
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Ecom\Basket\SelectRetinaOrderShipper;
+use App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessage;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPackaging;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -304,12 +308,15 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('select-shipper', SelectRetinaOrderShipper::class)->name('select_shipper');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
+    Route::patch('update-gift-message', UpdateRetinaOrderGiftMessage::class)->name('update_gift_message');
+    Route::post('update-gift-message-pdf', UpdateRetinaOrderGiftMessagePdf::class)->name('update_gift_message_pdf');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
     Route::patch('update-packaging', UpdateRetinaOrderPackaging::class)->name('update_packaging');
     Route::post('store-voucher', StoreRetinaOrderVoucher::class)->name('store_voucher');
     Route::post('remove-voucher', RemoveRetinaOrderVoucher::class)->name('remove_voucher');
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
+    Route::post('repeat', RepeatRetinaEcomOrder::class)->name('repeat');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
     Route::post('pay-with-balance-after-submitted', PayRetinaOrderWithBalanceAfterSubmitted::class)->name('pay_with_balance_after_submitted');
 
@@ -491,6 +498,7 @@ Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewP
 Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product')->whereNumber('portfolio');
 
 Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings()->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchRetinaPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-wix-product', StoreRetinaNewProductToCurrentWix::class)->name('portfolio.store_new_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/match-to-existing-wix-product', MatchRetinaPortfolioToCurrentWixProduct::class)->name('portfolio.match_to_existing_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
 

@@ -10,12 +10,17 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\Agent\UI\WithAgentEditAction;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Http\Resources\Procurement\SupplierMessagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Models\Procurement\OrgAgent;
@@ -121,11 +126,34 @@ class ShowOrgAgent extends OrgAction
                     fn () => GetOrgAgentShowcase::run($orgAgent)
                     : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
 
+                OrgAgentTabsEnum::INBOX->value => $this->tab == OrgAgentTabsEnum::INBOX->value ?
+                    fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgAgent, OrgAgentTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgAgent)])
+                    : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgAgent, OrgAgentTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgAgent)])),
+
+                OrgAgentTabsEnum::ATTACHMENTS->value => $this->tab == OrgAgentTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($orgAgent->agent, OrgAgentTabsEnum::ATTACHMENTS->value))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($orgAgent->agent, OrgAgentTabsEnum::ATTACHMENTS->value))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.agent.attachment.attach',
+                        'parameters' => ['agent' => $orgAgent->agent->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.agent.attachment.detach',
+                        'parameters' => ['agent' => $orgAgent->agent->id],
+                    ],
+                ],
+                'attachmentScopes' => SupplyChainAttachmentScopeEnum::options(),
+
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value)))
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value))
+            ->table(IndexSupplierMessages::make()->tableStructure($orgAgent, prefix: OrgAgentTabsEnum::INBOX->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: OrgAgentTabsEnum::ATTACHMENTS->value));
     }
 
 

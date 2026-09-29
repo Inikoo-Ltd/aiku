@@ -133,6 +133,10 @@ class UpdateInvoice extends OrgAction
 
         $invoice = $this->update($invoice, $modelData, ['data']);
 
+        if ($invoice->wasChanged('as_organisation_id')) {
+            InvoiceTransaction::where('invoice_id', $invoice->id)->update(['is_partner' => (bool)$invoice->as_organisation_id]);
+        }
+
         if ($updateTaxCategory) {
             $staleInvoice = clone $invoice;
 
@@ -161,7 +165,7 @@ class UpdateInvoice extends OrgAction
                 country: $invoice->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
-                deliveryAddress: $invoice->deliveryAddress,
+                deliveryAddress: $invoice->order?->collection_address_id ? $invoice->order->taxableDeliveryAddress($taxNumber) : $invoice->deliveryAddress,
                 isRe: $invoice->is_re,
             );
 

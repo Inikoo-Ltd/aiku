@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -54,13 +55,15 @@ class CustomerHydrateInvoices implements ShouldBeUnique
             enum: InvoiceTypeEnum::class,
             models: Invoice::class,
             where: function ($q) use ($customerId) {
-                $q->where('customer_id', $customerId);
+                $q->where('customer_id', $customerId)->where('in_process', false);
             }
         ));
 
         $customer->update($updateData);
 
         $customer->stats()->update($stats);
+
+        ShopHydrateCustomersDashboard::dispatchForCustomer($customer);
     }
 
 }

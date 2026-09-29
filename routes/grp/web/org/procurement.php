@@ -67,10 +67,24 @@ use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\CreatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\Settings\UI\EditProcurementSettings;
+use App\Actions\Procurement\Settings\UpdateProcurementSettings;
+use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
+use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
+use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
+use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
+use App\Actions\Comms\Mailbox\DisconnectProcurementMailbox;
+use App\Actions\Procurement\SupplierMessage\AssignSupplierMessage;
+use App\Actions\Procurement\SupplierMessage\AttachSupplierMessageAttachment;
+use App\Actions\Procurement\SupplierMessage\DownloadSupplierMessageAttachment;
+use App\Actions\Procurement\SupplierMessage\SendSupplierEmail;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Actions\Procurement\SupplierMessage\UI\ShowSupplierMessage;
 use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
 use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use Illuminate\Support\Facades\Route;
@@ -78,6 +92,26 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
 Route::get('/stock-cover', IndexOrganisationStockCoverItems::class)->name('stock_cover.index');
 Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->name('stock_cover.export');
+
+Route::prefix('settings')->as('settings.')->group(function () {
+    Route::get('', EditProcurementSettings::class)->name('edit');
+    Route::patch('', UpdateProcurementSettings::class)->name('update');
+    Route::get('mailbox/connect', ConnectProcurementMailbox::class)->name('mailbox.connect');
+    Route::post('mailbox/disconnect', DisconnectProcurementMailbox::class)->name('mailbox.disconnect');
+    Route::post('whatsapp-phone/status', [GetWhatsappPhoneNumberStatus::class, 'inProcurement'])->name('whatsapp_phone.status');
+    Route::post('whatsapp-app/subscribed', [GetWhatsappSubscribedApps::class, 'inProcurement'])->name('whatsapp_app.subscribed');
+});
+
+Route::prefix('emails')->as('supplier_messages.')->group(function () {
+    Route::get('', IndexSupplierMessages::class)->name('index');
+    Route::post('send', SendSupplierEmail::class)->name('send');
+    Route::post('whatsapp', SendSupplierWhatsappMessage::class)->name('whatsapp');
+    Route::post('{supplierMessage}/reply', [SendSupplierEmail::class, 'inReply'])->name('reply')->withoutScopedBindings();
+    Route::get('{supplierMessage}', ShowSupplierMessage::class)->name('show')->withoutScopedBindings();
+    Route::post('{supplierMessage}/assign', AssignSupplierMessage::class)->name('assign')->withoutScopedBindings();
+    Route::get('{supplierMessage}/attachments/{index}', DownloadSupplierMessageAttachment::class)->name('attachment')->whereNumber('index')->withoutScopedBindings();
+    Route::post('{supplierMessage}/attachments/{index}/attach', AttachSupplierMessageAttachment::class)->name('attachment.attach')->whereNumber('index')->withoutScopedBindings();
+});
 
 Route::prefix('agents')->as('org_agents.')->group(function () {
     Route::get('', IndexOrgAgents::class)->name('index');
@@ -203,6 +237,7 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('{purchaseOrder}', ShowPurchaseOrder::class)->name('show');
     Route::get('{purchaseOrder}/edit', EditPurchaseOrder::class)->name('edit');
     Route::get('{purchaseOrder}/pdf', PdfPurchaseOrder::class)->name('pdf');
+    Route::get('{purchaseOrder}/transactions-export', ExportPurchaseOrderTransactions::class)->name('transactions.export');
 });
 Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
     Route::get('', IndexStockDeliveries::class)->name('index');

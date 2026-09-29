@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
+import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
@@ -21,10 +22,13 @@ import {
     faExclamationCircle,
     faCircle,
     faShare,
+    faListCheck,
+    faTruck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -59,6 +63,7 @@ interface GetMessagesParams {
 }
 
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -113,6 +118,7 @@ const emit = defineEmits([
     "spam-success",
     "restore-success",
     "view-tickets",
+    "task-created",
 ])
 
 const layout: any = inject("layout", {})
@@ -155,6 +161,28 @@ const isTicketModalOpen = ref(false)
 const openTicketModal = () => {
     isMenuOpen.value = false
     isTicketModalOpen.value = true
+}
+
+type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
+
+const isTaskDialogOpen = ref(false)
+const openTaskDialog = () => {
+    isMenuOpen.value = false
+    isTaskDialogOpen.value = true
+}
+
+const openTasks = computed<ChatOpenTask[]>(() => (props.session as any)?.open_tasks ?? [])
+
+const onTaskCreated = (task: any) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tasks = [...(session.open_tasks ?? []), {
+        reference: task.reference,
+        subject: task.subject,
+        who: task.assignee?.name ?? task.department_label,
+        url: route("grp.tasks.index", { task: task.reference }),
+    }]
+    emit("task-created")
 }
 
 // Putting a conversation down again. Opening one takes it, and an agent who cannot answer it —
@@ -273,13 +301,29 @@ const canIgnore = computed(() =>
 
 const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
-// Ending a conversation nobody ever answered is rude: from the other side it reads as being
+// Ending a live chat nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
+// An email customer is never told it was closed, and is often already being helped on a chat.
 const hasBeenAnswered = computed(() =>
     messagesLocal.value.some((message) => message.sender_type === "agent")
 )
 
-const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+const canEndChat = computed(() =>
+    (hasBeenAnswered.value || (props.session as any)?.channel === "email") && !isClosed.value && !isTrashed.value && !props.readOnly
+)
+
+// The header goes to two rows by the width it actually has, not the screen's: on a tablet the
+// app menu and the conversation list leave the thread a phone's width on an lg screen.
+const headerRef = ref<HTMLElement | null>(null)
+const { width: headerWidth } = useElementSize(headerRef)
+const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.value < 600)
+
+// Whether the second row has anything in it. Spam and Customer details only show from lg up, so
+// below it they would leave the divider over an empty row; from lg up Customer details is always there.
+const isLgScreen = useMediaQuery("(min-width: 1024px)")
+const hasHeaderActions = computed(() =>
+    isLgScreen.value || canEndChat.value || canIgnore.value || Boolean(openTicketsCount.value && hasTicketsPanel.value) || openTasks.value.length > 0
+)
 
 // The reason is picked, never typed: clearing an imported mailbox is a bulk job, and what has
 // to be written becomes blank or inconsistent within a day. Picked from a list it can be counted.
@@ -300,6 +344,26 @@ const markRubbish = async (rubbish: boolean, reason?: string) => {
             reason ? { reason } : {},
             { withCredentials: true }
         )
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
+const moveToCouriers = async () => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const response = await axios.patch(route("grp.org.chat.agents.sessions.couriers", [organisation, props.session.ulid]), {}, { withCredentials: true })
+        notify({ title: ctrans("Moved to Couriers"), text: response.data?.message, type: "success" })
         emit("spam-success")
     } catch (e: any) {
         notify({
@@ -573,6 +637,12 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
+
+const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
+    chatSession.value?.ulid
+        ? route("grp.org.chat.agents.sessions.keep_open", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid])
+        : null
+)
 const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => chatSession.value?.status === "waiting")
@@ -986,6 +1056,7 @@ let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
 let onRetracted: ((payload: any) => void) | null = null
+let onClosing: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -994,6 +1065,8 @@ const stopSocket = () => {
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
     if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
+    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
+    onClosing = null
     onMessage = null
     onReaction = null
     onMessagesRead = null
@@ -1012,8 +1085,12 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
+    onClosing = onClosingEvent
+    chatChannel.listen(".closing", onClosing)
+
     // Message
     onMessage = ({ message }: any) => {
+        closingAt.value = null
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -1194,6 +1271,8 @@ const sendTypingStatus = async (status: boolean) => {
 }
 
 const handleTyping = () => {
+    keepOpen()
+
     if (!isTyping.value) {
         isTyping.value = true
         sendTypingStatus(true)
@@ -1246,12 +1325,15 @@ const handleClickOutside = (e: MouseEvent) => {
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')" :aria-label="ctrans('Back')">
+        <!-- When the thread is too narrow for the name and the buttons side by side, the name and
+             the menu keep the first row and the buttons drop to a second one beneath it. -->
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+            :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
+            <button :class="{ '-order-2': isHeaderStacked }" @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
-            <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
+            <div class="flex-1 min-w-0 cursor-pointer" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
                 <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
@@ -1274,6 +1356,11 @@ const handleClickOutside = (e: MouseEvent) => {
                         <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
                         <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
                     </span>
+                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
+                        👍 {{ closingIn }}
+                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
+                    </span>
                     <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}
                     </span>
@@ -1283,6 +1370,10 @@ const handleClickOutside = (e: MouseEvent) => {
             <!-- Also offered on a conversation nobody has taken: an out of office reply or a
                  supplier's newsletter needs disposing of, and having to assign it to yourself
                  first to close it is why they pile up in the waiting queue. -->
+            <!-- The line between the two rows: it spans the header edge to edge, and being a whole
+                 row on its own is also what pushes the buttons onto the second one. -->
+            <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
+
             <ModalConfirmationDelete v-if="canEndChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
@@ -1295,6 +1386,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <template #default="{ changeModel }">
                     <Button
                         type="red"
+                        class="h-7"
                         :label="ctrans('End chat')"
                         @click="changeModel"
                         icon="fal fa-times-circle"
@@ -1346,7 +1438,7 @@ const handleClickOutside = (e: MouseEvent) => {
                  customer writes again next week. -->
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                class="hidden lg:inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam(!(session as any)?.is_spam)">
                 <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" fixed-width />
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
@@ -1363,13 +1455,20 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ openTicketsCount }}
             </button>
 
+            <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
+                v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
+                <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
+            </a>
+
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
-                class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                class="hidden lg:inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
                 <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
             </button>
 
-            <div class="relative" ref="menuRef">
+            <div class="relative" :class="{ '-order-1': isHeaderStacked }" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" fixed-width />
                 </button>
@@ -1412,6 +1511,10 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
                         </button>
 
+                        <button v-if="session?.ulid" class="menu-item" @click="openTaskDialog">
+                            <FontAwesomeIcon :icon="faListCheck" class="text-amber-600" fixed-width /> {{ ctrans("Ask a colleague (task)") }}
+                        </button>
+
                         <button v-if="canRelease" class="menu-item" :disabled="isReleasing" @click="releaseChat">
                             <FontAwesomeIcon :icon="faRotateLeft" class="text-amber-600" fixed-width />
                             <span class="text-left">{{ ctrans("Give it back to the queue") }}</span>
@@ -1425,7 +1528,22 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
                         </button>
 
+                        <button v-if="(session as any)?.can_move_to_couriers" class="menu-item" :disabled="isSpamMarking"
+                            v-tooltip="ctrans('Adds the sender\'s domain to the courier list, and moves its open conversations to the Couriers folder')"
+                            @click="moveToCouriers">
+                            <FontAwesomeIcon :icon="faTruck" class="text-gray-600" fixed-width /> {{ ctrans("Move to Couriers") }}
+                        </button>
+
                     </template>
+
+                    <div v-if="canReportSpam" class="lg:hidden border-t border-gray-100">
+                        <button type="button" :disabled="isSpamMarking"
+                            class="menu-item text-red-600 disabled:opacity-50"
+                            @click="isMenuOpen = false; markSpam(!(session as any)?.is_spam)">
+                            <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" fixed-width />
+                            {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Mark as Spam") }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -1650,6 +1768,13 @@ const handleClickOutside = (e: MouseEvent) => {
             @close="isTicketModalOpen = false"
         />
 
+        <StaffTaskDialog
+            :is-open="isTaskDialogOpen"
+            :store-url="session?.ulid ? route('grp.org.chat.agents.sessions.task', [currentOrganisation, session.ulid]) : undefined"
+            @created="onTaskCreated"
+            @close="isTaskDialogOpen = false"
+        />
+
         <ForwardToColleagueModal
             :is-open="isForwardModalOpen"
             :organisation="currentOrganisation"
@@ -1684,6 +1809,8 @@ const handleClickOutside = (e: MouseEvent) => {
 .menu-item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    text-align: left;
     gap: 8px;
     padding: 10px 16px;
     width: 100%;

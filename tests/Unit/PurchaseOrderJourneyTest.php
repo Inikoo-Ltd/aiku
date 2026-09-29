@@ -112,3 +112,43 @@ it('keeps the agreed plan on later stages and moves only the estimate when a sta
         ->and($inTransit['forecast_at'] > '2026-09-24')->toBeTrue()
         ->and($journey['eta'] > '2026-09-24')->toBeTrue();
 });
+
+it('does not count a draft as sent even when it carries a submitted date', function () {
+    $journey = journeyFor(['journey' => 'partner', 'state' => 'in_process', 'submitted_at' => '2026-09-02', 'created_at' => '2026-09-01']);
+
+    expect(segmentOf($journey, 'po_created')['state'])->toBe('overdue')
+        ->and(segmentOf($journey, 'po_created')['done_at'])->toBeNull();
+});
+
+it('targets QC on the approved ready date and the clean handover seven days after it', function () {
+    $journey = journeyFor(['deposit_paid_at' => '2026-09-05', 'approved_ready_at' => '2026-10-20']);
+
+    expect(segmentOf($journey, 'qc')['planned_at'])->toBe('2026-10-20')
+        ->and(segmentOf($journey, 'clean_handover')['planned_at'])->toBe('2026-10-27');
+});
+
+it('works the dispatch target back from a recorded arrival date', function () {
+    $journey = journeyFor([
+        'journey'               => 'partner',
+        'created_at'            => '2026-08-01',
+        'submitted_at'          => '2026-08-01',
+        'estimated_received_at' => '2026-09-30',
+    ]);
+
+    expect(segmentOf($journey, 'dispatched')['planned_at'])->toBe('2026-09-26')
+        ->and($journey['status'])->toBe('at_risk');
+});
+
+it('leaves the online date empty when the date the goods were placed is unknown', function () {
+    $journey = journeyFor([
+        'journey'           => 'supplier',
+        'state'             => 'settled',
+        'delivery_state'    => 'placed',
+        'sellable_products' => 1,
+        'online_products'   => 1,
+        'online_at'         => '2019-11-07',
+    ]);
+
+    expect(segmentOf($journey, 'products_online')['state'])->toBe('done')
+        ->and(segmentOf($journey, 'products_online')['done_at'])->toBeNull();
+});

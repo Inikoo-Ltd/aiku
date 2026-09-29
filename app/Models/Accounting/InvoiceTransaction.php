@@ -73,6 +73,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $master_family_id
  * @property int|null $master_asset_id
  * @property bool $is_refund
+ * @property bool $is_partner
  * @property numeric $tax_amount
  * @property bool $is_tax_only
  * @property numeric $amount_total
@@ -124,12 +125,13 @@ class InvoiceTransaction extends Model
         'gross_amount'      => 'decimal:2',
         'net_amount'        => 'decimal:2',
         'commission_amount' => 'decimal:2',
-        'grp_exchange'      => 'decimal:4',
-        'org_exchange'      => 'decimal:4',
+        'grp_exchange'      => 'decimal:10',
+        'org_exchange'      => 'decimal:10',
         'grp_net_amount'    => 'decimal:2',
         'org_net_amount'    => 'decimal:2',
         'offers_data'       => 'array',
         'is_refund'         => 'boolean',
+        'is_partner'        => 'boolean',
     ];
 
     protected $attributes = [

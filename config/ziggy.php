@@ -10,7 +10,7 @@ return [
     'groups' => [
         'grp'         => ['grp.*'],
         'iris'        => ['iris.*'],
-        'retina'      => ['retina.*'],
+        'retina'      => ['retina.*', 'iris.json.fetch_basket', 'iris.models.order.*', 'iris.models.transaction.*'],
         'aiku-public' => ['aiku-public.*'],
         'cornea'      => ['cornea.*'],
         'pupil'      => ['pupil.*'],

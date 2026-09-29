@@ -2338,6 +2338,15 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
+
+    $costed = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA3', 'name' => 'Costed product', 'source_id' => '4:99998', 'recommended_batch_size' => 10]);
+    $costed->update(['data' => ['costings_recipe' => ['imported_at' => now()->toDateTimeString()]]]);
+    $costed->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $costedStep = ArtefactManufactureTask::where('artefact_id', $costed->id)->first();
+    AttachRawMaterialToRecipeStep::make()->action($costedStep, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.4]);
+
+    $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
+    expect((float)$costedStep->rawMaterials()->first()->quantity_per_unit)->toBe(0.4);
 });
 
 test('an operative only sees the factory jobs page and nothing group or commercial', function () {
@@ -2610,7 +2619,7 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
-test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
+test('a labelled run is prepared only with its batch code, and keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
     $stocks       = createStocks($this->group);
     $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
@@ -2637,16 +2646,23 @@ test('keeping the expiry date writes it onto the published label of a partner li
         'org_stock_id'    => $makerOrgStock->id,
         'name'            => 'Dated',
         'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
-        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
+        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => ''], ['source' => 'batch_code', 'text' => 'EXAMPLE-1']]],
     ]);
 
     actingAs($this->guest->getUser());
     \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
         'preparing' => true,
-        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
-    ])->assertRedirect();
+        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09']],
+    ])->assertSessionHasErrors('lines.0.batch_code');
+    expect($line->refresh()->preparing_at)->toBeNull();
+
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'batch_code' => 'B-0309', 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
+    ])->assertRedirect()->assertSessionHasNoErrors();
 
     expect($line->refresh()->preparing_at)->not->toBeNull()
+        ->and($line->batch_code)->toBe('B-0309')
         ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
         ->and($label->layout['fields'][0]['text'])->toBe('Kept');
 });
@@ -3536,15 +3552,17 @@ test('SKO labels are the compliance team\'s: workers draft, supervisors publish,
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
 
     expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->stock_id)->toBe($orgStock->stock_id)
+        ->and($orgStock->stock->labels->pluck('id')->all())->toBe([$labelId])
         ->and($label->artefact_id)->toBeNull();
 
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
         ->assertForbidden();
     \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
         ->assertForbidden();
 
     actingAs($userWithRole('compliance-manager'));
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
         ->assertOk();
     expect($label->refresh()->missingMandatoryInformation())->toBe(['ingredients']);
 
@@ -3565,7 +3583,7 @@ test('SKO labels are the compliance team\'s: workers draft, supervisors publish,
         ->assertNotFound();
 });
 
-test('compliance labels place icons, wrapped texts and a text per language taken from the product record', function () {
+test('compliance labels place icons, wrapped texts, free texts and a text per language taken from the product record', function () {
     \App\Actions\SysAdmin\Group\Seeders\SeedGroupPermissions::run($this->group);
     $orgStock  = labelTestOrgStock($this->organisation, $this->group);
     $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
@@ -3574,8 +3592,10 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         'label_info'          => [
             'markets'                  => ['uk'],
             'languages'                => ['de'],
-            'ce_marking'               => true,
-            'packaging_material_codes' => ['show' => true, 'value' => ['pet_1', 'pap_21']],
+            'ce_marking'                    => true,
+            'best_before'                   => 'pao_12m',
+            'sorting_recycling_information' => true,
+            'packaging_material_codes'      => ['show' => true, 'value' => ['pet_1', 'pap_21']],
         ],
     ]);
     $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
@@ -3587,7 +3607,15 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         ->and($information['ukca_marking'])->toBe('')
         ->and($information['eu_responsible_person'])->toBe('')
         ->and($information['warnings:de'])->toBe('')
-        ->and($information['directions_for_use:de'])->toBe('');
+        ->and($information['directions_for_use:de'])->toBe('')
+        ->and($information['product_name:de'])->toBe('')
+        ->and($information['period_after_opening'])->toBe('pao_12m')
+        ->and($information['sorting_information'])->toBe('triman,info_tri')
+        ->and($information['free_text'])->toBe('');
+
+    foreach (['pao_12m', 'triman', 'info_tri'] as $icon) {
+        expect(\App\Actions\Production\Artefact\Label\GetArtefactLabelIconSource::run($icon))->toStartWith('data:image/svg+xml;base64,');
+    }
 
     $userWithRole = function (string $role) {
         $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
@@ -3597,9 +3625,9 @@ test('compliance labels place icons, wrapped texts and a text per language taken
     };
 
     actingAs($userWithRole('compliance-manager'));
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['product_name:de']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['ingredients:de']])
         ->assertUnprocessable();
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials', 'product_name:de', 'period_after_opening']])
         ->assertOk();
 
     $layout = [
@@ -3611,6 +3639,10 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         'fields'      => [
             ['source' => 'packaging_materials', 'text' => 'pet_1,pap_21', 'x' => 0.05, 'y' => 0.05, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.25],
             ['source' => 'warnings:de', 'text' => "Nicht verschlucken.\nAußer Reichweite von Kindern aufbewahren.", 'x' => 0.05, 'y' => 0.5, 'font_size' => 6, 'color' => '#000000', 'box_width' => 0.8, 'height' => 6.2, 'rotation' => 90],
+            ['source' => 'product_name:de', 'text' => 'Magnesium-Badesalz', 'x' => 0.05, 'y' => 0.3, 'font_size' => 7, 'color' => '#000000'],
+            ['source' => 'period_after_opening', 'text' => 'pao_12m', 'x' => 0.6, 'y' => 0.05, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.2],
+            ['source' => 'sorting_information', 'text' => 'triman,info_tri', 'x' => 0.6, 'y' => 0.3, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.2],
+            ['source' => 'free_text', 'text' => 'Weight / Peso / Gewicht', 'x' => 0.05, 'y' => 0.9, 'font_size' => 6, 'color' => '#000000'],
         ],
     ];
 
@@ -3621,6 +3653,7 @@ test('compliance labels place icons, wrapped texts and a text per language taken
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
 
     expect($label->layout['fields'][0]['icon_size'])->toBe(0.25)
+        ->and($label->layout['fields'][5]['text'])->toBe('Weight / Peso / Gewicht')
         ->and($label->layout['fields'][1]['box_width'])->toBe(0.8)
         ->and($label->layout['fields'][1]['height'])->toBe(6.2)
         ->and($label->missingMandatoryInformation())->toBe([]);
@@ -3812,4 +3845,76 @@ test('a job carried to another day is one row on the board, with the amount the 
         ->and($rows[0]['quantity_made'])->toEqual($skos(40))
         ->and($rows[0]['quantity_total'])->toEqual($skos(40))
         ->and($rows[0]['in_progress'])->toBeFalse();
+});
+
+test('organisation navigation shows the warehouse section above production', function () {
+    $sections = array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($this->guest->getUser(), $this->organisation));
+
+    expect(array_search('warehouses_navigation', $sections))->toBeLessThan(array_search('productions_navigation', $sections));
+});
+
+test('surplus made beyond its lines is flagged on the backlog and booking it in fulfils the oldest lines', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'         => 'SURPLUS1',
+        'name'         => 'Surplus artefact',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action(
+        \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-SUR', 'name' => 'Surplus warehouse']),
+        ['code' => 'A-SUR', 'name' => 'Surplus area']
+    );
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        ['code' => 'L-SUR', 'name' => 'Surplus location'] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $line = fn (float $quantity, array $extra = []) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stock->id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => $quantity,
+    ] + $extra);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+    $line(1, ['job_order_id' => $jobOrder->id, 'quantity_to_produce' => 10, 'state' => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::ORDERED]);
+    $older = $line(1, ['created_at' => now()->subDay()]);
+    $newer = $line(12);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn (array $query = []) => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters + $query))
+        ->assertOk()->viewData('page')['props']['groups'])->firstWhere('label', 'Backlog')['items'];
+
+    expect(collect($backlog())->firstWhere('id', $older->id)['pipeline'] ?? null)->toBe(['pending_booking' => 0.0, 'in_production' => 1.0, 'job_orders' => [$jobOrder->reference]]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 100]);
+
+    $items = collect($backlog())->keyBy('id');
+    expect($items[$older->id]['pipeline']['pending_booking'])->toBe(1.0)
+        ->and($items[$newer->id]['pipeline']['pending_booking'])->toBe(8.0)
+        ->and(collect($backlog(['ignore_pipeline' => 1]))->pluck('pipeline')->filter()->all())->toBe([]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
+
+    expect($older->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
+        ->and((float) $newer->quantity)->toBe(4.0);
 });

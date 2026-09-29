@@ -57,7 +57,7 @@ class StaffTask extends Model implements Auditable
     use SoftDeletes;
     use HasHistory;
 
-    public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock'];
+    public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock', 'ChatSession', 'MetaChatSession'];
 
     protected $guarded = [];
 
@@ -149,6 +149,11 @@ class StaffTask extends Model implements Auditable
             ->orWhere('staff_tasks.assignee_id', $viewer->id)
             ->orWhereIn('staff_tasks.id', DB::table('staff_task_collaborators')->where('user_id', $viewer->id)->select('staff_task_id'))
             ->orWhereIn('staff_tasks.department', self::departmentsOf($viewer)));
+    }
+
+    public function isVisibleTo(User $viewer): bool
+    {
+        return $this->group_id === $viewer->group_id && self::query()->whereKey($this->id)->visibleTo($viewer)->exists();
     }
 
     public static function departmentLabel(string $department): string

@@ -115,7 +115,7 @@ class EditProfileSettings
                             "alert_sounds" => [
                                 "type"        => "alert_sounds",
                                 "label"       => __("Alert sounds"),
-                                "information" => __("The sound played when a customer or a colleague writes to you"),
+                                "information" => __("The sound played when a customer or a colleague writes to you. Customer still waiting rings again every 30 seconds while a website or WhatsApp chat is unanswered, Silent turns it off"),
                                 "value"       => Arr::get($user->settings, 'alert_sounds'),
                             ],
                             "alert_preview_seconds" => [

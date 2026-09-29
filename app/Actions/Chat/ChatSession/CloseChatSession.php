@@ -45,11 +45,11 @@ class CloseChatSession
         array $additionalData = []
     ): ChatSession {
         if ($actorType === ChatActorTypeEnum::AGENT) {
-            $blockingTickets = $this->unresolvedBlockingTickets($chatSession);
+            $blockers = $this->unresolvedBlockers($chatSession);
 
-            if ($blockingTickets->isNotEmpty()) {
+            if ($blockers->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'message' => $this->blockingTicketsMessage($blockingTickets),
+                    'message' => $this->blockersMessage($blockers),
                 ]);
             }
         }

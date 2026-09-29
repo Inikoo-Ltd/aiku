@@ -13,6 +13,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\Production;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovement extends FetchAurora
@@ -249,10 +250,20 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return false;
         }
 
-        return DB::table('stock_deliveries')
-            ->where('source_id', $this->organisation->id.':'.$matches[1])
-            ->where('parent_type', 'Production')
-            ->exists();
+        $auroraDelivery = $this->fetchAuroraDeliveryParent($matches[1]);
+
+        if (!$auroraDelivery || $auroraDelivery->{'Supplier Delivery Parent'} != 'Supplier') {
+            return false;
+        }
+
+        return Production::whereJsonContains('sources->suppliers', $this->organisation->id.':'.$auroraDelivery->{'Supplier Delivery Parent Key'})->exists();
+    }
+
+    protected function fetchAuroraDeliveryParent(string $auroraDeliveryKey): ?object
+    {
+        return DB::connection('aurora')->table('Supplier Delivery Dimension')
+            ->where('Supplier Delivery Key', $auroraDeliveryKey)
+            ->first(['Supplier Delivery Parent', 'Supplier Delivery Parent Key']);
     }
 
     /**

@@ -19,7 +19,6 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandl
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
 use App\Actions\Dispatching\DeliveryNoteItem\WithDeliveryNoteItemPickingCounts;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -86,7 +85,6 @@ class ShowDeliveryNote extends OrgAction
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
-    private ?array $countriesAddressData = null;
 
     private bool $allowAction = true;
 
@@ -454,6 +452,27 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ];
+
+            if (request()->user()?->authTo([
+                "supervisor-dispatching.$deliveryNote->warehouse_id",
+                "org-admin.$deliveryNote->organisation_id",
+            ])) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'tertiary',
+                    'icon'    => 'fal fa-undo-alt',
+                    'tooltip' => __('Give the items waiting for the warehouse back to the picker'),
+                    'label'   => __('Back to picking'),
+                    'key'     => 'undo-waiting',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.undo_waiting',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                ];
+            }
         }
 
         return $actions;
@@ -870,7 +889,6 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $this->countriesAddressData ??= GetAddressData::run();
 
         return [
             'state'                        => $deliveryNote->state,
@@ -927,7 +945,6 @@ class ShowDeliveryNote extends OrgAction
             'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
@@ -1090,7 +1107,6 @@ class ShowDeliveryNote extends OrgAction
         if ($this->parent instanceof Warehouse && !$deliveryNote->isLockedInAurora()) {
             $isEditable = true;
         }
-        $this->countriesAddressData ??= GetAddressData::run();
 
         $allowAction = $this->canHandleDeliveryNote($deliveryNote);
 

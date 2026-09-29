@@ -47,6 +47,8 @@ class SetupShopifyAccount extends OrgAction
      */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
     {
+        abort_unless($request->user('pupil')?->id === $shopifyUser->id, 403);
+
         $shop = Shop::find($request->input('shop'));
 
         $this->handle($shopifyUser, $shop);

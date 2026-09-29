@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Workplace\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
@@ -91,7 +90,6 @@ class EditWorkplace extends OrgAction
                         )
                     )->getArray(),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
 
                     ],
                     'required' => true

@@ -73,6 +73,7 @@ class ChatTimelineEventResource extends JsonResource
             ChatEventTypeEnum::TRANSFER_REJECT => __(':actor rejected the transfer', ['actor' => $actor]),
             ChatEventTypeEnum::TRANSFER_TO_AGENT => $this->describeTransfer($actor),
             ChatEventTypeEnum::ASSIGNMENT_TO_SELF => __(':actor took the chat', ['actor' => $actor]),
+            ChatEventTypeEnum::MOVED_TO_COURIERS => __(':actor moved the chat to Couriers and added :domain to the courier list', ['actor' => $actor, 'domain' => $this->payload('domain')]),
             default => __(':actor updated the chat', ['actor' => $actor]),
         };
     }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
@@ -118,7 +117,6 @@ class CreateAgent extends OrgAction
                         'label'   => __('Address'),
                         'value'   => AddressFormFieldsResource::make(new Address(['country_id' => group()->country_id]))->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run(),
                         ],
                     ],
                 ],

@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -14,6 +15,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetShopDashboardTabData extends OrgAction
 {
+    use WithDashboardPartnersTypeSettings;
     use WithPerformanceDateResolution;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): JsonResponse
@@ -32,7 +34,7 @@ class GetShopDashboardTabData extends OrgAction
         $savedInterval    = DateIntervalEnum::tryFrom((string) ($intervalParam ?? Arr::get($userSettings, 'selected_interval', 'all'))) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
 
         $table = $tab->table($shop, $timeSeriesData);
 

@@ -76,6 +76,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -922,74 +923,85 @@ test('a private product off the website can still be put on its own customer ord
         ->and($sellableTo(null))->toBeFalse();
 });
 
-test('repair records unrecorded exclusives among products hidden from the site', function () {
+test('a product made for one customer is recorded as theirs', function () {
     list($organisation, $user, $shop) = createShop();
 
     $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
         $shop,
         \App\Models\CRM\Customer::factory()->definition(),
     );
-    $partnerCustomer = $newCustomer();
-    $publicCustomer  = $newCustomer();
-    DB::table('org_partners')->insert([
-        'group_id'        => $organisation->group_id,
-        'organisation_id' => $organisation->id,
-        'partner_id'      => $organisation->id,
-        'customer_id'     => $partnerCustomer->id,
-        'sources'         => '{}',
-        'created_at'      => now(),
-        'updated_at'      => now(),
-    ]);
+    $owner = $newCustomer();
+    $other = $newCustomer();
 
     [, $seedProduct] = createProduct($shop);
-    $intercompany    = StoreProduct::make()->action($seedProduct->family, array_merge(
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units'               => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'                     => 1,
+            'exclusive_for_customer_id' => $owner->id,
+        ]
+    ));
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and(Product::whereKey($product->id)->visibleToCustomer($other->id)->exists())->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1);
+});
+
+test('staff choose who a product is sold to from its edit page', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner      = $newCustomer();
+    $wrongOwner = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
         Product::factory()->definition(),
         ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
     ));
-    $public       = StoreProduct::make()->action($intercompany->family, array_merge(
-        Product::factory()->definition(),
-        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
-    ));
-    DB::table('products')->whereIn('id', [$intercompany->id, $public->id])
-        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => [$wrongOwner->id]]);
 
-    $invoiceFor = function ($customer, $product) {
-        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
-        \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
-            'date'            => now(),
-            'tax_category_id' => $invoice->tax_category_id,
-            'quantity'        => 1,
-            'gross_amount'    => 10,
-            'net_amount'      => 10,
-        ]);
-    };
-    $privateLabel = StoreProduct::make()->action($intercompany->family, array_merge(
-        Product::factory()->definition(),
-        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 3]
-    ));
-    DB::table('products')->where('id', $privateLabel->id)
-        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($owner, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
 
-    $invoiceFor($partnerCustomer, $intercompany);
-    $invoiceFor($partnerCustomer, $public);
-    $invoiceFor($publicCustomer, $public);
-    $invoiceFor($publicCustomer, $privateLabel);
+    $soldOnlyTo = fn () => collect(EditProduct::make()->getBlueprint($product->refresh()))->pluck('fields')->collapse();
 
-    $repair   = \App\Actions\Maintenance\Catalogue\RepairUnrecordedExclusiveProducts::make();
-    $partners = $repair->partnerCustomerIds($shop);
-    expect($partners)->toBe([$partnerCustomer->id])
-        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id])
-        ->and($repair->singleBuyerCandidates($shop)->reorder("id")->get()->map(fn ($product) => [$product->id, $product->buyer_id])->all())
-        ->toBe([[$intercompany->id, $partnerCustomer->id], [$privateLabel->id, $publicCustomer->id]]);
+    expect($soldOnlyTo()->get('customer_ids')['value'])->toBe([$wrongOwner->id])
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'][0]['description'])->toContain($owner->reference)
+        ->and($soldOnlyTo()->has('is_for_sale'))->toBeFalse();
 
-    $repair->handle($intercompany, $partners);
-    $repair->handle($privateLabel, [$publicCustomer->id]);
-    $intercompany->refresh();
-    $privateLabel->refresh();
-    expect($intercompany->exclusive_for_customer_id)->toBe($partnerCustomer->id)
-        ->and($privateLabel->exclusive_for_customer_id)->toBe($publicCustomer->id)
-        ->and($repair->candidates($shop, $partners)->count())->toBe(0)
-        ->and($repair->singleBuyerCandidates($shop)->count())->toBe(0);
+    UpdateProduct::make()->action($product, ['exclusive_for_customer_id' => $owner->id]);
+    expect($product->refresh()->exclusive_for_customer_id)->toBe($wrongOwner->id);
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => [$owner->id]])
+        ->assertSessionHasNoErrors();
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and($product->exclusive_for_customer_id)->toBe($owner->id)
+        ->and($product->is_for_sale)->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1)
+        ->and($wrongOwner->refresh()->number_exclusive_products)->toBe(0)
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'])->toBe([]);
+
+    expect(fn () => StoreProductWebpage::make()->action($product))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $product->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('exclusive_customers.0.reference', $owner->reference)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', __('Create Webpage')))
+        );
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => []])
+        ->assertSessionHasNoErrors();
+
+    expect($product->refresh()->exclusive_for_customer_id)->toBeNull()
+        ->and($product->isExclusive())->toBeFalse();
 });
 
 test('repair repoints products from a discontinued org stock to its active twin', function () {
@@ -1365,8 +1377,8 @@ test('retina new arrivals hide exclusive products from other customers and famil
         'state'             => ProductStateEnum::ACTIVE->value,
         'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
     ]);
-    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
     \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => []]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
 
     $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
         \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()

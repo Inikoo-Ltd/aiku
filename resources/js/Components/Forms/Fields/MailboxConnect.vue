@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope, faCheckCircle } from "@fal"
 import Dialog from "primevue/dialog"
@@ -16,7 +16,13 @@ const props = defineProps<{
             connected_at: string | null
             connect_url: string
             disconnect_route: { name: string; parameters: any }
-            inbox_url: string
+            inbox_url?: string
+            texts?: {
+                connected?: string
+                not_connected?: string
+                success?: string
+                confirm_disconnect?: string
+            }
         }
     }
 }>()
@@ -38,7 +44,7 @@ const closeSuccessDialog = () => {
 }
 
 const disconnect = () => {
-    if (!confirm(trans("Disconnect this mailbox? Emails will stop arriving in the CRM."))) {
+    if (!confirm(props.fieldData.value.texts?.confirm_disconnect ?? ctrans("Disconnect this mailbox? Emails will stop arriving in the CRM."))) {
         return
     }
     router.post(route(props.fieldData.value.disconnect_route.name, props.fieldData.value.disconnect_route.parameters), {}, {
@@ -49,15 +55,16 @@ const disconnect = () => {
 </script>
 
 <template>
-    <Dialog v-model:visible="showSuccessDialog" :header="trans('Mailbox connected')" modal :style="{ width: '32rem' }">
+    <Dialog v-model:visible="showSuccessDialog" :header="ctrans('Mailbox connected')" modal :style="{ width: '32rem' }">
         <div class="space-y-4">
-            <p class="text-sm text-gray-700">
-                {{ trans("Emails sent to") }} <span class="font-medium">{{ fieldData.value.email }}</span> {{ trans("now arrive as conversations in the chat inbox, next to website chat and WhatsApp. Reply from there and the answer is sent by email from this address.") }}
+            <p v-if="fieldData.value.texts?.success" class="text-sm text-gray-700">{{ fieldData.value.texts.success }}</p>
+            <p v-else class="text-sm text-gray-700">
+                {{ ctrans("Emails sent to") }} <span class="font-medium">{{ fieldData.value.email }}</span> {{ ctrans("now arrive as conversations in the chat inbox, next to website chat and WhatsApp. Reply from there and the answer is sent by email from this address.") }}
             </p>
             <div class="flex justify-end gap-3">
-                <Button :label="trans('Close')" type="tertiary" size="sm" @click="closeSuccessDialog" />
-                <a :href="fieldData.value.inbox_url">
-                    <Button :label="trans('Open chat inbox')" type="primary" size="sm" />
+                <Button :label="ctrans('Close')" type="tertiary" size="sm" @click="closeSuccessDialog" />
+                <a v-if="fieldData.value.inbox_url" :href="fieldData.value.inbox_url">
+                    <Button :label="ctrans('Open chat inbox')" type="primary" size="sm" />
                 </a>
             </div>
         </div>
@@ -70,13 +77,13 @@ const disconnect = () => {
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-medium text-gray-700 truncate">{{ fieldData.value.email }}</div>
                     <div class="text-xs text-gray-500">
-                        {{ trans("Connected") }}<template v-if="fieldData.value.connected_at"> · {{ useFormatTime(fieldData.value.connected_at) }}</template>
+                        {{ ctrans("Connected") }}<template v-if="fieldData.value.connected_at"> · {{ useFormatTime(fieldData.value.connected_at) }}</template>
                     </div>
                     <p class="mt-2 text-xs text-gray-500">
-                        {{ trans("Customer emails arriving in this mailbox appear as conversations in the CRM inbox. Replies written there are sent from this address.") }}
+                        {{ fieldData.value.texts?.connected ?? ctrans("Customer emails arriving in this mailbox appear as conversations in the CRM inbox. Replies written there are sent from this address.") }}
                     </p>
                 </div>
-                <Button :label="trans('Disconnect')" type="negative" size="xs" :loading="isDisconnecting" @click="disconnect" />
+                <Button :label="ctrans('Disconnect')" type="negative" size="xs" :loading="isDisconnecting" @click="disconnect" />
             </div>
         </template>
 
@@ -84,12 +91,12 @@ const disconnect = () => {
             <div class="flex items-start gap-3">
                 <FontAwesomeIcon :icon="faEnvelope" class="mt-0.5 text-gray-400" fixed-width />
                 <div class="min-w-0 flex-1">
-                    <div class="text-sm font-medium text-gray-700">{{ trans("No mailbox connected") }}</div>
+                    <div class="text-sm font-medium text-gray-700">{{ ctrans("No mailbox connected") }}</div>
                     <p class="mt-1 text-xs text-gray-500">
-                        {{ trans("Sign in with the address customers write to, for example info@ or care@ of this shop, not with your own account. The account you pick is the inbox that gets connected.") }}
+                        {{ fieldData.value.texts?.not_connected ?? ctrans("Sign in with the address customers write to, for example info@ or care@ of this shop, not with your own account. The account you pick is the inbox that gets connected.") }}
                     </p>
                     <a :href="fieldData.value.connect_url" class="mt-3 inline-block">
-                        <Button :label="trans('Connect Google mailbox')" :icon="faEnvelope" type="primary" size="xs" />
+                        <Button :label="ctrans('Connect Google mailbox')" :icon="faEnvelope" type="primary" size="xs" />
                     </a>
                 </div>
             </div>

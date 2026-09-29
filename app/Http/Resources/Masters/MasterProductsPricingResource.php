@@ -27,6 +27,8 @@ class MasterProductsPricingResource extends JsonResource
             'rrp'           => $this->rrp,
             'currency_code'  => $this->currency_code,
             'units_review'   => $this->units_review,
+            'price_review'   => $this->price_review,
+            'price_outlier'  => $this->price_outlier,
             'effective_cost' => $this->effective_cost,
             'master_prices' => $this->master_prices ?? [],
             'master_rrps'   => $this->master_rrps ?? [],
@@ -43,6 +45,7 @@ class MasterProductsPricingResource extends JsonResource
             'customers'       => (int) $this->customers,
             'sales_ly'        => $this->sales_ly,
             'price_tip'       => $this->price_tip,
+            'is_dropship'     => (bool) $this->is_dropship,
         ];
     }
 }

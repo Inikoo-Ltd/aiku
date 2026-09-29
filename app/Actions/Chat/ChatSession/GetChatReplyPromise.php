@@ -53,15 +53,6 @@ class GetChatReplyPromise
     }
 
     /**
-     * The same test in SQL, to put these conversations first in the queue.
-     */
-    public static function waitingSql(string $table): string
-    {
-        return "(($table.metadata->>'out_of_hours_replied_at') is not null and $table.status <> 'closed'
-            and ($table.last_agent_message_at is null or $table.last_agent_message_at < ($table.metadata->>'out_of_hours_replied_at')::timestamptz)) desc";
-    }
-
-    /**
      * What the inbox shows beside a conversation still waiting on that promise: when it was
      * made, and whether we are already an hour past it.
      *

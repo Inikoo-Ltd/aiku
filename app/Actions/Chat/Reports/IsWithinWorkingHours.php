@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Reports;
 use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\WorkScheduleDay;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -136,10 +137,15 @@ class IsWithinWorkingHours
 
     private function isPublicHoliday(Shop $shop, Carbon $local): bool
     {
+        return $this->publicHoliday($shop, $local) !== null;
+    }
+
+    public function publicHoliday(Shop $shop, Carbon $local): ?Holiday
+    {
         return $shop->organisation->holidays()
             ->where('type', HolidayTypeEnum::PUBLIC)
             ->whereDate('from', '<=', $local->toDateString())
             ->whereDate('to', '>=', $local->toDateString())
-            ->exists();
+            ->first();
     }
 }

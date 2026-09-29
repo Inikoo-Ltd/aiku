@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import FooterCurrency from '@/Components/Footer/FooterCurrency.vue'
+import FooterBorrowPermissions from '@/Components/Footer/FooterBorrowPermissions.vue'
 import { faHeart, faComputerClassic } from '@fas'
 import { faDiscord } from '@fortawesome/free-brands-svg-icons'
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -76,6 +77,7 @@ const deploymentTooltip = computed(() => {
 
                 </div>
                <!--  <FooterCurrency /> -->
+                <FooterBorrowPermissions />
                 <FooterLanguage />
             </div>
         </div>

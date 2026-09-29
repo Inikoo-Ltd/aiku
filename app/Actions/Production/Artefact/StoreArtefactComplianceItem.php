@@ -24,9 +24,12 @@ class StoreArtefactComplianceItem extends OrgAction
 
     public function handle(OrgStock $orgStock, array $modelData): ArtefactComplianceItem
     {
+        abort_unless($orgStock->stock_id, 422, __('This SKO has no master SKO, so it cannot carry compliance items yet.'));
+
         $modelData['group_id']        = $orgStock->group_id;
         $modelData['organisation_id'] = $orgStock->organisation_id;
-        $modelData['artefact_id']     = Artefact::where('org_stock_id', $orgStock->id)->value('id');
+        $modelData['org_stock_id']    = $orgStock->id;
+        $modelData['artefact_id']     = Artefact::whereIn('org_stock_id', OrgStock::where('stock_id', $orgStock->stock_id)->select('id'))->value('id');
 
         return $orgStock->complianceItems()->create($modelData);
     }

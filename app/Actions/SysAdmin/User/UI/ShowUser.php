@@ -21,6 +21,7 @@ use App\Http\Resources\SysAdmin\User\UserShowcaseResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -101,6 +102,19 @@ class ShowUser extends OrgAction
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                        BorrowUserPermissions::canBorrow($request->user(), $user) ? [
+                            'type'        => 'button',
+                            'style'       => 'tertiary',
+                            'icon'        => 'fal fa-user-shield',
+                            'label'       => __('Use their permissions'),
+                            'tooltip'     => __('See and use the system with this user\'s permissions, while staying yourself'),
+                            'fullLoading' => true,
+                            'route'       => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.user.borrow_permissions',
+                                'parameters' => ['user' => $user->id]
                             ]
                         ] : false,
                     ]

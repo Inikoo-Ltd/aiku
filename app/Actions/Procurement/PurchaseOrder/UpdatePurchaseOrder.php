@@ -68,7 +68,7 @@ class UpdatePurchaseOrder extends OrgAction
             'reference'       => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string',
+                $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
             'notes' => ['sometimes', 'string'],
             'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],

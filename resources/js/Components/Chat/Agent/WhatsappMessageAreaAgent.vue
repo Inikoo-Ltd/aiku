@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
+import { useElementSize } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
@@ -21,9 +22,11 @@ import {
     faLifeRing,
     faEye,
     faBan,
+    faListCheck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -40,6 +43,7 @@ const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/Em
 import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -95,7 +99,7 @@ const lastMessageStamp = computed(() => {
     return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
 })
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success", "task-created"])
 
 const isSpamMarking = ref(false)
 
@@ -123,7 +127,29 @@ const baseUrl = layout?.appUrl ?? ""
 
 const isTicketModalOpen = ref(false)
 
+type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
+
+const isTaskDialogOpen = ref(false)
+
+const openTasks = computed<ChatOpenTask[]>(() => (props.session as any)?.open_tasks ?? [])
+
+const onTaskCreated = (task: any) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tasks = [...(session.open_tasks ?? []), {
+        reference: task.reference,
+        subject: task.subject,
+        who: task.assignee?.name ?? task.department_label,
+        url: route("grp.tasks.index", { task: task.reference }),
+    }]
+    emit("task-created")
+}
+
 const chatSession = computed(() => props.session)
+
+const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
+)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
@@ -142,6 +168,14 @@ const canDispose = computed(() => {
 const canReportSpam = computed(() =>
     !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly && canDispose.value
 )
+
+// The header goes to two rows by the width it actually has, not the screen's: on a tablet the
+// app menu and the conversation list leave the thread a phone's width on an lg screen.
+const headerRef = ref<HTMLElement | null>(null)
+const { width: headerWidth } = useElementSize(headerRef)
+const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.value < 600)
+
+const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
 const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
@@ -203,6 +237,10 @@ const templateOnly = computed(() => canSendNonTemplate.value === false)
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
+
+watch(newMessage, (text) => {
+    if (text) keepOpen()
+})
 useComposerDraft(() => props.session?.ulid, newMessage)
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
@@ -784,11 +822,14 @@ let chatChannel: any = null
 let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
+let onClosing: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
+    onClosing = null
     onMessage = null
     onReaction = null
     onStatus = null
@@ -826,6 +867,8 @@ const initSocket = () => {
             canSendNonTemplate.value = can_send_non_template_message
         }
 
+        closingAt.value = null
+
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
@@ -846,8 +889,12 @@ const initSocket = () => {
         scrollBottom()
     }
 
-    onReaction = ({ message }: any) => {
+    onReaction = ({ message, can_send_non_template_message }: any) => {
         if (!message?.id) return
+
+        if (can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = can_send_non_template_message
+        }
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 
@@ -879,6 +926,8 @@ const initSocket = () => {
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
+    onClosing = onClosingEvent
+    chatChannel.listen(".closing", onClosing)
 }
 
 watch(
@@ -910,7 +959,10 @@ onUnmounted(() => {
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b">
+        <!-- When the thread is too narrow for the name and the buttons side by side, the name
+             keeps the first row and the buttons drop to a second one beneath it. -->
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+            :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
@@ -950,8 +1002,24 @@ onUnmounted(() => {
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
                     </span>
+                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
+                        👍 {{ closingIn }}
+                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
+                    </span>
                 </div>
             </div>
+
+            <!-- The line between the two rows: it spans the header edge to edge, and being a whole
+                 row on its own is also what pushes the buttons onto the second one. -->
+            <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
+
+            <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
+                v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
+                <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
+            </a>
 
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
@@ -1209,6 +1277,10 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
+                        <button @click="isTaskDialogOpen = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-gray-500 hover:text-amber-600 transition-colors" v-tooltip="ctrans('Ask a colleague (task)')" :aria-label="ctrans('Ask a colleague (task)')">
+                            <FontAwesomeIcon :icon="faListCheck" class="text-sm" fixed-width />
+                        </button>
                         <template v-if="!hasTemplate && !templateOnly">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <ChatFormattingToolbar :editor="messageEditor?.editor" />
@@ -1237,6 +1309,12 @@ onUnmounted(() => {
             :organisation="organisationSlug"
             channel="whatsapp"
             @close="isTicketModalOpen = false" />
+
+        <StaffTaskDialog
+            :is-open="isTaskDialogOpen"
+            :store-url="session?.ulid ? route('grp.org.chat.agents.whatsapp.sessions.task', [organisationSlug, session.ulid]) : undefined"
+            @created="onTaskCreated"
+            @close="isTaskDialogOpen = false" />
 
         <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
              the drop still lands. -->

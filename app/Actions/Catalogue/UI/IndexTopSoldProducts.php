@@ -44,6 +44,7 @@ class IndexTopSoldProducts extends OrgAction
             ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
             ->where('assets.type', 'product')
             ->whereNull('invoice_transactions.deleted_at')
+            ->where('invoice_transactions.in_process', false)
             ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
             ->orderByDesc('total_sold');
 

@@ -12,7 +12,7 @@ class GetOrganisationTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group $group, $from_date = null, $to_date = null): array
+    public function handle(Group $group, $from_date = null, $to_date = null, bool $includePartners = false): array
     {
         $organisations = $group->organisations()
             ->select(['organisations.id', 'organisations.slug', 'organisations.name', 'organisations.code', 'organisations.colour', 'organisations.currency_id', 'organisations.group_id'])
@@ -41,7 +41,7 @@ class GetOrganisationTimeSeriesStats
         if (!empty($timeSeriesIds)) {
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'sales_org_currency_external'  => 'sales_org_currency_external',
                     'sales_grp_currency_external'  => 'sales_grp_currency_external',
                     'lost_revenue_org_currency'    => 'lost_revenue_org_currency',
@@ -57,7 +57,7 @@ class GetOrganisationTimeSeriesStats
                     'registrations_with_orders'    => 'registrations_with_orders',
                     'registrations_without_orders' => 'registrations_without_orders',
                     'customers_invoiced'           => 'customers_invoiced',
-                ],
+                ], $includePartners),
                 'organisation_time_series_records',
                 'organisation_time_series_id',
                 $from_date,

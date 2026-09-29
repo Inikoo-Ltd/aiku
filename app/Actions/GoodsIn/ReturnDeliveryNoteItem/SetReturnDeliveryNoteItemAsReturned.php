@@ -9,16 +9,20 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetReturnDeliveryNoteItemAsReturned extends OrgAction
 {
+    use WithReturnsAuthorisation;
+    use WithReturnedItemLocation;
     use AsAction;
     use WithAttributes;
 
@@ -44,8 +48,15 @@ class SetReturnDeliveryNoteItemAsReturned extends OrgAction
     public function rules(): array
     {
         return [
-            'location_org_stock_id' => ['required', Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)]
+            'location_org_stock_id' => ['sometimes', Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)]
         ];
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        if (!$request->input('location_org_stock_id')) {
+            $validator->errors()->add('message', $this->missingLocationMessage($request->returnDeliveryNoteItem));
+        }
     }
 
     public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void

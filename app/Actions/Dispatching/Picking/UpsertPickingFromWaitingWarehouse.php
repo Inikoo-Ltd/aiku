@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingIte
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
@@ -35,6 +36,15 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem, $user, array $modelData): ?bool
     {
         DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
+            DeliveryNote::whereKey($deliveryNoteItem->delivery_note_id)->lockForUpdate()->first();
+            $deliveryNoteItem = DeliveryNoteItem::whereKey($deliveryNoteItem->id)->lockForUpdate()->firstOrFail();
+
+            if ((float)$deliveryNoteItem->quantity_waiting_warehouse <= 0 && !Arr::get($modelData, 'picking_id')) {
+                throw ValidationException::withMessages([
+                    'message' => __('This item is not waiting for the warehouse any more'),
+                ]);
+            }
+
             $locationOrgStock  = LocationOrgStock::find(Arr::get($modelData, 'location_org_stock_id'));
             $requestedQuantity = (float) Arr::get($modelData, 'quantity', 0);
 

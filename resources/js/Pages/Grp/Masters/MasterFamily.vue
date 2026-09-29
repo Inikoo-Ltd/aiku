@@ -12,6 +12,7 @@ import {
     faUser,
     faBrowser,
     faUpload,
+    faChartLine,
 } from "@fal"
 import { faExclamationTriangle, faCactus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -26,7 +27,7 @@ import { capitalize } from "@/Composables/capitalize"
 import MasterFamilyShowcase from "@/Components/Showcases/Grp/MasterFamilyShowcase.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
@@ -41,6 +42,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 import MasterFamilyWebpageLockButton from "@/Components/CMS/Webpage/MasterFamilyWebpageLockButton.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -53,7 +55,8 @@ library.add(
     faMoneyBillWave,
     faBrowser,
     faExclamationTriangle,
-    faCactus
+    faCactus,
+    faChartLine
 )
 
 
@@ -74,6 +77,8 @@ const props = defineProps<{
     is_orphan?: boolean
     sales?:object
     salesData?:object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     currency?:Object
     url_master?:routeType
     shopsData? :any
@@ -97,8 +102,17 @@ const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    return row.slug && params.masterShop && params.masterFamily
+        ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, row.slug])
+        : null
+}
+
 const handleTabUpdate = (tabSlug: string) => {
-    useTabChange(tabSlug, currentTab)
+    useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 }
 
 const component = computed(() => {
@@ -111,6 +125,7 @@ const component = computed(() => {
         history: TableHistories,
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         variants: TableMasterVariants,
         related_products: ProductCategoryRecomendation,
         related_product_category: RelatedProductCategory,
@@ -133,7 +148,7 @@ const showDialog = ref(false);
 
         <template #afterTitle2>
            <div class="whitespace-nowrap">
-                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="ctrans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
                         color="#4B0082" fixed-width
@@ -143,14 +158,14 @@ const showDialog = ref(false);
                     v-if="mismatch_detected" 
                     :icon="faWarning" 
                     class="text-red-500" 
-                    v-tooltip="trans('One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units')" fixed-width
+                    v-tooltip="ctrans('One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units')" fixed-width
                 />
             </div>
         </template>
 
         <template #button-variants>
             <div v-if="!isPerfectFamily">
-                <Button :style="'create'" :label="trans('Variants')" :tooltip="trans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
+                <Button :style="'create'" :label="ctrans('Variants')" :tooltip="ctrans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
             </div>
         </template>
 
@@ -169,7 +184,7 @@ const showDialog = ref(false);
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
-        {{ trans("This family is not assigned to any department. You can add it in edit section.") }}
+        {{ ctrans("This family is not assigned to any department. You can add it in edit section.") }}
     </Message>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
      <div  class="bg-white pt-2 w-full  border-gray-200 border-b overflow-x-auto">
@@ -196,11 +211,11 @@ const showDialog = ref(false);
                 :icon="faWarning"
                 class="text-red-500 mr-1" fixed-width
             />
-            {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
+            {{ ctrans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward" :historyScopeToggle="currentTab === 'history'"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

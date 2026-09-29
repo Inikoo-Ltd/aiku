@@ -102,15 +102,24 @@ class StorePurchaseOrderTransaction extends OrgAction
     {
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        DB::transaction(function () use ($purchaseOrder, $orgSupplierProduct) {
+        $this->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, $this->validatedData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $modelData
+     * @throws ValidationException
+     */
+    public function addOrgSupplierProduct(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct, array $modelData): PurchaseOrderTransaction
+    {
+        return DB::transaction(function () use ($purchaseOrder, $orgSupplierProduct, $modelData) {
             $this->ensureCanBeAdded($purchaseOrder, $orgSupplierProduct);
             $orgStock = $this->resolveOrgStock($purchaseOrder, $orgSupplierProduct);
 
-            $this->handle(
+            return $this->handle(
                 $purchaseOrder,
                 $orgSupplierProduct->supplierProduct->historicSupplierProduct,
                 $orgStock,
-                array_merge($this->validatedData, ['org_supplier_product_id' => $orgSupplierProduct->id])
+                array_merge($modelData, ['org_supplier_product_id' => $orgSupplierProduct->id])
             );
         });
     }

@@ -27,7 +27,7 @@ class GetChatOrderFacts
     use AsAction;
 
     /** What each state means to somebody waiting for the parcel, for the model to explain. */
-    private const array STATE_MEANING = [
+    public const array STATE_MEANING = [
         'submitted'        => 'received, waiting to be picked in the warehouse',
         'in_warehouse'     => 'in the warehouse, waiting to be picked',
         'handling'         => 'being picked in the warehouse',

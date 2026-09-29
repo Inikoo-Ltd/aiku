@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -116,7 +117,7 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.tickets.',
             'route'   => [
-                'name' => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.tickets.board' : 'grp.tickets.index',
+                'name' => $user->hasRole(RolesEnum::HELP_DESK_SUPERVISOR->value) ? 'grp.tickets.board' : 'grp.tickets.index',
             ],
             'topMenu' => [
                 'subSections' => [
@@ -129,13 +130,21 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label' => __('List'),
+                        'label' => __('Ticket List'),
                         'icon'  => ['fal', 'fa-list'],
                         'root'  => 'grp.tickets.list',
                         'route' => [
                             'name' => 'grp.tickets.list',
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        'label' => __('QA List'),
+                        'icon'  => ['fal', 'fa-vial'],
+                        'root'  => 'grp.tickets.qa_list',
+                        'route' => [
+                            'name' => 'grp.tickets.qa_list',
+                        ],
+                    ]] : []),
                     [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],
@@ -236,7 +245,7 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, ['tickets']);
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets'] : ['tickets']);
         }
 
         return $groupNavigation;

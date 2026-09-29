@@ -55,6 +55,10 @@ class ForwardedChatSessionNotification extends Notification
             $mail->replyTo($this->replyTo);
         }
 
+        if (app()->isProduction()) {
+            $mail->mailer('ses')->from('help@aiku.io', 'Aiku Help');
+        }
+
         return $mail;
     }
 }

@@ -20,6 +20,7 @@ enum MasterAssetTabsEnum: string
     use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     // case PRODUCTS = 'products';
     case IMAGES = 'images';
     case SALES = 'sales';
@@ -34,6 +35,10 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterAssetTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterAssetTabsEnum::PRODUCTS => [
             //     'title' => __('Products in shop'),

@@ -42,8 +42,11 @@ interface MasterProductPricing {
     rrp: string | number | null
     currency_code: string
     units_review: string | null
+    price_review: string | null
+    price_outlier: { times: number, reason: string } | null
     master_prices: Record<string, CurrencyValue>
     master_rrps: Record<string, CurrencyValue>
+    is_dropship?: boolean
     used_in: number
     favourites: number
     price_rebels: number
@@ -104,6 +107,8 @@ watch(() => (props.data as any)?.data, (rows: MasterProductPricing[] | undefined
         rowCache.value[row.id] = row
     }
 }, { immediate: true, deep: false })
+
+const isDropship = computed(() => !!((props.data as any)?.data?.[0]?.is_dropship))
 
 // Cascade progress tracked at table level so it survives closing the modal
 // (and several products can cascade at the same time, each on its own row)
@@ -212,12 +217,12 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     const allSame = selectionFullyKnown
         && rows.length > 0
         && rows.every(row => canonicalRecord(row[field]) === firstRecord)
-        && (field !== 'master_rrps' || rows.every(row => Number(row.units) === Number(rows[0].units)))
+        && (field !== 'master_rrps' || isDropship.value || rows.every(row => Number(row.units) === Number(rows[0].units)))
 
     let prefill: Record<string, CurrencyValue> = {}
     if (allSame) {
         prefill = JSON.parse(JSON.stringify(rows[0][field] ?? {}))
-        if (field === 'master_rrps' && Number(rows[0].units) > 0) {
+        if (field === 'master_rrps' && !isDropship.value && Number(rows[0].units) > 0) {
             const units = Number(rows[0].units)
             // enough per-unit decimals that saving the untouched prefill (× units
             // server side) reproduces the stored outer value instead of drifting it
@@ -248,7 +253,7 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     editingField.value = field
     editForm.value = useForm({
         ids: compSelectedIds.value,
-        rrp_per_unit: true,
+        rrp_per_unit: !isDropship.value,
         [field]: prefill,
     })
 }
@@ -393,8 +398,12 @@ const formatMoney = (value: string | number | null, currencyCode: string) => {
     return locale.currencyFormat(currencyCode, Number(value))
 }
 
-// DB stores RRP per outer; the UI always shows RRP per unit
+// DB stores RRP per outer; the UI shows RRP per unit, except dropshipping, which resells whole outers
 const formatRrpPerUnit = (value: string | number | null, currencyCode: string, units: number) => {
+    if (isDropship.value) {
+        units = 1
+    }
+
     if (value == null) {
         return "-"
     }
@@ -416,6 +425,18 @@ const priceMarginPct = (masterProduct: MasterProductPricing, code: string): stri
     }
 
     return Math.round(((price - cost) / price) * 100) + '%'
+}
+
+const priceWarning = (masterProduct: MasterProductPricing): string | null => {
+    const warnings = []
+    if (masterProduct.price_review) {
+        warnings.push(ctrans('The composition changed after this price was set, review the price and save it'))
+    }
+    if (masterProduct.price_outlier) {
+        warnings.push(masterProduct.price_outlier.reason)
+    }
+
+    return warnings.length ? warnings.join('. ') : null
 }
 
 const marginPct = (masterProduct: MasterProductPricing, code: string): string | null => {
@@ -529,6 +550,14 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                                 </template>
                                 <template v-else>✓</template>
                             </span>
+                            <FontAwesomeIcon
+                                v-if="priceWarning(masterProduct)"
+                                :icon="faExclamationTriangle"
+                                class="text-red-500"
+                                v-tooltip="priceWarning(masterProduct)"
+                                fixed-width
+                                aria-hidden="true"
+                            />
                             <button
                                 type="button"
                                 class="text-sm text-gray-400 hover:text-indigo-600"
@@ -540,7 +569,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                         </template>
                     </span>
                     <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
-                    <span class="tabular-nums text-right">{{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}</span>
+                    <span class="tabular-nums text-right" :class="{ 'font-semibold text-red-600': priceWarning(masterProduct) }">{{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}</span>
                 </template>
                 <template v-for="code in independentMinors(masterProduct.master_prices)" :key="code">
                     <span />
@@ -639,24 +668,24 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         <div v-if="editForm">
             <div class="mb-3 text-sm font-medium text-gray-700">
                 <template v-if="bulkMode">
-                    {{ ctrans('Bulk edit') }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${ctrans('Unit')}` }}
+                    {{ ctrans('Bulk edit') }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${isDropship ? ctrans('Outer') : ctrans('Unit')}` }}
                     <span class="ml-1 font-normal text-gray-400">{{ ctrans(':n products', { n: `${editForm.ids?.length}` }) }}</span>
                 </template>
                 <template v-else-if="editingProduct">
-                    {{ editingProduct.code }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${ctrans('Unit')}` }}
+                    {{ editingProduct.code }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${isDropship ? ctrans('Outer') : ctrans('Unit')}` }}
                     <span class="ml-1 font-normal text-gray-400">{{ editingProduct.name }}</span>
                 </template>
             </div>
             <div v-if="bulkMode && !bulkPrefilled" class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
                 {{ ctrans('Only currencies you fill will be applied; independent prices are never overwritten.') }}
-                <template v-if="editingField === 'master_rrps'">{{ ctrans('RRP is entered per unit and scaled by each product\'s units.') }}</template>
+                <template v-if="editingField === 'master_rrps' && !isDropship">{{ ctrans('RRP is entered per unit and scaled by each product\'s units.') }}</template>
             </div>
             <PureMultiplePriceCurrency
                 v-model="editForm[editingField]"
                 :currencies="pricingCurrencies ?? {}"
                 :masterAsset="editingProduct?.id ?? 0"
                 :type_input="editingField === 'master_prices' ? 'price' : 'rrp'"
-                :perUnits="!bulkMode && editingField === 'master_rrps' ? editingProduct?.units : undefined"
+                :perUnits="!bulkMode && !isDropship && editingField === 'master_rrps' ? editingProduct?.units : undefined"
                 :form="editForm"
                 :submitForm="submitEdit"
                 :inputPlaceholder="bulkMode && !bulkPrefilled ? '' : undefined"

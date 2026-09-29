@@ -59,6 +59,7 @@ class FetchAuroraStockDeliveryItem extends FetchAurora
             'unit_quantity'         => !$this->auroraModelData->{'Supplier Delivery Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Units'},
             'unit_quantity_checked' => !$this->auroraModelData->{'Supplier Delivery Checked Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Checked Units'},
             'unit_quantity_placed'  => !$this->auroraModelData->{'Supplier Delivery Placed Units'} ? 0 : $this->auroraModelData->{'Supplier Delivery Placed Units'},
+            'net_amount'            => $this->auroraModelData->{'Supplier Delivery Net Amount'} ?? 0,
             'state'                 => $state,
             'source_id'             => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Transaction Fact Key'},
             'created_at'            => $this->auroraModelData->{'Creation Date'},

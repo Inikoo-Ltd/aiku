@@ -10,13 +10,20 @@ namespace App\Actions\CRM\TrafficSourceCampaign\UI;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\GetGoogleAdsSearchTerms;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsImage;
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Models\Helpers\Media;
 use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\CRM\TrafficSourceCampaignConversion;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Models\CRM\TrafficSourceCampaignMetric;
+use Illuminate\Support\Arr;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,6 +33,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class ShowGoogleAdsCampaign extends OrgAction
 {
     use WithGoogleAdsInterval;
+    use WithGoogleAdsCampaignJourney;
 
     public function handle(TrafficSourceCampaign $trafficSourceCampaign): TrafficSourceCampaign
     {
@@ -51,18 +59,26 @@ class ShowGoogleAdsCampaign extends OrgAction
         $data     = $trafficSourceCampaign->data ?? [];
         $currency = $data['currency'] ?? $this->shop->currency->code;
 
+        /* A campaign that exists only in Aiku has no figures, no ad groups read back from Google and
+           nothing to compare periods over. Showing it through the same page would be a wall of dashes,
+           so it gets its own, which is about finishing it rather than reading it. */
+        if ($trafficSourceCampaign->state->isInProcess()) {
+            return $this->inProcessResponse($trafficSourceCampaign, $request);
+        }
+
         return Inertia::render(
             'Org/Shop/CRM/GoogleAdsCampaign',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($trafficSourceCampaign, $request->route()->originalParameters()),
                 'title'       => $trafficSourceCampaign->name,
                 'pageHead'    => [
-                    'title' => $trafficSourceCampaign->name,
-                    'icon'  => [
+                    'title'   => $trafficSourceCampaign->name,
+                    'icon'    => [
                         'icon'  => ['fab', 'fa-google'],
                         'title' => __('Google Ads campaign'),
                     ],
-                    'model' => __('Google Ads campaign'),
+                    'model'   => GoogleAdsCampaignStateEnum::labels()[$trafficSourceCampaign->state->value],
+                    'actions' => $this->stateActions($trafficSourceCampaign),
                 ],
 
                 /* Deferred: the page is about the campaign's own figures and those are already stored,
@@ -73,6 +89,7 @@ class ShowGoogleAdsCampaign extends OrgAction
                     $trafficSourceCampaign->reference
                 )),
 
+                'state'    => $this->stateProps($trafficSourceCampaign),
                 'campaign' => [
                     'reference'             => $trafficSourceCampaign->reference,
                     'name'                  => $trafficSourceCampaign->name,
@@ -154,6 +171,151 @@ class ShowGoogleAdsCampaign extends OrgAction
                 }),
             ]
         );
+    }
+
+    /**
+     * The in process page, the compose step: what has been written so far, and the way on to review it.
+     */
+    private function inProcessResponse(TrafficSourceCampaign $campaign, ActionRequest $request): Response
+    {
+        $parameters = $request->route()->originalParameters();
+        $missing    = $this->missingForGoogle($campaign);
+
+        return Inertia::render(
+            'Org/Shop/CRM/GoogleAdsCampaignInProcess',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs($campaign, $parameters),
+                'title'       => $campaign->name,
+                'pageHead'    => [
+                    'title'      => $campaign->name,
+                    'model'      => __('Campaign:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
+                    'icon'       => ['icon' => ['fab', 'fa-google'], 'title' => __('Google Ads campaign')],
+                    'actions'    => [
+                        [
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Review'),
+                            'route'     => [
+                                'name'       => 'grp.org.shops.show.marketing.google_ads.review',
+                                'parameters' => $parameters,
+                            ],
+                        ],
+                    ],
+                ],
+                'journey'  => $this->getGoogleAdsCampaignJourney($campaign, 'compose'),
+                'campaign' => [
+                    'slug'         => $campaign->slug,
+                    'name'         => $campaign->name,
+                    'channel_type' => $campaign->channel_type,
+                    'data'         => $campaign->data ?? [],
+                ],
+                'currency'      => $this->shop->currency->code,
+
+                /* The type is picked here rather than before the campaign existed, and stays a choice
+                   for as long as nothing has been published: every field below it depends on it. */
+                'campaign_types' => StoreGoogleAdsCampaign::campaignTypes(),
+
+                'missing'       => $missing,
+                'countries'     => collect(GetCountriesOptions::run())
+                    ->map(fn (array $country) => ['value' => $country['code'], 'label' => $country['label']])
+                    ->sortBy('label')
+                    ->values()
+                    ->all(),
+                'images'        => Inertia::defer(fn () => $this->images($campaign, (string) $request->query('image_search', ''))),
+                'image_search'  => (string) $request->query('image_search', ''),
+                'image_route'   => [
+                    'name'       => 'grp.models.org.shop.google_ads.image.store',
+                    'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id],
+                ],
+                'update_route'  => [
+                    'name'       => 'grp.models.org.shop.google_ads.campaign.in_process.update',
+                    'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id, 'trafficSourceCampaign' => $campaign->id],
+                ],
+                'index_route' => [
+                    'name'       => 'grp.org.shops.show.marketing.google_ads.index',
+                    'parameters' => Arr::except($parameters, 'trafficSourceCampaign'),
+                ],
+            ]
+        );
+    }
+
+    /**
+     * Images this shop could advertise with, the same list the create form offers.
+     *
+     * @return array<int, array{id: int, name: string, thumbnail: string}>
+     */
+    private function images(TrafficSourceCampaign $campaign, string $search = ''): array
+    {
+        return Media::where('group_id', $campaign->trafficSource->shop->group_id)
+            ->whereIn('mime_type', ['image/jpeg', 'image/png'])
+            ->when($search !== '', fn ($query) => $query->where(
+                fn ($query) => $query->where('name', 'ilike', '%'.$search.'%')
+                    ->orWhere('file_name', 'ilike', '%'.$search.'%')
+            ))
+            ->orderByDesc('id')
+            ->limit(60)
+            ->get()
+            ->map(fn (Media $media) => StoreGoogleAdsImage::shape($media))
+            ->all();
+    }
+
+    /**
+     * Switching a campaign on and off, in the page head where a mailshot keeps its stop and resume.
+     *
+     * Only ever one of them: a campaign is either serving or it is not, and offering both would leave
+     * somebody deciding which one applies to what they are looking at.
+     *
+     * @return array<int, array>
+     */
+    private function stateActions(TrafficSourceCampaign $campaign): array
+    {
+        $isServing = $campaign->state === GoogleAdsCampaignStateEnum::PUBLISHED_SERVING;
+
+        return [[
+            'type'  => 'button',
+            'style' => 'edit',
+            'label' => $isServing ? __('Pause') : __('Switch on'),
+            'icon'  => $isServing ? ['fal', 'fa-pause'] : ['fal', 'fa-play'],
+            'route' => [
+                'name'       => $isServing
+                    ? 'grp.models.org.shop.google_ads.campaign.pause'
+                    : 'grp.models.org.shop.google_ads.campaign.resume',
+                'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id, 'trafficSourceCampaign' => $campaign->id],
+                'method'     => 'post',
+            ],
+        ]];
+    }
+
+    /**
+     * The state timeline: the three points a campaign passes through, each with the moment it
+     * happened where that has happened.
+     *
+     * @return array{current: string, timeline: array<int, array{key: string, label: string, icon: string, timestamp: string|null}>}
+     */
+    private function stateProps(TrafficSourceCampaign $campaign): array
+    {
+        $labels = GoogleAdsCampaignStateEnum::labels();
+        $icons  = GoogleAdsCampaignStateEnum::stateIcon();
+
+        return [
+            'current'  => $campaign->state->value,
+            'timeline' => collect(GoogleAdsCampaignStateEnum::cases())
+                ->map(function (GoogleAdsCampaignStateEnum $state) use ($campaign, $labels, $icons) {
+                    $reachedAt = $campaign->{$state->timestampColumn()};
+
+                    return [
+                        'key'       => $state->value,
+                        'label'     => $labels[$state->value],
+                        'icon'      => $icons[$state->value]['icon'],
+                        'timestamp' => $reachedAt ? Carbon::parse($reachedAt)->toIso8601String() : null,
+                    ];
+                })
+                ->all(),
+        ];
     }
 
     /**

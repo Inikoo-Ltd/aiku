@@ -221,9 +221,11 @@ class EditMasterProduct extends OrgAction
             'type_input'   => 'price'
         ];
 
+        $isDropshipping = $masterShop->type == ShopTypeEnum::DROPSHIPPING;
+
         $masterRRPsField = [
             'type'              => 'multiple_price_currency',
-            'label'             => __('RRP').' / '.__('Unit'),
+            'label'             => __('RRP').' / '.($isDropshipping ? __('Outer') : __('Unit')),
             'required'          => true,
             'currencies'        => $currenciesRate,
             'value'             => $masterProduct->master_rrps,
@@ -231,7 +233,7 @@ class EditMasterProduct extends OrgAction
             'unitsReview'       => $unitsReview,
             'updateRoute'       => $pricesUpdateRoute,
             'noSaveButton'      => true,
-            'perUnits'          => (float) $masterProduct->units,
+            'perUnits'          => $isDropshipping ? null : (float) $masterProduct->units,
             'counterpartRecord' => $masterProduct->master_prices,
             'type_input'        => 'rrp'
         ];
@@ -468,7 +470,7 @@ class EditMasterProduct extends OrgAction
                     ],
                 ],
             ],
-            $masterShop->type == ShopTypeEnum::DROPSHIPPING ? [] : [
+            $isDropshipping ? [] : [
                 'label'  => __('Offer Details'),
                 'icon'   => 'fa-light fa-badge-percent',
                 'fields'        => [

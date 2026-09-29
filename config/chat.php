@@ -19,6 +19,23 @@ return [
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
 
+    'urgent_model' => env('CHAT_URGENT_MODEL', 'gpt-4o'),
+
+    'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),
+
+    'close_after_thanks' => (bool) env('CHAT_CLOSE_AFTER_THANKS', true),
+
+    // With an agent in the chat, a thanks is closed only after this long with nobody writing.
+    'close_after_thanks_minutes' => (int) env('CHAT_CLOSE_AFTER_THANKS_MINUTES', 2),
+
+    'carrier_domains' => [
+        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
+        'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
+        'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com',
+    ],
+
+    'marketplace_notice_domains' => ['info.faire.com', 'orderchamp.com'],
+
     'phone_call' => [
 
         'max_minutes' => (int) env('CHAT_PHONE_CALL_MAX_MINUTES', 60),

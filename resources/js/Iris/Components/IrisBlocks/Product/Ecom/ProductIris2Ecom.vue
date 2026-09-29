@@ -394,18 +394,18 @@ onMounted(async () => {
                             <!-- REMIND ME -->
                             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
                                 @click="
-                                    product.is_back_in_stock
+                                    customerData?.back_in_stock
                                         ? onUnselectBackInStock(product)
                                         : onAddBackInStock(product)
                                     "
                                 class="absolute right-0 bottom-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-full border bg-gray-100 hover:bg-gray-200">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
-                                    :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
+                                    :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>
                                     {{
-                                        product.is_back_in_stock
+                                        customerData?.back_in_stock
                                             ? ctrans("will be notified when in Stock")
                                             : ctrans("Remind me")
                                     }}
@@ -462,8 +462,8 @@ onMounted(async () => {
                             </p>
                         </template>
 
-                        <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                        <div class="flex items-baseline justify-end gap-1 text-black">
+                        <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                        <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
@@ -776,8 +776,8 @@ onMounted(async () => {
                         </p>
                     </template>
 
-                    <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                    <div class="flex items-baseline justify-end gap-1 text-black">
+                    <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                    <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>
@@ -828,15 +828,15 @@ onMounted(async () => {
 
             <!-- REMIND ME -->
             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'" @click="
-                product.is_back_in_stock
+                customerData?.back_in_stock
                     ? onUnselectBackInStock(product)
                     : onAddBackInStock(product)
                 " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
+                <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
-                        product.is_back_in_stock
+                        customerData?.back_in_stock
                             ? ctrans('will be notified when in Stock')
                             : ctrans('Remind me')
                     }}

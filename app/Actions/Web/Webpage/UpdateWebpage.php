@@ -27,6 +27,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
+use App\Rules\NotReservedIrisPath;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -207,6 +208,7 @@ class UpdateWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 Rule::unique('webpages', 'url')
                     ->where(function ($query) {
                         return $query

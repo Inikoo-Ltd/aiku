@@ -13,6 +13,7 @@ use App\Actions\Traits\WithDispatchedEmailArchiveRead;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Ordering\Order;
+use App\Models\Procurement\PurchaseOrder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,7 +22,7 @@ class IndexDispatchedEmailsInOrder extends OrgAction
 {
     use WithDispatchedEmailArchiveRead;
 
-    public function handle(Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Order|PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
     {
 
         if ($prefix) {

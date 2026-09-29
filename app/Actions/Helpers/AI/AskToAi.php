@@ -66,7 +66,7 @@ class AskToAi extends OrgAction
         $response = Http::withToken($apiKey)
             ->connectTimeout(10)
             ->timeout(30)
-            ->post($url, [
+            ->post($url, array_merge([
                 'model' => $model,
                 'messages' => [
                     [
@@ -78,8 +78,7 @@ class AskToAi extends OrgAction
                         'content' => $prompt
                     ],
                 ],
-                'temperature' => 0.3,
-            ]);
+            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : []));
 
         if (!$response->successful()) {
             Log::error("AskToAi API Error: " . $response->body());

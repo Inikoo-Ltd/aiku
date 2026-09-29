@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
@@ -77,6 +78,10 @@ class SummarizeChatSession
             'metadata' => $metadata,
             'topic'    => ChatTopicEnum::tryFrom((string) Arr::get($summaryData, 'topic'))?->value ?? ChatTopicEnum::OTHER->value,
         ]);
+
+        if ($chatSession instanceof ChatSession && $chatSession->shop && in_array($chatSession->topic, ShopHydrateCustomersDashboard::PROBLEM_TOPICS, true)) {
+            ShopHydrateCustomersDashboard::dispatch($chatSession->shop)->delay(now()->addMinutes(2));
+        }
 
         return $chatSession;
     }

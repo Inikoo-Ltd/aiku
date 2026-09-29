@@ -510,6 +510,20 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'ses-low'                  => [
+            'connection'      => 'redis',
+            'queue'           => ['ses-low'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 1,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'nice'            => 10,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'ses-analytics'        => [
             'connection'      => 'redis',
             'queue'           => ['ses-analytics'],
@@ -607,6 +621,9 @@ return [
             'ses-send'                  => [
                 'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
             ],
+            'ses-low'                  => [
+                'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
             ],
@@ -685,6 +702,9 @@ return [
             'ses-send'                  => [
                 'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 1),
             ],
+            'ses-low'                  => [
+                'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),
+            ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 1),
             ],
@@ -761,6 +781,9 @@ return [
             ],
             'ses-send'                  => [
                 'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
+            'ses-low'                  => [
+                'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),
             ],
             'ses-analytics'        => [
                 'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),

@@ -24,6 +24,7 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -166,6 +167,10 @@ class ShowTicket extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($ticket),
                 'title'       => $ticket->reference,
+                'navigation'  => [
+                    'previous' => $this->getPrevious($ticket),
+                    'next'     => $this->getNext($ticket),
+                ],
                 'pageHead'    => [
                     'model' => __('Ticket'),
                     'title' => $ticket->reference,
@@ -250,6 +255,8 @@ class ShowTicket extends OrgAction
             'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
             'can_qa'                 => Ticket::canGiveQaVerdict($user),
+            'can_claim_qa'           => $ticket->canBeClaimedForQaBy($user),
+            'qa_held_by_another'     => $ticket->isQaHeldByAnotherThan($user),
             'can_request_qa'         => $ticket->canRequestQaBy($user),
             'is_reporter'            => $ticket->isReportedBy($user),
             'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),
@@ -286,5 +293,41 @@ class ShowTicket extends OrgAction
                 ],
             ]
         );
+    }
+
+    public function getPrevious(Ticket $ticket): ?array
+    {
+        $previous = $this->siblingTicketsQuery($ticket)->where('tickets.id', '<', $ticket->id)->orderByDesc('tickets.id')->first();
+
+        return $this->getNavigation($previous);
+    }
+
+    public function getNext(Ticket $ticket): ?array
+    {
+        $next = $this->siblingTicketsQuery($ticket)->where('tickets.id', '>', $ticket->id)->orderBy('tickets.id')->first();
+
+        return $this->getNavigation($next);
+    }
+
+    private function siblingTicketsQuery(Ticket $ticket): Builder
+    {
+        return Ticket::query()
+            ->where('tickets.group_id', $ticket->group_id)
+            ->visibleTo(request()->user());
+    }
+
+    /**
+     * @return array{label: string, route: array{name: string, parameters: array<int, string>}}|null
+     */
+    private function getNavigation(?Ticket $ticket): ?array
+    {
+        if (!$ticket) {
+            return null;
+        }
+
+        return [
+            'label' => $ticket->reference,
+            'route' => $this->ticketsRoute('show', [$ticket->reference]),
+        ];
     }
 }

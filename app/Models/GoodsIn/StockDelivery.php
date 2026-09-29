@@ -224,6 +224,20 @@ class StockDelivery extends Model implements HasMedia, Auditable
     }
 
     /**
+     * A partner delivery mirrors the seller's delivery note, and the seller owns it until the
+     * buyer receives the goods.
+     */
+    public function isManagedByPartner(): bool
+    {
+        return $this->delivery_note_id !== null && in_array($this->state, [
+            StockDeliveryStateEnum::IN_PROCESS,
+            StockDeliveryStateEnum::CONFIRMED,
+            StockDeliveryStateEnum::READY_TO_SHIP,
+            StockDeliveryStateEnum::DISPATCHED,
+        ], true);
+    }
+
+    /**
      * Strips what Aurora knows about placement from a fetched delivery or item payload, so a
      * re-fetch can never regress what aiku booked in. The state is dropped from checked onwards
      * because aiku derives it from its own sowings.

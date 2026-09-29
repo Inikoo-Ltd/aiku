@@ -8,7 +8,7 @@ class ChatAgentResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $isDeletedInOrg = (int) ($this->active_shca_count ?? 0) === 0;
+        $isDeletedInOrg = $this->deleted_at !== null;
         $orgSlug        = $this->organisation_slug;
 
         $data = [

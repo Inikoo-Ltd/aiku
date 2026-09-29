@@ -44,7 +44,7 @@ class SlowStockTool extends AikuTool
             'WITH sold AS (
                 SELECT model_id, SUM(net_amount) AS sales, SUM(quantity) AS quantity
                 FROM invoice_transactions
-                WHERE shop_id = ? AND model_type = ? AND date BETWEEN ? AND ? AND deleted_at IS NULL
+                WHERE shop_id = ? AND model_type = ? AND date BETWEEN ? AND ? AND deleted_at IS NULL AND in_process = false
                 GROUP BY model_id
             )
             SELECT p.code, p.name, p.state, p.available_quantity, p.price,

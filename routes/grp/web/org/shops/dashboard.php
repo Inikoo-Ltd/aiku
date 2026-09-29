@@ -11,6 +11,7 @@ use App\Actions\Catalogue\Shop\UI\GetShopDashboardTabData;
 use App\Actions\Catalogue\Shop\UI\GetShopDashboardWidgets;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\Shop\UI\ShowShopBrandsDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShopSalesAnalysis;
 use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,7 @@ Route::get('', ShowShop::class)->name('show');
 Route::get('/tab-data', GetShopDashboardTabData::class)->name('tab-data');
 Route::get('/widgets', GetShopDashboardWidgets::class)->name('widgets');
 Route::get('/brands', ShowShopBrandsDashboard::class)->name('brands');
+Route::get('/sales-analysis', ShowShopSalesAnalysis::class)->name('sales_analysis');
 
 Route::name("comms.")->prefix('comms')
     ->group(__DIR__ . "/comms.php");

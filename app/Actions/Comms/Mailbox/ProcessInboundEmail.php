@@ -13,6 +13,8 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
+use App\Actions\Chat\ChatSession\SummarizeLongEmail;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -25,6 +27,7 @@ use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\Group;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
@@ -46,7 +49,10 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
-    private const array MACHINE_SENDER_DOMAINS = ['luigisbox.com', 'email-abuse.amazonses.com'];
+    private const array MACHINE_SENDER_DOMAINS = [
+        'luigisbox.com', 'email-abuse.amazonses.com',
+        'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
+    ];
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
@@ -106,9 +112,8 @@ class ProcessInboundEmail
         $body    = GmailMessageParser::body($raw);
 
         // Kept beside the text, never instead of it: the text is what search, previews and
-        // translation read, and what is shown if the markup is ever refused. It is purified
-        // once the pictures it points at have been stored, because the purifier refuses the
-        // cid scheme they arrive under and there is no second chance to resolve them.
+        // translation read, and what is shown if the markup is ever refused. Pictures keep the
+        // cid address they arrive under; ChatMessageResource points them at the stored file.
         $rawHtml = GmailMessageParser::htmlBody($raw);
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
@@ -131,6 +136,15 @@ class ProcessInboundEmail
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
             $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
+
+            return null;
+        }
+
+        // Order, shipping and payout notices from the marketplaces are work for whoever runs those
+        // portals, not a conversation. They wait unread under their own label in Gmail. Buyers'
+        // messages come from another address and still reach the inbox.
+        if (self::isMarketplaceNotice($from['address'])) {
+            $client->fileAway($gmailMessageId, 'Marketplaces', Arr::get($raw, 'labelIds', []), markRead: false);
 
             return null;
         }
@@ -174,12 +188,16 @@ class ProcessInboundEmail
             'message_text' => $body,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'attachments'  => $attachments,
+            'attachment_content_ids' => $contentIds,
             'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $webUser?->id,
         ]);
 
         $html = app(HTMLSanitizer::class)->cleanEmail(
-            $this->resolveInlineImages($rawHtml, $message, $contentIds)
+            $this->embedSmallInlineImages(
+                $rawHtml,
+                ImportPendingGmailAttachments::make()->smallInlineImages($client, $gmailMessageId, $raw)
+            )
         );
 
         if ($html !== '') {
@@ -228,6 +246,11 @@ class ProcessInboundEmail
         }
 
         SendOutOfHoursReply::dispatch($session, $message);
+        FlagUrgentChatRequest::dispatch($session);
+
+        if (! $isAutoReply) {
+            SummarizeLongEmail::dispatch($message);
+        }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));
@@ -238,35 +261,18 @@ class ProcessInboundEmail
     }
 
     /**
-     * A picture inside an email is addressed as src="cid:something", which means nothing outside
-     * the mail itself: left alone the purifier drops the src and the message reads as "see the
-     * photo below" with nothing below it, while the file sits detached above the text. Each one
-     * is pointed at the copy we stored instead, so the mail shows the way it was written.
+     * A picture too small to be stored as a file is written into the body itself.
      *
-     * The stored files are in the order they were downloaded, so position is what matches them.
-     *
-     * @param  array<int, string|null>  $contentIds
+     * @param  array<string, string>  $smallInlineImages  Content-ID => data uri
      */
-    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds): ?string
+    private function embedSmallInlineImages(?string $html, array $smallInlineImages): ?string
     {
-        if (! $html || ! array_filter($contentIds)) {
+        if (! $html) {
             return $html;
         }
 
-        $files = $message->attachedFiles();
-
-        foreach ($contentIds as $index => $contentId) {
-            $media = $files[$index] ?? null;
-
-            if (! $contentId || ! $media) {
-                continue;
-            }
-
-            $html = str_ireplace(
-                ['cid:'.$contentId, 'cid:'.rawurlencode($contentId)],
-                $media->getUrl(),
-                $html
-            );
+        foreach ($smallInlineImages as $contentId => $source) {
+            $html = str_ireplace(['cid:'.$contentId, 'cid:'.rawurlencode($contentId)], $source, $html);
         }
 
         return $html;
@@ -372,6 +378,9 @@ class ProcessInboundEmail
             $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
             $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+            // Files of earlier mails are fetched only when an agent asks, so a long thread does
+            // not download everything it ever carried.
+            $pending = ImportPendingGmailAttachments::make()->countImportable($raw);
 
             ChatMessage::create([
                 'chat_session_id' => $session->id,
@@ -393,7 +402,7 @@ class ProcessInboundEmail
                     'gmail_header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
                     'email_subject'           => GmailMessageParser::header($raw, 'Subject'),
                     'gmail_thread_history'    => true,
-                ],
+                ] + ($pending ? ['gmail_pending_attachments' => $pending] : []),
             ]);
 
             $imported++;
@@ -546,6 +555,7 @@ class ProcessInboundEmail
                 'name'  => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
+            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'], $session->shop?->group)),
         ]);
 
         return $session;
@@ -554,6 +564,35 @@ class ProcessInboundEmail
     /**
      * @param  array{address: ?string, name: ?string}  $from
      */
+    public static function isMarketplaceNotice(?string $address): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && in_array($domain, config('chat.marketplace_notice_domains', []), true);
+    }
+
+    /**
+     * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
+     */
+    public static function isCarrierAddress(?string $address, ?Group $group = null): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && collect(self::carrierDomains($group))
+            ->contains(fn (string $carrier) => $domain === $carrier || str_ends_with($domain, '.'.$carrier));
+    }
+
+    /**
+     * Customer service keeps the list in the chat settings. Until they first save it the group
+     * reads the list we shipped with, so an empty saved list really means no couriers.
+     *
+     * @return array<int, string>
+     */
+    public static function carrierDomains(?Group $group): array
+    {
+        return data_get($group?->settings, 'chat.carrier_domains') ?? config('chat.carrier_domains', []);
+    }
+
     private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
     {
         $session = StoreChatSession::run([
@@ -573,6 +612,7 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
+            'is_carrier' => !$webUser && self::isCarrierAddress($from['address'], $shop->group),
         ]);
 
         return $session;

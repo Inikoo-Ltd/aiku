@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
@@ -31,11 +32,18 @@ class StoreTicketComment extends OrgAction
             throw ValidationException::withMessages(['is_internal' => __('Only engineers and collaborators can write engineering notes.')]);
         }
 
+        $isPostMortem = Arr::get($modelData, 'type') === TicketCommentTypeEnum::POST_MORTEM->value;
+
+        if ($isPostMortem && !($author instanceof User && $ticket->canWriteEngineeringNotesBy($author))) {
+            throw ValidationException::withMessages(['type' => __('Only engineers and collaborators can write incident post-mortems.')]);
+        }
+
         $comment = $ticket->comments()->create([
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,
             'body'        => (string) Arr::get($modelData, 'body', ''),
             'is_internal' => (bool) Arr::get($modelData, 'is_internal', false),
+            'type'        => $isPostMortem ? TicketCommentTypeEnum::POST_MORTEM : TicketCommentTypeEnum::COMMENT,
         ]);
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
@@ -81,6 +89,7 @@ class StoreTicketComment extends OrgAction
         return [
             'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'is_internal' => ['sometimes', 'boolean'],
+            'type'        => ['sometimes', 'in:'.TicketCommentTypeEnum::COMMENT->value.','.TicketCommentTypeEnum::POST_MORTEM->value],
             'images'   => ['sometimes', 'array', 'max:5'],
             'images.*' => Ticket::ticketFileRules(),
         ];

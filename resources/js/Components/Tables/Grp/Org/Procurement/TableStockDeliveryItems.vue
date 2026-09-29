@@ -164,11 +164,23 @@ function findLocation(locationsList: any[], locationCode: string | null) {
     return locationsList?.find(location => location.location_code == locationCode) || locationsList?.[0]
 }
 
+const setAsPickingLocationChoice = reactive<Record<number, boolean>>({})
+
+function isOnlyLocationOfSko(item: any) {
+    const locationsCount = item.locations?.length ?? 0
+    return selectedOtherLocation[item.id] ? locationsCount === 0 : locationsCount === 1
+}
+
+function isSetAsPickingLocation(item: any) {
+    return !item.has_picking_location && (setAsPickingLocationChoice[item.id] ?? isOnlyLocationOfSko(item))
+}
+
 function placedAdditionalData(item: any) {
+    const pickingLocationData = isSetAsPickingLocation(item) ? { set_as_picking_location: true } : {}
     if (selectedOtherLocation[item.id]) {
-        return { location_id: selectedOtherLocation[item.id]?.id }
+        return { location_id: selectedOtherLocation[item.id]?.id, ...pickingLocationData }
     }
-    return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id }
+    return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id, ...pickingLocationData }
 }
 
 function sowingLocationRoute(sowing: any, item: any) {
@@ -357,6 +369,20 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
+                <div v-if="item.locations?.length" class="mt-1 w-fit min-w-40 divide-y divide-gray-100 border-t border-gray-100 text-xs">
+                    <div v-for="location in item.locations" :key="location.id" class="flex justify-between gap-x-6 py-0.5">
+                        <Link
+                            v-if="sowingLocationRoute(location, item)"
+                            :href="sowingLocationRoute(location, item)"
+                            class="secondaryLink"
+                        >
+                            {{ location.location_code }}
+                        </Link>
+                        <span v-else>{{ location.location_code }}</span>
+                        <span class="text-gray-500">{{ formatQuantity(Number(location.quantity)) }}</span>
+                    </div>
+                </div>
+                <div v-else-if="item.org_stock_id" class="mt-1 text-xs italic text-red-500">{{ ctrans('No location yet') }}</div>
             </div>
         </template>
 
@@ -647,6 +673,19 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                         @click="() => { isModalLocation = true; selectedItemValue = item }"
                     />
                 </div>
+                <label
+                    v-if="!item.has_picking_location && (item.locations?.length || selectedOtherLocation[item.id])"
+                    class="flex items-center gap-1 cursor-pointer select-none text-xs text-amber-700"
+                    v-tooltip="ctrans('This SKO has no picking location yet')"
+                >
+                    <input
+                        :checked="isSetAsPickingLocation(item)"
+                        @change="(event) => setAsPickingLocationChoice[item.id] = (event.target as HTMLInputElement).checked"
+                        type="checkbox"
+                        class="rounded border-gray-300"
+                    />
+                    {{ ctrans('Set as picking location') }}
+                </label>
             </div>
             <span v-else-if="Number(item.sko_quantity_placed) > 0" class="text-green-500">
                 {{ formatQuantity(Number(item.sko_quantity_placed)) }}

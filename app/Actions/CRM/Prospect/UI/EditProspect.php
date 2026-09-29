@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Prospect\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
@@ -85,7 +84,6 @@ class EditProspect extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($prospect->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ]

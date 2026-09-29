@@ -29,15 +29,15 @@ class GetWhatsappSubscribedApps extends OrgAction
     /**
      * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
      */
-    public function handle(Shop $shop): array
+    public function handle(Shop|Organisation $parent): array
     {
         [
             'waba_id'      => $wabaId,
             'access_token' => $accessToken,
-        ] = $this->whatsappCredentials($shop);
+        ] = $parent instanceof Shop ? $this->whatsappCredentials($parent) : $this->procurementWhatsappCredentials($parent);
 
         if ($wabaId === '' || $accessToken === '') {
-            return $this->notConfigured();
+            return $this->notConfigured($parent);
         }
 
         $response = Http::withToken($accessToken)->get($this->whatsappEndpoint($wabaId.'/subscribed_apps'));
@@ -56,6 +56,10 @@ class GetWhatsappSubscribedApps extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if (! isset($this->shop)) {
+            return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'org-supervisor.'.$this->organisation->id.'.procurement']);
+        }
+
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
@@ -67,5 +71,15 @@ class GetWhatsappSubscribedApps extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);
+    }
+
+    /**
+     * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
+     */
+    public function inProcurement(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
     }
 }

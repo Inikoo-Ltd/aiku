@@ -45,6 +45,7 @@ use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
 use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
@@ -75,6 +76,7 @@ use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
 use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
@@ -118,6 +120,8 @@ use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\CRM\CustomerComms\UnsubscribeCustomerFromMarketing;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\RejectCustomer;
@@ -268,6 +272,7 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
 use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
@@ -311,6 +316,8 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
+use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
 use App\Actions\Helpers\Media\AttachImagesToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
@@ -418,6 +425,7 @@ use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\ProcurementNote\StoreProcurementNote;
@@ -446,7 +454,7 @@ use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabelOnArtwork;
-use App\Actions\Inventory\OrgStock\UpdateOrgStockLabelMandatoryInformation;
+use App\Actions\Goods\Stock\UpdateStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
@@ -716,6 +724,7 @@ Route::prefix('stock-family')->name('stock-family.')->group(function () {
 Route::name('stock.')->prefix('/stock')->group(function () {
     Route::post('/', StoreStock::class)->name('store');
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
+    Route::patch('/{stock:id}/label-mandatory-information', UpdateStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
 });
 
 Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
@@ -848,12 +857,23 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('shop', StoreShop::class)->name('shop.store');
     Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/sales-target', UpdateShopSalesTarget::class)->name('shop.sales_target.update')->withoutScopedBindings();
     Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}', UpdateGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.update')->withoutScopedBindings();
     Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/element', UpdateGoogleAdsCampaignElement::class)
         ->name('shop.google_ads.campaign.element.update')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign', StoreGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.store');
+    Route::post('shop/{shop:id}/google-ads/image', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsImage::class)
+        ->name('shop.google_ads.image.store');
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/publish', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\PublishGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.publish')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/in-process', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateInProcessGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.in_process.update')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/pause', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\PauseGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.pause')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/resume', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\ResumeGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.resume')->withoutScopedBindings();
     Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
         ->name('shop.ad_proposal.apply')->withoutScopedBindings();
     Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
@@ -938,6 +958,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/retire-into-replacement', RetireProductIntoReplacement::class)->name('retire_into_replacement');
     Route::patch('/{product:id}/keep-as-separate', KeepRetiredProductAsSeparate::class)->name('keep_as_separate');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
+    Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
@@ -1313,6 +1334,8 @@ Route::delete('/web-user/{webUser:id}', DeleteWebUser::class)->name('web-user.de
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
     Route::delete('', DeleteCustomer::class)->name('delete');
+    Route::post('anonymise', AnonymiseCustomer::class)->name('anonymise');
+    Route::post('unsubscribe-marketing', UnsubscribeCustomerFromMarketing::class)->name('unsubscribe_marketing');
     Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
@@ -1462,6 +1485,8 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
+    Route::post('invoice/{media:id}/read', ReadStockDeliveryInvoice::class)->name('invoice.read')->withoutScopedBindings();
+    Route::post('invoice/{media:id}/apply', ApplyStockDeliveryInvoiceCosting::class)->name('invoice.apply')->withoutScopedBindings();
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
 });
 
@@ -1505,6 +1530,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
     Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
+    Route::post('transactions/upload', ImportPurchaseOrderTransactions::class)->name('transaction.upload');
     Route::post('transactions/{orgSupplierProduct:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
@@ -1578,7 +1604,6 @@ Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () 
     Route::post('labels/{label:id}/on-artwork', [UpdateArtefactLabelOnArtwork::class, 'inOrgStock'])->name('labels.on_artwork');
     Route::get('labels/{label:id}/pdf', [DownloadArtefactLabelPdf::class, 'inOrgStock'])->name('labels.pdf');
     Route::delete('labels/{label:id}', [DeleteArtefactLabel::class, 'inOrgStock'])->name('labels.delete');
-    Route::patch('label-mandatory-information', UpdateOrgStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
     Route::post('compliance-item', [StoreArtefactComplianceItem::class, 'inOrgStock'])->name('compliance-item.store');
 });
 
@@ -1590,6 +1615,7 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+    Route::post('assign-next-barcode', AssignNextBarcodeToTradeUnit::class)->name('assign_next_barcode');
     Route::patch('tariff-code-override/{organisation:id}', SetTradeUnitTariffCodeOverride::class)->name('tariff_code_override.update')->withoutScopedBindings();
     Route::delete('tariff-code-override/{organisation:id}', DeleteTradeUnitTariffCodeOverride::class)->name('tariff_code_override.delete')->withoutScopedBindings();
 

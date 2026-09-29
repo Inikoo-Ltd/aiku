@@ -100,6 +100,7 @@ class MasterProductsResource extends JsonResource
             'description_extra'                 => $this->description_extra,
             'tax_preset'                        => $this->tax_preset ?? 'custom',
             'trade_units_label'                 => $this->trade_units_label ?? null,
+            'single_trade_unit_id'              => $this->single_trade_unit_id ?? null,
             'price'                             => $this->price,
             'rrp'                               => $this->rrp,
             'master_prices'                     => $this->master_prices,

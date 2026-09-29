@@ -339,6 +339,11 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.org.shops.show.chat.reports')['url'])->toContain('/docs/customer-chat')
         ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
         ->and(BlogPosts::helpFor('grp.profile.edit')['url'])->toContain('/docs/getting-notifications-on-your-computer-and-phone')
+        ->and(BlogPosts::helpFor('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.labels')['title'])->toBe('Making compliance labels')
+        ->and(BlogPosts::helpFor('grp.org.procurement.agent_labels.index', 'zh-hans')['url'])->toEndWith('/docs/printing-labels-as-an-agent-zh-hans')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_families.master_variants.show')['url'])->toEndWith('/docs/checking-master-product-prices')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.create', 'es')['url'])->toEndWith('/docs/checking-master-product-prices-es')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_collections.show')['url'])->toEndWith('/docs/master-collections')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });

@@ -17,6 +17,7 @@ enum MasterFamilyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE  = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
@@ -33,6 +34,10 @@ enum MasterFamilyTabsEnum: string
             MasterFamilyTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterFamilyTabsEnum::FAMILIES => [
             //     'title' => __('Families in shop'),

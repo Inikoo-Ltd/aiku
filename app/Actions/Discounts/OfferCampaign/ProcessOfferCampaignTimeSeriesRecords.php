@@ -75,12 +75,12 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
             ->whereNull('invoice_transactions.deleted_at');
 
         $discountSelects = [
-            DB::raw('SUM(itoha.discounted_amount) as discount_amount_external'),
-            DB::raw('SUM(itoha.discounted_amount * invoice_transactions.org_exchange) as discount_org_currency_external'),
-            DB::raw('SUM(itoha.discounted_amount * invoice_transactions.grp_exchange) as discount_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN invoice_transactions.is_partner = false THEN itoha.discounted_amount ELSE 0 END) as discount_amount_external'),
+            DB::raw('SUM(CASE WHEN invoice_transactions.is_partner = false THEN itoha.discounted_amount * invoice_transactions.org_exchange ELSE 0 END) as discount_org_currency_external'),
+            DB::raw('SUM(CASE WHEN invoice_transactions.is_partner = false THEN itoha.discounted_amount * invoice_transactions.grp_exchange ELSE 0 END) as discount_grp_currency_external'),
         ];
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, array_merge($this->fullInvoiceTransactionSelects(), $discountSelects))->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, array_merge($this->fullInvoiceTransactionSelects(), $this->partnerInvoiceTransactionSelects(), $discountSelects))->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -95,6 +95,9 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'sales_external'                 => $result->sales_external,
                     'sales_org_currency_external'    => $result->sales_org_currency_external,
                     'sales_grp_currency_external'    => $result->sales_grp_currency_external,
+                    'sales_internal'                 => $result->sales_internal,
+                    'sales_org_currency_internal'    => $result->sales_org_currency_internal,
+                    'sales_grp_currency_internal'    => $result->sales_grp_currency_internal,
                     'customers_invoiced'             => $result->customers_invoiced,
                     'invoices'                       => $result->invoices,
                     'refunds'                        => $result->refunds,
@@ -130,6 +133,9 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'sales_external'                 => 0,
                     'sales_org_currency_external'    => 0,
                     'sales_grp_currency_external'    => 0,
+                    'sales_internal'                 => 0,
+                    'sales_org_currency_internal'    => 0,
+                    'sales_grp_currency_internal'    => 0,
                     'customers_invoiced'             => 0,
                     'invoices'                       => 0,
                     'refunds'                        => 0,

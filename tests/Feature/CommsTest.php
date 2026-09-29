@@ -54,6 +54,7 @@ use App\Actions\Comms\Mailshot\MailshotHasUnsubscribeLink;
 use App\Actions\Comms\Mailshot\PrepareMailshotRecipients;
 use App\Actions\Comms\Mailshot\PrepareMailshotSecondWaveRecipients;
 use App\Actions\Comms\Mailshot\PrepareNewsletterRecipients;
+use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\ProcessSendMailshot;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\PublishMailShotSecondWave;
@@ -1470,6 +1471,21 @@ test('update mailshot recipients stored at marks stored when counts match', func
         ->and($mailshot->refresh()->recipients_stored_at)->not->toBeNull();
 })->depends('create mailshot with recipe for filters');
 
+test('update mailshot recipients stored at marks mailshot without recipients as sent', function (Mailshot $mailshot) {
+    $emptyMailshot                       = $mailshot->replicate();
+    $emptyMailshot->state                = MailshotStateEnum::SENDING;
+    $emptyMailshot->recipients_count     = 0;
+    $emptyMailshot->recipients_stored_at = null;
+    $emptyMailshot->sent_at              = null;
+    $emptyMailshot->save();
+
+    UpdateMailshotRecipientsStoredAt::run($emptyMailshot);
+
+    $emptyMailshot->refresh();
+    expect($emptyMailshot->state)->toBe(MailshotStateEnum::SENT)
+        ->and($emptyMailshot->sent_at)->not->toBeNull();
+})->depends('create mailshot with recipe for filters');
+
 test('update mailshot recipients stored at is no-op when counts differ', function (Mailshot $mailshot) {
     $mailshot->update(['recipients_stored_at' => null, 'recipients_count' => 5]);
     $mailshot->refresh();
@@ -1520,6 +1536,25 @@ test('process send mailshot creates recipient and dispatched email', function (M
 
     expect($mailshot->recipients()->count())->toBe(1)
         ->and($mailshot->channels()->count())->toBeGreaterThan(0);
+})->depends('create mailshot with recipe for filters');
+
+test('process send mailshot sends second wave on low priority ses queue', function (Mailshot $mailshot) {
+    Queue::fake();
+
+    $secondWave                 = $mailshot->replicate();
+    $secondWave->is_second_wave = true;
+    $secondWave->save();
+
+    ProcessSendMailshot::make()->handle($mailshot->id, [$this->customer->id]);
+    ProcessSendMailshot::make()->handle($secondWave->id, [$this->customer->id]);
+
+    $sendQueues = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SendEmailDeliveryChannel::class)
+        ->map(fn ($job) => $job->queue)
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($sendQueues)->toBe(['ses-low', 'ses-send']);
 })->depends('create mailshot with recipe for filters');
 
 test('process send mailshot is no-op for missing mailshot', function () {

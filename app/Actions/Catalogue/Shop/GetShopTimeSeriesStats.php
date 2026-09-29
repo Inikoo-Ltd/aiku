@@ -13,7 +13,7 @@ class GetShopTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, ?ShopTypeEnum $filterType = null): array
+    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, ?ShopTypeEnum $filterType = null, bool $includePartners = false): array
     {
         $query = $parent->shops()
             ->select(['shops.id', 'shops.slug', 'shops.name', 'shops.state', 'shops.type', 'shops.colour', 'shops.is_aiku', 'shops.migrated_to_aiku_on', 'shops.currency_id', 'shops.organisation_id', 'shops.group_id'])
@@ -51,7 +51,7 @@ class GetShopTimeSeriesStats
         if (!empty($timeSeriesIds)) {
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'sales_external'               => 'sales_external',
                     'sales_org_currency_external'  => 'sales_org_currency_external',
                     'sales_grp_currency_external'  => 'sales_grp_currency_external',
@@ -71,7 +71,7 @@ class GetShopTimeSeriesStats
                     'registrations_with_orders'    => 'registrations_with_orders',
                     'registrations_without_orders' => 'registrations_without_orders',
                     'customers_invoiced'           => 'customers_invoiced',
-                ],
+                ], $includePartners),
                 'shop_time_series_records',
                 'shop_time_series_id',
                 $from_date,

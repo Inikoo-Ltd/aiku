@@ -19,6 +19,7 @@ const props = defineProps<{
     sourceMessageId?: number | null
     modelType?: string | null
     modelId?: number | null
+    storeUrl?: string
 }>()
 
 const emit = defineEmits<{
@@ -78,7 +79,7 @@ const submit = async () => {
     saving.value = true
     errors.value = {}
     try {
-        const { data } = await axios.post(route("grp.tasks.store"), {
+        const { data } = await axios.post(props.storeUrl ?? route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
             department: form.value.assignee ? null : form.value.department || null,

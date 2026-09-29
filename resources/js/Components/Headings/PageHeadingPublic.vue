@@ -162,8 +162,8 @@ const setError = (e) => {
 
 				<!-- Section: Main title group -->
 				<div
-					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-700 tracking-tight"
-					:class="data.titleStyle ?? 'font-bold text-2xl'">
+					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-800 tracking-tight"
+					:class="data.titleStyle ?? 'font-bold text-xl sm:text-2xl'">
 					<div v-if="data.container" class="text-slate-500 text-lg">
 						<Link
 							v-if="data.container.href"
@@ -201,7 +201,7 @@ const setError = (e) => {
 						:alt="data.image.alt"
 						class="w-6 h-6" />
 
-					<div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center">
+					<div class="flex flex-row flex-wrap gap-y-1.5 gap-x-3 items-baseline sm:items-center">
 						<div class="xspace-x-2">
 							<template v-if="data.model">
 								<span class="text-gray-400 font-medium" :class="data.modelStyle">{{ data.model }}</span>
@@ -333,7 +333,7 @@ const setError = (e) => {
 		<!-- Section: Button and/or ButtonGroup -->
 		<slot name="button" :dataPageHead="{ ...props }">
 			<div
-				class="self-end w-full md:w-auto flex sm:flex-row flex-wrap justify-end sm:items-center gap-y-3 md:gap-y-1 gap-x-2 rounded-md">
+				class="self-end w-full md:w-auto flex sm:flex-row flex-wrap justify-end sm:items-center gap-y-3 md:gap-y-1 gap-x-2 rounded-md empty:hidden">
 				<slot name="otherBefore" :dataPageHead="{ ...props }" />
 
 				<template v-for="(action, actIndex) in data.actions">

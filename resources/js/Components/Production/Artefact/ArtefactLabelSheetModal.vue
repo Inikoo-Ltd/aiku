@@ -1544,7 +1544,7 @@ const describeFailure = async (error: any): Promise<string> => {
                                 :disabled="!labelSheet.information?.[option.value] && !option.can_be_typed">
                                 {{ option.label }}{{ labelSheet.information?.[option.value]
                                     ? ""
-                                    : " (" + (option.can_be_typed ? ctrans("no translation yet, type it in") : ctrans("not on the product record")) + ")" }}
+                                    : " (" + (option.can_be_typed ? ctrans("type it in") : ctrans("not on the product record")) + ")" }}
                             </option>
                         </select>
                     </div>

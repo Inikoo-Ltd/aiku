@@ -21,29 +21,31 @@ class PurchaseOrderTransactionResource extends JsonResource
         $transaction = $this->resource;
 
         $supplierProduct = $transaction->supplierProduct;
-        $tradeUnit       = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $orgStock        = $transaction->orgStock;
+        $tradeUnit       = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
 
         return [
             'id'                   => $transaction->id,
             'slug'                 => $supplierProduct?->slug,
-            'code'                 => $supplierProduct?->code,
-            'name'                 => $supplierProduct?->name,
+            'code'                 => $supplierProduct?->code ?? $orgStock?->code,
+            'name'                 => $supplierProduct?->name ?? $orgStock?->name,
             'supplier_name'        => $supplierProduct?->supplier?->name,
             'supplier_slug'        => $transaction->orgSupplierProduct?->orgSupplier?->slug,
             'org_stock_id'         => $transaction->org_stock_id,
-            'image_thumbnail'      => $tradeUnit?->imageSources(64, 64),
-            'stock_in_locations'   => $transaction->orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($transaction->orgStock->quantity_in_locations),
+            'image_thumbnail'      => $tradeUnit?->imageSources(160, 160),
+            'image_preview'        => $tradeUnit?->imageSources(480, 480),
+            'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,
-            'can_update_supplier_cost' => (bool)$request->user()?->authTo('supply-chain.edit'),
+            'can_update_supplier_cost' => $supplierProduct !== null && $request->user()?->authTo('supply-chain.edit'),
             'units_per_pack'       => $supplierProduct?->units_per_pack,
             'units_per_carton'     => $supplierProduct?->units_per_carton,
             'quantity_ordered'     => $transaction->quantity_ordered,
 
             'net_amount'           => $transaction->net_amount,
-            'net_currency'         => $supplierProduct?->currency?->code,
+            'net_currency'         => $transaction->purchaseOrder?->currency?->code ?? $supplierProduct?->currency?->code,
             'org_net_amount'       => $transaction->org_net_amount,
             'org_currency'         => $transaction->organisation?->currency?->code,
             'org_exchange'         => $transaction->org_exchange,

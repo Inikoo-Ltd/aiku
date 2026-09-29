@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
@@ -226,14 +227,14 @@ class UpdateCustomer extends OrgAction
                                 ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
                         });
                 })
-                ->with(['organisation', 'billingAddress', 'deliveryAddress'])
+                ->with(['organisation', 'billingAddress', 'deliveryAddress', 'shop.collectionAddress'])
                 ->each(function ($order) use ($customer) {
                     $order->update([
                         'tax_category_id' => GetTaxCategory::run(
                             country: $order->organisation->country,
                             taxNumber: $customer->taxNumber,
                             billingAddress: $order->billingAddress,
-                            deliveryAddress: $order->deliveryAddress,
+                            deliveryAddress: $order->taxableDeliveryAddress($customer->taxNumber),
                             isRe: $customer->is_re,
                         )->id,
                     ]);
@@ -283,6 +284,10 @@ class UpdateCustomer extends OrgAction
         if (Arr::has($changes, 'email')) {
             $webUserWithOldEmail = $customer->webUsers()->where('email', Arr::get($staleData, 'email'))->first();
             $webUserWithOldEmail?->update(['email' => $customer->email]);
+        }
+
+        if (Arr::hasAny($changes, ['state', 'email'])) {
+            ShopHydrateCustomersDashboard::dispatchForCustomer($customer, Arr::get($staleData, 'email'));
         }
 
         if (Arr::has($changes, 'state')) {
