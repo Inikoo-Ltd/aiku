@@ -279,11 +279,15 @@ const getTooltips = () => {
 			<div class="mb-4 flex items-center gap-3 px-2">
 				<span class="relative flex h-3 w-3 shrink-0">
 					<span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-						:class="data?.product?.data?.stock > 0 ? 'bg-green-400' : 'bg-red-400'" />
+						:class="data?.product?.data?.is_on_demand || data?.product?.data?.stock > 0 ? 'bg-green-400' : 'bg-red-400'" />
 					<span class="relative inline-flex h-3 w-3 rounded-full"
-						:class="data?.product?.data?.stock > 0 ? 'bg-green-500' : 'bg-red-500'" />
+						:class="data?.product?.data?.is_on_demand || data?.product?.data?.stock > 0 ? 'bg-green-500' : 'bg-red-500'" />
 				</span>
-				<span v-if="data?.product?.data?.stock > 0" class="flex flex-wrap items-baseline gap-x-2">
+				<span v-if="data?.product?.data?.is_on_demand" class="flex flex-wrap items-baseline gap-x-2">
+					<span class="text-xl font-semibold text-gray-800">{{ ctrans("Always available") }}</span>
+					<span class="text-sm text-gray-500">{{ ctrans("made on demand") }}</span>
+				</span>
+				<span v-else-if="data?.product?.data?.stock > 0" class="flex flex-wrap items-baseline gap-x-2">
 					<span class="text-xl font-semibold text-gray-800">{{ ctrans("In stock") }}</span>
 					<span class="text-sm tabular-nums text-gray-500">{{ locale.number(data.product.data.stock) }} {{ ctrans("available") }}</span>
 				</span>

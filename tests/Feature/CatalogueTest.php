@@ -1472,6 +1472,28 @@ test('shop products json carries the outer size from the stock, not the product 
     expect($multi->packed_in)->toBeNull();
 });
 
+test('shop products json flags on-demand products so the UI can show them as always available', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $orgStock = $this->orgStock1;
+    $orgStock->update(['is_on_demand' => true, 'has_been_in_warehouse' => true]);
+
+    $product->update(['is_for_sale' => true]);
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+
+    expect($product->is_on_demand)->toBeTrue();
+
+    $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
+    $data     = \App\Http\Resources\Catalogue\ProductsWebpageResource::collection($products)->response()->getData(true)['data'];
+    $row      = collect($data)->firstWhere('id', $product->id);
+
+    expect($row)->not->toBeNull()
+        ->and($row['is_on_demand'])->toBeTrue();
+});
+
 test('faire case size change flags the product for units review until its trade units are saved', function () {
     $seederShop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     [, $seederProduct] = createProduct($seederShop);
