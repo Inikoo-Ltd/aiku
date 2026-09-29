@@ -8,7 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
@@ -95,7 +95,7 @@ class TranslateChatMessage
             return;
         }
 
-        $language = $this->detectLanguageCode($text);
+        $language = $this->detectLanguageCode($text, $message->chatSession);
 
         if ($language) {
             $message->update(['original_language_id' => $language->id]);
@@ -194,7 +194,7 @@ class TranslateChatMessage
     }
 
 
-    private function detectLanguageCode(string $text): ?Language
+    private function detectLanguageCode(string $text, ChatSession $session): ?Language
     {
         if (mb_strlen(trim($text)) <= 3) {
             return null;
@@ -202,7 +202,7 @@ class TranslateChatMessage
 
         try {
             /** @var \App\Models\Helpers\Language|null $language */
-            return DetectLanguageWithAI::run($text);
+            return DetectLanguageWithJev::inConversation($text, $session);
         } catch (Throwable $e) {
             Log::error($e->getMessage());
             Sentry::captureException($e);

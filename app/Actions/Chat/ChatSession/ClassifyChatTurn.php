@@ -10,7 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\AskToAi;
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Iris\Docs\ShowIrisDocs;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -328,7 +328,7 @@ class ClassifyChatTurn
      */
     public static function closingMessage(ChatSession|MetaChatSession $chatSession, string $customerWrote, string $weSaid): ?string
     {
-        $language = DetectLanguageWithAI::run($customerWrote, $chatSession->language ?? $chatSession->shop?->language);
+        $language = DetectLanguageWithJev::inConversation($customerWrote, $chatSession);
         $customer = DraftChatReply::knownCustomer($chatSession);
         $name     = $customer?->contact_name ?: $customer?->name;
 
@@ -358,7 +358,7 @@ class ClassifyChatTurn
 
         $message = trim((string) AskToAi::run($prompt, config('chat.summary_model')), " \n\"");
 
-        return $message !== '' && mb_strlen($message) <= 400 && DetectLanguageWithAI::run($message, $language)?->id === $language->id ? $message : null;
+        return $message !== '' && mb_strlen($message) <= 400 && DetectLanguageWithJev::run($message, [$language])?->id === $language->id ? $message : null;
     }
 
     /**

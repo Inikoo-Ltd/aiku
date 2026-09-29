@@ -260,3 +260,37 @@ it('sends only an openai model when there is no openrouter key, and reads json w
 
     expect((new App\Actions\Helpers\Translations\ChatGPT5Driver(['max_tokens' => 16384]))->translate(['a' => 'hello'], 'en', 'fr'))->toBe(['a' => 'bonjour']);
 });
+
+it('asks jev to choose between the ngram shortlist, the conversation language and the visitor country languages', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => Illuminate\Support\Facades\Http::response(['answers' => ['language' => ['choice' => 'pt', 'probabilities' => ['pt' => 0.97], 'confidence' => 0.97]]]),
+    ]);
+
+    $slovak = App\Models\Helpers\Language::firstWhere('code', 'sk');
+
+    expect(App\Actions\Helpers\Translations\DetectLanguageWithJev::make()->handle('Obrigado, até logo', [$slovak], 'PT   ')->code)->toBe('pt');
+
+    Illuminate\Support\Facades\Http::assertSent(function (Illuminate\Http\Client\Request $request) {
+        $options = array_keys($request['questions']['language']['criteria']);
+
+        return $request['questions']['language']['type'] === 'choice'
+            && in_array('pt', $options) && in_array('sk', $options) && in_array('en', $options)
+            && $request['state']['visitor_country'] === 'PT';
+    });
+});
+
+it('maps the detector codes onto ours and falls back to the conversation language without jev', function () {
+    $detector = App\Actions\Helpers\Translations\DetectLanguageWithJev::make();
+
+    expect($detector->ourCode('pt-BR', ['pt', 'pt-br']))->toBe('pt')
+        ->and($detector->ourCode('zh-Hans', ['zh-Hans', 'zh-Hant']))->toBe('zh-Hans')
+        ->and($detector->ourCode('pt-BR', ['pt-br']))->toBe('pt-br')
+        ->and($detector->ourCode('xx-Yyyy', ['en']))->toBeNull();
+
+    config()->set('services.openrouter.api_key', null);
+    $spanish = App\Models\Helpers\Language::firstWhere('code', 'es');
+
+    expect(App\Actions\Helpers\Translations\DetectLanguageWithJev::run('Hola', [$spanish])->code)->toBe('es')
+        ->and(App\Actions\Helpers\Translations\DetectLanguageWithJev::run('Hola'))->toBeNull();
+});

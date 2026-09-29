@@ -9,7 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Helpers\AI\AskToAi;
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -128,7 +128,7 @@ class DraftChatReply implements ShouldBeUnique
 
         if (!$answer
             || !self::isGrounded($answer['topic'], $answer['reply'], $facts)
-            || DetectLanguageWithAI::run($answer['reply'], $language)?->id !== $language->id
+            || DetectLanguageWithJev::run($answer['reply'], [$language])?->id !== $language->id
             || !$this->survivesReview($text, $weSaid, $facts, $answer['reply'])) {
             return null;
         }
@@ -212,7 +212,7 @@ class DraftChatReply implements ShouldBeUnique
         $reply = !empty($source['url']) && !str_contains($answer['reply'], $source['url']) ? $answer['reply']."\n".$source['url'] : $answer['reply'];
         $facts = ['ask' => $ask, 'quote' => $answer['quote'], 'knowledge' => $source['id'] ?? null, 'source' => $source['url'] ?? 'facts', 'facts' => $known];
 
-        if (DetectLanguageWithAI::run($answer['reply'], $language)?->id !== $language->id
+        if (DetectLanguageWithJev::run($answer['reply'], [$language])?->id !== $language->id
             || !$this->survivesReview($text, $weSaid, ['page' => $source['text'] ?? null, 'facts' => $known], $reply)) {
             return null;
         }
@@ -322,7 +322,7 @@ class DraftChatReply implements ShouldBeUnique
     {
         $chatLanguage = $chatSession->language ?? $chatSession->shop?->language;
 
-        return $trigger->originalLanguage ?? DetectLanguageWithAI::run($text, $chatLanguage) ?? $chatLanguage;
+        return $trigger->originalLanguage ?? DetectLanguageWithJev::inConversation($text, $chatSession) ?? $chatLanguage;
     }
 
     /**

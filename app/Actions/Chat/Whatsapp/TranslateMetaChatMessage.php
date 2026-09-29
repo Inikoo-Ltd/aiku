@@ -7,7 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\MetaChatMessage;
@@ -84,7 +84,7 @@ class TranslateMetaChatMessage
         }
 
         try {
-            $language = DetectLanguageWithAI::run($text);
+            $language = DetectLanguageWithJev::inConversation($text, $message->metaChatSession);
         } catch (Throwable $exception) {
             Log::error($exception->getMessage());
             Sentry::captureException($exception);
