@@ -614,6 +614,13 @@ function createAttachedMedia(string $modelType, int $modelId, string $scope): \A
 
     @mkdir(dirname($media->getPath()), 0777, true);
     file_put_contents($media->getPath(), 'data');
+    $path        = $media->getPath();
+    $storageRoot = storage_path('app');
+    register_shutdown_function(function () use ($path, $storageRoot) {
+        @unlink($path);
+        for ($directory = dirname($path); $directory !== $storageRoot && @rmdir($directory); $directory = dirname($directory)) {
+        }
+    });
 
     \Illuminate\Support\Facades\DB::table('model_has_attachments')->insert([
         'group_id'   => $media->group_id,
