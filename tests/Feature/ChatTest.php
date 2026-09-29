@@ -6161,9 +6161,10 @@ test('a supervisor moves a conversation to Couriers, which adds the sender domai
 });
 
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
-    config(['chat.close_after_thanks' => true]);
+    config(['chat.close_after_thanks' => true, 'chat.wait_for_customer_hours' => 72]);
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Order', 'Perfect, thank you!'), function (ChatSession $session) {
@@ -6173,9 +6174,15 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     $thanks = $answered('thanks@example.com');
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
 
+    expect($thanks->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($thanks))->diffInMinutes(now()->addHours(72), true))->toBeLessThan(1)
+        ->and(data_get($thanks->metadata, 'waiting_for_customer.reason'))->toBe('thanks');
+    \App\Actions\Chat\ChatSession\WaitForCustomerReply::assertPushed(1);
+
+    \App\Actions\Chat\ChatSession\WaitForCustomerReply::make()->asJob($thanks, data_get($thanks->metadata, 'waiting_for_customer.message_id'));
     expect($thanks->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($thanks->closed_by)->toBe(\App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum::SYSTEM)
-        ->and($thanks->messages()->where('metadata->automated', 'thanks_closed')->exists())->toBeTrue();
+        ->and($thanks->messages()->where('metadata->automated', 'waited_closed')->exists())->toBeTrue();
 
     $first = noiseTestEmailSession($this->shop, 'first@example.com', 'Hello', 'Thank you!');
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($first);
@@ -6295,6 +6302,39 @@ test('a website chat thanks gets a thumbs up and closes, but with an agent in th
 
     expect($agentReplied->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
         ->and($thanksOf($agentReplied)->reactions()->exists())->toBeFalse();
+});
+
+test('an agent waits for the customer: it closes when the time is up unless the customer writes, and the agent can stop waiting', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": false}');
+    $wait    = \App\Actions\Chat\ChatSession\WaitForCustomerReply::class;
+    $waitFor = function (ChatSession $session, int $hours) use ($wait): int {
+        $wait::run($session, $hours);
+
+        return data_get($session->refresh()->metadata, 'waiting_for_customer.message_id');
+    };
+
+    $silent = noiseTestEmailSession($this->shop, 'wait-silent@example.com', 'Order', 'Can you check my order?');
+    $lastId = $waitFor($silent, 24);
+    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addDay(), true))->toBeLessThan(1);
+    $wait::make()->asJob($silent, $lastId);
+    expect($silent->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($wait::until($silent))->toBeNull();
+
+    $replied = noiseTestEmailSession($this->shop, 'wait-replied@example.com', 'Order', 'Can you check my order?');
+    $lastId  = $waitFor($replied, 24);
+    $replied->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Here is the photo you asked for']);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($replied);
+    expect($wait::until($replied->refresh()))->toBeNull();
+    $wait::make()->asJob($replied, $lastId);
+    expect($replied->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED);
+
+    $stopped = noiseTestEmailSession($this->shop, 'wait-stopped@example.com', 'Order', 'Can you check my order?');
+    $lastId  = $waitFor($stopped, 72);
+    $wait::stop($stopped);
+    $wait::make()->asJob($stopped, $lastId);
+    expect($stopped->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED);
 });
 
 test('an agent unsubscribes a customer from every newsletter and reminder in one click, and when is kept', function () {

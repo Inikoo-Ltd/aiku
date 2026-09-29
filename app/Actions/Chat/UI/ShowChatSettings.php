@@ -110,6 +110,7 @@ class ShowChatSettings extends OrgAction
                 'closing'        => $isShop ? [
                     'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
                     'close_after_thanks_minutes' => UpdateShopChatClosing::minutes($parent),
+                    'wait_for_customer_hours'    => UpdateShopChatClosing::waitingHours($parent),
                     'can_edit'                   => $this->userSupervisesChatOnShop($request->user(), $parent),
                     'update_route'               => [
                         'name'       => 'grp.org.shops.show.chat.settings.closing.update',

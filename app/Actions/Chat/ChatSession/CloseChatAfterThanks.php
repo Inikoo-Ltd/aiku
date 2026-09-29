@@ -27,7 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * A customer who only thanked us gets a 👍 on website chat and WhatsApp and the conversation
- * closes; an email is closed without anything sent. When an agent is in the chat it waits the
+ * closes; an email is left waiting for the customer for the shop's hours, nothing sent. When an agent is in the chat it waits the
  * shop's minutes instead, with a countdown on their screen, and closes only if nobody has
  * written since the thanks and the agent did not start typing or click "Keep open".
  */
@@ -57,6 +57,12 @@ class CloseChatAfterThanks
             ->first();
 
         if (!$thanks) {
+            return;
+        }
+
+        if ($chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL) {
+            WaitForCustomerReply::run($chatSession, UpdateShopChatClosing::waitingHours($chatSession->shop), 'thanks');
+
             return;
         }
 

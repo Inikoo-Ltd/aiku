@@ -50,6 +50,7 @@ const props = defineProps<{
     closing: {
         close_after_thanks: boolean
         close_after_thanks_minutes: number
+        wait_for_customer_hours: number
         can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
@@ -98,6 +99,7 @@ const saveOutOfHours = () => {
 const closingForm = useForm({
     close_after_thanks: props.closing?.close_after_thanks ?? true,
     close_after_thanks_minutes: props.closing?.close_after_thanks_minutes ?? 2,
+    wait_for_customer_hours: props.closing?.wait_for_customer_hours ?? 72,
 })
 
 const saveClosing = () => {
@@ -191,7 +193,7 @@ const saveCouriers = () => {
 
     <div v-else-if="currentTab === 'closing' && closing" class="max-w-3xl space-y-5 p-6">
         <p class="text-sm text-gray-500">
-            {{ ctrans("When a customer on website chat or WhatsApp only thanks us after we answered, we react with a 👍 and close the conversation. If an agent has the chat open, it waits first and closes only if nobody writes. Anything the customer writes next reopens it. An email that only thanks us is closed without a reply.") }}
+            {{ ctrans("When a customer on website chat or WhatsApp only thanks us after we answered, we react with a 👍 and close the conversation. If an agent has the chat open, it waits first and closes only if nobody writes. Anything the customer writes next reopens it. An email that only thanks us gets no reply and stays open as waiting for the customer, then closes if they write nothing.") }}
         </p>
 
         <div class="flex items-center gap-2">
@@ -210,6 +212,19 @@ const saveCouriers = () => {
                 :disabled="!closing.can_edit || !closingForm.close_after_thanks"
                 class="mt-1" />
             <p v-if="closingForm.errors.close_after_thanks_minutes" class="mt-1 text-sm text-red-600">{{ closingForm.errors.close_after_thanks_minutes }}</p>
+        </div>
+
+        <div>
+            <label for="wait-for-customer-hours" class="block text-sm font-medium text-gray-700">{{ ctrans("Hours an email that only thanks us waits for the customer before it closes") }}</label>
+            <InputNumber
+                v-model="closingForm.wait_for_customer_hours"
+                inputId="wait-for-customer-hours"
+                :min="1"
+                :max="720"
+                showButtons
+                :disabled="!closing.can_edit || !closingForm.close_after_thanks"
+                class="mt-1" />
+            <p v-if="closingForm.errors.wait_for_customer_hours" class="mt-1 text-sm text-red-600">{{ closingForm.errors.wait_for_customer_hours }}</p>
         </div>
 
         <p v-if="!closing.can_edit" class="text-sm text-gray-500">{{ ctrans("Only a chat supervisor can change this.") }}</p>

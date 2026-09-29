@@ -28,6 +28,9 @@ return [
     // With an agent in the chat, a thanks is closed only after this long with nobody writing.
     'close_after_thanks_minutes' => (int) env('CHAT_CLOSE_AFTER_THANKS_MINUTES', 2),
 
+    // An email that only thanks us waits this long for the customer before it closes.
+    'wait_for_customer_hours' => (int) env('CHAT_WAIT_FOR_CUSTOMER_HOURS', 72),
+
     'carrier_domains' => [
         'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
         'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',

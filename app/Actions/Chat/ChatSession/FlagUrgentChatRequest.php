@@ -59,6 +59,8 @@ class FlagUrgentChatRequest
 
     public function handle(ChatSession|MetaChatSession $chatSession): ?string
     {
+        WaitForCustomerReply::stop($chatSession);
+
         if ($chatSession->status === ChatSessionStatusEnum::CLOSED) {
             return null;
         }

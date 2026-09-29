@@ -4,6 +4,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { followPointer } from "@/Composables/followPointer"
@@ -381,6 +382,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     claim: (s as any).claim ?? null,
     promise: (s as any).promise ?? null,
     urgent: (s as any).urgent ?? null,
+    waiting_until: (s as any).waiting_until ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -2489,6 +2491,10 @@ onUnmounted(() => {
                                     <span v-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                                         class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">
                                         {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                                    </span>
+                                    <span v-if="c.waiting_until" v-tooltip="ctrans('Waiting for the customer to write back. Closes by itself if they write nothing.')"
+                                        class="shrink-0 truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        ⏳ {{ waitingLeft(c.waiting_until) }}
                                     </span>
                                     <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
                                         class="shrink-0 truncate rounded px-1 font-medium"

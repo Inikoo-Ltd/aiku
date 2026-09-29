@@ -27,6 +27,7 @@ import {
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
+import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -150,6 +151,15 @@ const chatSession = computed(() => props.session)
 const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
 )
+const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
+)
+const onWaitPicked = (event: Event) => {
+    const select = event.target as HTMLSelectElement
+    const hours = Number(select.value)
+    select.value = ""
+    if (hours) setWaiting(hours)
+}
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
@@ -868,6 +878,7 @@ const initSocket = () => {
         }
 
         closingAt.value = null
+        onCustomerWaitMessage(message)
 
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
         messagesLocal.value = messagesLocal.value.filter(
@@ -1007,6 +1018,18 @@ onUnmounted(() => {
                         👍 {{ closingIn }}
                         <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
+                    <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
+                        v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
+                        ⏳ {{ ctrans("Waiting for customer, closes in :time", { time: waitingIn }) }}
+                        <button v-if="isMyChat && !isClosed && !readOnly" type="button" class="ml-1 underline hover:text-amber-800" @click="setWaiting(null)">{{ ctrans("Stop waiting") }}</button>
+                    </span>
+                    <select v-else-if="isMyChat && !isClosed && !readOnly" value=""
+                        class="shrink-0 cursor-pointer border-0 bg-transparent py-0 pl-0 pr-6 text-[11px] text-gray-400 hover:text-gray-600 focus:ring-0"
+                        v-tooltip="ctrans('Keep it open while the customer gets back to us: it shows here as waiting and closes by itself if they write nothing.')"
+                        @change="onWaitPicked">
+                        <option value="" disabled>⏳ {{ ctrans("Wait for reply") }}</option>
+                        <option v-for="option in waitingOptions" :key="option.hours" :value="option.hours">{{ option.label() }}</option>
+                    </select>
                 </div>
             </div>
 
