@@ -640,6 +640,7 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-rejected');
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'UP-2']);
 
     ShopifyFake::fake([
         'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
@@ -1170,6 +1171,7 @@ test('an upload throwing a non-Exception error records it on the portfolio inste
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-throws');
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'UP-2']);
 
     ShopifyFake::fake([
         'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
@@ -1484,7 +1486,7 @@ test('retina channel read routes refuse the channel, order, client and customer 
     ShopifyFake::$stray = [];
 })->with('retina channel read routes');
 
-test('repairing a channel re-points portfolios whose product is gone onto the one active listing with the same sku, without writing to shopify', function () {
+test('repairing a channel re-points portfolios whose product is gone onto the one active listing with the same sku, never through a sku another portfolio also carries, without writing to shopify', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-repair-connections');
     $channel     = $shopifyUser->customerSalesChannel;
@@ -1516,15 +1518,15 @@ test('repairing a channel re-points portfolios whose product is gone onto the on
 
     $dryRun = RepairShopifyPortfolioConnections::run($channel, null, true);
 
-    expect($dryRun['repaired'])->toBe(2)
+    expect($dryRun['repaired'])->toBe(1)
         ->and($gone->refresh()->platform_product_id)->toBe('gid://shopify/Product/6001');
 
     $result = RepairShopifyPortfolioConnections::run($channel);
     $gone->refresh();
 
-    expect($result)->toMatchArray(['complete' => true, 'repaired' => 2, 'connected' => 1, 'not_at_location' => 1, 'skipped_sku_of_another_product' => 1, 'portfolio_ids' => [$gone->id, $owner->id]])
+    expect($result)->toMatchArray(['complete' => true, 'repaired' => 1, 'connected' => 0, 'not_at_location' => 1, 'skipped_sku_of_another_product' => 2, 'portfolio_ids' => [$gone->id]])
         ->and($borrower->refresh()->platform_product_id)->toBe('gid://shopify/Product/6002')
-        ->and($owner->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9201')
+        ->and($owner->refresh()->platform_product_variant_id)->toBeNull()
         ->and($gone->platform_product_id)->toBe('gid://shopify/Product/9100')
         ->and($gone->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9101')
         ->and($gone->platform_status)->toBeFalse()
@@ -1772,7 +1774,7 @@ test('repair re-links a portfolio from an archived duplicate to the one active p
         ->and($portfolio->isShopifyVariantAdopted())->toBeTrue();
 });
 
-test('the stock push still sends stock to an archived listing but no longer shows it as connected, and says when the listing is gone', function () {
+test('the stock push still sends stock to an archived listing and logs that it is not for sale, and says when the listing is gone, without changing the connected flag', function () {
     Queue::fake();
     $channel = shopifyProductChannel($this, 'product-stock-archived')->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 10, 'stock_threshold' => 0]);
@@ -1781,7 +1783,7 @@ test('the stock push still sends stock to an archived listing but no longer show
     $listing = fn (string $productId) => tap(StorePortfolio::make()->action($channel, $newProduct(), []), fn (Portfolio $portfolio) => $portfolio->update([
         'platform_product_id'         => "gid://shopify/Product/$productId",
         'platform_product_variant_id' => "gid://shopify/ProductVariant/$productId",
-        'platform_status'             => $productId !== '7500',
+        'platform_status'             => true,
         'sku'                         => "sku-$productId",
     ]));
     $active   = $listing('7500');
@@ -1808,14 +1810,15 @@ test('the stock push still sends stock to an archived listing but no longer show
 
     expect(array_column(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'], 'inventoryItemId'))->toBe(['gid://shopify/InventoryItem/7500', 'gid://shopify/InventoryItem/7501'])
         ->and($active->refresh()->platform_status)->toBeTrue()
-        ->and($archived->refresh()->platform_status)->toBeFalse()
+        ->and($archived->refresh()->platform_status)->toBeTrue()
+        ->and($deleted->refresh()->platform_status)->toBeTrue()
         ->and($archived->last_stock_value)->toBe(10)
         ->and($responses[$active->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, null])
         ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
         ->and($responses[$deleted->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'This product is no longer in your Shopify store']);
 });
 
-test('two products linked to one shopify listing: orders go to the product whose code the line carries, only that product sends stock, and a match onto a taken listing is refused', function () {
+test('two products linked to one shopify listing: orders go to the product whose code the line carries, never move another product onto it, and only one product sends it stock', function () {
     Queue::fake();
     $channel    = shopifyProductChannel($this, 'product-shared-listing')->customerSalesChannel;
     $newProduct = fn () => tap(\App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), fn ($product) => $product->update(['available_quantity' => 7]));
@@ -1836,10 +1839,10 @@ test('two products linked to one shopify listing: orders go to the product whose
         ->and($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', 'unknown-sku'))->toBeNull();
 
     $bySku = StorePortfolio::make()->action($channel, $newProduct(), []);
-    $third = StorePortfolio::make()->action($channel, $newProduct(), []);
-    $bySku->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/8601']);
-    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, 'gid://shopify/ProductVariant/8600', $bySku->item_code)?->id)->toBe($bySku->id)
-        ->and($bySku->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8601');
+    $bySku->update(['platform_product_id' => 'gid://shopify/Product/7700', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8701']);
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', $bySku->item_code)?->id)->toBe($bySku->id)
+        ->and($bySku->refresh()->platform_product_id)->toBe('gid://shopify/Product/7700')
+        ->and($bySku->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8701');
 
     ShopifyFake::fake([
         'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8600', 'sku' => strtoupper($ownerProduct->code), 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8600']]]]]], $variables['ids'])]),
@@ -1857,9 +1860,22 @@ test('two products linked to one shopify listing: orders go to the product whose
         ->and($owner->refresh()->last_stock_value)->toBe(7)
         ->and($responses[$sharer->id])->toBe('This Shopify listing is also linked to '.$ownerProduct->code.', so its stock is not sent');
 
-    MatchPortfolioToCurrentShopifyProduct::make()->handle($third, ['shopify_product_id' => 'gid://shopify/Product/7600']);
-    expect($third->refresh()->platform_product_id)->toBeNull()
-        ->and($third->errors_response)->toBe(['message' => 'This Shopify product is already linked to '.$owner->item_code.' in this channel']);
+    ShopifyFake::fake([
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8600', 'sku' => '', 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8600']]]]]], $variables['ids'])]),
+        'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => []]]),
+    ]);
+    BulkUpdateShopifyPortfolio::run($channel->id);
+    expect(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'])->toBe([['inventoryItemId' => 'gid://shopify/InventoryItem/8600', 'locationId' => 'gid://shopify/Location/1001', 'quantity' => 0]])
+        ->and($owner->refresh()->last_stock_value)->toBe(0);
+
+    $small = ['code' => 'ARTS-23S', 'sku' => 'arts-23s'];
+    $large = ['code' => 'ARTS-23L', 'sku' => 'arts-23l'];
+    expect(BulkUpdateShopifyPortfolio::sharedListingSender([7 => $large, 5 => $small], 'arts-23'))->toBe([5, false])
+        ->and(BulkUpdateShopifyPortfolio::sharedListingSender([7 => ['code' => 'ARTS-23L', 'sku' => 'arts-23'], 5 => $small], 'ARTS-23'))->toBe([7, true])
+        ->and(BulkUpdateShopifyPortfolio::sharedListingSender([5 => ['code' => 'ARTS-23S', 'sku' => 'arts-23'], 7 => ['code' => 'ARTS-23', 'sku' => 'x']], 'arts-23'))->toBe([7, true])
+        ->and(BulkUpdateShopifyPortfolio::sharedListingSender([7 => $large, 5 => $small], ''))->toBe([5, false])
+        ->and(BulkUpdateShopifyPortfolio::sharedListingSender([9 => ['code' => 'ARTS-07L', 'sku' => 'arts-07', 'quantity' => 82], 5 => ['code' => 'ARTS-07S', 'sku' => 'arts-07', 'quantity' => 825]], 'arts-07'))->toBe([5, false])
+        ->and(BulkUpdateShopifyPortfolio::sharedListingSender([9 => ['code' => 'AROSS-09A', 'sku' => 'aross-09', 'quantity' => 40], 5 => ['code' => 'DSAROSS-09', 'sku' => 'aross-09', 'quantity' => 40]], 'aross-09'))->toBe([5, true]);
 });
 
 test('repair tries the product code when the sku a portfolio carries only matches an archived copy', function () {
@@ -1888,25 +1904,236 @@ test('repair tries the product code when the sku a portfolio carries only matche
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101');
 });
 
-test('an upload is refused when the shopify store already has a product with the same sku, whatever its status', function () {
+test('an upload is refused when the shopify store has a listing with the same sku that none of our products holds, and when the sku is blank or can not be checked', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-sku-taken');
-    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $channel     = $shopifyUser->customerSalesChannel;
+    $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
     $portfolio->update(['sku' => 'TAKEN-1', 'platform_product_id' => 'gid://shopify/Product/7800']);
+    $sibling = StorePortfolio::make()->action($channel, \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 3]], 'price' => 50])), []);
+    $sibling->update(['sku' => 'taken-1', 'platform_product_id' => 'gid://shopify/Product/7801']);
+
+    $listings = fn (array $productIds) => ShopifyFake::graphql(['productVariants' => ['edges' => array_merge(
+        [['node' => ['id' => 'gid://shopify/ProductVariant/7799', 'sku' => 'TAKEN-10', 'product' => ['id' => 'gid://shopify/Product/7799', 'handle' => 'other', 'status' => 'ACTIVE']]]],
+        array_map(fn (string $id) => ['node' => ['id' => "gid://shopify/ProductVariant/$id", 'sku' => 'taken-1', 'product' => ['id' => "gid://shopify/Product/$id", 'handle' => "reed-diffuser-$id", 'status' => 'ARCHIVED']]], $productIds)
+    )]]);
+    $fake = fn (array $productIds) => ShopifyFake::fake([
+        'getProductExistence'    => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => $listings($productIds),
+        'productCreate'          => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'stop here']]]]),
+    ]);
+
+    $fake(['7801', '7802']);
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('Your Shopify store already has a product with the sku TAKEN-1 (archived, reed-diffuser-7802). Match this product to it instead of uploading a new one')
+        ->and($portfolio->refresh()->errors_response)->not->toBeEmpty()
+        ->and(ShopifyFake::calls('productCreate'))->toBe([])
+        ->and(ShopifyFake::calls('productVariantsWithSku')[0]['variables']['query'])->toBe('sku:"TAKEN-1"')
+        ->and($portfolio->platform_product_id)->toBe('gid://shopify/Product/7800');
+
+    $fake(['7801']);
+    StoreShopifyProduct::run($portfolio->refresh());
+    expect(ShopifyFake::calls('productCreate'))->toHaveCount(1);
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $sibling->id)->update(['status' => false]);
+    $fake(['7801']);
+    [$stored] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and(ShopifyFake::calls('productCreate'))->toBe([]);
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $sibling->id)->update(['status' => true]);
+
+    $sibling->update(['sku' => 'taken-1-bundle']);
+    $fake(['7801']);
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and($message)->toContain('reed-diffuser-7801')
+        ->and(ShopifyFake::calls('productCreate'))->toBe([]);
+
+    $sibling->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/7801']);
+    $fake(['7801']);
+    StoreShopifyProduct::run($portfolio->refresh());
+    expect(ShopifyFake::calls('productCreate'))->toHaveCount(1);
 
     ShopifyFake::fake([
         'getProductExistence'    => ShopifyFake::graphql(['product' => null]),
-        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => [
-            ['node' => ['sku' => 'TAKEN-10', 'product' => ['handle' => 'other', 'status' => 'ACTIVE']]],
-            ['node' => ['sku' => 'taken-1', 'product' => ['handle' => 'reed-diffuser', 'status' => 'ARCHIVED']]],
-        ]]]),
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => true, 'endCursor' => 'next'], 'edges' => []]]),
+    ]);
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('Could not check whether this product is already in Shopify, nothing was created to avoid a duplicate')
+        ->and(ShopifyFake::calls('productVariantsWithSku'))->toHaveCount(5)
+        ->and(ShopifyFake::calls('productVariantsWithSku')[1]['variables']['cursor'])->toBe('next');
+
+    ShopifyFake::fake([
+        'getProductExistence'    => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => ShopifyFake::graphql([], [['message' => 'Throttled']]),
+    ]);
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('Could not check whether this product is already in Shopify, nothing was created to avoid a duplicate');
+
+    $portfolio->update(['sku' => ' ']);
+    ShopifyFake::fake(['getProductExistence' => ShopifyFake::graphql(['product' => null])]);
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('This product has no sku, so it can not be uploaded to Shopify')
+        ->and(ShopifyFake::calls('productVariantsWithSku'))->toBe([]);
+});
+
+test('repair never re-links a portfolio through a sku that is the code of another product of the shop', function () {
+    Queue::fake();
+    $channel      = shopifyProductChannel($this, 'bundle-slug-repair')->customerSalesChannel;
+    $otherProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+    $portfolio    = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['sku' => Str::lower($otherProduct->code), 'platform_product_id' => 'gid://shopify/Product/9202', 'platform_status' => true]);
+    $borrowed = Str::lower($otherProduct->code);
+
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn([
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 2,
+        'products'           => [
+            'gid://shopify/Product/9201' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8201', 'sku' => $borrowed, 'at_location' => true]]],
+            'gid://shopify/Product/9202' => ['status' => 'ARCHIVED', 'variants' => [['id' => 'gid://shopify/ProductVariant/8202', 'sku' => $borrowed, 'at_location' => true]]],
+        ],
+        'product_ids_by_sku' => [$borrowed => ['gid://shopify/Product/9201' => true, 'gid://shopify/Product/9202' => false]],
     ]);
 
-    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    $result = RepairShopifyPortfolioConnections::run($channel);
 
+    expect($result['repaired'])->toBe(0)
+        ->and($result['skipped_sku_of_another_product'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9202')
+        ->and($portfolio->isShopifyVariantAdopted())->toBeFalse();
+});
+
+test('repair only follows a sku that belongs to this portfolio alone, and tries its own product code first', function () {
+    Queue::fake();
+    $channel      = shopifyProductChannel($this, 'sibling-sku-repair')->customerSalesChannel;
+    $portfolio    = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['sku' => 'custom-slug', 'platform_product_id' => 'gid://shopify/Product/9302', 'platform_status' => true]);
+    $sibling = StorePortfolio::make()->action($channel, \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 6]], 'price' => 50])), []);
+    $code = Str::lower($this->product->code);
+    $sibling->update(['sku' => $code]);
+
+    $snapshot = [
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 3,
+        'products'           => [
+            'gid://shopify/Product/9301' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8301', 'sku' => $code, 'at_location' => true]]],
+            'gid://shopify/Product/9302' => ['status' => 'ARCHIVED', 'variants' => [['id' => 'gid://shopify/ProductVariant/8302', 'sku' => $code, 'at_location' => true]]],
+            'gid://shopify/Product/9303' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8303', 'sku' => 'custom-slug', 'at_location' => true]]],
+        ],
+        'product_ids_by_sku' => [
+            $code         => ['gid://shopify/Product/9301' => true, 'gid://shopify/Product/9302' => false],
+            'custom-slug' => ['gid://shopify/Product/9303' => true],
+        ],
+    ];
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot, $snapshot);
+
+    $result = RepairShopifyPortfolioConnections::run($channel);
+    expect($result['repaired'])->toBe(0)
+        ->and($result['skipped_sku_of_another_product'])->toBe(2)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9302');
+
+    $sibling->update(['sku' => Str::lower($sibling->item_code)]);
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9301');
+});
+
+test('a product is never added to a shopify product whose only variant belongs to another of our products, since that would replace the variant', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'standalone-variant-guard')->customerSalesChannel;
+    $newProduct = fn () => \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+
+    $holder = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $holder->update(['platform_product_id' => 'gid://shopify/Product/7900', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900', 'platform_status' => true]);
+    $matched  = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $uploaded = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $matched->update(['sku' => 'MATCH-1']);
+    $uploaded->update(['sku' => 'UPLOAD-1', 'platform_product_id' => 'gid://shopify/Product/7900']);
+
+    $variants = fn (array $ids) => ShopifyFake::graphql(['product' => ['variants' => ['edges' => array_map(fn (string $id) => ['node' => ['id' => "gid://shopify/ProductVariant/$id"]], $ids)]]]);
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8900'])]);
+
+    MatchPortfolioToCurrentShopifyProduct::make()->handle($matched, ['shopify_product_id' => 'gid://shopify/Product/7900']);
+    [$stored, $message] = StoreShopifyProductVariant::run($uploaded->refresh());
+
+    expect($matched->refresh()->platform_product_id)->toBeNull()
+        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product to give it a listing of its own')
+        ->and($stored)->toBeFalse()
+        ->and($message)->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so this product was unlinked from it. Upload it to give it a listing of its own')
+        ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([])
+        ->and($uploaded->refresh()->platform_product_id)->toBeNull()
+        ->and($uploaded->platform_status)->toBeFalse()
+        ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900');
+    $uploaded->update(['platform_product_id' => 'gid://shopify/Product/7900', 'sku' => 'UPLOAD-1']);
+
+    $single = fn (string $id, string $sku) => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => "gid://shopify/ProductVariant/$id", 'sku' => $sku]]]]]]);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8950', 'upload-1')]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    $uploaded->update(['sku' => Str::lower($holder->item_code)]);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8950', Str::upper($holder->item_code))]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+
+    ShopifyFake::fake(['productOnlyVariant' => $single('8900', $uploaded->item_code)]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    $uploaded->update(['sku' => 'UPLOAD-1', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900']);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8900', '')]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+    [$stored] = StoreShopifyProductVariant::run($uploaded->refresh());
     expect($stored)->toBeFalse()
-        ->and($message)->toBe('Your Shopify store already has a product with the sku TAKEN-1 (archived, reed-diffuser). Match this product to it instead of uploading a new one')
-        ->and(ShopifyFake::calls('productCreate'))->toBe([])
-        ->and(ShopifyFake::calls('productVariantsWithSku')[0]['variables']['query'])->toBe('sku:"TAKEN-1"')
-        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/7800');
+        ->and($uploaded->refresh()->platform_product_id)->toBe('gid://shopify/Product/7900')
+        ->and($uploaded->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900')
+        ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([]);
+    $uploaded->update(['platform_product_variant_id' => null]);
+
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
+        ->and(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($holder->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    ShopifyFake::fake(['productOnlyVariant' => ShopifyFake::graphql([], [['message' => 'Throttled']])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeFalse();
+
+    $holder->update(['platform_product_variant_id' => null]);
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8999'])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $holder->id)->update(['status' => false]);
+    ShopifyFake::fake([]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
+        ->and(ShopifyFake::calls('productOnlyVariant'))->toBe([]);
+});
+
+test('repair leaves disabled portfolios alone, and only corrects the variant id of a portfolio already on its own listing, without marking it adopted', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'repair-skips-own-listing')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/9401', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8401', 'platform_status' => true]);
+    $code = Str::lower($this->product->code);
+
+    $snapshot = fn (string $productId) => [
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 1,
+        'products'           => [$productId => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8401', 'sku' => $code, 'at_location' => false]]]],
+        'product_ids_by_sku' => [$code => [$productId => true]],
+    ];
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9401'), $snapshot('gid://shopify/Product/9402'));
+
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
+        ->and($portfolio->refresh()->isShopifyVariantAdopted())->toBeFalse();
+
+    $portfolio->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/stale']);
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8401')
+        ->and($portfolio->isShopifyVariantAdopted())->toBeFalse();
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $portfolio->id)->update(['status' => false]);
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9401');
 });

@@ -18,6 +18,7 @@ export interface ProductResource {
 	rrp?: number
 	unit: string
 	stock: number
+	is_on_demand?: boolean
 	rating: number
 	price: number
 	url: string | null

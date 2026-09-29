@@ -13,7 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSeedling, faThumbsDown, faUserHardHat, faTasks, faHandshake, faInventory } from "@fal";
 import { faCheckCircle, faTimesCircle, faPauseCircle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 
 import { capitalize } from "@/Composables/capitalize";
 import { useLocaleStore } from "@/Stores/locale";
@@ -32,6 +32,7 @@ interface QueueTask {
     job_order_slug: string
     quantity_made: number
     quantity_required: number
+    blocked_by_step: string | null
     start_route: { name: string, parameters: object }
 }
 
@@ -112,7 +113,7 @@ const props = defineProps<{
 }>();
 
 function voidSession(session: { id: number, worker: string, quantity_made: number, void_route: { name: string, parameters: object } }) {
-    if (!window.confirm(trans('Void this entry?') + ` ${session.worker} · ${session.quantity_made}`)) return
+    if (!window.confirm(ctrans('Void this entry?') + ` ${session.worker} · ${session.quantity_made}`)) return
     processing.value = true
     router.patch(
         route(session.void_route.name, session.void_route.parameters),
@@ -124,16 +125,16 @@ function voidSession(session: { id: number, worker: string, quantity_made: numbe
 const processing = ref(false)
 const openPartnerOrder = ref<number | null>(null)
 const partnerOrderLanes: { key: 'requested' | 'being_made' | 'on_the_shelves' | 'in_the_bay' | 'ready', label: string }[] = [
-    { key: 'requested', label: trans('Requested, no stock yet') },
-    { key: 'being_made', label: trans('Being made') },
-    { key: 'on_the_shelves', label: trans('On the shelves') },
-    { key: 'in_the_bay', label: trans('In the bay') },
-    { key: 'ready', label: trans('Ready to order') },
+    { key: 'requested', label: ctrans('Requested, no stock yet') },
+    { key: 'being_made', label: ctrans('Being made') },
+    { key: 'on_the_shelves', label: ctrans('On the shelves') },
+    { key: 'in_the_bay', label: ctrans('In the bay') },
+    { key: 'ready', label: ctrans('Ready to order') },
 ]
 
 function createPartnerOrder(order: PartnerOrder) {
     const amount = locale.currencyFormat(props.partner_orders!.currency_code, order.ready.amount)
-    if (!window.confirm(`${trans('Create the order and send it to the warehouse?')} ${order.partner_name} · ${locale.number(order.ready.quantity)} SKOs · ${amount}`)) return
+    if (!window.confirm(`${ctrans('Create the order and send it to the warehouse?')} ${order.partner_name} · ${locale.number(order.ready.quantity)} SKOs · ${amount}`)) return
     processing.value = true
     router.post(
         route('grp.org.productions.show.operations.partner_orders.store', [route().params['organisation'], route().params['production'], order.org_partner_id]),
@@ -162,7 +163,11 @@ function startTask(task: QueueTask) {
     router.post(
         route(task.start_route.name, task.start_route.parameters),
         {},
-        { preserveScroll: true, onFinish: () => processing.value = false }
+        {
+            preserveScroll: true,
+            onError: errors => window.alert(Object.values(errors).join(' ')),
+            onFinish: () => processing.value = false,
+        }
     )
 }
 
@@ -198,7 +203,7 @@ function elapsedSince(startedAt: string) {
     <div v-if="partner_orders?.orders.length" class="mx-4 mt-6">
         <h2 class="text-lg font-semibold mb-3">
             <FontAwesomeIcon :icon="['fal', 'handshake']" fixed-width class="text-gray-400 mr-1" />
-            {{ trans('Partner orders') }}
+            {{ ctrans('Partner orders') }}
         </h2>
         <div class="grid gap-4 lg:grid-cols-3">
             <div v-for="order in partner_orders.orders" :key="order.org_partner_id" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
@@ -221,7 +226,7 @@ function elapsedSince(startedAt: string) {
                 </dl>
 
                 <div v-if="order.ordered.quantity > 0" class="mt-1 flex justify-between gap-3 text-sm text-gray-600">
-                    <span>{{ trans('Ordered, waiting to be picked') }} · {{ order.order_references.join(', ') }}</span>
+                    <span>{{ ctrans('Ordered, waiting to be picked') }} · {{ order.order_references.join(', ') }}</span>
                     <span class="tabular-nums shrink-0">
                         {{ locale.number(order.ordered.quantity) }}
                         <span class="ml-2 inline-block min-w-20 text-right">{{ locale.currencyFormat(partner_orders.currency_code, order.ordered.amount) }}</span>
@@ -229,11 +234,11 @@ function elapsedSince(startedAt: string) {
                 </div>
 
                 <div v-if="order.quantity_in_the_bay_not_requested > 0" class="mt-1 text-sm text-amber-600">
-                    {{ locale.number(order.quantity_in_the_bay_not_requested) }} {{ trans('in the bay that nobody asked for, it stays out of the order') }}
+                    {{ locale.number(order.quantity_in_the_bay_not_requested) }} {{ ctrans('in the bay that nobody asked for, it stays out of the order') }}
                 </div>
 
                 <div v-if="order.job_orders.length" class="mt-1 text-sm text-gray-600">
-                    {{ trans('Job orders') }}:
+                    {{ ctrans('Job orders') }}:
                     <template v-for="(jobOrder, index) in order.job_orders" :key="jobOrder.slug">
                         <span v-if="index">, </span>
                         <Link :href="jobOrderHref(jobOrder.slug)" class="text-[--app-accent-strong] hover:underline">{{ jobOrder.reference }}</Link>
@@ -243,7 +248,7 @@ function elapsedSince(startedAt: string) {
                 <div class="mt-3 flex items-center justify-between gap-3">
                     <button v-if="order.items.length" type="button" class="text-sm text-[--app-accent-strong] hover:underline"
                         @click="openPartnerOrder = openPartnerOrder == order.org_partner_id ? null : order.org_partner_id">
-                        {{ locale.number(order.items.length) }} {{ trans('items') }}
+                        {{ locale.number(order.items.length) }} {{ ctrans('items') }}
                     </button>
                     <button
                         v-if="partner_orders.can_create"
@@ -252,18 +257,18 @@ function elapsedSince(startedAt: string) {
                         :disabled="processing || order.ready.quantity <= 0"
                         @click="createPartnerOrder(order)"
                     >
-                        {{ trans('Create order') }}
+                        {{ ctrans('Create order') }}
                     </button>
                 </div>
 
                 <table v-if="openPartnerOrder == order.org_partner_id" class="mt-3 w-full text-sm">
                     <thead class="text-gray-500">
                         <tr>
-                            <th class="text-left font-medium py-1">{{ trans('Code') }}</th>
-                            <th class="text-right font-medium">{{ trans('In the bay') }}</th>
-                            <th class="text-right font-medium">{{ trans('On the shelves') }}</th>
-                            <th class="text-right font-medium">{{ trans('Waiting') }}</th>
-                            <th class="text-right font-medium">{{ trans('Amount') }}</th>
+                            <th class="text-left font-medium py-1">{{ ctrans('Code') }}</th>
+                            <th class="text-right font-medium">{{ ctrans('In the bay') }}</th>
+                            <th class="text-right font-medium">{{ ctrans('On the shelves') }}</th>
+                            <th class="text-right font-medium">{{ ctrans('Waiting') }}</th>
+                            <th class="text-right font-medium">{{ ctrans('Amount') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -285,13 +290,13 @@ function elapsedSince(startedAt: string) {
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-lg font-semibold">
                     <FontAwesomeIcon :icon="['fal', 'user-hard-hat']" fixed-width class="text-gray-400 mr-1" />
-                    {{ trans('Working now') }}
+                    {{ ctrans('Working now') }}
                 </h2>
                 <Link
                     :href="route(command_control.floor_route.name, command_control.floor_route.parameters)"
                     class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-1.5 transition duration-200 hover:bg-[--app-accent-strong]"
                 >
-                    {{ trans('Open manufacture floor') }}
+                    {{ ctrans('Open manufacture floor') }}
                 </Link>
             </div>
 
@@ -302,7 +307,7 @@ function elapsedSince(startedAt: string) {
             />
 
             <div v-if="!command_control.working_now.length" class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-lg">
-                {{ trans('Nobody is working on a task right now') }}
+                {{ ctrans('Nobody is working on a task right now') }}
             </div>
             <div v-for="session in command_control.working_now" :key="session.id"
                 class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
@@ -310,7 +315,7 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ session.worker }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ session.task_name }} · {{ session.artefact_code }}
-                        · {{ trans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
+                        · {{ ctrans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -320,7 +325,7 @@ function elapsedSince(startedAt: string) {
             </div>
 
             <template v-if="command_control.today_sessions.length">
-                <h3 class="text-sm font-semibold text-gray-500 mt-6 mb-2">{{ trans('Finished today') }}</h3>
+                <h3 class="text-sm font-semibold text-gray-500 mt-6 mb-2">{{ ctrans('Finished today') }}</h3>
                 <div v-for="session in command_control.today_sessions" :key="session.id"
                     class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-2 flex items-center justify-between gap-3 text-sm">
                     <div class="min-w-0 truncate">
@@ -336,7 +341,7 @@ function elapsedSince(startedAt: string) {
                             :disabled="processing"
                             @click="voidSession(session)"
                         >
-                            {{ trans('Void') }}
+                            {{ ctrans('Void') }}
                         </button>
                     </div>
                 </div>
@@ -346,10 +351,10 @@ function elapsedSince(startedAt: string) {
         <div>
             <h2 class="text-lg font-semibold mb-3">
                 <FontAwesomeIcon :icon="['fal', 'tasks']" fixed-width class="text-gray-400 mr-1" />
-                {{ trans('Task queue') }}
+                {{ ctrans('Task queue') }}
             </h2>
             <div v-if="!command_control.queue.length" class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-lg">
-                {{ trans('The queue is empty') }}
+                {{ ctrans('The queue is empty') }}
             </div>
             <div v-for="task in command_control.queue" :key="task.id"
                 class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
@@ -357,21 +362,24 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ task.task_name }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ task.artefact_code }} — {{ task.artefact_name }}
-                        · {{ trans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ task.job_order_reference }}</Link>
+                        · {{ ctrans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ task.job_order_reference }}</Link>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 tabular-nums">
                         {{ task.quantity_made }} / {{ task.quantity_required }}
-                        <span v-if="task.state == 'in_progress'" class="ml-1 text-amber-600 font-medium">{{ trans('In progress') }}</span>
+                        <span v-if="task.state == 'in_progress'" class="ml-1 text-amber-600 font-medium">{{ ctrans('In progress') }}</span>
                     </div>
                 </div>
+                <div v-if="task.blocked_by_step" class="shrink-0 text-sm text-gray-400">
+                    {{ ctrans('Waiting for') }} {{ task.blocked_by_step }}
+                </div>
                 <button
-                    v-if="!command_control.open_session"
+                    v-else-if="!command_control.open_session"
                     type="button"
                     class="shrink-0 rounded bg-[--app-accent] text-[--app-accent-text] text-sm font-semibold px-4 py-2 transition duration-200 hover:bg-[--app-accent-strong] disabled:opacity-40 disabled:hover:bg-[--app-accent]"
                     :disabled="processing"
                     @click="startTask(task)"
                 >
-                    {{ trans('START') }}
+                    {{ ctrans('START') }}
                 </button>
             </div>
         </div>

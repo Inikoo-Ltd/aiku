@@ -137,6 +137,40 @@ const partsOutOfStock = computed(() =>
 	(props.data.org_stocks ?? []).filter((part) => Number(part.quantity_available ?? 0) < Number(part.quantity ?? 1))
 )
 
+const shelfQuantity = computed(() => {
+	const quantities = (props.data.org_stocks ?? [])
+		.filter((part) => Number(part.quantity) > 0)
+		.map((part) => Math.floor(Number(part.quantity_available ?? 0) / Number(part.quantity)))
+
+	return quantities.length ? Math.max(0, Math.min(...quantities)) : 0
+})
+
+const stockStatus = computed(() => {
+	const product = props.data?.product?.data
+
+	if (product?.state === 'discontinued') {
+		return { isAvailable: false, label: ctrans("Discontinued"), detail: null }
+	}
+
+	if (product?.is_on_demand) {
+		if (!props.data?.availability_status?.is_for_sale) {
+			return { isAvailable: false, label: ctrans("Not for sale"), detail: ctrans("Made on demand") }
+		}
+
+		return {
+			isAvailable: true,
+			label: ctrans("Always available"),
+			detail: ctrans(":quantity on the shelf, made on demand", { quantity: locale.number(shelfQuantity.value) }),
+		}
+	}
+
+	if (product?.stock > 0) {
+		return { isAvailable: true, label: ctrans("In stock"), detail: `${locale.number(product.stock)} ${ctrans("available")}` }
+	}
+
+	return { isAvailable: false, label: ctrans("Out Of Stock"), detail: null }
+})
+
 const editIsForSale = () => {
 	let url = route('grp.org.shops.show.catalogue.products.all_products.edit', {
 			...route().params,
@@ -279,20 +313,13 @@ const getTooltips = () => {
 			<div class="mb-4 flex items-center gap-3 px-2">
 				<span class="relative flex h-3 w-3 shrink-0">
 					<span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-						:class="data?.product?.data?.is_on_demand || data?.product?.data?.stock > 0 ? 'bg-green-400' : 'bg-red-400'" />
+						:class="stockStatus.isAvailable ? 'bg-green-400' : 'bg-red-400'" />
 					<span class="relative inline-flex h-3 w-3 rounded-full"
-						:class="data?.product?.data?.is_on_demand || data?.product?.data?.stock > 0 ? 'bg-green-500' : 'bg-red-500'" />
+						:class="stockStatus.isAvailable ? 'bg-green-500' : 'bg-red-500'" />
 				</span>
-				<span v-if="data?.product?.data?.is_on_demand" class="flex flex-wrap items-baseline gap-x-2">
-					<span class="text-xl font-semibold text-gray-800">{{ ctrans("Always available") }}</span>
-					<span class="text-sm text-gray-500">{{ ctrans("made on demand") }}</span>
-				</span>
-				<span v-else-if="data?.product?.data?.stock > 0" class="flex flex-wrap items-baseline gap-x-2">
-					<span class="text-xl font-semibold text-gray-800">{{ ctrans("In stock") }}</span>
-					<span class="text-sm tabular-nums text-gray-500">{{ locale.number(data.product.data.stock) }} {{ ctrans("available") }}</span>
-				</span>
-				<span v-else class="text-xl font-semibold text-gray-800">
-					{{ data.product.data.state == 'discontinued' ? ctrans("Discontinued") : ctrans("Out Of Stock") }}
+				<span class="flex flex-wrap items-baseline gap-x-2">
+					<span class="text-xl font-semibold text-gray-800">{{ stockStatus.label }}</span>
+					<span v-if="stockStatus.detail" class="text-sm tabular-nums text-gray-500">{{ stockStatus.detail }}</span>
 				</span>
 			</div>
 

@@ -143,7 +143,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
      */
     private function producedQuantity(JobOrderItem $item): float
     {
-        $lastTask = $item->tasks->sortByDesc('position')->first();
+        $lastTask = $item->tasks->last();
 
         if (!$lastTask) {
             return 0.0;

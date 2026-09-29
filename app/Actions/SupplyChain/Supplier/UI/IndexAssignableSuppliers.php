@@ -38,7 +38,8 @@ class IndexAssignableSuppliers extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('suppliers.code', $value)
                     ->orWhereAnyWordStartWith('suppliers.name', $value)
-                    ->orWhereAnyWordStartWith('agents.name', $value);
+                    ->orWhereAnyWordStartWith('agent_organisations.name', $value)
+                    ->orWhereRaw("suppliers.location->>1 ilike ?", [$value.'%']);
             });
         });
 
@@ -46,8 +47,15 @@ class IndexAssignableSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $countryFilter = AllowedFilter::callback('country', function ($query, $value) {
+            $query->whereRaw("suppliers.location->>0 = ?", [$value]);
+        });
+
         return QueryBuilder::for(Supplier::class)
-            ->leftJoin('agents', 'agents.id', '=', 'suppliers.agent_id')
+            ->leftJoin('agents', function ($join) {
+                $join->on('agents.id', '=', 'suppliers.agent_id')->whereNull('agents.deleted_at');
+            })
+            ->leftJoin('organisations as agent_organisations', 'agent_organisations.id', '=', 'agents.organisation_id')
             ->where('suppliers.group_id', $agent->group_id)
             ->where('suppliers.status', true)
             ->where(function ($query) use ($agent) {
@@ -64,24 +72,45 @@ class IndexAssignableSuppliers extends OrgAction
                 'suppliers.agent_id',
                 'agents.slug as agent_slug',
                 'agents.code as agent_code',
-                'agents.name as agent_name',
+                'agent_organisations.name as agent_name',
             ])
+            ->selectRaw(
+                "(select string_agg(organisations.name, ', ' order by organisations.name)
+                    from org_suppliers
+                    join organisations on organisations.id = org_suppliers.organisation_id
+                    where org_suppliers.supplier_id = suppliers.id
+                    and org_suppliers.status = true
+                    and org_suppliers.organisation_id not in (select org_agents.organisation_id from org_agents where org_agents.agent_id = ?)
+                ) as organisations_losing_supplier",
+                [$agent->id]
+            )
             ->allowedSorts(['code', 'name', 'agent_code', 'location'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $countryFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(Agent $agent, ?string $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($agent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
+            $countryOptions = Supplier::query()
+                ->where('group_id', $agent->group_id)
+                ->where('status', true)
+                ->whereRaw("location->>0 <> ''")
+                ->selectRaw("distinct location->>0 as country_code, location->>1 as country_name")
+                ->orderByRaw('location->>1')
+                ->get()
+                ->mapWithKeys(fn ($country) => [$country->country_code => $country->country_name ?: $country->country_code])
+                ->all();
+
             $table
+                ->selectFilter('country', $countryOptions, __('Country'))
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
                 ->withEmptyState([
@@ -137,13 +166,12 @@ class IndexAssignableSuppliers extends OrgAction
                 ],
                 'agent'         => [
                     'id'   => $this->agent->id,
-                    'slug' => $this->agent->slug,
                     'code' => $this->agent->code,
-                    'name' => $this->agent->name,
+                    'name' => $this->agent->organisation->name,
                 ],
                 'data'          => AssignableSuppliersResource::collection($suppliers),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->agent));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

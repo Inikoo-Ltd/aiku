@@ -1,6 +1,6 @@
 ---
 title: Overseeing chat
-summary: Supervision watches every conversation and every agent across the shops you run, can take over or close anything without being routed it, and owns the settings agents cannot touch.
+summary: Supervision shows every conversation and every agent on the shops you run, lets you step into any conversation, and puts the shop's chat switches in your hands.
 date: 2026-09-29
 tags: crm, chat
 category: crm
@@ -9,31 +9,45 @@ order: 5
 ---
 
 <aside class="tldr">
-<b>Supervision</b> is the same inbox agents work, seen from above: every conversation on every shop you oversee, whoever is holding it, and the agents down the side with whether they are there and how much they carry. A supervisor or administrator can take over, write in and close any conversation without being routed one first, and keeps the override on actions that otherwise belong to whoever holds the conversation.
+<b>Supervision</b> is the same inbox the agents work, seen from above: every conversation on the shops you oversee, whoever is holding it, and the agents down the side with whether they are there and how much they carry. You can take over, write in and close any of those conversations without being routed one. How the shop's chat behaves, such as whether out-of-hours messages become emails, is your decision.
 </aside>
 
-## What Supervision shows that Customer Inbox does not
+## What you see
 
-- <b>Every shop at once.</b> Switch several shops on together and read them as one list, rather than one shop at a time.
-- <b>Everybody's conversations</b>, in place of the agent's <b>My Chats</b> / <b>Colleagues' Chats</b> split - every conversation on the shops you oversee, whoever is holding it.
-- <b>Agents down the side</b>, with whether they are there and how much they are holding. Picking one shows what they are holding, across every shop.
-- <b>The Unclaimed folder</b> - conversations nobody has taken past the agreed time for their channel. It covers every shop and organisation, and a conversation held by an agent who went home comes back here until somebody else takes it. See <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a>.
+- <b>Everybody's conversations</b>, in place of <b>My Chats</b> and <b>Colleagues' Chats</b>: every conversation on the shops you oversee, whoever is holding it.
+- <b>Several shops at once.</b> Light them in the rail and read them as one list.
+- <b>The agents down the side</b>, with whether they are there, whether they are on a phone call, and how many conversations each is holding. Picking one shows what they hold, across every shop.
 
-## What a supervisor can do that an agent cannot
+The <b>Unclaimed</b> folder is where to look for customers nobody has taken in time; it is shared with the agents. See <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a>.
 
-- <b>Take over, write in or close any conversation</b>, whether or not it was ever routed to you.
+## What you can do
+
+- <b>Step into any conversation</b> on the shops you oversee - take it over, write in it or close it - even one that was never routed to you.
 - <b>Override Ignore, Spam and Create Ticket</b>, which otherwise belong to whoever holds the conversation.
-- <b>Read Reports</b> across shops and organisations, not just the ones you work day to day - see <a href="/docs/customer-chat">Talking to customers in Chat</a> for what Reports counts.
 
-## Settings only a supervisor or admin should change
+## Deciding how the shop's chat behaves
 
-A shop's <b>Settings &rarr; Chat</b> holds working hours, the connected mailbox, the channels turned on, and settings that change what agents see day to day, such as <b>Answer offline messages by email</b> (see <a href="/docs/live-chat-on-the-website">Live chat on the website</a>). Because these change behaviour for the whole team without a code change, they are worth reviewing with whoever asked for them rather than left as a one-off toggle nobody remembers.
+The shop's <b>Settings</b> &rarr; <b>Chat</b> holds the switches that change what agents see every day:
+
+- <b>Answer offline messages by email</b> - whether a message left in the widget outside working hours becomes an email conversation. When it is on, agents find these website visitors in the email list. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
+- <b>Unclaimed after</b> times per channel - how long a conversation can wait before it counts as unclaimed.
+- Whether the website chat and the WhatsApp channel are switched on at all.
+
+When you change one of these, tell the agents: to them a change of behaviour looks like a fault.
+
+Two things that shape chat are kept elsewhere: the shop's mailbox (<b>Settings</b> &rarr; <b>Customer mailbox</b>) and working hours and public holidays (<b>Human Resources</b>).
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>See every shop you oversee at once:</b> <b>Chat &rarr; Supervision</b> &rarr; light each shop in the rail.</li>
+<li><b>Watch the desk:</b> <b>Chat &rarr; Supervision</b>.</li>
 <li><b>Take a conversation off an agent:</b> open it &rarr; <b>Take Over</b>.</li>
-<li><b>Check who is waiting too long, everywhere:</b> <b>Folders &rarr; Unclaimed</b>.</li>
-<li><b>Change a shop's chat settings:</b> the shop's <b>Settings &rarr; Chat</b>.</li>
+<li><b>Change how the shop's chat behaves:</b> the shop's <b>Settings</b> &rarr; <b>Chat</b>.</li>
+</ul>
+</aside>
+
+<aside class="wayfinder"><strong>Permissions you need</strong>
+<ul>
+<li><b>Supervision:</b> a job position that oversees chat on that shop.</li>
+<li><b>Change the shop's chat settings:</b> shop or organisation administrator.</li>
 </ul>
 </aside>

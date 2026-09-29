@@ -45,15 +45,13 @@ class UpdateOrder extends OrgAction
 
     private Order $order;
 
-    private function isTaxStillOpen(Order $order): bool
-    {
-        return !in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])
-            && !$order->invoices()->exists();
-    }
-
     public function handle(Order $order, array $modelData): Order
     {
         $this->guardCustomerShipperLock($order, $modelData);
+
+        if (Arr::get($modelData, 'collection_address_id') && $order->shop->collection_address_id) {
+            $modelData['collection_address_id'] = $order->shop->collection_address_id;
+        }
 
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
@@ -69,7 +67,7 @@ class UpdateOrder extends OrgAction
 
         if (Arr::has($changes, 'collection_address_id')) {
             OrderHydrateShipments::run($order->id);
-            if (!Arr::has($modelData, 'tax_category_id') && $order->billingAddress && $this->isTaxStillOpen($order)) {
+            if (!Arr::has($modelData, 'tax_category_id') && $order->billingAddress && $order->canChangeTaxCategory()) {
                 $taxNumber = $order->customer?->taxNumber;
                 $order->update([
                     'tax_category_id' => GetTaxCategory::run(
@@ -121,7 +119,10 @@ class UpdateOrder extends OrgAction
 
 
         if (count($changes) > 0) {
-            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
+            $deliveryNote = $order->deliveryNotes()
+                ->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)
+                ->orderByRaw('delivery_notes.state = ?, delivery_notes.id desc', [DeliveryNoteStateEnum::CANCELLED->value])
+                ->first();
             if ($deliveryNote) {
                 if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
                     $deliveryNote->update(

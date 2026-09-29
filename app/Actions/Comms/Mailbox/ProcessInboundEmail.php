@@ -134,25 +134,18 @@ class ProcessInboundEmail
             return null;
         }
 
+        $senderLabel = $this->labelForSender($shop, $from['address']);
+        if ($senderLabel) {
+            $client->fileAway($gmailMessageId, $senderLabel, Arr::get($raw, 'labelIds', []), markRead: false);
+
+            return null;
+        }
+
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
             $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
 
             return null;
-        }
-
-        // A known non-conversation sender (e.g. a booking tool's confirmations) is filed under
-        // its own label straight away: it is not spam and not a chat, just mail worth keeping.
-        $labeledSenders = Arr::get($shop->settings, 'gmail.labeled_senders', []);
-        if ($from['address'] && $labeledSenders) {
-            $senderLabel = Arr::get($labeledSenders, strtolower($from['address']))
-                ?? Arr::get($labeledSenders, '@'.strtolower(Str::after($from['address'], '@')));
-
-            if ($senderLabel) {
-                $client->fileAway($gmailMessageId, $senderLabel, Arr::get($raw, 'labelIds', []));
-
-                return null;
-            }
         }
 
         // Order, shipping and payout notices from the marketplaces are work for whoever runs those
@@ -343,6 +336,18 @@ class ProcessInboundEmail
     private function goneKey(Shop $shop, string $gmailMessageId): string
     {
         return "gmail-message-gone:{$shop->id}:$gmailMessageId";
+    }
+
+    private function labelForSender(Shop $shop, ?string $address): ?string
+    {
+        if (! $address) {
+            return null;
+        }
+
+        $labeledSenders = Arr::get($shop->settings, 'gmail.labeled_senders') ?? [];
+        $address        = strtolower($address);
+
+        return $labeledSenders[$address] ?? $labeledSenders['@'.Str::after($address, '@')] ?? null;
     }
 
     /**

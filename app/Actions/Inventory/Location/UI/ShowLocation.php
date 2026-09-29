@@ -122,6 +122,11 @@ class ShowLocation extends OrgAction
                 ],
                 'location_id' => $location->id,
                 'transfer_reason'   => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
+                'create_order_route' => $location->is_goods_out && $this->canEdit ? [
+                    'name'       => 'grp.models.location.create_order',
+                    'parameters' => ['location' => $location->id],
+                    'method'     => 'post',
+                ] : null,
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)

@@ -102,11 +102,15 @@ trait WithShopifyPortfolioMatching
     {
         $healedIds = [];
 
+        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId && $this->isVariantLinkedToAnotherPortfolio($portfolio, $platformProductVariantId)) {
+            return;
+        }
+
         if ($platformProductId && $portfolio->platform_product_id !== $platformProductId) {
             $healedIds['platform_product_id'] = $platformProductId;
         }
 
-        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId && !$this->isVariantLinkedToAnotherPortfolio($portfolio, $platformProductVariantId)) {
+        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId) {
             $healedIds['platform_product_variant_id'] = $platformProductVariantId;
         }
 

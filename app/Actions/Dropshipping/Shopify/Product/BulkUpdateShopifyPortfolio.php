@@ -90,16 +90,17 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get()
             ->keyBy('id');
 
-        $portfolioCodesByVariant = [];
+        $holdersByVariant = [];
         foreach ($portfolios as $portfolio) {
             if ($portfolio->platform_product_variant_id) {
-                $portfolioCodesByVariant[$portfolio->platform_product_variant_id][$portfolio->id] = $portfolio->item_code;
+                $holdersByVariant[$portfolio->platform_product_variant_id][$portfolio->id] = self::sharedListingHolder($portfolio, $productMap->get($portfolio->item_id), $customerSalesChannel);
             }
         }
 
+        $variantsSent = [];
         foreach ($portfolios->chunk(50) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $portfolioCodesByVariant, $command);
+                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $holdersByVariant, $variantsSent, $command);
             } catch (\Throwable $e) {
                 Sentry::captureException($e);
             }
@@ -109,9 +110,10 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     /**
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, Product>  $productMap
-     * @param  array<string, array<int, string|null>>  $portfolioCodesByVariant
+     * @param  array<string, array<int, array{code: string, sku: string, quantity: int|null}>>  $holdersByVariant
+     * @param  array<string, int>  $variantsSent  variants already sent stock in this run, variant id => portfolio id
      */
-    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, array $portfolioCodesByVariant, ?Command $command = null): void
+    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, array $holdersByVariant, array &$variantsSent, ?Command $command = null): void
     {
         $logs                   = [];
         $inventoryItems         = [];
@@ -146,16 +148,32 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             $variantId       = $shopifyData['variantId'];
             $inventoryItemId = $shopifyData['inventoryItemId'];
 
-            $sharedWithCodes = array_diff_key($portfolioCodesByVariant[$variantId] ?? [], [$portfolio->id => true]);
+            $holders                = $holdersByVariant[$variantId] ?? [];
+            $holders[$portfolio->id] = self::sharedListingHolder($portfolio, $productData, $customerSalesChannel);
+            $sharedListingNote      = null;
 
-            if ($sharedWithCodes && Str::lower($shopifyData['sku']) !== Str::lower((string)$productData->code)) {
-                $portfolio->update(['stock_last_fail_updated_at' => now()]);
-                UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'This Shopify listing is also linked to '.implode(', ', array_filter($sharedWithCodes)).', so its stock is not sent'
-                ]);
-                continue;
+            if (count($holders) > 1 || isset($variantsSent[$variantId])) {
+                [$senderId, $ordersReachSender] = self::sharedListingSender($holders, $shopifyData['sku']);
+
+                if ($senderId !== $portfolio->id || isset($variantsSent[$variantId])) {
+                    $otherCodes = array_filter(array_column(array_diff_key($holders, [$portfolio->id => true]), 'code'));
+                    $portfolio->update(['stock_last_fail_updated_at' => now()]);
+                    UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
+                        'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                        'response' => $otherCodes
+                            ? 'This Shopify listing is also linked to '.implode(', ', $otherCodes).', so its stock is not sent'
+                            : 'This Shopify listing already got its stock from another product, so its stock is not sent'
+                    ]);
+                    continue;
+                }
+
+                if (!$ordersReachSender) {
+                    $availableQuantity = 0;
+                    $sharedListingNote = 'Several products are linked to this Shopify listing and it can not be told which of them it sells, so 0 is sent';
+                }
             }
+
+            $variantsSent[$variantId] = $portfolio->id;
 
             if ($portfolio->platform_product_variant_id !== $variantId) {
                 $portfolio->update(['platform_product_variant_id' => $variantId]);
@@ -176,6 +194,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
             $portfoliosToUpdateData[$portfolio->id] = [
                 'last_stock_value' => $availableQuantity,
+                'note'             => $sharedListingNote,
             ];
 
             $logs[$portfolio->id] = StorePlatformPortfolioLog::run($portfolio, []);
@@ -243,7 +262,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $portfolio?->update([
                     'stock_last_fail_updated_at' => now(),
                 ]);
-                if ($portfolio && str_contains($failedIndices[$index], 'not stocked at the location')) {
+                if ($portfolio && str_contains($failedIndices[$index], 'not stocked at the location') && !$portfoliosToUpdateData[$portfolioId]['note']) {
                     StoreShopifyLocationToProductVariant::dispatch($portfolio);
                 }
                 if ($log) {
@@ -258,9 +277,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $portfolio?->update([
                     'last_stock_value'      => $portfoliosToUpdateData[$portfolioId]['last_stock_value'],
                     'stock_last_updated_at' => now(),
-                    'platform_status'       => $listingStatus === self::ACTIVE_STATUS,
                 ]);
-                if ($log) {
+                if ($log && $portfoliosToUpdateData[$portfolioId]['note']) {
+                    UpdatePlatformPortfolioLog::dispatch($log, [
+                        'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                        'response' => $portfoliosToUpdateData[$portfolioId]['note']
+                    ]);
+                } elseif ($log) {
                     UpdatePlatformPortfolioLog::dispatch($log, $listingStatus === self::ACTIVE_STATUS
                         ? ['status' => PlatformPortfolioLogsStatusEnum::OK]
                         : [
@@ -330,6 +353,45 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         }
 
         return null;
+    }
+
+    /**
+     * @return array{code: string, sku: string, quantity: int|null}
+     */
+    private static function sharedListingHolder(Portfolio $portfolio, ?Product $product, CustomerSalesChannel $customerSalesChannel): array
+    {
+        return [
+            'code'     => (string)$portfolio->item_code,
+            'sku'      => (string)$portfolio->sku,
+            'quantity' => $product ? (int)UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel) : null,
+        ];
+    }
+
+    /**
+     * A listing linked to several portfolios gets its stock from the one its orders go to, chosen the way
+     * order lines are matched: the portfolio whose product code the listing carries, then the one whose
+     * sku it carries, oldest first. When no portfolio carries the listing sku, or several carry it and
+     * would send different stock, it can not be told which product the listing sells: the oldest sends 0.
+     *
+     * @param  array<int, array{code: string, sku: string, quantity?: int|null}>  $holders  portfolio id => product code, sku and stock to send
+     * @return array{0: int, 1: bool}  the portfolio that sends, and whether it sends its own stock
+     */
+    public static function sharedListingSender(array $holders, string $listingSku): array
+    {
+        $listingSku = Str::lower(trim($listingSku));
+        ksort($holders);
+
+        if ($listingSku !== '') {
+            foreach (['code', 'sku'] as $field) {
+                $carriers = array_filter($holders, fn (array $holder) => Str::lower(trim($holder[$field])) === $listingSku);
+
+                if ($carriers) {
+                    return [array_key_first($carriers), count(array_unique(array_map(fn (array $holder) => $holder['quantity'] ?? null, $carriers))) === 1];
+                }
+            }
+        }
+
+        return [array_key_first($holders), false];
     }
 
     /**

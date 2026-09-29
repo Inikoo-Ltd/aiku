@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
@@ -14,6 +15,7 @@ interface AssignableSupplier {
     location: object
     agent_code: string | null
     agent_name: string | null
+    organisations_losing_supplier: string | null
 }
 
 const props = defineProps<{
@@ -26,17 +28,48 @@ const props = defineProps<{
     tab?: string
 }>()
 
-function addSupplier(supplier: AssignableSupplier) {
+const addingSupplierId = ref<number | null>(null)
+
+function confirmationDescription(supplier: AssignableSupplier): string {
+    const lines = [
+        supplier.agent_code
+            ? ctrans("This supplier currently belongs to agent :current. Adding it here moves it off :current to :agent.", { current: supplier.agent_name, agent: props.agent.name })
+            : ctrans("This free supplier will be bought through :agent.", { agent: props.agent.name }),
+    ]
+
+    if (supplier.organisations_losing_supplier) {
+        lines.push(ctrans("These organisations don't trade with :agent and will stop buying from this supplier: :organisations.", { agent: props.agent.name, organisations: supplier.organisations_losing_supplier }))
+    }
+
+    return lines.join(" ")
+}
+
+function addSupplier(supplier: AssignableSupplier, closeModal: () => void) {
     router.patch(
         route("grp.models.supplier.update", supplier.id),
         { agent_id: props.agent.id },
         {
+            preserveScroll: true,
+            onStart: () => {
+                addingSupplierId.value = supplier.id
+            },
             onSuccess: () => {
+                closeModal()
                 notify({
                     title: ctrans("Success!"),
-                    text: ctrans("Supplier added to :agent", { agent: props.agent.name }),
+                    text: ctrans(":supplier added to :agent", { supplier: supplier.code, agent: props.agent.name }),
                     type: "success",
                 })
+            },
+            onError: (errors) => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: Object.values(errors).join(", "),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                addingSupplierId.value = null
             },
         }
     )
@@ -53,16 +86,8 @@ function addSupplier(supplier: AssignableSupplier) {
         </template>
         <template #cell(actions)="{ item: supplier }">
             <ModalConfirmation
-                v-if="supplier.agent_code"
-                :title="ctrans('Move supplier?')"
-                :description="ctrans('This supplier currently belongs to agent :agent. Moving it here will detach it from :agent.', { agent: supplier.agent_name })"
-                :route-yes="{
-                    name: 'grp.models.supplier.update',
-                    parameters: [supplier.id],
-                    method: 'patch',
-                }"
-                :body="{ agent_id: agent.id }"
-                :success-message="ctrans('Supplier moved to :agent', { agent: agent.name })"
+                :title="supplier.agent_code ? ctrans('Move supplier?') : ctrans('Add supplier?')"
+                :description="confirmationDescription(supplier)"
             >
                 <template #default="{ changeModel }">
                     <Button
@@ -72,14 +97,14 @@ function addSupplier(supplier: AssignableSupplier) {
                         @click="changeModel"
                     />
                 </template>
+                <template #btn-yes="{ closeModal }">
+                    <Button
+                        :loading="addingSupplierId === supplier.id"
+                        :label="ctrans('Yes, add')"
+                        @click="addSupplier(supplier, closeModal)"
+                    />
+                </template>
             </ModalConfirmation>
-            <Button
-                v-else
-                type="secondary"
-                size="xs"
-                :label="ctrans('Add')"
-                @click="addSupplier(supplier)"
-            />
         </template>
     </Table>
 </template>

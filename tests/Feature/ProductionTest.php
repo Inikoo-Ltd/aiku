@@ -102,6 +102,9 @@ beforeEach(function () {
     $this->group        = group();
     setPermissionsTeamId($this->group->id);
     $this->guest        = createAdminGuest($this->group);
+    ManufactureTaskSession::where('user_id', $this->guest->getUser()->id)
+        ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
 
     $production = Production::orderBy('id')->first();
     if (!$production) {
@@ -833,6 +836,228 @@ test('work queue is generated from the artefact recipe and sessions pay the work
         ->and((float)$task->quantity_rejected)->toBe(1.0);
 });
 
+function stepTestManufactureTask(Production $production, string $code = 'BOX', string $name = 'Boxing'): ManufactureTask
+{
+    return ManufactureTask::where('production_id', $production->id)->where('code', $code)->first()
+        ?? StoreManufactureTask::make()->action($production, [
+            'code'                            => $code,
+            'name'                            => $name,
+            'task_materials_cost'             => 1,
+            'task_energy_cost'                => 1,
+            'task_other_cost'                 => 1,
+            'task_work_cost'                  => 1,
+            'task_lower_target'               => 1,
+            'task_upper_target'               => 1,
+            'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT->value,
+            'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY->value,
+            'operative_reward_amount'         => 1,
+        ]);
+}
+
+function stepTestSecondOperator(\App\Models\SysAdmin\Group $group): \App\Models\SysAdmin\User
+{
+    return \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]])
+    )->getUser();
+}
+
+test('a step cannot be started before earlier steps in the job order are finished', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, ['date' => now()->subYear()]);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    [$firstTask, $secondJobTask] = $jobOrderItem->tasks()->orderBy('position')->get();
+    $user = $this->guest->getUser();
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $secondJobTask))
+        ->toThrow(ValidationException::class, 'Finish '.$this->manufactureTask->name.' first');
+
+    $queue = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['command_control']['queue']);
+    expect($queue->firstWhere('id', $firstTask->id)['blocked_by_step'])->toBeNull()
+        ->and($queue->firstWhere('id', $secondJobTask->id)['blocked_by_step'])->toBe($this->manufactureTask->name);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $firstTask),
+        ['quantity_made' => 5]
+    );
+
+    $session = StartManufactureTaskSession::make()->action($user, $secondJobTask);
+    expect($session->state)->toBe(ManufactureTaskSessionStateEnum::OPEN);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
+});
+
+test('a second operator cannot start a step another operator already has open', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $jobOrderItem->tasks()->first();
+
+    $firstUser  = $this->guest->getUser();
+    $secondUser = stepTestSecondOperator($this->group);
+
+    $session = StartManufactureTaskSession::make()->action($firstUser, $task);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($secondUser, $task))
+        ->toThrow(ValidationException::class, 'Someone else is already working on this step');
+
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
+});
+
+test('steps sharing a position still run one after the other, in the order they were queued', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    [$earlier, $later] = $jobOrderItem->tasks()->orderBy('id')->get();
+    $user = $this->guest->getUser();
+    expect($earlier->manufacture_task_id)->toBe($this->manufactureTask->id);
+
+    $floorTasks = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks']);
+    expect($floorTasks->firstWhere('id', $later->id)['blocked_by_step'])->toBe($earlier->manufactureTask->name)
+        ->and($floorTasks->firstWhere('id', $earlier->id)['can_start'])->toBeTrue();
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $later))
+        ->toThrow(ValidationException::class, 'Finish '.$earlier->manufactureTask->name.' first');
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $earlier), ['quantity_made' => 5]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $later), ['quantity_made' => 5]);
+
+    expect($later->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+});
+
+test('someone the job is not addressed to, or a job not on the floor, is refused before anything about its steps', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    $blockedTask  = $jobOrderItem->tasks()->where('position', 2)->first();
+
+    expect(fn () => StartManufactureTaskSession::make()->action($this->guest->getUser(), $blockedTask))
+        ->toThrow(ValidationException::class, 'This job order has not been released to the floor');
+
+    ConfirmJobOrder::make()->action($jobOrder);
+    $outsider = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($outsider, $blockedTask))
+        ->toThrow(ValidationException::class, 'This job is not addressed to you');
+});
+
+test('a step already under way keeps going when an earlier step is reopened by a void', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$firstTask, $secondJobTask] = $jobOrderItem->tasks()->orderBy('position')->get();
+    $user = $this->guest->getUser();
+
+    $firstSession = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $firstTask), ['quantity_made' => 5]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $secondJobTask), ['quantity_made' => 2]);
+
+    VoidManufactureTaskSession::make()->action($firstSession);
+    expect($firstTask->refresh()->state)->not->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($secondJobTask->refresh()->state)->toBe(JobOrderItemTaskStateEnum::IN_PROGRESS);
+
+    $onTheFloor = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks'])->firstWhere('id', $secondJobTask->id);
+    expect($onTheFloor['blocked_by_step'])->toBeNull()
+        ->and($onTheFloor['can_start'])->toBeTrue();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $secondJobTask), ['quantity_made' => 3]);
+    expect($secondJobTask->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+});
+
+test('recipe edits reorder and remove steps nobody has started on open job orders', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $firstStep = $jobOrderItem->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $boxStep   = $jobOrderItem->tasks()->where('manufacture_task_id', $secondTask->id)->first();
+
+    AttachManufactureTaskToArtefact::make()->action($this->artefact, ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 3]);
+    expect($firstStep->refresh()->position)->toBe(3);
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $boxStep), ['quantity_made' => 5]);
+
+    DetachManufactureTaskFromArtefact::make()->action($this->artefact, $this->manufactureTask);
+    expect(JobOrderItemTask::find($firstStep->id))->toBeNull()
+        ->and(JobOrderItemTask::find($boxStep->id))->not->toBeNull();
+
+    $singleStepArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'ONE-STEP')->first()
+        ?? StoreArtefact::make()->action($this->production, ['code' => 'ONE-STEP', 'name' => 'Single step artefact']);
+    $singleStepArtefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $singleStepJobOrder = StoreJobOrder::make()->action($this->production, []);
+    $onlyStep           = StoreJobOrderItem::make()->action($singleStepJobOrder, ['artefact_id' => $singleStepArtefact->id, 'quantity' => 2])->tasks()->first();
+
+    DetachManufactureTaskFromArtefact::make()->action($singleStepArtefact, $this->manufactureTask);
+    expect(JobOrderItemTask::find($onlyStep->id))->not->toBeNull();
+
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+});
+
+test('a step taken out of the recipe no longer holds up the steps after it', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$removedStep, $laterStep] = $jobOrderItem->tasks()->orderBy('position')->get();
+    $user = $this->guest->getUser();
+
+    VoidManufactureTaskSession::make()->action(
+        CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $removedStep), ['quantity_made' => 5])
+    );
+    DetachManufactureTaskFromArtefact::make()->action($this->artefact, $this->manufactureTask);
+    expect(JobOrderItemTask::find($removedStep->id))->not->toBeNull();
+
+    $onTheFloor = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks'])->firstWhere('id', $laterStep->id);
+    expect($onTheFloor['blocked_by_step'])->toBeNull();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $laterStep), ['quantity_made' => 5]);
+    expect($laterStep->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+});
+
 test('closing short can finish the job or carry the shortfall to a new job order', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -964,6 +1189,61 @@ test('UI show manufacture floor', function () {
                 ->has('earned'))
             ->where('open_session', null);
     });
+});
+
+test('floor marks a later step as blocked until the earlier step is done, then flags who is working it', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $olderJobOrder = StoreJobOrder::make()->action($this->production, ['date' => now()->subWeek()]);
+    StoreJobOrderItem::make()->action($olderJobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($olderJobOrder);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    [$firstTask, $secondJobTask] = $jobOrderItem->tasks()->orderBy('position')->get();
+    $firstUser  = $this->guest->getUser();
+    $secondUser = stepTestSecondOperator($this->group);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props'];
+    $blockedTask = collect($props['tasks'])->firstWhere('id', $secondJobTask->id);
+    expect($blockedTask['blocked_by_step'])->toBe($this->manufactureTask->name)
+        ->and($blockedTask['can_start'])->toBeFalse()
+        ->and(collect($blockedTask['steps'])->pluck('task_name')->all())->toBe([$this->manufactureTask->name, $secondTask->name])
+        ->and(collect($blockedTask['steps'])->pluck('blocked_by_step')->all())->toBe([null, $this->manufactureTask->name]);
+
+    $notReady = collect($props['tasks'])->map(fn (array $task) => !$task['can_start'] || count($task['waiting_for']) > 0)->values();
+    expect($notReady->all())->toBe($notReady->sort()->values()->all());
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($firstUser, $firstTask),
+        ['quantity_made' => 5]
+    );
+    $secondSession = StartManufactureTaskSession::make()->action($secondUser, $secondJobTask);
+
+    $seenByFirstUser = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks'])->firstWhere('id', $secondJobTask->id);
+    expect($seenByFirstUser['working_on_by'])->toBe([$secondUser->contact_name ?: $secondUser->username])
+        ->and($seenByFirstUser['blocked_by_step'])->toBeNull()
+        ->and($seenByFirstUser['can_start'])->toBeFalse()
+        ->and($seenByFirstUser['steps'][0]['worked_by'])->toBe([$firstUser->contact_name ?: $firstUser->username])
+        ->and($seenByFirstUser['steps'][0]['quantity_made'])->toEqual(5)
+        ->and($seenByFirstUser['steps'][1]['working_on_by'])->toBe([$secondUser->contact_name ?: $secondUser->username]);
+
+    actingAs($secondUser);
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props'];
+    expect($props['open_session']['task']['id'])->toBe($secondJobTask->id);
+
+    CloseManufactureTaskSession::make()->action($secondSession, ['quantity_made' => 5]);
+    actingAs($this->guest->getUser());
 });
 
 test('floor skips tasks left behind by a deleted job order item or job order', function () {
@@ -1243,18 +1523,119 @@ test('UI index artisans aggregates worker sessions', function () {
         'from' => now()->toDateString(),
         'to'   => now()->toDateString(),
     ]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Production/Artisans')
-            ->has('period')
-            ->has('artisans')
-            ->has('artisans.0', fn (AssertableInertia $page) => $page
-                ->has('worker')
-                ->has('number_sessions')
-                ->has('earned')
-                ->has('sessions')
-                ->etc());
-    });
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Production/Artisans')
+        ->has('period')
+        ->has('manufacture_tasks')
+        ->has('artisans.0', fn (AssertableInertia $page) => $page
+            ->has('worker')
+            ->has('number_sessions')
+            ->has('earned')
+            ->has('jobs')
+            ->etc()));
+
+    $job = collect(collect($response->viewData('page')['props']['artisans'])->firstWhere('user_id', $this->guest->getUser()->id)['jobs'])
+        ->firstWhere('job_order_item_id', $jobOrderItem->id);
+    expect($job['job_order_reference'])->toBe($jobOrder->reference)
+        ->and($job['steps'][0]['task_name'])->toBe($this->manufactureTask->name)
+        ->and($job['steps'][0]['quantity_made'])->toEqual(5)
+        ->and($job['steps'][0]['sessions'])->toHaveCount(1);
+});
+
+test('performance breakdown groups a job with steps from two different operators', function () {
+    $secondTask = stepTestManufactureTask($this->production);
+
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $secondTask->id            => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $firstUser  = $this->guest->getUser();
+    $secondUser = stepTestSecondOperator($this->group);
+
+    [$firstTask, $lastTask] = $jobOrderItem->tasks()->orderBy('position')->get();
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($firstUser, $firstTask),
+        ['quantity_made' => 5]
+    );
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($secondUser, $lastTask),
+        ['quantity_made' => 5]
+    );
+
+    $props = get(route('grp.org.productions.show.artisans.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'from' => now()->toDateString(),
+        'to'   => now()->toDateString(),
+    ]))->viewData('page')['props'];
+
+    $firstUsersJob = collect(collect($props['artisans'])->firstWhere('user_id', $firstUser->id)['jobs'])->firstWhere('job_order_item_id', $jobOrderItem->id);
+    expect($firstUsersJob['job_order_reference'])->toBe($jobOrder->reference)
+        ->and(collect($firstUsersJob['steps'])->pluck('task_name')->all())->toBe([$this->manufactureTask->name]);
+
+    $filteredProps = get(route('grp.org.productions.show.artisans.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'from'                => now()->toDateString(),
+        'to'                  => now()->toDateString(),
+        'manufacture_task_id' => $secondTask->id,
+    ]))->viewData('page')['props'];
+
+    $filteredArtisans = collect($filteredProps['artisans']);
+    expect($filteredArtisans->pluck('user_id')->all())->toContain($secondUser->id)
+        ->and($filteredArtisans->flatMap(fn ($artisan) => $artisan['jobs'])->flatMap(fn ($job) => $job['steps'])->pluck('manufacture_task_id')->unique()->values()->all())
+        ->toBe([$secondTask->id]);
+});
+
+test('performance breakdown keeps two artefacts of one job order apart and takes breaks out of the hours', function () {
+    $otherArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'PERF-2')->first()
+        ?? StoreArtefact::make()->action($this->production, ['code' => 'PERF-2', 'name' => 'Second artefact']);
+    $sameNamedTask = stepTestManufactureTask($this->production, 'SAMENAME', $this->manufactureTask->name);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $sameNamedTask->id         => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    $otherArtefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $jobOrder  = StoreJobOrder::make()->action($this->production, []);
+    $firstItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    $otherItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $otherArtefact->id, 'quantity' => 6]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $user = $this->guest->getUser();
+    foreach ($firstItem->tasks()->orderBy('position')->get() as $step) {
+        CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $step), ['quantity_made' => 4]);
+    }
+    $session = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $otherItem->tasks()->first()), ['quantity_made' => 6]);
+    $session->update(['started_at' => $session->ended_at->copy()->subHours(2), 'break_minutes' => 30]);
+
+    $props = get(route('grp.org.productions.show.artisans.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'from' => now()->toDateString(),
+        'to'   => now()->toDateString(),
+    ]))->viewData('page')['props'];
+
+    $jobs      = collect(collect($props['artisans'])->firstWhere('user_id', $user->id)['jobs']);
+    $firstJob  = $jobs->firstWhere('job_order_item_id', $firstItem->id);
+    $otherJob  = $jobs->firstWhere('job_order_item_id', $otherItem->id);
+
+    expect($firstJob['artefact_code'])->toBe($this->artefact->code)
+        ->and(collect($firstJob['steps'])->pluck('manufacture_task_id')->sort()->values()->all())->toBe(collect([$this->manufactureTask->id, $sameNamedTask->id])->sort()->values()->all())
+        ->and(collect($firstJob['steps'])->pluck('quantity_made')->all())->toEqual([4, 4])
+        ->and($otherJob['artefact_code'])->toBe($otherArtefact->code)
+        ->and($otherJob['job_order_reference'])->toBe($jobOrder->reference)
+        ->and($otherJob['steps'][0]['quantity_made'])->toEqual(6)
+        ->and($otherJob['steps'][0]['hours'])->toEqual(1.5)
+        ->and($otherJob['hours'])->toEqual(1.5);
+
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
 });
 
 test('raw material stores with defaults and only human fields', function () {

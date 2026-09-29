@@ -4,13 +4,12 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableAssignableSuppliers from "@/Components/Tables/Grp/SupplyChain/TableAssignableSuppliers.vue"
 import { capitalize } from "@/Composables/capitalize"
 
-const props = defineProps<{
+defineProps<{
     pageHead: object
     title: string
     data: object
     agent: {
         id: number
-        slug: string
         code: string
         name: string
     }

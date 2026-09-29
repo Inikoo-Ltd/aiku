@@ -1,7 +1,7 @@
 ---
 title: What the labels in the chat inbox mean
 summary: Every list, count, colour and tag in the customer inbox in plain words - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, and the aiku folders in the shop's Gmail.
-date: 2026-09-23
+date: 2026-09-29
 tags: crm, chat
 category: crm
 ---
@@ -53,8 +53,11 @@ Whoever oversees chat sees the agents down the side: who is there, who is on a p
 - <b>Possible noise</b> - it might be automatic mail, but it was not certain enough to move. It stays in the queue for a person to decide.
 - <b>Put aside automatically</b> - moved to Ignored or Spam by the system, with the reason. One click brings it back.
 - <b>Priority</b> - <b>Urgent</b>, <b>High</b>, <b>Normal</b> or <b>Low</b>, set from the conversation's menu. Normal unless somebody changes it.
-- <b>Offline message</b> - a website chat opened outside working hours, where the shop has <b>Answer offline messages by email</b> turned on in its chat settings. The conversation is genuinely in the email channel, so it counts and sits with everything else there; the tag is just there to say why.
 - A number on the right - unread messages in that conversation.
+
+## Labels on a message
+
+- <b>Offline message</b> - the customer wrote it in the website widget outside working hours. When the shop has <b>Answer offline messages by email</b> switched on, the whole conversation is moved to the email channel so the answer reaches them, which is why a website visitor can turn up in the email list. The label is on the message only; the row in the list has no mark. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
 
 ## Your own state
 

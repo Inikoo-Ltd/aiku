@@ -26,13 +26,10 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
         if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
-            $linkedCode = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
-                ->where('platform_product_id', $shopifyProductId)
-                ->where('id', '!=', $portfolio->id)
-                ->value('item_code');
+            $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
 
-            if ($linkedCode) {
-                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => 'This Shopify product is already linked to '.$linkedCode.' in this channel']]);
+            if ($replacedVariantOwner !== null) {
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false)]]);
                 UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
 
                 return;

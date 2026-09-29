@@ -1,8 +1,8 @@
 ---
 title: Qué significan las etiquetas de la bandeja de chat
 summary: Cada lista, contador, color y etiqueta de la bandeja de clientes explicados en palabras sencillas - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, y las carpetas de aiku en el Gmail de la tienda.
-date: 2026-09-23
-source_date: 2026-09-23
+date: 2026-09-29
+source_date: 2026-09-29
 tags: crm, chat
 category: crm
 ---
@@ -56,6 +56,10 @@ Quien supervisa el chat ve a los agentes en la columna lateral: quién está ah�
 - <b>Priority</b> (Prioridad) - <b>Urgent</b> (Urgente), <b>High</b> (Alta), <b>Normal</b> (Normal) o <b>Low</b> (Baja), se fija desde el menú de la conversación. Normal salvo que alguien la cambie.
 - Un número a la derecha - mensajes sin leer en esa conversación.
 
+## Etiquetas en un mensaje
+
+- <b>Offline message</b> (Mensaje fuera de horario) - el cliente lo escribió en el widget de la web fuera del horario de trabajo. Cuando la tienda tiene activado <b>Answer offline messages by email</b> (Responder mensajes fuera de horario por correo), toda la conversación se traslada al canal de email para que la respuesta le llegue, por eso un visitante de la web puede aparecer en la lista de correo. La etiqueta está solo en el mensaje; la fila de la lista no lleva ninguna marca. Consulta <a href="/docs/live-chat-on-the-website-es">Chat en directo en la web</a>.
+
 ## Tu propio estado
 
 - <b>You are on a phone call</b> (Estás en una llamada) - hay una llamada en marcha, así que no se te asigna ninguna conversación nueva hasta que termine.
@@ -85,5 +89,3 @@ aiku solo lee la bandeja de Gmail. El correo que Gmail pone en su propia carpeta
 </aside>
 
 La guía completa de la bandeja es <a href="/docs/customer-chat-es">Hablar con clientes en Chat</a>.
-</content>
-</invoke>

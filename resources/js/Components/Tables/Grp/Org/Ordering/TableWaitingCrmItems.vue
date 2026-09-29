@@ -229,8 +229,12 @@ const productQuantityInput = (product: Record<string, any>): number => {
     return isProductCutView(product) ? packsToUnits(quantity, productPackedIn(product)) : quantity
 }
 
+const productShelfStock = (product: Record<string, any>): number => (
+    Number(product?.is_on_demand ? product?.shelf_quantity : product?.stock) || 0
+)
+
 const productStockInView = (product: Record<string, any>): number => {
-    const stock = Number(product?.stock) || 0
+    const stock = productShelfStock(product)
     return isProductCutView(product) ? packsToUnits(stock, productPackedIn(product)) : stock
 }
 
@@ -263,7 +267,7 @@ const onUpdateProductQuantity = (product: Record<string, any>, value: number | n
 }
 
 const isProductOverStock = (product: Record<string, any>): boolean => (
-    !product?.is_on_demand && (productQuantities[product.id]?.quantity ?? 0) > (Number(product?.stock) || 0)
+    (productQuantities[product.id]?.quantity ?? 0) > productShelfStock(product)
 )
 
 // Outside cut view the quantity was typed in whole packs, so it reads as a plain count.
@@ -337,7 +341,7 @@ const fetchModalProducts = debounce(async () => {
                     quantity: 0,
                     code: product.code,
                     name: product.name,
-                    stock: product.stock ?? 0,
+                    stock: productShelfStock(product),
                     units: productPackedIn(product),
                     image: productImage(product),
                 }
@@ -769,17 +773,17 @@ const submitSendBackWarehouse = () => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.is_on_demand && !product.stock ? 'text-red-500' : 'text-gray-600'">
-                                <template v-if="product.is_on_demand">{{ ctrans('Always available') }}</template>
-                                <template v-else-if="product.stock > 0">
+                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.is_on_demand && !productShelfStock(product) ? 'text-red-500' : 'text-gray-600'">
+                                <template v-if="productShelfStock(product) > 0">
                                     <FractionDisplay
                                         v-if="isProductCutView(product)"
-                                        :fractionData="toMixedFractionData(Number(product.stock), productPackedIn(product))"
+                                        :fractionData="toMixedFractionData(productShelfStock(product), productPackedIn(product))"
                                         class="justify-end"
                                     />
                                     <template v-else>{{ locale.number(productStockInView(product)) }}</template>
                                 </template>
                                 <template v-else>{{ ctrans('Empty stock') }}</template>
+                                <div v-if="product.is_on_demand" class="text-xs italic text-gray-500">{{ ctrans('Made on demand') }}</div>
                             </td>
                             <td class="px-4 py-3 flex justify-end">
                                 <div class="flex flex-col items-end gap-y-1">

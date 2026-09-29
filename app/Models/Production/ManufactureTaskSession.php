@@ -77,6 +77,11 @@ class ManufactureTaskSession extends Model
         'ended_at'      => 'datetime',
     ];
 
+    public function paidHours(): float
+    {
+        return max(0, $this->started_at->diffInSeconds($this->ended_at) / 3600 - $this->break_minutes / 60);
+    }
+
     public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class);
@@ -104,7 +109,7 @@ class ManufactureTaskSession extends Model
 
     public function manufactureTask(): BelongsTo
     {
-        return $this->belongsTo(ManufactureTask::class);
+        return $this->belongsTo(ManufactureTask::class)->withTrashed();
     }
 
     public function user(): BelongsTo

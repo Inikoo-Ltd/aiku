@@ -1018,46 +1018,80 @@ test('UI edit supplier', function () {
     });
 });
 
-test('UI index assignable suppliers for agent', function () {
+test('UI assignable suppliers list free and other agents suppliers, not the agent own', function () {
     $this->withoutExceptionHandling();
 
-    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
 
-    $free = StoreSupplier::make()->action(
-        parent: $this->group,
-        modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ASSIGNFREE', 'name' => 'Assign Free'])
+    $makeSupplier = fn (string $code, Agent|\App\Models\SysAdmin\Group $parent) => StoreSupplier::make()->action(
+        parent: $parent,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => $code, 'name' => $code.' name'])
     );
 
-    $response = $this->get(route('grp.supply-chain.agents.show.suppliers.assignable', [$agent->slug]));
+    $free    = $makeSupplier('ASSIGNFREE', $this->group);
+    $stolen  = $makeSupplier('ASSIGNSTEAL', $otherAgent);
+    $ownOne  = $makeSupplier('ASSIGNOWN', $agent);
 
-    $response->assertInertia(function (AssertableInertia $page) use ($agent, $free) {
-        $page
-            ->component('SupplyChain/AssignableSuppliers')
-            ->has('title')
-            ->has('pageHead')
-            ->has('agent', fn (AssertableInertia $page) => $page->where('id', $agent->id)->etc())
-            ->has('data');
-    });
+    $url = route('grp.supply-chain.agents.show.suppliers.assignable', [$agent->slug]);
 
-    $codes = collect($response->viewData('page')['props']['data']['data'])->pluck('code');
-    expect($codes)->toContain('ASSIGNFREE');
-    expect($agent->suppliers()->pluck('code'))->not->toContain('ASSIGNFREE');
+    $response = $this->get($url);
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('SupplyChain/AssignableSuppliers')
+        ->where('agent.id', $agent->id)
+        ->has('data'));
+
+    $rows = collect($response->viewData('page')['props']['data']['data'])->keyBy('code');
+
+    expect($rows->keys())->toContain('ASSIGNFREE', 'ASSIGNSTEAL')
+        ->and($rows->keys())->not->toContain('ASSIGNOWN')
+        ->and($rows['ASSIGNFREE']['agent_code'])->toBeNull()
+        ->and($rows['ASSIGNSTEAL']['agent_code'])->toBe($otherAgent->code);
+
+    $expectedLosing = \App\Models\Procurement\OrgSupplier::query()
+        ->where('supplier_id', $free->id)
+        ->where('status', true)
+        ->whereNotIn('organisation_id', $agent->orgAgents()->pluck('organisation_id'))
+        ->with('organisation')
+        ->get()
+        ->pluck('organisation.name')
+        ->sort()
+        ->implode(', ');
+
+    expect($rows['ASSIGNFREE']['organisations_losing_supplier'])->toBe($expectedLosing ?: null);
+
+    $country       = $free->refresh()->location[0];
+    $filteredCodes = collect(
+        $this->get($url.'?filter[country]='.$country)->viewData('page')['props']['data']['data']
+    )->pluck('code');
+
+    expect($filteredCodes)->toContain('ASSIGNFREE')
+        ->and($filteredCodes->every(fn ($code) => Supplier::where('code', $code)->first()->location[0] === $country))->toBeTrue();
+
+    expect($ownOne->refresh()->agent_id)->toBe($agent->id)
+        ->and($stolen->refresh()->agent_id)->toBe($otherAgent->id);
 });
 
-test('UI attach free supplier to agent', function () {
+test('UI add supplier moves free and other agents suppliers to the agent', function () {
     $this->withoutExceptionHandling();
 
-    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
 
-    $supplier = StoreSupplier::make()->action(
-        parent: $this->group,
-        modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHME', 'name' => 'Attach Me'])
-    );
+    $free   = StoreSupplier::make()->action(parent: $this->group, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHFREE']));
+    $stolen = StoreSupplier::make()->action(parent: $otherAgent, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHSTEAL']));
 
-    $this->patch(route('grp.models.supplier.update', $supplier->id), ['agent_id' => $agent->id])
-        ->assertSessionHasNoErrors();
+    foreach ([$free, $stolen] as $supplier) {
+        $this->patch(route('grp.models.supplier.update', $supplier->id), ['agent_id' => $agent->id])
+            ->assertSessionHasNoErrors();
 
-    expect($supplier->refresh()->agent_id)->toBe($agent->id);
+        expect($supplier->refresh()->agent_id)->toBe($agent->id)
+            ->and($supplier->supplierProducts()->where('agent_id', '!=', $agent->id)->count())->toBe(0);
+    }
+
+    $this->get(route('grp.supply-chain.agents.show.suppliers.index', [$agent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.show.suppliers.assignable'));
 });
 
 test('UI edit supplier product', function () {

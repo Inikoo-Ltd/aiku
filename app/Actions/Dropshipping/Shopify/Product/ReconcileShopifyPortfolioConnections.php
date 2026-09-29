@@ -132,7 +132,7 @@ class ReconcileShopifyPortfolioConnections
     {
         return array_values(array_unique(array_map(
             fn (string $sku) => Str::lower($sku),
-            array_filter([$portfolio->sku, $portfolio->item_code])
+            array_filter([$portfolio->item_code, $portfolio->sku])
         )));
     }
 

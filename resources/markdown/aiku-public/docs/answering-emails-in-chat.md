@@ -1,6 +1,6 @@
 ---
 title: Answering emails in Chat
-summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, threaded, with your signature and attachments, answered the same way as any other chat.
+summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments.
 date: 2026-09-29
 tags: crm, chat, email
 category: crm
@@ -9,32 +9,29 @@ order: 3
 ---
 
 <aside class="tldr">
-Once a shop's mailbox is connected, mail arriving there shows up as a conversation in <b>Customer Inbox</b>, sitting next to the website chat and WhatsApp, answered the same way. An incoming mail brings the rest of its thread with it, so you read the whole exchange, and your reply leaves from that mailbox in the same thread, with your signature and attachments.
+Once the shop's mailbox is connected, every mail sent to it becomes a conversation in <b>Customer Inbox</b>, next to the website chat and WhatsApp, and is answered the same way. You see the whole thread, not just the latest mail, and your answer leaves from the shop's address in the same thread, with your signature and attachments.
 </aside>
 
-## Connecting the mailbox
+## Before it works
 
-A shop needs its mailbox connected once before any of this works - see <a href="/docs/connecting-an-email-mailbox-to-your-shop">Connecting an email mailbox to your shop</a>. Until then, the email channel in Chat is simply empty.
+The shop's mailbox has to be connected once - see <a href="/docs/connecting-an-email-mailbox-to-your-shop">Connecting an email mailbox to your shop</a>. Until then the email channel stays empty.
 
-## Reading and replying
+## Reading and answering
 
-An incoming mail opens a conversation like any other: it joins <b>Waiting</b>, <b>Assign to me</b> makes it yours, and everything in <a href="/docs/customer-chat">Talking to customers in Chat</a> about taking a conversation, the customer's side panel and topics applies the same way. The whole thread is there to read, not just the latest mail.
+An email joins <b>Waiting</b> like any conversation, and <b>Assign to me</b> makes it yours - see <a href="/docs/customer-chat">Talking to customers in Chat</a> for the rest. The whole thread comes with it. Your answer is sent from the shop's mailbox in the same thread, and when the customer replies it lands back in the same conversation, not a new one.
 
-Your reply is sent from the shop's mailbox address, in the same thread, with your signature and any attachments you add - a customer answering it lands back in the same conversation, not a new one.
+## Website visitors in the email list
 
-<b>Email notification</b> (the <b>&#8942;</b> toggle described in <a href="/docs/live-chat-on-the-website">Live chat on the website</a>) never appears on an email conversation - it is already an email.
+Some conversations in the email list started on the website. When a shop has <b>Answer offline messages by email</b> switched on, a message left in the widget outside working hours is moved to email so the answer reaches the customer. Open one and the customer's message shows an <b>Offline message</b> label; from there it is answered like any other email. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
 
-## Offline messages that became email
+## Mail that never arrives
 
-A website conversation can also arrive here as an <b>Offline message</b>, when a shop has turned on answering out-of-hours chats by email - see <a href="/docs/live-chat-on-the-website">Live chat on the website</a>. It behaves exactly like any other email conversation once it is here; the tag is only there to say it started as a chat.
-
-## What Chat does not see
-
-aiku only reads the mailbox's <b>inbox</b>. Mail that is not customer work - from staff, no-reply senders, bounces, out-of-office replies - is filed by aiku into a folder of its own rather than left in the inbox, and never reaches the chat queue. See <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a> for what each folder is. Mail that Gmail itself puts in Spam, or that a Gmail filter moves past the inbox, never reaches aiku either.
+aiku reads only the mailbox's inbox, and files mail that is not customer work into folders of its own instead of the chat list. When a mail seems missing, see the Gmail folders in <a href="/docs/chat-inbox-labels">What the labels in the chat inbox mean</a>.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>Connect a mailbox:</b> the shop's <b>Settings &rarr; Chat</b>.</li>
+<li><b>Connect the mailbox:</b> the shop's <b>Settings</b> &rarr; <b>Customer mailbox</b>.</li>
+<li><b>Answer an email:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; light the email square for your shop &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
 <li><b>Find a mail that never reached the inbox:</b> the shop's Gmail &rarr; <b>aiku/filtered</b>.</li>
 </ul>
 </aside>

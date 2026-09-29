@@ -34,7 +34,7 @@ class GetShopDashboardTabData extends OrgAction
         $savedInterval    = DateIntervalEnum::tryFrom((string) ($intervalParam ?? Arr::get($userSettings, 'selected_interval', 'all'))) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
+        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, [$tab->dataKey()], $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
 
         $table = $tab->table($shop, $timeSeriesData);
 
