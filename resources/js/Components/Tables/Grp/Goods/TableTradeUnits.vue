@@ -19,6 +19,7 @@ import axios from "axios"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
+import Image from "@common/Components/Image.vue"
 
 library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus, faPencil, faSave, faTimes, faSpinnerThird)
 
@@ -32,10 +33,62 @@ const canEditDimensions = computed(() =>
     route().current('grp.trade_units.units.missing_dimensions')
 )
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
+    isCheckBox?: boolean
 }>()
+
+const emits = defineEmits<{
+    (e: 'onSelectTradeUnits', value: TradeUnit[]): void
+}>()
+
+const _table = ref<InstanceType<typeof Table> | null>(null)
+const selectedTradeUnits = ref<Record<string, TradeUnit>>({})
+
+const onSelectRow = (rows: Record<string, boolean>) => {
+    const tradeUnitsOnPage: TradeUnit[] = props.data?.data ?? []
+
+    for (const [tradeUnitId, isSelected] of Object.entries(rows)) {
+        if (!isSelected) {
+            delete selectedTradeUnits.value[tradeUnitId]
+            continue
+        }
+
+        const tradeUnit = tradeUnitsOnPage.find((row) => String(row.id) === tradeUnitId)
+        if (tradeUnit) {
+            selectedTradeUnits.value[tradeUnitId] = tradeUnit
+        }
+    }
+
+    emits('onSelectTradeUnits', Object.values(selectedTradeUnits.value))
+}
+
+const clearSelection = () => {
+    _table.value?.clearSelection()
+    selectedTradeUnits.value = {}
+    emits('onSelectTradeUnits', [])
+}
+
+const deselectTradeUnit = (tradeUnitId: number) => {
+    const tradeUnitOnPage = (props.data?.data ?? []).find((row: TradeUnit) => row.id === tradeUnitId)
+    if (tradeUnitOnPage) {
+        tradeUnitOnPage.is_checked = false
+    }
+
+    delete selectedTradeUnits.value[tradeUnitId]
+
+    if (_table.value?.selectRow) {
+        _table.value.selectRow[tradeUnitId] = false
+    } else {
+        emits('onSelectTradeUnits', Object.values(selectedTradeUnits.value))
+    }
+}
+
+defineExpose({
+    clearSelection,
+    deselectTradeUnit
+})
 
 type EditingField = 'net_weight' | 'marketing_weight' | 'marketing_dimensions'
 const editingCell = ref<Record<number, EditingField>>({})
@@ -142,9 +195,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table ref="_table" :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox" checkboxKey="id" @onSelectRow="onSelectRow">
         <template #cell(status)="{ item: tradeUnit }">
             <Icon :data="tradeUnit.status_icon" />
+        </template>
+        <template #cell(image_thumbnail)="{ item: tradeUnit }">
+            <Image :src="tradeUnit.image_thumbnail" imageCover class="w-6 aspect-square rounded-full overflow-hidden shadow" />
         </template>
         <template #cell(code)="{ item: tradeUnit }">
             <Link :href="tradeUnitHref(tradeUnit) as string" class="primaryLink">

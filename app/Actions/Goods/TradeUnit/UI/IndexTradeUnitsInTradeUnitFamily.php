@@ -32,6 +32,7 @@ class IndexTradeUnitsInTradeUnitFamily extends OrgAction
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
         $queryBuilder->with('brands');
         $queryBuilder->with('tags');
+        $queryBuilder->with('image');
 
         $queryBuilder
             ->defaultSort('trade_units.code')
@@ -47,6 +48,7 @@ class IndexTradeUnitsInTradeUnitFamily extends OrgAction
                 'trade_units.type',
                 'trade_units.id',
                 'trade_units.status',
+                'trade_units.image_id',
                 'trade_unit_stats.number_current_stocks',
                 'trade_unit_stats.number_current_products',
             ]);
@@ -77,6 +79,7 @@ class IndexTradeUnitsInTradeUnitFamily extends OrgAction
             );
 
             $this->addColumnStatusAvatar($table);
+            $this->addColumnImageAvatar($table);
             $this->addColumnCodeAndName($table);
             $this->addColumnNumberCurrentProducts($table);
             $this->addColumnNetWeight($table, 'Weight');

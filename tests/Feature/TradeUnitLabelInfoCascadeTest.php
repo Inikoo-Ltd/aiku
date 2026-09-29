@@ -14,7 +14,13 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
 use App\Models\Helpers\Country;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitGpsr;
+use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitLabelInfo;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
+use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Models\SysAdmin\Guest;
+use Illuminate\Support\Arr;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -646,6 +652,236 @@ test('the product web block tells the website whether the label info is approved
     UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
 
     expect($buildApproval($this->product->refresh()))->toBeTrue();
+});
+
+dataset('bulkLabelInfo', [
+    fn () => [
+        'label_info_approved'           => true,
+        'show_net_quantity'             => false,
+        'markets'                       => ['uk', 'eu'],
+        'languages'                     => ['en'],
+        'best_before'                   => 'pao_12m',
+        'packaging_material_codes'      => ['pap_20'],
+        'packaging_material_codes_show' => true,
+        'batch_number'                  => true,
+        'ce_marking'                    => true,
+        'ukca_marking'                  => false,
+        'weee_symbol'                   => false,
+        'ip_rating'                     => true,
+        'sorting_recycling_information' => false,
+        'safety_icons'                  => false,
+    ],
+]);
+
+test('bulk editing overrides the label info of every selected trade unit', function (array $bulkLabelInfo) {
+    UpdateTradeUnit::make()->action($this->bottle, [
+        'weee_symbol' => true,
+        'markets'     => ['other'],
+        'languages'   => ['fr', 'de'],
+    ]);
+
+    UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
+        ...$bulkLabelInfo,
+        'trade_units' => [$this->bottle->id, $this->plug->id],
+    ]);
+
+    foreach ([$this->bottle, $this->plug] as $tradeUnit) {
+        expect($tradeUnit->refresh()->label_info)->toMatchArray([
+            'label_info_approved'      => true,
+            'show_net_quantity'        => false,
+            'markets'                  => ['uk', 'eu'],
+            'languages'                => ['en'],
+            'best_before'              => 'pao_12m',
+            'packaging_material_codes' => ['show' => true, 'value' => ['pap_20']],
+            'ce_marking'               => true,
+            'weee_symbol'              => false,
+            'ip_rating'                => true,
+        ]);
+    }
+
+    expect($this->masterAsset->refresh()->label_info)->toMatchArray([
+        'label_info_approved' => true,
+        'markets'             => ['uk', 'eu'],
+        'weee_symbol'         => false,
+    ]);
+})->with('bulkLabelInfo');
+
+test('bulk editing through the route only touches the selected trade units', function (array $bulkLabelInfo) {
+    $this->patch(route('grp.models.trade_units.bulk_update_label_info'), [
+        ...$bulkLabelInfo,
+        'markets'     => ['eu'],
+        'trade_units' => [$this->bottle->id],
+    ])->assertSessionHasNoErrors();
+
+    expect($this->bottle->refresh()->label_info['markets'])->toBe(['eu'])
+        ->and(data_get($this->plug->refresh()->label_info, 'markets'))->toBeNull();
+})->with('bulkLabelInfo');
+
+test('bulk editing needs every label info field so nothing is left half overridden', function (array $bulkLabelInfo) {
+    UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
+        ...Arr::except($bulkLabelInfo, 'ce_marking'),
+        'trade_units' => [$this->bottle->id],
+    ]);
+})->with('bulkLabelInfo')->throws(Illuminate\Validation\ValidationException::class);
+
+test('bulk editing rejects an empty selection', function (array $bulkLabelInfo) {
+    UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
+        ...$bulkLabelInfo,
+        'trade_units' => [],
+    ]);
+})->with('bulkLabelInfo')->throws(Illuminate\Validation\ValidationException::class);
+
+test('the trade units index offers a fresh bulk edit label info form', function () {
+    get(route('grp.trade_units.units.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('is_checkbox', true)
+            ->where('bulk_edit.sections.label_info.label', 'Labeling & Compliance Marks')
+            ->where('bulk_edit.sections.label_info.icon', 'fa-light fa-stamp')
+            ->where('bulk_edit.sections.label_info.updateRoute.name', 'grp.models.trade_units.bulk_update_label_info')
+            ->where('bulk_edit.sections.label_info.fields.label_info_approved.value', false)
+            ->where('bulk_edit.sections.label_info.fields.show_net_quantity.value', true)
+            ->where('bulk_edit.sections.label_info.fields.languages.value', [])
+            ->where('bulk_edit.sections.label_info.fields.markets.value', fn ($markets) => collect($markets)->every(fn ($market) => $market['value'] === false))
+            ->where('bulk_edit.sections.gpsr.label', 'GPSR')
+            ->where('bulk_edit.sections.gpsr.updateRoute.name', 'grp.models.trade_units.bulk_update_gpsr')
+            ->where('bulk_edit.sections.gpsr.fields.gpsr_manufacturer.value', null)
+            ->where('bulk_edit.sections.gpsr.fields.pictogram_toxic.value', false)
+            ->etc());
+});
+
+dataset('bulkGpsr', [
+    fn () => [
+        'gpsr_manufacturer'          => 'Ancient Wisdom, Sheffield',
+        'gpsr_eu_responsible'        => null,
+        'gpsr_warnings'              => 'Keep out of reach of children',
+        'gpsr_manual'                => null,
+        'gpsr_class_category_danger' => null,
+        'pictogram_toxic'            => false,
+        'pictogram_corrosive'        => false,
+        'pictogram_explosive'        => false,
+        'pictogram_flammable'        => true,
+        'pictogram_gas'              => false,
+        'pictogram_environment'      => false,
+        'pictogram_health'           => false,
+        'pictogram_oxidising'        => false,
+        'pictogram_danger'           => false,
+    ],
+]);
+
+test('bulk editing gpsr overrides the gpsr of every selected trade unit', function (array $bulkGpsr) {
+    UpdateTradeUnit::make()->action($this->bottle, [
+        'gpsr_manual'     => 'Apply twice a day',
+        'pictogram_toxic' => true,
+    ]);
+
+    $this->patch(route('grp.models.trade_units.bulk_update_gpsr'), [
+        ...$bulkGpsr,
+        'trade_units' => [$this->bottle->id, $this->plug->id],
+    ])->assertSessionHasNoErrors();
+
+    foreach ([$this->bottle, $this->plug] as $tradeUnit) {
+        $tradeUnit->refresh();
+
+        expect($tradeUnit->gpsr_manufacturer)->toBe('Ancient Wisdom, Sheffield')
+            ->and($tradeUnit->gpsr_warnings)->toBe('Keep out of reach of children')
+            ->and($tradeUnit->gpsr_manual)->toBeNull()
+            ->and($tradeUnit->pictogram_toxic)->toBeFalse()
+            ->and($tradeUnit->pictogram_flammable)->toBeTrue();
+    }
+})->with('bulkGpsr');
+
+test('bulk editing gpsr needs every gpsr field', function (array $bulkGpsr) {
+    UpdateBulkTradeUnitGpsr::make()->action(group(), [
+        ...Arr::except($bulkGpsr, 'pictogram_gas'),
+        'trade_units' => [$this->bottle->id],
+    ]);
+})->with('bulkGpsr')->throws(Illuminate\Validation\ValidationException::class);
+
+test('bulk editing is hidden and refused for users who can only view goods', function (array $bulkLabelInfo, array $bulkGpsr) {
+    setPermissionsTeamId($this->group->id);
+    $viewer = StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $viewer->givePermissionTo('goods.view');
+    actingAs($viewer);
+
+    $tradeUnitFamily = StoreTradeUnitFamily::make()->action(group(), [
+        'code' => 'LIVW'.substr(uniqid(), -6),
+        'name' => 'viewer family',
+    ]);
+
+    get(route('grp.trade_units.units.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('is_checkbox', false)
+            ->where('bulk_edit', null)
+            ->etc());
+
+    get(route('grp.trade_units.families.show', [$tradeUnitFamily->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('bulk_edit', null)
+            ->etc());
+
+    $this->patch(route('grp.models.trade_units.bulk_update_label_info'), [
+        ...$bulkLabelInfo,
+        'trade_units' => [$this->bottle->id],
+    ])->assertForbidden();
+
+    $this->patch(route('grp.models.trade_units.bulk_update_gpsr'), [
+        ...$bulkGpsr,
+        'trade_units' => [$this->bottle->id],
+    ])->assertForbidden();
+
+    expect(data_get($this->bottle->refresh()->label_info, 'label_info_approved'))->toBeNull()
+        ->and($this->bottle->gpsr_manufacturer)->not->toBe('Ancient Wisdom, Sheffield');
+})->with('bulkLabelInfo', 'bulkGpsr');
+
+test('label info and gpsr changes are recorded in the trade unit history', function (array $bulkLabelInfo, array $bulkGpsr) {
+    $this->patch(route('grp.models.trade_units.bulk_update_label_info'), [
+        ...$bulkLabelInfo,
+        'trade_units' => [$this->bottle->id],
+    ])->assertSessionHasNoErrors();
+
+    $this->patch(route('grp.models.trade_units.bulk_update_gpsr'), [
+        ...$bulkGpsr,
+        'trade_units' => [$this->bottle->id],
+    ])->assertSessionHasNoErrors();
+
+    $audits = $this->bottle->refresh()->audits()->get();
+
+    $labelInfoAudit = $audits->first(fn ($audit) => Arr::has($audit->new_values, 'label_info.markets'));
+    $gpsrAudit      = $audits->first(fn ($audit) => Arr::has($audit->new_values, 'gpsr_manufacturer'));
+
+    expect($labelInfoAudit)->not->toBeNull()
+        ->and($labelInfoAudit->new_values)->toMatchArray([
+            'label_info.markets'                        => 'uk, eu',
+            'label_info.label_info_approved'            => true,
+            'label_info.packaging_material_codes.value' => 'pap_20',
+        ])
+        ->and($labelInfoAudit->new_values)->not->toHaveKey('label_info')
+        ->and($labelInfoAudit->old_values['label_info.markets'])->toBeNull()
+        ->and($gpsrAudit)->not->toBeNull()
+        ->and($gpsrAudit->new_values['gpsr_manufacturer'])->toBe('Ancient Wisdom, Sheffield')
+        ->and($gpsrAudit->new_values['pictogram_flammable'])->toBeTruthy();
+
+    get(route('grp.trade_units.units.show', [$this->bottle->slug, 'tab' => 'history']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tabs.current', 'history')
+            ->has('history.data', fn ($histories) => $histories->etc())
+            ->etc());
+})->with('bulkLabelInfo', 'bulkGpsr');
+
+test('the trade unit family page offers the bulk edit label info form', function () {
+    $tradeUnitFamily = StoreTradeUnitFamily::make()->action(group(), [
+        'code' => 'LIFAM'.substr(uniqid(), -6),
+        'name' => 'label info family',
+    ]);
+
+    get(route('grp.trade_units.families.show', [$tradeUnitFamily->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('bulk_edit.sections.label_info.updateRoute.name', 'grp.models.trade_units.bulk_update_label_info')
+            ->where('bulk_edit.sections.label_info.fields.label_info_approved.value', false)
+            ->etc());
 });
 
 test('the trade unit edit form offers the publish toggle switched off by default', function () {
