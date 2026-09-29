@@ -94,7 +94,6 @@ class StoreProductsStepDiscount extends OrgAction
                     ->whereIn('offers.state', [
                         OfferStateEnum::ACTIVE->value,
                         OfferStateEnum::IN_PROCESS->value,
-                        OfferStateEnum::SUSPENDED->value,
                     ])
                     ->whereNull('offers.deleted_at');
             })
