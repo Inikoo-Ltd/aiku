@@ -120,21 +120,12 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
         </div>
 
         <div v-if="pre_order.is_open" class="flex flex-wrap gap-2">
-<<<<<<< Updated upstream
-            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. Make the deposit are no longer refundable')" size="xs" type="secondary" :label="ctrans('Supplier ordered')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
-            <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Goods arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
+            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. Make the deposit are no longer refundable')" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
+            <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
             <Button v-if="pre_order.has_pallet_delivery" v-tooltip="ctrans('Enter the final pallet delivery cost. It replaces the shipping on the order and, if the goods have arrived, the balance is requested from the customer')" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
             <Button v-tooltip="ctrans('Change the estimated dispatch window. The customer is emailed the new dates')" size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
             <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" v-tooltip="ctrans('The pre-order is fully paid: close it and send the order to the warehouse to be picked and dispatched')" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
             <Button v-tooltip="ctrans('Choose a reason and cancel the pre-order. The refund follows the terms the customer accepted at checkout')" size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
-=======
-            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
-            <Button v-if="pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
-            <Button v-if="pre_order.has_pallet_delivery" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
-            <Button size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
-            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
-            <Button size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
->>>>>>> Stashed changes
         </div>
 
         <div v-if="openForm === 'pallet_quote'" class="flex flex-wrap items-end gap-2">
