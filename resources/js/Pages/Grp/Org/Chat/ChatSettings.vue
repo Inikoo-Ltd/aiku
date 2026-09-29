@@ -56,6 +56,9 @@ const props = defineProps<{
     } | null
     policies: {
         text: string
+        notes: { id: number; title: string; body: string; updated_at: string }[]
+        copied: { kind: string; total: number; at: string | null }[]
+        knowledge_route: Record<string, any>
         update_route: { name: string; parameters: Record<string, any> }
     } | null
     couriers: {
@@ -113,19 +116,39 @@ const saveClosing = () => {
     })
 }
 
-const policiesForm = useForm({
-    policies: props.policies?.text ?? "",
-})
+const noteForm = useForm({ id: null as number | null, title: "", body: "" })
 
-const savePolicies = () => {
+const editNote = (note: { id: number; title: string; body: string } | null) => {
+    noteForm.clearErrors()
+    noteForm.id = note?.id ?? null
+    noteForm.title = note?.title ?? ""
+    noteForm.body = note?.body ?? ""
+}
+
+const saveNote = () => {
     if (!props.policies) {
         return
     }
 
-    policiesForm.patch(route(props.policies.update_route.name, props.policies.update_route.parameters), {
-        preserveScroll: true,
-        onSuccess: () => policiesForm.defaults(),
-    })
+    const options = { preserveScroll: true, onSuccess: () => editNote(null) }
+
+    noteForm.id
+        ? noteForm.patch(route("grp.org.shops.show.chat.settings.knowledge.update", { ...props.policies.knowledge_route, chatKnowledgeEntry: noteForm.id }), options)
+        : noteForm.post(route("grp.org.shops.show.chat.settings.knowledge.store", props.policies.knowledge_route), options)
+}
+
+const deleteNote = (id: number) => {
+    if (!props.policies || !window.confirm(ctrans("Remove this note?"))) {
+        return
+    }
+
+    noteForm.delete(route("grp.org.shops.show.chat.settings.knowledge.delete", { ...props.policies.knowledge_route, chatKnowledgeEntry: id }), { preserveScroll: true })
+}
+
+const COPIED_LABELS: Record<string, string> = {
+    policy: ctrans("sections of the returns, delivery and terms pages"),
+    shop_fact: ctrans("facts from the shop's settings"),
+    guide: ctrans("help guides"),
 }
 
 const couriersForm = useForm({
@@ -239,26 +262,38 @@ const saveCouriers = () => {
 
     <div v-else-if="currentTab === 'policies' && policies" class="max-w-3xl space-y-5 p-6">
         <p class="text-sm text-gray-500">
-            {{ ctrans("What AI draft replies may tell customers about this shop. Drafts state only what is written here, so anything left out is answered by an agent. One fact per line works best.") }}
+            {{ ctrans("What the AI answers customers from. Pages and shop settings are copied in every night. Add a note for anything that is on no page, like a country we cannot ship to or a product that is not available for now; notes win when they disagree with a page.") }}
         </p>
 
-        <div>
-            <label for="chat-policies" class="block text-sm font-medium text-gray-700">{{ ctrans("Facts about the shop") }}</label>
-            <Textarea
-                id="chat-policies"
-                v-model="policiesForm.policies"
-                rows="14"
-                autoResize
-                class="mt-1 w-full font-mono text-sm"
-                :placeholder="ctrans('Minimum first order: …\nWe ship to: …\nOrders placed before … are dispatched the same day\nTo open a trade account: …\nSamples: …')" />
-            <p v-if="policiesForm.errors.policies" class="mt-1 text-sm text-red-600">{{ policiesForm.errors.policies }}</p>
+        <div class="rounded-lg border border-gray-200 p-4">
+            <div class="text-sm font-medium text-gray-700">{{ noteForm.id ? ctrans("Edit note") : ctrans("New note") }}</div>
+            <input v-model="noteForm.title" type="text" maxlength="200" :placeholder="ctrans('Title, for example: Shipping to Germany')"
+                class="mt-2 w-full rounded-md border-gray-300 text-sm" />
+            <p v-if="noteForm.errors.title" class="mt-1 text-sm text-red-600">{{ noteForm.errors.title }}</p>
+            <Textarea v-model="noteForm.body" rows="4" autoResize maxlength="2000" class="mt-2 w-full text-sm"
+                :placeholder="ctrans('What customer service knows, as you would tell a new colleague.')" />
+            <p v-if="noteForm.errors.body" class="mt-1 text-sm text-red-600">{{ noteForm.errors.body }}</p>
+            <div class="mt-2 flex gap-2">
+                <Button :label="ctrans('Save note')" :loading="noteForm.processing" :disabled="!noteForm.title.trim() || !noteForm.body.trim()" @click="saveNote" />
+                <Button v-if="noteForm.id" type="tertiary" :label="ctrans('Cancel')" @click="editNote(null)" />
+            </div>
         </div>
 
-        <Button
-            :label="ctrans('Save')"
-            :loading="policiesForm.processing"
-            :disabled="!policiesForm.isDirty"
-            @click="savePolicies" />
+        <div v-if="policies.notes.length" class="divide-y divide-gray-100 rounded-lg border border-gray-200">
+            <div v-for="note in policies.notes" :key="note.id" class="flex items-start gap-3 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ note.title }}</div>
+                    <p class="whitespace-pre-line text-sm text-gray-600">{{ note.body }}</p>
+                </div>
+                <button type="button" class="text-xs text-indigo-700 underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
+                <button type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
+            </div>
+        </div>
+
+        <div v-if="policies.copied.length" class="text-xs text-gray-500">
+            {{ ctrans("Copied in automatically:") }}
+            <span v-for="row in policies.copied" :key="row.kind" class="ml-2">{{ row.total }} {{ COPIED_LABELS[row.kind] ?? row.kind }}</span>
+        </div>
     </div>
 
     <div v-else-if="currentTab === 'couriers' && couriers" class="max-w-4xl space-y-5 p-6">

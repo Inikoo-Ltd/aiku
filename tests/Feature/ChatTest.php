@@ -7547,6 +7547,68 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
 });
 
+test('a general question is answered from the knowledge base entry jev picks, and only when the quote is really in it', function () {
+    config(['chat.ai_drafts' => true, 'services.openrouter.api_key' => 'or-key']);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $sections = \App\Actions\Chat\ChatSession\HydrateChatKnowledge::sections(['blocks' => ['<h2>Returns</h2><p>You may return goods within 30 days of delivery, unused and in their original packaging.</p><h3>Refunds</h3><p>Refunds are made to your account balance once the goods are back with us.</p>']], 'Returns page');
+    expect(array_column($sections, 'title'))->toBe(['Returns page · Returns', 'Returns page · Refunds'])
+        ->and($sections[0]['body'])->toBe('You may return goods within 30 days of delivery, unused and in their original packaging.');
+
+    $note = \App\Models\Chat\ChatKnowledgeEntry::create([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'kind' => 'note', 'title' => 'Shipping to Germany', 'source_type' => 'manual', 'is_manual' => true,
+        'body' => 'We cannot ship from the UK to Germany because we do not have a LUCID registration.',
+    ]);
+    expect(\App\Models\Chat\ChatKnowledgeEntry::forShop($this->shop)->pluck('id'))->toContain($note->id);
+
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(fn (array $state, array $questions) => match (true) {
+        isset($questions['wants_something']) => [
+            'wants_something' => ['type' => 'noul', 'noul' => 0.97], 'one_question' => ['type' => 'noul', 'noul' => 0.9],
+            'problem' => ['type' => 'noul', 'noul' => 0.02], 'answers_us' => ['type' => 'noul', 'noul' => 0.02], 'still_waiting' => ['type' => 'noul', 'noul' => 0.02],
+            'subject' => ['type' => 'choice', 'choice' => 'shop', 'probabilities' => ['shop' => 0.95]],
+        ],
+        isset($questions['ask'])   => ['ask' => ['type' => 'choice', 'choice' => 'ship_to_country', 'probabilities' => ['ship_to_country' => 0.96]]],
+        isset($questions['entry']) => ['entry' => ['type' => 'choice', 'choice' => 'e'.$note->id, 'probabilities' => ['e'.$note->id => 0.9, 'none' => 0.1]]],
+        default                    => null,
+    });
+    $quote = 'We cannot ship from the UK to Germany because we do not have a LUCID registration.';
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt) use (&$quote) {
+        return str_contains($prompt, '{"objection"')
+            ? '{"objection": "", "send": true}'
+            : json_encode(['answerable' => true, 'quote' => $quote, 'reply' => 'Hello! We cannot ship from the UK to Germany, as we have no LUCID registration.']);
+    });
+    \App\Actions\Helpers\Translations\DetectLanguageWithAI::shouldRun()->andReturn(Language::where('code', 'en')->first());
+
+    $ask = function (string $text) {
+        $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
+        ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => $text]);
+
+        return \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    };
+
+    $draft = $ask('Do you ship from the UK to Germany?');
+    expect($draft->topic)->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::OTHER)
+        ->and($draft->text)->toContain('LUCID')
+        ->and($draft->facts['knowledge'])->toBe($note->id)
+        ->and($draft->facts['ask'])->toBe('ship_to_country');
+
+    $quote = 'We ship to Germany every day.';
+    expect($ask('Can you deliver to Germany please?'))->toBeNull();
+
+    $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
+    \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
+    \App\Actions\Chat\ChatSession\HydrateChatKnowledge::run($this->shop);
+
+    expect($saved->refresh()->only(['title', 'is_manual', 'kind', 'created_by_user_id']))->toBe(['title' => 'Diffuser testers', 'is_manual' => true, 'kind' => 'note', 'created_by_user_id' => $this->user->id])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe(2)
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', false)->whereNotNull('hydrated_at')->count())
+        ->toBe(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', false)->count());
+
+    $note->delete();
+    $saved->delete();
+});
+
 test('when only a programmer can fix it staff get one click: the customer joins the open bug it matches, or a CUS ticket is raised, once', function () {
     config()->set('services.openrouter.api_key', 'or-key');
     $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);

@@ -65,14 +65,56 @@ class GetChatShopFacts
         }));
     }
 
-    private function bannedCountries(Shop $shop): string
+    /**
+     * What the shop's own settings say, one entry each, for the knowledge base.
+     *
+     * @return array<int, array{title: string, body: string}>
+     */
+    public function shopFacts(Shop $shop): array
+    {
+        $zones = $shop->currentShippingZoneSchema?->shippingZones()->where('status', true)->orderBy('position')->get() ?? collect();
+
+        return array_values(array_filter([
+            ...$zones->map(fn ($zone) => data_get($zone->price, 'type') === 'TBC'
+                ? ['title' => __('Delivery').': '.$zone->name, 'body' => $zone->name.': '.__('delivery price to be confirmed by customer service')]
+                : ['title' => __('Delivery').': '.$zone->name, 'body' => $zone->name.' ('.$this->zoneCountries($zone).'): '.$this->steps($shop, $zone->price).' ('.__('goods before VAT').')'])
+                ->all(),
+            ($banned = $this->bannedCountries($shop)) ? ['title' => __('Blocked delivery countries'), 'body' => $banned] : null,
+            ($free = $this->freeShipping($shop)) ? ['title' => __('Free delivery offer'), 'body' => $free] : null,
+            ($bonus = $this->firstOrderBonus($shop, null)) ? ['title' => __('First order bonus'), 'body' => $bonus] : null,
+            ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
+        ]));
+    }
+
+    private function zoneCountries($zone): string
+    {
+        return collect($zone->territories ?? [])
+            ->map(fn ($territory) => (Locale::getDisplayRegion('-'.data_get($territory, 'country_code'), 'en') ?: data_get($territory, 'country_code'))
+                .(data_get($territory, 'included_postcodes') ? ' ('.__('some postcodes').')' : ''))
+            ->unique()
+            ->join(', ') ?: __('rest of the world');
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $price
+     */
+    private function steps(Shop $shop, ?array $price): string
+    {
+        return collect(data_get($price, 'steps', []))
+            ->map(fn ($step) => (float) $step['price'] === 0.0
+                ? __('free from').' '.$this->money($shop, (float) $step['from'])
+                : $this->money($shop, (float) $step['price']).($step['to'] !== 'INF' ? ' '.__('up to').' '.$this->money($shop, (float) $step['to']) : ''))
+            ->join(', ');
+    }
+
+    private function bannedCountries(Shop $shop): ?string
     {
         $countries = collect($this->getBannedCountriesTarget($shop)->bannedDeliveryCountries())
             ->map(fn (array $ban, string $code) => (Locale::getDisplayRegion('-'.$code, 'en') ?: $code).(data_get($ban, 'postcode') ? ' ('.__('some postcodes').')' : ''))
             ->sort()
             ->join(', ');
 
-        return __('We do not deliver to').': '.($countries ?: __('none, we deliver everywhere'));
+        return $countries ? __('Blocked delivery countries').': '.$countries : null;
     }
 
     /**
@@ -91,11 +133,7 @@ class GetChatShopFacts
             return null;
         }
 
-        $steps = collect(data_get($zone->price, 'steps', []))
-            ->map(fn ($step) => (float) $step['price'] === 0.0
-                ? __('free from').' '.$this->money($shop, (float) $step['from'])
-                : $this->money($shop, (float) $step['price']).($step['to'] !== 'INF' ? ' '.__('up to').' '.$this->money($shop, (float) $step['to']) : ''))
-            ->join(', ');
+        $steps = $this->steps($shop, $zone->price);
 
         return __('Delivery to').' '.(Locale::getDisplayRegion('-'.$country, 'en') ?: $country).': '.$steps.' ('.__('goods before VAT').')';
     }

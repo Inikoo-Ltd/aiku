@@ -42,7 +42,7 @@ enum ChatSettingsTabsEnum: string
                 'icon'  => 'fal fa-thumbs-up',
             ],
             ChatSettingsTabsEnum::POLICIES => [
-                'title' => __('Facts for AI replies'),
+                'title' => __('AI knowledge'),
                 'icon'  => 'fal fa-book',
             ],
             ChatSettingsTabsEnum::COURIERS => [

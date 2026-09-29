@@ -732,7 +732,7 @@ class ClassifyChatTurn
                 && self::yes($answers, 'how_to') >= self::SURE
                 && Arr::get($answers, 'guide.choice') !== 'none'
                 && self::sureOf($answers, 'guide', (string) Arr::get($answers, 'guide.choice'))           => ChatTopicEnum::DROPSHIPPING_INTEGRATION,
-            $branch === null && in_array($subject, ['shop', 'emails'], true)                            => ChatTopicEnum::OTHER,
+            $branch === null && $subject === 'emails'                            => ChatTopicEnum::OTHER,
             default                                                                                      => null,
         };
     }
