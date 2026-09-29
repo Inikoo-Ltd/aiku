@@ -130,6 +130,11 @@ trait WithTradeUnitIndex
         $table->column(key: 'status', label: '', icon: 'fal fa-yin-yang', canBeHidden: false, sortable: true, type: 'avatar');
     }
 
+    protected function addColumnImageAvatar(InertiaTable $table): void
+    {
+        $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+    }
+
     protected function addColumnNumberCurrentProducts(InertiaTable $table): void
     {
         $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

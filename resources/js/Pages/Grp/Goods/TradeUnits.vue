@@ -21,6 +21,10 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import Image from "@common/Components/Image.vue";
 import { faTrash } from "@fas";
+import { faPencil, faAtom } from "@fal";
+import BulkEditSectionsModal from "@/Components/Forms/BulkEditSectionsModal.vue";
+import { ctrans } from "@/Composables/useTrans";
+import { TradeUnit } from "@/types/trade-unit";
 
 const props = defineProps<{
     title: string;
@@ -35,10 +39,21 @@ const props = defineProps<{
         slug: string
         id: number
     }
+    is_checkbox?: boolean
+    bulk_edit?: {
+        sections: Record<string, any>
+    } | null
 }>();
 
 const currentTab = ref<string>(props?.tabs?.current ?? "index");
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => {
+    selectedTradeUnits.value = []
+    useTabChange(tabSlug, currentTab)
+};
+
+const _tableTradeUnits = ref<InstanceType<typeof TableTradeUnits> | null>(null)
+const selectedTradeUnits = ref<TradeUnit[]>([])
+const isBulkEditVisible = ref(false)
 const modalVisible = ref(false);
 const valueTradeUnit = ref([])
 const loading = ref(false)
@@ -92,6 +107,16 @@ const removeTradeUnit = (id: number) => {
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
+        <template v-if="bulk_edit" #otherBefore>
+            <Button
+                v-tooltip="selectedTradeUnits.length ? '' : ctrans('Select trade units in the table first')"
+                :icon="faPencil"
+                :label="selectedTradeUnits.length ? `${ctrans('Bulk Edit')} (${selectedTradeUnits.length})` : ctrans('Bulk Edit')"
+                type="secondary"
+                :disabled="!selectedTradeUnits.length"
+                @click="isBulkEditVisible = true"
+            />
+        </template>
         <template #button-add-trade-units="{ action }">
             <Button :icon="action.icon" :label="action.label" :style="action.style" @click="openModal" />
         </template>
@@ -99,7 +124,26 @@ const removeTradeUnit = (id: number) => {
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]" />
+    <component
+        :is="component"
+        ref="_tableTradeUnits"
+        :key="currentTab"
+        :tab="currentTab"
+        :data="props[currentTab]"
+        :isCheckBox="is_checkbox"
+        @onSelectTradeUnits="(tradeUnits: TradeUnit[]) => selectedTradeUnits = tradeUnits"
+    />
+
+    <BulkEditSectionsModal
+        v-if="bulk_edit"
+        v-model:visible="isBulkEditVisible"
+        :sections="bulk_edit.sections"
+        :items="selectedTradeUnits"
+        itemsKey="trade_units"
+        :itemsLabel="ctrans('trade units')"
+        :itemsIcon="faAtom"
+        @removeItem="(tradeUnitId: number) => _tableTradeUnits?.deselectTradeUnit(tradeUnitId)"
+    />
 
     <!-- PrimeVue Dialog -->
     <Dialog 

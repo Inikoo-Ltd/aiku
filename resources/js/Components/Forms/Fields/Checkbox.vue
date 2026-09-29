@@ -31,7 +31,7 @@ const isNoneSelected = computed(() => !(props.form?.[props.fieldName] ?? []).som
             <label v-for="(option, index) in form[fieldName]" :key="index" :for="`item-${fieldName}-${index}`"
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors"
                 :class="option.value
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    ? 'border-[color:color-mix(in_srgb,var(--theme-color-4)_53%,transparent)] bg-[color:color-mix(in_srgb,var(--theme-color-4)_14%,transparent)] text-[color:color-mix(in_srgb,var(--theme-color-4)_50%,black)]'
                     : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'">
                 <input v-model="option.value"
                     :id="`item-${fieldName}-${index}`"
@@ -39,7 +39,7 @@ const isNoneSelected = computed(() => !(props.form?.[props.fieldName] ?? []).som
                     type="checkbox"
                     class="sr-only" />
                 <span class="flex h-4 w-4 items-center justify-center rounded border"
-                    :class="option.value ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 bg-white'">
+                    :class="option.value ? 'border-[color:var(--theme-color-4)] bg-[color:var(--theme-color-4)] text-[color:var(--theme-color-5)]' : 'border-gray-300 bg-white'">
                     <FontAwesomeIcon v-if="option.value" icon="fas fa-check" class="text-[10px]" fixed-width aria-hidden="true" />
                 </span>
                 {{ option.label }}

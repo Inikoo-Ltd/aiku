@@ -101,6 +101,10 @@ const formatValue = (value: any, key?: string) => {
     return value ? 'Active' : 'Inactive';
   }
 
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
   if (value === null || value === undefined || value === '') {
     return value;
   }
@@ -129,7 +133,7 @@ const formatValue = (value: any, key?: string) => {
 };
 
 const hasValue = (value: any): boolean => {
-  return value !== null && value !== undefined && value !== '';
+  return value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0);
 };
 
 const expandedRows = ref<String[]>([]);
@@ -296,15 +300,17 @@ const getTradeUnitHistory = (oldData, newData) => {
                     </div>
                     <div
                         v-else
-                        class="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-0.5 items-baseline w-full"
+                        class="grid grid-cols-[minmax(9rem,max-content)_minmax(0,1fr)] gap-x-6 gap-y-0.5 items-baseline w-full"
                         :class="getChangedKeys(history.old_values, history.new_values).length > 1 ? 'text-xs' : 'text-sm'"
                     >
+                        <span class="pb-1 mb-0.5 border-b border-gray-200 text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Key") }}</span>
+                        <span class="pb-1 mb-0.5 border-b border-gray-200 text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Changed") }}</span>
                         <template
                             v-for="key in getChangedKeys(history.old_values, history.new_values)"
                             :key="key"
                         >
-                            <span class="text-xs text-gray-500 text-right whitespace-nowrap">{{ formatKey(key) }}:</span>
-                            <span class="text-gray-700">
+                            <span class="text-xs text-gray-500 text-left whitespace-nowrap">{{ formatKey(key) }}</span>
+                            <span class="text-gray-700 break-words">
                                 <template v-if="hasValue(history.old_values[key])">
                                     <span
                                         class="text-gray-400"

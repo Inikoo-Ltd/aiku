@@ -858,6 +858,46 @@ test('iris variant products list leaves out the variant products that are not fo
         ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
 });
 
+test('iris variant products list sends the offers and step discount each variant needs to price the selection', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id]);
+
+    \App\Actions\Discounts\Offer\StoreProductStepDiscount::make()->action($product, [
+        'steps'    => [
+            ['min_quantity' => 5, 'percentage_off' => 0.25],
+            ['min_quantity' => 1, 'percentage_off' => 0.15],
+        ],
+        'duration' => 'interval',
+        'start_at' => now(),
+        'end_at'   => now()->addDays(14)->toDateTimeString(),
+    ]);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($variantProduct)->toHaveKeys(['offers_data', 'family_id', 'is_golden_product'])
+        ->and($variantProduct['family_id'])->toBe($product->family_id)
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5])
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
+});
+
 test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {
     $customer = createCustomer($this->shop);
     [, $product] = createProduct($this->shop);

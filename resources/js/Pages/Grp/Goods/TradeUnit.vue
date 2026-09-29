@@ -9,7 +9,7 @@ import { Head, router, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt, faChartLine } from "@fal"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Breadcrumb from 'primevue/breadcrumb'
@@ -31,11 +31,11 @@ import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProduc
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt, faChartLine)
 
 const isModalUploadOpen = ref(false)
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string,
@@ -62,6 +62,7 @@ const props = defineProps<{
     org_stocks?: {}
     images?: {}
     master_products?: {}
+    history?: {}
     images_category_box?: {
         label: string
         type: string
@@ -86,7 +87,7 @@ const component = computed(() => {
         showcase: TradeUnitShowcase,
         sales_analysis: SalesAnalysis,
         composition: TradeUnitComposition,
-        history: ModelChangelog,
+        history: TableHistories,
         attachments: AttachmentManagement,
         master_products: TableMasterProducts,
         products: TableProducts,
