@@ -29,7 +29,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
             $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
 
             if ($replacedVariantOwner !== null) {
-                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner)]]);
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false)]]);
                 UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
 
                 return;

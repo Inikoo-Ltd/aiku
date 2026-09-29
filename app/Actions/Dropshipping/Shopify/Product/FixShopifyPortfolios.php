@@ -191,7 +191,7 @@ class FixShopifyPortfolios
         $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
 
         if ($replacedVariantOwner !== null) {
-            UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner)]]);
+            UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false)]]);
 
             return;
         }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
@@ -93,9 +94,15 @@ class StoreShopifyProductVariant extends RetinaAction
         if ($replacedVariantOwner !== null) {
             $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
 
-            UpdatePortfolio::run($portfolio, [
-                'errors_response' => $this->portfolioErrorResponse($errorMessage)
-            ]);
+            UpdatePortfolio::run($portfolio, array_merge(
+                ['errors_response' => $this->portfolioErrorResponse($errorMessage)],
+                $replacedVariantOwner === false ? [] : [
+                    'platform_product_id'         => null,
+                    'platform_product_variant_id' => null,
+                    'platform_status'             => false,
+                    'sku'                         => ($portfolio->item ? StorePortfolio::make()->getSKU($portfolio->item) : null) ?? $portfolio->sku,
+                ]
+            ));
 
             return [false, $errorMessage];
         }
@@ -255,9 +262,11 @@ class StoreShopifyProductVariant extends RetinaAction
 
     /**
      * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product.
-     * When other active portfolios of the channel are linked to that product and its only variant is not
-     * this portfolio's (not its stored variant, not carrying its code or sku), that variant is another
-     * product's listing, so adding this one would silently take it away.
+     * When other active portfolios of the channel are linked to that product, the only variant is this
+     * portfolio's when it carries its product code, or when it is its stored variant or carries its sku and
+     * no other portfolio holds that variant or has that sku as its code. Otherwise it is another product's
+     * listing: adding this one would silently take it away, so the caller refuses and unlinks this portfolio
+     * from that product, giving it back its own sku so it can get a listing of its own.
      *
      * @return string|false|null  the product code of the portfolio the variant belongs to, false when it could not be checked
      */
@@ -319,23 +328,29 @@ class StoreShopifyProductVariant extends RetinaAction
 
         $variantId  = (string)Arr::get($variants, '0.node.id');
         $variantSku = Str::lower(trim((string)Arr::get($variants, '0.node.sku')));
-        $carriesSku = fn ($candidate) => $variantSku !== '' && in_array($variantSku, array_map(fn ($sku) => Str::lower(trim((string)$sku)), [$candidate->item_code, $candidate->sku]), true);
+        $is         = fn (?string $value) => $variantSku !== '' && Str::lower(trim((string)$value)) === $variantSku;
 
-        if ($portfolio->platform_product_variant_id === $variantId || $carriesSku($portfolio)) {
+        $siblingOwner = $siblings->first(fn (Portfolio $sibling) => $sibling->platform_product_variant_id === $variantId)
+            ?? $siblings->first(fn (Portfolio $sibling) => $is($sibling->item_code));
+
+        if ($is($portfolio->item_code) || (!$siblingOwner && ($portfolio->platform_product_variant_id === $variantId || $is($portfolio->sku)))) {
             return null;
         }
 
-        $owner = $siblings->first(fn (Portfolio $sibling) => $sibling->platform_product_variant_id === $variantId)
-            ?? $siblings->first(fn (Portfolio $sibling) => $carriesSku($sibling))
+        $owner = $siblingOwner
+            ?? $siblings->first(fn (Portfolio $sibling) => $is($sibling->sku))
             ?? $siblings->first();
 
         return (string)$owner->item_code;
     }
 
-    public static function replacedVariantMessage(string|false $replacedVariantOwner): string
+    public static function replacedVariantMessage(string|false $replacedVariantOwner, bool $unlinked = true): string
     {
-        return $replacedVariantOwner === false
-            ? 'Could not check the variants of this Shopify product, nothing was changed'
-            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so nothing was changed. This product needs a listing of its own';
+        if ($replacedVariantOwner === false) {
+            return 'Could not check the variants of this Shopify product, nothing was changed';
+        }
+
+        return 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, '
+            .($unlinked ? 'so this product was unlinked from it. Upload it to give it a listing of its own' : 'so nothing was changed. Upload this product to give it a listing of its own');
     }
 }

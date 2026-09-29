@@ -2062,15 +2062,30 @@ test('a product is never added to a shopify product whose only variant belongs t
     [$stored, $message] = StoreShopifyProductVariant::run($uploaded->refresh());
 
     expect($matched->refresh()->platform_product_id)->toBeNull()
-        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. This product needs a listing of its own')
+        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product to give it a listing of its own')
         ->and($stored)->toBeFalse()
-        ->and($message)->toBe($matched->errors_response['message'])
+        ->and($message)->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so this product was unlinked from it. Upload it to give it a listing of its own')
         ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([])
-        ->and($uploaded->refresh()->platform_product_id)->toBe('gid://shopify/Product/7900')
+        ->and($uploaded->refresh()->platform_product_id)->toBeNull()
+        ->and($uploaded->platform_status)->toBeFalse()
         ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900');
+    $uploaded->update(['platform_product_id' => 'gid://shopify/Product/7900', 'sku' => 'UPLOAD-1']);
 
-    ShopifyFake::fake(['productOnlyVariant' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8950', 'sku' => 'upload-1']]]]]])]);
+    $single = fn (string $id, string $sku) => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => "gid://shopify/ProductVariant/$id", 'sku' => $sku]]]]]]);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8950', 'upload-1')]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    $uploaded->update(['sku' => Str::lower($holder->item_code)]);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8950', Str::upper($holder->item_code))]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+
+    ShopifyFake::fake(['productOnlyVariant' => $single('8900', $uploaded->item_code)]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    $uploaded->update(['sku' => 'UPLOAD-1', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900']);
+    ShopifyFake::fake(['productOnlyVariant' => $single('8900', '')]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+    $uploaded->update(['platform_product_variant_id' => null]);
 
     ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
