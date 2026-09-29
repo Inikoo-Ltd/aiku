@@ -19,6 +19,7 @@ use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
+use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
@@ -26,6 +27,7 @@ use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UpdateArtefactDepartment;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
@@ -3477,6 +3479,166 @@ test('bulk batch size leaves artefacts of another production alone', function ()
     expect($changed)->toBe(1)
         ->and($mine->refresh()->recommended_batch_size)->toBe(50)
         ->and($theirs->refresh()->recommended_batch_size)->toBeNull();
+});
+
+function unifiedRecipeSteps(Artefact $artefact): array
+{
+    return ArtefactManufactureTask::where('artefact_id', $artefact->id)
+        ->orderBy('position')
+        ->get()
+        ->map(fn (ArtefactManufactureTask $step) => [
+            'manufacture_task_id' => $step->manufacture_task_id,
+            'position'            => (int) $step->position,
+            'units_per_artefact'  => (float) $step->units_per_artefact,
+            'raw_materials'       => $step->rawMaterials()->pluck('quantity_per_unit', 'raw_material_id')->map(fn ($quantity) => (float) $quantity)->all(),
+        ])
+        ->all();
+}
+
+test('unified manufacture task replaces the steps of every selected artefact', function () {
+    $pouring = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
+    $boxing  = stepTestManufactureTask($this->production, 'BOX', 'Boxing');
+    $oil     = RawMaterial::where('code', 'UNI-OIL')->first() ?? StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'UNI-OIL',
+        'description' => 'Unified oil',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 4,
+    ]);
+
+    $one = StoreArtefact::make()->action($this->production, ['code' => 'UNI-01', 'name' => 'One']);
+    $two = StoreArtefact::make()->action($this->production, ['code' => 'UNI-02', 'name' => 'Two']);
+
+    $removedStep = ArtefactManufactureTask::where('artefact_id', $one->id)->first();
+    AttachRawMaterialToRecipeStep::make()->action($removedStep, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 1]);
+
+    AttachManufactureTaskToArtefact::make()->action($two, ['manufacture_task_id' => $boxing->id, 'position' => 5]);
+    $keptStep = ArtefactManufactureTask::where('artefact_id', $two->id)->where('manufacture_task_id', $boxing->id)->first();
+    AttachRawMaterialToRecipeStep::make()->action($keptStep, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.3]);
+
+    $changed = SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$one->id, $two->id],
+        'steps'     => [
+            ['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 2, 'raw_materials' => [['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.5]]],
+            ['manufacture_task_id' => $boxing->id, 'position' => 2, 'units_per_artefact' => 1],
+        ],
+    ]);
+
+    $expected = [
+        ['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 2.0, 'raw_materials' => [$oil->id => 0.5]],
+        ['manufacture_task_id' => $boxing->id, 'position' => 2, 'units_per_artefact' => 1.0, 'raw_materials' => []],
+    ];
+
+    expect($changed)->toBe(2)
+        ->and(unifiedRecipeSteps($one))->toBe($expected)
+        ->and(unifiedRecipeSteps($two))->toBe($expected)
+        ->and(ArtefactManufactureTask::find($removedStep->id))->toBeNull()
+        ->and(RecipeStepRawMaterial::where('artefact_manufacture_task_id', $removedStep->id)->exists())->toBeFalse()
+        ->and(ArtefactManufactureTask::find($keptStep->id))->not->toBeNull();
+});
+
+test('unified manufacture task can give an artefact its own raw materials on a step', function () {
+    $pouring = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
+    $oil     = RawMaterial::where('code', 'UNI-OIL')->first();
+
+    $shared = StoreArtefact::make()->action($this->production, ['code' => 'UNI-07', 'name' => 'Shared']);
+    $own    = StoreArtefact::make()->action($this->production, ['code' => 'UNI-08', 'name' => 'Own']);
+    $none   = StoreArtefact::make()->action($this->production, ['code' => 'UNI-09', 'name' => 'None']);
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$shared->id, $own->id, $none->id],
+        'steps'     => [[
+            'manufacture_task_id'    => $pouring->id,
+            'position'               => 1,
+            'units_per_artefact'     => 1,
+            'raw_materials'          => [['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.5]],
+            'artefact_raw_materials' => [
+                ['artefact_id' => $own->id, 'raw_materials' => [['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 2]]],
+                ['artefact_id' => $none->id, 'raw_materials' => []],
+            ],
+        ]],
+    ]);
+
+    expect(unifiedRecipeSteps($shared)[0]['raw_materials'])->toBe([$oil->id => 0.5])
+        ->and(unifiedRecipeSteps($own)[0]['raw_materials'])->toBe([$this->rawMaterial->id => 2.0])
+        ->and(unifiedRecipeSteps($none)[0]['raw_materials'])->toBe([]);
+});
+
+test('unified manufacture task swaps the steps nobody has started on open job orders', function () {
+    $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-03', 'name' => 'Three']);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $defaultStep = $jobOrderItem->tasks()->first();
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$artefact->id],
+        'steps'     => [['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 3]],
+    ]);
+
+    $tasks = $jobOrderItem->refresh()->tasks()->get();
+
+    expect(JobOrderItemTask::find($defaultStep->id))->toBeNull()
+        ->and($tasks->pluck('manufacture_task_id')->all())->toBe([$pouring->id])
+        ->and((float) $tasks->first()->quantity_required)->toBe(12.0);
+});
+
+test('unified manufacture task rejects a task used twice and leaves other productions alone', function () {
+    $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-04', 'name' => 'Four']);
+
+    expect(fn () => SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$artefact->id],
+        'steps'     => [
+            ['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 1],
+            ['manufacture_task_id' => $pouring->id, 'position' => 2, 'units_per_artefact' => 1],
+        ],
+    ]))->toThrow(ValidationException::class);
+
+    $otherProduction = Production::where('code', 'UNIPROD')->first() ?? StoreProduction::make()->action($this->organisation, [
+        'code' => 'UNIPROD',
+        'name' => 'Unified scope production',
+    ]);
+    $theirs      = StoreArtefact::make()->action($otherProduction, ['code' => 'UNI-05', 'name' => 'Theirs']);
+    $theirRecipe = unifiedRecipeSteps($theirs);
+
+    $changed = SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$artefact->id, $theirs->id],
+        'steps'     => [['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 1]],
+    ]);
+
+    expect($changed)->toBe(1)
+        ->and(unifiedRecipeSteps($theirs))->toBe($theirRecipe);
+});
+
+test('unified manufacture task is offered on the artefacts page and saves through its route', function () {
+    $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-06', 'name' => 'Six']);
+
+    $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('set_recipe.set_route.name', 'grp.models.production.artefacts.set_recipe')
+            ->where('set_recipe.task_options.name', 'grp.json.production.manufacture_tasks.index'));
+
+    $department = ArtefactDepartment::where('code', 'UNIDEP')->first()
+        ?? StoreArtefactDepartment::make()->action($this->production, ['code' => 'UNIDEP', 'name' => 'Unified department']);
+    $family = ArtefactFamily::where('code', 'UNIFAM')->first()
+        ?? StoreArtefactFamily::make()->action($department, ['code' => 'UNIFAM', 'name' => 'Unified family']);
+
+    $this->get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('set_recipe.set_route.name', 'grp.models.production.artefacts.set_recipe'));
+    $this->get(route('grp.org.productions.show.crafts.artefact_departments.show', [$this->organisation->slug, $this->production->slug, $department->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('set_recipe.set_route.name', 'grp.models.production.artefacts.set_recipe'));
+
+    $this->post(route('grp.models.production.artefacts.set_recipe', [$this->production->id]), [
+        'artefacts' => [$artefact->id],
+        'steps'     => [['manufacture_task_id' => $pouring->id, 'position' => 1, 'units_per_artefact' => 1]],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(collect(unifiedRecipeSteps($artefact))->pluck('manufacture_task_id')->all())->toBe([$pouring->id]);
 });
 
 test('discontinue artefacts in bulk and take the family down with them', function () {
