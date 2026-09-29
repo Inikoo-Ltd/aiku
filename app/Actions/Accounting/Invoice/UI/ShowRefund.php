@@ -46,10 +46,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRefund extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     use IsInvoiceUI;
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
