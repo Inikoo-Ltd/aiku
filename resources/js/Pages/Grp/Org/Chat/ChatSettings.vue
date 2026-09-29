@@ -58,6 +58,7 @@ const props = defineProps<{
         text: string
         notes: { id: number; title: string; body: string; updated_at: string }[]
         copied: { kind: string; total: number; at: string | null }[]
+        learned: { id: number; title: string; body: string; status: "active" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
         knowledge_route: Record<string, any>
         update_route: { name: string; parameters: Record<string, any> }
     } | null
@@ -144,6 +145,20 @@ const deleteNote = (id: number) => {
 
     noteForm.delete(route("grp.org.shops.show.chat.settings.knowledge.delete", { ...props.policies.knowledge_route, chatKnowledgeEntry: id }), { preserveScroll: true })
 }
+
+const decideLearned = (id: number, status: "active" | "removed") => {
+    if (!props.policies) {
+        return
+    }
+
+    noteForm.transform(() => ({ status })).patch(route("grp.org.shops.show.chat.settings.knowledge.status", { ...props.policies.knowledge_route, chatKnowledgeEntry: id }), {
+        preserveScroll: true,
+        onFinish: () => noteForm.transform((data) => data),
+    })
+}
+
+const learnedInUse = computed(() => props.policies?.learned.filter((entry) => entry.status === "active") ?? [])
+const learnedInConflict = computed(() => props.policies?.learned.filter((entry) => entry.status === "conflict") ?? [])
 
 const COPIED_LABELS: Record<string, string> = {
     policy: ctrans("sections of the returns, delivery and terms pages"),
@@ -287,6 +302,33 @@ const saveCouriers = () => {
                 </div>
                 <button type="button" class="text-xs text-indigo-700 underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
                 <button type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
+            </div>
+        </div>
+
+        <div v-if="learnedInConflict.length" class="rounded-lg border border-amber-200 bg-amber-50/60">
+            <div class="px-4 pt-3 text-sm font-medium text-amber-900">{{ ctrans("Agents' answers that contradict what we hold") }}</div>
+            <p class="px-4 text-xs text-amber-800">{{ ctrans("Several customers were told this, but a page, a setting or a note says otherwise. Decide which is right; until then the AI does not use it.") }}</p>
+            <div v-for="entry in learnedInConflict" :key="entry.id" class="flex items-start gap-3 border-t border-amber-100 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ entry.title }} <span class="text-xs font-normal text-gray-500">· {{ ctrans(":count customers", { count: entry.customers_count }) }}</span></div>
+                    <p class="text-sm text-gray-600">{{ entry.body }}</p>
+                    <p v-if="entry.conflict" class="text-xs text-amber-800">{{ ctrans("Differs from:") }} {{ entry.conflict }}</p>
+                </div>
+                <button type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
+                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
+            </div>
+        </div>
+
+        <div v-if="learnedInUse.length" class="rounded-lg border border-gray-200">
+            <div class="px-4 pt-3 text-sm font-medium text-gray-700">{{ ctrans("Learned from what agents told customers") }}</div>
+            <div v-for="entry in learnedInUse" :key="entry.id" class="flex items-start gap-3 border-t border-gray-100 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ entry.title }}
+                        <span class="text-xs font-normal text-gray-500">· {{ ctrans(":count customers", { count: entry.customers_count }) }}<span v-if="entry.expires_at"> · {{ ctrans("until") }} {{ entry.expires_at.slice(0, 10) }}</span></span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ entry.body }}</p>
+                </div>
+                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 

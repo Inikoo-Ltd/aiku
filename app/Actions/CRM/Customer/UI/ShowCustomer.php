@@ -31,6 +31,7 @@ use App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
+use App\Actions\CRM\Customer\GetCustomerCommunications;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
@@ -243,6 +244,10 @@ class ShowCustomer extends OrgAction
                 $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerTimeline::run($customer)
                     : Inertia::optional(fn () => GetCustomerTimeline::run($customer)),
+
+                $tabs::COMMUNICATIONS->value      => $this->tab == $tabs::COMMUNICATIONS->value ?
+                    fn () => GetCustomerCommunications::run($customer)
+                    : Inertia::optional(fn () => GetCustomerCommunications::run($customer)),
 
                 CustomerTabsEnum::JOURNEY->value  => $this->tab == CustomerTabsEnum::JOURNEY->value ?
                     fn () => GetCustomerJourney::run($customer)

@@ -7547,6 +7547,104 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
 });
 
+test('the mailbox history is archived as text for the customer it was with, leaving machine mail out, and shows on their page with their chats', function () {
+    $customer = createOwnCustomer($this->shop, 'archive-'.Str::lower(Str::random(6)));
+    $customer->update(['email' => 'archive.'.Str::lower(Str::random(6)).'@example.com']);
+    $mail = fn (string $id, string $from, string $to, string $text, array $labels = ['INBOX'], array $headers = []) => [
+        'id'           => $id,
+        'threadId'     => 'th-archive-'.$customer->id,
+        'labelIds'     => $labels,
+        'internalDate' => (string) (1780000000000 + (int) preg_replace('/\D.*$/', '', substr($id, 1)) * 60000),
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => $from], ['name' => 'To', 'value' => $to], ['name' => 'Subject', 'value' => 'Broken jar'], ...$headers],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+    $archive = fn (array $raw) => \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archive($this->shop, 'care@shop.test', $raw);
+
+    $question = $archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'));
+    $answer   = $archive($mail('a2-'.$customer->id, 'Care <care@shop.test>', $customer->email, 'Sorry, a new one is on its way', ['SENT']));
+
+    expect($question->only(['customer_id', 'is_outbound', 'counterpart_address', 'text']))->toBe(['customer_id' => $customer->id, 'is_outbound' => false, 'counterpart_address' => $customer->email, 'text' => 'My jar arrived broken'])
+        ->and($answer->only(['customer_id', 'is_outbound']))->toBe(['customer_id' => $customer->id, 'is_outbound' => true])
+        ->and($archive($mail('a3', 'no-reply@example.com', 'care@shop.test', 'Your report')))->toBeNull()
+        ->and($archive($mail('a4', 'news@example.com', 'care@shop.test', 'Big sale', ['INBOX'], [['name' => 'List-Unsubscribe', 'value' => '<mailto:u@example.com>']])))->toBeNull()
+        ->and($archive($mail('a5', 'away@example.com', 'care@shop.test', 'I am away', ['INBOX'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
+        ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id);
+
+    $thread = collect(\App\Actions\CRM\Customer\GetCustomerCommunications::run($customer)['threads'])->firstWhere('kind', 'email_archive');
+    expect($thread['title'])->toBe('Broken jar')
+        ->and(array_column($thread['messages'], 'from_us'))->toBe([false, true]);
+
+    \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
+});
+
+test('what agents keep telling different customers is learned, but only once enough customers heard it and nothing we hold says otherwise', function () {
+    $shop = $this->shop;
+    \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
+    $thread = function (string $question, string $reply, string $key) use ($shop) {
+        $base = ['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'shop_id' => $shop->id, 'gmail_thread_id' => 'th-learn-'.$key, 'subject' => 'Question', 'counterpart_address' => "learn.$key@example.com"];
+        \App\Models\Comms\EmailArchiveMessage::create($base + ['gmail_message_id' => "q-$key", 'is_outbound' => false, 'text' => $question, 'sent_at' => now()->subDays(2)]);
+        \App\Models\Comms\EmailArchiveMessage::create($base + ['gmail_message_id' => "r-$key", 'is_outbound' => true, 'text' => $reply, 'sent_at' => now()->subDay()]);
+    };
+    foreach (['a', 'b'] as $key) {
+        $thread('Is VAT charged on shipping?', 'Hi, yes VAT applies to both the products and the shipping cost, standard UK rate of 20%.', $key);
+    }
+
+    $rule = ['general' => true, 'title' => 'VAT on shipping', 'note' => 'VAT is charged on products and on shipping at the standard UK rate of 20%.', 'temporary' => false];
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function () use (&$rule) {
+        return json_encode($rule);
+    });
+    $contradicts = 0.1;
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) {
+        $options = array_keys($questions['same']['criteria'] ?? $questions['entry']['criteria'] ?? []);
+        $first   = $options[0] ?? 'new';
+
+        $note = (string) ($state['new_note'] ?? '');
+        $same = collect($questions['same']['criteria'] ?? [])
+            ->filter(fn (string $label, string $key) => $key !== 'new' && collect(['VAT', 'dispatched'])->contains(fn (string $word) => str_contains($label, $word) && str_contains($note, $word)))
+            ->keys()
+            ->first() ?? 'new';
+
+        return isset($questions['same'])
+            ? ['same' => ['choice' => $same, 'probabilities' => [$same => 0.9]]]
+            : ['entry' => ['choice' => $first, 'probabilities' => [$first => 0.9]]];
+    });
+    $jev->shouldReceive('noul')->andReturnUsing(function () use (&$contradicts) {
+        return $contradicts;
+    });
+
+    $twice = \App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop);
+    $vat   = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->sole();
+    expect($twice)->toMatchArray(['replies' => 2, 'rules' => 2, 'promoted' => 0])
+        ->and($vat->only(['status', 'customers_count']))->toBe(['status' => 'candidate', 'customers_count' => 2])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->not->toContain($vat->id)
+        ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(0);
+
+    $thread('Do you charge VAT on delivery?', 'Yes, 20% VAT is added to the delivery charge as well.', 'c');
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['promoted'])->toBe(1)
+        ->and($vat->refresh()->only(['status', 'customers_count']))->toBe(['status' => 'active', 'customers_count' => 3])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->toContain($vat->id);
+
+    $vat->update(['status' => 'removed']);
+    $contradicts = 0.8;
+    $rule        = ['general' => true, 'title' => 'Dispatch', 'note' => 'Orders are dispatched the same day.', 'temporary' => false];
+    \App\Models\Chat\ChatKnowledgeEntry::create(['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'shop_id' => $shop->id, 'kind' => 'note', 'title' => 'Dispatch times', 'body' => 'Orders are dispatched within 2 working days.', 'source_type' => 'manual', 'is_manual' => true]);
+    foreach (['d', 'e', 'f'] as $key) {
+        $thread('When do you dispatch?', 'We dispatch every order the same day it is placed.', $key);
+    }
+    \App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop);
+    $dispatch = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('title', 'Dispatch')->first();
+
+    expect($dispatch?->only(['status', 'customers_count', 'conflict']))->toBe(['status' => 'conflict', 'customers_count' => 3, 'conflict' => 'Dispatch times'])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->where('source_type', 'learned')->count())->toBe(0);
+
+    \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
+});
+
 test('a general question is answered from the knowledge base entry jev picks, and only when the quote is really in it', function () {
     config(['chat.ai_drafts' => true, 'services.openrouter.api_key' => 'or-key']);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);

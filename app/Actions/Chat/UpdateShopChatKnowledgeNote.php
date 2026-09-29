@@ -79,6 +79,20 @@ class UpdateShopChatKnowledgeNote extends OrgAction
         return back()->with('notification', ['status' => 'success', 'title' => __('Note saved')]);
     }
 
+    /**
+     * A rule learned from replies: used, or removed for good so it is not learned again.
+     *
+     * @noinspection PhpUnusedParameterInspection
+     */
+    public function decide(Organisation $organisation, Shop $shop, ChatKnowledgeEntry $chatKnowledgeEntry, ActionRequest $request): RedirectResponse
+    {
+        $this->initialisationFromShop($shop, []);
+        abort_unless($this->userCanActOnChatOnShop($request->user(), $shop) && $chatKnowledgeEntry->source_type === 'learned' && $chatKnowledgeEntry->shop_id === $shop->id, 404);
+        $chatKnowledgeEntry->update(['status' => $request->validate(['status' => ['required', 'in:active,removed']])['status'], 'conflict' => null]);
+
+        return back()->with('notification', ['status' => 'success', 'title' => __('Saved')]);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function destroy(Organisation $organisation, Shop $shop, ChatKnowledgeEntry $chatKnowledgeEntry, ActionRequest $request): RedirectResponse
     {

@@ -18,6 +18,7 @@ enum CustomerTabsEnum: string
 
     case SHOWCASE            = 'showcase';
     case TIMELINE            = 'timeline';
+    case COMMUNICATIONS = 'communications';
     case JOURNEY             = 'journey';
     case RETINA_DASHBOARD    = 'retina_dashboard';
     case REORDERS            = 'reorders';
@@ -39,6 +40,10 @@ enum CustomerTabsEnum: string
             CustomerTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            CustomerTabsEnum::COMMUNICATIONS => [
+                'title' => __('Communications'),
+                'icon'  => 'fal fa-comments',
             ],
             CustomerTabsEnum::TIMELINE => [
                 'title' => __('Timeline'),

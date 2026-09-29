@@ -1152,6 +1152,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:learn-knowledge --days=7')->dailyAt('04:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'LearnChatKnowledge',
+                ),
+                name: 'LearnChatKnowledge',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:hydrate-knowledge')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'HydrateChatKnowledge',
                 ),

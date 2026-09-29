@@ -171,6 +171,25 @@ final class GmailClient
         );
     }
 
+    /**
+     * One page of the message ids a search finds, newest first, and where the next page starts.
+     *
+     * @return array{ids: array<int, string>, next: string|null}
+     */
+    public function listMessageIds(string $query, ?string $pageToken = null, int $maxResults = 500): array
+    {
+        $response = $this->get('users/me/messages', array_filter([
+            'q'          => $query,
+            'maxResults' => $maxResults,
+            'pageToken'  => $pageToken,
+        ]));
+
+        return [
+            'ids'  => array_map(static fn (array $message) => $message['id'], $response->json('messages', [])),
+            'next' => $response->json('nextPageToken'),
+        ];
+    }
+
     public function getMessage(string $messageId): array
     {
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();

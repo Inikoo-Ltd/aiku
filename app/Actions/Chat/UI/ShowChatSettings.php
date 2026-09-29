@@ -121,7 +121,9 @@ class ShowChatSettings extends OrgAction
                 'policies'       => $isShop ? [
                     'text'         => data_get($parent->settings, 'chat.policies', ''),
                     'notes'        => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('is_manual', true)->latest('updated_at')->get(['id', 'title', 'body', 'updated_at'])->all(),
-                    'copied'       => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('is_manual', false)->selectRaw('kind, count(*) as total, max(hydrated_at) as at')->groupBy('kind')->get()->all(),
+                    'copied'       => ChatKnowledgeEntry::where('shop_id', $parent->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs'])->selectRaw('kind, count(*) as total, max(hydrated_at) as at')->groupBy('kind')->get()->all(),
+                    'learned'      => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('source_type', 'learned')->whereIn('status', ['active', 'conflict'])->orderByDesc('customers_count')->limit(200)
+                        ->get(['id', 'title', 'body', 'status', 'conflict', 'customers_count', 'last_seen_at', 'expires_at'])->all(),
                     'knowledge_route' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
                     'update_route' => [
                         'name'       => 'grp.org.shops.show.chat.settings.policies.update',

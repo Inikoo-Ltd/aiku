@@ -48,7 +48,7 @@ class HydrateChatKnowledge
         ];
 
         DB::transaction(function () use ($shop, $entries, $now) {
-            ChatKnowledgeEntry::where('shop_id', $shop->id)->where('is_manual', false)->delete();
+            ChatKnowledgeEntry::where('shop_id', $shop->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs'])->delete();
 
             foreach ($entries as $entry) {
                 ChatKnowledgeEntry::create($entry + [

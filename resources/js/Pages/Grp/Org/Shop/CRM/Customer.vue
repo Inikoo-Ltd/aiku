@@ -16,6 +16,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue"
 import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
+import CustomerCommunications from "@/Components/Showcases/Grp/CustomerCommunications.vue"
 import CustomerJourney from "@/Components/Showcases/Grp/CustomerJourney.vue"
 import CustomerRetinaDashboard from "@/Components/Showcases/Grp/CustomerRetinaDashboard.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
@@ -79,6 +80,7 @@ const props = defineProps<{
     customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
+    communications?: {}
     api_requests?: {}
     web_users?: {}
     attachments?: {}
@@ -157,6 +159,7 @@ const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
         timeline: CustomerTimeline,
+        communications: CustomerCommunications,
         journey: CustomerJourney,
         retina_dashboard: CustomerRetinaDashboard,
         products: TableProducts,

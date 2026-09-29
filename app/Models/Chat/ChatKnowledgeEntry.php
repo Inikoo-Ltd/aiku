@@ -35,6 +35,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_active
  * @property int|null $created_by_user_id
  * @property \Illuminate\Support\Carbon|null $hydrated_at
+ * @property string $status active, candidate (learned, not yet confirmed), conflict or removed
+ * @property array|null $evidence
+ * @property int $customers_count
+ * @property \Illuminate\Support\Carbon|null $last_seen_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property string|null $conflict
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Shop|null $shop
@@ -46,7 +52,10 @@ class ChatKnowledgeEntry extends Model
     protected $casts = [
         'is_manual'   => 'boolean',
         'is_active'   => 'boolean',
-        'hydrated_at' => 'datetime',
+        'hydrated_at'  => 'datetime',
+        'evidence'     => 'array',
+        'last_seen_at' => 'datetime',
+        'expires_at'   => 'datetime',
     ];
 
     public function shop(): BelongsTo
@@ -62,6 +71,8 @@ class ChatKnowledgeEntry extends Model
     public function scopeForShop(Builder $query, Shop $shop): void
     {
         $query->where('is_active', true)
+            ->where('status', 'active')
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->where('group_id', $shop->group_id)
             ->where(fn (Builder $query) => $query->where('shop_id', $shop->id)
                 ->orWhere(fn (Builder $query) => $query->whereNull('shop_id')->where('organisation_id', $shop->organisation_id))

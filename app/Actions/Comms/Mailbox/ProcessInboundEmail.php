@@ -197,7 +197,7 @@ class ProcessInboundEmail
         // An out of office is a machine answering, not the customer coming back. It belongs in
         // the thread so the history is honest, but it must not drag a finished conversation into
         // the waiting queue: customer service writes, the robot replies, and the chat reopens.
-        $isAutoReply = $this->isAutoReply($raw);
+        $isAutoReply = self::isAutoReply($raw);
         $existing    = $this->findSessionByThread($shop, $threadId);
 
         // On its own it is not a conversation at all: answering a mail we never sent leaves
@@ -609,7 +609,7 @@ class ProcessInboundEmail
      *
      * @param  array<string, mixed>  $raw
      */
-    private function isAutoReply(array $raw): bool
+    public static function isAutoReply(array $raw): bool
     {
         $autoSubmitted = strtolower(trim((string) GmailMessageParser::header($raw, 'Auto-Submitted')));
 

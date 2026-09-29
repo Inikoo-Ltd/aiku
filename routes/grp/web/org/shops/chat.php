@@ -45,6 +45,7 @@ Route::patch('/settings/policies', UpdateShopChatPolicies::class)->name('setting
 Route::post('/settings/knowledge', UpdateShopChatKnowledgeNote::class)->name('settings.knowledge.store');
 Route::patch('/settings/knowledge/{chatKnowledgeEntry}', [UpdateShopChatKnowledgeNote::class, 'inNote'])->name('settings.knowledge.update')->withoutScopedBindings();
 Route::delete('/settings/knowledge/{chatKnowledgeEntry}', [UpdateShopChatKnowledgeNote::class, 'destroy'])->name('settings.knowledge.delete')->withoutScopedBindings();
+Route::patch('/settings/knowledge/{chatKnowledgeEntry}/status', [UpdateShopChatKnowledgeNote::class, 'decide'])->name('settings.knowledge.status')->withoutScopedBindings();
 Route::patch('/settings/closing', UpdateShopChatClosing::class)->name('settings.closing.update');
 Route::get('/conversations/export', [ExportChatConversations::class, 'inShop'])->name('conversations.export');
 Route::get('/conversations', ShowShopChatConversations::class)->name('conversations.show');
