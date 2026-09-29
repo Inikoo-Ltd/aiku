@@ -19,8 +19,9 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Uploads that died because the store ran out of time (full size images before CUS-1745) are queued
- * again, only on open channels that still connect; the per-store funnel in
+ * Uploads that died because the store ran out of time (full size images before CUS-1745, or the
+ * host's gateway giving up with a 504) are queued again, only on open channels that still connect;
+ * a product the store created anyway is linked by its sku instead of duplicated. The per-store funnel in
  * StoreNewProductToCurrentWooCommerce keeps each host at a few creates at once.
  */
 class RetryTimedOutWooUploads

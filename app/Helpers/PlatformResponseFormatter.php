@@ -200,7 +200,9 @@ class PlatformResponseFormatter
 
         if ($this->isHtml($value)) {
             return [[
-                'message' => __('The store answered with a web page instead of data, it may be down, in maintenance mode or blocking the connection.'),
+                'message' => $this->isGatewayTimeout($value)
+                    ? __('The store timed out before answering (gateway timeout), it may be busy or too slow. Try again in a few minutes.')
+                    : __('The store answered with a web page instead of data, it may be down, in maintenance mode or blocking the connection.'),
                 'code'    => null,
             ]];
         }
@@ -432,6 +434,15 @@ class PlatformResponseFormatter
     private function isHtml(string $value): bool
     {
         return (bool)preg_match('/^<(!doctype|html|\?xml|body|head)/i', trim($value));
+    }
+
+    /**
+     * The host's own gateway page (nginx 504, Cloudflare 524) when the store is too slow, so the
+     * upload may still be completing on the store side.
+     */
+    private function isGatewayTimeout(string $value): bool
+    {
+        return (bool)preg_match('/<title>[^<]*\b(504|524)\b|gateway time-?out|a timeout occurred/i', $value);
     }
 
     private function isEmpty(string $value): bool

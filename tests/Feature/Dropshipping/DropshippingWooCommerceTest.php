@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
+use App\Helpers\PlatformResponseFormatter;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
@@ -865,6 +866,26 @@ test('an upload the store refuses leaves the error on the portfolio and an empty
         ->and($portfolio->errors_response['message'])->toBe('Sorry, you are not allowed to create resources.')
         ->and($portfolio->platform_possible_matches)->toEqual(['number_matches' => 0, 'matches_labels' => [], 'raw_data' => []])
         ->and(PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->first()->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
+});
+
+test('an upload the store gateway times out on is saved as a timeout and picked up by the timed out retry', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $channel->update(['can_connect_to_platform' => true]);
+    $portfolio = wooPortfolio($channel, $this->product, null, 'aw-gateway-timeout');
+
+    wooFake([
+        'POST products' => Http::response("<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n", 504, ['Content-Type' => 'text/html']),
+        'GET products'  => Http::response([]),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->errors_response['message'])->toContain('timed out')
+        ->and(RetryTimedOutWooUploads::run($channel)->pluck('id')->all())->toContain($portfolio->id)
+        ->and(PlatformResponseFormatter::make()->message(['<!DOCTYPE html><html><head><title>Maintenance</title></head><body>Back soon</body></html>']))->toContain('web page');
 });
 
 test('an upload that collides with a listed sku adopts the listed product', function () {
