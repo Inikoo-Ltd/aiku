@@ -56,7 +56,7 @@ const props = defineProps<{
     search_demand?: any
     shoppingLists?: any
     stockOuts?: any
-    stockLevels?: any[]
+    stockLevelsByOrganisation?: any[]
     poJourney?: {
         currency: string
         summary: {
@@ -108,12 +108,12 @@ const shoppingListTotalItems = computed(() =>
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <Deferred :data="['stockOuts', 'stockLevels']">
+    <Deferred :data="['stockOuts', 'stockLevelsByOrganisation']">
         <template #fallback>
             <div class="mx-4 mt-3 h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
         </template>
 
-        <StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :stockLevels="stockLevels ?? []" storageKey="supply-chain-overview-stock-outs" class="mx-4 mt-3" />
+        <StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :organisationStockLevels="stockLevelsByOrganisation ?? []" storageKey="supply-chain-overview-stock-outs" class="mx-4 mt-3" />
     </Deferred>
     <div class="mx-4 mt-3 flex flex-wrap gap-3">
         <ProcurementOverviewPill v-for="card in dashboardCards" :key="card.label" :card="card" />

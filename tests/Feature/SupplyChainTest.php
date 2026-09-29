@@ -758,9 +758,10 @@ test('UI supply chain overview', function () {
             ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
                 ->where('stockOuts.period', '1y')
                 ->has('stockOuts.series')
-                ->has('stockLevels', 8)
-                ->where('stockLevels.0.bucket', 'out')
-                ->where('stockLevels.0.route', null)
+                ->has('stockOuts.organisations')
+                ->has('stockLevelsByOrganisation.0.levels', 8)
+                ->where('stockLevelsByOrganisation.0.levels.0.bucket', 'out')
+                ->where('stockLevelsByOrganisation.0.levels.0.route.name', 'grp.org.procurement.stock_cover.index')
                 ->where('poJourney.route.name', 'grp.supply-chain.dashboard')
                 ->has('poJourney.summary.open')
                 ->has('poJourney.summary.overdue')

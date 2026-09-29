@@ -19,7 +19,6 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -40,17 +39,25 @@ class ShowSupplyChainDashboard extends OrgAction
         $this->initialisationFromGroup(app('group'), $request);
     }
 
-    private function getStockLevels(): array
+    private function getStockLevelsByOrganisation(): array
     {
         return GetStockOutsHistory::make()->organisations($this->group)
-            ->flatMap(fn (Organisation $organisation) => GetOrganisationStockCoverBuckets::run($organisation))
-            ->groupBy('bucket')
-            ->map(fn (Collection $buckets) => [
-                'bucket' => $buckets->first()['bucket'],
-                'label'  => $buckets->first()['label'],
-                'tone'   => $buckets->first()['tone'],
-                'count'  => $buckets->sum('count'),
-                'route'  => null,
+            ->map(fn (Organisation $organisation) => [
+                'slug'   => $organisation->slug,
+                'levels' => collect(GetOrganisationStockCoverBuckets::run($organisation))
+                    ->map(fn (array $bucket) => [
+                        'bucket' => $bucket['bucket'],
+                        'label'  => $bucket['label'],
+                        'tone'   => $bucket['tone'],
+                        'count'  => $bucket['count'],
+                        'route'  => [
+                            'name'       => 'grp.org.procurement.stock_cover.index',
+                            'parameters' => [
+                                'organisation' => $organisation->slug,
+                                '_query'       => ['elements[cover]' => $bucket['bucket']],
+                            ],
+                        ],
+                    ])->values()->all(),
             ])->values()->all();
     }
 
@@ -305,7 +312,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
                 'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')))),
-                'stockLevels'    => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels())),
+                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisation())),
                 'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
