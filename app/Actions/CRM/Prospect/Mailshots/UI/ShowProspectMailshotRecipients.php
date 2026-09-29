@@ -16,10 +16,12 @@ use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowProspectMailshotRecipients extends OrgAction
 {
+    use WithCRMAuthorisation;
     use WithMailshotJourney;
 
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
