@@ -34,6 +34,8 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     public string $jobQueue = 'shopify-slave';
     public int $jobTries = 1;
 
+    private const string ACTIVE_STATUS = 'ACTIVE';
+
     public function getJobUniqueId(?int $customerSalesChannelId): string
     {
         return $customerSalesChannelId ?? 'empty';
@@ -108,7 +110,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $portfoliosToUpdateData = [];
         $indexToPortfolioId     = [];
 
-        $variantsByProduct = $this->getShopifyVariantsBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
+        [$variantsByProduct, $statusByProduct, $catalogueRead] = $this->getShopifyVariantsBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
         $channelSkus       = $productMap->pluck('code')->merge($portfolios->pluck('sku'))->filter()->map(fn ($sku) => Str::lower($sku))->unique()->values()->all();
 
         foreach ($portfolios as $portfolio) {
@@ -126,7 +128,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $portfolio->update(['stock_last_fail_updated_at' => now()]);
                 UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'No variant on Shopify matches this sku'
+                    'response' => $catalogueRead && !isset($statusByProduct[$portfolio->platform_product_id])
+                        ? 'This product is no longer in your Shopify store'
+                        : 'No variant on Shopify matches this sku'
                 ]);
                 continue;
             }
@@ -231,14 +235,19 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 }
             } else {
                 $command?->line("Portfolio $portfolioId usefully updated");
+                $listingStatus = $statusByProduct[$portfolio?->platform_product_id] ?? null;
                 $portfolio?->update([
                     'last_stock_value'      => $portfoliosToUpdateData[$portfolioId]['last_stock_value'],
                     'stock_last_updated_at' => now(),
+                    'platform_status'       => $listingStatus === self::ACTIVE_STATUS,
                 ]);
                 if ($log) {
-                    UpdatePlatformPortfolioLog::dispatch($log, [
-                        'status' => PlatformPortfolioLogsStatusEnum::OK
-                    ]);
+                    UpdatePlatformPortfolioLog::dispatch($log, $listingStatus === self::ACTIVE_STATUS
+                        ? ['status' => PlatformPortfolioLogsStatusEnum::OK]
+                        : [
+                            'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                            'response' => 'Stock sent, but this product is '.Str::lower((string)$listingStatus).' in your Shopify store, so it is not for sale there'
+                        ]);
                 }
             }
         }
@@ -306,12 +315,12 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
     /**
      * @param  list<string>  $productIds
-     * @return array<string, list<array{variantId: string, inventoryItemId: string|null, sku: string}>>
+     * @return array{0: array<string, list<array{variantId: string, inventoryItemId: string|null, sku: string}>>, 1: array<string, string|null>, 2: bool}
      */
     private function getShopifyVariantsBatch(ShopifyUser $shopifyUser, array $productIds): array
     {
         if (empty($productIds)) {
-            return [];
+            return [[], [], false];
         }
 
         $query = <<<'QUERY'
@@ -319,6 +328,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 nodes(ids: $ids) {
                     ... on Product {
                         id
+                        status
                         variants(first: 100) {
                             edges {
                                 node {
@@ -338,24 +348,26 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         [$status, $res] = $this->doPost($shopifyUser, $query, ['ids' => $productIds]);
 
         if (!$status) {
-            return [];
+            return [[], [], false];
         }
 
-        $body    = $res['body']->toArray();
-        $results = [];
+        $body     = $res['body']->toArray();
+        $results  = [];
+        $statuses = [];
         foreach ($body['data']['nodes'] ?? [] as $node) {
             if (!$node || !isset($node['id'])) {
                 continue;
             }
 
-            $results[$node['id']] = array_map(fn (array $edge) => [
+            $statuses[$node['id']] = $node['status'] ?? null;
+            $results[$node['id']]  = array_map(fn (array $edge) => [
                 'variantId'       => $edge['node']['id'],
                 'inventoryItemId' => $edge['node']['inventoryItem']['id'] ?? null,
                 'sku'             => trim((string)($edge['node']['sku'] ?? '')),
             ], $node['variants']['edges'] ?? []);
         }
 
-        return $results;
+        return [$results, $statuses, isset($body['data']['nodes'])];
     }
 
     public function bulkUpdateLogs(array $platformPortfolioLogs, array $modelData): void
