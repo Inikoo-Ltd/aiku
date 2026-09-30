@@ -5244,6 +5244,16 @@ test('a set sold only complete waits until its other parts are put back, then re
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
         ->and($deliveryNote->incompleteSetItems()->pluck('id')->all())->toBe([$item->id]);
 
+    $partsToPutBack = \App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote::make()->getPutBackIncompleteSetsAction($deliveryNote)['parts'];
+    $pickedLocation = $item->pickings()->with('location')->first()->location;
+
+    expect($partsToPutBack)->toBe([[
+        'code'      => $item->orgStock->code,
+        'name'      => $item->orgStock->name,
+        'quantity'  => (float)$item->quantity_picked,
+        'locations' => [$pickedLocation->code],
+    ]]);
+
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
 
     $item->refresh();
@@ -5251,4 +5261,33 @@ test('a set sold only complete waits until its other parts are put back, then re
         ->and((float)$item->quantity_picked)->toBe(0.0)
         ->and($item->is_handled)->toBeTrue()
         ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});
+
+test('the picking list shows which set sold only complete an item is a part of (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $product = $item->transaction->model;
+    $product->update(['is_indivisible' => false]);
+
+    $indivisibleSetOnPickingList = fn () => DeliveryNoteItemsStateHandlingResource::collection(
+        IndexDeliveryNoteItemsStateHandling::run($deliveryNote, deliveryNoteItemId: $item->id)
+    )->resolve()[0]['indivisible_set'];
+
+    expect($indivisibleSetOnPickingList())->toBeNull();
+
+    $tradeUnit = \App\Models\Goods\TradeUnit::firstOrFail();
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 9]]);
+    $product->update(['is_indivisible' => true]);
+
+    $indivisibleSet = $indivisibleSetOnPickingList();
+    $part           = collect($indivisibleSet['parts'])->firstWhere('code', $tradeUnit->code);
+
+    $transaction = $item->transaction;
+
+    expect($indivisibleSet['product'])->toBe(['code' => $product->code, 'name' => $product->name])
+        ->and($indivisibleSet['transaction_id'])->toBe($transaction->id)
+        ->and($indivisibleSet['sets_ordered'])->toBe((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus)
+        ->and($indivisibleSet['route'])->toBeNull()
+        ->and($part)->toBe(['code' => $tradeUnit->code, 'name' => $tradeUnit->name, 'quantity' => 9.0]);
 });

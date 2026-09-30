@@ -43,6 +43,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_stocks_batch_code
  * @property mixed $un_numbers
  * @property mixed $packings_quantity
+ * @property mixed $indivisible_set
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -151,6 +152,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
             'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
+            'indivisible_set'                          => $this->getOrderedAssetIndivisibleSet(),
             'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_slug'                           => $this->org_stock_slug,

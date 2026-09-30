@@ -34,8 +34,7 @@ class PutBackIncompleteSetParts extends OrgAction
     public function handle(DeliveryNote $deliveryNote, ?User $user): DeliveryNote
     {
         foreach ($deliveryNote->incompleteSetItems()->get() as $deliveryNoteItem) {
-            $excess = (float)$deliveryNoteItem->quantity_picked
-                - (float)$deliveryNoteItem->quantity_required * $this->getCompleteSetFraction($deliveryNoteItem);
+            $excess = $this->getQuantityToPutBack($deliveryNoteItem);
 
             if ($excess <= 0.000001) {
                 continue;
@@ -51,6 +50,12 @@ class PutBackIncompleteSetParts extends OrgAction
         }
 
         return AutoFinishWaitingDeliveryNote::run($deliveryNote->refresh());
+    }
+
+    public function getQuantityToPutBack(DeliveryNoteItem $deliveryNoteItem): float
+    {
+        return (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_required * $this->getCompleteSetFraction($deliveryNoteItem);
     }
 
     private function getCompleteSetFraction(DeliveryNoteItem $deliveryNoteItem): float

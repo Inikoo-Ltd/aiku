@@ -9,6 +9,7 @@ import {
 import { faCheckCircle, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import IndivisibleSetIcon from "@/Components/Catalogue/IndivisibleSetIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref, inject, onMounted, watch } from "vue"
@@ -63,6 +64,10 @@ const props = defineProps<{
     masterAsset: {}
     tradeUnits : {}
     is_single_trade_unit?: boolean
+    indivisible_set?: {
+        parts: { code: string, name: string, quantity: number }[]
+        route: routeType | null
+    } | null
     trade_unit_slug?: string
     masterVariant?: {}
     is_variant_leader?: boolean
@@ -190,6 +195,8 @@ onMounted(() => {
                     icon="fal fa-atom" fixed-width
                 />
             </Link>
+            <IndivisibleSetIcon v-if="indivisible_set" :set="indivisible_set"
+                :note="ctrans('Shop products that follow this master\'s trade units are sold the same way.')" />
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
             <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="ctrans('Go to Master Variant')">
                 <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />

@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $batch_code
  * @property mixed $expiry_date
  * @property mixed $un_numbers
+ * @property mixed $indivisible_set
  */
 class DeliveryNoteItemsStateUnassignedResource extends JsonResource
 {
@@ -77,6 +78,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
             'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
+            'indivisible_set'                          => $this->getOrderedAssetIndivisibleSet(),
             'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_id'                             => $this->org_stock_id,

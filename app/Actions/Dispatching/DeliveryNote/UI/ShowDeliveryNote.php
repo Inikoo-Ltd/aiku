@@ -56,6 +56,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -254,16 +256,31 @@ class ShowDeliveryNote extends OrgAction
 
     public function getPutBackIncompleteSetsAction(DeliveryNote $deliveryNote): array
     {
-        $parts = $deliveryNote->incompleteSetItems()->with('orgStock')->get()
-            ->map(fn (DeliveryNoteItem $deliveryNoteItem) => $deliveryNoteItem->orgStock?->code)
-            ->filter()
-            ->implode(', ');
+        $putBackIncompleteSetParts = PutBackIncompleteSetParts::make();
+
+        $parts = $deliveryNote->incompleteSetItems()->with(['orgStock', 'pickings.location'])->get()
+            ->map(fn (DeliveryNoteItem $deliveryNoteItem) => [
+                'code'      => $deliveryNoteItem->orgStock?->code,
+                'name'      => $deliveryNoteItem->orgStock?->name,
+                'quantity'  => $putBackIncompleteSetParts->getQuantityToPutBack($deliveryNoteItem),
+                'locations' => $deliveryNoteItem->pickings
+                    ->whereIn('type', [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK])
+                    ->where('quantity', '>', 0)
+                    ->pluck('location.code')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all(),
+            ])
+            ->filter(fn (array $part) => $part['quantity'] > 0.000001)
+            ->values();
 
         return [
             'type'    => 'button',
             'style'   => 'save',
             'label'   => __('Parts put back'),
-            'tooltip' => __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts]),
+            'tooltip' => __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts->pluck('code')->filter()->implode(', ')]),
+            'parts'   => $parts->all(),
             'key'     => 'put-back-incomplete-sets',
             'route'   => [
                 'method'     => 'patch',

@@ -49,9 +49,12 @@ import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/Change
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import { faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faCloudDownload, faEye } from "@fal"
+import IndivisibleSetIcon from "@/Components/Catalogue/IndivisibleSetIcon.vue"
+import { useStringToHex } from "@/Composables/useStringToHex"
+import { useIndivisibleSetMismatches } from "@/Composables/useIndivisibleSetMismatches"
+import { faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faCloudDownload, faEye, faInfoCircle } from "@fal"
 
-library.add(faFilePdf, faSpinnerThird, faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload, faEye);
+library.add(faInfoCircle, faFilePdf,faSpinnerThird, faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload, faEye);
 
 
 const props = defineProps<{
@@ -895,6 +898,30 @@ const hasPickedMoreThanRequired = computed(() => {
     return Object.values(props.data?.data ?? {}).some((item: any) => parseFloat(item.quantity_picked) > parseFloat(item.quantity_required))
 })
 
+const { incompleteSets, quantityToPutBack, incompleteSetFor } = useIndivisibleSetMismatches(() => Object.values(props.data?.data ?? {}))
+
+const roundQuantity = (quantity: number) => Math.round(quantity * 100) / 100
+
+const describeIncompleteSet = (transactionId?: number) => {
+    const incompleteSet = incompleteSetFor(transactionId)
+
+    return incompleteSet
+        ? ctrans('Only :complete of :ordered sets are complete', { complete: incompleteSet.completeSets, ordered: roundQuantity(incompleteSet.setsOrdered) })
+        : undefined
+}
+
+const explainPutBack = (transactionId?: number) => {
+    const incompleteSet = incompleteSetFor(transactionId)
+
+    return incompleteSet
+        ? ctrans(':product is sold only as a complete set. Another part is short, so only :complete of :ordered sets can be sent and the rest of this part has to go back on the shelf.', {
+            product: incompleteSet.product.code,
+            complete: incompleteSet.completeSets,
+            ordered: roundQuantity(incompleteSet.setsOrdered),
+        })
+        : ''
+}
+
 const warningMsg = computed(() => {
     let text = '';
     let title = '';
@@ -915,7 +942,25 @@ const warningMsg = computed(() => {
         title += ctrans('Item Picked more than the Required Quantity')
 
     }
-    
+
+    if (incompleteSets.value.length) {
+        if (text) {
+            text += '. ';
+            title += ' | '
+        }
+
+        text += incompleteSets.value.map((incompleteSet) => ctrans(
+            ':product is sold only as a complete set and only :complete of :ordered sets are complete. Put back :parts',
+            {
+                product: incompleteSet.product.code,
+                complete: incompleteSet.completeSets,
+                ordered: roundQuantity(incompleteSet.setsOrdered),
+                parts: incompleteSet.partsToPutBack.map((part) => `${roundQuantity(part.quantity)} × ${part.code}`).join(', '),
+            }
+        )).join('. ');
+        title += ctrans('Incomplete set picked')
+    }
+
 
     return {
         text: text,
@@ -995,9 +1040,12 @@ const onSaveSplitBoxes = async () => {
             if (parseFloat(item.quantity_picked) > parseFloat(item.quantity_required)) {
                 return '!bg-[#f5463d66]'
             }
+            if (quantityToPutBack(item.id) > 0) {
+                return '!bg-red-50'
+            }
             return ''
         }"
-        :showWarningMessage="hasDirtyDeliveryNoteItem || hasPickedMoreThanRequired"
+        :showWarningMessage="hasDirtyDeliveryNoteItem || hasPickedMoreThanRequired || incompleteSets.length > 0"
         :warning="warningMsg"
     >
 
@@ -1077,27 +1125,44 @@ const onSaveSplitBoxes = async () => {
 
         <!-- Column: Reference -->
         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
-            <span class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
-                <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
-                    {{ deliveryNoteItem.org_stock_code }}
-                </Link>
-                <button
-                    v-if="deliveryNoteItem.org_stock_id && warehouseSlug"
-                    type="button"
-                    v-tooltip="ctrans('Print label')"
-                    class="shrink-0 text-gray-500 transition hover:text-[--app-accent] disabled:cursor-wait"
-                    :disabled="labelLoadingFor === deliveryNoteItem.org_stock_id"
-                    @click="openLabelModal(deliveryNoteItem)">
-                    <FontAwesomeIcon
-                        :icon="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'fad fa-spinner-third' : 'fal fa-file-pdf'"
-                        :spin="labelLoadingFor === deliveryNoteItem.org_stock_id"
-                        :class="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'text-[--app-accent]' : ''"
-                        fixed-width aria-hidden="true" />
-                </button>
-            </span>
-            <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
-                {{ un_number.number }}
-            </span>
+            <div class="flex items-center">
+                <span class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                    <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                        {{ deliveryNoteItem.org_stock_code }}
+                    </Link>
+                    <button
+                        v-if="deliveryNoteItem.org_stock_id && warehouseSlug"
+                        type="button"
+                        v-tooltip="ctrans('Print label')"
+                        class="shrink-0 text-gray-500 transition hover:text-[--app-accent] disabled:cursor-wait"
+                        :disabled="labelLoadingFor === deliveryNoteItem.org_stock_id"
+                        @click="openLabelModal(deliveryNoteItem)">
+                        <FontAwesomeIcon
+                            :icon="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'fad fa-spinner-third' : 'fal fa-file-pdf'"
+                            :spin="labelLoadingFor === deliveryNoteItem.org_stock_id"
+                            :class="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'text-[--app-accent]' : ''"
+                            fixed-width aria-hidden="true" />
+                    </button>
+                </span>
+                <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                    {{ un_number.number }}
+                </span>
+                <span v-if="deliveryNoteItem.indivisible_set" class="ml-auto inline-flex items-center gap-x-1.5 pl-3">
+                    <span v-if="quantityToPutBack(deliveryNoteItem.id) > 0" class="inline-flex items-center gap-x-1 whitespace-nowrap text-xs font-semibold text-red-600">
+                        {{ ctrans('Put back :quantity', { quantity: roundQuantity(quantityToPutBack(deliveryNoteItem.id)) }) }}
+                        <FontAwesomeIcon
+                            v-tooltip="explainPutBack(deliveryNoteItem.indivisible_set.transaction_id)"
+                            icon="fal fa-info-circle"
+                            class="cursor-help text-red-400"
+                            fixed-width
+                            aria-hidden="true" />
+                    </span>
+                    <IndivisibleSetIcon
+                        :set="deliveryNoteItem.indivisible_set"
+                        :color="useStringToHex(deliveryNoteItem.indivisible_set.product.code)"
+                        :note="describeIncompleteSet(deliveryNoteItem.indivisible_set.transaction_id)" />
+                </span>
+            </div>
         </template>
 
         <!-- Column: Name -->
