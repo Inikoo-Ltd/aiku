@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
-use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPriceTips;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -50,6 +49,10 @@ class GenerateMasterAssetPriceTips
     public string $jobQueue = 'long-low-priority';
 
     public int $jobTimeout = 3600;
+
+    public const array EXCLUDED_MASTER_SHOPS = ['aroma'];
+
+    public const float MINIMUM_MARKUP_OVER_COST = 1.25;
 
     public const float MIN_CONFIDENCE = 0.5;
 
@@ -193,7 +196,7 @@ class GenerateMasterAssetPriceTips
             }
 
             if ($signals['cost'] ?? null) {
-                $floor = -(int) floor(100 * (1 - $signals['cost'] * GetMasterProductsPriceTips::MINIMUM_MARKUP_OVER_COST / $signals['price']));
+                $floor = -(int) floor(100 * (1 - $signals['cost'] * self::MINIMUM_MARKUP_OVER_COST / $signals['price']));
                 if ($floor > $change) {
                     $change = $floor;
                     $capped = true;
@@ -553,7 +556,7 @@ class GenerateMasterAssetPriceTips
 
         $command->info('Measured '.$this->measureOutcomes().' applied tips');
 
-        $masterShops = MasterShop::whereNotIn('slug', GetMasterProductsPriceTips::EXCLUDED_MASTER_SHOPS)
+        $masterShops = MasterShop::whereNotIn('slug', self::EXCLUDED_MASTER_SHOPS)
             ->where('type', '!=', ShopTypeEnum::FULFILMENT)
             ->when($command->option('master-shop'), fn ($query, $slug) => $query->where('slug', $slug))
             ->get();
