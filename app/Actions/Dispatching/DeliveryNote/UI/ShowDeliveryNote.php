@@ -502,29 +502,40 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ];
 
-            if (request()->user()?->authTo([
-                "supervisor-dispatching.$deliveryNote->warehouse_id",
-                "org-admin.$deliveryNote->organisation_id",
-            ])) {
-                $actions[] = [
-                    'type'    => 'button',
-                    'style'   => 'tertiary',
-                    'icon'    => 'fal fa-undo-alt',
-                    'tooltip' => __('Give the items waiting for the warehouse back to the picker'),
-                    'label'   => __('Back to picking'),
-                    'key'     => 'undo-waiting',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.undo_waiting',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ];
+            if ($backToPickingAction = $this->getBackToPickingAction($deliveryNote)) {
+                $actions[] = $backToPickingAction;
             }
         }
 
         return $actions;
+    }
+
+    public function getBackToPickingAction(DeliveryNote $deliveryNote): ?array
+    {
+        if (!request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ])) {
+            return null;
+        }
+
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'icon'    => 'fal fa-undo-alt',
+            'tooltip' => $deliveryNote->hasIncompleteSets()
+                ? __('Give the parts of the set that were not found back to the picker to look for them again')
+                : __('Give the items waiting for the warehouse back to the picker'),
+            'label'   => __('Back to picking'),
+            'key'     => 'undo-waiting',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.undo_waiting',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
     }
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array

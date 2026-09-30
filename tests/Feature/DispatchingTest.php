@@ -5330,6 +5330,126 @@ test('a set sold only complete waits until its other parts are put back, then re
         ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
 });
 
+test('a set sold only complete waiting on a part not found goes back to picking with that part to look for again (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $notFoundPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($this)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    StoreNotPickPicking::make()->action($notFoundPart, $this->user, []);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoWaitingDeliveryNote::make()->action($deliveryNote);
+    $notFoundPart->refresh();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and((float)$notFoundPart->quantity_not_picked)->toBe(0.0)
+        ->and($notFoundPart->is_handled)->toBeFalse()
+        ->and($deliveryNote->hasIncompleteSets())->toBeFalse()
+        ->and((float)$item->refresh()->quantity_picked)->toBe(10.0);
+});
+
+test('a picking session offers to put back the parts of a set sold only complete picked beyond its complete sets (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $groupedRow = (new \App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource((object)[
+        'delivery_note_id'                  => $deliveryNote->id,
+        'delivery_note_reference'           => $deliveryNote->reference,
+        'delivery_note_slug'                => $deliveryNote->slug,
+        'delivery_note_customer_notes'      => null,
+        'delivery_note_public_notes'        => null,
+        'delivery_note_internal_notes'      => null,
+        'delivery_note_shipping_notes'      => null,
+        'delivery_note_is_premium_dispatch' => false,
+        'delivery_note_has_extra_packing'   => false,
+    ]))->toArray(request());
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($groupedRow['put_back_incomplete_sets']['route']['name'])->toBe('grp.models.delivery_note.state.put_back_incomplete_sets')
+        ->and(collect($groupedRow['put_back_incomplete_sets']['parts'])->pluck('code')->all())->toBe([$item->orgStock->code]);
+});
+
+test('a picking session waiting on a set sold only complete shows the parts to put back and moves on once they are (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['is_handled' => true, 'quantity_picked' => 0]);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $incompleteSets = \App\Actions\Dispatching\PickingSession\UI\ShowPickingSession::make()->getIncompleteSets($pickingSession->refresh());
+    $itemizedRow    = collect(\App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
+        \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession)
+    )->resolve())->firstWhere('id', $item->id);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($incompleteSets)->toHaveCount(1)
+        ->and($incompleteSets[0]['delivery_note_reference'])->toBe($deliveryNote->reference)
+        ->and(collect($incompleteSets[0]['action']['parts'])->pluck('code')->all())->toBe([$item->orgStock->code])
+        ->and($itemizedRow['indivisible_set']['product']['code'])->toBe($item->transaction->model->code);
+
+    \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->not->toBe(PickingSessionStateEnum::HANDLING_BLOCKED)
+        ->and(\App\Actions\Dispatching\PickingSession\UI\ShowPickingSession::make()->getIncompleteSets($pickingSession))->toBe([]);
+});
+
+test('a picking session waiting on a set sold only complete goes back to picking to look for the part not found (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $notFoundPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($this)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    StoreNotPickPicking::make()->action($notFoundPart->refresh(), $this->user, []);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    \App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::make()->action($pickingSession->refresh());
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING)
+        ->and((float)$notFoundPart->refresh()->quantity_not_picked)->toBe(0.0)
+        ->and($notFoundPart->is_handled)->toBeFalse();
+});
+
+test('the picker of a waiting picking session may send it back to picking (HELP-3548)', function () {
+    $pickingSession = (new \App\Models\Inventory\PickingSession())->forceFill([
+        'user_id'         => $this->user->id,
+        'warehouse_id'    => $this->warehouse->id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+
+    expect(\App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::canStepBack($this->user, $pickingSession))->toBeTrue()
+        ->and(\App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::canStepBack(null, $pickingSession))->toBeFalse();
+});
+
 test('a set sold only complete with a part not found counts the product once in what customer services sees as out of stock (HELP-3548)', function () {
     [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
     $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['quantity_not_picked' => 10]);

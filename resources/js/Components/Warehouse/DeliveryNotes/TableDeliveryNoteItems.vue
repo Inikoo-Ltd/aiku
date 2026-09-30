@@ -1266,16 +1266,18 @@ const onSaveSplitBoxes = async () => {
                 <div v-for="picking in item.picking_locations" :key="picking.id"
                     class="text-sm flex items-center gap-2 flex-wrap"
                     :class="picking.is_returned_to_location ? 'opacity-60' : ''">
-                    <Link v-if="picking.location_code"
-                          :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
-                          :class="picking.is_returned_to_location ? 'font-medium text-gray-400 line-through' : 'primaryLink font-medium'">
-                        {{ picking.location_code }}
-                    </Link>
-                    <span v-else class="text-gray-400 italic">No Location</span>
-                    <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium"
-                        :class="picking.is_returned_to_location ? 'text-gray-400 line-through' : ''">
-                        {{ picking.quantity_picked }}
-                    </div>
+                    <span class="inline-flex items-center gap-2 whitespace-nowrap">
+                        <Link v-if="picking.location_code"
+                              :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
+                              :class="picking.is_returned_to_location ? 'font-medium text-gray-400 line-through' : 'primaryLink font-medium'">
+                            {{ picking.location_code }}
+                        </Link>
+                        <span v-else class="text-gray-400 italic">{{ ctrans('No Location') }}</span>
+                        <span class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium"
+                            :class="picking.is_returned_to_location ? 'text-gray-400 line-through' : ''">
+                            {{ picking.quantity_picked }}
+                        </span>
+                    </span>
 
                     <!-- Label: walked back to its location, so the pick is history -->
                     <span v-if="picking.is_returned_to_location"
@@ -1309,7 +1311,7 @@ const onSaveSplitBoxes = async () => {
                     </button>
                 </div>
             </div>
-            <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+            <div v-else class="text-gray-400 italic text-sm whitespace-nowrap">{{ ctrans('No items picked yet') }}</div>
         </template>
 
         <!-- Column: Batch Codes -->
@@ -1548,24 +1550,26 @@ const onSaveSplitBoxes = async () => {
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
-                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center flex-wrap">
-                        <Link v-if="!!(generateLocationRoute(picking))" :href="generateLocationRoute(picking)" class="secondaryLink">
-                            {{ picking.location_code }}
-                        </Link>
-                        <span v-else>
-                            {{ picking.location_code }}
-                        </span>
-
-                        <div v-tooltip="ctrans('Total picked quantity in this location')"
-                            class="text-gray-500 whitespace-nowrap">
-                            <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
-                                aria-hidden="true" />
-                            <FractionDisplay v-if="picking.quantity_picked_fractional"
-                                :fractionData="picking.quantity_picked_fractional" />
+                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 gap-y-1 items-center flex-wrap">
+                        <span class="inline-flex items-center gap-x-2 whitespace-nowrap">
+                            <Link v-if="!!(generateLocationRoute(picking))" :href="generateLocationRoute(picking)" class="secondaryLink">
+                                {{ picking.location_code }}
+                            </Link>
                             <span v-else>
-                                {{ picking.quantity_picked }}
+                                {{ picking.location_code }}
                             </span>
-                        </div>
+
+                            <span v-tooltip="ctrans('Total picked quantity in this location')"
+                                class="text-gray-500 whitespace-nowrap">
+                                <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
+                                    aria-hidden="true" />
+                                <FractionDisplay v-if="picking.quantity_picked_fractional"
+                                    :fractionData="picking.quantity_picked_fractional" />
+                                <span v-else>
+                                    {{ picking.quantity_picked }}
+                                </span>
+                            </span>
+                        </span>
 
                         <!-- Section: Picking Batch Code -->
                         <button
