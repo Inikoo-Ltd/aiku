@@ -358,7 +358,7 @@ defineExpose({
                     <template #default>
                         <h3 class="inline-block leading-4 !text-sm">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
-                            {{ product.name }}
+                            {{ product.variant_title || product.name }}
                         </h3>
                     </template>
                 </LinkIris>
