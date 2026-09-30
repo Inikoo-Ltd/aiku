@@ -542,6 +542,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <span :class="differenceClass(item.difference_units)">{{ formatQuantity(Number(item.difference_units)) }}</span>
         </template>
 
+        <template #cell(difference_amount)="{ item }">
+            <span :class="differenceClass(item.difference_amount)">
+                {{ item.difference_amount === null ? '-' : locale.currencyFormat(item.currency_code ?? 'EUR', Number(item.difference_amount)) }}
+            </span>
+        </template>
+
         <template #cell(difference_skos)="{ item }">
             <span :class="differenceClass(item.difference_skos)">
                 {{ item.difference_skos === null ? '-' : formatQuantity(Number(item.difference_skos)) }}

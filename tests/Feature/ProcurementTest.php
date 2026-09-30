@@ -2850,6 +2850,7 @@ test('stock delivery item confirmation sets confirmed_at real column', function 
 
 test('UI show stock delivery under over delivered items tab', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-OVER-TAB', [10]);
+    $stockDelivery->items()->first()->update(['net_amount' => 50]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
@@ -2875,6 +2876,8 @@ test('UI show stock delivery under over delivered items tab', function () {
                     ->where('difference_units', -2)
                     ->where('difference_percentage', -20)
                     ->where('difference_skos', -0.2)
+                    ->where('difference_amount', -10)
+                    ->has('currency_code')
                     ->etc()
             );
     });

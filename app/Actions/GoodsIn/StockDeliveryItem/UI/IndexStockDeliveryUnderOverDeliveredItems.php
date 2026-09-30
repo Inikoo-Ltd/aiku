@@ -38,6 +38,8 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
         $query->where('stock_delivery_items.stock_delivery_id', $parent->id);
         $query->leftJoin('org_stocks', 'stock_delivery_items.org_stock_id', 'org_stocks.id');
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id');
+        $query->leftJoin('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id');
+        $query->leftJoin('currencies', 'currencies.id', 'stock_deliveries.currency_id');
         $query->whereNotNull('stock_delivery_items.checked_at');
         $query->where('stock_delivery_items.state', '!=', StockDeliveryItemStateEnum::CANCELLED);
         $query->whereColumn('stock_delivery_items.unit_quantity_checked', '!=', 'stock_delivery_items.unit_quantity');
@@ -56,10 +58,12 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.packed_in as org_stock_packed_in',
+                'currencies.code as currency_code',
             ])
             ->selectRaw('stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity as difference_units')
             ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) / nullif(coalesce(sp.units_per_pack, org_stocks.packed_in), 0), 3) as difference_skos')
             ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) * 100 / nullif(stock_delivery_items.unit_quantity, 0), 1) as difference_percentage')
+            ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) * stock_delivery_items.net_amount / nullif(stock_delivery_items.unit_quantity, 0), 2) as difference_amount')
             ->allowedSorts([
                 AllowedSort::field('part', 'org_stocks.code'),
                 AllowedSort::field('delivered_quantity', 'stock_delivery_items.unit_quantity'),
@@ -67,6 +71,7 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 'difference_units',
                 'difference_skos',
                 'difference_percentage',
+                'difference_amount',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -95,6 +100,7 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 ->column(key: 'difference_percentage', label: __('Diff'), canBeHidden: false, sortable: true)
                 ->column(key: 'difference_units', label: __('Units'), canBeHidden: false, sortable: true)
                 ->column(key: 'difference_skos', label: __('SKOs'), canBeHidden: false, sortable: true)
+                ->column(key: 'difference_amount', label: __('Value'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('part');
         };
     }
