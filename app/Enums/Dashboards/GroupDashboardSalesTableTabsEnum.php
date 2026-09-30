@@ -59,6 +59,8 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice Categories'),

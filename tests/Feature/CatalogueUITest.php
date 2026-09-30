@@ -1164,6 +1164,19 @@ test('sales are visible to webmasters but not to staff unrelated to sales', func
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')->has('dashboard.super_blocks', 1));
 });
 
+test('shop links on the dashboards open the shop dashboard on the target tab, whatever tab the user looked at last', function () {
+    $originalSettings = $this->user->settings;
+    $this->user->update(['settings' => array_merge($originalSettings ?? [], ['shop_dashboard_section' => ShopDashboardSectionsEnum::SALES->value])]);
+
+    $targetUrl = route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => ShopDashboardSectionsEnum::TARGET->value]);
+
+    get(route('grp.majordomo.redirect_shops_from_dashboard', $this->shop->id))->assertRedirect($targetUrl);
+
+    get($targetUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks.0.sections.current', 'target'));
+
+    $this->user->update(['settings' => $originalSettings]);
+});
+
 test('shop dashboard sales table shows departments, with brands as an icon on the right', function () {
     $response = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
 

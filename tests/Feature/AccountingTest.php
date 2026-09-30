@@ -75,6 +75,8 @@ use App\Actions\Dashboard\GetOrganisationDashboardTimeSeriesData;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
 use Illuminate\Support\Facades\Event;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -823,8 +825,44 @@ test('UI show invoice category', function (InvoiceCategory $invoiceCategory) {
                 fn (AssertableInertia $page) => $page
                     ->where('title', $invoiceCategory->name)
                     ->etc()
-            );
+            )
+            ->has('overview.month')
+            ->has('overview.year')
+            ->has('overview.monthly')
+            ->missing('tabs');
     });
+})->depends('store invoice category');
+
+test('invoice category overview adds partner sales and compares with the same days last year', function (InvoiceCategory $invoiceCategory) {
+    $today  = Carbon::parse('2026-09-15', 'UTC');
+    $record = fn (TimeSeriesFrequencyEnum $frequency, string $from, string $period, float $external, float $internal, int $invoices) => [
+        'invoice_category_time_series_id' => $invoiceCategory->timeSeries()->firstOrCreate(['frequency' => $frequency->value])->id,
+        'frequency'                       => $frequency->singleLetter(),
+        'from'                            => $from,
+        'to'                              => $from,
+        'period'                          => $period,
+        'sales_external'                  => $external,
+        'sales_internal'                  => $internal,
+        'invoices'                        => $invoices,
+        'refunds'                         => 0,
+    ];
+
+    DB::table('invoice_category_time_series_records')->insert([
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-09-10 00:00:00', '2026-09-10', 100, 20, 2),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-09-16 00:00:00', '2026-09-16', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-02-01 00:00:00', '2026-02-01', 50, 0, 1),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2025-09-15 00:00:00', '2025-09-15', 60, 0, 1),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2025-09-20 00:00:00', '2025-09-20', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2025-08-01 00:00:00', '2025-08', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2025-09-01 00:00:00', '2025-09', 60, 0, 1),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2026-09-01 00:00:00', '2026-09', 120, 0, 2),
+    ]);
+
+    $overview = GetInvoiceCategoryOverview::run($invoiceCategory, $today);
+
+    expect($overview['month'])->toMatchArray(['sales' => 120.0, 'invoices' => 2, 'sales_last_year' => 60.0, 'invoices_last_year' => 1])
+        ->and($overview['year'])->toMatchArray(['sales' => 170.0, 'invoices' => 3, 'sales_last_year' => 60.0])
+        ->and(array_column($overview['monthly'], 'period'))->toBe(['2025-09', '2026-09']);
 })->depends('store invoice category');
 
 test('UI show invoice in invoice category', function (InvoiceCategory $invoiceCategory) {

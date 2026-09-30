@@ -46,6 +46,8 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice categories'),

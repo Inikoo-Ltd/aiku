@@ -226,11 +226,11 @@ const updateTab = (value: string) => {
 						<Tab
 							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"
-							:class="tab.align === 'right' ? '!ml-auto' : ''"
+							:class="[tab.align === 'right' ? '!ml-auto' : '', '!outline-none focus-visible:bg-gray-100']"
 							v-tooltip="tab.type === 'icon' ? tab.title : undefined"
 							:aria-label="tab.title"
 						>
-							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" :class="tab.type === 'icon' ? '' : 'mr-1.5'" fixed-width aria-hidden="true" />
 							<template v-if="tab.type !== 'icon'">{{ tab.title }}</template>
 						</Tab>
 					</template>
