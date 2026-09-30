@@ -43,10 +43,11 @@ const props = withDefaults(defineProps<{
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
     showDescription?: boolean
+    showComments?: boolean
     labelReporterOnMobile?: boolean
     canCommentInternally?: boolean
     translateRoutes?: { ticket: string; comment: string }
-}>(), { commentsNewestFirst: true, showDescription: true, canCommentInternally: false, labelReporterOnMobile: false })
+}>(), { commentsNewestFirst: true, showDescription: true, showComments: true, canCommentInternally: false, labelReporterOnMobile: false })
 
 const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
@@ -157,7 +158,9 @@ const submit = () => {
 
         <slot name="after-description" />
 
-        <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.type === 'post_mortem' ? 'border-red-300 bg-red-50' : form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
+        <slot name="before-comments" />
+
+        <form v-show="showComments" class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.type === 'post_mortem' ? 'border-red-300 bg-red-50' : form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
             <TicketComposer ref="composer" v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="ctrans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
@@ -174,13 +177,13 @@ const submit = () => {
             </div>
         </form>
 
-        <div v-if="comments.length > 1" class="ml-6 flex justify-end text-xs text-gray-500">
+        <div v-if="comments.length > 1" v-show="showComments" class="ml-6 flex justify-end text-xs text-gray-500">
             <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="ctrans('Sort comments')" @click="toggleCommentOrder">
                 {{ isNewestFirst ? "↓" : "↑" }} {{ isNewestFirst ? ctrans("Newest first") : ctrans("Oldest first") }}
             </button>
         </div>
 
-        <div class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
+        <div v-show="showComments" class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
             <div
                 v-for="comment in sortedComments"
                 :key="comment.id"

@@ -239,8 +239,9 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
+				usePage().component === 'Tickets/Ticket' ? 'pb-0' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				'mr-4',
 				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
