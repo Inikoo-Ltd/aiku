@@ -25,6 +25,11 @@ class IndexSysAdminScheduledTasks
     use AsAction;
     use WithAnalyticsSubNavigations;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('sysadmin.view');
+    }
+
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

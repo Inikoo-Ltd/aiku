@@ -56,6 +56,9 @@ enum RolesEnum: string
     case PROCUREMENT_CLERK = 'procurement-clerk';
     case PROCUREMENT_SUPERVISOR = 'procurement-supervisor';
 
+    case AGENT_MANAGER = 'agent-manager';
+    case AGENT_CLERK = 'agent-clerk';
+
     case DISPATCH_CLERK = 'dispatch-clerk';
     case DISPATCH_EXCEPTION_CLERK = 'dispatch-exception-clerk';
     case DISPATCH_SUPERVISOR = 'dispatch-supervisor';
@@ -135,6 +138,8 @@ enum RolesEnum: string
             RolesEnum::SUPPLY_CHAIN => __('Supply chain'),
             RolesEnum::PROCUREMENT_CLERK => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
+            RolesEnum::AGENT_MANAGER => __('Agent manager'),
+            RolesEnum::AGENT_CLERK => __('Agent clerk'),
             RolesEnum::DISPATCH_CLERK => __('Dispatching clerk'),
             RolesEnum::DISPATCH_EXCEPTION_CLERK => __('Dispatching exception clerk'),
             RolesEnum::DISPATCH_SUPERVISOR => __('Dispatching supervisor'),
@@ -340,6 +345,16 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW,
                 OrganisationPermissionsEnum::PROCUREMENT_VIEW
+            ],
+            RolesEnum::AGENT_MANAGER => [
+                OrganisationPermissionsEnum::AGENT,
+                OrganisationPermissionsEnum::PROCUREMENT,
+                OrganisationPermissionsEnum::SUPERVISOR_PROCUREMENT,
+                OrganisationPermissionsEnum::HUMAN_RESOURCES,
+            ],
+            RolesEnum::AGENT_CLERK => [
+                OrganisationPermissionsEnum::AGENT,
+                OrganisationPermissionsEnum::PROCUREMENT,
             ],
             RolesEnum::PROCUREMENT_SUPERVISOR => [
                 OrganisationPermissionsEnum::PROCUREMENT,
@@ -654,6 +669,10 @@ enum RolesEnum: string
             RolesEnum::SAAS_CLERK,
 
             => [OrganisationTypeEnum::DIGITAL_AGENCY],
+
+            RolesEnum::AGENT_MANAGER,
+            RolesEnum::AGENT_CLERK
+            => [OrganisationTypeEnum::AGENT],
 
             RolesEnum::PROCUREMENT_CLERK,
             RolesEnum::PROCUREMENT_SUPERVISOR,

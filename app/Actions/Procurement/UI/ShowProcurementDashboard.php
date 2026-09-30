@@ -24,9 +24,9 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\Procurement\OrgPartner;
-use App\Models\Procurement\OrgSupplier;
-use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -67,19 +67,27 @@ class ShowProcurementDashboard extends OrgAction
         }
 
         return [
-            'suppliers'         => OrgSupplier::where('agent_id', $agent->id)->count(),
-            'supplier_products' => OrgSupplierProduct::whereIn(
-                'org_agent_id',
-                OrgAgent::where('agent_id', $agent->id)->select('id')
-            )->count(),
-            'purchase_orders'   => PurchaseOrder::where('agent_id', $agent->id)->count(),
-            'stock_deliveries'  => StockDelivery::where('agent_id', $agent->id)->count(),
+            'suppliers'                => Supplier::where('agent_id', $agent->id)->where('status', true)->count(),
+            'purchase_orders'          => PurchaseOrder::where('agent_id', $agent->id)->count(),
+            'supplier_purchase_orders' => AgentSupplierPurchaseOrder::join('suppliers', 'suppliers.id', 'agent_supplier_purchase_orders.supplier_id')
+                ->where('suppliers.agent_id', $agent->id)
+                ->count(),
+            'stock_deliveries'         => StockDelivery::where('agent_id', $agent->id)->count(),
         ];
     }
 
     private function getDashboardCards(array $numbers): array
     {
         $organisation = $this->organisation;
+
+        if ($organisation->type === OrganisationTypeEnum::AGENT) {
+            return [
+                $this->dashboardCard(__('Purchase Orders'), __('Received from our organisations'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
+                $this->dashboardCard(__('Supplier Purchase Orders'), __('Sent to suppliers'), 'fal fa-clipboard-list', $numbers['supplier_purchase_orders'], 'amber', 'grp.org.procurement.agent_supplier_purchase_orders.index'),
+                $this->dashboardCard(__('Stock Deliveries'), __('Shipped to our organisations'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
+                $this->dashboardCard(__('Suppliers'), __('Current suppliers'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
+            ];
+        }
 
         if ($organisation->type !== OrganisationTypeEnum::SHOP) {
             return [

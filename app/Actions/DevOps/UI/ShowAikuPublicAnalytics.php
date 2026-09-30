@@ -28,6 +28,11 @@ class ShowAikuPublicAnalytics extends OrgAction
 {
     use WithInertia;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function asController(ActionRequest $request): Group
     {
         $this->initialisationFromGroup(app('group'), $request)->withTab(AikuPublicAnalyticsTabsEnum::values());

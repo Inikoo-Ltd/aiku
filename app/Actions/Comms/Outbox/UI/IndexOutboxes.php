@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Outbox\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithCommsSubNavigation;
 use App\Actions\Comms\UI\ShowCommsDashboard;
@@ -38,6 +39,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOutboxes extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use WithCommsSubNavigation;
 
     private Group|Shop|Organisation|PostRoom|Website|Fulfilment $parent;

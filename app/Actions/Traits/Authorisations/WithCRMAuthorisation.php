@@ -19,7 +19,7 @@ trait WithCRMAuthorisation
         if (str_starts_with($routeName, 'grp.overview.')) {
             return $request->user()->authTo("group-overview");
         } elseif (str_starts_with($routeName, 'grp.platforms.')) {
-            return true;
+            return $request->user()->hasGroupAccess();
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.prospects')) {
             $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.prospects.edit");
 

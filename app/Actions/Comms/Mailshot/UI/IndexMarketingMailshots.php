@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\MarketingMailshotsResource;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexMarketingMailshots extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use HasUIMailshots;
     use WithIndexMailshots;
 

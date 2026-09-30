@@ -180,6 +180,30 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
+        'agt-m'      => [
+            'code'               => 'agt-m',
+            'name'               => 'Agent manager',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_MANAGER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
+        'agt-c'      => [
+            'code'               => 'agt-c',
+            'name'               => 'Agent clerk',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_CLERK
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
         'hr-m'       => [
             'code'       => 'hr-m',
             'name'       => 'Human resources supervisor',

@@ -30,6 +30,11 @@ class IndexBarcode extends OrgAction
 {
     private Group $parent;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(['goods.view', 'masters.view']);
+    }
+
     public function handle(Group $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

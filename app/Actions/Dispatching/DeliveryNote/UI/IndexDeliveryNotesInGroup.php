@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\UI\DeliveryNotes\DeliveryNotesTabsEnum;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexDeliveryNotesInGroup extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use IsDeliveryNotesIndex;
 
     public function handle(Group $parent, $prefix = null): LengthAwarePaginator

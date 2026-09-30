@@ -120,6 +120,27 @@ const optionsJob = reactive<optionsJob>({
         ],
     },
 
+    agt: {
+        key: "agt",
+        department: ctrans("Agent"),
+        icon: "fal fa-box-usd",
+        subDepartment: [
+            {
+                slug: "agt-m",
+                grade: "manager",
+                label: ctrans("Manager"),
+                number_employees: props.options.positions.data.find(position => position.code == 'agt-m')?.number_employees || 0
+            },
+            {
+                slug: "agt-c",
+                grade: "clerk",
+                label: ctrans("Clerk"),
+                number_employees: props.options.positions.data.find(position => position.code == 'agt-c')?.number_employees || 0
+            }
+        ],
+        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c"].includes(position.code))
+    },
+
     hr: {
         key: 'hr',
         department: ctrans("Human Resources"),

@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Employee\UI;
 
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -29,6 +30,7 @@ use App\Models\HumanResources\Employee;
 
 class CreateEmployee extends OrgAction
 {
+    use WithWithheldJobPositions;
     use WithHumanResourcesEditAuthorisation;
 
     public function handle(Organisation $organisation, ActionRequest $request): Response
@@ -244,7 +246,7 @@ class CreateEmployee extends OrgAction
                                     'required' => true,
                                     'label'    => __('Position'),
                                     'options'  => [
-                                        'positions'   => JobPositionResource::collection($this->organisation->jobPositions),
+                                        'positions'   => JobPositionResource::collection($this->assignableJobPositions($this->organisation, request()->user())),
                                         'shops'       => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                         'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                                         'warehouses'  => WarehouseResource::collection($this->organisation->warehouses),

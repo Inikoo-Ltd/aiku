@@ -501,6 +501,96 @@ test('agent login can propose a ready date but not set management-only clean han
     actingAs($this->adminGuest->getUser());
 })->depends('create agent supplier purchase order');
 
+test('agent manager only sees their own agent organisation', function () {
+    $organisation = $this->agent->organisation;
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationPermissions::run($organisation);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($organisation);
+
+    $agentManager = JobPosition::where('organisation_id', $organisation->id)->where('code', 'agt-m')->firstOrFail();
+    $employee     = StoreEmployee::make()->action($organisation, [
+        'worker_number'   => 'agent-manager',
+        'alias'           => 'agent-manager',
+        'contact_name'    => 'Agent Manager',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $agentManager->slug, 'scopes' => []]],
+    ]);
+    $agentUser = StoreUser::make()->action($employee, [
+        'username'       => 'agent-manager',
+        'password'       => Str::random(32),
+        'status'         => true,
+        'reset_password' => false,
+    ]);
+
+    expect($agentUser->roles()->pluck('name')->all())->toBe(['agent-manager-'.$organisation->id])
+        ->and($agentUser->authTo('agent.'.$organisation->id))->toBeTrue()
+        ->and($agentUser->worksOnlyForAgents())->toBeTrue()
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['procurement', 'hr'])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['procurement']['topMenu']['subSections'])->pluck('root')->all())->toBe([
+            'grp.org.procurement.dashboard',
+            'grp.org.procurement.purchase_orders.',
+            'grp.org.procurement.agent_supplier_purchase_orders.',
+            'grp.org.procurement.stock_deliveries.',
+            'grp.org.procurement.org_suppliers.',
+            'grp.org.procurement.supplier_messages.',
+            'grp.org.procurement.settings.',
+        ]);
+
+    actingAs($agentUser);
+
+    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.procurement.org_suppliers.index', $organisation->slug))
+        ->assertInertia(fn ($page) => $page->where('data.meta.total', Supplier::where('agent_id', $this->agent->id)->where('status', true)->count()));
+    $this->get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
+
+    $this->get(route('grp.org.accounting.invoices.index', $this->organisation->slug))->assertForbidden();
+    $this->get(route('grp.org.procurement.purchase_orders.index', $this->organisation->slug))->assertForbidden();
+    $this->get(route('grp.overview.crm.customers.index'))->assertForbidden();
+    $this->get(route('grp.catalogue.show'))->assertForbidden();
+    $this->get(route('grp.supply-chain.dashboard'))->assertForbidden();
+    $this->get(route('grp.tickets.index'))->assertOk();
+
+    $orgAdmin    = JobPosition::where('organisation_id', $organisation->id)->where('code', 'org-admin')->firstOrFail();
+    $agentClerk  = JobPosition::where('organisation_id', $organisation->id)->where('code', 'agt-c')->firstOrFail();
+    $createProps = json_encode($this->get(route('grp.org.hr.employees.create', $organisation->slug))->viewData('page')['props']);
+    expect($createProps)->not->toContain('"code":"org-admin"')->toContain('"code":"agt-c"');
+
+    $this->post(route('grp.models.org.employee.store', $organisation->id), [
+        'worker_number'   => 'agent-new',
+        'alias'           => 'agent-new',
+        'contact_name'    => 'Agent New',
+        'state'           => EmployeeStateEnum::WORKING->value,
+        'type'            => EmployeeTypeEnum::EMPLOYEE->value,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME->value,
+        'positions'       => [['slug' => $agentClerk->slug, 'scopes' => []], ['slug' => $orgAdmin->slug, 'scopes' => []]],
+        'username'        => 'agent-new',
+        'password'        => Str::random(32),
+    ])->assertRedirect();
+    expect(\App\Models\HumanResources\Employee::where('alias', 'agent-new')->firstOrFail()->jobPositions()->pluck('code')->all())->toBe(['agt-c']);
+
+    $administrator = StoreEmployee::make()->action($organisation, [
+        'worker_number'   => 'agent-admin',
+        'alias'           => 'agent-admin',
+        'contact_name'    => 'Agent Admin',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $orgAdmin->slug, 'scopes' => []]],
+    ]);
+    $this->patch(route('grp.models.employee.update', $administrator->id), [
+        'job_positions' => [['slug' => $agentClerk->slug, 'scopes' => []]],
+    ])->assertRedirect();
+    expect($administrator->jobPositions()->pluck('code')->sort()->values()->all())->toBe(['agt-c', 'org-admin']);
+
+    actingAs($this->adminGuest->getUser());
+    expect(json_encode($this->get(route('grp.org.hr.employees.create', $organisation->slug))->viewData('page')['props']))->toContain('"code":"org-admin"');
+    $this->get(route('grp.overview.crm.customers.index'))->assertOk();
+    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
+});
+
 test('PO journey board marks stages on an agent supplier purchase order and keeps handover for management', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
     $route = route('grp.models.agent_supplier_purchase_order.journey_stage', $agentSupplierPurchaseOrder->id);
 
