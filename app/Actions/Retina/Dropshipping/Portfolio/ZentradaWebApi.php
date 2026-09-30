@@ -117,10 +117,16 @@ class ZentradaWebApi extends RetinaAction
     /**
      * Zentrada keeps the last value it imported for a field left empty, so the promotion has to be
      * published as an explicit 0: an empty column leaves a discount running forever.
+     *
+     * The pack is the only thing that can be ordered (minimum_order_quantity_in_packing_units is
+     * always 1, there is no buying loose pieces), so price, RRP and weight are published per pack,
+     * matching the price aiku itself sells and invoices it at. Splitting the pack price down to a
+     * fractional per-piece price left Zentrada rounding it to the cent before multiplying back up
+     * by the piece count, so its order total stopped matching the pack price aiku actually charged.
      */
     private function mapRow(Product $row, ?string $currency, string $vat): array
     {
-        $unitsPerPackage  = $row->units > 0 ? $row->units : 1;
+        $piecesPerPackage = $row->units > 0 ? $row->units : 1;
         $images           = $this->extractImages($row->web_images);
         $shortDescription = $this->shortDescription($row->description) ?: $row->name;
         $mainTradeUnit    = $this->getMainTradeUnit($row);
@@ -146,18 +152,18 @@ class ZentradaWebApi extends RetinaAction
             'image10'                                 => $images[9] ?? '',
             'currency'                                => $currency,
             'VAT'                                     => $vat,
-            'quantity_of_units_per_package'           => $unitsPerPackage,
+            'quantity_of_units_per_package'           => 1,
             'minimum_order_quantity_in_packing_units' => 1,
-            'net_price_per_unit'                      => ($row->price ?? 0) / $unitsPerPackage,
+            'net_price_per_unit'                      => $row->price ?? 0,
             'promotion_discount'                      => '0',
             'volumedbasedpricing_quantity1'           => '',
             'volumebasedpricing_price1'               => '',
             'volumedbasedpricing_quantity2'           => '',
             'volumedbasedpricing_quantity3'           => '',
             'available_quantity_in_packing_units'     => floor($row->available_quantity ?? 0),
-            'recommended_retail_price'                => ($row->rrp ?? 0) / $unitsPerPackage,
+            'recommended_retail_price'                => $row->rrp ?? 0,
             'activ_until'                             => '',
-            'weight'                                  => number_format($this->weightPerUnit($row, $unitsPerPackage) / 1000, 2),
+            'weight'                                  => number_format($this->weightPerPackage($row, $piecesPerPackage) / 1000, 2),
             'collection'                              => '',
             'statistical_number'                      => $this->getStatisticalNumber($row, $mainTradeUnit),
             'country_of_origin'                       => $row->country_of_origin,
@@ -224,16 +230,17 @@ class ZentradaWebApi extends RetinaAction
     }
 
     /**
-     * Prices are per unit, so the weight has to be per unit too. The marketing weight already is,
-     * the gross weight covers the whole packing unit including its packing.
+     * Prices are per pack, so the weight has to be per pack too. The gross weight already covers
+     * the whole packing unit including its packing; the marketing weight is per single piece, so it
+     * has to be scaled up by the pieces the pack holds.
      */
-    private function weightPerUnit(Product $product, float $unitsPerPackage): float
+    private function weightPerPackage(Product $product, float $piecesPerPackage): float
     {
         if ($product->marketing_weight) {
-            return (float) $product->marketing_weight;
+            return (float) $product->marketing_weight * $piecesPerPackage;
         }
 
-        return ($product->gross_weight ?? 0) / $unitsPerPackage;
+        return $product->gross_weight ?? 0;
     }
 
     private function detailedDescription(Product $product, string $shortDescription): string
