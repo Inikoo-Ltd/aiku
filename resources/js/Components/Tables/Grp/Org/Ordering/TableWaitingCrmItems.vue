@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
+import NotesDisplay from "@/Components/NotesDisplay.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart, faHourglassStart } from "@fal"
@@ -487,6 +488,14 @@ const submitSendBackWarehouse = () => {
                     fixed-width
                     aria-hidden="true"
                 />
+                <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
+                    internal: 'delivery_note_internal_notes',
+                    customer: 'delivery_note_customer_notes',
+                    public: 'delivery_note_public_notes',
+                    shipping: 'delivery_note_shipping_notes',
+                    warehouse: 'delivery_note_private_warehouse_note',
+                    credit_transaction_note: '',
+                }" />
             </div>
             <div v-if="item.order_reference" class="mt-1 text-xs text-gray-500">
                 <Link v-if="orderRoute(item)" :href="orderRoute(item)!" class="primaryLink">

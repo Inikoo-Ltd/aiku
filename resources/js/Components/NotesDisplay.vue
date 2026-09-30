@@ -24,6 +24,7 @@ const props = defineProps<{
         customer?: string
         internal?: string
         public?: string
+        warehouse?: string
         credit_transaction_note?: string
     }
     referenceField?: string // Field name for the reference/identifier

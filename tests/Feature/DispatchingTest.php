@@ -3854,6 +3854,23 @@ test('waiting quantities never exceed what is still unpicked', function () {
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
+test('lines waiting for customer service show the order CRM note and the warehouse note', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+    $deliveryNote->update(['number_items_waiting_crm' => 1, 'private_warehouse_note' => 'shelf empty']);
+    $deliveryNote->orders()->first()->update(['internal_notes' => '30/9 emailed re oos']);
+
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['waiting_crm_items']['data'];
+
+    $row = collect($rows)->firstWhere('delivery_note_id', $deliveryNote->id);
+
+    expect($row['delivery_note_internal_notes'])->toBe('30/9 emailed re oos')
+        ->and($row['delivery_note_private_warehouse_note'])->toBe('shelf empty');
+});
+
 test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
