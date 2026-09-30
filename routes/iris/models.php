@@ -62,6 +62,7 @@ Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder
 Route::post('review/{review:id}/react', ReactRetinaReview::class)->name('review.react')->whereNumber('review');
 
 Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(function () {
+    Route::patch('update', UpdateRetinaOrder::class)->name('update');
     Route::patch('update-gr-gift', UpdateRetinaOrderGrGift::class)->name('update_gr_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');

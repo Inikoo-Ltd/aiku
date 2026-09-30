@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue'
+import { inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
-import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent } from "@fal"
+import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote } from "@fal"
 import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -14,6 +14,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { ToggleSwitch } from 'primevue'
 import OrderSummary from '@/Components/Summary/OrderSummary.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { ProductResource } from '@/types/Iris/Products'
 import InputQuantitySideBasket from '@/Components/Iris/Products/InputQuantitySideBasket.vue'
 import axios from 'axios'
@@ -32,7 +33,7 @@ import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LabelOfAvailableDiscountInRightBasket from '@/Components/Utils/Iris/Label/LabelOfAvailableDiscountInRightBasket.vue'
-library.add(faMinus, faArrowRight, faPlus, fasPlus, faCheck, faChevronRight, faChevronDown, faTrashAlt, faCheckCircle, faExclamationTriangle, faPlusCircle, faGift, faImage, faTimes)
+library.add(faMinus, faArrowRight, faPlus, fasPlus, faCheck, faChevronRight, faChevronDown, faTrashAlt, faCheckCircle, faExclamationTriangle, faPlusCircle, faGift, faImage, faTimes, faTruck, faStickyNote)
 
 interface DataSideBasket {
     order_summary: any
@@ -43,6 +44,8 @@ interface DataSideBasket {
         has_extra_packing: boolean
         has_insurance: boolean
         voucher_code?: string | null
+        customer_notes?: string | null
+        shipping_notes?: string | null
     }
     voucher: {
         
@@ -341,7 +344,82 @@ const onApplyVoucher = async () => {
     )
 }
 
+type InstructionKey = 'shipping_notes' | 'customer_notes'
 
+const isModalCheckoutOpen = ref(false)
+const isLoadingCheckout = ref(false)
+const instructions = ref<Record<InstructionKey, string>>({ shipping_notes: '', customer_notes: '' })
+const savedInstructions: Record<InstructionKey, string> = { shipping_notes: '', customer_notes: '' }
+const listLoadingInstructions = ref<InstructionKey[]>([])
+const listSuccessInstructions = ref<InstructionKey[]>([])
+const listErrorInstructions = ref<InstructionKey[]>([])
+
+const onOpenCheckoutModal = () => {
+    const orderData = dataSideBasket.value?.order_data
+    savedInstructions.shipping_notes = orderData?.shipping_notes ?? ''
+    savedInstructions.customer_notes = orderData?.customer_notes ?? ''
+    instructions.value = { ...savedInstructions }
+    isModalCheckoutOpen.value = true
+}
+
+const saveInstruction = async (key: InstructionKey): Promise<boolean> => {
+    const orderId = dataSideBasket.value?.order_data?.id
+    const value = instructions.value[key]
+    if (!orderId || value === savedInstructions[key]) {
+        return true
+    }
+
+    listLoadingInstructions.value.push(key)
+    listErrorInstructions.value = listErrorInstructions.value.filter(item => item !== key)
+    try {
+        await axios.patch(route('iris.models.order.update', { order: orderId }), { [key]: value })
+        savedInstructions[key] = value
+        listSuccessInstructions.value.push(key)
+        setTimeout(() => {
+            listSuccessInstructions.value = listSuccessInstructions.value.filter(item => item !== key)
+        }, 3000)
+
+        return true
+    } catch {
+        listErrorInstructions.value.push(key)
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
+            type: "error"
+        })
+
+        return false
+    } finally {
+        listLoadingInstructions.value = listLoadingInstructions.value.filter(item => item !== key)
+    }
+}
+
+const debSaveShippingNotes = debounce(() => saveInstruction('shipping_notes'), 800)
+const debSaveCustomerNotes = debounce(() => saveInstruction('customer_notes'), 800)
+
+const onProceedToCheckout = async () => {
+    debSaveShippingNotes.cancel()
+    debSaveCustomerNotes.cancel()
+    isLoadingCheckout.value = true
+
+    const results = await Promise.all([saveInstruction('shipping_notes'), saveInstruction('customer_notes')])
+    if (results.includes(false)) {
+        isLoadingCheckout.value = false
+        return
+    }
+
+    sidePanel?.close()
+    window.location.href = '/app/checkout'
+}
+
+const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
+        isLoadingCheckout.value = false
+    }
+}
+
+onMounted(() => window.addEventListener('pageshow', onPageShow))
+onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 
 </script>
 
@@ -598,108 +676,21 @@ const onApplyVoucher = async () => {
             </div>
         </Transition>
 
-        <!-- Section: Voucher Code -->
-        <div v-if="layout.retina.type == 'b2b' && !isVoucherInputOpen && !dataSideBasket?.voucher" class="px-4 sm:px-6 py-1.5 border-t border-gray-200">
-            <button type="button" class="text-xs text-gray-500 hover:text-gray-800 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" @click="isVoucherInputOpen = true">
-                <FontAwesomeIcon icon="far fa-plus" fixed-width aria-hidden="true" />
-                {{ ctrans("Add voucher code") }}
-            </button>
-        </div>
-        <InputVoucherInBasket
-            v-else-if="layout.retina.type == 'b2b'"
-            :voucher="dataSideBasket?.voucher"
-            :order="dataSideBasket?.order_data"
-            :routes="{
-                store: {
-                    name: 'iris.models.order.store_voucher',
-                    parameters: dataSideBasket?.order_data?.id
-                },
-                remove: {
-                    name: 'iris.models.order.remove_voucher',
-                    parameters: dataSideBasket?.order_data?.id
-                }
-            }"
-            :currentGrossAmount="layout.iris_variables?.cart_amount_gross"
-            @onRemove="fetchDataSideBasket(true)"
-            @onApply="fetchDataSideBasket(true)"
-            inIris
-            class="py-2 w-full flex px-6 border-t border-gray-200"
-        />
-
         <!-- Section: Order Summary -->
-        <div class="px-4 pt-2 pb-3 sm:px-6"
-            :class="layout.retina.type == 'b2b' ? '' : 'border-t border-gray-200 '"
-        >
+        <div class="px-4 pt-2 pb-3 sm:px-6 border-t border-gray-200">
             <div class="relative isolate">
-                <button type="button" class="w-full flex items-center justify-between text-sm font-medium py-1 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" :aria-expanded="isSummaryExpanded" @click="isSummaryExpanded = !isSummaryExpanded">
-                    <span class="flex items-baseline gap-x-2">
-                        {{ ctrans("Total") }}
-                        <span class="text-xs font-normal text-gray-500 underline decoration-dotted underline-offset-2 hover:text-gray-800">
-                            {{ isSummaryExpanded ? ctrans("Hide breakdown") : ctrans("Show breakdown") }}
-                            <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="isSummaryExpanded ? '' : 'rotate-180'" fixed-width aria-hidden="true" />
-                        </span>
-                    </span>
+                <div class="w-full flex items-center justify-between text-sm font-medium py-1">
+                    {{ ctrans("Total") }}
                     <span class="text-base font-semibold">{{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}</span>
-                </button>
-                <OrderSummary v-if="isSummaryExpanded" :order_summary="dataSideBasket?.order_summary"
-                    :currency_code="layout.iris?.currency?.code" size="sm" />
-                <div class="pt-2 mt-1 border-t border-gray-200 space-y-2">
-                    <!-- Section: Eligible Gift -->
-                    <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
-                        <EligibleGift :routeUpdate="{
-                            name: 'iris.models.order.update_gr_gift',
-                            parameters: dataSideBasket?.order_data?.id
-                        }" :giftOptions="dataSideBasket?.gr_gifts?.gifts" :meter="dataSideBasket?.gr_gifts?.meter"
-                            :isOptedOut="dataSideBasket?.gr_gifts?.is_gift_opted_out"
-                            :routeOptOut="dataSideBasket?.gr_gifts?.route_gift_opt_out"
-                            class="justify-between w-full" />
-                    </div>
-
-                    <!-- Section: Charges (Premium Dispatch, Insurance) -->
-                    <template v-for="charge in dataSideBasket?.charges">
-                        <div v-if="charge?.id" class="flex gap-4 justify-between">
-                            <div class="text-xs flex justify-end items-center gap-x-1 relative"
-                                xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                                <InformationIcon :information="charge?.description" />
-                                {{ charge?.label ?? charge?.name }}
-                                <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code,
-                                    charge?.amount) }})</span>
-                            </div>
-
-                            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                                <ToggleSwitch :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
-                                    @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
-                                    :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }">
-                                    <template #handle>
-                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" class="text-[8px] text-gray-500" />
-                                    </template>
-                                </ToggleSwitch>
-                            </div>
-                        </div>
-                        <div v-if="charge?.key_db === 'has_gift_message' && dataSideBasket?.order_data?.has_gift_message" class="mt-1">
-                            <GiftMessagePanel
-                                ref="giftMessagePanel"
-                                :giftMessage="dataSideBasket?.order_data?.gift_message"
-                                :hasGiftMessagePdf="dataSideBasket?.order_data?.has_gift_message_pdf"
-                                :giftMessagePdfName="dataSideBasket?.order_data?.gift_message_pdf_name"
-                                :textRoute="{ name: 'iris.models.order.update_gift_message_text', parameters: dataSideBasket?.order_data?.id }"
-                                :pdfRoute="{ name: 'iris.models.order.update_gift_message_pdf', parameters: dataSideBasket?.order_data?.id }"
-                                @uploaded="() => fetchDataSideBasket(true)"
-                            />
-                        </div>
-                    </template>
                 </div>
-
-
                 <div v-if="isLoadingFetch" class="absolute inset-0">
                     <div class="inset-0 h-full w-full skeleton z-10" />
                 </div>
             </div>
 
             <div class="mt-3">
-                <LinkIris href="/app/checkout" @start="() => sidePanel?.close()">
-                    <Button full :label="ctrans('Checkout')" iconRight="far fa-arrow-right" key="1" />
-                </LinkIris>
+                <Button full :label="ctrans('Checkout')" iconRight="far fa-arrow-right" key="1"
+                    :disabled="isLoadingFetch || !dataSideBasket?.order_data?.id" @click="onOpenCheckoutModal" />
             </div>
 
             <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
@@ -713,6 +704,143 @@ const onApplyVoucher = async () => {
                 </p>
             </div>
         </div>
+
+        <!-- Modal: Checkout options -->
+        <Modal :isOpen="isModalCheckoutOpen" @onClose="isModalCheckoutOpen = false" :zIndex="70" width="w-full max-w-lg" closeButton>
+            <div class="text-lg font-semibold text-gray-900 mb-4">{{ ctrans("Before you checkout") }}</div>
+
+            <div class="space-y-2">
+                <!-- Section: Eligible Gift -->
+                <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
+                    <EligibleGift :routeUpdate="{
+                        name: 'iris.models.order.update_gr_gift',
+                        parameters: dataSideBasket?.order_data?.id
+                    }" :giftOptions="dataSideBasket?.gr_gifts?.gifts" :meter="dataSideBasket?.gr_gifts?.meter"
+                        :isOptedOut="dataSideBasket?.gr_gifts?.is_gift_opted_out"
+                        :routeOptOut="dataSideBasket?.gr_gifts?.route_gift_opt_out"
+                        class="justify-between w-full" />
+                </div>
+
+                <!-- Section: Charges (Premium Dispatch, Insurance) -->
+                <template v-for="charge in dataSideBasket?.charges">
+                    <div v-if="charge?.id" class="flex gap-4 justify-between">
+                        <div class="text-xs flex justify-end items-center gap-x-1 relative"
+                            xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                            <InformationIcon :information="charge?.description" />
+                            {{ charge?.label ?? charge?.name }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(layout.iris?.currency?.code,
+                                charge?.amount) }})</span>
+                        </div>
+
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
+                                @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }">
+                                <template #handle>
+                                    <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" class="text-[8px] text-gray-500" />
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                    <div v-if="charge?.key_db === 'has_gift_message' && dataSideBasket?.order_data?.has_gift_message" class="mt-1">
+                        <GiftMessagePanel
+                            ref="giftMessagePanel"
+                            :giftMessage="dataSideBasket?.order_data?.gift_message"
+                            :hasGiftMessagePdf="dataSideBasket?.order_data?.has_gift_message_pdf"
+                            :giftMessagePdfName="dataSideBasket?.order_data?.gift_message_pdf_name"
+                            :textRoute="{ name: 'iris.models.order.update_gift_message_text', parameters: dataSideBasket?.order_data?.id }"
+                            :pdfRoute="{ name: 'iris.models.order.update_gift_message_pdf', parameters: dataSideBasket?.order_data?.id }"
+                            @uploaded="() => fetchDataSideBasket(true)"
+                        />
+                    </div>
+                </template>
+            </div>
+
+            <!-- Section: Voucher Code -->
+            <div v-if="layout.retina.type == 'b2b'" class="mt-4 pt-3 border-t border-gray-200">
+                <div v-if="!isVoucherInputOpen && !dataSideBasket?.voucher" class="py-1.5">
+                    <button type="button" class="text-xs text-gray-500 hover:text-gray-800 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" @click="isVoucherInputOpen = true">
+                        <FontAwesomeIcon icon="far fa-plus" fixed-width aria-hidden="true" />
+                        {{ ctrans("Add voucher code") }}
+                    </button>
+                </div>
+                <InputVoucherInBasket
+                    v-else
+                    :voucher="dataSideBasket?.voucher"
+                    :order="dataSideBasket?.order_data"
+                    :routes="{
+                        store: {
+                            name: 'iris.models.order.store_voucher',
+                            parameters: dataSideBasket?.order_data?.id
+                        },
+                        remove: {
+                            name: 'iris.models.order.remove_voucher',
+                            parameters: dataSideBasket?.order_data?.id
+                        }
+                    }"
+                    :currentGrossAmount="layout.iris_variables?.cart_amount_gross"
+                    @onRemove="fetchDataSideBasket(true)"
+                    @onApply="fetchDataSideBasket(true)"
+                    inIris
+                    class="py-2 w-full flex"
+                />
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                <div>
+                    <div class="text-sm text-gray-600 mb-1">
+                        <FontAwesomeIcon :icon="faTruck" style="color: #93C5FD" fixed-width aria-hidden="true" />
+                        {{ ctrans("Delivery Instructions") }}:
+                    </div>
+                    <PureTextarea
+                        v-model="instructions.shipping_notes"
+                        @update:modelValue="() => debSaveShippingNotes()"
+                        :placeholder="ctrans('Add if needed') + ' (' + ctrans('This message will be printed in shipping label') + ')'"
+                        rows="2"
+                        :maxlength="35"
+                        :loading="listLoadingInstructions.includes('shipping_notes')"
+                        :isSuccess="listSuccessInstructions.includes('shipping_notes')"
+                        :isError="listErrorInstructions.includes('shipping_notes')"
+                    />
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-600 mb-1">
+                        <FontAwesomeIcon :icon="faStickyNote" style="color: #599FF0" fixed-width aria-hidden="true" />
+                        {{ ctrans("Other Instructions") }}:
+                    </div>
+                    <PureTextarea
+                        v-model="instructions.customer_notes"
+                        @update:modelValue="() => debSaveCustomerNotes()"
+                        :placeholder="ctrans('Add if needed')"
+                        rows="3"
+                        :loading="listLoadingInstructions.includes('customer_notes')"
+                        :isSuccess="listSuccessInstructions.includes('customer_notes')"
+                        :isError="listErrorInstructions.includes('customer_notes')"
+                    />
+                </div>
+            </div>
+
+            <!-- Section: Order Summary -->
+            <div class="mt-4 pt-3 border-t border-gray-200 relative isolate">
+                <button type="button" class="w-full flex items-center justify-between text-sm font-medium py-1 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" :aria-expanded="isSummaryExpanded" @click="isSummaryExpanded = !isSummaryExpanded">
+                    <span class="flex items-baseline gap-x-2">
+                        {{ ctrans("Total") }}
+                        <span class="text-xs font-normal text-gray-500 underline decoration-dotted underline-offset-2 hover:text-gray-800">
+                            {{ isSummaryExpanded ? ctrans("Hide breakdown") : ctrans("Show breakdown") }}
+                            <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="isSummaryExpanded ? '' : 'rotate-180'" fixed-width aria-hidden="true" />
+                        </span>
+                    </span>
+                    <span class="text-base font-semibold">{{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}</span>
+                </button>
+                <OrderSummary v-if="isSummaryExpanded" :order_summary="dataSideBasket?.order_summary"
+                    :currency_code="layout.iris?.currency?.code" size="sm" />
+            </div>
+
+            <div class="mt-6">
+                <Button full :label="ctrans('Proceed to checkout')" iconRight="far fa-arrow-right" :loading="isLoadingCheckout" @click="onProceedToCheckout" />
+            </div>
+        </Modal>
 
         <!-- Modal: Voucher not found -->
         <Modal :isOpen="isModalVoucherNotFound" @onClose="isModalVoucherNotFound = false" width="w-full max-w-md z-[9999]">

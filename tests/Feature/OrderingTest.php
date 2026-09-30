@@ -3723,6 +3723,24 @@ test('iris exposes the gift message text and pdf routes on the retina order gift
         ->and($pdfRoute->getActionName())->toContain(UpdateRetinaOrderGiftMessagePdf::class);
 });
 
+test('iris exposes the order update route for basket delivery and other instructions', function () {
+    $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update');
+
+    expect($route)->not->toBeNull()
+        ->and($route->methods())->toContain('PATCH')
+        ->and($route->getActionName())->toContain(\App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::class);
+});
+
+test('retina order update stores basket delivery and other instructions', function (Order $order) {
+    $order = \App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::make()->handle($order, [
+        'shipping_notes' => 'Leave at back door',
+        'customer_notes' => 'Please pack carefully',
+    ]);
+
+    expect($order->shipping_notes)->toBe('Leave at back door')
+        ->and($order->customer_notes)->toBe('Please pack carefully');
+})->depends('create order');
+
 test('the generated gift message card pdf route returns a pdf for a text message', function (Order $order) {
     $order->update(['gift_message' => 'Happy Birthday!']);
 

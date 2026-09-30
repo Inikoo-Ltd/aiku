@@ -62,6 +62,8 @@ class FetchIrisEcomBasket extends IrisAction
             'has_gift_message_pdf' => $order->attachments()->wherePivot('scope', 'GiftMessage')->exists(),
             'gift_message_pdf_name' => $order->giftMessagePdfName(),
             'voucher_code'        => data_get($order->data, 'voucher_code'),
+            'customer_notes'      => $order->customer_notes,
+            'shipping_notes'      => $order->shipping_notes,
         ];
 
         $charges         = $this->getBasketCharges($order);
