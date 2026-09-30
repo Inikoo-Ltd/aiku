@@ -162,7 +162,7 @@ const allCards = computed(() => [
 
                 <ul v-else class="space-y-1.5 text-sm">
                     <li v-for="(row, index) in card.rows" :key="index" class="relative">
-                        <div class="absolute inset-y-0 left-0 rounded bg-indigo-100/70" :style="{ width: share(Number(row.sales ?? row.estimated_lost ?? row.revenue ?? row.page_views ?? row.attributed_revenue ?? 0), card.rows, row.sales != null ? 'sales' : row.estimated_lost != null ? 'estimated_lost' : row.revenue != null ? 'revenue' : row.page_views != null ? 'page_views' : 'attributed_revenue') + '%' }" />
+                        <div class="absolute inset-y-0 left-0 rounded bg-[color-mix(in_srgb,var(--theme-color-4)_15%,transparent)]" :style="{ width: share(Number(row.sales ?? row.estimated_lost ?? row.revenue ?? row.page_views ?? row.attributed_revenue ?? 0), card.rows, row.sales != null ? 'sales' : row.estimated_lost != null ? 'estimated_lost' : row.revenue != null ? 'revenue' : row.page_views != null ? 'page_views' : 'attributed_revenue') + '%' }" />
                         <div class="relative flex items-center gap-2 px-1.5 py-0.5">
                             <span class="w-4 text-xs text-gray-400 text-right shrink-0">{{ index + 1 }}</span>
 
