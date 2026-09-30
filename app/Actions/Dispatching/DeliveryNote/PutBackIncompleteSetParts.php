@@ -18,6 +18,7 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -91,6 +92,11 @@ class PutBackIncompleteSetParts extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote, $request->user());
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     /**
