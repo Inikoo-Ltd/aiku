@@ -7995,10 +7995,12 @@ test('a general question is answered from the knowledge base entry jev picks, an
         ->and($draft->facts['ask'])->toBe('ship_to_country');
 
     $quote = 'We ship to Germany every single working day of the week.';
-    expect($ask('Can you deliver to Germany please?'))->toBeNull();
+    $notFromThePage = $ask('Can you deliver to Germany please?');
+    expect(data_get($notFromThePage?->facts, 'knowledge'))->toBeNull()
+        ->and(data_get($notFromThePage?->facts, 'mode'))->toBe(\App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION);
 
     $quote = 'have a LUCID registration.';
-    expect($ask('Do you have a LUCID registration for Germany?'))->toBeNull();
+    expect(data_get($ask('Do you have a LUCID registration for Germany?')?->facts, 'knowledge'))->toBeNull();
 
     $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
     \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
@@ -11106,6 +11108,54 @@ test('jev works out what the customer wants in rounds, and only a clear single q
     $firstRound = \Illuminate\Support\Facades\Http::recorded()->first()[0]->data();
     expect(array_keys($firstRound['questions']))->toContain('wants_something', 'subject')
         ->and($firstRound['state']['customer_wrote'])->toBe('When is NSBag-09 back in stock?');
+
+    $session->forceDelete();
+});
+
+test('a claim gets a suggested reply with gaps for the agent, never sent on its own, and a number aiku does not hold drops it', function () {
+    config(['chat.ai_drafts' => true, 'services.openrouter.api_key' => 'or-key']);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeDraftLanguageDetection();
+
+    $noul = fn (float $p) => ['type' => 'noul', 'noul' => $p];
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn([
+        'wants_something' => $noul(0.9), 'problem' => $noul(0.97), 'about_existing_order' => $noul(0.95), 'one_question' => $noul(0.2),
+        'act'             => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
+        'problem_kind'    => ['type' => 'choice', 'choice' => 'damaged', 'probabilities' => ['damaged' => 0.95]],
+    ]);
+
+    $reply = 'Hello, I am sorry two mugs arrived broken. Could you send a photo of each mug and of the box? [[agent: replacement or credit?]]';
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function () use (&$reply) {
+        return json_encode(['topic' => 'missing_or_damaged', 'reply' => $reply]);
+    });
+
+    $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::ACTIVE, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id, 'last_visitor_message_at' => now()]);
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Two of the mugs arrived broken, what can you do?']);
+
+    $draft = \App\Actions\Chat\ChatSession\DraftChatReply::run($session);
+
+    expect($draft?->text)->toBe($reply)
+        ->and($draft->topic)->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED)
+        ->and(data_get($draft->facts, 'mode'))->toBe(\App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION)
+        ->and(data_get($draft->facts, 'model'))->toBe(\App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel($session))
+        ->and(\App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED)['decided'])->toBe(0);
+
+    config(['chat.ai_auto_send.enabled' => true]);
+    expect(\App\Actions\Chat\ChatSession\SendChatAiAnswer::run($draft))->toBeFalse()
+        ->and(preg_match(\App\Actions\Chat\ChatSession\DraftChatReply::GAP, $reply))->toBe(1)
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::usesOnlyKnownNumbers('Your order GB589594 left on 29 September.', 'order GB589594 dispatched 2026-09-29, 29 September'))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::usesOnlyKnownNumbers('Your order GB123456 left today.', 'order GB589594'))->toBeFalse();
+
+    $writers = collect(range(1, 40))->map(fn (int $id) => \App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel((new ChatSession())->forceFill(['id' => $id])))->unique()->sort()->values()->all();
+    expect($writers)->toBe(collect(array_keys(config('chat.suggestion_models')))->sort()->values()->all());
+    config(['chat.suggestion_model' => 'openai/gpt-5.6-luna']);
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel($session))->toBe('openai/gpt-5.6-luna');
+
+    $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    $reply = 'Hello, your order GB123456 will be replaced. [[agent: confirm]]';
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Also one candle holder is chipped.']);
+
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
 
     $session->forceDelete();
 });

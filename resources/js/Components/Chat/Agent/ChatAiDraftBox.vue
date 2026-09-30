@@ -226,6 +226,7 @@ onBeforeUnmount(stopListening)
                 <span>{{ ctrans("Draft written by AI from aiku data") }} · {{ draft.topic_label }}</span>
             </div>
             <p class="mt-1 line-clamp-6 whitespace-pre-line text-gray-800" :title="draft.text">{{ draft.text }}</p>
+            <p v-if="draft.text.includes('[[')" class="mt-1 text-[11px] text-amber-700">{{ ctrans("Fill in or delete the parts marked [[ ]] before sending.") }}</p>
             <div v-if="!preview" class="mt-2 flex gap-2">
                 <button type="button" :disabled="busy" @click="decide('take')"
                     class="rounded-md bg-indigo-600 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-indigo-500 disabled:opacity-50">

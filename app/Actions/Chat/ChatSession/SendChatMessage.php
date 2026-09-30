@@ -304,7 +304,10 @@ class SendChatMessage
                 'required_without_all:image,file,attachments',
                 'nullable',
                 'string',
-                'max:5000'
+                'max:5000',
+                fn (string $attribute, mixed $value, \Closure $fail) => is_string($value) && preg_match(\App\Actions\Chat\ChatSession\DraftChatReply::GAP, $value)
+                    ? $fail(__('Fill in or delete the parts marked [[ ]] before sending.'))
+                    : null,
             ],
             'message_type'   => [
                 'required',

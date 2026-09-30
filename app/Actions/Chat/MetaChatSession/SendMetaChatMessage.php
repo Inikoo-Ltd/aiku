@@ -54,7 +54,10 @@ class SendMetaChatMessage
                 'required_without_all:image,file,template_name',
                 'nullable',
                 'string',
-                'max:4096'
+                'max:4096',
+                fn (string $attribute, mixed $value, \Closure $fail) => is_string($value) && preg_match(\App\Actions\Chat\ChatSession\DraftChatReply::GAP, $value)
+                    ? $fail(__('Fill in or delete the parts marked [[ ]] before sending.'))
+                    : null,
             ],
             'image'                 => [
                 'sometimes',

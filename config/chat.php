@@ -19,6 +19,13 @@ return [
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
     'page_answer_model' => env('CHAT_PAGE_ANSWER_MODEL'),
+    // Suggested replies are written by one of these, half the conversations each, so staff choices show which writes better.
+    // CHAT_SUGGESTION_MODEL set to one of them ends the comparison.
+    'suggestion_model' => env('CHAT_SUGGESTION_MODEL'),
+    'suggestion_models' => [
+        'openai/gpt-5.6-luna'          => [],
+        'deepseek/deepseek-v4.1-flash' => ['reasoning' => ['enabled' => false], 'provider' => ['data_collection' => 'deny']],
+    ],
     'learning_model' => env('CHAT_LEARNING_MODEL', 'gpt-4o-mini'),
 
     // Hiding a real customer is worse than showing a junk mail, so the bar is low.

@@ -854,6 +854,11 @@ const sendMessage = async () => {
 
     if (!hasText && !hasFiles) return
 
+    if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
+        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        return
+    }
+
     sendTypingStatus(false)
     isTyping.value = false
 

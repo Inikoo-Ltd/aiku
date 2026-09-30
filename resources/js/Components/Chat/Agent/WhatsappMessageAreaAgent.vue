@@ -617,6 +617,11 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 const sendMessage = async () => {
     if (isSending.value) return
 
+    if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
+        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        return
+    }
+
     if (hasTemplate.value) {
         await sendTemplateMessage()
         return

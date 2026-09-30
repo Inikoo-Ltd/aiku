@@ -20,9 +20,10 @@ class AskToAi extends OrgAction
      *
      * @param string $prompt
      * @param string $model (Optional, default 'gpt-4o-mini')
+     * @param array<string, mixed> $options extra request fields, such as OpenRouter's reasoning or provider
      * @return string|null
      */
-    public function handle(string $prompt, string $model = 'gpt-4o-mini'): ?string
+    public function handle(string $prompt, string $model = 'gpt-4o-mini', array $options = []): ?string
     {
         if (empty($prompt)) {
             return null;
@@ -36,7 +37,7 @@ class AskToAi extends OrgAction
                 return null;
             }
 
-            return $this->sendRequest($apiKey, $model, $prompt);
+            return $this->sendRequest($apiKey, $model, $prompt, $options);
         } catch (AICreditException $e) {
             throw $e;
         } catch (Throwable $e) {
@@ -52,7 +53,7 @@ class AskToAi extends OrgAction
         return $this->aiApiKey(config('askbot-laravel.openai_api_key'));
     }
 
-    private function sendRequest(string $apiKey, string $model, string $prompt): ?string
+    private function sendRequest(string $apiKey, string $model, string $prompt, array $options = []): ?string
     {
         $response = $this->aiRequest($apiKey)
             ->connectTimeout(10)
@@ -69,7 +70,7 @@ class AskToAi extends OrgAction
                         'content' => $prompt
                     ],
                 ],
-            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : []));
+            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : [], $this->usesOpenRouter() ? $options : []));
 
         if (!$response->successful()) {
             Log::error("AskToAi API Error: " . $response->body());
