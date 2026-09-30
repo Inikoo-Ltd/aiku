@@ -515,7 +515,7 @@ const overview = computed(() => {
                             <div class="flex items-center rounded-md border border-stone-300 focus-within:ring-2 focus-within:ring-[#a0694a]">
                                 <button
                                     type="button"
-                                    class="px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
+                                    class="min-h-11 min-w-11 px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
                                     :aria-label="ctrans('Decrease quantity')"
                                     :disabled="readOnly"
                                     @click="stepQuantity(regular.id, suggestedQuantity(regular), -1, maxQuantity(regular))"
@@ -534,7 +534,7 @@ const overview = computed(() => {
                                 />
                                 <button
                                     type="button"
-                                    class="px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
+                                    class="min-h-11 min-w-11 px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
                                     :aria-label="ctrans('Increase quantity')"
                                     :disabled="readOnly"
                                     @click="stepQuantity(regular.id, suggestedQuantity(regular), 1, maxQuantity(regular))"
@@ -544,7 +544,7 @@ const overview = computed(() => {
                             </div>
                             <button
                                 type="button"
-                                class="inline-flex items-center gap-2 rounded-md bg-[#a0694a] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
+                                class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#a0694a] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
                                 :disabled="readOnly || addingProductIds.includes(regular.id)"
                                 @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)))"
                             >
@@ -596,7 +596,7 @@ const overview = computed(() => {
                             <button
                                 v-else-if="canAdd(favourite)"
                                 type="button"
-                                class="flex-none rounded-md bg-[#a0694a] px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
+                                class="min-h-11 min-w-11 flex-none rounded-md bg-[#a0694a] px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
                                 :aria-label="ctrans('Add to basket')"
                                 :disabled="readOnly || addingProductIds.includes(favourite.id)"
                                 @click="addToBasket(favourite, 1)"
@@ -689,7 +689,7 @@ const overview = computed(() => {
                         <button
                             v-else
                             type="button"
-                            class="rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
+                            class="min-h-11 min-w-11 rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
                             :disabled="readOnly || addingProductIds.includes(product.id)"
                             :aria-label="ctrans('Add :product to basket', { product: product.name })"
                             @click="addToBasket(product, 1)"

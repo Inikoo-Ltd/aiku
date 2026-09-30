@@ -61,7 +61,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             array_map('intval', $modelData['exclude_product_ids'] ?? [])
         )));
 
-        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $excludedProductIds, $referencePrice, $preferCheaper);
+        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $excludedProductIds, $referencePrice, $preferCheaper, $modelData['customer_id'] ?? null);
 
         return $this->diversifyByFamily($candidates);
     }
@@ -102,7 +102,8 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
         array $basketProductIds,
         array $excludedProductIds,
         float $referencePrice,
-        bool $preferCheaper
+        bool $preferCheaper,
+        ?int $customerId
     ): Collection {
         $coPurchase = $this->getCoPurchaseCounts($shop, $basketProductIds);
 
@@ -123,6 +124,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->where('products.available_quantity', '>', 0)
             ->where('products.price', '>', 0)
             ->whereNotIn('products.id', $excludedProductIds)
+            ->visibleToCustomer($customerId)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('products.is_minion_variant', false)
@@ -214,7 +216,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->shop, $this->getBasketProductIds($request), $this->validatedData);
+        return $this->handle($this->shop, $this->getBasketProductIds($request), [...$this->validatedData, 'customer_id' => $this->customer?->id]);
     }
 
     /**

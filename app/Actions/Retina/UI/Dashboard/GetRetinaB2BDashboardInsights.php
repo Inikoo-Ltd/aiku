@@ -135,7 +135,7 @@ class GetRetinaB2BDashboardInsights
         $allTime = DB::table('orders')
             ->where('customer_id', $customer->id)
             ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
-            ->selectRaw('count(*) as orders, coalesce(sum(net_amount), 0) as spend')
+            ->selectRaw('count(*) as orders, coalesce(sum(net_amount), 0) as spend, max(date) as last_date')
             ->first();
 
         $totalOrders = (int) $allTime->orders;
@@ -151,7 +151,7 @@ class GetRetinaB2BDashboardInsights
             ? $lastOrderAt->copy()->addDays($orderEveryDays)
             : null;
 
-        $lastOrderAt ??= $this->getLastOrderDate($customer);
+        $lastOrderAt ??= $allTime->last_date ? Carbon::parse($allTime->last_date) : null;
         $daysSinceLast = $lastOrderAt ? (int) $lastOrderAt->copy()->startOfDay()->diffInDays($today) : null;
 
         return [
@@ -456,6 +456,7 @@ class GetRetinaB2BDashboardInsights
             [
                 'prefer_cheaper'      => false,
                 'exclude_product_ids' => $productSales->pluck('product_id')->all(),
+                'customer_id'         => $customer->id,
             ]
         );
 
@@ -501,16 +502,6 @@ class GetRetinaB2BDashboardInsights
             ->sortBy(fn (Product $product) => $rank[$product->id])
             ->take(GetRetinaProductBasketRecommendations::MAX_PRODUCTS)
             ->values();
-    }
-
-    private function getLastOrderDate(Customer $customer): ?Carbon
-    {
-        $lastOrderDate = DB::table('orders')
-            ->where('customer_id', $customer->id)
-            ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
-            ->max('date');
-
-        return $lastOrderDate ? Carbon::parse($lastOrderDate) : null;
     }
 
     private function medianGapInDays(Collection $dates): ?int

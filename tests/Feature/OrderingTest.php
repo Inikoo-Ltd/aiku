@@ -5000,6 +5000,38 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
         ->and($lostInsights['recommendations_source'])->toBe('bought_together');
 });
 
+test('basket recommendations never suggest a product sold exclusively to another customer', function () {
+    $customer      = freshCustomerLike($this->shop, $this->customer);
+    $otherCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $seed]      = createProduct($this->shop);
+    [$exclusive, $public] = collect(range(1, 2))->map(fn () => StoreProduct::make()->action($seed->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seed->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+    )))->all();
+
+    foreach ([$seed, $exclusive, $public] as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+    }
+    DB::table('product_has_exclusive_customers')->insert([
+        'product_id'  => $exclusive->id,
+        'customer_id' => $otherCustomer->id,
+        'created_at'  => now(),
+        'updated_at'  => now(),
+    ]);
+
+    $order = StoreOrder::make()->action($otherCustomer, Order::factory()->definition());
+    foreach ([$seed, $exclusive, $public] as $product) {
+        StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+    }
+
+    $recommend = fn (?int $customerId) => \App\Actions\Retina\Ecom\Basket\GetRetinaProductBasketRecommendations::make()
+        ->handle($this->shop, [$seed->id], ['customer_id' => $customerId])->pluck('id');
+
+    expect($recommend($customer->id))->toContain($public->id)->not->toContain($exclusive->id)
+        ->and($recommend(null))->not->toContain($exclusive->id)
+        ->and($recommend($otherCustomer->id))->toContain($exclusive->id);
+});
+
 test('b2b dashboard shows a voucher only once staff opt it in, and hides it after the customer used it', function () {
     if (!$this->shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOUCHERS)->exists()) {
         \App\Actions\Discounts\OfferCampaign\SeedShopOfferCampaigns::run($this->shop);
