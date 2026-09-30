@@ -4476,3 +4476,75 @@ test('surplus made beyond its lines is flagged on the backlog and booking it in 
         ->and($newer->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
         ->and((float) $newer->quantity)->toBe(4.0);
 });
+
+test('a job order planned by hand is one job with its lines on the board, even for a product already there', function () {
+    $newEmployee = function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    };
+
+    $newArtefact = function (string $code) {
+        $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+            $this->group,
+            array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+        );
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+        return StoreArtefact::make()->action($this->production, ['code' => $code, 'name' => $code.' name', 'org_stock_id' => $orgStock->id]);
+    };
+
+    $first  = $newArtefact('MANUALJO1');
+    $second = $newArtefact('MANUALJO2');
+    AttachArtisan::make()->action($first, ['employee_id' => $newEmployee()->id]);
+    AttachArtisan::make()->action($second, ['employee_id' => $newEmployee()->id]);
+
+    $alreadyOnBoard = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $first->orgStock->stock_id,
+        'org_stock_id'    => $first->org_stock_id,
+        'quantity'        => 3,
+        'state'           => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN,
+    ]);
+
+    $jobOrder = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason'    => 'partner',
+        'notes'     => 'ELEMENTS - PO85',
+        'needed_by' => '2026-10-06',
+        'lines'     => [
+            ['artefact_id' => $first->id, 'quantity' => 2],
+            ['artefact_id' => $second->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $lines = \App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $jobOrder->id)->get();
+
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::IN_PROCESS)
+        ->and($jobOrder->jobOrderItems()->count())->toBe(2)
+        ->and($jobOrder->employee_id)->toBe($first->artisans()->first()->id)
+        ->and($jobOrder->internal_notes)->toBe('Partner: ELEMENTS - PO85')
+        ->and($jobOrder->data['reason'])->toBe('partner')
+        ->and($lines)->toHaveCount(2)
+        ->and($lines->every(fn ($line) => $line->needed_by->format('Y-m-d') === '2026-10-06' && $line->notes === 'Partner: ELEMENTS - PO85'))->toBeTrue()
+        ->and($alreadyOnBoard->refresh()->job_order_id)->toBeNull();
+
+    $reversed = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'stock',
+        'lines'  => [
+            ['artefact_id' => $second->id, 'quantity' => 1],
+            ['artefact_id' => $first->id, 'quantity' => 1],
+        ],
+    ]);
+    expect($reversed->employee_id)->toBe($second->artisans()->first()->id);
+
+    expect(fn () => \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'stock',
+        'lines'  => [],
+    ]))->toThrow(ValidationException::class);
+});
