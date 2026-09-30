@@ -503,6 +503,7 @@ const saveDeployComment = () => {
                     <div v-else class="text-xs italic text-gray-500">{{ ctrans("Nothing will be posted when the deployment lands.") }}</div>
                 </div>
             </div>
+            <slot name="after-qa" />
             <template v-if="can_manage || can_contribute">
             <div v-if="ticket.type === 'help'">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Kind and module") }}</p>

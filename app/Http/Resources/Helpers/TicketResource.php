@@ -69,6 +69,7 @@ class TicketResource extends JsonResource
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
             'reference_url'  => data_get($this->data, 'reference_url'),
+            'pull_request_url' => $this->pull_request_url,
             'assignee_id'    => $this->assignee_id,
             'assignee'       => $this->assignee?->contact_name ?: $this->assignee?->username,
             'assignee_username' => $this->assignee?->username,

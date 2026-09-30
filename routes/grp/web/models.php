@@ -588,6 +588,7 @@ use App\Actions\Helpers\Ticket\TranslateTicketText;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
+use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -605,6 +606,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/pull-request', UpdateTicketPullRequest::class)->name('pull_request.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::patch('comment/{ticketComment:id}', UpdateTicketComment::class)->name('comment.update')->whereNumber('ticketComment');
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
