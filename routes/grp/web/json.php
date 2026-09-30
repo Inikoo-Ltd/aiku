@@ -171,6 +171,7 @@ use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateDetail;
 use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
+use App\Actions\Web\Webpage\Json\GetBlogAuthors;
 use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
@@ -222,6 +223,7 @@ Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepa
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 Route::get('shop/{shop}/website/{website}/blog-webpages', GetBlogWebpages::class)->name('shop.website.blog_webpages');
+Route::get('shop/{shop}/blog-authors', GetBlogAuthors::class)->name('shop.blog_authors');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
 Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');

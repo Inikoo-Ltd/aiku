@@ -1,7 +1,24 @@
-import { trans } from "laravel-vue-i18n"
-
 export default {
 	blueprint: [
+		{
+			label: "Author",
+			key: ["author"],
+			type: "selectquery",
+			props_data: {
+				mode: "single",
+				object: true,
+				valueProp: "id",
+				labelProp: "name",
+				placeholder: "Select a user",
+				fetchRoute: {
+					name: "grp.json.shop.blog_authors",
+					parameters: {
+						shop: typeof route === "function" ? route().params["shop"] : null,
+					},
+				},
+			},
+			information: "Shown next to the date. Defaults to the person who created the blog.",
+		},
 		{
 			name: "Image",
 			key: ["image"],
