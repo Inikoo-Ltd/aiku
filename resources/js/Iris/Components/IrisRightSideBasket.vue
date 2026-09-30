@@ -3,7 +3,7 @@ import { inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
-import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote } from "@fal"
+import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote, faExclamationCircle } from "@fal"
 import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -653,26 +653,26 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
         <!-- Section: Missed Offers -->
         <Transition name="slide-to-right">
             <div v-if="Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
-                <div class="text-xs text-red-500 font-bold">
+                <div class="mb-2 flex items-center gap-1.5 text-xs font-semibold text-red-500">
+                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width aria-hidden="true" />
                     {{ ctrans('You missed ( :number_missed_offer ) offers', {
                         number_missed_offer:
                             Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
                 </div>
-                <div class="flex flex-col gap-y-2">
-                    <TransitionGroup name="list" tag="ul" class="!m-0">
-                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id"
-                            class="list-none">
-                            <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
-                            <div v-else
-                                class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
-                                <InformationIcon :information="missed_offer.information" class="text-2xl" />
-                                <div>
-                                    {{ missed_offer.description }}
-                                </div>
-                            </div>
-                        </li>
-                    </TransitionGroup>
-                </div>
+                <TransitionGroup name="list" tag="ul" class="!m-0 space-y-2">
+                    <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id"
+                        class="list-none">
+                        <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
+                        <div v-else
+                            class="flex items-center gap-2.5 rounded-md border border-[#2a919e]/30 bg-[#2a919e]/5 px-3 py-2 text-xs text-gray-700">
+                            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#2a919e] text-white">
+                                <FontAwesomeIcon :icon="faBadgePercent" class="text-xs" fixed-width aria-hidden="true" />
+                            </span>
+                            <div class="flex-1 leading-snug">{{ missed_offer.description }}</div>
+                            <InformationIcon v-if="missed_offer.information" :information="missed_offer.information" />
+                        </div>
+                    </li>
+                </TransitionGroup>
             </div>
         </Transition>
 

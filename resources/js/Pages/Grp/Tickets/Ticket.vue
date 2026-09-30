@@ -125,6 +125,13 @@ const toggleHistoryOrder = () => {
     isHistoryNewestFirst.value = !isHistoryNewestFirst.value
     saveTicketOrderSetting("ticket_history_newest_first", isHistoryNewestFirst.value)
 }
+const mobileTab = ref<"comments" | "history">("comments")
+
+const mobileTabs = computed(() => [
+    { key: "comments" as const, label: ctrans("Comments"), count: props.comments.length },
+    { key: "history" as const, label: ctrans("History"), count: props.timeline.length },
+])
+
 const sortedTimeline = computed(() => (isHistoryNewestFirst.value ? props.timeline : [...props.timeline].reverse()))
 
 
@@ -162,20 +169,38 @@ const update = (field: string, value: unknown) => {
             </div>
         </template>
     </PageHeading>
-    <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div class="min-w-0 lg:col-span-2 space-y-4">
+    <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+        <div class="min-w-0 lg:col-span-2 space-y-4 pb-[26px] lg:border-r-2 lg:border-gray-300 lg:pr-6">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" label-reporter-on-mobile :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" label-reporter-on-mobile :show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #card-header-footer>
                     <div id="ticket-card-controls" />
                 </template>
                 <template #after-description>
+                    <div id="ticket-mobile-pull-request" class="lg:hidden" />
                     <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
+                <template #before-comments>
+                    <div class="flex border-b border-gray-200 lg:hidden" role="tablist">
+                        <button
+                            v-for="tab in mobileTabs"
+                            :key="tab.key"
+                            type="button"
+                            role="tab"
+                            :aria-selected="mobileTab === tab.key"
+                            class="-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition duration-200"
+                            :class="mobileTab === tab.key ? 'border-[--app-accent] text-[--app-accent-strong]' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            @click="mobileTab = tab.key">
+                            {{ tab.label }}
+                            <span class="rounded bg-gray-100 px-1.5 text-[11px] tabular-nums text-gray-600">{{ tab.count }}</span>
+                        </button>
+                    </div>
+                    <div v-show="mobileTab === 'history'" id="ticket-mobile-history" class="lg:hidden" />
+                </template>
             </TicketThread>
         </div>
-        <div class="min-w-0 space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
+        <div class="min-w-0 space-y-4 self-start max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto lg:pb-2.5 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
         <Teleport defer to="#ticket-card-controls" :disabled="isDesktop">
         <TicketControlPanel :ticket="ticket" :storage-key="isDesktop ? 'ticket_controls_open' : 'ticket_controls_open_mobile'" :default-open="isDesktop" :embedded="!isDesktop">
             <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_claim_qa="can_claim_qa" :qa_held_by_another="qa_held_by_another" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
@@ -198,7 +223,10 @@ const update = (field: string, value: unknown) => {
             </dl>
         </TicketControlPanel>
         </Teleport>
-        <TicketPullRequest :ticket="ticket" :routes="routes" :can-edit="can_contribute" />
+        <Teleport defer to="#ticket-mobile-pull-request" :disabled="isDesktop">
+            <TicketPullRequest :ticket="ticket" :routes="routes" :can-edit="can_contribute" />
+        </Teleport>
+        <Teleport defer to="#ticket-mobile-history" :disabled="isDesktop">
         <div class="bg-white rounded-lg border border-gray-300 text-sm">
             <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
                 <span class="font-medium uppercase tracking-wide text-gray-400">{{ ctrans("History") }}</span>
@@ -221,6 +249,7 @@ const update = (field: string, value: unknown) => {
                 </li>
             </ol>
         </div>
+        </Teleport>
         </div>
     </div>
 </template>
