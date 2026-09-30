@@ -167,7 +167,7 @@ const groupStockTotal = computed(() => stockTotal(props.overview.totals.stock_he
 					<dl class="mt-1 grid grid-cols-5 gap-x-2">
 						<div v-for="item in goodsInItems" :key="item.key" class="text-right">
 							<dt class="truncate text-[10px] text-gray-400" v-tooltip="item.label">{{ item.label }}</dt>
-							<dd class="tabular-nums" class="text-gray-700">{{ locale.numberShort(org.goods_in[item.key]) }}</dd>
+							<dd class="tabular-nums text-gray-700">{{ locale.numberShort(org.goods_in[item.key]) }}</dd>
 						</div>
 					</dl>
 				</li>
