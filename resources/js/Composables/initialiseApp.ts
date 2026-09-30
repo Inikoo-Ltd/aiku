@@ -289,6 +289,10 @@ export const initialiseApp = () => {
             layout.crm_return_count = usePage().props.crm_return_count as number
         }
 
+        if (usePage().props.products_need_review_count !== undefined) {
+            layout.products_need_review_count = usePage().props.products_need_review_count as number
+        }
+
         if (usePage().props.master_updated_count !== undefined) {
             layout.master_updated_count = usePage().props.master_updated_count as number
         }

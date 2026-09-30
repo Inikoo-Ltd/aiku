@@ -8,8 +8,10 @@
 
 namespace App\Actions\UI\AikuPublic;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -148,7 +150,9 @@ class BlogPosts
             return null;
         }
 
-        $match = self::all('docs')
+        $docs = collect(self::helpIndex());
+
+        $match = $docs->where('lang', 'en')
             ->flatMap(fn (array $doc) => collect($doc['help_routes'])->map(fn (string $prefix) => ['prefix' => $prefix, 'doc' => $doc]))
             ->filter(fn (array $candidate) => str_starts_with($routeName, $candidate['prefix']))
             ->sortByDesc(fn (array $candidate) => strlen($candidate['prefix']))
@@ -160,13 +164,30 @@ class BlogPosts
 
         $doc = $match['doc'];
         if ($language && strtolower($language) !== 'en') {
-            $doc = self::translations($doc, 'docs')->firstWhere('lang', strtolower($language)) ?? $doc;
+            $doc = $docs->where('base_slug', $doc['base_slug'])->firstWhere('lang', strtolower($language)) ?? $doc;
         }
 
         return [
             'title' => $doc['title'],
             'url' => 'https://'.config('app.domain').'/docs/'.$doc['slug'],
         ];
+    }
+
+    /**
+     * Shared by every grp request, which cannot afford to parse every doc's markdown each time.
+     * Keyed by the files and their mtimes so an edited doc is picked up at once, and by the date
+     * because a doc dated in the future stays hidden until its day comes.
+     *
+     * @return array<int, array{slug: string, base_slug: string, lang: string, title: string, help_routes: array<int, string>}>
+     */
+    private static function helpIndex(): array
+    {
+        $files   = File::glob(self::directory('docs').'/*.md');
+        $version = md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.filemtime($path), $files)));
+
+        return Cache::remember('grp-help-index:'.$version, now()->addDay(), fn () => self::everything('docs')
+            ->map(fn (array $doc) => Arr::only($doc, ['slug', 'base_slug', 'lang', 'title', 'help_routes']))
+            ->all());
     }
 
     /**

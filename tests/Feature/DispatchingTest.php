@@ -86,7 +86,9 @@ use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dispatching\Trolley\UI\GetTrolleyShowcase;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Catalogue\Product\GetProductsNeedReviewBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -1333,6 +1335,16 @@ test('shippers json and waiting badges', function () {
     expect(GetDispatchingWaitingBadgeData::run($user))->toBeArray()
         ->and(GetCrmWaitingBadgeData::run($user))->toBeArray()
         ->and(GetCrmReturnedBadgeData::run($user))->toBeArray();
+});
+
+test('layout badge totals match the sum of their per shop breakdown', function () {
+    $user = $this->adminGuest->getUser();
+
+    $sumOf = fn (array $organisations, string $key) => collect($organisations)->flatMap(fn (array $organisation) => $organisation['shops'])->sum("$key.count");
+
+    expect(GetCrmReturnedBadgeData::make()->totalCount($user))->toBe($sumOf(GetCrmReturnedBadgeData::run($user), 'return_crm_items'))
+        ->and(GetMasterUpdatedBadgeData::make()->totalCount($user))->toBe($sumOf(GetMasterUpdatedBadgeData::run($user), 'master_updated_items'))
+        ->and(GetProductsNeedReviewBadgeData::make()->totalCount($user))->toBe($sumOf(GetProductsNeedReviewBadgeData::run($user), 'needs_review_items'));
 });
 
 test('UI dispatching item and courier index pages', function () {

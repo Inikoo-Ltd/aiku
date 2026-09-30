@@ -63,17 +63,14 @@ class GetMasterUpdatedBadgeData
 
     public function totalCount(User $user): int
     {
-        $total = 0;
+        $shopIds = $user->authorisedShops()->pluck('shops.id')
+            ->filter(fn (int $shopId) => $user->authTo("products.$shopId.view"));
 
-        foreach ($user->authorisedShops()->get() as $shop) {
-            if (!$user->authTo("products.{$shop->id}.view")) {
-                continue;
-            }
+        $query = Product::whereIn('products.shop_id', $shopIds);
 
-            $total += $this->query($shop)->count();
-        }
+        $this->applyDriftConstraints($query);
 
-        return $total;
+        return $query->count();
     }
 
     /**

@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
-use Tighten\Ziggy\Ziggy;
 use Throwable;
 
 class GetFirstLoadProps
@@ -70,7 +69,6 @@ class GetFirstLoadProps
         data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'products_need_review_count', $user ? GetProductsNeedReviewBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'faire_skipped_count', $user ? GetFaireSkippedBadgeData::make()->totalCount($user) : 0);
-        data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
         data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);
         data_set($props, 'last_deployment_version', $lastDeployment?->semantic_version);
