@@ -730,6 +730,24 @@ describe('recalculating attribution', function () {
         expect($trafficSources->first()->type)->toBe('google-ads');
     });
 
+    it('attaches one merged row when several touches resolve to the same source without a campaign', function () {
+        createTrafficSource($this->shop, 'newsletter', 'Newsletter');
+        $this->customer->update(['traffic_sources' => '1700000000pmailshot-901|1700000100pmailshot-902|1700000200pmailshot-903']);
+
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh(), ProcessTrafficSourceShare::ATTRIBUTION_LINEAR);
+
+        $pivot = DB::table('model_has_traffic_sources')
+            ->where('model_type', $this->customer->getMorphClass())
+            ->where('model_id', $this->customer->id)
+            ->get();
+
+        expect($pivot)->toHaveCount(1)
+            ->and($pivot->first()->traffic_source_campaign_id)->toBeNull()
+            ->and((float) $pivot->first()->share)->toBe(1.0)
+            ->and(\Carbon\Carbon::parse($pivot->first()->first_touch_at)->timestamp)->toBe(1700000000)
+            ->and(\Carbon\Carbon::parse($pivot->first()->last_touch_at)->timestamp)->toBe(1700000200);
+    });
+
     it('detaches everything and does nothing else when there is no touch history', function () {
         RecalculateTrafficSourceAttribution::run($this->customer->fresh(), ProcessTrafficSourceShare::ATTRIBUTION_LINEAR);
 

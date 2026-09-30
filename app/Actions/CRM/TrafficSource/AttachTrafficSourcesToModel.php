@@ -38,7 +38,9 @@ class AttachTrafficSourcesToModel
      * visitor arrives with one, and cost imports have something to match against.
      *
      * Every caller runs against a model with no pivot rows for these touches (fresh registration,
-     * order submit, or a recalculation that detached first), so rows are inserted, never merged.
+     * order submit, or a recalculation that detached first), so rows are inserted, never merged with
+     * existing ones. Shares that resolve to the same (source, campaign) pair are merged before insert:
+     * several campaign references can resolve to no campaign, and the pivot allows one row per pair.
      *
      * @param array<int, array{timestamp: int|null, abbr: string, type: \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
      */
@@ -81,6 +83,8 @@ class AttachTrafficSourcesToModel
         $touchedCampaignIds = [];
         $touchDates         = $this->touchDates($touches);
 
+        $rows = [];
+
         foreach ($shares as $share) {
             /** @var TrafficSource|null $trafficSource */
             $trafficSource = $trafficSources->get($share['type']->value);
@@ -94,19 +98,38 @@ class AttachTrafficSourcesToModel
                 : null;
 
             $dates = $touchDates[$share['type']->value.'|'.($share['campaign_ref'] ?? '')] ?? null;
+            $key   = $trafficSource->id.'|'.($campaignId ?? 0);
 
-            $model->trafficSources()->attach($trafficSource->id, [
-                'share'                      => round($share['share'], 2),
-                'traffic_source_campaign_id' => $campaignId,
+            if (!isset($rows[$key])) {
+                $rows[$key] = [
+                    'source_id'   => $trafficSource->id,
+                    'campaign_id' => $campaignId,
+                    'share'       => $share['share'],
+                    'first'       => $dates['first'] ?? null,
+                    'last'        => $dates['last'] ?? null,
+                ];
+
+                continue;
+            }
+
+            $rows[$key]['share'] += $share['share'];
+            $rows[$key]['first']  = $this->earlier($rows[$key]['first'], $dates['first'] ?? null);
+            $rows[$key]['last']   = $this->later($rows[$key]['last'], $dates['last'] ?? null);
+        }
+
+        foreach ($rows as $row) {
+            $model->trafficSources()->attach($row['source_id'], [
+                'share'                      => round($row['share'], 2),
+                'traffic_source_campaign_id' => $row['campaign_id'],
                 'attribution_model'          => $attributionModel,
-                'first_touch_at'             => $dates['first'] ?? null,
-                'last_touch_at'              => $dates['last'] ?? null,
+                'first_touch_at'             => $row['first'],
+                'last_touch_at'              => $row['last'],
             ]);
 
-            $touchedSourceIds[$trafficSource->id] = true;
+            $touchedSourceIds[$row['source_id']] = true;
 
-            if ($campaignId) {
-                $touchedCampaignIds[$campaignId] = true;
+            if ($row['campaign_id']) {
+                $touchedCampaignIds[$row['campaign_id']] = true;
             }
         }
 
@@ -117,6 +140,16 @@ class AttachTrafficSourcesToModel
         foreach (TrafficSourceCampaign::whereIn('id', array_keys($touchedCampaignIds))->get() as $campaign) {
             TrafficSourceCampaignHydrateStats::dispatch($campaign);
         }
+    }
+
+    private function earlier(?Carbon $a, ?Carbon $b): ?Carbon
+    {
+        return $a && $b ? ($b->lt($a) ? $b : $a) : ($a ?? $b);
+    }
+
+    private function later(?Carbon $a, ?Carbon $b): ?Carbon
+    {
+        return $a && $b ? ($b->gt($a) ? $b : $a) : ($a ?? $b);
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\Ordering\Order;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RecalculateTrafficSourceAttribution
@@ -53,18 +54,14 @@ class RecalculateTrafficSourceAttribution
             return;
         }
 
-        $model->trafficSources()->detach();
+        $touches = blank($rawTouchesData) ? [] : ParseTrafficSourceTouches::run($rawTouchesData);
 
-        if (blank($rawTouchesData)) {
-            return;
-        }
+        DB::transaction(function () use ($model, $touches, $attributionModel) {
+            $model->trafficSources()->detach();
 
-        $touches = ParseTrafficSourceTouches::run($rawTouchesData);
-
-        if (empty($touches)) {
-            return;
-        }
-
-        AttachTrafficSourcesToModel::run($model, $model->shop_id, $touches, $attributionModel);
+            if (!empty($touches)) {
+                AttachTrafficSourcesToModel::run($model, $model->shop_id, $touches, $attributionModel);
+            }
+        });
     }
 }
