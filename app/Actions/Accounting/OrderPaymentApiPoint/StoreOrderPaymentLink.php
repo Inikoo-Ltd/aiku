@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\OrderPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -34,9 +35,15 @@ class StoreOrderPaymentLink extends OrgAction
 
     public const int EXPIRES_IN_SECONDS = 604800;
 
+    /**
+     * Refunds paid back take money off what the order counts as paid, so they come off what it
+     * owes too, or a refunded order would ask the customer to pay the refund again.
+     */
     public static function amountDue(Order $order): float
     {
-        return round((float)$order->total_amount - (float)$order->payment_amount, 2);
+        $refunded = (float) $order->invoices()->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->sum('total_amount');
+
+        return round((float)$order->total_amount + $refunded - (float)$order->payment_amount, 2);
     }
 
     public static function checkoutPaymentAccountShop(Order $order): ?PaymentAccountShop

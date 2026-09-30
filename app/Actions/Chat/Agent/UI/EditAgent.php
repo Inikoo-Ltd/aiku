@@ -15,10 +15,19 @@ use App\Models\Chat\ChatAgent;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditAgent extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->userCanWorkChatOnOrganisation($request->user(), $this->organisation)
+            || $this->userSupervisesChatOnOrganisation($request->user(), $this->organisation);
+    }
+
     /**
      * Load model
      */

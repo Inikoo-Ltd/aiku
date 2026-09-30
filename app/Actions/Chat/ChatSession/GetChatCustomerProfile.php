@@ -145,7 +145,7 @@ class GetChatCustomerProfile
      *
      * @return Collection<int, ChatSession|MetaChatSession>
      */
-    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession $current): Collection
+    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession|null $current = null): Collection
     {
         $columns = ['id', 'ulid', 'topic', 'status', 'metadata', 'created_at', 'closed_at', 'last_visitor_message_at', 'last_agent_message_at'];
 

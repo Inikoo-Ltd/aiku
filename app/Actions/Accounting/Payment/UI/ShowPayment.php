@@ -132,13 +132,6 @@ class ShowPayment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PaymentTabsEnum::navigation()
                 ],
-                'refund_route' => [
-                    'name' => 'grp.models.org.payment_refund.store',
-                    'parameters' => [
-                        'organisation' => $payment->organisation_id,
-                        'payment' => $payment->id
-                    ]
-                ],
                 'cancel_route'  => [
                     'name'          => 'grp.models.org.payment.cancel',
                     'parameters'    => [

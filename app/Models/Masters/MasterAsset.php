@@ -156,6 +156,7 @@ use App\Models\Traits\HasSearch;
  * @property string|null $tax_preset Named tax preset this master follows (standard, food, ...); null is a custom map; tax_category holds the expansion the money path reads
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -233,6 +234,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'has_independent_units'   => 'boolean',
         'variant_is_visible'      => 'boolean',
         'is_golden_product'       => 'boolean',
+        'is_indivisible'          => 'boolean',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
         'discontinued_at'         => 'datetime',
@@ -281,6 +283,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'is_for_sale',
         'follow_trade_unit_media',
         'is_golden_product',
+        'is_indivisible',
     ];
 
     public function getRouteKeyName(): string

@@ -23,6 +23,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
@@ -36,26 +37,28 @@ class PayOrder extends OrgAction
     public function handle(Order $order, PaymentAccount $paymentAccount, array $modelData): Payment
     {
 
-        $payment = StorePayment::make()->action($order->customer, $paymentAccount, $modelData);
+        [$payment, $invoice] = DB::transaction(function () use ($order, $paymentAccount, $modelData) {
+            $payment = StorePayment::make()->action($order->customer, $paymentAccount, $modelData);
 
+            if ($paymentAccount->is_accounts) {
+                StoreCreditTransaction::make()->action($order->customer, [
+                    'amount'     => -$payment->amount,
+                    'type'       => CreditTransactionTypeEnum::PAYMENT,
+                    'payment_id' => $payment->id,
+                ]);
+            }
 
-        if ($paymentAccount->is_accounts) {
-            $creditTransactionData = [
-                'amount'     => -$payment->amount,
-                'type'       => CreditTransactionTypeEnum::PAYMENT,
-                'payment_id' => $payment->id,
-            ];
-            StoreCreditTransaction::make()->action($order->customer, $creditTransactionData);
+            AttachPaymentToOrder::make()->action($order, $payment, []);
 
-        }
+            $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+            if ($invoice) {
+                AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+            }
 
+            return [$payment, $invoice];
+        });
 
-        AttachPaymentToOrder::make()->action($order, $payment, []);
-
-        $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
         if ($invoice) {
-            AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-
             ProcessInvoicePaidNotification::dispatch($invoice->id);
         }
 

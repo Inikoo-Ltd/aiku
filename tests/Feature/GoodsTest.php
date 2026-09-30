@@ -206,11 +206,19 @@ test("UI Show Goods Dashboard", function () {
             ->has("breadcrumbs", 2)
             ->has("title")
             ->where("pageHead.title", "Product Command & Control")
-            ->has("kpis")
-            ->has("rows")
-            ->has("organisations")
             ->where("filters.condition", "oos")
-            ->where("filters.sort", "code");
+            ->where("filters.sort", "code")
+            ->missing("kpis")
+            ->missing("rows")
+            ->missing("organisations")
+            ->loadDeferredProps(
+                "dashboard",
+                fn (AssertableInertia $reload) => $reload
+                    ->has("kpis")
+                    ->has("rows")
+                    ->has("organisations")
+                    ->has("pagination")
+            );
     });
 });
 
@@ -293,6 +301,74 @@ test("UI Show Stock Family sales analysis tab", function () {
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily));
 
     expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
+test("UI Show Stock Family sales and history tabs render their tables", function () {
+    $stockFamily = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GSTABS']));
+
+    $timeSeriesId = DB::table('stock_family_time_series')->where('stock_family_id', $stockFamily->id)->where('frequency', 'monthly')->value('id')
+        ?? DB::table('stock_family_time_series')->insertGetId([
+            'stock_family_id' => $stockFamily->id,
+            'frequency'       => 'monthly',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    DB::table('stock_family_time_series_records')->insert([
+        'stock_family_time_series_id' => $timeSeriesId,
+        'frequency'                   => 'M',
+        'sales_grp_currency_external' => 321,
+        'invoices'                    => 4,
+        'from'                        => now()->startOfMonth(),
+        'to'                          => now()->endOfMonth(),
+        'created_at'                  => now(),
+        'updated_at'                  => now(),
+    ]);
+
+    get(route('grp.goods.stock-families.show', ['stockFamily' => $stockFamily->slug, 'tab' => \App\Enums\UI\SupplyChain\StockFamilyTabsEnum::SALES->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Goods/StockFamily')
+            ->where('sales.data.0.sales_grp_currency_external', 321)
+            ->where('sales.data.0.invoices', 4)
+            ->has('sales.data.0.period'));
+
+    get(route('grp.goods.stock-families.show', ['stockFamily' => $stockFamily->slug, 'tab' => \App\Enums\UI\SupplyChain\StockFamilyTabsEnum::HISTORY->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Goods/StockFamily')
+            ->has('history.data'));
+});
+
+test("UI Show Stocks sales and history tabs render their tables", function () {
+    [$stock] = createStocks($this->group);
+
+    $timeSeriesId = DB::table('stock_time_series')->where('stock_id', $stock->id)->where('frequency', 'monthly')->value('id')
+        ?? DB::table('stock_time_series')->insertGetId([
+            'stock_id'   => $stock->id,
+            'frequency'  => 'monthly',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    DB::table('stock_time_series_records')->insert([
+        'stock_time_series_id'        => $timeSeriesId,
+        'frequency'                   => 'M',
+        'sales_grp_currency_external' => 123,
+        'customers_invoiced'          => 2,
+        'from'                        => now()->startOfMonth(),
+        'to'                          => now()->endOfMonth(),
+        'created_at'                  => now(),
+        'updated_at'                  => now(),
+    ]);
+
+    get(route('grp.goods.stocks.show', ['stock' => $stock->slug, 'tab' => \App\Enums\UI\SupplyChain\StockTabsEnum::SALES->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Goods/Stock')
+            ->where('sales.data.0.sales_grp_currency_external', 123)
+            ->where('sales.data.0.customers_invoiced', 2)
+            ->where('sales.data.0.currency_code', $stock->group->currency->code));
+
+    get(route('grp.goods.stocks.show', ['stock' => $stock->slug, 'tab' => \App\Enums\UI\SupplyChain\StockTabsEnum::HISTORY->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Goods/Stock')
+            ->has('history.data'));
 });
 
 test("UI Index Stocks", function () {
@@ -858,8 +934,25 @@ test('UI Show Trade Unit Family sales analysis tab', function () {
                 ->has('sales_analysis.stock_outs')
                 ->has('sales_analysis.events')
                 ->has('sales_analysis.filters.organisations')
+                ->has('sales_analysis.monthly_sales', 3)
+                ->where('sales_analysis.monthly_sales.0.month', '2026-01-01')
+                ->where('sales_analysis.monthly_sales.0.is_partial', false)
+                ->where('sales_analysis.monthly_sales.2.to', '2026-03-31')
+                ->where('sales_analysis.monthly_sales.2.previous_month', '2025-03-01')
             );
     });
+
+    $partial = GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($family), [
+        'from'        => '2021-09-27',
+        'to'          => '2021-11-15',
+        'compareFrom' => '2016-09-27',
+        'compareTo'   => '2016-11-15',
+    ])['monthly_sales'];
+
+    expect($partial)->toHaveCount(3)
+        ->and($partial[0])->toMatchArray(['month' => '2021-09-01', 'from' => '2021-09-27', 'is_partial' => true, 'previous_month' => '2016-09-01'])
+        ->and($partial[1]['is_partial'])->toBeFalse()
+        ->and($partial[2])->toMatchArray(['to' => '2021-11-15', 'is_partial' => true]);
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($family));
 
@@ -1301,9 +1394,13 @@ describe('Product Command & Control extras', function () {
                 ->component('Goods/ProductCommandControl')
                 ->where('period', '90d')
                 ->has('periods')
-                ->has('rates')
-                ->has('editable_organisations')
-                ->has('can_change_group');
+                ->loadDeferredProps(
+                    'dashboard',
+                    fn (AssertableInertia $reload) => $reload
+                        ->has('rates')
+                        ->has('editable_organisations')
+                        ->has('can_change_group')
+                );
         });
     });
 
@@ -1419,17 +1516,23 @@ describe('Product analysis view', function () {
                 ->component('Goods/ProductAnalysis')
                 ->has('breadcrumbs')
                 ->where('granularity', $granularity)
-                ->has('summary')
-                ->has('series')
-                ->has('families_table')
-                ->has('organisations_table')
-                ->has('products_table')
-                ->has('stock_trend')
-                ->has('exceptions')
-                ->has('urgent_actions')
-                ->has('promotion_candidates')
-                ->has('status_history')
-                ->has('inbound');
+                ->missing('summary')
+                ->missing('series')
+                ->loadDeferredProps(
+                    'analysis',
+                    fn (AssertableInertia $reload) => $reload
+                        ->has('summary')
+                        ->has('series')
+                        ->has('families_table')
+                        ->has('organisations_table')
+                        ->has('products_table')
+                        ->has('stock_trend')
+                        ->has('exceptions')
+                        ->has('urgent_actions')
+                        ->has('promotion_candidates')
+                        ->has('status_history')
+                        ->has('inbound')
+                );
         });
     })->with(['month', 'quarter', 'year']);
 
@@ -1513,7 +1616,100 @@ describe('Product analysis view', function () {
 
         expect(collect($result['promotion_candidates'])->pluck('code'))->toContain('GA-SELL')
             ->and(collect($result['urgent_actions']['offline_with_stock'])->pluck('code'))->toContain('GA-OFF')
-            ->and(collect($result['exceptions']['offline'])->pluck('code'))->toContain('GA-OFF');
+            ->and(collect($result['exceptions']['offline'])->pluck('code'))->toContain('GA-OFF')
+            ->and(collect($result['promotion_candidates'])->firstWhere('code', 'GA-SELL')['slug'])->toBe($stockSell->slug)
+            ->and(collect($result['exceptions']['offline'])->firstWhere('code', 'GA-OFF')['slug'])->toBe($stockOff->slug);
+    });
+
+    test('status change history rows carry the stock slug for the quick look', function () {
+        [$stock] = createStocks($this->group);
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+        DB::table('audits')->insert([
+            'tags'           => '[]',
+            'auditable_type' => 'OrgStock',
+            'auditable_id'   => $orgStock->id,
+            'event'          => 'state_change',
+            'old_values'     => json_encode(['state' => 'active']),
+            'new_values'     => json_encode(['to_state' => 'discontinuing', 'reason' => 'GAHIST']),
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        $result = ShowGoodsAnalysis::make()->forGroup($this->group)->handle(['search' => $stock->code]);
+
+        $change = collect($result['status_history'])->firstWhere('reason', 'GAHIST');
+
+        expect($change)->not->toBeNull()
+            ->and($change['slug'])->toBe($stock->slug)
+            ->and($change['code'])->toBe($stock->code);
+    });
+
+    test('quick look history includes status changes recorded on the organisation stocks', function () {
+        [$stock] = createStocks($this->group);
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+        DB::table('audits')->insert([
+            'tags'           => '[]',
+            'auditable_type' => 'OrgStock',
+            'auditable_id'   => $orgStock->id,
+            'event'          => 'state_change',
+            'old_values'     => json_encode(['state' => 'active']),
+            'new_values'     => json_encode(['to_state' => 'suspended', 'reason' => 'GAQLHIST']),
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        $entries = collect(get(route('grp.goods.quick_look.stock.history', ['stock' => $stock->slug]))->assertOk()->json('data'));
+        $change  = $entries->firstWhere('event', 'state_change');
+
+        expect($change)->not->toBeNull()
+            ->and($change['new_values']['reason'])->toBe('GAQLHIST')
+            ->and($change['record'])->toBe($this->organisation->code);
+    });
+
+    test('product quick look returns the stock showcase, sales teaser and page url', function () {
+        [$stock] = createStocks($this->group);
+
+        $response = get(route('grp.goods.quick_look.stock', ['stock' => $stock->slug]));
+
+        $response->assertOk()
+            ->assertJsonPath('code', $stock->code)
+            ->assertJsonPath('url', route('grp.goods.stocks.show', $stock->slug))
+            ->assertJsonStructure(['code', 'name', 'url', 'showcase' => ['trade_units', 'org_stocks'], 'sales_analysis_teaser']);
+    });
+
+    test('family quick look returns the family sales teaser and page url', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAQUICK']));
+
+        $response = get(route('grp.goods.quick_look.family', ['stockFamily' => $family->slug]));
+
+        $response->assertOk()
+            ->assertJsonPath('code', 'GAQUICK')
+            ->assertJsonPath('url', route('grp.goods.stock-families.show', $family->slug))
+            ->assertJsonStructure(['code', 'name', 'url', 'sales_analysis_teaser']);
+    });
+
+    test('quick look sales analysis and history endpoints answer for a product and a family', function () {
+        [$stock] = createStocks($this->group);
+        $family  = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAQLTAB']));
+
+        get(route('grp.goods.quick_look.stock.sales_analysis', ['stock' => $stock->slug, 'from' => '2026-01-01', 'to' => '2026-03-31']))
+            ->assertOk()
+            ->assertJsonPath('period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->assertJsonStructure(['period', 'compare_period', 'filters', 'totals', 'sales']);
+
+        get(route('grp.goods.quick_look.family.sales_analysis', ['stockFamily' => $family->slug]))
+            ->assertOk()
+            ->assertJsonStructure(['period', 'compare_period', 'filters', 'totals', 'sales']);
+
+        get(route('grp.goods.quick_look.stock.history', ['stock' => $stock->slug]))
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+
+        get(route('grp.goods.quick_look.family.history', ['stockFamily' => $family->slug]))
+            ->assertOk()
+            ->assertJsonStructure(['data']);
     });
 });
 

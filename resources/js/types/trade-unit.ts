@@ -6,7 +6,12 @@
 
 export interface TradeUnit {
 
+    id: number,
     slug:string,
+    code?: string,
+    name?: string,
+    image_thumbnail?: Record<string, any> | null,
+    is_checked?: boolean,
     brands?: {
         name: string,
         slug: string

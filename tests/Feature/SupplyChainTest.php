@@ -752,15 +752,29 @@ test('UI supply chain overview', function () {
             ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
             ->missing('staleOrders')
             ->missing('search_demand')
-            ->has('breadcrumbs', 3);
+            ->missing('poJourney')
+            ->missing('stockOuts')
+            ->has('breadcrumbs', 3)
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->where('stockOuts.period', '1y')
+                ->has('stockOuts.series')
+                ->has('stockOuts.organisations')
+                ->has('stockLevelsByOrganisation.0.levels', 8)
+                ->where('stockLevelsByOrganisation.0.levels.0.bucket', 'out')
+                ->where('stockLevelsByOrganisation.0.levels.0.route.name', 'grp.org.procurement.stock_cover.index')
+                ->where('poJourney.route.name', 'grp.supply-chain.dashboard')
+                ->has('poJourney.summary.open')
+                ->has('poJourney.summary.overdue')
+                ->has('poJourney.blockages'));
     });
 });
 
 test('supply chain navigation separates agent suppliers from free suppliers', function () {
     $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
 
-    expect(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.dashboard')
-        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.overview')
+    expect(data_get($navigation, 'supply-chain.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.dashboard')
         ->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
         'name' => 'grp.supply-chain.agent_suppliers.index',
     ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.4.route'))->toBe([
@@ -1016,6 +1030,82 @@ test('UI edit supplier', function () {
             )
             ->has('formData');
     });
+});
+
+test('UI assignable suppliers list free and other agents suppliers, not the agent own', function () {
+    $this->withoutExceptionHandling();
+
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+
+    $makeSupplier = fn (string $code, Agent|\App\Models\SysAdmin\Group $parent) => StoreSupplier::make()->action(
+        parent: $parent,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => $code, 'name' => $code.' name'])
+    );
+
+    $free    = $makeSupplier('ASSIGNFREE', $this->group);
+    $stolen  = $makeSupplier('ASSIGNSTEAL', $otherAgent);
+    $ownOne  = $makeSupplier('ASSIGNOWN', $agent);
+
+    $url = route('grp.supply-chain.agents.show.suppliers.assignable', [$agent->slug]);
+
+    $response = $this->get($url);
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('SupplyChain/AssignableSuppliers')
+        ->where('agent.id', $agent->id)
+        ->has('data'));
+
+    $rows = collect($response->viewData('page')['props']['data']['data'])->keyBy('code');
+
+    expect($rows->keys())->toContain('ASSIGNFREE', 'ASSIGNSTEAL')
+        ->and($rows->keys())->not->toContain('ASSIGNOWN')
+        ->and($rows['ASSIGNFREE']['agent_code'])->toBeNull()
+        ->and($rows['ASSIGNSTEAL']['agent_code'])->toBe($otherAgent->code);
+
+    $expectedLosing = \App\Models\Procurement\OrgSupplier::query()
+        ->where('supplier_id', $free->id)
+        ->where('status', true)
+        ->whereNotIn('organisation_id', $agent->orgAgents()->pluck('organisation_id'))
+        ->with('organisation')
+        ->get()
+        ->pluck('organisation.name')
+        ->sort()
+        ->implode(', ');
+
+    expect($rows['ASSIGNFREE']['organisations_losing_supplier'])->toBe($expectedLosing ?: null);
+
+    $country       = $free->refresh()->location[0];
+    $filteredCodes = collect(
+        $this->get($url.'?filter[country]='.$country)->viewData('page')['props']['data']['data']
+    )->pluck('code');
+
+    expect($filteredCodes)->toContain('ASSIGNFREE')
+        ->and($filteredCodes->every(fn ($code) => Supplier::where('code', $code)->first()->location[0] === $country))->toBeTrue();
+
+    expect($ownOne->refresh()->agent_id)->toBe($agent->id)
+        ->and($stolen->refresh()->agent_id)->toBe($otherAgent->id);
+});
+
+test('UI add supplier moves free and other agents suppliers to the agent', function () {
+    $this->withoutExceptionHandling();
+
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+
+    $free   = StoreSupplier::make()->action(parent: $this->group, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHFREE']));
+    $stolen = StoreSupplier::make()->action(parent: $otherAgent, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHSTEAL']));
+
+    foreach ([$free, $stolen] as $supplier) {
+        $this->patch(route('grp.models.supplier.update', $supplier->id), ['agent_id' => $agent->id])
+            ->assertSessionHasNoErrors();
+
+        expect($supplier->refresh()->agent_id)->toBe($agent->id)
+            ->and($supplier->supplierProducts()->where('agent_id', '!=', $agent->id)->count())->toBe(0);
+    }
+
+    $this->get(route('grp.supply-chain.agents.show.suppliers.index', [$agent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.show.suppliers.assignable'));
 });
 
 test('UI edit supplier product', function () {

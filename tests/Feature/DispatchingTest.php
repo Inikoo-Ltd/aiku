@@ -10,6 +10,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
+use App\Models\Accounting\PaymentServiceProvider;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
@@ -2959,6 +2966,17 @@ test('a claim is refunded to the customer balance in one call, the claimed share
         'gross_amount'    => 60,
         'net_amount'      => 60,
     ]);
+    $invoice = CalculateInvoiceTotals::run($invoice->refresh());
+    $cashAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim cash account']
+    );
+    PayInvoice::make()->action($invoice, $cashAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
     $balanceBefore = (float) $customer->fresh()->balance;
 
     $claimed = (float) $item->quantity_required / 3;
@@ -3777,6 +3795,12 @@ test('lines waiting for customer service carry the product order line net and ta
         ->and((float) $line['net_amount_with_tax'])->toBe(round(10 * (1 + $rate), 2))
         ->and($line['product_code'])->toBe($transaction->historicAsset->code)
         ->and($line['number_skos_in_product'])->toBeGreaterThanOrEqual(1);
+
+    if ((int) $line['number_skos_in_product'] === 1) {
+        $waitingNet = round(10 / (float) $item->quantity_required, 2);
+        expect((float) $line['waiting_net_amount'])->toBe($waitingNet)
+            ->and((float) $line['waiting_net_amount_with_tax'])->toBe(round($waitingNet * (1 + $rate), 2));
+    }
 });
 
 test('a redefined pack does not change what an already sold box means', function () {
@@ -5173,4 +5197,58 @@ test('a second worker reaching picked with a stale note leaves the already picke
     $this->travelBack();
 
     expect($deliveryNote->fresh()->picked_at->equalTo($pickedAt))->toBeTrue();
+});
+
+test('a product made of parts counts complete sets when indivisible and each part by its value otherwise (HELP-3548)', function () {
+    $parts = collect([
+        (object)['quantity_required' => 1, 'quantity_picked' => 0, 'sku_commercial_value' => 10.95],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 1.69],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 5.29],
+    ]);
+    $generateInvoiceFromOrder = \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make();
+
+    expect($generateInvoiceFromOrder->getPickedFraction($parts, true))->toBe(0.0)
+        ->and(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(6.98 / 17.93, 4));
+
+    $parts[1]->sku_commercial_value = null;
+    expect(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(2 / 3, 4));
+});
+
+function deliveryNoteWithOnePartNotFound($ctx): array
+{
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($ctx)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    $deliveryNote->deliveryNoteItems()
+        ->whereKeyNot($item->id)
+        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0]);
+
+    return [$deliveryNote->refresh(), $item];
+}
+
+test('parts of a divisible set go out when another part is not found (HELP-3548)', function () {
+    [$deliveryNote] = deliveryNoteWithOnePartNotFound($this);
+
+    expect(UpdateDeliveryNoteStateToPicked::run($deliveryNote)->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a set sold only complete waits until its other parts are put back, then refunds the whole product (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->incompleteSetItems()->pluck('id')->all())->toBe([$item->id]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    $item->refresh();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and((float)$item->quantity_picked)->toBe(0.0)
+        ->and($item->is_handled)->toBeTrue()
+        ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
 });

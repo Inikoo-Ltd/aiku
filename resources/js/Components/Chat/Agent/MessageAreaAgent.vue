@@ -64,6 +64,7 @@ interface GetMessagesParams {
 
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
+import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -643,6 +644,24 @@ const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClo
         ? route("grp.org.chat.agents.sessions.keep_open", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid])
         : null
 )
+const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.sessions.wait_for_customer", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid]) : null
+)
+const onSuggestedAction = async (action: "close" | "wait") => {
+    if (action === "wait") {
+        setWaiting(72)
+        return
+    }
+    if (!chatSession.value?.ulid) return
+    await axios.patch(route("grp.org.chat.agents.sessions.close", [(chatSession.value as any)?.organisation?.id, chatSession.value.ulid]))
+    emit("close-session")
+}
+const onWaitPicked = (event: Event) => {
+    const select = event.target as HTMLSelectElement
+    const hours = Number(select.value)
+    select.value = ""
+    if (hours) setWaiting(hours)
+}
 const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => chatSession.value?.status === "waiting")
@@ -1091,6 +1110,7 @@ const initSocket = () => {
     // Message
     onMessage = ({ message }: any) => {
         closingAt.value = null
+        onCustomerWaitMessage(message)
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -1215,7 +1235,7 @@ const onViewMessageDetails = () => {
 
 const translateConversation = async () => {
     isMenuOpen.value = false
-    const languageId = layout.user?.language_id
+    const languageId = layout.user?.chat_language_id ?? layout.user?.language_id
     if (!chatSession.value?.ulid || !languageId) return
 
     try {
@@ -1361,6 +1381,18 @@ const handleClickOutside = (e: MouseEvent) => {
                         👍 {{ closingIn }}
                         <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
+                    <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
+                        v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
+                        ⏳ {{ ctrans("Waiting for customer, closes in :time", { time: waitingIn }) }}
+                        <button v-if="isMyChat && !isClosed && !readOnly" type="button" class="ml-1 underline hover:text-amber-800" @click="setWaiting(null)">{{ ctrans("Stop waiting") }}</button>
+                    </span>
+                    <select v-else-if="isMyChat && !isClosed && !readOnly" value=""
+                        class="shrink-0 cursor-pointer border-0 bg-transparent py-0 pl-0 pr-6 text-[11px] text-gray-400 hover:text-gray-600 focus:ring-0"
+                        v-tooltip="ctrans('Keep it open while the customer gets back to us: it shows here as waiting and closes by itself if they write nothing.')"
+                        @change="onWaitPicked">
+                        <option value="" disabled>⏳ {{ ctrans("Wait for reply") }}</option>
+                        <option v-for="option in waitingOptions" :key="option.hours" :value="option.hours">{{ option.label() }}</option>
+                    </select>
                     <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}
                     </span>
@@ -1617,6 +1649,7 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Restore banner for trashed chats -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1658,6 +1691,7 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ ctrans('Assign this chat to yourself to start the conversation') }}
@@ -1715,7 +1749,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
 
-            <ChatAiDraftBox :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
+            <ChatAiDraftBox :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" @action="onSuggestedAction" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="handleTyping"

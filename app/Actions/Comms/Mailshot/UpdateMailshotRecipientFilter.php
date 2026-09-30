@@ -128,6 +128,10 @@ class UpdateMailshotRecipientFilter extends OrgAction
             'recipients_recipe.gold_reward_status' => ['sometimes', 'array'],
             'recipients_recipe.gold_reward_status.value' => ['sometimes', 'string'],
 
+            'recipients_recipe.due_to_reorder' => ['sometimes', 'array'],
+            'recipients_recipe.due_to_reorder.value' => ['sometimes', 'array'],
+            'recipients_recipe.due_to_reorder.value.value' => ['sometimes', 'boolean'],
+
             // by_family_never_ordered filter
             'recipients_recipe.by_family_never_ordered' => ['sometimes', 'array'],
             'recipients_recipe.by_family_never_ordered.value' => ['sometimes', 'array'],

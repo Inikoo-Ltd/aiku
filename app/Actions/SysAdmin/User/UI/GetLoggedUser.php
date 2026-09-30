@@ -35,6 +35,7 @@ class GetLoggedUser
             'contact_name' => (string) $user->contact_name,
             'nickname'     => $user->nickname,
             'language_id'  => $user->language_id,
+            'chat_language_id' => $user->chatAgent?->language_id ?? $user->language_id,
             'email'        => $user->email,
             'is_agent'     => $isAgent,
             'borrowed_permissions_from' => $user->permissionsLender()?->only(['id', 'username', 'contact_name']),

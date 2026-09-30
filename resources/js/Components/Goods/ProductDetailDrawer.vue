@@ -9,11 +9,13 @@ import { TransitionRoot, TransitionChild, Dialog, DialogPanel } from "@headlessu
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes } from "@fal"
-import { ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-library.add(faTimes)
+import Select from "primevue/select"
+import { faChevronLeft, faChevronRight } from "@fal"
+library.add(faTimes, faChevronLeft, faChevronRight)
 
 interface InboundLine {
     type: string
@@ -76,9 +78,18 @@ interface Detail {
 const props = defineProps<{
     isOpen: boolean
     stockSlug: string | null
+    navigation?: { slug: string; label: string }[]
+    reloadKey?: number
 }>()
 
-const emits = defineEmits<{ (e: "onClose"): void }>()
+const emits = defineEmits<{ (e: "onClose"): void; (e: "navigate", slug: string): void }>()
+
+const currentIndex = computed(() => (props.navigation ?? []).findIndex((item) => item.slug === props.stockSlug))
+
+function navigateBy(step: number): void {
+    const target = props.navigation?.[currentIndex.value + step]
+    if (target) emits("navigate", target.slug)
+}
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -102,7 +113,7 @@ const load = async () => {
 }
 
 watch(
-    () => [props.isOpen, props.stockSlug],
+    () => [props.isOpen, props.stockSlug, props.reloadKey],
     ([isOpen]) => {
         if (isOpen) {
             load()
@@ -139,7 +150,7 @@ watch(
                         leave-to="translate-x-full"
                     >
                         <DialogPanel class="pointer-events-auto w-screen max-w-xl">
-                            <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
+                            <div class="flex h-full flex-col bg-white shadow-xl">
                                 <div class="flex items-start justify-between border-b border-gray-200 px-4 py-3">
                                     <div>
                                         <div class="text-sm font-semibold text-gray-900">{{ detail?.code }}</div>
@@ -156,7 +167,9 @@ watch(
 
                                 <div v-else-if="errorMessage" class="p-4 text-sm text-red-600">{{ errorMessage }}</div>
 
-                                <div v-else-if="detail" class="flex-1 space-y-4 px-4 py-3">
+                                <div v-else-if="detail" class="flex-1 space-y-4 overflow-y-auto px-4 py-3">
+                                    <slot name="action" />
+
                                     <div v-if="detail.all_retired" class="rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700">
                                         {{ ctrans("Retired in every organisation") }}
                                     </div>
@@ -227,6 +240,37 @@ watch(
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div v-if="navigation?.length" class="flex items-center gap-2 border-t border-gray-200 bg-gray-50 px-4 py-3">
+                                    <button
+                                        type="button"
+                                        class="flex h-9 items-center gap-1 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors enabled:hover:bg-gray-100 enabled:hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+                                        :disabled="currentIndex <= 0"
+                                        @click="navigateBy(-1)"
+                                    >
+                                        <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+                                        {{ ctrans("Previous") }}
+                                    </button>
+                                    <Select
+                                        :modelValue="stockSlug"
+                                        :options="navigation"
+                                        optionLabel="label"
+                                        optionValue="slug"
+                                        filter
+                                        class="min-w-0 flex-1 [&.p-focus]:!border-[--app-accent]"
+                                        :pt="{ label: { class: '!text-sm' } }"
+                                        :aria-label="ctrans('Jump to product')"
+                                        @update:modelValue="(slug: string) => slug && emits('navigate', slug)"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="flex h-9 items-center gap-1 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors enabled:hover:bg-gray-100 enabled:hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+                                        :disabled="currentIndex === -1 || currentIndex >= navigation.length - 1"
+                                        @click="navigateBy(1)"
+                                    >
+                                        {{ ctrans("Next") }}
+                                        <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+                                    </button>
                                 </div>
                             </div>
                         </DialogPanel>

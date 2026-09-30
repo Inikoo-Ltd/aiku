@@ -87,6 +87,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_outboxes_type_gold_reward_reminder_1
  * @property int $number_outboxes_type_gold_reward_reminder_2
  * @property int $number_outboxes_type_gold_reward_reminder_3
+ * @property int $number_outboxes_type_due_to_reorder
  * @property int $number_outboxes_type_oos_in_order_notification
  * @property int $number_outboxes_type_credit_balance_notification_for_customer
  * @property int $number_outboxes_type_credit_balance_notification_for_user

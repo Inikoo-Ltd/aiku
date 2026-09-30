@@ -140,8 +140,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     /**
      * Null unless the customer is reporting a problem with goods: then the details the agent will
-     * need that they have not sent yet. Only the model decides whether it is a claim; what is
-     * missing is read from what they sent.
+     * need that they have not sent yet. Only Jev's cascade decides whether it is a claim (a chat
+     * model when Jev cannot be asked); what is missing is read from what they sent.
      *
      * ponytail: every out of hours message re-reads the wait until a claim is found; store how far
      * it read if the model calls ever show up on the bill.
@@ -166,6 +166,12 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     private function isClaim(ChatSession|MetaChatSession $chatSession, string $text): bool
     {
+        $turn = ClassifyChatTurn::forSession($chatSession);
+
+        if ($turn) {
+            return $turn['claim'];
+        }
+
         $definitions = ChatTopicEnum::definitions();
         $excerpt     = mb_substr($text, 0, 3000);
 

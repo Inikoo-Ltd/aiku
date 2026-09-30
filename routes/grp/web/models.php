@@ -14,7 +14,6 @@ use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\Payment\CancelPayment;
-use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
@@ -78,8 +77,6 @@ use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
-use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsAd;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsKeyword;
@@ -460,6 +457,7 @@ use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
+use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
@@ -874,10 +872,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         ->name('shop.google_ads.campaign.pause')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/resume', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\ResumeGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.resume')->withoutScopedBindings();
-    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
-        ->name('shop.ad_proposal.apply')->withoutScopedBindings();
-    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
-        ->name('shop.ad_proposal.dismiss')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/keyword', StoreGoogleAdsKeyword::class)
         ->name('shop.google_ads.campaign.keyword.store')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/ad', StoreGoogleAdsAd::class)
@@ -922,7 +916,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/shop/{shop:id}/customer', StoreCustomer::class)->name('shop.customer.store');
 
     Route::post('/shop/{shop:id}/product/', [StoreProduct::class, 'inShop'])->name('show.product.store');
-    Route::delete('/shop/{shop:id}/product/{product:id}', [DeleteProduct::class, 'inShop'])->name('shop.product.delete');
 
     Route::post('product/{product:id}/images/attach', AttachImagesToProduct::class)->name('product.images.attach')->withoutScopedBindings();
     Route::delete('product/{product:id}/images/{media:id}/media', DeleteImagesFromProduct::class)->name('product.images.delete')->withoutScopedBindings();
@@ -933,7 +926,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
 
-    Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings(); // todo to be deleted
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 });
@@ -1404,6 +1396,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefacts/batch-size', SetArtefactsBatchSize::class)->name('artefacts.set_batch_size');
     Route::post('artefacts/shelf-life', SetArtefactsShelfLife::class)->name('artefacts.set_shelf_life');
+    Route::post('artefacts/recipe', SetArtefactsRecipe::class)->name('artefacts.set_recipe');
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');

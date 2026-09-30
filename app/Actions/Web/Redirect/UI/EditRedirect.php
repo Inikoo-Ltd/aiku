@@ -24,10 +24,12 @@ use Exception;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditRedirect extends OrgAction
 {
+    use WithWebEditAuthorisation;
     /**
      * @throws Exception
      */

@@ -9,14 +9,12 @@
 namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
-use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
-use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Models\Catalogue\Variant;
 use Illuminate\Support\Arr;
@@ -25,6 +23,7 @@ class GetWebBlockProduct
 {
     use AsObject;
     use HasWebBlockLayoutData;
+    use HasWebBlockProductAttachments;
     use HasWebBlockProductLabelInfo;
 
     public function handle(Webpage $webpage, array $webBlock): array
@@ -36,22 +35,6 @@ class GetWebBlockProduct
             abort(404);
         }
 
-        $attachments = DB::table('media')
-            ->join('model_has_attachments', function ($join) use ($webpage) {
-                $join->on('model_has_attachments.media_id', '=', 'media.id')
-                    ->where('model_has_attachments.model_type', '=', 'Product')
-                    ->where('model_has_attachments.model_id', $webpage->model_id);
-            })
-            ->select(['model_has_attachments.caption', 'model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
-            ->whereIn('model_has_attachments.scope', [
-                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
-                TradeAttachmentScopeEnum::CPSR,
-                TradeAttachmentScopeEnum::DOC,
-                TradeAttachmentScopeEnum::IFRA,
-                TradeAttachmentScopeEnum::SDS,
-                TradeAttachmentScopeEnum::TEST_REPORTS,
-            ])
-            ->get();
 
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
@@ -74,7 +57,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', $this->getProductAttachments($product->id));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.label_info', $this->getProductLabelInfo($product));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.is_label_info_approved', $this->isProductLabelInfoApproved($product));
 

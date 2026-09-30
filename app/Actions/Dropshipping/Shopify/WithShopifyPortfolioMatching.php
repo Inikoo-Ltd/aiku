@@ -7,6 +7,7 @@
 
 namespace App\Actions\Dropshipping\Shopify;
 
+use App\Actions\Dropshipping\Shopify\Product\LinkShopifyPortfolio;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Str;
@@ -45,10 +46,13 @@ trait WithShopifyPortfolioMatching
             return null;
         }
 
-        return $customerSalesChannel->portfolios()
+        $portfolios = $customerSalesChannel->portfolios()
             ->whereIn($column, $candidates)
             ->when($column === 'platform_product_id', fn ($query) => $query->whereRaw("coalesce(settings->>'shopify_variant_adopted', 'false') <> 'true'"))
-            ->first();
+            ->limit(2)
+            ->get();
+
+        return $portfolios->count() === 1 ? $portfolios->first() : null;
     }
 
     /**
@@ -97,18 +101,11 @@ trait WithShopifyPortfolioMatching
 
     private function healPortfolioPlatformIds(Portfolio $portfolio, ?string $platformProductId, ?string $platformProductVariantId): void
     {
-        $healedIds = [];
+        $healedProductId = $platformProductId && $portfolio->platform_product_id !== $platformProductId ? $platformProductId : null;
+        $healedVariantId = $platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId ? $platformProductVariantId : null;
 
-        if ($platformProductId && $portfolio->platform_product_id !== $platformProductId) {
-            $healedIds['platform_product_id'] = $platformProductId;
-        }
-
-        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId) {
-            $healedIds['platform_product_variant_id'] = $platformProductVariantId;
-        }
-
-        if ($healedIds) {
-            $portfolio->update($healedIds);
+        if ($healedProductId || $healedVariantId) {
+            LinkShopifyPortfolio::run($portfolio, $healedProductId, $healedVariantId);
         }
     }
 }

@@ -74,7 +74,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator(null, tableName: request()->route()->getName())
+            ->withPaginator(null, 25, tableName: request()->route()->getName())
             ->withQueryString();
 
         $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);

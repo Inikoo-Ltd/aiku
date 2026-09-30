@@ -10,10 +10,14 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
+use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Accounting\Payment;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use Illuminate\Http\JsonResponse;
@@ -24,8 +28,9 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Refunds the lines of a claim to the customer's balance in one go: a refund of the order's
  * invoice holding just those lines, finalised and paid out as credit, the same steps the
- * refund page takes one at a time. Paying out is asked of the original invoice, which settles
- * its unpaid refunds. The claim counts in delivery note units, which are
+ * refund page takes one at a time. It is paid out from the customer's payment of the invoice,
+ * as refunding that payment to balance by hand does, so only money that was paid is credited
+ * and the balance entry points at its refund. The claim counts in delivery note units, which are
  * not always the invoice's (a pack, a piece), so each line refunds the share of its invoice
  * line that was claimed: two of six units refund a third of what that line was invoiced at.
  */
@@ -82,11 +87,37 @@ class RefundClaimToBalance extends OrgAction
             $amounts->each(fn (array $line) => StoreRefundInvoiceTransaction::make()->action($refund, $line[0], ['net_amount' => $line[1]]));
 
             $refund = FinaliseRefund::make()->action($refund->refresh(), []);
+            $amount = abs((float) $refund->refresh()->total_amount);
 
-            RefundToCredit::make()->action($invoice->refresh(), ['amount' => abs((float) $refund->refresh()->total_amount)]);
+            RefundPaymentToBalance::make()->handle(self::paymentToRefundFrom($invoice, $amount), [
+                'amount'     => $amount,
+                'invoice_id' => $refund->id,
+            ]);
 
             return $refund->refresh();
         });
+    }
+
+    /**
+     * The customer's payment of the invoice that still has enough left to give back, so the
+     * balance is credited only with money that was paid, the way refunding a payment to
+     * balance by hand does it.
+     */
+    public static function paymentToRefundFrom(Invoice $invoice, float $amount): Payment
+    {
+        $payment = $invoice->payments()
+            ->where('payments.type', PaymentTypeEnum::PAYMENT)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->get()
+            ->filter(fn (Payment $payment) => round((float) $payment->amount - (float) $payment->total_refund, 2) >= round($amount, 2))
+            ->sortByDesc(fn (Payment $payment) => (float) $payment->amount - (float) $payment->total_refund)
+            ->first();
+
+        if (!$payment) {
+            throw ValidationException::withMessages(['delivery_note_items' => __('The invoice has no payment left to refund this from, it may not be paid yet')]);
+        }
+
+        return $payment;
     }
 
     /**

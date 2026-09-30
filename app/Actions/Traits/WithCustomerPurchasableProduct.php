@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 trait WithCustomerPurchasableProduct
@@ -27,9 +28,10 @@ trait WithCustomerPurchasableProduct
      * for sale publicly: it can be bought only by the customers it is exclusive to, and only while
      * there is stock. An on demand product is made to order and never out of stock. Out of stock,
      * coming soon, discontinued and not-for-sale products never enter a basket, a line for them
-     * would be charged and could not be sent.
+     * would be charged and could not be sent. Callers checking many products pass the customer's
+     * exclusive product ids (keyed by id) to avoid a query per product.
      */
-    protected function isProductPurchasableByCustomer(Product $product, Customer $customer): bool
+    protected function isProductPurchasableByCustomer(Product $product, Customer $customer, ?Collection $customerExclusiveProductIds = null): bool
     {
         if ((float) $product->price <= 0 || $product->shop_id != $customer->shop_id) {
             return false;
@@ -37,7 +39,9 @@ trait WithCustomerPurchasableProduct
 
         if ($product->exclusive_for_customer_id) {
             $isAllowed = $product->exclusive_for_customer_id == $customer->id
-                || $product->exclusiveCustomers()->where('customers.id', $customer->id)->exists();
+                || ($customerExclusiveProductIds
+                    ? $customerExclusiveProductIds->has($product->id)
+                    : $product->exclusiveCustomers()->where('customers.id', $customer->id)->exists());
 
             return $isAllowed && ($product->is_on_demand || $product->available_quantity > 0);
         }

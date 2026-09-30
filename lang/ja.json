@@ -1364,5 +1364,8 @@
     "Minutes to wait when an agent has the chat open": "担当者がチャットを開いているときの待機時間（分）",
     "Only a chat supervisor can change this.": "これを変更できるのはチャットのスーパーバイザーだけです。",
     "Keep open": "開いたままにする",
-    "The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.": "お客様はお礼だけを送りました：👍 が送られ、誰も書き込まなければチャットは閉じます。入力すると開いたままになります。"
+    "The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.": "お客様はお礼だけを送りました：👍 が送られ、誰も書き込まなければチャットは閉じます。入力すると開いたままになります。",
+    "Always available": "常時購入可能",
+    "Made on demand": "受注生産",
+    ":quantity on the shelf, made on demand": "棚に:quantity、受注生産"
 }

@@ -20,6 +20,7 @@ use Illuminate\Support\Arr;
  * @property mixed $name
  * @property mixed $available_quantity
  * @property mixed $is_on_demand
+ * @property mixed $shelf_quantity
  * @property mixed $price
  * @property mixed $state
  * @property mixed $created_at
@@ -83,6 +84,7 @@ class ProductsWebpageResource extends JsonResource
              * a product built from more than one SKU has no single answer so it stays null.
              */
             'packed_in'                     => $this->packed_in ? (int) $this->packed_in : null,
+            'shelf_quantity'                => $this->shelf_quantity === null ? null : (int) $this->shelf_quantity,
             'offers_data'                   => $this->offers_data,
             'discounted_price'              => $bestPercentageOff ? round($this->price * $bestPercentageOffOfferFactor, 2) : null,
             'discounted_price_per_unit'     => $pricePerUnitDiscounted,

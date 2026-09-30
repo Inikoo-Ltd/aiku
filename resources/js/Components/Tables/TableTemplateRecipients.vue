@@ -49,7 +49,7 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import "@/Composables/initialiseLeaflet"
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
 import { useFilterRecipients } from "@/Composables/useFilterRecipients";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faSpellCheck,
@@ -432,7 +432,7 @@ watch(
                         class="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" v-model="selectedChannels[option.value]" @change="onChannelChange"
                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-sm text-gray-700 whitespace-nowrap">{{ trans(option.label) }}</span>
+                        <span class="text-sm text-gray-700 whitespace-nowrap">{{ ctrans(option.label) }}</span>
                     </label>
                 </div>
 
@@ -441,13 +441,13 @@ watch(
 
                 <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    <span>{{ trans("Filter") }}</span>
+                    <span>{{ ctrans("Filter") }}</span>
 
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
                 </Button>
 
                 <MultiSelect v-if="stateOptions?.length" v-model="selectedStates" :options="stateOptions"
-                    optionLabel="label" optionValue="value" :placeholder="trans('State')" :maxSelectedLabels="2"
+                    optionLabel="label" optionValue="value" :placeholder="ctrans('State')" :maxSelectedLabels="2"
                     :showToggleAll="false" class="h-10 items-center w-max max-w-[14rem]" appendTo="body" @change="onStateChange"
                     :pt="{ label: { class: 'whitespace-nowrap' } }">
                     <template #option="{ option }">
@@ -459,7 +459,7 @@ watch(
                 </MultiSelect>
 
                 <MultiSelect v-if="statusOptions?.length" v-model="selectedStatuses" :options="statusOptions"
-                    optionLabel="label" optionValue="value" :placeholder="trans('Status')" :maxSelectedLabels="2"
+                    optionLabel="label" optionValue="value" :placeholder="ctrans('Status')" :maxSelectedLabels="2"
                     :showToggleAll="false" class="h-10 items-center w-max max-w-[14rem]" appendTo="body" @change="onStatusChange"
                     :pt="{ label: { class: 'whitespace-nowrap' } }">
                     <template #option="{ option }">
@@ -473,22 +473,22 @@ watch(
                 <Button v-if="upcomingReadyCount !== undefined"
                     :key="'ready-' + (selectedUpcoming === 'ready')" @click="toggleUpcoming('ready')"
                     :type="selectedUpcoming === 'ready' ? 'primary' : 'secondary'"
-                    :tooltip="trans('Upcoming Transactions Ready')" class="h-10 px-4 shrink-0 whitespace-nowrap">
+                    :tooltip="ctrans('Upcoming Transactions Ready')" class="h-10 px-4 shrink-0 whitespace-nowrap">
                     <FontAwesomeIcon :icon="faCalendarPlus" fixed-width />
-                    <span>{{ trans("Upcoming Transactions") }}</span>
+                    <span>{{ ctrans("Upcoming Transactions") }}</span>
                     <Badge :value="upcomingReadyCount" class="ml-2" />
                 </Button>
 
                 <Button v-if="upcomingOutOfStockCount !== undefined"
                     :key="'oos-' + (selectedUpcoming === 'out_of_stock')" @click="toggleUpcoming('out_of_stock')"
                     :type="selectedUpcoming === 'out_of_stock' ? 'red' : 'red_outline'"
-                    :tooltip="trans('Upcoming Transactions Out of Stock / Not for Sale')" class="h-10 px-4 shrink-0 whitespace-nowrap">
+                    :tooltip="ctrans('Upcoming Transactions Out of Stock / Not for Sale')" class="h-10 px-4 shrink-0 whitespace-nowrap">
                     <FontAwesomeIcon :icon="faBan" fixed-width />
-                    <span>{{ trans("Upcoming Transactions") }}</span>
+                    <span>{{ ctrans("Upcoming Transactions") }}</span>
                     <Badge :value="upcomingOutOfStockCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="() => fetchCustomers()" />
+                <Button :label="ctrans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="() => fetchCustomers()" />
 
                 <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />
@@ -496,7 +496,7 @@ watch(
             <!-- center side -->
             <div v-if="isAllCustomers && showEstimate" class="flex items-center">
                 <span class="text-blue-600 font-medium">
-                    {{ trans("Audience: All Customers") }}
+                    {{ ctrans("Audience: All Customers") }}
                 </span>
             </div>
             <!-- right side -->
@@ -504,7 +504,7 @@ watch(
 
                 <template v-if="exportRoutes">
                     <div v-if="exportFields?.length">
-                        <Button :icon="faDownload" :label="trans('Export')" type="tertiary"
+                        <Button :icon="faDownload" :label="ctrans('Export')" type="tertiary"
                             @click="exportPanel.toggle($event)" />
 
                         <Popover ref="exportPanel">
@@ -519,7 +519,7 @@ watch(
                                 <label
                                     class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
                                     <Checkbox v-model="allColumnsSelected" :binary="true" />
-                                    <span>{{ trans("Select all") }}</span>
+                                    <span>{{ ctrans("Select all") }}</span>
                                 </label>
 
                                 <div class="max-h-72 overflow-y-auto">
@@ -543,7 +543,7 @@ watch(
                     </div>
                 </template>
 
-                <Button v-if="showSave" :label="trans('Save recipients')" type="positive" icon="save" @click="saveFilters"
+                <Button v-if="showSave" :label="ctrans('Save recipients')" type="positive" icon="save" @click="saveFilters"
                     class="h-10 px-4" :disabled="isByOrderValueInvalid" />
             </div>
         </div>
@@ -557,11 +557,11 @@ watch(
                 </div>
                 <span
                     class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
-                    {{ trans("Active") }}
+                    {{ ctrans("Active") }}
                 </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
-                    <template v-if="key === 'orders_collection' || key === 'by_showroom_orders'">
+                    <template v-if="key === 'orders_collection' || key === 'by_showroom_orders' || key === 'due_to_reorder'">
                         <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full"
                             disabled />
                     </template>
@@ -610,7 +610,7 @@ watch(
                             :min="filter.value.amount_range.min ?? undefined" />
 
                         <p v-if="isAmountRangeInvalid(filter)" class="text-xs text-red-500 mt-1 col-span-2">
-                            {{ trans("Minimum amount is required.") }}
+                            {{ ctrans("Minimum amount is required.") }}
                         </p>
                     </div>
                 </template>
@@ -627,7 +627,7 @@ watch(
                             <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="single"
                                 v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
                                 :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
-                                :placeholder="trans('Select items...')" />
+                                :placeholder="ctrans('Select items...')" />
                         </div>
                     </template>
 
@@ -646,18 +646,18 @@ watch(
                         <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute(key)" :key="key" mode="multiple"
                             v-model="filter.value.ids" :initOptions="preloadedEntities[key] || []"
                             :fetchRoute="getEntityFetchRoute(key)!" valueProp="id" labelProp="name"
-                            :placeholder="trans('Select items...')" />
+                            :placeholder="ctrans('Select items...')" />
                     </div>
                     <div class="mb-3">
                         <div class="flex items-center gap-6">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="filter.value.combine_logic" :value="true" inputId="multi" />
-                                <label for="multi" class="text-sm">{{ trans("Allow multiple behaviours") }}</label>
+                                <label for="multi" class="text-sm">{{ ctrans("Allow multiple behaviours") }}</label>
                             </div>
 
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="filter.value.combine_logic" :value="false" inputId="single" />
-                                <label for="single" class="text-sm">{{ trans("Single behaviour only") }}</label>
+                                <label for="single" class="text-sm">{{ ctrans("Single behaviour only") }}</label>
                             </div>
                         </div>
                     </div>
@@ -701,7 +701,7 @@ watch(
                             <InputText v-model="getPostalCodeModel(filter).value"
                                 :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
                             <small class="text-gray-500">
-                                {{ trans("You can enter multiple postal codes separated by commas.") }}
+                                {{ ctrans("You can enter multiple postal codes separated by commas.") }}
                             </small>
                         </template>
 
@@ -718,7 +718,7 @@ watch(
                             <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
                                 placeholder="Radius in km" class="w-full" />
 
-                            <Button :label="trans('Find On Map')" :disabled="!!findOnMapErrors[key]"
+                            <Button :label="ctrans('Find On Map')" :disabled="!!findOnMapErrors[key]"
                                 :loading="!!filter.value.loadingMap" :tooltip="findOnMapErrors[key]" @click="() => {
                                     filter.value.lastSource = 'input'
                                     getLatLngToLocation(filter, 'forward')
@@ -732,7 +732,7 @@ watch(
                                     class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
                                     <div class="flex flex-col items-center gap-2 text-gray-600">
                                         <FontAwesomeIcon :icon="faSpinner" class="text-2xl animate-spin" fixed-width />
-                                        <span class="text-sm">{{ trans("Finding location...") }}</span>
+                                        <span class="text-sm">{{ ctrans("Finding location...") }}</span>
                                     </div>
                                 </div>
 
@@ -745,7 +745,7 @@ watch(
                                         <l-marker :lat-lng="[Number(filter.value.lat), Number(filter.value.lng)]"
                                             :draggable="true" @dragend="(e: any) => onMarkerDrag(e, filter)">
                                             <l-tooltip :permanent="true" direction="top" :offset="[0, -10]">
-                                                📍 {{ trans("This is your point") }}<br>
+                                                📍 {{ ctrans("This is your point") }}<br>
                                                 Lat: {{ Number(filter.value.lat).toFixed(5) }}<br>
                                                 Lng: {{ Number(filter.value.lng).toFixed(5) }}
                                             </l-tooltip>
@@ -767,12 +767,12 @@ watch(
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">{{ trans(estimateLabel) }}</p>
+                    <p class="text-sm text-gray-500 mb-1">{{ ctrans(estimateLabel) }}</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
-                        {{ trans(formatNumber(estimatedRecipients)) }}
+                        {{ ctrans(formatNumber(estimatedRecipients)) }}
                     </h2>
                     <p class="text-xs text-gray-400 mt-2">
-                        {{ trans("Based on current filters") }}
+                        {{ ctrans("Based on current filters") }}
                     </p>
                 </div>
 

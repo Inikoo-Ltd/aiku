@@ -11,11 +11,11 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
-use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -29,13 +29,12 @@ class AskBotVision
     use AsController;
     use WithPromptAI;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public function handle(string $urlOrBase64Image, string $prompt)
     {
         if (config('askbot-laravel.ai_provider') == 'openai') {
-            $config = new OpenAIConfig();
-            $config->model = 'gpt-4o-mini';
-            $chat = new OpenAIChat($config);
+            $chat = new OpenAIChat($this->aiLLPhantConfig('gpt-4o-mini'));
 
             $messages = [
                 VisionMessage::fromImages([

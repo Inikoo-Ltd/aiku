@@ -46,10 +46,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowInvoice extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     use IsInvoiceUI;
     use WithMarginData;
     use WithInvoicePayBox;

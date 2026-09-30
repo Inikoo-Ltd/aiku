@@ -250,6 +250,44 @@ async function saveCost(item: any) {
     }
 }
 
+const isSavingAllCosts = ref(false)
+
+function changedCostItems() {
+    return (props.data?.data ?? []).filter(item =>
+        item.updateCostRoute && costDraft[item.id]
+        && costFields.some(field => Number(costDraft[item.id][field]) !== Number(item[field] ?? 0))
+    )
+}
+
+async function saveAllCosts() {
+    const items = changedCostItems()
+
+    if (!items.length) {
+        notify({ title: ctrans('Nothing to save'), text: ctrans('No item costs were changed'), type: 'info' })
+        return
+    }
+
+    isSavingAllCosts.value = true
+    let savedCount = 0
+
+    try {
+        for (const item of items) {
+            await axios.patch(route(item.updateCostRoute.name, item.updateCostRoute.parameters), costDraft[item.id])
+            savedCount++
+        }
+        notify({ title: ctrans('Success'), text: ctrans(':count items costs updated', { count: String(savedCount) }), type: 'success' })
+        reloadStockDelivery()
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update item costs'),
+            type: 'error',
+        })
+    } finally {
+        isSavingAllCosts.value = false
+    }
+}
+
 async function distributeExtraCost(type: 'equally' | 'by_value') {
     const distributeRoute = props.costing?.distributeExtraCostRoute
 
@@ -315,6 +353,18 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     :loading="distributingType === 'by_value'"
                     :disabled="distributingType !== null"
                     @click="distributeExtraCost('by_value')"
+                />
+
+                <Button
+                    :label="ctrans('Save all')"
+                    :tooltip="ctrans('Save the costs of every changed item')"
+                    icon="fal fa-save"
+                    type="save"
+                    size="xs"
+                    class="ml-auto"
+                    :loading="isSavingAllCosts"
+                    :disabled="isSavingAllCosts || savingCostId !== null"
+                    @click="saveAllCosts"
                 />
             </div>
         </template>

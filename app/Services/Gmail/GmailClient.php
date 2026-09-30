@@ -9,6 +9,7 @@ namespace App\Services\Gmail;
 
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -171,6 +172,47 @@ final class GmailClient
         );
     }
 
+    /**
+     * One page of the message ids a search finds, newest first, and where the next page starts.
+     *
+     * @return array{ids: array<int, string>, next: string|null}
+     */
+    public function listMessageIds(string $query, ?string $pageToken = null, int $maxResults = 500): array
+    {
+        $response = $this->get('users/me/messages', array_filter([
+            'q'          => $query,
+            'maxResults' => $maxResults,
+            'pageToken'  => $pageToken,
+        ]));
+
+        return [
+            'ids'  => array_map(static fn (array $message) => $message['id'], $response->json('messages', [])),
+            'next' => $response->json('nextPageToken'),
+        ];
+    }
+
+    /**
+     * Several messages fetched side by side, within one mailbox's rate limit. A message Gmail
+     * refused comes back null, a rate limit as the string 'rate_limited', so the caller can wait.
+     *
+     * @param  array<int, string>  $messageIds
+     * @return array<string, array<string, mixed>|string|null>
+     */
+    public function getMessages(array $messageIds): array
+    {
+        $token     = $this->accessToken();
+        $responses = Http::pool(fn (Pool $pool) => array_map(
+            fn (string $messageId) => $pool->as($messageId)->withToken($token)->timeout(60)->get(self::API_BASE_URL."users/me/messages/$messageId", ['format' => 'full']),
+            $messageIds
+        ));
+
+        return collect($responses)->map(fn ($response) => match (true) {
+            $response instanceof Response && $response->successful()                            => $response->json(),
+            $response instanceof Response && in_array($response->status(), [403, 429, 503], true) => 'rate_limited',
+            default                                                                            => null,
+        })->all();
+    }
+
     public function getMessage(string $messageId): array
     {
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
@@ -270,7 +312,10 @@ final class GmailClient
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
                 'addLabelIds'    => [$labelId],
-                'removeLabelIds' => $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
+                'removeLabelIds' => array_merge(
+                    $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
+                    in_array('SPAM', $priorLabelIds, true) ? ['SPAM'] : []
+                ),
             ]);
     }
 

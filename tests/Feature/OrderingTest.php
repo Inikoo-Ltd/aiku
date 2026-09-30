@@ -8,6 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Models\Inventory\OrgStock;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
@@ -69,7 +73,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
@@ -4050,39 +4054,74 @@ test('a collection invoice stores the collection address it was issued with', fu
 });
 
 test('an order switched to collection is taxed where it is collected, not where the customer lives', function () {
-    $addressIn = fn (string $code, string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
-        \App\Models\Helpers\Address::factory()->definition(),
-        ['group_id' => $this->shop->group_id, 'country_code' => $code, 'country_id' => Country::where('code', $code)->value('id'), 'postal_code' => $postalCode]
-    ));
+    DB::beginTransaction();
+    try {
+        $spain = Country::where('code', 'ES')->first();
+        $this->organisation->forceFill(['country_id' => $spain->id])->save();
+        $spanishVat = TaxCategory::where('type', \App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum::STANDARD)->where('country_id', $spain->id)->where('status', true)->first();
 
-    $customer = createCustomer($this->shop);
-    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $addressIn = fn (string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+            \App\Models\Helpers\Address::factory()->definition(),
+            ['group_id' => $this->shop->group_id, 'country_code' => 'ES', 'country_id' => $spain->id, 'postal_code' => $postalCode]
+        ));
+        $showroom = $addressIn('29004');
+        $this->shop->update(['collection_address_id' => $showroom->id]);
 
-    $ceuta = $addressIn('ES', '51001');
-    $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
-    $showroom = $addressIn('ES', '29004');
-    $order->shop->update(['collection_address_id' => $showroom->id]);
-    $order->shop->unsetRelation('collectionAddress');
-    $order->updateQuietly(['tax_category_id' => 2]);
+        $customer = freshCustomerLike($this->shop, $this->customer);
+        $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $ceuta = $addressIn('51001');
+        $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        expect($order->refresh()->tax_category_id)->toBe(1);
 
-    UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $ceuta->id]);
-    $order->refresh();
+        UpdateOrder::make()->action($order, ['collection_address_id' => $ceuta->id]);
+        $order->refresh();
+        expect($order->collection_address_id)->toBe($showroom->id)
+            ->and($order->tax_category_id)->toBe($spanishVat->id)
+            ->and((float)$order->tax_amount)->toBeGreaterThan(0.0)
+            ->and($order->taxableDeliveryAddress(new \App\Models\Helpers\TaxNumber(['valid' => true]))->id)->toBe($ceuta->id);
 
-    $spain = Country::where('code', 'ES')->first();
-    expect($order->taxableDeliveryAddress(null)->id)->toBe($showroom->id)
-        ->and($order->tax_category_id)->toBe(GetTaxCategory::run($order->organisation->country, null, $ceuta, $showroom)->id)
-        ->and(GetTaxCategory::run($spain, null, $ceuta, $ceuta)->id)->toBe(1)
-        ->and(GetTaxCategory::run($spain, null, $ceuta, $order->taxableDeliveryAddress(null))->rate)->toBeGreaterThan(0)
-        ->and($order->taxableDeliveryAddress(new \App\Models\Helpers\TaxNumber(['valid' => true]))->id)->toBe($ceuta->id);
+        UpdateOrder::make()->action($order, ['collection_address_id' => null]);
+        expect($order->refresh()->tax_category_id)->toBe(1);
 
-    UpdateOrder::make()->action($order, ['collection_address_id' => null]);
-    expect($order->refresh()->taxableDeliveryAddress(null)->id)->toBe($ceuta->id);
+        $order->updateQuietly(['state' => OrderStateEnum::FINALISED]);
+        UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        expect($order->refresh()->tax_category_id)->toBe(1);
+    } finally {
+        DB::rollBack();
+    }
+});
 
-    $order->updateQuietly(['state' => OrderStateEnum::FINALISED, 'tax_category_id' => 2]);
-    UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $showroom->id]);
-    expect($order->refresh()->tax_category_id)->toBe(2);
-    $order->updateQuietly(['state' => OrderStateEnum::CREATING]);
+test('ticking collection on a delivery note stores the shop collection address, not the customer address', function () {
+    DB::beginTransaction();
+    try {
+        $spain = Country::where('code', 'ES')->first();
+        $this->organisation->forceFill(['country_id' => $spain->id])->save();
+        $addressIn = fn (string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+            \App\Models\Helpers\Address::factory()->definition(),
+            ['group_id' => $this->shop->group_id, 'country_code' => 'ES', 'country_id' => $spain->id, 'postal_code' => $postalCode]
+        ));
+        $showroom = $addressIn('29004');
+        $this->shop->update(['collection_address_id' => $showroom->id]);
+
+        $customer = freshCustomerLike($this->shop, $this->customer);
+        $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $ceuta = $addressIn('51001');
+        $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = $order->refresh()->deliveryNotes()->first() ?? SendOrderToWarehouse::make()->action($order, []);
+        expect($order->refresh()->tax_category_id)->toBe(1);
+
+        \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote, ['collection_address_id' => $ceuta->id]);
+
+        expect($deliveryNote->refresh()->collection_address_id)->toBe($showroom->id);
+    } finally {
+        DB::rollBack();
+    }
 });
 
 test('a held order goes to the warehouse once its address is put on it', function () {
@@ -4636,6 +4675,22 @@ test('a product that is not for sale cannot be added to a basket', function () {
     }
 });
 
+test('products added from a stale customer after the basket was deleted all land in one new basket', function () {
+    $this->customer->update(['current_order_in_basket_id' => null]);
+    $staleCustomer = $this->customer->fresh();
+    [, $bulk] = createProduct($this->shop);
+    [$firstProduct, $secondProduct] = collect([1, 2])->map(fn () => tap(StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    )))->update(['status' => ProductStatusEnum::FOR_SALE]))->all();
+
+    $firstLine  = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $firstProduct->fresh(), ['quantity' => 1]);
+    $secondLine = StoreEcomBasketTransaction::make()->handle($staleCustomer, $secondProduct->fresh(), ['quantity' => 1]);
+
+    expect($secondLine->order_id)->toBe($firstLine->order_id)
+        ->and($this->customer->fresh()->current_order_in_basket_id)->toBe($firstLine->order_id);
+});
+
 test('an exclusive product can be added only by its own customer, and only while in stock', function () {
     $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
@@ -4887,7 +4942,11 @@ test('b2b dashboard insights show the customer order overview, their regular pro
         ->and($regular['reorder_every_days'])->toBe(20)
         ->and($regular['days_until_due'])->toBe(10)
         ->and($regular['stock_status'])->toBe('in_stock')
-        ->and($regular['is_purchasable'])->toBeTrue();
+        ->and($regular['is_purchasable'])->toBeTrue()
+        ->and($regular['is_on_demand'])->toBeFalse()
+        ->and($regular['has_reminder'])->toBeFalse()
+        ->and($insights['recent_orders'][0]['date'])->toBe(now()->subDays(10)->toDateString())
+        ->and(collect($insights['recommendations'])->every(fn ($product) => array_key_exists('quantity_in_basket', $product)))->toBeTrue();
 });
 
 test('b2b dashboard insights work for a customer who never ordered and for one who stopped ordering', function () {
@@ -4923,6 +4982,46 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
         ->and($lostInsights['recommendations_source'])->toBe('bought_together');
 });
 
+test('b2b dashboard shows a voucher only once staff opt it in, and hides it after the customer used it', function () {
+    if (!$this->shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOUCHERS)->exists()) {
+        \App\Actions\Discounts\OfferCampaign\SeedShopOfferCampaigns::run($this->shop);
+    }
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $code     = 'DASH'.strtoupper(\Illuminate\Support\Str::random(6));
+
+    $voucher = \App\Actions\Discounts\Offer\StoreVoucherOffers::make()->handle($this->shop, [
+        'voucher'            => $code,
+        'name'               => '15% off over 200',
+        'offer_amount'       => 200,
+        'can_customer_reuse' => false,
+        'start_at'           => now()->subDay()->toDateTimeString(),
+        'end_at'             => now()->addDays(10)->toDateTimeString(),
+        'percentage_off'     => 15,
+        'allowance_type'     => 'percentage_off',
+        'target_type'        => 'shop',
+        'target_id'          => $this->shop->id,
+    ]);
+    $voucher->update(['status' => true]);
+
+    $dashboardVoucherCodes = fn () => collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->pluck('code')->all();
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+
+    \App\Actions\Discounts\Offer\UpdateOffer::make()->action($voucher, ['show_on_customer_dashboard' => true]);
+    $shown = collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->firstWhere('code', $code);
+
+    expect($voucher->fresh()->settings)->toMatchArray(['can_customer_reuse' => false, 'show_on_customer_dashboard' => true])
+        ->and($shown['percentage_off'])->toEqual(0.15)
+        ->and($shown['min_amount'])->toEqual(200)
+        ->and($shown['is_whole_order'])->toBeTrue()
+        ->and($shown['expires_at'])->toBe(now()->addDays(10)->toDateString());
+
+    $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['state' => OrderStateEnum::DISPATCHED, 'offer_voucher_id' => $voucher->id]);
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+});
+
 test('ordering a past order again fills the basket once, however many times it is pressed', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     [, $product] = createProduct($this->shop);
@@ -4942,9 +5041,82 @@ test('ordering a past order again fills the basket once, however many times it i
         ->and($second['added'])->toBe(1)
         ->and($pastOrder->fresh()->state)->toBe(OrderStateEnum::DISPATCHED)
         ->and($basket->id)->not->toBe($pastOrder->id)
-        ->and((float) $line->quantity_ordered)->toEqual(6.0);
+        ->and((float) $line->quantity_ordered)->toEqual(6.0)
+        ->and((float) $line->net_amount)->toBeGreaterThan(0.0)
+        ->and((float) $basket->goods_amount)->toEqual((float) $line->net_amount);
 
     $product->update(['status' => ProductStatusEnum::DISCONTINUED]);
     expect(\App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder)['skipped'])
         ->toBe([['code' => $product->code, 'name' => $product->name]]);
+});
+
+test('a claim refunded to balance is paid out of the card payment and leaves nothing due on the order', function () {
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $attachedOrgStock = null;
+    if (!$this->product->orgStocks()->count()) {
+        $attachedOrgStock = OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($attachedOrgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+    $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
+    $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $invoice      = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    $claimed      = [['id' => $item->id, 'quantity' => 1]];
+
+    expect((float) $invoice->total_amount)->toBeGreaterThan(0.0)
+        ->and(fn () => RefundClaimToBalance::make()->handle($order->refresh(), $claimed))->toThrow(ValidationException::class, 'no payment left')
+        ->and($order->invoices()->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(0);
+
+    $cardAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim card account']
+    );
+    $payment = PayInvoice::make()->action($invoice->refresh(), $cardAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+
+    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed);
+
+    $credit = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
+    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $refund->total_amount)->toBeLessThan(0.0)
+        ->and((float) $order->customer->refresh()->balance)->toBe(abs((float) $refund->total_amount))
+        ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
+        ->and($credit->payment->original_payment_id)->toBe($payment->id)
+        ->and($credit->payment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::ACCOUNT)
+        ->and(StoreOrderPaymentLink::amountDue($order->refresh()))->toBe(0.0);
+
+    if ($attachedOrgStock) {
+        $this->product->orgStocks()->detach($attachedOrgStock->id);
+    }
+});
+
+test('staff see the customer balance on a basket so a phone payment can use it first', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $basket = StoreOrder::make()->action($this->customer, $modelData);
+    $originalBalance = $this->customer->balance;
+    $this->customer->update(['balance' => 10.46]);
+
+    try {
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', fn ($balance) => (float) $balance === 10.46)->etc());
+
+        $basket->update(['state' => OrderStateEnum::IN_WAREHOUSE]);
+
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', null)->etc());
+    } finally {
+        $this->customer->update(['balance' => $originalBalance]);
+    }
 });

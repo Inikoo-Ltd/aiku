@@ -424,8 +424,6 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/ebay-publish-drafts', PublishAllRetinaEbayDraftPortfolios::class)->name('ebay.publish_drafts')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
-    Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
-    Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', [StoreNewProductToCurrentEbay::class, 'inRetina'])->name('woo.single_upload')->withoutScopedBindings()->whereNumber(['wooCommerceUser', 'portfolio']);
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');

@@ -28,10 +28,12 @@ use App\Models\SysAdmin\Organisation;
 use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowDeletedInvoice extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     use IsInvoiceUI;
     use WithFulfilmentCustomerSubNavigation;
 

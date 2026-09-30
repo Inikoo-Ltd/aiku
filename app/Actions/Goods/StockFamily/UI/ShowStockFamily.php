@@ -18,6 +18,7 @@ use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\Goods\StocksResource;
+use App\Http\Resources\Goods\StockTimeSeriesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
@@ -110,16 +111,20 @@ class ShowStockFamily extends OrgAction
                             bucket: 'all'
                         )
                     )),
+                StockFamilyTabsEnum::SALES->value => $this->tab == StockFamilyTabsEnum::SALES->value ?
+                    fn () => StockTimeSeriesResource::collection(IndexStockFamilyTimeSeries::run($stockFamily, StockFamilyTabsEnum::SALES->value))
+                    : Inertia::optional(fn () => StockTimeSeriesResource::collection(IndexStockFamilyTimeSeries::run($stockFamily, StockFamilyTabsEnum::SALES->value))),
                 StockFamilyTabsEnum::HISTORY->value  => $this->tab == StockFamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($stockFamily))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
+                    fn () => HistoryResource::collection(IndexHistory::run($stockFamily, StockFamilyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily, StockFamilyTabsEnum::HISTORY->value)))
             ]
-        ) ->table(
+        )->table(
             IndexStocks::make()->tableStructure(
                 parent: $stockFamily,
                 prefix: StockFamilyTabsEnum::STOCKS->value,
             )
-        );
+        )->table(IndexStockFamilyTimeSeries::make()->tableStructure(prefix: StockFamilyTabsEnum::SALES->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: StockFamilyTabsEnum::HISTORY->value, model: $stockFamily));
     }
 
 

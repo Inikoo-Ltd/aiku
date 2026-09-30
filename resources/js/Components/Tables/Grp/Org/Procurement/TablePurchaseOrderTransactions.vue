@@ -279,6 +279,10 @@ function supplierProductRoute(item: { slug?: string }) {
     return route('grp.supply-chain.supplier_products.show', [item.slug])
 }
 
+function purchaseOrderRoute(slug: string) {
+    return route('grp.org.procurement.purchase_orders.show', [route().params.organisation, slug])
+}
+
 function orgStockRoute(item: { org_stock_id?: number }) {
     if (!item.org_stock_id) {
         return ''
@@ -433,6 +437,13 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ ctrans('Usage (SKOs)') }}:
                     <span v-for="record in item.quarterly_usage" :key="record.period" class="mr-2">
                         {{ record.period }}: <span class="font-medium">{{ formatQuantity(record.sales) }}</span>
+                    </span>
+                </div>
+                <div v-if="item.other_open_purchase_orders?.length" class="text-xs text-amber-700">
+                    {{ ctrans('Also in') }}:
+                    <span v-for="openPurchaseOrder in item.other_open_purchase_orders" :key="openPurchaseOrder.slug" class="mr-2">
+                        <Link :href="purchaseOrderRoute(openPurchaseOrder.slug)" class="primaryLink font-medium">{{ openPurchaseOrder.reference }}</Link>
+                        ({{ quantityBreakdown({ ...item, quantity_ordered: openPurchaseOrder.quantity_ordered }) }})
                     </span>
                 </div>
             </div>

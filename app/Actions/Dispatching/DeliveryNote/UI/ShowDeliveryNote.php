@@ -226,6 +226,10 @@ class ShowDeliveryNote extends OrgAction
      */
     public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
     {
+        if ($deliveryNote->hasIncompleteSets()) {
+            return [$this->getPutBackIncompleteSetsAction($deliveryNote)];
+        }
+
         if ($deliveryNote->hasBlockingItems()) {
             return [];
         }
@@ -248,6 +252,29 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    public function getPutBackIncompleteSetsAction(DeliveryNote $deliveryNote): array
+    {
+        $parts = $deliveryNote->incompleteSetItems()->with('orgStock')->get()
+            ->map(fn (DeliveryNoteItem $deliveryNoteItem) => $deliveryNoteItem->orgStock?->code)
+            ->filter()
+            ->implode(', ');
+
+        return [
+            'type'    => 'button',
+            'style'   => 'save',
+            'label'   => __('Parts put back'),
+            'tooltip' => __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts]),
+            'key'     => 'put-back-incomplete-sets',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.put_back_incomplete_sets',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ]
+        ];
+    }
+
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         if (!$this->allowAction) {
@@ -257,6 +284,10 @@ class ShowDeliveryNote extends OrgAction
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
             ->where('is_handled', false)
             ->exists();
+
+        if ($deliveryNote->hasIncompleteSets()) {
+            return [$this->getPutBackIncompleteSetsAction($deliveryNote)];
+        }
 
         $actions = [];
         if (!$hasUnHandledItems) {

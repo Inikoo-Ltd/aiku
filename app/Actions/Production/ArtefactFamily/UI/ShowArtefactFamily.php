@@ -79,6 +79,7 @@ class ShowArtefactFamily extends OrgAction
                 'move_to_family' => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
                 'set_batch_size' => IndexArtefacts::make()->getSetBatchSizeProps($this->production, $this->canEdit),
                 'set_state'   => IndexArtefacts::make()->getSetStateProps($this->production, $this->canEdit),
+                'set_recipe'  => IndexArtefacts::make()->getSetRecipeProps($this->production, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactFamilyTabsEnum::navigation()

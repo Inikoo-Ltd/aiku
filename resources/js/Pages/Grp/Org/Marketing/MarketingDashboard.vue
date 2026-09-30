@@ -23,6 +23,10 @@ import MarketingOverview from '@/Components/DataDisplay/MarketingOverview.vue'
 import AttributionDataQuality from '@/Components/DataDisplay/AttributionDataQuality.vue'
 import ClickFraud from '@/Components/DataDisplay/ClickFraud.vue'
 import OfferPerformance from '@/Components/DataDisplay/OfferPerformance.vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faHeartbeat, faUserSecret } from '@fal'
+
+library.add(faHeartbeat, faUserSecret)
 
 const props = defineProps<{
     title: string,

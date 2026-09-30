@@ -13,6 +13,7 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -47,6 +48,28 @@ class GetPartnerOrdersInTheMaking
     public function allocations(Organisation $seller): array
     {
         return $this->allocate($seller)[1];
+    }
+
+    /**
+     * Lines already on an order that has not been picked yet: their stock still sits in the bay
+     * or on the shelves but is spoken for.
+     */
+    public static function awaitingPicking(Organisation $seller): Builder
+    {
+        return DB::table('partner_shopping_list_items')
+            ->join('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->join('orders', 'orders.id', 'transactions.order_id')
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED)
+            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+            ->whereNull('partner_shopping_list_items.deleted_at')
+            ->whereNull('transactions.deleted_at')
+            ->whereIn('orders.state', [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED,
+                OrderStateEnum::IN_WAREHOUSE,
+                OrderStateEnum::HANDLING,
+                OrderStateEnum::HANDLING_BLOCKED,
+            ]);
     }
 
     private function allocate(Organisation $seller): array
@@ -88,21 +111,8 @@ class GetPartnerOrdersInTheMaking
             ])
             ->groupBy('buyer_id');
 
-        $awaitingPicking = DB::table('partner_shopping_list_items')
-            ->join('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
-            ->join('orders', 'orders.id', 'transactions.order_id')
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED)
-            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+        $awaitingPicking = static::awaitingPicking($seller)
             ->whereIn('partner_shopping_list_items.organisation_id', $partners->keys())
-            ->whereNull('partner_shopping_list_items.deleted_at')
-            ->whereNull('transactions.deleted_at')
-            ->whereIn('orders.state', [
-                OrderStateEnum::CREATING,
-                OrderStateEnum::SUBMITTED,
-                OrderStateEnum::IN_WAREHOUSE,
-                OrderStateEnum::HANDLING,
-                OrderStateEnum::HANDLING_BLOCKED,
-            ])
             ->get([
                 'partner_shopping_list_items.organisation_id as buyer_id',
                 'partner_shopping_list_items.stock_id',

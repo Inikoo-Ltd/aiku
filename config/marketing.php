@@ -117,6 +117,7 @@ return [
         'gold_reward_reminder_1',
         'gold_reward_reminder_2',
         'gold_reward_reminder_3',
+        'due_to_reorder',
         'basket_low_stock',
         'basket_on_offer',
         'favourites_on_offer',

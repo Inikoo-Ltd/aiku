@@ -18,6 +18,14 @@ return [
     ],
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
+    'page_answer_model' => env('CHAT_PAGE_ANSWER_MODEL'),
+    'learning_model' => env('CHAT_LEARNING_MODEL', 'gpt-4o-mini'),
+
+    // Hiding a real customer is worse than showing a junk mail, so the bar is low.
+    'spam_rescue_min_probability' => (float) env('CHAT_SPAM_RESCUE_MIN_PROBABILITY', 0.3),
+
+    // An email from Gmail spam that came in anyway is tagged a possible scam only when a scam is probable.
+    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.5),
 
     'urgent_model' => env('CHAT_URGENT_MODEL', 'gpt-4o'),
 
@@ -27,6 +35,9 @@ return [
 
     // With an agent in the chat, a thanks is closed only after this long with nobody writing.
     'close_after_thanks_minutes' => (int) env('CHAT_CLOSE_AFTER_THANKS_MINUTES', 2),
+
+    // An email that only thanks us waits this long for the customer before it closes.
+    'wait_for_customer_hours' => (int) env('CHAT_WAIT_FOR_CUSTOMER_HOURS', 72),
 
     'carrier_domains' => [
         'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',

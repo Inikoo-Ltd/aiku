@@ -26,6 +26,7 @@ use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer;
 use App\Actions\Chat\ChatSession\HandleChatAiDraft;
+use App\Actions\Chat\ChatSession\RaiseChatEngineerTicket;
 use App\Actions\Chat\ChatSession\LinkChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\ToggleChatMessageReaction;
@@ -102,6 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'rejectInMetaChatSession'])->name('meta.sessions.suggested_customer.reject');
     Route::get('/sessions/{chatSession:ulid}/ai-draft', HandleChatAiDraft::class)->name('sessions.ai_draft.show');
     Route::get('/meta/sessions/{metaChatSession:ulid}/ai-draft', [HandleChatAiDraft::class, 'inMetaChatSession'])->name('meta.sessions.ai_draft.show');
+    Route::post('/sessions/{chatSession:ulid}/suggestion-used', [HandleChatAiDraft::class, 'suggestionUsed'])->name('sessions.suggestion_used');
+    Route::post('/meta/sessions/{metaChatSession:ulid}/suggestion-used', [HandleChatAiDraft::class, 'suggestionUsedInMetaChatSession'])->name('meta.sessions.suggestion_used');
+    Route::post('/sessions/{chatSession:ulid}/engineer-ticket', RaiseChatEngineerTicket::class)->name('sessions.engineer_ticket');
+    Route::post('/meta/sessions/{metaChatSession:ulid}/engineer-ticket', [RaiseChatEngineerTicket::class, 'inMetaChatSession'])->name('meta.sessions.engineer_ticket');
     Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');
     Route::post('/ai-drafts/{chatAiDraft}/discard', [HandleChatAiDraft::class, 'discard'])->name('ai_drafts.discard');
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();

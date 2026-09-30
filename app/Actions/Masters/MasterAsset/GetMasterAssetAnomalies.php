@@ -61,6 +61,11 @@ class GetMasterAssetAnomalies
             if ($product->not_follow_master_trade_units) {
                 $ignoredScopes[] = 'trade_units';
                 $ignoredIssues   = array_merge($ignoredIssues, $composition ?: [__('Not following master composition and picking (currently identical to master)')]);
+                if ($product->is_indivisible != $masterProduct->is_indivisible) {
+                    $ignoredIssues[] = $product->is_indivisible
+                        ? __('Sold only as a complete set, master is not')
+                        : __('Parts can be sent on their own, master is sold only as a complete set');
+                }
             } else {
                 $issues = array_merge($issues, $composition);
             }

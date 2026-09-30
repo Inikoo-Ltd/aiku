@@ -53,7 +53,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Models\Helpers\Language;
 use App\Actions\Chat\ChatSession\TranslateSessionMessages;
@@ -708,6 +708,22 @@ test('can store a new agent', function () {
     // Creating an agent profile writes nothing to the retired assignment table: access
     // comes from the customer service position, set up separately.
     expect(\App\Models\Chat\ShopHasChatAgent::where('chat_agent_id', $agent->id)->exists())->toBeFalse();
+});
+
+test('chat translations follow the agent chat language, not the app language', function () {
+    $spanishId = \App\Models\Helpers\Language::where('code', 'es')->value('id');
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id, 'language_id' => 68]);
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($user)['chat_language_id'])->toBe(68);
+
+    StoreAgent::make()->handle([
+        'organisation_id'      => $this->organisation->id,
+        'user_id'              => $user->id,
+        'language_id'          => $spanishId,
+        'max_concurrent_chats' => 5,
+    ]);
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($user->fresh())['chat_language_id'])->toBe($spanishId);
 });
 
 test('cannot store an agent for a user that is already active', function () {
@@ -1690,7 +1706,7 @@ test('TranslateChatMessage leaves an agent reply alone when it is already in the
         'is_read'         => false,
     ]);
 
-    DetectLanguageWithAI::shouldRun()->andReturn($detectedLanguageCode ? Language::where('code', $detectedLanguageCode)->first() : null);
+    DetectLanguageWithJev::shouldRun()->andReturn($detectedLanguageCode ? Language::where('code', $detectedLanguageCode)->first() : null);
     Translate::shouldNotRun();
 
     TranslateChatMessage::make()->handle($chatMessage->id);
@@ -3699,7 +3715,7 @@ test('an agent email reply in another language goes out translated to the custom
         'sender_type'   => ChatSenderTypeEnum::AGENT,
     ]);
 
-    DetectLanguageWithAI::shouldRun()->andReturn($english);
+    DetectLanguageWithJev::shouldRun()->andReturn($english);
     Translate::shouldRun()->once()->andReturn('Enviado hoy');
 
     \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
@@ -3756,6 +3772,64 @@ test('inbound gmail from an unknown sender becomes a guest email session and a s
     expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toBe(['stranger@example.com'])
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g2'))->toBeNull();
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
+});
+
+test('a showroom sender is filed unread under its label without becoming a chat, even when it was once marked as spam', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'           => 'care@shop.test',
+        'refresh_token'   => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'      => '1',
+        'blocked_senders' => ['notifications@calendly.com'],
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['gmail_showroom_senders' => ['@Calendly.com']]);
+
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.labeled_senders'))->toBe(['@calendly.com' => 'aiku/showroom']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/showroom1*' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'showroom1', 'threadId' => 't-showroom1',
+            'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'Calendly <notifications@calendly.com>'], ['name' => 'Subject', 'value' => 'New Event: Showroom Appointment'], ['name' => 'Message-ID', 'value' => '<showroom1@calendly.com>']], 'body' => ['data' => rtrim(strtr(base64_encode('Your appointment is confirmed'), '+/', '-_'), '=')]],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LS', 'name' => 'aiku/showroom']]]),
+        'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'showroom1');
+
+    expect($message)->toBeNull()
+        ->and(\App\Models\Chat\ChatSession::where('shop_id', $this->shop->id)->where('metadata->email', 'notifications@calendly.com')->exists())->toBeFalse();
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/showroom1/modify') && $request['addLabelIds'] === ['LS'] && $request['removeLabelIds'] === ['INBOX']);
+});
+
+test('showroom senders only accept email addresses or @domain', function () {
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['gmail_showroom_senders' => ['calendly']]);
+})->throws(\Illuminate\Validation\ValidationException::class);
+
+test('un-marking an email chat as spam takes the sender off the blocked list', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'channel'          => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'metadata'         => ['email' => 'Notifications@Calendly.com'],
+    ]);
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::firstOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+
+    \App\Actions\Chat\ChatSession\MarkChatSessionAsSpam::run($session, $agent);
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toContain('notifications@calendly.com');
+
+    \App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam::run($session->fresh(), $agent);
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->not->toContain('notifications@calendly.com');
+
+    $session->forceDelete();
 });
 
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {
@@ -5862,6 +5936,29 @@ test('a request to cancel or change the delivery address goes first in the queue
         ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBeNull();
 });
 
+test('with jev the urgent flag and the dropshipping queue come from the cascade, and no chat model is asked', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->never();
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(fn (array $state, array $questions) => isset($questions['request']) ? [
+            'request' => ['type' => 'choice', 'choice' => 'cancel_order', 'probabilities' => ['cancel_order' => 0.93, 'none' => 0.07]],
+            'ds_kind' => ['type' => 'choice', 'choice' => 'documents', 'probabilities' => ['documents' => 0.9]],
+        ] : null);
+
+        $cancel = noiseTestEmailSession($this->shop->fresh(), 'jev-cancel@example.com', 'Order 1234', 'Tem como cancelar uma encomenda feita HOJE ?');
+
+        expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($cancel))->toBe('cancel_order')
+            ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($cancel->refresh()))->toBe('cancel_order')
+            ->and(data_get($cancel->metadata, 'ds_kind'))->toBe('documents')
+            ->and(data_get($cancel->metadata, 'ai_turn.urgent'))->toBe('cancel_order');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('a dropshipping conversation is labelled integration or documents from the same check, and can be listed by that kind', function () {
     \Illuminate\Support\Facades\Http::fake();
 
@@ -6103,10 +6200,12 @@ test('a supervisor moves a conversation to Couriers, which adds the sender domai
 });
 
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
-    config(['chat.close_after_thanks' => true]);
+    config(['chat.close_after_thanks' => true, 'chat.wait_for_customer_hours' => 72]);
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Order', 'Perfect, thank you!'), function (ChatSession $session) {
         $session->update(['last_agent_message_at' => now()->subHour()]);
@@ -6115,9 +6214,15 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     $thanks = $answered('thanks@example.com');
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
 
+    expect($thanks->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($thanks))->diffInMinutes(now()->addWeekdays(3), true))->toBeLessThan(1)
+        ->and(data_get($thanks->metadata, 'waiting_for_customer.reason'))->toBe('thanks');
+    \App\Actions\Chat\ChatSession\WaitForCustomerReply::assertPushed(1);
+
+    \App\Actions\Chat\ChatSession\WaitForCustomerReply::make()->asJob($thanks, data_get($thanks->metadata, 'waiting_for_customer.message_id'));
     expect($thanks->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($thanks->closed_by)->toBe(\App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum::SYSTEM)
-        ->and($thanks->messages()->where('metadata->automated', 'thanks_closed')->exists())->toBeTrue();
+        ->and($thanks->messages()->where('metadata->automated', 'waited_closed')->exists())->toBeTrue();
 
     $first = noiseTestEmailSession($this->shop, 'first@example.com', 'Hello', 'Thank you!');
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($first);
@@ -6134,11 +6239,49 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
+test('a new email after a closed thanks is judged on its own, and jev must be sure the customer is closing', function () {
+    config(['chat.close_after_thanks' => true]);
+    \Illuminate\Support\Facades\Http::fake();
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    DetectLanguageWithJev::shouldRun()->andReturn(null);
+    $jevSays = ['choice' => 'asking', 'probabilities' => ['asking' => 0.64, 'pending' => 0.3, 'closing' => 0.06]];
+    $jevRead = [];
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state) use (&$jevSays, &$jevRead) {
+        $jevRead[] = $state['customer_wrote'];
+
+        return $jevSays ? ['act' => ['type' => 'choice'] + $jevSays] : null;
+    });
+    $judge = function (ChatSession $session) {
+        \Illuminate\Support\Facades\Cache::flush();
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+
+        return \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh());
+    };
+
+    $refund  = 'Can you please refund the full cost of the order to my AW wallet. Please let me know once the credit has been posted.';
+    $session = noiseTestEmailSession($this->shop, 'root@example.com', 'Re: AWD191595', 'Thanks for sharing the return label.');
+    $session->update(['last_agent_message_at' => now()->subDays(6)]);
+    $session->messages()->create(['message_text' => 'Chat session has been closed by agent', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::SYSTEM]);
+    $session->messages()->create(['message_text' => $refund, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST]);
+
+    expect($judge($session))->toBeNull()
+        ->and($jevRead[0])->toBe($refund);
+
+    $jevSays = null;
+    expect($judge($session))->toBeNull();
+
+    $jevSays = ['choice' => 'closing', 'probabilities' => ['closing' => 0.99]];
+    expect($judge($session))->not->toBeNull();
+});
+
 test('a whatsapp thanks after we answered gets a thumbs up and closes, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
     \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->once()
         ->withArgs(fn ($message, $agent, $emoji) => $message->message_text === 'Thank you so much!' && $agent === null && $emoji === '👍')
         ->andReturn(['ok' => true]);
@@ -6187,6 +6330,7 @@ test('a website chat thanks gets a thumbs up and closes, but with an agent in th
     config(['chat.close_after_thanks' => true, 'chat.close_after_thanks_minutes' => 2]);
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Chat', 'Great, thanks'), function (ChatSession $session) {
         $session->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);
@@ -6237,6 +6381,39 @@ test('a website chat thanks gets a thumbs up and closes, but with an agent in th
 
     expect($agentReplied->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
         ->and($thanksOf($agentReplied)->reactions()->exists())->toBeFalse();
+});
+
+test('an agent waits for the customer: it closes when the time is up unless the customer writes, and the agent can stop waiting', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": false}');
+    $wait    = \App\Actions\Chat\ChatSession\WaitForCustomerReply::class;
+    $waitFor = function (ChatSession $session, int $hours) use ($wait): int {
+        $wait::run($session, $hours);
+
+        return data_get($session->refresh()->metadata, 'waiting_for_customer.message_id');
+    };
+
+    $silent = noiseTestEmailSession($this->shop, 'wait-silent@example.com', 'Order', 'Can you check my order?');
+    $lastId = $waitFor($silent, 24);
+    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addDay(), true))->toBeLessThan(1);
+    $wait::make()->asJob($silent, $lastId);
+    expect($silent->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($wait::until($silent))->toBeNull();
+
+    $replied = noiseTestEmailSession($this->shop, 'wait-replied@example.com', 'Order', 'Can you check my order?');
+    $lastId  = $waitFor($replied, 24);
+    $replied->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Here is the photo you asked for']);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($replied);
+    expect($wait::until($replied->refresh()))->toBeNull();
+    $wait::make()->asJob($replied, $lastId);
+    expect($replied->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED);
+
+    $stopped = noiseTestEmailSession($this->shop, 'wait-stopped@example.com', 'Order', 'Can you check my order?');
+    $lastId  = $waitFor($stopped, 72);
+    $wait::stop($stopped);
+    $wait::make()->asJob($stopped, $lastId);
+    expect($stopped->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED);
 });
 
 test('an agent unsubscribes a customer from every newsletter and reminder in one click, and when is kept', function () {
@@ -6576,15 +6753,12 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 });
 
 /**
- * The model behind the chat drafts: the language detector reads Spanish from "Hola" and English
- * from anything else, every other request gets the given answer.
+ * The model behind the chat drafts: every request gets the given answer.
  */
 function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answer): \GuzzleHttp\Promise\PromiseInterface
 {
-    $isLanguageDetection = str_contains((string) data_get($request->data(), 'messages.0.content'), 'language detector');
-    $detected            = str_contains((string) data_get($request->data(), 'messages.1.content'), 'Hola') ? 'es' : 'en';
-    $isQuestionCheck     = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
-    $isReview            = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":');
+    $isQuestionCheck = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
+    $isReview        = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":');
 
     if ($isReview) {
         return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['objection' => '', 'send' => true])]]]]);
@@ -6594,8 +6768,15 @@ function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answ
         return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => data_get(json_decode($answer, true), 'topic', 'other')])]]]]);
     }
 
+    return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $answer]]]]);
+}
 
-    return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $isLanguageDetection ? $detected : $answer]]]]);
+/**
+ * The language detector of the chat draft tests reads Spanish from "Hola" and English from anything else.
+ */
+function fakeDraftLanguageDetection(): void
+{
+    DetectLanguageWithJev::shouldRun()->andReturnUsing(fn (?string $text) => Language::firstWhere('code', str_contains((string) $text, 'Hola') ? 'es' : 'en'));
 }
 
 function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
@@ -6741,6 +6922,8 @@ test('website chat out of hours is answered in the conversation, but not after t
         ->and($sentTab->pluck('kind')->contains('noise_check'))->toBeFalse();
 
     $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect($dashboard['readings'])->toHaveKeys(['read', 'helped', 'drafts', 'guides', 'guides_used', 'facts', 'engineer', 'engineer_used']);
+    expect($dashboard['review'])->toBeArray();
     expect($dashboard['daily'])->toHaveCount(30)
         ->and(collect($dashboard['by_kind'])->firstWhere('kind', 'out_of_hours')['total'])->toBeGreaterThanOrEqual(1);
 
@@ -6850,6 +7033,7 @@ test('a question about an order gets a draft written from that customer\'s order
     $asks        = null;
     $objection   = null;
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => function ($request) use (&$modelAnswer, &$asks, &$objection) {
             if ($objection !== null && str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":')) {
@@ -6933,6 +7117,26 @@ test('a question about an order gets a draft written from that customer\'s order
     \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $mine);
 
     expect($second->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED);
+
+    // An agent who copies the draft word for word without pressing Use still sent it as written.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Sorry, where is my order again?');
+    $copied = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    $pasted = $ask($session, $copied->text, ChatSenderTypeEnum::AGENT);
+    $pasted->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $pasted);
+
+    expect($copied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
+
+    // Answering a question we asked them ("yes", "please") gets no draft: what they want is in our question.
+    $this->travel(1)->minutes();
+    $ourQuestion = $ask($session, 'Do you mean the orders still with us?', ChatSenderTypeEnum::AGENT);
+    $ourQuestion->update(['sender_id' => $agent->id]);
+    $session->update(['last_agent_message_at' => now()]);
+    $ask($session, 'yes please');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::answersOurQuestion('Do you mean the orders still with us?', 'yes, where is it?'))->toBeFalse();
 
     // When the facts do not answer the question the model says so, and there is no draft.
     $modelAnswer = ['answerable' => false];
@@ -7035,6 +7239,7 @@ test('a draft goes to the customer without staff only out of hours, only once ea
         'updated_at'      => '2026-09-24',
     ]);
 
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
@@ -7142,6 +7347,7 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         'updated_at'      => '2026-09-24',
     ]);
 
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
@@ -7347,6 +7553,292 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->update(['status' => ChatSessionStatusEnum::CLOSED]);
     expect(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop))->toBe(['sessions' => 1, 'messages' => 2, 'failed' => 0])
         ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
+});
+
+test('the mailbox history is archived as text for the customer it was with, leaving machine mail out, and shows on their page with their chats', function () {
+    $customer = createOwnCustomer($this->shop, 'archive-'.Str::lower(Str::random(6)));
+    $customer->update(['email' => 'archive.'.Str::lower(Str::random(6)).'@example.com']);
+    $mail = fn (string $id, string $from, string $to, string $text, array $labels = ['INBOX'], array $headers = []) => [
+        'id'           => $id,
+        'threadId'     => 'th-archive-'.$customer->id,
+        'labelIds'     => $labels,
+        'internalDate' => (string) (1780000000000 + (int) preg_replace('/\D.*$/', '', substr($id, 1)) * 60000),
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => $from], ['name' => 'To', 'value' => $to], ['name' => 'Subject', 'value' => 'Broken jar'], ...$headers],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+    $archive = fn (array $raw) => \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archive($this->shop, 'care@shop.test', $raw);
+
+    $question = $archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'));
+    $answer   = $archive($mail('a2-'.$customer->id, 'Care <care@shop.test>', $customer->email, 'Sorry, a new one is on its way', ['SENT']));
+
+    expect($question->only(['customer_id', 'is_outbound', 'counterpart_address', 'text']))->toBe(['customer_id' => $customer->id, 'is_outbound' => false, 'counterpart_address' => $customer->email, 'text' => 'My jar arrived broken'])
+        ->and($answer->only(['customer_id', 'is_outbound']))->toBe(['customer_id' => $customer->id, 'is_outbound' => true])
+        ->and($archive($mail('a3', 'no-reply@example.com', 'care@shop.test', 'Your report')))->toBeNull()
+        ->and($archive($mail('a4', 'news@example.com', 'care@shop.test', 'Big sale', ['INBOX'], [['name' => 'List-Unsubscribe', 'value' => '<mailto:u@example.com>']])))->toBeNull()
+        ->and($archive($mail('a5', 'away@example.com', 'care@shop.test', 'I am away', ['INBOX'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
+        ->and($archive($mail('a6', 'Care <care@shop.test>', $customer->email, 'We are closed at the moment', ['SENT'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
+        ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id);
+
+    $inInbox = noiseTestEmailSession($this->shop, 'inbox.'.Str::lower(Str::random(6)).'@example.com', 'Already here', 'Came in through the inbox');
+    $inInbox->messages()->first()->update(['metadata' => ['gmail_message_id' => 'a7-inbox']]);
+    expect($archive($mail('a7-inbox', "Jo <{$customer->email}>", 'care@shop.test', 'Came in through the inbox')))->toBeNull();
+
+    $thread = collect(\App\Actions\CRM\Customer\GetCustomerCommunications::run($customer)['threads'])->firstWhere('kind', 'email_archive');
+    expect($thread['title'])->toBe('Broken jar')
+        ->and(array_column($thread['messages'], 'from_us'))->toBe([false, true]);
+
+    \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
+});
+
+test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12));
+    \Illuminate\Support\Carbon::setTestNow(now());
+    \Illuminate\Support\Sleep::fake();
+
+    $raw = fn (string $id) => [
+        'id' => $id, 'threadId' => 'th-page', 'labelIds' => ['INBOX'], 'internalDate' => '1780000000000',
+        'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => "page.$id@example.com"], ['name' => 'To', 'value' => 'care@shop.test'], ['name' => 'Subject', 'value' => 'Hello']],
+            'body' => ['data' => rtrim(strtr(base64_encode("Question $id"), '+/', '-_'), '=')]],
+    ];
+    $refuse = true;
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                       => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'p1'], ['id' => 'p2']], 'nextPageToken' => 'page-2']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/*' => function ($request) use ($raw, &$refuse) {
+            $id = basename(parse_url($request->url(), PHP_URL_PATH));
+
+            return $refuse && $id === 'p2' ? \Illuminate\Support\Facades\Http::response([], 429) : \Illuminate\Support\Facades\Http::response($raw($id));
+        },
+    ]);
+
+    $action  = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make();
+    $refused = $action->archivePage($this->shop, 12);
+    expect($refused['rate_limited'])->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBeNull();
+
+    $refuse = false;
+    $action->asJob($this->shop, 12);
+    expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->count())->toBe(2)
+        ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
+    \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
+
+    \App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->delete();
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12));
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+test('what agents keep telling different customers is learned, but only once enough customers heard it and nothing we hold says otherwise', function () {
+    $shop = $this->shop;
+    \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
+    $thread = function (string $question, string $reply, string $key) use ($shop) {
+        $base = ['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'shop_id' => $shop->id, 'gmail_thread_id' => 'th-learn-'.$key, 'subject' => 'Question', 'counterpart_address' => "learn.$key@example.com"];
+        \App\Models\Comms\EmailArchiveMessage::create($base + ['gmail_message_id' => "q-$key", 'is_outbound' => false, 'text' => $question, 'sent_at' => now()->subDays(2)]);
+        \App\Models\Comms\EmailArchiveMessage::create($base + ['gmail_message_id' => "r-$key", 'is_outbound' => true, 'text' => $reply, 'sent_at' => now()->subDay()]);
+    };
+    foreach (['a', 'b'] as $key) {
+        $thread('Is VAT charged on shipping?', 'Hi, yes VAT applies to both the products and the shipping cost, standard UK rate of 20%.', $key);
+    }
+
+    $rule = ['general' => true, 'title' => 'VAT on shipping', 'note' => 'VAT is charged on products and on shipping at the standard UK rate of 20%.', 'temporary' => false];
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function () use (&$rule) {
+        return json_encode($rule);
+    });
+    $contradicts = 0.1;
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) {
+        $options = array_keys($questions['same']['criteria'] ?? $questions['entry']['criteria'] ?? []);
+        $first   = $options[0] ?? 'new';
+
+        $note = (string) ($state['new_note'] ?? '');
+        $same = collect($questions['same']['criteria'] ?? [])
+            ->filter(fn (string $label, string $key) => $key !== 'new' && collect(['VAT', 'dispatched'])->contains(fn (string $word) => str_contains($label, $word) && str_contains($note, $word)))
+            ->keys()
+            ->first() ?? 'new';
+
+        return isset($questions['same'])
+            ? ['same' => ['choice' => $same, 'probabilities' => [$same => 0.9]]]
+            : ['entry' => ['choice' => $first, 'probabilities' => [$first => 0.9]]];
+    });
+    $jev->shouldReceive('noul')->andReturnUsing(function () use (&$contradicts) {
+        return $contradicts;
+    });
+
+    $twice = \App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop);
+    $vat   = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->sole();
+    expect($twice)->toMatchArray(['replies' => 2, 'rules' => 2, 'promoted' => 0])
+        ->and($vat->only(['status', 'customers_count']))->toBe(['status' => 'candidate', 'customers_count' => 2])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->not->toContain($vat->id)
+        ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(0);
+
+    $thread('Do you charge VAT on delivery?', 'Yes, 20% VAT is added to the delivery charge as well.', 'c');
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['promoted'])->toBe(1)
+        ->and($vat->refresh()->only(['status', 'customers_count']))->toBe(['status' => 'active', 'customers_count' => 3])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->toContain($vat->id);
+
+    $vat->update(['status' => 'removed']);
+    $contradicts = 0.8;
+    $rule        = ['general' => true, 'title' => 'Dispatch', 'note' => 'Orders are dispatched the same day.', 'temporary' => false];
+    \App\Models\Chat\ChatKnowledgeEntry::create(['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'shop_id' => $shop->id, 'kind' => 'note', 'title' => 'Dispatch times', 'body' => 'Orders are dispatched within 2 working days.', 'source_type' => 'manual', 'is_manual' => true]);
+    foreach (['d', 'e', 'f'] as $key) {
+        $thread('When do you dispatch?', 'We dispatch every order the same day it is placed.', $key);
+    }
+    \App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop);
+    $dispatch = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('title', 'Dispatch')->first();
+
+    expect($dispatch?->only(['status', 'customers_count', 'conflict']))->toBe(['status' => 'conflict', 'customers_count' => 3, 'conflict' => 'Dispatch times'])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->where('source_type', 'learned')->count())->toBe(0);
+
+    \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
+});
+
+test('a general question is answered from the knowledge base entry jev picks, and only when the quote is really in it', function () {
+    config(['chat.ai_drafts' => true, 'services.openrouter.api_key' => 'or-key']);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $sections = \App\Actions\Chat\ChatSession\HydrateChatKnowledge::sections(['blocks' => ['<h2>Returns</h2><p>You may return goods within 30 days of delivery, unused and in their original packaging.</p><h3>Refunds</h3><p>Refunds are made to your account balance once the goods are back with us.</p>']], 'Returns page');
+    expect(array_column($sections, 'title'))->toBe(['Returns page · Returns', 'Returns page · Refunds'])
+        ->and($sections[0]['body'])->toBe('You may return goods within 30 days of delivery, unused and in their original packaging.');
+
+    $note = \App\Models\Chat\ChatKnowledgeEntry::create([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'kind' => 'note', 'title' => 'Shipping to Germany', 'source_type' => 'manual', 'is_manual' => true,
+        'body' => 'We cannot ship from the UK to Germany because we do not have a LUCID registration.',
+    ]);
+    expect(\App\Models\Chat\ChatKnowledgeEntry::forShop($this->shop)->pluck('id'))->toContain($note->id);
+
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(fn (array $state, array $questions) => match (true) {
+        isset($questions['wants_something']) => [
+            'wants_something' => ['type' => 'noul', 'noul' => 0.97], 'one_question' => ['type' => 'noul', 'noul' => 0.9],
+            'problem' => ['type' => 'noul', 'noul' => 0.02], 'answers_us' => ['type' => 'noul', 'noul' => 0.02], 'still_waiting' => ['type' => 'noul', 'noul' => 0.02],
+            'subject' => ['type' => 'choice', 'choice' => 'shop', 'probabilities' => ['shop' => 0.95]],
+        ],
+        isset($questions['ask'])   => ['ask' => ['type' => 'choice', 'choice' => 'ship_to_country', 'probabilities' => ['ship_to_country' => 0.96]]],
+        isset($questions['entry']) => ['entry' => ['type' => 'choice', 'choice' => 'e'.$note->id, 'probabilities' => ['e'.$note->id => 0.9, 'none' => 0.1]]],
+        default                    => null,
+    });
+    $quote = 'We cannot ship from the UK to Germany because we do not have a LUCID registration.';
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt) use (&$quote) {
+        return str_contains($prompt, '{"objection"')
+            ? '{"objection": "", "send": true}'
+            : json_encode(['answerable' => true, 'quote' => $quote, 'reply' => 'Hello! We cannot ship from the UK to Germany, as we have no LUCID registration.']);
+    });
+    \App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(Language::where('code', 'en')->first());
+
+    $ask = function (string $text) {
+        $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
+        ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => $text]);
+
+        return \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    };
+
+    $draft = $ask('Do you ship from the UK to Germany?');
+    expect($draft->topic)->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::OTHER)
+        ->and($draft->text)->toContain('LUCID')
+        ->and($draft->facts['knowledge'])->toBe($note->id)
+        ->and($draft->facts['ask'])->toBe('ship_to_country');
+
+    $quote = 'We ship to Germany every day.';
+    expect($ask('Can you deliver to Germany please?'))->toBeNull();
+
+    $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
+    \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
+    \App\Actions\Chat\ChatSession\HydrateChatKnowledge::run($this->shop);
+
+    expect($saved->refresh()->only(['title', 'is_manual', 'kind', 'created_by_user_id']))->toBe(['title' => 'Diffuser testers', 'is_manual' => true, 'kind' => 'note', 'created_by_user_id' => $this->user->id])
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe(2)
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', false)->whereNotNull('hydrated_at')->count())
+        ->toBe(\App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', false)->count());
+
+    $note->delete();
+    $saved->delete();
+});
+
+test('when only a programmer can fix it staff get one click: the customer joins the open bug it matches, or a CUS ticket is raised, once', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+
+    $newSession = function (string $text) {
+        $session = ChatSession::create([
+            'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+            'shop_id'          => $this->shop->id,
+            'language_id'      => 68,
+            'status'           => ChatSessionStatusEnum::ACTIVE->value,
+            'priority'         => ChatPriorityEnum::NORMAL->value,
+            'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        ]);
+        $session->messages()->create(['message_text' => $text, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST]);
+
+        return $session;
+    };
+
+    $known = \App\Actions\Chat\ChatSession\StoreTicketFromChatSession::make()->handle($newSession('Stock stuck at zero'), $agent, ['summary' => 'Shopify stock not updating', 'kind' => 'bug']);
+
+    $knownOrNew = $known->reference;
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) use (&$knownOrNew) {
+        return match (true) {
+            isset($questions['needs_engineer']) => ['needs_engineer' => ['type' => 'noul', 'noul' => 0.72], 'wants_something' => ['type' => 'noul', 'noul' => 0.9]],
+            isset($questions['platform'])       => [
+                'platform'     => ['type' => 'choice', 'choice' => 'shopify', 'probabilities' => ['shopify' => 0.9]],
+                'symptom'      => ['type' => 'choice', 'choice' => 'stock_wrong', 'probabilities' => ['stock_wrong' => 0.8]],
+                'known_ticket' => ['type' => 'choice', 'choice' => $knownOrNew, 'probabilities' => [$knownOrNew => 0.85]],
+            ],
+            default => null,
+        };
+    });
+
+    $sameBug = $newSession('My Shopify stock shows 0 for everything since yesterday');
+    $turn    = \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($sameBug);
+
+    expect($turn['engineer'])->toMatchArray(['probability' => 0.72, 'platform_label' => 'Shopify', 'ticket' => ['reference' => $known->reference, 'subject' => 'Shopify stock not updating']]);
+
+    $added = \App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent);
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $sameBug->id)->latest('id')->first()->only(['engineer', 'used', 'engineer_ticket']))
+        ->toBe(['engineer' => true, 'used' => 'engineer', 'engineer_ticket' => $known->reference]);
+    expect($added)->toMatchArray(['reference' => $known->reference, 'added' => true])
+        ->and($known->comments()->latest('id')->value('body'))->toContain('My Shopify stock shows 0')
+        ->and(\App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($sameBug)['engineer']['raised'])->toBe($known->reference);
+
+    $knownOrNew = 'new';
+    $newBug     = $newSession('Our Shopify stock is wrong again');
+    \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($newBug);
+    $raised = \App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($newBug->refresh(), $agent);
+    $ticket = \App\Models\Helpers\Ticket::where('reference', $raised['reference'])->first();
+
+    expect($raised['added'])->toBeFalse()
+        ->and($ticket->type)->toBe(\App\Enums\Helpers\Ticket\TicketTypeEnum::CUSTOMER)
+        ->and($ticket->kind)->toBe(\App\Enums\Helpers\Ticket\TicketKindEnum::BUG)
+        ->and($ticket->subject)->toBe('Shopify · Stock shown wrong or not updating')
+        ->and($ticket->description)->toContain('Our Shopify stock is wrong again');
+
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($newSession('The Shopify stock is broken'))['engineer'])->not->toBeNull();
+
+    $act = fn (string $act, float $p, float $wants = 0.1) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::nextStep(['wants_something' => ['noul' => $wants], 'act' => ['choice' => $act, 'probabilities' => [$act => $p]]]);
+    expect($act('closing', 0.82))->toBe(['kind' => 'close', 'probability' => 0.82])
+        ->and($act('informing', 0.9)['kind'])->toBe('wait')
+        ->and($act('pending', 0.75)['kind'])->toBe('owed')
+        ->and($act('closing', 0.5))->toBeNull()
+        ->and($act('closing', 0.95, 0.8))->toBeNull();
+
+    $reply = $newBug->messages()->create(['message_text' => 'Passed to our developers, we will be back to you', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($newBug, $reply);
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $newBug->id)->latest('id')->first()->only(['reply_message_id', 'reply', 'customer_wrote']))
+        ->toBe(['reply_message_id' => $reply->id, 'reply' => 'Passed to our developers, we will be back to you', 'customer_wrote' => 'Our Shopify stock is wrong again']);
+
+    $guides = ['a' => ['title' => 'A', 'summary' => '', 'url' => 'https://shop.test/docs/a'], 'b' => ['title' => 'B', 'summary' => '', 'url' => 'https://shop.test/docs/b']];
+    $picked = fn (array $probabilities) => array_column(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestedGuides($guides, ['guide' => ['probabilities' => $probabilities]], 'en'), 'title');
+    expect($picked(['a' => 0.72, 'b' => 0.26]))->toBe(['A', 'B'])
+        ->and($picked(['a' => 0.9, 'b' => 0.1]))->toBe(['A'])
+        ->and($picked(['a' => 0.6, 'b' => 0.4]))->toBe([]);
 });
 
 test('a ticket marked as blocking holds the chat open until it is settled', function () {
@@ -10096,4 +10588,246 @@ test('a website guest on a test email domain is put in spam by rule', function (
     expect($scanner->is_spam)->toBeTrue()
         ->and($scanner->noise_source)->toBe('rule')
         ->and($rule)->toBeNull();
+});
+
+test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice', function () {
+    Bus::fake();
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => 'spam-buyer@example.com']));
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $message = fn (string $id, string $from, string $subject, array $extraHeaders = []) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => "t$id",
+        'labelIds' => ['SPAM', 'UNREAD'],
+        'payload'  => [
+            'mimeType' => 'multipart/mixed',
+            'headers'  => array_merge([['name' => 'From', 'value' => $from], ['name' => 'Subject', 'value' => $subject]], $extraHeaders),
+            'parts'    => [
+                ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('Hello')]],
+                ['mimeType' => 'application/pdf', 'filename' => 'invoice.pdf', 'body' => ['attachmentId' => 'att1', 'size' => 2000]],
+            ],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp0*' => $message('sp0', 'Buyer <spam-buyer@example.com>', 'Just registered'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp1*' => $message('sp1', 'Buyer <spam-buyer@example.com>', 'Where is my order?'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp2*' => $message('sp2', 'Deals <deals@promo.example.net>', 'Grow your SEO', [['name' => 'List-Unsubscribe', 'value' => '<mailto:x@promo.example.net>']]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp3*' => $message('sp3', 'New Shop <owner@newshop.example.net>', 'Wholesale account'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp4*' => $message('sp4', 'Prince <prince@scam.example.net>', 'Urgent transfer'),
+        'openrouter.ai/api/alpha/decisions'                    => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => [
+                'kind'      => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]],
+                'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
+            ]])
+            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'account_warning', 'probabilities' => ['account_warning' => 0.7, 'none' => 0.3]]]])
+            ->push(['answers' => [
+                'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.35, 'vague_buyer' => 0.3, 'customer_request' => 0.05]],
+                'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.9]],
+            ]])
+            ->push(['answers' => [
+                'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.6, 'scam' => 0.4]],
+                'scam_form' => ['type' => 'choice', 'choice' => 'payment_copy', 'probabilities' => ['payment_copy' => 0.7, 'none' => 0.3]],
+            ]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
+            ['id' => 'LI', 'name' => 'aiku/imported'],
+            ['id' => 'LU', 'name' => 'aiku/unmatched'],
+            ['id' => 'LC', 'name' => 'aiku/spam-checked'],
+        ]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => fn ($request) => \Illuminate\Support\Facades\Http::response(
+            str_contains($request->data()['q'] ?? '', 'in:spam') ? ['messages' => [['id' => 'sp1']]] : []
+        ),
+        'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $inbound = \App\Actions\Comms\Mailbox\ProcessInboundEmail::class;
+
+    expect($inbound::run($this->shop, 'sp0'))->toBeNull();
+
+    $this->customer->stats()->update(['number_invoices_type_invoice' => 1]);
+
+    $fromCustomer = $inbound::run($this->shop, 'sp1');
+
+    expect($fromCustomer)->toBeInstanceOf(ChatMessage::class)
+        ->and($fromCustomer->is_rescued_from_spam)->toBeTrue()
+        ->and($fromCustomer->is_possible_scam)->toBeTrue()
+        ->and($fromCustomer->attachedFiles())->toHaveCount(0)
+        ->and(Arr::get($fromCustomer->metadata, 'gmail_pending_attachments'))->toBe(1)
+        ->and(\App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::make()->handle($fromCustomer->chatSession))->toBe(0)
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($fromCustomer)->resolve()['is_rescued_from_spam'])->toBeTrue()
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($fromCustomer)->resolve()['spam_rescue_kind_label'])->toBeNull()
+        ->and($inbound::run($this->shop, 'sp2'))->toBeNull()
+        ->and($stranger = $inbound::run($this->shop, 'sp3'))->toBeInstanceOf(ChatMessage::class)
+        ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::PROSPECT)
+        ->and($stranger->is_possible_scam)->toBeFalse()
+        ->and($fromCustomer->spam_rescue_kind)->toBeNull()
+        ->and($inbound::run($this->shop, 'sp4'))->toBeNull();
+
+    $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
+        ->map(fn ($pair) => $pair[0]->data())->first();
+
+    expect($filed('sp1'))->toBe(['addLabelIds' => ['LI'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
+        ->and($filed('sp3'))->toBe(['addLabelIds' => ['LU'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
+        ->and($filed('sp0'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp2'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
+
+    \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop->fresh());
+
+    $relabelled = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), 'messages/sp1/modify'))->map(fn ($pair) => $pair[0]->data())->last();
+
+    expect($relabelled)->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
+
+    $spamSweep = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains(urldecode($request->url()), 'in:spam'))->first()[0];
+
+    expect($spamSweep->data()['q'])->toContain('in:spam -label:aiku-spam-checked')
+        ->and((int) $spamSweep->data()['maxResults'])->toBe(25);
+
+    $asked = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->first()[0]->data();
+
+    expect($asked['questions']['kind']['criteria'])->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::definitions())
+        ->and($asked['questions']['scam_form']['criteria'])->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::scamForms());
+});
+
+test('jev works out what the customer wants in rounds, and only a clear single question can be drafted', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    $noul   = fn (float $p) => ['type' => 'noul', 'noul' => $p];
+    $choice = fn (string $picked, float $p) => ['type' => 'choice', 'choice' => $picked, 'probabilities' => [$picked => $p]];
+    $clear  = ['wants_something' => $noul(0.97), 'answers_us' => $noul(0.05), 'about_existing_order' => $noul(0.1), 'problem' => $noul(0.05), 'one_question' => $noul(0.9), 'still_waiting' => $noul(0.02)];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => $clear + ['subject' => $choice('stock', 0.95)]])
+            ->push(['answers' => ['stock_ask' => $choice('when_back', 0.9), 'names_product_code' => $noul(0.96)]])
+            ->push(['answers' => $clear + ['subject' => $choice('stock', 0.95)]])
+            ->push(['answers' => ['stock_ask' => $choice('bulk', 0.8), 'names_product_code' => $noul(0.96)]])
+            ->push(['answers' => array_merge($clear, ['problem' => $noul(0.9), 'about_existing_order' => $noul(0.9), 'subject' => $choice('order', 0.9)])])
+            ->push(['answers' => ['problem_kind' => $choice('damaged', 0.9), 'names_order' => $noul(0.2)]])
+            ->push([], 500),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'    => (string) Str::ulid(),
+        'status'  => ChatSessionStatusEnum::WAITING,
+        'channel' => ChatChannelEnum::WEBSITE,
+        'shop_id' => $this->shop->id,
+    ]);
+    $classify = fn (string $text) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::run($session, $text, '(nothing yet)');
+
+    $readingsBefore = \App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->count();
+    $whenBack       = $classify('When is NSBag-09 back in stock?');
+    expect(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->count())->toBe($readingsBefore + 1)
+        ->and(\App\Models\Chat\ChatTurnReading::where('chat_session_id', $session->id)->latest('id')->first()->branch)->toBe('stock');
+    expect($whenBack['branch'])->toBe('stock')
+        ->and($whenBack['topic'])->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::STOCK_AVAILABILITY)
+        ->and($session->refresh()->metadata['ai_turn']['answers']['stock_ask'])->toBe(['choice' => 'when_back', 'probability' => 0.9]);
+
+    expect($classify('Can you get me 400 red FPGB-12?')['topic'])->toBeNull();
+
+    $damaged = $classify('Two candles arrived broken');
+    expect($damaged['branch'])->toBe('problem')
+        ->and($damaged['topic'])->toBeNull()
+        ->and($session->refresh()->metadata['ai_turn']['answers']['problem_kind']['choice'])->toBe('damaged');
+
+    expect($classify('Anything'))->toBeNull();
+
+    $guides = ['connecting-woocommerce' => ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin and connect.', 'url' => 'https://shop.test/docs/connecting-woocommerce']];
+    $asked  = \App\Actions\Chat\ChatSession\ClassifyChatTurn::secondRound('integration', $guides);
+    expect($asked['guide']['criteria'])->toBe(['connecting-woocommerce' => 'Connecting WooCommerce: Install the plugin and connect.', 'none' => 'None of these guides answers it'])
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::secondRound('integration'))->toBe([]);
+
+    $integration = $clear + ['subject' => $choice('integration', 0.95)];
+    $howTo       = fn (float $howTo, string $guide, float $p) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::topic('integration', $integration + ['how_to' => $noul($howTo), 'guide' => $choice($guide, $p)]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::branch($integration))->toBe('integration')
+        ->and($howTo(0.95, 'connecting-woocommerce', 0.9))->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::DROPSHIPPING_INTEGRATION)
+        ->and($howTo(0.05, 'connecting-woocommerce', 0.98))->toBeNull()
+        ->and($howTo(0.95, 'none', 0.9))->toBeNull()
+        ->and($howTo(0.95, 'connecting-woocommerce', 0.5))->toBeNull();
+
+    expect($damaged['claim'])->toBeTrue()
+        ->and($whenBack['claim'])->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.45, 'change_address' => 0.1]]]))->toBe('cancel_order')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.02, 'change_address' => 0.92]]]))->toBe('change_address')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.2, 'none' => 0.8]]]))->toBeNull();
+
+    $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
+    $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'guides' => [$hint], 'engineer' => null]], 'last_agent_message_at' => now()->subMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBe(['guides' => [$hint], 'engineer' => null, 'facts' => [], 'next_step' => null])
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::guideMessage($hint, 'en'))->toContain("helps:\nConnecting WooCommerce\nhttps://shop.test/docs/connecting-woocommerce\n");
+    $session->update(['last_agent_message_at' => now()->addMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBeNull();
+
+    $firstRound = \Illuminate\Support\Facades\Http::recorded()->first()[0]->data();
+    expect(array_keys($firstRound['questions']))->toContain('wants_something', 'subject')
+        ->and($firstRound['state']['customer_wrote'])->toBe('When is NSBag-09 back in stock?');
+
+    $session->forceDelete();
+});
+
+test('jev answers yes/no, choice and score questions through openrouter, and nothing without a key', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => ['answer' => ['type' => 'noul', 'noul' => 0.91]]])
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'billing', 'probabilities' => ['billing' => 0.8, 'sales' => 0.2]]]])
+            ->push(['answers' => ['answer' => ['type' => 'score', 'score' => 2, 'probabilities' => [0.1, 0.2, 0.7]]]])
+            ->push([], 500),
+    ]);
+
+    $jev = \App\Actions\Helpers\AI\AskJev::make();
+
+    expect($jev->noul('My payouts failed', 'Is it urgent?', 'Time-sensitive', 'No urgency'))->toBe(0.91)
+        ->and($jev->choice('Refund please', 'Which team?', ['billing' => 'Payments', 'sales' => 'New accounts']))
+        ->toBe(['choice' => 'billing', 'probabilities' => ['billing' => 0.8, 'sales' => 0.2]])
+        ->and($jev->score('This is outrageous!', 'How frustrated?', ['Calm', 'Frustrated', 'Very angry']))
+        ->toBe(['score' => 2, 'probabilities' => [0.1, 0.2, 0.7]])
+        ->and($jev->noul('x', 'y', 'a', 'b'))->toBeNull();
+
+    $sent = \Illuminate\Support\Facades\Http::recorded()->map(fn ($pair) => $pair[0]->data())->values();
+
+    expect($sent[0]['model'])->toBe('~typesafe/jev-latest')
+        ->and($sent[0]['questions']['answer'])->toBe(['type' => 'noul', 'instructions' => 'Is it urgent?', 'criteria' => ['true' => 'Time-sensitive', 'false' => 'No urgency']])
+        ->and($sent[2]['questions']['answer']['criteria'])->toBe(['Calm', 'Frustrated', 'Very angry']);
+
+    config()->set('services.openrouter.api_key', null);
+
+    expect($jev->noul('x', 'y', 'a', 'b'))->toBeNull();
+});
+
+test('ai calls go through openrouter with the provider prefix, and straight to openai without its key', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    config()->set('askbot-laravel.openai_api_key', 'openai-key');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => 'via openrouter']]]]),
+        'api.openai.com/v1/chat/completions'    => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => 'via openai']]]]),
+    ]);
+
+    expect(\App\Actions\Helpers\AI\AskToAi::run('hi', 'gpt-4o-mini'))->toBe('via openrouter');
+
+    $request = \Illuminate\Support\Facades\Http::recorded()->last()[0];
+    expect($request->data()['model'])->toBe('openai/gpt-4o-mini')
+        ->and($request->data()['temperature'])->toBe(0.3)
+        ->and($request->hasHeader('Authorization', 'Bearer or-key'))->toBeTrue();
+
+    config()->set('services.openrouter.api_key', null);
+
+    expect(\App\Actions\Helpers\AI\AskToAi::run('hi', 'gpt-4o-mini'))->toBe('via openai');
+
+    $request = \Illuminate\Support\Facades\Http::recorded()->last()[0];
+    expect($request->data()['model'])->toBe('gpt-4o-mini')
+        ->and($request->hasHeader('Authorization', 'Bearer openai-key'))->toBeTrue();
 });

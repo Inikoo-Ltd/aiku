@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
@@ -172,15 +173,7 @@ class FixShopifyPortfolios
         }
 
         if (!$productExistsInShopify && $numberMatches == 1) {
-            $firstMatch       = Arr::first($matches);
-            $shopifyProductId = Arr::get($firstMatch, 'id');
-
-            $portfolio->update([
-                'platform_product_id' => $shopifyProductId,
-            ]);
-
-            $portfolio->refresh();
-            StoreShopifyProductVariant::run($portfolio);
+            $this->linkToMatch($portfolio, Arr::get(Arr::first($matches), 'id'));
         }
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
@@ -191,6 +184,28 @@ class FixShopifyPortfolios
             $productExistsInShopifyResult['exist'],
             $productHasVariantAtLocation['exist'],
         ];
+    }
+
+    private function linkToMatch(Portfolio $portfolio, string $shopifyProductId): void
+    {
+        $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
+
+        if ($replacedVariantOwner !== null) {
+            UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false)]]);
+
+            return;
+        }
+
+        [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, $shopifyProductId);
+
+        if (!$linked) {
+            UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => $refusal]]);
+
+            return;
+        }
+
+        $portfolio->refresh();
+        StoreShopifyProductVariant::run($portfolio);
     }
 
     public function fixLevel3(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
@@ -234,15 +249,7 @@ class FixShopifyPortfolios
         }
 
 
-        $firstMatch       = Arr::first($matches);
-        $shopifyProductId = Arr::get($firstMatch, 'id');
-
-        $portfolio->update([
-            'platform_product_id' => $shopifyProductId,
-        ]);
-
-        $portfolio->refresh();
-        StoreShopifyProductVariant::run($portfolio);
+        $this->linkToMatch($portfolio, Arr::get(Arr::first($matches), 'id'));
         CustomerSalesChannelsHydratePortfolios::run($portfolio->customerSalesChannel);
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);

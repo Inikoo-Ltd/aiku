@@ -401,6 +401,7 @@ class Order extends Model implements HasMedia, Auditable
         'gross_amount',
         'net_amount',
         'total_amount',
+        'tax_category_id',
         'weight',
     ];
 
@@ -536,11 +537,21 @@ class Order extends Model implements HasMedia, Auditable
      */
     public function taxableDeliveryAddress(?TaxNumber $taxNumber): ?Address
     {
-        if ($this->collection_address_id && !$taxNumber?->valid && $this->shop->collectionAddress) {
-            return $this->shop->collectionAddress;
-        }
+        return $this->isTaxedAtCollectionAddress($taxNumber) ? $this->shop->collectionAddress : $this->deliveryAddress;
+    }
 
-        return $this->deliveryAddress;
+    public function isTaxedAtCollectionAddress(?TaxNumber $taxNumber): bool
+    {
+        return $this->collection_address_id && !$taxNumber?->valid && $this->shop->collectionAddress;
+    }
+
+    /**
+     * Once invoiced (or closed) the tax was already charged to the customer, so it must not be recalculated on the order
+     */
+    public function canChangeTaxCategory(): bool
+    {
+        return !in_array($this->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])
+            && !$this->invoices()->exists();
     }
 
     public function deliveryAddress(): BelongsTo

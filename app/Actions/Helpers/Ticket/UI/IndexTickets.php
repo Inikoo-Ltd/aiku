@@ -93,6 +93,24 @@ class IndexTickets extends OrgAction
                     $query->whereIn('tickets.status', $elements);
                 },
             ],
+            'qa_status' => [
+                'label'    => __('QA status'),
+                'optional' => true,
+                'elements' => [
+                    'none' => [__('No verdict'), (clone $base)->whereNull('qa_status')->count()],
+                    ...collect(TicketQaStatusEnum::cases())->filter(fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
+                        $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
+                    ])->all(),
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        $query->whereIn('tickets.qa_status', [...array_diff($elements, ['none']), TicketQaStatusEnum::REQUESTED->value, TicketQaStatusEnum::CHECKING->value]);
+                        if (in_array('none', $elements)) {
+                            $query->orWhereNull('tickets.qa_status');
+                        }
+                    });
+                },
+            ],
             'type'   => [
                 'label'    => __('Type'),
                 'elements' => collect(TicketTypeEnum::cases())->mapWithKeys(fn (TicketTypeEnum $type) => [
@@ -129,24 +147,6 @@ class IndexTickets extends OrgAction
                             ->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')
                             ->whereIn('collaborator_users.username', $elements)
                     );
-                },
-            ],
-            'qa_status' => [
-                'label'    => __('QA status'),
-                'optional' => true,
-                'elements' => [
-                    'none' => [__('No verdict'), (clone $base)->whereNull('qa_status')->count()],
-                    ...collect(TicketQaStatusEnum::cases())->filter(fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
-                        $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
-                    ])->all(),
-                ],
-                'engine'   => function ($query, $elements) {
-                    $query->where(function ($query) use ($elements) {
-                        $query->whereIn('tickets.qa_status', [...array_diff($elements, ['none']), TicketQaStatusEnum::REQUESTED->value, TicketQaStatusEnum::CHECKING->value]);
-                        if (in_array('none', $elements)) {
-                            $query->orWhereNull('tickets.qa_status');
-                        }
-                    });
                 },
             ],
         ];

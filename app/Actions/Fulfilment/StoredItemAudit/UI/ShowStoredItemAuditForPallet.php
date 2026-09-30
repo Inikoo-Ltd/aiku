@@ -35,6 +35,14 @@ class ShowStoredItemAuditForPallet extends OrgAction
 {
     // use WithFulfilmentShopAuthorisation; //idk what to use since we have inWarehouse
     use WithFulfilmentCustomerSubNavigation;
+    public function authorize(ActionRequest $request): bool
+    {
+        if (isset($this->fulfilment)) {
+            return $request->user()->authTo(["fulfilment-shop.{$this->fulfilment->id}.view", "supervisor-fulfilment-shop.{$this->fulfilment->id}"]);
+        }
+
+        return $request->user()->authTo(["fulfilment.{$this->warehouse->id}.view", "supervisor-fulfilment.{$this->warehouse->id}", "warehouses-view.{$this->organisation->id}"]);
+    }
 
     private Fulfilment|Location|FulfilmentCustomer|Warehouse $parent;
     private Pallet $pallet;

@@ -22,6 +22,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Web\Website;
@@ -31,6 +32,7 @@ use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 
 class ShowWorkshopBlueprint extends OrgAction
 {
+    use WithWebAuthorisation;
     use AsAction;
     use WithFooterSubNavigation;
 

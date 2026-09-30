@@ -24,6 +24,8 @@ use App\Actions\Goods\UI\ExportGoodsDashboard;
 use App\Actions\Goods\UI\ShowGoodsAnalysis;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Goods\UI\ShowGoodsProductDetail;
+use App\Actions\Goods\UI\ShowGoodsStockFamilyQuickLook;
+use App\Actions\Goods\UI\ShowGoodsStockQuickLook;
 use App\Actions\Helpers\TariffCode\UI\IndexTariffCodes;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,12 @@ Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
 Route::get('/analysis', ShowGoodsAnalysis::class)->name('analysis');
 Route::get('/export', ExportGoodsDashboard::class)->name('export');
 Route::get('/products/{stock}', ShowGoodsProductDetail::class)->name('products.show');
+Route::get('/quick-look/stocks/{stock}', ShowGoodsStockQuickLook::class)->name('quick_look.stock');
+Route::get('/quick-look/stocks/{stock}/sales-analysis', [ShowGoodsStockQuickLook::class, 'salesAnalysis'])->name('quick_look.stock.sales_analysis');
+Route::get('/quick-look/stocks/{stock}/history', [ShowGoodsStockQuickLook::class, 'history'])->name('quick_look.stock.history');
+Route::get('/quick-look/families/{stockFamily}', ShowGoodsStockFamilyQuickLook::class)->name('quick_look.family');
+Route::get('/quick-look/families/{stockFamily}/sales-analysis', [ShowGoodsStockFamilyQuickLook::class, 'salesAnalysis'])->name('quick_look.family.sales_analysis');
+Route::get('/quick-look/families/{stockFamily}/history', [ShowGoodsStockFamilyQuickLook::class, 'history'])->name('quick_look.family.history');
 Route::get('tariff-codes', IndexTariffCodes::class)->name('tariff_codes.index');
 
 Route::prefix('stocks')->as('stocks.')->group(function () {
@@ -101,7 +109,6 @@ Route::prefix('families')->as('stock-families.')->group(function () {
 
         Route::prefix('stocks')->as('show.stocks.')->group(function () {
             Route::get('/', [IndexStocks::class, 'inStockFamily'])->name('index');
-            Route::get('/export', [ExportStocks::class, 'inStockFamily'])->name('export');
             Route::get('/create', [CreateStock::class, 'inStockFamily'])->name('create');
 
             Route::prefix('{stock}')->group(function () {

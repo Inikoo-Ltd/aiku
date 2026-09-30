@@ -21,7 +21,6 @@ import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButt
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { UploadPallet } from "@/types/Pallet"
@@ -130,6 +129,7 @@ interface UploadSection {
 
 const props = defineProps<{
     aurora_notice?: string | null
+    basket_customer_balance?: number | string | null
     title: string
     tabs: TSTabs
     products?: TableTS
@@ -1851,7 +1851,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
         <div>
-            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-xl font-bold uppercase">{{ ctrans("Process in Aurora") }}</div>
             <div class="text-base">{{ aurora_notice }}</div>
         </div>
     </div>
@@ -1994,7 +1994,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
+                    <div v-if="isChargeEditable && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
@@ -2274,6 +2274,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div v-else-if="basket_customer_balance !== null && basket_customer_balance !== undefined"
+                            class="w-full rounded-md border px-4 py-3 text-center"
+                            :class="Number(basket_customer_balance) > 0 ? 'border-green-400 bg-green-50 text-green-800' : 'border-gray-200 text-gray-600'">
+                            <div class="text-sm">{{ ctrans("Customer balance") }}</div>
+                            <div class="text-2xl font-bold tabular-nums">{{ locale.currencyFormat(currency.code, Number(basket_customer_balance)) }}</div>
+                            <div v-if="Number(basket_customer_balance) > 0" class="mt-1 text-xs">{{ ctrans("Used first when this order is paid, charge only the rest") }}</div>
                         </div>
                     </dl>
 

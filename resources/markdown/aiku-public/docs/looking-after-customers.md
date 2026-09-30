@@ -1,7 +1,7 @@
 ---
 title: Looking after customers
 summary: Find your way around a shop's customer list, add a new customer, read a customer's page, and understand the states, logins and prospects that sit around it.
-date: 2026-09-01
+date: 2026-09-29
 tags: crm, customers
 category: crm
 help_routes: grp.org.shops.show.crm.customers, grp.org.shops.show.crm.prospects, grp.org.shops.show.crm.customers.show.web_users
@@ -13,9 +13,32 @@ Each shop keeps its own <b>Customers</b> list, reachable from the shop's <b>CRM<
 
 ## The customer list
 
-Open a shop and go to **CRM → Customers**. The list shows every customer for that shop, with columns for their **Ref**, **Name**, the date they were added (**Since**), their **Last Invoice** date, number of **Invoices**, and **Sales**. You can search the list and sort by any of these columns.
+Open a shop and go to **CRM → Customers**. The list shows every customer for that shop, with columns for their **Ref**, **Name**, the date they were added (**Since**), their **Last Invoice** date, their estimated **Next order** date, number of **Invoices**, and **Sales**. You can search the list and sort by any of these columns.
 
-You can filter the list down using a global search box (it matches names, and postcodes when you type one), by **Tag**, by **Country**, and by whether a customer has ever placed an order or not.
+You can filter the list down using a global search box (it matches names, and postcodes when you type one), by **Tag**, by **Country**, and by whether a customer has ever placed an order or not. The filter panel above the list adds more, including **Due to Reorder**.
+
+## Customers due to reorder
+
+For every customer with at least two orders, invoiced in the last year, aiku works out how many days they usually leave between orders: the days from their first invoice to their last, divided by the number of gaps between them. Several invoices on the same day count as one order, and refunds are not orders.
+
+Their estimated **Next order** is the date of their last invoice plus that usual gap. It shows on the customer list and on the customer's **Overview**, and is worked out again each night and whenever they are invoiced.
+
+A customer is **due to reorder** when that date falls in the next 7 days, or has passed by less than one of their usual gaps. A customer who is later than that is slipping away rather than due. A customer with an order already submitted and on its way through the warehouse has reordered, so they are not due. Add the **Due to Reorder** filter on the customer list to see them, sort by **Next order** to see who is first, or use the same filter to choose the recipients of a mailshot.
+
+## Reorder reminder emails
+
+A shop can also email customers automatically when they are due to reorder. In the shop's **Comms** section open **Push** and then the **Due to reorder reminder** outbox. Design the email there and set it to active. It goes out once a day, in the afternoon.
+
+In the email, **[Products]** shows up to five of the customer's own repeat products, the ones they are due to reorder first. Each has a picture, a link to its page on the website, the quantity they usually order and the price. **[Last Invoice Date]** is the date of their last invoice. **Days before the expected next order** sets how early the email is sent. Left empty, it is sent 7 days before the customer's estimated **Next order**.
+
+To avoid sending the same customer several similar emails:
+
+- A customer gets this email only once between two of their invoices. When they order again and are invoiced, the next reminder waits until they are due again.
+- A customer with an order already on its way through the warehouse is not due, so they are not emailed.
+- The **Gold reward reminder** emails also go to customers after their last order. A customer who got one of them in the last 7 days, or is due one in the next 7 days, is skipped for now. If they still have not reordered once the Gold reward reminders are over, they get the reorder reminder then.
+- Customers who unsubscribe from the email, or whose **Reorder Reminders** subscription is switched off in **Subscriptions** on their **Overview**, are not sent it again. Customers can switch it off themselves in their account on the website too.
+
+The outbox shows every run, with the emails sent, opened and clicked. Orders placed after a customer clicks a link in the email are credited to it in the marketing reports.
 
 ## Adding a customer
 
@@ -41,6 +64,7 @@ Opening a customer from the list takes you to their page, which is organised int
 - **Attachments** — files attached to the customer.
 - **Payments**
 - **Credit transactions**
+- **Reorders** — the products the customer has bought on two or more different days: how many times, the average quantity, the average days between orders of that product, when they last ordered it and when they are likely to order it next. Products they are due to reorder carry a **Due** mark.
 - **Favourites** — products the customer has favourited.
 - **Reminders**
 - **Dispatched emails** — emails aiku has sent them.

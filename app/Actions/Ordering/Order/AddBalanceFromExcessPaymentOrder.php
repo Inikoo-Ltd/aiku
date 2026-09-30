@@ -24,6 +24,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AddBalanceFromExcessPaymentOrder extends OrgAction
@@ -32,38 +33,41 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
 
     public function handle(Order $order): void
     {
-        $refunds = Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get();
+        DB::transaction(function () use ($order) {
+            $order = Order::lockForUpdate()->findOrFail($order->id);
+            $refunds = Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->orderBy('id')->lockForUpdate()->get();
 
-        $totalAmount = $order->total_amount + $refunds->sum('total_amount');
+            $totalAmount = $order->total_amount + $refunds->sum('total_amount');
 
-        $amount = round($order->payment_amount - $totalAmount, 2);
+            $amount = round($order->payment_amount - $totalAmount, 2);
 
-        /** @var PaymentAccountShop $paymentAccountShop */
-        $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
+            /** @var PaymentAccountShop $paymentAccountShop */
+            $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        foreach ($this->allocate($amount, $refunds) as [$refund, $allocatedAmount]) {
-            $refundPayment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, [
-                'amount'              => -$allocatedAmount,
-                'reference'           => 'ref-bal-'.Str::ulid(),
-                'status'              => PaymentStatusEnum::SUCCESS->value,
-                'state'               => PaymentStateEnum::COMPLETED->value,
-                'type'                => PaymentTypeEnum::REFUND,
-            ]);
+            foreach ($this->allocate($amount, $refunds) as [$refund, $allocatedAmount]) {
+                $refundPayment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, [
+                    'amount'              => -$allocatedAmount,
+                    'reference'           => 'ref-bal-'.Str::ulid(),
+                    'status'              => PaymentStatusEnum::SUCCESS->value,
+                    'state'               => PaymentStateEnum::COMPLETED->value,
+                    'type'                => PaymentTypeEnum::REFUND,
+                ]);
 
-            StoreCreditTransaction::make()->action($order->customer, [
-                'payment_id' => $refundPayment->id,
-                'amount' => $allocatedAmount,
-                'notes'  => 'Excess payment from order:'.$order->reference,
-                'type'   => CreditTransactionTypeEnum::FROM_EXCESS,
-                'reason' => CreditTransactionReasonEnum::OTHER,
-            ]);
+                StoreCreditTransaction::make()->action($order->customer, [
+                    'payment_id' => $refundPayment->id,
+                    'amount' => $allocatedAmount,
+                    'notes'  => 'Excess payment from order:'.$order->reference,
+                    'type'   => CreditTransactionTypeEnum::FROM_EXCESS,
+                    'reason' => CreditTransactionReasonEnum::OTHER,
+                ]);
 
-            AttachPaymentToOrder::make()->action($order, $refundPayment, []);
+                AttachPaymentToOrder::make()->action($order, $refundPayment, []);
 
-            if ($refund) {
-                AttachPaymentToInvoice::make()->action($refund, $refundPayment, []);
+                if ($refund) {
+                    AttachPaymentToInvoice::make()->action($refund, $refundPayment, []);
+                }
             }
-        }
+        });
 
         $order->refresh();
     }

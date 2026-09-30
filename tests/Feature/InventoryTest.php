@@ -2205,11 +2205,6 @@ test('UI Show inventory dashboard', function () {
         ->assertStatus(200);
 })->depends('create warehouse');
 
-test('UI Index org stock movements (overview)', function () {
-    get(route('grp.overview.inventory.org-stock-movements.index'))
-        ->assertStatus(200);
-});
-
 test('UI Index and Show OrganisationStockHistory', function () {
     $warehouse = Warehouse::first();
 
@@ -3719,9 +3714,13 @@ test('merging a duplicate trade unit hands its stock to the twin so the product 
         ]);
     }
 
+    $tag = \App\Models\Helpers\Tag::create(['group_id' => $shop->group_id, 'name' => 'Made In '.uniqid(), 'scope' => \App\Enums\Helpers\Tag\TagScopeEnum::PRODUCT_PROPERTY]);
+    $tradeUnit->tags()->attach($tag->id);
+
     \App\Actions\Goods\TradeUnit\MergeDuplicateTradeUnit::make()->handle($duplicate, $tradeUnit);
 
     expect($duplicate->fresh()->trashed())->toBeTrue()
+        ->and($product->refresh()->tags->pluck('id'))->toContain($tag->id)
         ->and(DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->where('model_type', 'Stock')->where('model_id', $stock->id)->exists())->toBeTrue()
         ->and($product->refresh()->orgStocks()->where('org_stocks.id', $orgStock->id)->exists())->toBeTrue();
 });

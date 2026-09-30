@@ -64,6 +64,9 @@ interface Message {
     } | null
     attachments?: ChatAttachment[]
     is_read?: boolean
+    is_rescued_from_spam?: boolean
+    spam_rescue_kind_label?: string | null
+    is_possible_scam?: boolean
     metadata?: Record<string, any> | null
     replied_to?: {
         id: number
@@ -492,7 +495,7 @@ const showTranslation = ref(true)
 // it from a list of every language we support, every time, on every message, was asking a
 // question with one answer.
 const selectedLanguageId = computed(() =>
-    getLanguageIdByCode(selectedLanguage.value) || layout.user?.language_id || null
+    getLanguageIdByCode(selectedLanguage.value) || layout.user?.chat_language_id || layout.user?.language_id || null
 )
 
 const activeMessage = computed<Message>(() => {
@@ -1024,9 +1027,20 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
+            <div v-if="message.is_rescued_from_spam" class="mb-1 flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                <FontAwesomeIcon :icon="faShieldCheck" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                <span>
+                    <span v-if="message.is_possible_scam" class="mr-1 rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">{{ ctrans("Possible scam") }}</span>
+                    <span v-if="message.spam_rescue_kind_label" class="font-semibold">{{ message.spam_rescue_kind_label }}.</span>
+                    {{ ctrans("Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.") }}
+                </span>
+            </div>
+
             <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                 <span class="italic">
-                    {{ ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+                    {{ message.is_rescued_from_spam
+                        ? ctrans(":count attachment(s) kept in Gmail for safety", { count: message.metadata.gmail_pending_attachments })
+                        : ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
                 </span>
                 <button v-if="viewerType === 'agent' && !readonly && message.id" type="button"
                     class="font-semibold underline hover:text-gray-700"

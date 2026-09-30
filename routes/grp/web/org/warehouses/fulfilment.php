@@ -6,10 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
-use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\UI\IndexFulfilmentPickingSessions;
 use App\Actions\Fulfilment\PickingSession\UI\ShowFulfilmentPickingSession;
@@ -31,14 +29,12 @@ Route::prefix('locations')->as('locations.')->group(function () {
         Route::prefix('pallets')->as('pallets.')->group(function () {
             Route::get('', IndexPalletsInWarehouse::class)->name('index');
             Route::get('{pallet}', [ShowPallet::class, 'inLocation'])->name('show');
-            Route::get('{pallet}/edit', [EditPallet::class, 'inLocation'])->name('edit');
         });
     });
 
 });
 
 
-Route::get('deliveries', [IndexPalletDeliveries::class, 'inWarehouse'])->name('pallet-deliveries.index');
 Route::get('deliveries/{palletDelivery}', ShowWarehousePalletDelivery::class)->name('pallet-deliveries.show');
 
 Route::get('picking-sessions', IndexFulfilmentPickingSessions::class)->name('picking_sessions.index');

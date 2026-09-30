@@ -15,6 +15,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
 use App\Actions\Web\Website\GetWebsiteWorkshopSidebar;
@@ -26,6 +27,7 @@ use Illuminate\Support\Arr;
 
 class ShowSnapshotPreview extends OrgAction
 {
+    use WithWebAuthorisation;
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
         $this->initialisationFromShop($shop, $request);

@@ -318,7 +318,17 @@ class IndexSuppliers extends OrgAction
             $iconRight     = [
                 'icon' => 'fal fa-person-dolly',
             ];
-            $actions       = [
+            $actions       = array_values(array_filter([
+                $this->canEdit ? [
+                    'type'  => 'button',
+                    'style' => 'secondary',
+                    'icon'  => 'fal fa-people-arrows',
+                    'label' => __('Add Supplier'),
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.assignable',
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
+                ] : null,
                 [
                     'type'  => 'button',
                     'style' => 'primary',
@@ -329,7 +339,7 @@ class IndexSuppliers extends OrgAction
                         'parameters' => array_values($request->route()->originalParameters()),
                     ],
                 ],
-            ];
+            ]));
         } else {
             if ($this->onlyFreeSuppliers) {
                 $title = __('Free Suppliers');

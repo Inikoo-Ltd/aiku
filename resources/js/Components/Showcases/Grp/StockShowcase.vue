@@ -135,6 +135,8 @@ const props = defineProps < {
     }
     org_stock_id: number
     salesAnalysisTeaser?: object
+    compact?: boolean
+    onOpenAnalysis?: () => void
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -373,12 +375,12 @@ const saveBarcode = (value: string | null) => {
                     </div>
 
                     <template v-if="salesAnalysisTeaser !== undefined">
-                        <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" />
-                        <SalesAnalysisMovers :teaser="salesAnalysisTeaser" />
+                        <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" :compact="compact" :onOpenAnalysis="onOpenAnalysis" />
+                        <SalesAnalysisMovers v-if="!compact" :teaser="salesAnalysisTeaser" />
                     </template>
 
                     <!-- Card: Sales Analytics -->
-                    <SalesAnalyticsCompact v-if="data.sales_data && !data.has_no_products" :salesData="data.sales_data" />
+                    <SalesAnalyticsCompact v-if="!compact && data.sales_data && !data.has_no_products" :salesData="data.sales_data" />
                 </div>
             </div>
         </div>
@@ -388,7 +390,20 @@ const saveBarcode = (value: string | null) => {
             <h2 class="text-xs font-medium uppercase tracking-wide text-gray-400">
                 {{ ctrans("Stock Overview") }}
             </h2>
-            <div class="grid grid-cols-7 gap-1 py-2">
+            <div v-if="compact" class="space-y-2 py-2">
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div v-for="(item, key) in data.org_stocks.summary" :key="key" v-tooltip="item.icon_state.tooltip"
+                        class="flex min-w-0 items-center justify-center gap-1.5 rounded bg-gray-100 px-1.5 py-2">
+                        <Icon :data="{ ...item.icon_state, tooltip: null }" />
+                        <span class="whitespace-nowrap text-sm font-bold tabular-nums">{{ locale.number(item.value ?? 0) }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between rounded border border-green-200 bg-green-100 px-3 py-2">
+                    <span class="text-xs font-medium text-green-800">{{ ctrans("Stock in Location") }}</span>
+                    <span class="text-base font-semibold tabular-nums">{{ locale.number(data.org_stocks.quantity_in_locations ?? 0) }}</span>
+                </div>
+            </div>
+            <div v-else class="grid grid-cols-7 gap-1 py-2">
                 <div class="col-span-6 grid grid-cols-3 gap-2 text-center">
                     <div v-for="(item, key) in data.org_stocks.summary" :key="key" v-tooltip="item.icon_state.tooltip"
                         class="rounded bg-gray-100 p-2">
@@ -407,15 +422,16 @@ const saveBarcode = (value: string | null) => {
 
             <div class="border-t pt-2 text-gray-700">
                 <div v-for="orgStock in data.org_stocks.items" :key="orgStock.id"
-                    class="flex items-center gap-3 rounded px-2 py-2 hover:bg-gray-50">
+                    class="flex items-center gap-3 rounded px-2 py-2 hover:bg-gray-50"
+                    :class="{ 'group transition-colors hover:!bg-[--app-accent-soft]': compact }">
                     <span v-tooltip="orgStock.organisation_name"
                         class="w-12 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-500">
                         {{ orgStock.organisation_code }}
                     </span>
-                    <Link :href="route(orgStock.route.name, orgStock.route.parameters)" class="secondaryLink min-w-0 truncate">
+                    <Link :href="route(orgStock.route.name, orgStock.route.parameters)" class="secondaryLink min-w-0 truncate" :class="{ 'transition-colors group-hover:text-[--app-accent]': compact }">
                         {{ orgStock.code }}
                     </Link>
-                    <span class="ml-auto border-l pl-4 text-right font-semibold tabular-nums">
+                    <span class="ml-auto border-l text-right font-semibold tabular-nums" :class="compact ? 'w-20 shrink-0 pl-3 transition-colors group-hover:text-[--app-accent]' : 'pl-4'">
                         {{ locale.number(orgStock.quantity_in_locations ?? 0) }}
                     </span>
                 </div>
@@ -424,6 +440,11 @@ const saveBarcode = (value: string | null) => {
                     {{ ctrans("No Org SKOs") }}
                 </div>
             </div>
+        </div>
+
+        <div v-if="compact" class="grid grid-cols-1 gap-6 lg:grid-cols-2" :class="hasStockPanel ? 'md:col-span-4' : 'md:col-span-3'">
+            <SalesAnalyticsCompact v-if="data.sales_data && !data.has_no_products" :salesData="data.sales_data" />
+            <SalesAnalysisMovers v-if="salesAnalysisTeaser !== undefined" :teaser="salesAnalysisTeaser" class="self-start" />
         </div>
 
         <!-- Section: Stocks Management -->

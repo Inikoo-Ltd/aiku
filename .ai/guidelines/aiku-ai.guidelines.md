@@ -104,3 +104,25 @@ theming it would destroy what it says.
 
 When you touch a page, fix the hardcoded interactive colour you find on it rather than
 matching it. `grep -n "indigo-\|blue-600" <file>` is usually the whole audit.
+
+## Controls are PrimeVue components, not native elements
+
+Build form controls and toggles from PrimeVue (v4, `primevue/*`) instead of plain HTML:
+`DatePicker` rather than `<input type="date">`, `SelectButton` rather than a row of
+hand-built `<button>`s, and likewise `Select`, `InputText`, `ToggleSwitch`, `Checkbox` and
+`Dialog`. A native input next to a PrimeVue one renders at a different size and height, and
+the page reads as stitched together.
+
+Before writing a new wrapper, reuse the existing ones:
+
+- `@/Components/Utils/SegmentedToggle.vue` is `SelectButton` in the organisation's theme
+  colour, with hover and pressed states and optional icons. Use it for Daily/Weekly style
+  switches.
+- For a date range, copy the `DatePicker` setup in
+  `@/Components/SalesAnalysis/SalesAnalysisReport.vue` (`dateModel`, `datePickerPt`,
+  `fieldFocusClass`), which converts between the ISO strings the server sends and the `Date`
+  the picker needs.
+
+Style PrimeVue through `pt` or scoped `:deep()` rules using the theme variables from the
+section above, never hardcoded colours. When you touch a file that still has hand-rolled
+controls, convert them.

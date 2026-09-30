@@ -17,13 +17,22 @@ use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowChatConversations extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
     use AsAction;
     use WithInertia;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->userCanWorkChatOnOrganisation($request->user(), $this->organisation)
+            || $this->userSupervisesChatOnOrganisation($request->user(), $this->organisation);
+    }
 
     public function handle(Organisation $organisation): Organisation
     {

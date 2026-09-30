@@ -73,6 +73,9 @@ class UpdateOutbox extends OrgAction
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
                 $daysAfterRules[] = 'max:30';
                 break;
+            case OutboxCodeEnum::DUE_TO_REORDER:
+                $daysAfterRules = ['sometimes', 'nullable', 'integer', 'min:0', 'max:30'];
+                break;
             case OutboxCodeEnum::PROSPECT_CONVERTION_1:
             case OutboxCodeEnum::PROSPECT_CONVERTION_2:
             case OutboxCodeEnum::PROSPECT_CONVERTION_3:

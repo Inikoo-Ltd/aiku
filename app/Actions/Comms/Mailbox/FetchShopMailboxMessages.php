@@ -49,12 +49,27 @@ class FetchShopMailboxMessages
             $newHistoryId = $client->profile()['historyId'];
         }
 
-        $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds($this->sweepQuery($shop), 100)));
+        $spamIds    = $client->listInboxMessageIds($this->spamSweepQuery($shop), 25);
+        $messageIds = array_unique(array_merge(
+            $messageIds,
+            $client->listInboxMessageIds($this->sweepQuery($shop), 100),
+            $spamIds
+        ));
 
         $dispatched = 0;
 
         foreach ($messageIds as $messageId) {
             if (ChatMessage::where('metadata->gmail_message_id', $messageId)->exists()) {
+                // Mail Gmail moved to spam after it came in would be listed on every sweep, one of
+                // the 25 places each time, until enough of them stopped the backlog altogether.
+                if (in_array($messageId, $spamIds, true)) {
+                    $client->fileAway($messageId, ProcessInboundEmail::SPAM_CHECKED_LABEL, markRead: false);
+                }
+
+                continue;
+            }
+
+            if (Cache::has(ProcessInboundEmail::leftInSpamKey($shop, $messageId))) {
                 continue;
             }
 
@@ -86,6 +101,18 @@ class FetchShopMailboxMessages
         }
 
         return 'in:inbox after:'.Carbon::parse($connectedAt)->format('Y/m/d');
+    }
+
+    /**
+     * Only what has not been read yet, so a backlog is worked through 25 at a time instead of the
+     * newest 100 being listed forever, and a mailbox with a full spam folder does not spend its
+     * Gmail quota in one burst.
+     */
+    private function spamSweepQuery(Shop $shop): string
+    {
+        $checked = str_replace('/', '-', ProcessInboundEmail::SPAM_CHECKED_LABEL);
+
+        return str_replace('in:inbox', "in:spam -label:$checked", $this->sweepQuery($shop));
     }
 
     /**

@@ -1,8 +1,8 @@
 ---
 title: Čo znamenajú označenia v schránke chatu
-summary: Každý zoznam, počet, farba a značka v zákazníckej schránke jednoducho vysvetlené - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise a priečinky aiku v Gmaile obchodu.
-date: 2026-09-23
-source_date: 2026-09-23
+summary: Každý zoznam, počet, farba a značka v zákazníckej schránke jednoducho vysvetlené - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, poznámku o e-maile vzatom z Gmail spamu a priečinky aiku v Gmaile obchodu.
+date: 2026-09-29
+source_date: 2026-09-29
 tags: crm, chat
 category: crm
 ---
@@ -56,6 +56,11 @@ Kto dohliada na chat, vidí agentov po strane: kto je prítomný, kto telefonuje
 - <b>Priority</b> (priorita) - <b>Urgent</b> (naliehavé), <b>High</b> (vysoká), <b>Normal</b> (bežná) alebo <b>Low</b> (nízka), nastavená z menu konverzácie. Bežná, kým ju niekto nezmení.
 - Číslo vpravo - neprečítané správy v danej konverzácii.
 
+## Značky na správe
+
+- <b>Offline message</b> (offline správa) - zákazník ju napísal vo widgete na webe mimo pracovnej doby. Keď má obchod zapnuté <b>Answer offline messages by email</b> (odpovedať na offline správy e-mailom), celá konverzácia sa presunie na e-mailový kanál, aby sa k nej odpoveď dostala, a preto sa návštevník webu môže objaviť v e-mailovom zozname. Značka je len na správe; riadok v zozname nemá žiadne označenie. Pozrite si <a href="/docs/live-chat-on-the-website-sk">Živý chat na webe</a>.
+- <b>Amber note: Gmail put this email in its spam folder</b> (oranžová poznámka: Gmail zaradil tento e-mail do svojho spamu) - aiku vzal tento e-mail zo spamu Gmailu, pretože vyzerá ako skutočný zákazník. Poznámka začína tým, za čo ho aiku považoval, napríklad <b>New customer enquiry</b> (nová otázka od zákazníka), a červený štítok <b>Possible scam</b> (možný podvod), keď e-mail vyzerá ako bežný podvod. Jeho prílohy zostávajú pre bezpečnosť v Gmaile, kým nekliknete na <b>Show attachments</b> (Zobraziť prílohy). Pozrite si <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>.
+
 ## Váš vlastný stav
 
 - <b>You are on a phone call</b> (telefonujete) - hovor prebieha, takže vám sa nepridelí žiadna nová konverzácia, kým neskončí.
@@ -69,10 +74,11 @@ aiku číta Gmail schránku obchodu a každý prečítaný e-mail uloží do vla
 - <b>aiku/unmatched</b> - pošta od niekoho, koho sa nepodarilo spárovať so zákazníkom. Je v schránke chatu ako hosť.
 - <b>aiku/filtered</b> - pošta, ktorá nie je práca: od vlastných zamestnancov a adries obchodu, od odosielateľov no-reply, vrátená pošta, doručovacie správy a odpovede mimo kanceláriu na poštu, ktorú sme nikdy neposlali. Nie je v schránke chatu.
 - <b>aiku/spam</b> - pošta od odosielateľov zablokovaných cez <b>Report spam</b>. Nie je v schránke chatu.
+- <b>aiku/spam-checked</b> - pošta z vlastného Gmail priečinka Spam, ktorú aiku prečítalo a nechalo tam, pretože nevyzerala ako od zákazníka. Nie je v schránke chatu a Gmail ju po 30 dňoch vymaže.
 
 Po uložení pošta opustí Gmail schránku a označí sa ako prečítaná, takže prázdna Gmail schránka je normálna, nie stratená pošta. Nič sa nemaže: keď sa zdá, že pošta chýba, pozrite najprv do <b>aiku/filtered</b>.
 
-aiku číta iba Gmail schránku. Pošta, ktorú Gmail umiestni do vlastného priečinka Spam, alebo ktorú filter Gmailu presmeruje mimo schránku, sa k aiku nikdy nedostane. Kolegovia by si mali písať priamo medzi sebou, nie cez schránku obchodu: ich pošta sa vyfiltruje.
+aiku číta aj samotný Gmail priečinok Spam, ale berie z neho iba poštu od zákazníkov, ktorí u nás nakúpili, odpovede v našich konverzáciách a poštu, ktorá vyzerá ako zákazník alebo nový zákazník píšuci nám. Všetko ostatné zostáva v Gmail Spame, kde ho Gmail po 30 dňoch vymaže - pozrite si <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>. Pošta, ktorú filter Gmailu presmeruje mimo schránky, sa k aiku nikdy nedostane. Kolegovia by si mali písať priamo medzi sebou, nie cez schránku obchodu: ich pošta sa vyfiltruje.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
@@ -85,4 +91,3 @@ aiku číta iba Gmail schránku. Pošta, ktorú Gmail umiestni do vlastného pri
 </aside>
 
 Celý návod k schránke je <a href="/docs/customer-chat-sk">Rozhovor so zákazníkmi v Chate</a>.
-</content>

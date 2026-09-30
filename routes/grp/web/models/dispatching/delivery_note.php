@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflet;
@@ -84,6 +85,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middle
         Route::patch('undo-set-as-picked', UndoSetAsPickedDeliveryNote::class)->name('undo_set_as_picked');
         Route::patch('auto-finish-waiting', AutoFinishWaitingDeliveryNote::class)->name('auto_finish_waiting');
         Route::patch('undo-waiting', UndoWaitingDeliveryNote::class)->name('undo_waiting');
+        Route::patch('put-back-incomplete-sets', PutBackIncompleteSetParts::class)->name('put_back_incomplete_sets');
 
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('set-as-picked-with-picked-bay', SetAsPickedWithPickingBaysDeliveryNote::class)->name('set_as_picked_with_picked_bay');

@@ -130,6 +130,11 @@ return [
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
     ],
+    'openrouter' => [
+        'api_key'        => env('OPENROUTER_API_KEY'),
+        'decision_model' => env('OPENROUTER_DECISION_MODEL', '~typesafe/jev-latest'),
+        'low_credit_alert' => (float) env('OPENROUTER_LOW_CREDIT_ALERT', 5),
+    ],
     'pastpay' => [
         'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
         'base_url' => env('PASTPAY_BASE_URL'),

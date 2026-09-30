@@ -813,6 +813,16 @@ class EditShop extends OrgAction
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
                         ],
+                        'gmail_showroom_senders' => [
+                            'type'        => 'tags',
+                            'label'       => __('Showroom booking senders'),
+                            'placeholder' => '@calendly.com',
+                            'information' => __('Emails from these addresses, or from a whole domain written as @domain, are filed unread under the Gmail "aiku/showroom" label and never become a chat, even if the sender was once marked as spam. Press Enter to add each one.'),
+                            'value'       => array_keys(array_filter(
+                                Arr::get($shop->settings, 'gmail.labeled_senders') ?? [],
+                                fn ($label) => $label === 'aiku/showroom'
+                            )),
+                        ],
                         'view_contact_options_panel' => [
                             'type'        => 'toggle',
                             'label'       => __('View Contact Options Panel'),

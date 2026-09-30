@@ -84,12 +84,7 @@ class AdoptShopifyProductVariant
                 return $this->fail($portfolio, 'No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent');
             }
 
-            $linkedElsewhere = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
-                ->where('platform_product_variant_id', $variant['id'])
-                ->where('id', '!=', $portfolio->id)
-                ->exists();
-
-            if ($linkedElsewhere) {
+            if (LinkShopifyPortfolio::variantHolder($portfolio->customerSalesChannel, $variant['id'], $portfolio)) {
                 return $this->fail($portfolio, 'The variant with the sku '.$portfolio->sku.' is already linked to another product in this channel');
             }
 
@@ -102,12 +97,15 @@ class AdoptShopifyProductVariant
             DeactivateShopifyProduct::run($portfolio);
         }
 
-        UpdatePortfolio::run($portfolio, [
-            'platform_product_id'         => $shopifyProductId,
-            'platform_product_variant_id' => $variant['id'],
-            'platform_status'             => false,
-            'errors_response'             => null
+        [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, $shopifyProductId, $variant['id'], [
+            'platform_status' => false,
+            'errors_response' => null
         ]);
+
+        if (!$linked) {
+            return $this->fail($portfolio, $refusal);
+        }
+
         $portfolio->markShopifyVariantAdopted(true);
 
         [$stocked, $stockedMessage] = StoreShopifyLocationToProductVariant::run($portfolio->refresh());

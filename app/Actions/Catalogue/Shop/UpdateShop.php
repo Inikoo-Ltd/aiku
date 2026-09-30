@@ -403,6 +403,24 @@ class UpdateShop extends OrgAction
             $shop->saveQuietly();
         }
 
+        if (Arr::exists($modelData, 'gmail_showroom_senders')) {
+            $senders = array_values(array_filter(array_map(
+                'strtolower',
+                (array) Arr::pull($modelData, 'gmail_showroom_senders')
+            )));
+
+            $settings = $shop->settings ?? [];
+            $labeledSenders = Arr::get($settings, 'gmail.labeled_senders', []);
+            $labeledSenders = array_filter($labeledSenders, fn ($label) => $label !== 'aiku/showroom');
+            foreach ($senders as $sender) {
+                $labeledSenders[$sender] = 'aiku/showroom';
+            }
+            data_set($settings, 'gmail.labeled_senders', $labeledSenders);
+
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
+
         // Zero and blank both mean "no opinion": the shop is left following the group's time
         // rather than storing a nought that would put every conversation in the queue at once.
         foreach (['website', 'whatsapp', 'email'] as $chatChannel) {
@@ -929,6 +947,18 @@ class UpdateShop extends OrgAction
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'gmail_showroom_senders'                                  => [
+                'sometimes',
+                'nullable',
+                'array',
+                function (string $attribute, mixed $senders, Closure $fail) {
+                    foreach ((array) $senders as $sender) {
+                        if (! is_string($sender) || ! preg_match('/^[^@\s]*@[^@\s]+\.[^@\s]+$/', $sender)) {
+                            $fail(__('":sender" is not an email address or @domain', ['sender' => is_string($sender) ? $sender : '']));
+                        }
+                    }
+                },
+            ],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],

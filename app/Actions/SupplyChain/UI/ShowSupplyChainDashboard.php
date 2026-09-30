@@ -9,6 +9,8 @@
 namespace App\Actions\SupplyChain\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -16,6 +18,8 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,9 +32,47 @@ class ShowSupplyChainDashboard extends OrgAction
     use AsAction;
     use WithInertia;
 
+    private const array CACHE_FRESH_AND_STALE_SECONDS = [7200, 21600];
+
     public function asController(ActionRequest $request): void
     {
         $this->initialisationFromGroup(app('group'), $request);
+    }
+
+    private function getStockLevelsByOrganisation(): array
+    {
+        return GetStockOutsHistory::make()->organisations($this->group)
+            ->map(fn (Organisation $organisation) => [
+                'slug'   => $organisation->slug,
+                'levels' => collect(GetOrganisationStockCoverBuckets::run($organisation))
+                    ->map(fn (array $bucket) => [
+                        'bucket' => $bucket['bucket'],
+                        'label'  => $bucket['label'],
+                        'tone'   => $bucket['tone'],
+                        'count'  => $bucket['count'],
+                        'route'  => [
+                            'name'       => 'grp.org.procurement.stock_cover.index',
+                            'parameters' => [
+                                'organisation' => $organisation->slug,
+                                '_query'       => ['elements[cover]' => $bucket['bucket']],
+                            ],
+                        ],
+                    ])->values()->all(),
+            ])->values()->all();
+    }
+
+    private function getPurchaseOrderJourneySummary(ActionRequest $request): array
+    {
+        $journey = ShowSupplyChainPurchaseOrderJourney::make()
+            ->initialisationFromGroup($this->group, $request)
+            ->handle($request);
+
+        return [
+            'currency'  => $this->group->currency->code,
+            'summary'   => $journey['summary'],
+            'blockages' => $journey['blockages'],
+            'route'     => $this->dashboardRoute('grp.supply-chain.dashboard'),
+        ];
     }
 
     private function getDashboardCards(): array
@@ -246,7 +288,7 @@ class ShowSupplyChainDashboard extends OrgAction
         ];
     }
 
-    public function htmlResponse(): Response
+    public function htmlResponse(mixed $result, ActionRequest $request): Response
     {
         return Inertia::render(
             'SupplyChain/SupplyChainDashboard',
@@ -269,6 +311,9 @@ class ShowSupplyChainDashboard extends OrgAction
                     'title' => __('Overview'),
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
+                'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')))),
+                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisation())),
+                'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
             ]
@@ -284,7 +329,7 @@ class ShowSupplyChainDashboard extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.supply-chain.dashboard',
+                            'name' => 'grp.supply-chain.overview',
                         ],
                         'label' => __('Supply chain'),
                     ],

@@ -6,7 +6,10 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link, usePoll } from '@inertiajs/vue3'
+import { Head, Link, router, usePoll } from '@inertiajs/vue3'
+import Toggle from '@/Components/Pure/Toggle.vue'
+import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -17,7 +20,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { inject, computed, ref, watch } from 'vue'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
 import { OfferResource, OfferAllowanceResource, OfferSimulation } from '@/types/Catalogue/Offers'
@@ -56,6 +59,31 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const isSavingDashboardVisibility = ref(false)
+
+const setShowOnCustomerDashboard = async (value: boolean) => {
+    isSavingDashboardVisibility.value = true
+    try {
+        await axios.patch(
+            route('grp.org.shops.show.discounts.offers.update', {
+                organisation: route().params.organisation,
+                shop: route().params.shop,
+                offer: route().params.offer,
+            }),
+            { show_on_customer_dashboard: value }
+        )
+        router.reload({ only: ['data'] })
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Please try again'),
+            type: 'error',
+        })
+    } finally {
+        isSavingDashboardVisibility.value = false
+    }
+}
 
 type ProductCategoryLink = {
     name: string
@@ -221,7 +249,7 @@ const irisOffersData = computed(() => {
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">
-                <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)" v-tooltip="trans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
+                <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)" v-tooltip="ctrans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
                     <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
             </div>
@@ -430,6 +458,19 @@ const irisOffersData = computed(() => {
                                 <span v-else v-tooltip="ctrans('A customer cannot use the same voucher twice')">
                                     <FontAwesomeIcon icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
                                 </span>
+                            </dd>
+                        </div>
+
+                        <div v-if="data.offer.settings?.can_customer_reuse !== undefined" class="flex justify-between items-center gap-4">
+                            <dt class="text-gray-500" v-tooltip="ctrans('Customers see this voucher and its code on their dashboard. Leave off for codes sent only by email, so their use still measures the email.')">
+                                {{ ctrans("Show on customer dashboard") }}
+                            </dt>
+                            <dd>
+                                <Toggle
+                                    :modelValue="!!data.offer.settings?.show_on_customer_dashboard"
+                                    :disabled="isSavingDashboardVisibility"
+                                    @update:modelValue="setShowOnCustomerDashboard"
+                                />
                             </dd>
                         </div>
 

@@ -33,6 +33,10 @@ class UpdateOrderReCalculateVAT extends OrgAction
 
     public function handle(Order $order): Order
     {
+        if (!$order->canChangeTaxCategory()) {
+            return $order;
+        }
+
         $customer = $order->customer;
 
         $taxCategory = GetTaxCategory::run(
@@ -83,6 +87,11 @@ class UpdateOrderReCalculateVAT extends OrgAction
     public function asCommand(Command $command): int
     {
         $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        if (!$order->canChangeTaxCategory()) {
+            $command->error("Order $order->slug is invoiced or closed, its VAT is not re-calculated");
+
+            return 1;
+        }
         $this->handle($order);
         return 0;
     }

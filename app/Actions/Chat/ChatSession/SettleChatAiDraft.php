@@ -19,7 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * An agent answered while a draft was waiting: it counts as sent as written when the words
- * match, sent after changes when the agent took it and rewrote it, and not used when they wrote
+ * match, even when they copied it without pressing Use, sent after changes when the agent took it and rewrote it, and not used when they wrote
  * their own. These counts decide whether drafts are ever trusted to go out on their own.
  */
 class SettleChatAiDraft
@@ -28,6 +28,8 @@ class SettleChatAiDraft
 
     public function handle(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): ?ChatAiDraft
     {
+        ClassifyChatTurn::recordReply($chatSession, $reply);
+
         $draft = DraftChatReply::pendingDraft($chatSession);
 
         if (!$draft) {
@@ -35,9 +37,9 @@ class SettleChatAiDraft
         }
 
         $status = match (true) {
-            !$draft->taken_at                                                      => ChatAiDraftStatusEnum::SUPERSEDED,
             self::normalised($draft->text) === self::normalised((string) $reply->message_text) => ChatAiDraftStatusEnum::USED,
-            default                                                                => ChatAiDraftStatusEnum::EDITED,
+            !$draft->taken_at                                                                  => ChatAiDraftStatusEnum::SUPERSEDED,
+            default                                                                            => ChatAiDraftStatusEnum::EDITED,
         };
 
         $draft->update([

@@ -10,6 +10,7 @@ namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatSpamRescueKindEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
@@ -43,6 +44,9 @@ use App\Models\Traits\HasSearch;
  * @property \Illuminate\Support\Carbon|null $edited_at
  * @property bool|null $is_ai_generated
  * @property bool|null $is_validated
+ * @property bool $is_rescued_from_spam
+ * @property ChatSpamRescueKindEnum|null $spam_rescue_kind
+ * @property bool $is_possible_scam
  * @property-read Media|null $attachment
  * @property-read \App\Models\Chat\ChatSession|null $chatSession
  * @property-read Media|null $image
@@ -79,6 +83,9 @@ class ChatMessage extends Model implements HasMedia
         'is_ai_generated' => 'boolean',
         'is_validated' => 'boolean',
         'is_read' => 'boolean',
+        'is_rescued_from_spam' => 'boolean',
+        'spam_rescue_kind' => ChatSpamRescueKindEnum::class,
+        'is_possible_scam' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
         'edited_at' => 'datetime',

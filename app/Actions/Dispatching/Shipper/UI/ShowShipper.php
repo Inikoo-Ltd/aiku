@@ -21,10 +21,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowShipper extends OrgAction
 {
+    use WithDispatchingAuthorisation;
     use WithActionButtons;
     public function handle(Shipper $shipper): Shipper
     {

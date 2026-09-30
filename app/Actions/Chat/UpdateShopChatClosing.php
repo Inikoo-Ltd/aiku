@@ -32,6 +32,7 @@ class UpdateShopChatClosing extends OrgAction
         return [
             'close_after_thanks'         => ['required', 'boolean'],
             'close_after_thanks_minutes' => ['required', 'integer', 'min:1', 'max:60'],
+            'wait_for_customer_hours'    => ['sometimes', 'integer', 'min:1', 'max:720'],
         ];
     }
 
@@ -41,6 +42,10 @@ class UpdateShopChatClosing extends OrgAction
 
         data_set($settings, 'chat.close_after_thanks', (bool) $modelData['close_after_thanks']);
         data_set($settings, 'chat.close_after_thanks_minutes', (int) $modelData['close_after_thanks_minutes']);
+
+        if (isset($modelData['wait_for_customer_hours'])) {
+            data_set($settings, 'chat.wait_for_customer_hours', (int) $modelData['wait_for_customer_hours']);
+        }
 
         $shop->update(['settings' => $settings]);
 
@@ -55,6 +60,11 @@ class UpdateShopChatClosing extends OrgAction
     public static function minutes(Shop $shop): int
     {
         return (int) data_get($shop->settings, 'chat.close_after_thanks_minutes', config('chat.close_after_thanks_minutes'));
+    }
+
+    public static function waitingHours(Shop $shop): int
+    {
+        return (int) data_get($shop->settings, 'chat.wait_for_customer_hours', config('chat.wait_for_customer_hours'));
     }
 
     /** @noinspection PhpUnusedParameterInspection */

@@ -14,6 +14,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Illuminate\Console\Command;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Laravel\Nightwatch\Facades\Nightwatch;
 
@@ -68,7 +69,12 @@ class RepairExcessPaymentRefundsNotAttachedToInvoice
                 $command->line(($apply ? 'repairing ' : 'would repair ').$order->reference.' '.$refund->reference.' '.$payment->amount);
 
                 if ($apply) {
-                    $this->handle($payment, $refund);
+                    try {
+                        $this->handle($payment, $refund);
+                    } catch (ValidationException) {
+                        $skipped[] = [$payment->id, $order->reference, (float) $payment->amount, $refunds->count(), $refunds->sum(fn (Invoice $refund) => $owed($refund))];
+                        continue;
+                    }
                 }
                 $repaired++;
             }

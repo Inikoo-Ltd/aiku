@@ -362,7 +362,45 @@ class DeliveryNote extends Model implements Auditable
                         $query->where('is_dirty', true)
                             ->where('is_handled', false)
                             ->whereColumn('quantity_picked', '<=', 'quantity_required');
-                    });
+                    })
+                    ->orWhere(fn ($query) => $this->whereBeyondCompleteSets($query));
+            });
+    }
+
+    /**
+     * Parts of a set sold only complete (HELP-3548) picked beyond what a finished part allows: the
+     * bulb and cable in the tote while the lamp was not found. They block the note until they are
+     * put back, so the customer is never sent, free, parts useless on their own.
+     */
+    public function incompleteSetItems(): HasMany
+    {
+        return $this->deliveryNoteItems()
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->where(fn ($query) => $this->whereBeyondCompleteSets($query));
+    }
+
+    public function hasIncompleteSets(): bool
+    {
+        return $this->incompleteSetItems()->exists();
+    }
+
+    private function whereBeyondCompleteSets($query): void
+    {
+        $query->where('delivery_note_items.quantity_required', '>', 0)
+            ->whereColumn('delivery_note_items.quantity_picked', '<=', 'delivery_note_items.quantity_required')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('delivery_note_items as part')
+                    ->join('transactions', 'transactions.id', 'part.transaction_id')
+                    ->join('products', 'products.id', 'transactions.model_id')
+                    ->where('transactions.model_type', 'Product')
+                    ->where('products.is_indivisible', true)
+                    ->whereColumn('part.delivery_note_id', 'delivery_note_items.delivery_note_id')
+                    ->whereColumn('part.transaction_id', 'delivery_note_items.transaction_id')
+                    ->where('part.state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)
+                    ->where('part.is_handled', true)
+                    ->where('part.quantity_required', '>', 0)
+                    ->whereRaw('delivery_note_items.quantity_picked * part.quantity_required - part.quantity_picked * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
             });
     }
 

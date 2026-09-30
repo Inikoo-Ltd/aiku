@@ -19,6 +19,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditShipper extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(["dispatching.{$this->warehouse->id}.edit", "supervisor-dispatching.{$this->warehouse->id}"]);
+    }
+
     public function handle(Shipper $shipper, ActionRequest $request): Response
     {
         return Inertia::render(

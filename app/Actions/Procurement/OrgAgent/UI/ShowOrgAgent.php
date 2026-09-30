@@ -57,7 +57,7 @@ class ShowOrgAgent extends OrgAction
         return Inertia::render(
             'Procurement/OrgAgent',
             [
-                'title'       => __('Agent'),
+                'title'       => '(' . $orgAgent->agent->organisation->code . ') ' . __('Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

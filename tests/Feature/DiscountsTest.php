@@ -3773,4 +3773,17 @@ test('store step discount for multiple products creates one offer per product', 
     ]))->toThrow(ValidationException::class, 'STEP-MULTI-1');
 
     $offers->each(fn (Offer $offer) => SuspendOffer::run($offer));
+
+    $replacementOffers = StoreProductsStepDiscount::make()->action($this->shop, [
+        'product_ids' => $products->pluck('id')->all(),
+        'steps'       => [['min_quantity' => 5, 'percentage_off' => 0.05]],
+        'duration'    => 'permanent',
+        'start_at'    => now(),
+    ]);
+
+    expect($replacementOffers)->toHaveCount(2)
+        ->and($replacementOffers->every(fn (Offer $offer) => $offer->state === OfferStateEnum::ACTIVE))->toBeTrue()
+        ->and($offers->every(fn (Offer $offer) => $offer->refresh()->state === OfferStateEnum::FINISHED))->toBeTrue();
+
+    $replacementOffers->each(fn (Offer $offer) => SuspendOffer::run($offer));
 });

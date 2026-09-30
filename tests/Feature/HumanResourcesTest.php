@@ -3238,3 +3238,10 @@ test('staff attachment downloads need permission on what the file is attached to
     $download($goodsIn, $deliveryPaperwork)->assertOk();
     $download($colleague, $deliveryPaperwork)->assertNotFound();
 });
+
+test('marketing job positions can create and edit offers', function () {
+    $roles = fn (string $code) => config("blueprint.job_positions.positions.$code.roles");
+
+    expect($roles('mrk-m'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_SUPERVISOR)
+        ->and($roles('mrk-c'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_CLERK);
+});

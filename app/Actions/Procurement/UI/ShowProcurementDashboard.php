@@ -12,6 +12,7 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
 use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
@@ -28,8 +29,6 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -174,83 +173,6 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
-    public function stockOutPeriodOptions(): array
-    {
-        return [
-            '1m'  => __('1 Month'),
-            '1q'  => __('1 Quarter'),
-            '6m'  => __('6 Months'),
-            '1y'  => __('1 Year'),
-            '3y'  => __('3 Years'),
-            'all' => __('All'),
-        ];
-    }
-
-    private function getStockOuts(string $period): array
-    {
-        $today = today();
-        $from  = match ($period) {
-            '1m'    => $today->copy()->subMonth(),
-            '1q'    => $today->copy()->subMonths(3),
-            '6m'    => $today->copy()->subMonths(6),
-            '1y'    => $today->copy()->subYear(),
-            '3y'    => $today->copy()->subYears(3),
-            default => null,
-        };
-
-        $rows = DB::table('organisation_stock_histories')
-            ->where('organisation_id', $this->organisation->id)
-            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
-            ->orderBy('date')
-            ->get(['date', 'number_out_of_stock_org_stocks', 'number_org_stocks', 'estimated_lost_revenue_org_currency']);
-
-        $latest = $rows->last() ?? DB::table('organisation_stock_histories')
-            ->where('organisation_id', $this->organisation->id)
-            ->orderByDesc('date')
-            ->first(['date', 'number_out_of_stock_org_stocks', 'number_org_stocks', 'estimated_lost_revenue_org_currency']);
-
-        $from ??= $rows->isNotEmpty() ? Carbon::parse($rows->first()->date) : $today;
-        $end  = $latest ? Carbon::parse($latest->date) : $today;
-        $unit = match (true) {
-            $from->diffInDays($end) <= 92  => 'day',
-            $from->diffInDays($end) <= 731 => 'week',
-            default                        => 'month',
-        };
-
-        $lostTotal = 0.0;
-        $series    = $rows->groupBy(fn ($row) => Carbon::parse($row->date)->startOf($unit)->toDateString())
-            ->map(function ($bucketRows, string $bucketStart) use ($unit, $from, $end, &$lostTotal) {
-                $skos        = $bucketRows->sum('number_org_stocks');
-                $lostRows    = $bucketRows->whereNotNull('estimated_lost_revenue_org_currency');
-                $lostPerDay  = $lostRows->isEmpty() ? null : round($lostRows->avg('estimated_lost_revenue_org_currency'), 2);
-                $bucketStart = Carbon::parse($bucketStart);
-                $daysCovered = (int)$bucketStart->copy()->max($from)->diffInDays($bucketStart->copy()->endOf($unit)->min($end)) + 1;
-                $lostTotal   += ($lostPerDay ?? 0) * $daysCovered;
-
-                return [
-                    'date'         => $bucketStart->toDateString(),
-                    'out_of_stock' => (int)round($bucketRows->avg('number_out_of_stock_org_stocks')),
-                    'percentage'   => $skos ? round($bucketRows->sum('number_out_of_stock_org_stocks') / $skos * 100, 1) : 0,
-                    'lost_per_day' => $lostPerDay,
-                ];
-            })->values()->all();
-
-        return [
-            'period'     => $period,
-            'periods'    => $this->stockOutPeriodOptions(),
-            'unit'       => $unit,
-            'currency'   => $this->organisation->currency->code,
-            'lost_total' => round($lostTotal),
-            'now'        => $latest ? [
-                'date'         => $latest->date,
-                'out_of_stock' => (int)$latest->number_out_of_stock_org_stocks,
-                'percentage'   => $latest->number_org_stocks ? round($latest->number_out_of_stock_org_stocks / $latest->number_org_stocks * 100, 1) : 0,
-                'lost_per_day' => $latest->estimated_lost_revenue_org_currency === null ? null : (float)$latest->estimated_lost_revenue_org_currency,
-            ] : null,
-            'series'     => $series,
-        ];
-    }
-
     private function getStockLevels(): array
     {
         return collect(GetOrganisationStockCoverBuckets::run($this->organisation))
@@ -378,13 +300,6 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
-    private function stockOutPeriod(ActionRequest $request): string
-    {
-        $period = (string)$request->input('period');
-
-        return array_key_exists($period, $this->stockOutPeriodOptions()) ? $period : '1y';
-    }
-
     public function htmlResponse(ActionRequest $request): Response
     {
         $numbers = $this->getDashboardNumbers();
@@ -411,7 +326,7 @@ class ShowProcurementDashboard extends OrgAction
                 'dashboardCards' => $this->getDashboardCards($numbers),
                 'shoppingLists' => $this->getShoppingLists(),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
-                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockOuts($this->stockOutPeriod($request)) : null,
+                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period'))) : null,
 
             ]
         );
