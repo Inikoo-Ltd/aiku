@@ -29,7 +29,6 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgSupplier extends OrgAction
