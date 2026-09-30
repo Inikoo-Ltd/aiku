@@ -19,7 +19,7 @@ class GetShopifyListedSkus
 
     private const int MAX_PAGES = 500;
 
-    private const string ACTIVE_STATUS = 'ACTIVE';
+    private const array MATCHABLE_STATUSES = ['ACTIVE', 'DRAFT'];
 
     public function handle(ShopifyUser $shopifyUser): array
     {
@@ -76,7 +76,7 @@ class GetShopifyListedSkus
                 $sku       = Arr::get($variantEdge, 'node.sku');
                 $productId = Arr::get($variantEdge, 'node.product.id');
 
-                if (!$sku || !$productId || Arr::get($variantEdge, 'node.product.status') !== self::ACTIVE_STATUS) {
+                if (!$sku || !$productId || !in_array(Arr::get($variantEdge, 'node.product.status'), self::MATCHABLE_STATUSES, true)) {
                     continue;
                 }
 

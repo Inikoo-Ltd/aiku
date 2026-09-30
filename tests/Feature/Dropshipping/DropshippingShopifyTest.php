@@ -747,6 +747,39 @@ test('checking an unmatched portfolio stores the shopify matches in the shape th
         ->and($portfolio->platform_status)->toBeFalse();
 });
 
+test('draft shopify products can be matched, archived ones cannot', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-drafts');
+
+    $variant = fn (string $sku, string $productId, string $status) => ['node' => ['sku' => $sku, 'product' => ['id' => $productId, 'status' => $status]]];
+    $pickerQuery = null;
+
+    ShopifyFake::fake([
+        'GET shop.json'       => ['shop' => ['id' => 1]],
+        'listProductVariants' => ShopifyFake::graphql(['productVariants' => [
+            'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
+            'edges'    => [
+                $variant('On-Sale', 'gid://shopify/Product/1', 'ACTIVE'),
+                $variant('HHENBT-07', 'gid://shopify/Product/2', 'DRAFT'),
+                $variant('Retired', 'gid://shopify/Product/3', 'ARCHIVED'),
+            ],
+        ]]),
+        'listProducts'        => function (array $variables, $request) use (&$pickerQuery) {
+            $pickerQuery = $request->data()['query'];
+
+            return ShopifyFake::graphql(['products' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => []]]);
+        },
+    ]);
+
+    expect(\App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus::run($shopifyUser))
+        ->toBe(['on-sale' => 'gid://shopify/Product/1', 'hhenbt-07' => 'gid://shopify/Product/2']);
+
+    \App\Actions\Dropshipping\Shopify\Product\GetShopifyListedProducts::run($shopifyUser);
+
+    expect($pickerQuery)->toContain('status:active OR status:draft')
+        ->and($pickerQuery)->not->toContain('archived');
+});
+
 test('matching a portfolio to an existing shopify product keeps the price the merchant already set', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-existing');
