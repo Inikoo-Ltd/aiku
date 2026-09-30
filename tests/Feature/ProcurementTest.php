@@ -33,6 +33,7 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
+use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
@@ -2798,6 +2799,8 @@ function createStockDeliveryWithItems($test, string $code, array $unitQuantities
 
 test('stock delivery counts under and over delivered items', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-OVER', [10, 10, 10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
     $items         = $stockDelivery->items()->orderBy('id')->get();
 
     $under   = SetStockDeliveryItemCheckedQuantity::make()->action($items[0], ['unit_quantity_checked' => 8]);
@@ -2927,6 +2930,8 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
 test('stock delivery item can not be placed beyond the checked quantity', function () {
     $stockDelivery     = createStockDeliveryWithItems($this, 'OVER-PLACED', [10]);
+    $stockDelivery     = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery     = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
     $stockDeliveryItem = $stockDelivery->items()->first();
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 8]);
 
@@ -6756,6 +6761,101 @@ test('undoing a put away from a delivery takes the stock out at the value it wen
     expect((float) $purchase->org_amount)->toBeGreaterThan(0)
         ->and((float) $reversal->quantity)->toBe(-4.0)
         ->and((float) $reversal->org_amount)->toBe(-(float) $purchase->org_amount);
+});
+
+test('stock delivery items can not be checked before the delivery is received', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CHECK-NOT-RECEIVED', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+
+    SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+})->throws(ValidationException::class);
+
+test('a cancelled stock delivery item can not be put away', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-CANCELLED', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+
+    CancelStockDelivery::make()->action($stockDelivery->fresh());
+
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem->fresh(), ['quantity' => 10, 'location_org_stock_id' => $locationOrgStock->id]);
+})->throws(ValidationException::class);
+
+test('a stock delivery with stock already in locations can not be cancelled', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CANCEL-PLACED', [10, 10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => $locationOrgStock->id]);
+
+    expect(fn () => CancelStockDelivery::make()->action($stockDelivery->fresh()))->toThrow(ValidationException::class)
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CHECKED)
+        ->and((float) $locationOrgStock->fresh()->quantity)->toBe(4.0);
+});
+
+test('a put away can not be undone once the delivery is booked in', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDO-BOOKED-IN', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+
+    DeleteSowing::make()->action($stockDeliveryItem->sowings()->first());
+})->throws(ValidationException::class);
+
+test('undoing a put away needs procurement permission', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDO-FORBIDDEN', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => $locationOrgStock->id]);
+
+    setPermissionsTeamId($this->group->id);
+    $guest = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]));
+    actingAs($guest->getUser());
+
+    $this->delete(route('grp.models.sowing.delete', $stockDeliveryItem->sowings()->first()->id))->assertForbidden();
+
+    expect((float) $locationOrgStock->fresh()->quantity)->toBe(4.0);
+});
+
+test('the items hydrator does not move a booked in delivery back to checked', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'HYDRATE-BOOKED-IN', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+
+    $stockDelivery->fresh()->update(['state' => StockDeliveryStateEnum::BOOKED_IN]);
+    StockDeliveriesHydrateItems::run($stockDelivery->fresh());
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+});
+
+test('place all puts away a checked quantity that is not a whole number of SKOs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL-FRACTION', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $packedIn          = $stockDeliveryItem->orgStock->packed_in;
+    $stockDeliveryItem->orgStock->update(['packed_in' => 3]);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem->fresh(), ['unit_quantity_checked' => 10]);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
+
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+
+    $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
 });
 
 test('a fetched delivery linked to its purchase order by their shared aurora line is counted as on its way once', function () {

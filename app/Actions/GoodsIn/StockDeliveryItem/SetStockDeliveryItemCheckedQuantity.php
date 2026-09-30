@@ -9,9 +9,12 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemCheckedQuantity extends OrgAction
@@ -27,6 +30,16 @@ class SetStockDeliveryItemCheckedQuantity extends OrgAction
             'unit_quantity_checked' => ['required_without:sko_quantity_checked', 'numeric', 'gte:0'],
             'sko_quantity_checked'  => ['required_without:unit_quantity_checked', 'numeric', 'gte:0'],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $stockDelivery = $this->stockDeliveryItem->stockDelivery;
+
+        if ($this->stockDeliveryItem->state === StockDeliveryItemStateEnum::CANCELLED
+            || !($stockDelivery->isInGoodsIn() || $stockDelivery->state === StockDeliveryStateEnum::BOOKED_IN)) {
+            $validator->errors()->add('unit_quantity_checked', __('Items can only be checked while the delivery is being booked in'));
+        }
     }
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem

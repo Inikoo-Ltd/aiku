@@ -14,6 +14,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,9 +44,17 @@ class CancelStockDelivery extends OrgAction
         if (!in_array($this->stockDelivery->state, self::CANCELLABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not cancel this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
         }
+        if ($this->stockDelivery->items()->where('unit_quantity_placed', '>', 0)->exists()) {
+            $validator->errors()->add('state', __('Some stock of this delivery is already in locations, undo those put-aways before cancelling'));
+        }
     }
 
     public function handle(StockDelivery $stockDelivery): StockDelivery
+    {
+        return DB::transaction(fn () => $this->cancel($stockDelivery));
+    }
+
+    private function cancel(StockDelivery $stockDelivery): StockDelivery
     {
         $stockDelivery->items()
             ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
