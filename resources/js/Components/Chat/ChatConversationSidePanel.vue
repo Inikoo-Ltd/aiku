@@ -20,7 +20,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
-import { useWhatsappCall } from '@/Composables/useWhatsappCall'
+import { useWhatsappCall, WHATSAPP_OUTGOING_CALL_AVAILABLE } from '@/Composables/useWhatsappCall'
 
 library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock, faPhone)
 
@@ -904,7 +904,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">{{ ctrans("Phone") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone || customerProfile.phone }}</div>
                     </div>
-                    <div v-if="isWhatsapp && session.phone_number" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="WHATSAPP_OUTGOING_CALL_AVAILABLE && isWhatsapp && session.phone_number" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>
                         <div class="col-span-2">
                             <button type="button" :disabled="!!whatsappCall || isWhatsappCallBusy"

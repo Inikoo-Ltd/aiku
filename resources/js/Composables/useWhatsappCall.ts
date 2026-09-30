@@ -25,6 +25,8 @@ export type WhatsappCall = {
 // released, so there is nothing to negotiate for them and the console offers voice only.
 export const WHATSAPP_VIDEO_AVAILABLE = false
 
+export const WHATSAPP_OUTGOING_CALL_AVAILABLE = false
+
 // One call at a time per agent, so the state is module-level: the dock and the conversation
 // are two windows onto the same call rather than two calls. Customers can still ring at the
 // same moment, so every incoming call waits in its own slot until somebody takes it.
