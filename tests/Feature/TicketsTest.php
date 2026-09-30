@@ -735,6 +735,26 @@ test('assistant raises an engineer ticket with the INI prefix through MCP', func
         ->and($ticket->reference)->toStartWith('INI-');
 });
 
+test('assistant asks a QA user to check a ticket through MCP, with the comment as the note', function () {
+    Notification::fake();
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pay button missing', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+
+    $notQa = User::factory()->create(['group_id' => $this->group->id]);
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $notQa->username])->assertHasErrors();
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->comments()->where('body', 'like', '%Pay an order in warehouse')->count())->toBe(1);
+
+    UpdateTicket::make()->action($ticket, ['qa_status' => null]);
+});
+
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
     $created = AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Picking screen freezes', 'module' => 'dispatching', 'priority' => 'high']);
     $created->assertOk();
