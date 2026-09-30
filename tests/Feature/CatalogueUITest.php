@@ -29,6 +29,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Actions\Catalogue\Shop\UI\GetCatalogueShowcase;
 use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
@@ -1194,6 +1195,34 @@ test('shop dashboard sales table shows departments, with brands as an icon on th
 
     expect($subDepartmentsTable['header']['columns']['label']['formatted_value'])->toBe('Sub-department')
         ->and($subDepartmentsTable)->toHaveKeys(['body', 'totals']);
+});
+
+test('catalogue top of the month links to the department, family and product with their counts', function () {
+    $this->shop->stats->update([
+        'top_1m_department_id' => $this->department->id,
+        'top_1m_family_id'     => $this->family->id,
+        'top_1m_product_id'    => $this->product->id,
+    ]);
+
+    $topSelling = GetCatalogueShowcase::run($this->shop->fresh())['top_selling'];
+    $shopParameters = ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug];
+
+    expect($topSelling['department']['route'])->toBe([
+        'name'       => 'grp.org.shops.show.catalogue.departments.show',
+        'parameters' => [...$shopParameters, 'department' => $this->department->slug],
+    ])
+        ->and($topSelling['department']['counts'])->toBe([
+            'families' => $this->department->stats->number_current_families,
+            'products' => $this->department->stats->number_current_products,
+        ])
+        ->and($topSelling['family']['route']['parameters']['family'])->toBe($this->family->slug)
+        ->and($topSelling['family']['counts'])->toBe(['products' => $this->family->stats->number_current_products])
+        ->and($topSelling['product']['route']['name'])->toBe('grp.org.shops.show.catalogue.products.all_products.show')
+        ->and($topSelling['product']['route']['parameters']['product'])->toBe($this->product->slug);
+
+    get(route($topSelling['department']['route']['name'], $topSelling['department']['route']['parameters']))->assertOk();
+    get(route($topSelling['family']['route']['name'], $topSelling['family']['route']['parameters']))->assertOk();
+    get(route($topSelling['product']['route']['name'], $topSelling['product']['route']['parameters']))->assertOk();
 });
 
 test('shop top menu links to the target section of the shop dashboard', function () {

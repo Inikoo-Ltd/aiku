@@ -57,19 +57,38 @@ class GetCatalogueShowcase
             'currency_code' => $shop->currency->code,
             'top_selling' => [
                 'family'     => [
-                    'label' => __('Top Family'),
-                    'icon'  => 'fal fa-folder',
-                    'value' => $topFamily,
+                    'label'  => __('Top Family'),
+                    'icon'   => 'fal fa-folder',
+                    'value'  => $topFamily,
+                    'route'  => $topFamily ? [
+                        'name'       => 'grp.org.shops.show.catalogue.families.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'family' => $topFamily->slug],
+                    ] : null,
+                    'counts' => $topFamily ? [
+                        'products' => $topFamily->stats?->number_current_products ?? 0,
+                    ] : null,
                 ],
                 'department' => [
-                    'label' => __('Top Department'),
-                    'icon'  => 'fal fa-folder-tree',
-                    'value' => $topDepartment,
+                    'label'  => __('Top Department'),
+                    'icon'   => 'fal fa-folder-tree',
+                    'value'  => $topDepartment,
+                    'route'  => $topDepartment ? [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'department' => $topDepartment->slug],
+                    ] : null,
+                    'counts' => $topDepartment ? [
+                        'families' => $topDepartment->stats?->number_current_families ?? 0,
+                        'products' => $topDepartment->stats?->number_current_products ?? 0,
+                    ] : null,
                 ],
                 'product'    => [
                     'label' => __('Top Product'),
                     'icon'  => 'fal fa-folder-tree',
                     'value' => $topProduct,
+                    'route' => $topProduct ? [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'product' => $topProduct->slug],
+                    ] : null,
                 ],
             ],
             'stats' => $stats,
