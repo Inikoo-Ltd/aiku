@@ -1807,7 +1807,9 @@ test('create stock delivery from purchase order', function () {
             ->has('stock_delivery_timelines', 1)
             ->where('stock_delivery_timelines.0.reference', $stockDelivery->reference)
             ->where('stock_delivery_timelines.0.state', $stockDelivery->state->value)
-            ->has('stock_delivery_timelines.0.state_icon'));
+            ->has('stock_delivery_timelines.0.state_icon')
+            ->where('stock_delivery_timelines.0.timeline.dispatched.timestamp', '2026-07-27')
+            ->where('stock_delivery_timelines.0.timeline.received.timestamp', '2026-08-31'));
 
     return $stockDelivery;
 });
@@ -6494,13 +6496,41 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         'reference' => 'PO-USAGE-'.PurchaseOrder::max('id'),
     ], strict: false);
 
+    foreach ([now()->firstOfQuarter(), now()->firstOfQuarter()->addDay()] as $outOfStockDay) {
+        $organisationStockHistoryId = DB::table('organisation_stock_histories')
+            ->where('organisation_id', $orgStock->organisation_id)->where('date', $outOfStockDay->toDateString())->value('id')
+            ?? DB::table('organisation_stock_histories')->insertGetId([
+                'group_id'                       => $orgStock->group_id,
+                'organisation_id'                => $orgStock->organisation_id,
+                'date'                           => $outOfStockDay->toDateString(),
+                'number_org_stocks'              => 0,
+                'number_out_of_stock_org_stocks' => 0,
+                'number_location_org_stocks'     => 0,
+            ]);
+        DB::table('org_stock_histories')->insert([
+            'organisation_stock_history_id' => $organisationStockHistoryId,
+            'organisation_id'               => $orgStock->organisation_id,
+            'org_stock_id'                  => $orgStock->id,
+            'date'                          => $outOfStockDay->toDateString(),
+            'quantity_in_locations'         => 0,
+        ]);
+    }
+
+    $comingStockDelivery = StoreStockDelivery::make()->action($this->orgSupplier, ['reference' => 'SD-COMING-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+    StoreStockDeliveryItem::make()->action($comingStockDelivery, null, $orgStock, ['unit_quantity' => 30, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
+
     $products = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'products']))
         ->assertOk()->viewData('page')['props']['products']['data'];
     $row      = collect($products)->firstWhere('id', $orgSupplierProduct->id);
+    $currentQuarter = now()->year.'Q'.now()->quarter;
 
     expect($row['stock_in_locations'])->toBe('17')
-        ->and($row['quarterly_usage'])->toHaveCount(1)
-        ->and((float) $row['quarterly_usage'][0]['sales'])->toBe(6.0);
+        ->and($row['quarterly_usage'])->toHaveCount(4)
+        ->and(collect($row['quarterly_usage'])->last()['period'])->toBe($currentQuarter)
+        ->and((float) collect($row['quarterly_usage'])->last()['sales'])->toBe(6.0)
+        ->and(collect($row['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
+        ->and(collect($row['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
+        ->and((float) collect($row['stock_deliveries']['coming'])->firstWhere('reference', $comingStockDelivery->reference)['quantity'])->toBe(30.0);
 
     $transaction = StorePurchaseOrderTransaction::make()->action(
         $purchaseOrder,
@@ -6514,10 +6544,12 @@ test('purchase order products and items tabs show stock and quarterly usage of e
     $item  = collect($items)->firstWhere('id', $transaction->id);
 
     expect($item['stock_in_locations'])->toBe('17')
-        ->and($item['quarterly_usage'])->toHaveCount(1)
-        ->and((float) $item['quarterly_usage'][0]['sales'])->toBe(6.0);
+        ->and((float) collect($item['quarterly_usage'])->last()['sales'])->toBe(6.0)
+        ->and(collect($item['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
+        ->and(collect($item['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference);
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+    DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('quantity_in_locations', 0)->delete();
 });
 
 test('stock delivery pdf downloads', function () {

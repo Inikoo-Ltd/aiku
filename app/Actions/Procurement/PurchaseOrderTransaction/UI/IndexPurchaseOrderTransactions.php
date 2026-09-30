@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
+use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -17,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Services\QueryBuilder;
@@ -126,6 +128,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
         }
 
+        if ($parent->parent instanceof OrgAgent) {
+            $query->leftJoin('suppliers', 'suppliers.id', '=', 'sp.supplier_id')
+                ->orderBy('suppliers.name');
+        }
+
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
@@ -150,9 +157,13 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values());
+        $orgStockIds     = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
+        $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $paginator->getCollection()->each(
-            fn (PurchaseOrderTransaction $transaction) => $transaction->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
+            fn (PurchaseOrderTransaction $transaction) => $transaction
+                ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
+                ->setAttribute('stock_deliveries', $stockDeliveries->get($transaction->org_stock_id))
         );
 
         return $paginator;

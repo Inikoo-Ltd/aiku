@@ -38,6 +38,7 @@ use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -695,10 +696,12 @@ class ShowPurchaseOrder extends OrgAction
     {
         return $purchaseOrder->stockDeliveries()
             ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+            ->orderBy('stock_deliveries.id')
             ->get()->map(fn (StockDelivery $stockDelivery) => [
             'reference'  => $stockDelivery->reference,
             'state'      => $stockDelivery->state->value,
             'state_icon' => StockDeliveryStateEnum::stateIcon()[$stockDelivery->state->value],
+            'timeline'   => ShowStockDelivery::make()->getTimeline($stockDelivery, withPurchaseOrderStates: false),
             'route'      => [
                 'name'       => 'grp.org.procurement.stock_deliveries.show',
                 'parameters' => [

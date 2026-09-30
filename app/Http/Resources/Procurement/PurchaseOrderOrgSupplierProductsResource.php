@@ -36,6 +36,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property float|null $stock_in_locations
  * @property \Illuminate\Support\Collection|null $quarterly_usage
  * @property \Illuminate\Support\Collection|null $other_open_purchase_orders
+ * @property array|null $stock_deliveries
  */
 class PurchaseOrderOrgSupplierProductsResource extends JsonResource
 {
@@ -71,6 +72,7 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             'stock_in_locations' => $this->stock_in_locations === null ? null : trimDecimalZeros($this->stock_in_locations),
             'quarterly_usage'  => $this->quarterly_usage ?? [],
             'other_open_purchase_orders' => $this->other_open_purchase_orders ?? [],
+            'stock_deliveries' => $this->stock_deliveries,
 
             'unit_cost'        => $this->unit_cost,
             'units_per_pack'   => $this->units_per_pack,

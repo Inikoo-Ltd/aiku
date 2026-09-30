@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
+use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -68,7 +69,8 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
 
         if (class_basename($parent) == 'OrgAgent') {
-            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
+            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id)
+                ->orderBy('suppliers.name');
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } else {
@@ -166,15 +168,17 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage) {
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage, $stockDeliveries) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
             $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
 
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
+            $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);
 
             return $row;
         });

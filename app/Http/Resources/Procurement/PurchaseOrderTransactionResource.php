@@ -36,6 +36,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'image_preview'        => $tradeUnit?->imageSources(480, 480),
             'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
+            'stock_deliveries'     => $transaction->stock_deliveries,
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,

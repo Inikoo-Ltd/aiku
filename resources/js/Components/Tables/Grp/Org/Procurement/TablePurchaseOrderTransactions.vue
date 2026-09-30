@@ -15,6 +15,7 @@ import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { useFormatTime } from '@/Composables/useFormatTime'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -279,6 +280,24 @@ function supplierProductRoute(item: { slug?: string }) {
     return route('grp.supply-chain.supplier_products.show', [item.slug])
 }
 
+function stockDeliveryRoute(slug: string) {
+    return route('grp.org.procurement.stock_deliveries.show', [route().params.organisation, slug])
+}
+
+const firstRowOfSupplier = computed(() => {
+    const ids = new Set<number>()
+    let previousSupplier: string | null = null
+
+    for (const item of (props.data as any)?.data ?? []) {
+        if (item.supplier_name !== previousSupplier) {
+            ids.add(item.id)
+            previousSupplier = item.supplier_name
+        }
+    }
+
+    return ids
+})
+
 function purchaseOrderRoute(slug: string) {
     return route('grp.org.procurement.purchase_orders.show', [route().params.organisation, slug])
 }
@@ -356,8 +375,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </div>
 
                 <div
-                    v-if="isOrgAgent && item.supplier_name"
-                    class="flex items-center gap-1 text-xs text-gray-500"
+                    v-if="isOrgAgent && item.supplier_name && firstRowOfSupplier.has(item.id)"
+                    class="flex items-center gap-1 mt-1 px-2 py-0.5 rounded bg-gray-100 text-sm font-semibold text-gray-700"
                 >
                     <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
                     <Link
@@ -437,7 +456,24 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ ctrans('Usage (SKOs)') }}:
                     <span v-for="record in item.quarterly_usage" :key="record.period" class="mr-2">
                         {{ record.period }}: <span class="font-medium">{{ formatQuantity(record.sales) }}</span>
+                        <span v-if="record.days_out_of_stock" v-tooltip="ctrans('Days out of stock in this quarter')" class="text-red-600">
+                            ({{ record.days_out_of_stock }}{{ ctrans('d OOS') }})
+                        </span>
                     </span>
+                </div>
+                <div v-if="item.stock_deliveries?.coming?.length" class="text-xs text-indigo-700">
+                    {{ ctrans('Coming') }}:
+                    <span v-for="delivery in item.stock_deliveries.coming" :key="delivery.slug" class="mr-2">
+                        <Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink font-medium">{{ delivery.reference }}</Link>
+                        {{ delivery.state_label }}
+                        ({{ quantityBreakdown({ ...item, quantity_ordered: delivery.quantity }) }})
+                    </span>
+                </div>
+                <div v-if="item.stock_deliveries?.last_received" class="text-xs text-gray-500">
+                    {{ ctrans('Last received') }}:
+                    <Link :href="stockDeliveryRoute(item.stock_deliveries.last_received.slug)" class="primaryLink font-medium">{{ item.stock_deliveries.last_received.reference }}</Link>
+                    {{ useFormatTime(item.stock_deliveries.last_received.received_at) }}
+                    ({{ quantityBreakdown({ ...item, quantity_ordered: item.stock_deliveries.last_received.quantity }) }})
                 </div>
                 <div v-if="item.other_open_purchase_orders?.length" class="text-xs text-amber-700">
                     {{ ctrans('Also in') }}:
