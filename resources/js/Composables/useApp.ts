@@ -5,6 +5,7 @@
  * Copyright: 2025
 */
 
+import { getThemeChartColors } from '@/Composables/useStockList'
 
 export const setColorStyleRoot = (themeColors: string[]) => {
     if (!themeColors.length) {
@@ -19,6 +20,7 @@ export const setColorStyleRoot = (themeColors: string[]) => {
         root.style.setProperty('--theme-color-3', themeColors?.[3])
         root.style.setProperty('--theme-color-4', themeColors?.[4])
         root.style.setProperty('--theme-color-5', themeColors?.[5])
+        getThemeChartColors(themeColors).forEach((color, index) => root.style.setProperty(`--theme-chart-${index + 1}`, color))
     }
 }
 
@@ -37,5 +39,6 @@ export const setColorStyleRootByEl = (
         el.style.setProperty('--theme-color-3', themeColors?.[3])
         el.style.setProperty('--theme-color-4', themeColors?.[4])
         el.style.setProperty('--theme-color-5', themeColors?.[5])
+        getThemeChartColors(themeColors).forEach((color, index) => el.style.setProperty(`--theme-chart-${index + 1}`, color))
     }
 }

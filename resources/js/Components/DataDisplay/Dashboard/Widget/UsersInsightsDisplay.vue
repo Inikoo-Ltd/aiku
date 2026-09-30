@@ -57,7 +57,7 @@ const deviceIcon = (device: string) => {
             </h3>
             <Link
                 :href="route('grp.sysadmin.users.index')"
-                class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+                class="text-xs text-[var(--theme-color-4)] hover:underline whitespace-nowrap"
             >
                 {{ ctrans("All users") }}
                 <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
@@ -78,7 +78,7 @@ const deviceIcon = (device: string) => {
                     class="group"
                 >
                     <p class="text-4xl font-bold" :class="{
-                        Users: 'text-indigo-600',
+                        Users: 'text-[var(--theme-color-4)]',
                         Guests: 'text-sky-600',
                         'Active today': 'text-emerald-600',
                         Logins: 'text-violet-600',
@@ -89,7 +89,7 @@ const deviceIcon = (device: string) => {
 
             <div class="grid grid-cols-3 gap-6 text-sm">
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-indigo-400 mr-1" />{{ ctrans("Most active users") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-1)] mr-1" />{{ ctrans("Most active users") }}</p>
                     <div class="divide-y divide-gray-100">
                         <Link
                             v-for="user in widget.top_users"
@@ -102,13 +102,13 @@ const deviceIcon = (device: string) => {
                                 <span class="text-gray-600 truncate min-w-0">{{ user.username }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ user.requests.toLocaleString() }}</span>
                             </div>
-                            <MiniBar :value="user.requests" :max="maxUserRequests" color="bg-indigo-400" />
+                            <MiniBar :value="user.requests" :max="maxUserRequests" color="bg-[var(--theme-chart-1)]" />
                         </Link>
                         <p v-if="!widget.top_users.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-sky-400 mr-1" />{{ ctrans("Devices") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-2)] mr-1" />{{ ctrans("Devices") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="device in widget.devices" :key="device.device" class="py-1">
                             <div class="flex justify-between gap-2">
@@ -118,20 +118,20 @@ const deviceIcon = (device: string) => {
                                 </span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ device.requests.toLocaleString() }}</span>
                             </div>
-                            <MiniBar :value="device.requests" :max="maxDeviceRequests" color="bg-sky-400" />
+                            <MiniBar :value="device.requests" :max="maxDeviceRequests" color="bg-[var(--theme-chart-2)]" />
                         </div>
                         <p v-if="!widget.devices.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-violet-400 mr-1" />{{ ctrans("Browsers") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-3)] mr-1" />{{ ctrans("Browsers") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="browser in widget.browsers" :key="browser.browser" class="py-1">
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0 capitalize">{{ browser.browser }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ browser.requests.toLocaleString() }}</span>
                             </div>
-                            <MiniBar :value="browser.requests" :max="maxBrowserRequests" color="bg-violet-400" />
+                            <MiniBar :value="browser.requests" :max="maxBrowserRequests" color="bg-[var(--theme-chart-3)]" />
                         </div>
                         <p v-if="!widget.browsers.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
