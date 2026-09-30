@@ -258,7 +258,7 @@ const updateTopCustomersLimit = (value: number) => {
 </script>
 
 <template>
-    <div class="relative px-3 sm:px-6 md:mt-1">
+    <div class="relative px-3 sm:px-6 mt-3 md:mt-1">
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">
@@ -315,9 +315,9 @@ const updateTopCustomersLimit = (value: number) => {
             <div
                 v-tooltip="ctrans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
-                class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
+                class="cursor-pointer px-2 sm:p-2 rounded border flex items-center justify-center flex-shrink-0"
                 :class="isSectionVisible ? 'dashboard-accent-soft border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
-                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
+                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-lg sm:text-2xl" />
             </div>
         </div>
 
