@@ -15,7 +15,7 @@ return new class () extends Migration {
      */
     public $withinTransaction = false;
 
-    protected string $index = 'mailshot_recipients_mailshot_id_recipient_type_recipient_id_unique';
+    protected string $index = 'mailshot_recipients_mailshot_id_recipient_type_recipient_id_uni';
 
     /**
      * A retried send chunk must not be able to store the same person twice for one mailshot, because
