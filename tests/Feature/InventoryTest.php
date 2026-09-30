@@ -1227,6 +1227,26 @@ test('UI get section route infrastructure index', function () {
         ->and($sectionScope->model_slug)->toBe($warehouse->slug);
 });
 
+test('UI show incoming hub', function () {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+    $response = get(
+        route('grp.org.warehouses.show.incoming.backlog', [
+            $this->organisation->slug,
+            $warehouse->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Incoming/IncomingHub')
+            ->has('dashboard.dimension.items', 5)
+            ->where('dashboard.dimension.items.1.key', 'partner_stock_deliveries')
+            ->where('dashboard.dimension.items.2.key', 'agent_stock_deliveries')
+            ->where('dashboard.metrics.0.key', 'arriving')
+            ->has('dashboard.data.agent_stock_deliveries.booked_in');
+    });
+});
+
 test('UI get section route incoming backlog', function () {
     $warehouse    = Warehouse::first();
     $sectionScope = GetSectionRoute::make()->handle("grp.org.warehouses.show.incoming.backlog", [

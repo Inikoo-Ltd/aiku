@@ -97,7 +97,7 @@ class IndexStockDeliveries extends OrgAction
             ];
         }
 
-        return [
+        $elementGroups = [
             'state' => [
                 'label'    => __('State'),
                 'elements' => $elements,
@@ -106,6 +106,29 @@ class IndexStockDeliveries extends OrgAction
                 },
             ],
         ];
+
+        if (isset($this->parent) && $this->parent instanceof Warehouse) {
+            $sourceCounts = $this->applyParentFilter(StockDelivery::query())
+                ->selectRaw('stock_deliveries.parent_type, count(*) as total')
+                ->groupBy('stock_deliveries.parent_type')
+                ->pluck('total', 'parent_type')
+                ->all();
+
+            $elementGroups['source'] = [
+                'label'    => __('Source'),
+                'elements' => [
+                    'OrgSupplier' => [__('Suppliers'), $sourceCounts['OrgSupplier'] ?? 0],
+                    'Production'  => [__('Production'), $sourceCounts['Production'] ?? 0],
+                    'OrgPartner'  => [__('Partners'), $sourceCounts['OrgPartner'] ?? 0],
+                    'OrgAgent'    => [__('Agents'), $sourceCounts['OrgAgent'] ?? 0],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('stock_deliveries.parent_type', $elements);
+                },
+            ];
+        }
+
+        return $elementGroups;
     }
 
     private function isAgentContext(): bool
@@ -209,7 +232,7 @@ class IndexStockDeliveries extends OrgAction
             ->defaultSort('-stock_deliveries.date')
             ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'])
+            ->withBetweenDates(['date', 'booked_in_at', 'placed_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -223,7 +246,7 @@ class IndexStockDeliveries extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            $table->betweenDates(['date']);
+            $table->betweenDates(['date', 'booked_in_at', 'placed_at']);
 
             $table
                 ->withModelOperations($modelOperations)
