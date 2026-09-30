@@ -1905,6 +1905,25 @@ test('GetChatCustomerProfile returns empty defaults when session has no web user
     expect($result)->toBe(['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null]);
 });
 
+test('GetChatCustomerProfile links to the communications tab of the customer', function () {
+    $webUser = $this->customer->webUsers()->first() ?? StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'web_user_id'      => $webUser->id,
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $profileUrl = GetChatCustomerProfile::make()->handle($chatSession)['profile_url'];
+
+    expect($profileUrl)->toContain($this->customer->slug)
+        ->and($profileUrl)->toEndWith('?tab=communications');
+});
+
 test('GetChatCustomerProfile gives the customer address and leaves baskets out of the last orders', function () {
     $result = GetChatCustomerProfile::make()->contactAndLastOrders($this->customer);
 

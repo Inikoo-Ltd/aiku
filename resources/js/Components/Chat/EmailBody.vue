@@ -9,6 +9,7 @@
  * can be measured. Without scripts that grants the message no reach of its own.
  */
 import { ref, computed, onBeforeUnmount, watch } from "vue"
+import { collapseQuotedEmail } from "@/Composables/collapseQuotedEmail"
 
 const props = defineProps<{ html: string }>()
 
@@ -44,6 +45,10 @@ const measure = () => {
 let observer: ResizeObserver | null = null
 
 const onLoad = () => {
+    if (frame.value?.contentDocument) {
+        collapseQuotedEmail(frame.value.contentDocument)
+    }
+
     measure()
 
     const body = frame.value?.contentDocument?.body

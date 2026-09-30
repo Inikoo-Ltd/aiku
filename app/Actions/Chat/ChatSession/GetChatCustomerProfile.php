@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -220,6 +221,7 @@ class GetChatCustomerProfile
             $organisation->slug,
             $shop->slug,
             $customer->slug,
+            'tab' => CustomerTabsEnum::COMMUNICATIONS->value,
         ]);
     }
 
