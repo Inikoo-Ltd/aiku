@@ -105,7 +105,7 @@ const statsOnlyAdditional = Object.fromEntries(
     <!-- Stats Grid -->
     <div class="p-6 !pb-0">
         <span class="font-semibold"> {{ ctrans('Catalogue') }} </span>
-        <dl class="pt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        <dl class="pt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 xl:grid-cols-4 lg:gap-5">
             <StatsBox
                 v-for="(stat, index) in statsWithoutAdditional"
                 :key="index"
