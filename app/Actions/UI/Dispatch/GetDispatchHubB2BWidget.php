@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
@@ -16,10 +17,13 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetDispatchHubB2BWidget
 {
     use AsObject;
+    use WithDeliveryNotesChannel;
 
     public function handle(Warehouse $warehouse): array
     {
-        $organisation = $warehouse->organisation;
+        $organisation       = $warehouse->organisation;
+        $partnerStateCounts = $this->partnerDeliveryNotesStateCounts($organisation);
+        $count              = fn (string $state) => $this->channelDeliveryNotesCount($organisation, ShopTypeEnum::B2B->value, $state, $partnerStateCounts);
 
         return [
             'slug'             => 'wholesale',
@@ -34,7 +38,7 @@ class GetDispatchHubB2BWidget
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::B2B->value)
+                    ->tap(fn ($query) => $this->whereDeliveryNotesChannel($query, ShopTypeEnum::B2B->value))
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
@@ -47,7 +51,7 @@ class GetDispatchHubB2BWidget
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::B2B->value)
+                    ->tap(fn ($query) => $this->whereDeliveryNotesChannel($query, ShopTypeEnum::B2B->value))
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
                     ->count(),
@@ -60,7 +64,7 @@ class GetDispatchHubB2BWidget
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::B2B->value)
+                    ->tap(fn ($query) => $this->whereDeliveryNotesChannel($query, ShopTypeEnum::B2B->value))
                     ->where('delivery_note_items.has_waiting_crm', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
@@ -73,7 +77,7 @@ class GetDispatchHubB2BWidget
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::B2B->value)
+                    ->tap(fn ($query) => $this->whereDeliveryNotesChannel($query, ShopTypeEnum::B2B->value))
                     ->where('delivery_note_items.has_waiting_crm', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
                     ->count(),
@@ -132,22 +136,22 @@ class GetDispatchHubB2BWidget
                     ],
                 ],
             ],
-            'todo'             => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_unassigned,
-            'queued'           => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_queued,
-            'handling'         => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling,
-            'handling_blocked' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling_blocked,
-            'picked'           => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_picked,
-            'packing'          => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packing,
-            'packed'           => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packed,
-            'finalised'        => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_finalised,
-            'total'            => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_unassigned
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_queued
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling_blocked
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_picked
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packing
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packed
-                                    + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_finalised,
+            'todo'             => $count('unassigned'),
+            'queued'           => $count('queued'),
+            'handling'         => $count('handling'),
+            'handling_blocked' => $count('handling_blocked'),
+            'picked'           => $count('picked'),
+            'packing'          => $count('packing'),
+            'packed'           => $count('packed'),
+            'finalised'        => $count('finalised'),
+            'total'            => $count('unassigned')
+                                    + $count('queued')
+                                    + $count('handling')
+                                    + $count('handling_blocked')
+                                    + $count('picked')
+                                    + $count('packing')
+                                    + $count('packed')
+                                    + $count('finalised'),
         ];
     }
 }

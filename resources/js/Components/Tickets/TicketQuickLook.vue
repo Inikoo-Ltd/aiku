@@ -17,6 +17,7 @@ import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
+import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
 import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -176,11 +177,14 @@ const close = () => {
                         <span v-if="displayTicket.customer"
                             >{{ ctrans("Customer") }}: {{ displayTicket.customer }}</span
                         >
-                        <span v-if="displayTicket.shop">{{ ctrans("Shop") }}: {{ displayTicket.shop }}</span>
-                    </div>
+                        <span v-if="displayTicket.shop">{{ ctrans("Shop") }}: {{ displayTicket.shop }}</span>                    </div>
                     <template v-if="!isDesktop">
                         <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
-                            <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
+                            <TicketControls v-bind="controls" @updated="loadControls(ticket.id)">
+                                <template #after-qa>
+                                    <TicketPullRequest :ticket="controls.ticket" :routes="controls.routes" :can-edit="controls.can_contribute" compact @updated="loadControls(ticket.id)" />
+                                </template>
+                            </TicketControls>
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
@@ -214,7 +218,11 @@ const close = () => {
                         </div>
                     </div>
                     <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                        <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
+                        <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)">
+                            <template #after-qa>
+                                <TicketPullRequest :ticket="controls.ticket" :routes="controls.routes" :can-edit="controls.can_contribute" compact @updated="loadControls(ticket.id)" />
+                            </template>
+                        </TicketControls>
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
                     </aside>

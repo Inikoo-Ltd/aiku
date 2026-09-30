@@ -31,6 +31,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 trait IsDeliveryNotesIndex
 {
+    use WithDeliveryNotesChannel;
+
     private Group|Warehouse|Shop|Order|Customer|CustomerClient $parent;
     private string $bucket;
 
@@ -74,10 +76,7 @@ trait IsDeliveryNotesIndex
         $query->leftjoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
-        if ($shopType != 'all') {
-            // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
-            $query->where('shops.type', $shopType);
-        }
+        $this->whereDeliveryNotesChannel($query, $shopType);
 
         if ($bucket == 'unassigned') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::UNASSIGNED);

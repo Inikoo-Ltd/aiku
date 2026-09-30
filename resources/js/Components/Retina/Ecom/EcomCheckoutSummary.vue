@@ -1,7 +1,7 @@
 <script setup lang="ts">
     
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { faSortNumericDown, faWeight, faMapPin, faChevronDown, faBadgePercent } from "@fal"
+import { faSortNumericDown, faWeight, faMapPin, faChevronDown, faBadgePercent, faExclamationCircle } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { computed, inject, ref } from "vue"
@@ -289,22 +289,22 @@ const updateCollection = (value: boolean) => {
 
             <!-- Section: Missed Offers -->
             <Transition v-if="layout.app.environment === 'local'" name="slide-to-right">
-                <div v-if="Object.values(missed_offers || {}).length" class="xborder border-red-200 xbg-red-50 rounded-md p-3">
-                    <div class="text-xs text-red-500 font-bold mb-0">
-                        <!-- <span class="bg-red-500 text-white">(local only)</span> -->
+                <div v-if="Object.values(missed_offers || {}).length" class="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                    <div class="mb-2 flex items-center gap-1.5 text-xs font-semibold text-red-500">
+                        <FontAwesomeIcon :icon="faExclamationCircle" fixed-width aria-hidden="true" />
                         {{ ctrans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
                     </div>
-                    <div class="flex flex-col gap-y-2">
-                        <TransitionGroup name="list" tag="ul" class="!m-0 space-y-2">
-                            <li v-for="(missed_offer, misOfferKey) in missed_offers" :key="misOfferKey" class="list-none">
-                                <MissedOfferFOB v-if="misOfferKey === 'fob'" :data="missed_offer" />
-                                <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md text-sm flex items-center gap-x-2">
-                                    <InformationIcon :information="missed_offer.label" class="text-2xl" />
-                                    <div>{{ missed_offer.label }}</div>
-                                </div>
-                            </li>
-                        </TransitionGroup>
-                    </div>
+                    <TransitionGroup name="list" tag="ul" class="!m-0 space-y-2">
+                        <li v-for="(missed_offer, misOfferKey) in missed_offers" :key="misOfferKey" class="list-none">
+                            <MissedOfferFOB v-if="misOfferKey === 'fob'" :data="missed_offer" />
+                            <div v-else class="flex items-center gap-2.5 rounded-md border border-[#2a919e]/30 bg-[#2a919e]/5 px-3 py-2 text-xs text-gray-700">
+                                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#2a919e] text-white">
+                                    <FontAwesomeIcon :icon="faBadgePercent" class="text-xs" fixed-width aria-hidden="true" />
+                                </span>
+                                <div class="leading-snug">{{ missed_offer.label }}</div>
+                            </div>
+                        </li>
+                    </TransitionGroup>
                 </div>
             </Transition>
         </div>

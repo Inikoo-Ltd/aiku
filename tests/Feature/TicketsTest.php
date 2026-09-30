@@ -26,6 +26,8 @@ use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
+use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
+use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use Illuminate\Database\Eloquent\Builder;
@@ -3454,4 +3456,58 @@ test('the QA list hides the status filter, keeps tickets being QA checked whatev
 
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['qa_checking'])->pluck('id')->all())
         ->toContain($checkingOpen->id, $checkingByOther->id)->not->toContain($done->id));
+});
+
+test('a pull request link is checked on GitHub before it is saved, and read from GitHub when the ticket opens', function () {
+    Cache::flush();
+    Http::fake([
+        'https://api.github.com/repos/acme/app/pulls/42/commits*' => Http::response([
+            [
+                'sha'      => 'abcdef1234567890',
+                'html_url' => 'https://github.com/acme/app/commit/abcdef1234567890',
+                'commit'   => ['message' => "Round each invoice line\n\nThe total now adds rounded lines", 'author' => ['name' => 'Louis', 'date' => '2026-09-30T10:00:00Z']],
+                'author'   => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis'],
+            ],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/42' => Http::response([
+            'number'   => 42,
+            'title'    => 'Fix invoice rounding',
+            'html_url' => 'https://github.com/acme/app/pull/42',
+            'state'    => 'closed',
+            'merged'   => true,
+            'draft'    => false,
+            'body'     => 'Rounds each line before adding them up',
+            'user'     => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis', 'html_url' => 'https://github.com/louis'],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/*' => Http::response(['message' => 'Not Found'], 404),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Invoice totals are off by a cent']);
+
+    expect(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://gitlab.com/acme/app/merge_requests/1']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://github.com/acme/app/pull/7']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($ticket->fresh()->pull_request_url)->toBeNull();
+
+    UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => ' https://github.com/acme/app/pull/42/files#diff ']);
+    expect($ticket->fresh()->pull_request_url)->toBe('https://github.com/acme/app/pull/42');
+
+    $read = GetTicketPullRequest::make()->handle($ticket->fresh());
+    expect($read['error'])->toBeNull()
+        ->and($read['commits'])->toBeNull()
+        ->and($read['pull_request']['title'])->toBe('Fix invoice rounding')
+        ->and($read['pull_request']['state'])->toBe('merged')
+        ->and($read['pull_request']['author']['login'])->toBe('louis');
+
+    $commits = GetTicketPullRequest::make()->handle($ticket->fresh(), true)['commits'];
+    expect($commits)->toHaveCount(1)
+        ->and($commits[0]['short_sha'])->toBe('abcdef1')
+        ->and($commits[0]['subject'])->toBe('Round each invoice line')
+        ->and($commits[0]['author'])->toBe('louis')
+        ->and($commits[0]['date'])->toBe('2026-09-30T10:00:00Z');
+
+    UpdateTicketPullRequest::make()->action($ticket->fresh(), ['pull_request_url' => null]);
+    expect($ticket->fresh()->pull_request_url)->toBeNull()
+        ->and(GetTicketPullRequest::make()->handle($ticket->fresh()))->toBe(['pull_request' => null, 'commits' => null, 'error' => null]);
 });

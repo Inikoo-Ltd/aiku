@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
+use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -20,6 +21,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 {
+    use WithDeliveryNotesChannel;
     use WithDeliveryNoteItemUI;
 
     public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
@@ -50,10 +52,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
         $query->where('delivery_notes.state', $state);
 
 
-        if ($shopType != 'all') {
-            // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
-            $query->where('shops.type', $shopType);
-        }
+        $this->whereDeliveryNotesChannel($query, $shopType);
 
         $query->where('delivery_note_items.quantity_required', '>', 0);
 
