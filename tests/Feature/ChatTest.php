@@ -11030,3 +11030,33 @@ test('ai calls go through openrouter with the provider prefix, and straight to o
     expect($request->data()['model'])->toBe('gpt-4o-mini')
         ->and($request->hasHeader('Authorization', 'Bearer openai-key'))->toBeTrue();
 });
+
+test('a gmail quota 403 releases the job to try again, while a permissions 403 still fails it', function () {
+    $job = new class () {
+        public ?int $releasedFor = null;
+
+        public function release(int $delay): void
+        {
+            $this->releasedFor = $delay;
+        }
+    };
+
+    $refuse = function (array $body, int $status) use ($job) {
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response($body, $status)]);
+
+        (new \App\Services\Gmail\ReleaseWhenGmailRateLimited())->handle($job, fn () => \Illuminate\Support\Facades\Http::post('https://gmail.googleapis.com/x')->throw());
+    };
+
+    $refuse(['error' => ['code' => 403, 'message' => "Quota exceeded for quota metric 'Total Query Cost' and limit 'Units per minute per user'", 'status' => 'RESOURCE_EXHAUSTED']], 403);
+    expect($job->releasedFor)->toBeBetween(60, 120);
+
+    $job->releasedFor = null;
+    $refuse(['error' => ['code' => 429, 'message' => 'Too many requests']], 429);
+    expect($job->releasedFor)->toBeBetween(60, 120);
+
+    $job->releasedFor = null;
+    expect(fn () => $refuse(['error' => ['code' => 403, 'message' => 'Request had insufficient authentication scopes.', 'status' => 'PERMISSION_DENIED', 'errors' => [['reason' => 'insufficientPermissions']]]], 403))
+        ->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and($job->releasedFor)->toBeNull();
+});

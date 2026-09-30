@@ -31,6 +31,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Group;
 use App\Services\Gmail\GmailClient;
+use App\Services\Gmail\ReleaseWhenGmailRateLimited;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
 use Illuminate\Http\Client\RequestException;
@@ -62,6 +63,14 @@ class ProcessInboundEmail
         'luigisbox.com', 'email-abuse.amazonses.com',
         'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
     ];
+
+    /**
+     * @return array<int, object>
+     */
+    public function getJobMiddleware(): array
+    {
+        return [new ReleaseWhenGmailRateLimited()];
+    }
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only

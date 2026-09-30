@@ -220,14 +220,17 @@ final class GmailClient
     }
 
     /**
-     * Gmail asking us to slow down: a 429, a 403 whose reason is a rate limit (a 403 for anything
-     * else, like a missing scope, never gets better by waiting), or its backend briefly failing.
+     * Gmail asking us to slow down: a 429, a 403 whose reason or message says a rate limit or quota
+     * (a 403 for anything else, like a missing scope, never gets better by waiting), or its backend
+     * briefly failing.
      */
     public static function isRateLimited(Response $response): bool
     {
         return match ($response->status()) {
             429, 500, 503 => true,
-            403           => in_array($response->json('error.errors.0.reason'), ['rateLimitExceeded', 'userRateLimitExceeded'], true),
+            403           => in_array($response->json('error.errors.0.reason'), ['rateLimitExceeded', 'userRateLimitExceeded', 'quotaExceeded'], true)
+                || $response->json('error.status') === 'RESOURCE_EXHAUSTED'
+                || str_contains((string) $response->json('error.message'), 'Quota exceeded'),
             default       => false,
         };
     }
