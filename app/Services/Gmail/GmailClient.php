@@ -194,23 +194,42 @@ final class GmailClient
     /**
      * Several messages fetched side by side, within one mailbox's rate limit. A message Gmail
      * refused comes back null, a rate limit as the string 'rate_limited', so the caller can wait.
+     * Given headers, only those headers are fetched (format metadata): a few hundred bytes instead
+     * of the whole mail, for deciding whether the mail is worth reading at all.
      *
      * @param  array<int, string>  $messageIds
+     * @param  array<int, string>  $onlyHeaders
      * @return array<string, array<string, mixed>|string|null>
      */
-    public function getMessages(array $messageIds): array
+    public function getMessages(array $messageIds, array $onlyHeaders = []): array
     {
         $token     = $this->accessToken();
+        $query     = $onlyHeaders
+            ? 'format=metadata&'.implode('&', array_map(fn (string $header) => 'metadataHeaders='.rawurlencode($header), $onlyHeaders))
+            : 'format=full';
         $responses = Http::pool(fn (Pool $pool) => array_map(
-            fn (string $messageId) => $pool->as($messageId)->withToken($token)->timeout(60)->get(self::API_BASE_URL."users/me/messages/$messageId", ['format' => 'full']),
+            fn (string $messageId) => $pool->as($messageId)->withToken($token)->timeout(60)->get(self::API_BASE_URL."users/me/messages/$messageId?$query"),
             $messageIds
         ));
 
         return collect($responses)->map(fn ($response) => match (true) {
             $response instanceof Response && $response->successful()                            => $response->json(),
-            $response instanceof Response && in_array($response->status(), [403, 429, 503], true) => 'rate_limited',
+            $response instanceof Response && self::isRateLimited($response)                     => 'rate_limited',
             default                                                                            => null,
         })->all();
+    }
+
+    /**
+     * Gmail asking us to slow down: a 429, a 403 whose reason is a rate limit (a 403 for anything
+     * else, like a missing scope, never gets better by waiting), or its backend briefly failing.
+     */
+    public static function isRateLimited(Response $response): bool
+    {
+        return match ($response->status()) {
+            429, 500, 503 => true,
+            403           => in_array($response->json('error.errors.0.reason'), ['rateLimitExceeded', 'userRateLimitExceeded'], true),
+            default       => false,
+        };
     }
 
     public function getMessage(string $messageId): array

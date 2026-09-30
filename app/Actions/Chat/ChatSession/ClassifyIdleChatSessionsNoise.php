@@ -33,7 +33,7 @@ class ClassifyIdleChatSessionsNoise
         $found = 0;
 
         $queries = [
-            ChatSession::query()->where('channel', ChatChannelEnum::EMAIL)->whereNull('web_user_id')->where('is_rubbish', false),
+            ChatSession::query()->where('channel', ChatChannelEnum::EMAIL)->whereNull('web_user_id')->where('is_rubbish', false)->where('is_colleague', false),
             MetaChatSession::query()->whereNull('customer_id'),
         ];
 

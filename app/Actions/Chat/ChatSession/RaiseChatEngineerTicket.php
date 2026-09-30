@@ -17,6 +17,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -37,7 +38,17 @@ class RaiseChatEngineerTicket
      */
     public function handle(ChatSession|MetaChatSession $chatSession, ChatAgent $agent): ?array
     {
-        $engineer = ClassifyChatTurn::suggestions($chatSession)['engineer'] ?? null;
+        return Cache::lock('chat-engineer-ticket:'.class_basename($chatSession).':'.$chatSession->id, 60)
+            ->get(fn () => $this->raise($chatSession->refresh(), $agent)) ?: null;
+    }
+
+    /**
+     * @return array{reference: string, url: string, added: bool}|null
+     */
+    private function raise(ChatSession|MetaChatSession $chatSession, ChatAgent $agent): ?array
+    {
+        $suggestions = ClassifyChatTurn::suggestions($chatSession);
+        $engineer    = $suggestions['engineer'] ?? null;
 
         if (!$engineer || !empty($engineer['raised']) || $chatSession->tickets()->whereNotIn('status', ['resolved', 'cancelled'])->exists()) {
             return null;
@@ -58,10 +69,8 @@ class RaiseChatEngineerTicket
             ]);
         }
 
-        $metadata = $chatSession->metadata ?? [];
-        data_set($metadata, ClassifyChatTurn::KEY.'.engineer.raised', $ticket->reference);
-        $chatSession->update(['metadata' => $metadata]);
-        ClassifyChatTurn::markUsed($chatSession, 'engineer', $ticket->reference);
+        SetChatSessionMetadata::run($chatSession, [ClassifyChatTurn::RAISED_KEY => $ticket->reference]);
+        ClassifyChatTurn::markUsed($chatSession, $suggestions['reading_id'] ?? null, 'engineer', $ticket->reference);
 
         return ['reference' => $ticket->reference, 'url' => route('grp.tickets.show', $ticket->reference), 'added' => (bool) $known];
     }

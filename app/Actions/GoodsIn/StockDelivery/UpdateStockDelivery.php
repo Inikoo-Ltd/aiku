@@ -76,6 +76,10 @@ class UpdateStockDelivery extends OrgAction
             'org_gross_amount' => DB::raw("gross_amount * $orgExchange"),
         ]);
 
+        if ($stockDelivery->costs()->exists()) {
+            EvaluateStockDeliveryCosting::run($stockDelivery);
+        }
+
         RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
     }
 

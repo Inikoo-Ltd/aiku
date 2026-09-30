@@ -3471,7 +3471,7 @@ describe('stock delivery costing checklist', function () {
 
     test('costs in another currency are converted to the delivery currency', function () {
         $stockDelivery = $this->costingStockDelivery;
-        $otherCurrency = Currency::where('id', '!=', $stockDelivery->currency_id)->first();
+        $otherCurrency = Currency::whereNotIn('id', [$stockDelivery->currency_id, $stockDelivery->organisation->currency_id])->first();
 
         $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
             'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
@@ -3502,6 +3502,32 @@ describe('stock delivery costing checklist', function () {
         expect((float) $stockDelivery->refresh()->org_exchange)->toBe(2.5)
             ->and((float) $item->org_exchange)->toBe(2.5)
             ->and((float) $item->org_net_amount)->toBe(100.0);
+    });
+
+    test('a cost in the organisation currency keeps its amount through the invoice exchange rate', function () {
+        $stockDelivery = $this->costingStockDelivery;
+        $stockDelivery->update([
+            'currency_id'  => Currency::where('id', '!=', $stockDelivery->organisation->currency_id)->value('id'),
+            'org_exchange' => 0.75,
+        ]);
+        $orgStock = OrgStock::where('organisation_id', $stockDelivery->organisation_id)->first();
+        $item     = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
+        UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 40], strict: false);
+
+        $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount'      => 589.98,
+            'currency_id' => $stockDelivery->organisation->currency_id,
+            'exchange'    => 1.3,
+        ]);
+
+        expect(round($shipping->amountInDeliveryCurrency() * 0.75, 2))->toBe(589.98)
+            ->and(round((float) $stockDelivery->items()->sum('cost_shipping'), 2))->toBe(786.64);
+
+        UpdateStockDelivery::make()->action($stockDelivery, ['org_exchange' => 0.8]);
+
+        expect(round($shipping->fresh()->amountInDeliveryCurrency() * 0.8, 2))->toBe(589.98)
+            ->and(round((float) $stockDelivery->items()->sum('cost_shipping'), 2))->toBe(737.48);
     });
 
     test('non extra cost types are singletons', function () {
@@ -4317,6 +4343,74 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
 
         DB::table('delivery_note_items')->where('delivery_note_id', $resentDeliveryNote->id)->update(['quantity_dispatched' => 0]);
+    });
+
+    test('an order the seller enters by hand for the partner customer gets a mirror stock delivery on dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 4,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+        $order->update(['sales_channel_id' => null]);
+        SubmitOrder::make()->action($order->refresh());
+
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            $deliveryNoteItem->update(['quantity_dispatched' => $deliveryNoteItem->quantity_required]);
+        }
+
+        $stockDelivery = SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect($stockDelivery)->not->toBeNull()
+            ->and($stockDelivery->organisation_id)->toBe($this->orgPartner->organisation_id)
+            ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+    });
+
+    test('an order fetched from aurora gets no mirror stock delivery on dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        $order->update(['source_id' => '4:999999']);
+
+        expect(SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh()))->toBeNull();
+    });
+
+    test('a partner purchase order raised after the partner moved to aiku can not create its own stock delivery', function () {
+        $partnerData = $this->orgPartner->data;
+        data_set($partnerData, 'intercompany_customers', [$this->sellerShop->id => 1]);
+        $this->orgPartner->update(['data' => $partnerData]);
+        $this->sellerShop->update(['migrated_to_aiku_on' => now()->subDays(10)]);
+
+        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, PurchaseOrder::factory()->definition());
+        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED]);
+
+        expect(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))
+            ->toThrow(ValidationException::class);
+
+        $purchaseOrder->update(['created_at' => now()->subDays(20)]);
+
+        $refusal = '';
+        try {
+            StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+        } catch (ValidationException $exception) {
+            $refusal = implode(' ', Arr::flatten($exception->errors()));
+        }
+
+        expect($refusal)->not->toContain('dispatches the order');
     });
 
     test('buyer can not change a partner stock delivery before the seller dispatches it', function () {

@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
+use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromFreeSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
@@ -29,7 +30,7 @@ class SetSupplierAgent
     use AsAction;
 
     /**
-     * Under an agent, only organisations trading with that agent keep the supplier, bought through their org agent.
+     * Under an agent, every organisation buying from the supplier follows it: those not trading with the agent yet get the org agent created.
      * Without an agent, the supplier goes back to the organisations that buy independent suppliers directly.
      *
      * @throws \Throwable
@@ -42,12 +43,16 @@ class SetSupplierAgent
             return $supplier;
         }
 
-        $parents = $agent
-            ? $agent->orgAgents()->get()->keyBy('organisation_id')
-            : StoreOrgSupplierFromFreeSupplier::make()->getOrganisations($supplier)->keyBy('id');
-
-        $touchedOrgAgents = DB::transaction(function () use ($supplier, $agent, $parents) {
+        $touchedOrgAgents = DB::transaction(function () use ($supplier, $agent) {
             $touchedOrgAgents = collect();
+
+            if ($agent) {
+                $this->addAgentToOrganisationsBuyingFromSupplier($supplier, $agent);
+            }
+
+            $parents = $agent
+                ? $agent->orgAgents()->get()->keyBy('organisation_id')
+                : StoreOrgSupplierFromFreeSupplier::make()->getOrganisations($supplier)->keyBy('id');
 
             $supplier->update(['agent_id' => $agent?->id]);
             $supplier->supplierProducts()->update(['agent_id' => $agent?->id]);
@@ -110,5 +115,19 @@ class SetSupplierAgent
         }
 
         return $supplier->refresh();
+    }
+
+    private function addAgentToOrganisationsBuyingFromSupplier(Supplier $supplier, Agent $agent): void
+    {
+        $organisations = $supplier->orgSuppliers()
+            ->where('status', true)
+            ->whereNotIn('organisation_id', $agent->orgAgents()->pluck('organisation_id'))
+            ->with('organisation')
+            ->get()
+            ->pluck('organisation');
+
+        foreach ($organisations as $organisation) {
+            StoreOrgAgent::make()->action($organisation, $agent, []);
+        }
     }
 }

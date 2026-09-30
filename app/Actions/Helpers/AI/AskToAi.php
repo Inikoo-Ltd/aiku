@@ -49,15 +49,7 @@ class AskToAi extends OrgAction
 
     private function getApiKey(): ?string
     {
-        $driverName = config('auto-translations.default_driver', 'gpt-5-nano');
-        $driverConfig = config("auto-translations.drivers.$driverName");
-        $apiKey = $driverConfig['api_key'] ?? null;
-
-        if (empty($apiKey)) {
-            $apiKey = config('askbot-laravel.openai_api_key');
-        }
-
-        return $this->aiApiKey($apiKey);
+        return $this->aiApiKey(config('askbot-laravel.openai_api_key'));
     }
 
     private function sendRequest(string $apiKey, string $model, string $prompt): ?string

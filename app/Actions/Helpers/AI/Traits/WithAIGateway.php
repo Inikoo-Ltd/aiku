@@ -119,6 +119,20 @@ trait WithAIGateway
         return 'Other';
     }
 
+    /**
+     * With our own provider key (BYOK) OpenRouter bills only its fee and the provider bills the rest.
+     */
+    public function aiUsageCost(array $usage): ?float
+    {
+        $cost = Arr::get($usage, 'cost');
+
+        if ($cost !== null && Arr::get($usage, 'is_byok')) {
+            $cost += (float) Arr::get($usage, 'cost_details.upstream_inference_cost', 0);
+        }
+
+        return $cost;
+    }
+
     protected function recordAiUsage(ResponseInterface $response, string $feature, string $provider): void
     {
         if ($response->getStatusCode() >= 400 || str_contains($response->getHeaderLine('Content-Type'), 'event-stream')) {
@@ -135,11 +149,7 @@ trait WithAIGateway
                 return;
             }
 
-            $cost = Arr::get($usage, 'cost');
-
-            if ($cost !== null && Arr::get($usage, 'is_byok')) {
-                $cost += (float) Arr::get($usage, 'cost_details.upstream_inference_cost', 0);
-            }
+            $cost = $this->aiUsageCost($usage);
 
             DB::table('ai_usages')->insert([
                 'created_at'        => now(),

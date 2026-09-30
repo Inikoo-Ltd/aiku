@@ -30,6 +30,8 @@ class ChatGPT5Driver implements TranslationDriver
 
     private array $config;
 
+    public ?array $lastUsage = null;
+
     private Encoder $encoder;
 
     public function __construct(array $config)
@@ -170,6 +172,25 @@ EOL
         return $indexed;
     }
 
+    /**
+     * Through OpenRouter a rate limited or failing model hands the request to the next one in
+     * the list, so a busy provider costs a slower translation rather than English text in a shop.
+     * Straight to OpenAI only an OpenAI model can answer, so the first one in the list is sent.
+     */
+    public function modelParameters(): array
+    {
+        $models = array_values(array_unique(array_map(
+            $this->aiModel(...),
+            [$this->config['model'] ?? 'gpt-5-nano', ...($this->config['fallback_models'] ?? [])]
+        )));
+
+        if (!$this->usesOpenRouter()) {
+            return ['model' => collect($models)->first(fn (string $model) => !str_contains($model, '/'), $models[0])];
+        }
+
+        return count($models) > 1 ? ['models' => $models] : ['model' => $models[0]];
+    }
+
     protected function sendTranslationRequest(array $texts, string $sourceLang, string $targetLang): array
     {
         $prompt = $this->buildPrompt($texts, $sourceLang, $targetLang);
@@ -177,9 +198,9 @@ EOL
         $response = $this->aiRequest($this->config['api_key'] ?? null)
             ->timeout($this->config['http_timeout'] ?? 30)
             ->post('chat/completions', [
-                'model' => $this->aiModel($this->config['model'] ?? 'gpt-5-nano'),
+                ...$this->modelParameters(),
                 'messages' => $prompt,
-                'temperature' => 1,
+                'temperature' => $this->config['temperature'] ?? 1,
                 'max_completion_tokens' => $this->config['max_tokens'] ?? 1000,
                 'response_format' => ['type' => 'json_object'],
             ]);
@@ -196,6 +217,7 @@ EOL
         }
 
         $json = $response->json();
+        $this->lastUsage = is_array($json) ? Arr::get($json, 'usage') : null;
         $content = is_array($json) ? Arr::get($json, 'choices.0.message.content', '') : '';
 
         // Multi-line source strings come back with the newline written raw inside the JSON
@@ -206,6 +228,10 @@ EOL
         // bytes below 0x20 and UTF-8 continuation bytes are all >= 0x80, so byte matching
         // cannot damage the Devanagari or Han text around them.
         $content = preg_replace('/[\x00-\x1F]+/', ' ', $content) ?? $content;
+
+        if (! json_validate($content) && preg_match('/\{.*\}/s', $content, $jsonObject)) {
+            $content = $jsonObject[0];
+        }
 
         if (! json_validate($content)) {
             throw new Exception('Invalid JSON returned by ChatGPT: '.json_last_error_msg());

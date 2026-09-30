@@ -95,6 +95,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'un_numbers'              => $this->getUnNumbersSubquery(),
                 'pickings'                => $this->getPickingsSubquery(),
                 'is_returned_to_location' => $this->getIsReturnedToLocationSubquery(),
+                'indivisible_set'         => $this->getIndivisibleSetSubquery(),
             ])
             ->allowedSorts($this->getDeliveryNoteItemBaseSorts())
             ->allowedFilters([$globalSearch])

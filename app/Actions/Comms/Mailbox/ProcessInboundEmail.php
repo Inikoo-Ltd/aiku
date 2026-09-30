@@ -157,7 +157,13 @@ class ProcessInboundEmail
             return null;
         }
 
-        if ($this->isOneOfOurs($from['address'])) {
+        $isColleague = $this->isColleague($from['address']);
+
+        // A colleague answering inside a customer's thread is not the customer writing back: the
+        // reply would reopen the conversation and turn our answers towards the colleague.
+        if (($this->isOneOfOurs($from['address']) && ! $isColleague)
+            || ($isColleague && self::isColleagueCircular($raw, $mailboxAddress, $subject))
+            || ($isColleague && $this->findSessionByThread($shop, $threadId)?->is_colleague === false)) {
             $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
@@ -220,7 +226,7 @@ class ProcessInboundEmail
 
         $session = $existing
             ? $this->reuseSession($existing, $from, $isAutoReply)
-            : $this->createSession($shop, $webUser, $threadId, $subject, $from);
+            : $this->createSession($shop, $webUser, $threadId, $subject, $from, $isColleague);
 
         $message = SendChatMessage::run($session, [
             'message_text' => $body,
@@ -286,10 +292,9 @@ class ProcessInboundEmail
             ClassifyChatSessionNoise::dispatch($session);
         }
 
-        SendOutOfHoursReply::dispatch($session, $message);
-        FlagUrgentChatRequest::dispatch($session);
-
         if (! $isAutoReply) {
+            SendOutOfHoursReply::dispatch($session, $message);
+            FlagUrgentChatRequest::dispatch($session);
             SummarizeLongEmail::dispatch($message);
         }
 
@@ -544,12 +549,47 @@ class ProcessInboundEmail
      * is on: neither is a customer waiting for an answer, so they never open a conversation. Matched
      * on the address rather than the domain, since customers do buy from us on our own domains.
      *
-     * The accounts staff order on count here, with the web users under them. A colleague writing
-     * from their own address does not: that is somebody asking customer service for something.
+     * The accounts staff order on count here, with the web users under them. Staff mostly order
+     * on their work address, so what they write in person is let through by isColleagueCircular
+     * to the Colleagues folder.
      */
     private function isOneOfOurs(?string $address): bool
     {
         return $address !== null && isset(self::ourOwnAddresses()[strtolower($address)]);
+    }
+
+    private function isColleague(?string $address): bool
+    {
+        return $address !== null && (self::ourOwnAddresses()[strtolower($address)] ?? null) === ChatIgnoreReasonEnum::NOT_FOR_US;
+    }
+
+    /**
+     * What colleagues send to the shop mailboxes is mostly circulars: stock news to every shop,
+     * newsletters, lists, notifications. Only mail written to this mailbox, and to no other of
+     * ours, is somebody asking customer service for something.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    public static function isColleagueCircular(array $raw, ?string $mailboxAddress, ?string $subject): bool
+    {
+        if (GmailMessageParser::header($raw, 'List-Id')
+            || GmailMessageParser::header($raw, 'List-Unsubscribe')
+            || strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))) === 'list'
+            || self::isAutoReply($raw)
+            || self::isAutomatedMail(GmailMessageParser::fromAddress($raw)['address'], $subject)) {
+            return true;
+        }
+
+        $recipients = collect([...GmailMessageParser::addresses($raw, 'To'), ...GmailMessageParser::addresses($raw, 'Cc')])
+            ->map(fn (array $address) => strtolower($address['address']))
+            ->unique();
+
+        $ourMailboxes = $recipients->filter(fn (string $address) => (self::ourOwnAddresses()[$address] ?? null) === ChatIgnoreReasonEnum::MARKETING
+            || ($mailboxAddress && $address === strtolower($mailboxAddress)));
+
+        return ! $mailboxAddress
+            || ! $recipients->contains(strtolower($mailboxAddress))
+            || $ourMailboxes->count() > 1;
     }
 
     /**
@@ -721,7 +761,7 @@ class ProcessInboundEmail
         return data_get($group?->settings, 'chat.carrier_domains') ?? config('chat.carrier_domains', []);
     }
 
-    private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
+    private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from, bool $isColleague): ChatSession
     {
         $session = StoreChatSession::run([
             'shop_id'             => $shop->id,
@@ -740,7 +780,8 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
-            'is_carrier' => !$webUser && self::isCarrierAddress($from['address'], $shop->group),
+            'is_carrier'   => !$webUser && self::isCarrierAddress($from['address'], $shop->group),
+            'is_colleague' => $isColleague,
         ]);
 
         return $session;

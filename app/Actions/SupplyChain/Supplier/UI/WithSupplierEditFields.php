@@ -83,7 +83,8 @@ trait WithSupplierEditFields
                         'value'       => $supplier->currency_id,
                         'searchable'  => true,
                         'required'    => true,
-                        'mode'        => 'single'
+                        'mode'        => 'single',
+                        'saveConfirmation' => $this->supplierCurrencyChangeConfirmation($supplier),
                     ],
                     'default_product_country_origin' => [
                         'type'        => 'select',
@@ -201,6 +202,35 @@ trait WithSupplierEditFields
                     ],
                 ] : []),
             ]
+        ];
+    }
+
+    protected function supplierCurrencyChangeConfirmation(Supplier $supplier): ?array
+    {
+        $numberProducts = $supplier->supplierProducts()->count();
+        if ($numberProducts === 0) {
+            return null;
+        }
+
+        $currencyCode = $supplier->currency->code;
+
+        return [
+            'title'       => __('This supplier has :count products', ['count' => $numberProducts]),
+            'description' => __('Their costs are saved in :currency. What should happen to them in the new currency?', ['currency' => $currencyCode]),
+            'yesLabel'    => __('Change currency'),
+            'choiceField' => 'products_currency',
+            'choices'     => [
+                [
+                    'value'       => 'relabel',
+                    'label'       => __('Keep the numbers, they were already in the new currency'),
+                    'description' => __('Use this when :currency was a mistake: a cost of 100 stays 100, only the currency changes.', ['currency' => $currencyCode]),
+                ],
+                [
+                    'value'       => 'convert',
+                    'label'       => __("Convert the costs at today's exchange rate"),
+                    'description' => __('Use this when the supplier really changed currency: every cost is recalculated from :currency.', ['currency' => $currencyCode]),
+                ],
+            ],
         ];
     }
 }

@@ -69,7 +69,7 @@ class CloseChatAfterThanks
         if ($thanks->is_read) {
             $closingAt = now()->addMinutes(UpdateShopChatClosing::minutes($chatSession->shop));
 
-            $chatSession->update(['metadata' => [...($chatSession->metadata ?? []), self::PENDING_KEY => ['message_id' => $thanks->id, 'at' => $closingAt->toISOString()]]]);
+            SetChatSessionMetadata::run($chatSession, [self::PENDING_KEY => ['message_id' => $thanks->id, 'at' => $closingAt->toISOString()]]);
             BroadcastChatClosingAfterThanks::dispatch($chatSession, $closingAt->toISOString());
             static::dispatch($chatSession, $thanks->id, true)->delay($closingAt);
 
@@ -87,14 +87,12 @@ class CloseChatAfterThanks
     public static function cancel(ChatSession|MetaChatSession $chatSession): void
     {
         $chatSession->refresh();
-        $metadata = $chatSession->metadata ?? [];
 
-        if (!array_key_exists(self::PENDING_KEY, $metadata)) {
+        if (!array_key_exists(self::PENDING_KEY, $chatSession->metadata ?? [])) {
             return;
         }
 
-        unset($metadata[self::PENDING_KEY]);
-        $chatSession->update(['metadata' => $metadata]);
+        SetChatSessionMetadata::run($chatSession, [self::PENDING_KEY => null]);
         BroadcastChatClosingAfterThanks::dispatch($chatSession, null);
     }
 

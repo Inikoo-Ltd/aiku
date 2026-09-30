@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * One customer message as Jev's cascade read it: which area it fell in, what staff were shown
@@ -39,6 +40,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $replied_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read ChatSession|null $chatSession
+ * @property-read MetaChatSession|null $metaChatSession
  */
 class ChatTurnReading extends Model
 {
@@ -51,4 +54,14 @@ class ChatTurnReading extends Model
         'used_at'    => 'datetime',
         'replied_at' => 'datetime',
     ];
+
+    public function chatSession(): BelongsTo
+    {
+        return $this->belongsTo(ChatSession::class);
+    }
+
+    public function metaChatSession(): BelongsTo
+    {
+        return $this->belongsTo(MetaChatSession::class);
+    }
 }

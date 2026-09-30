@@ -13,6 +13,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\StockDelivery;
@@ -69,7 +70,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
 
             $unitQuantity     = (float) $deliveryNoteItem->quantity_required * (float) ($deliveryNoteItem->orgStock?->packed_in ?: 1);
             $transactionUnits = (float) $unitsRequiredByTransaction->get($deliveryNoteItem->transaction_id, 0);
-            $netAmount        = $transactionUnits > 0
+            $netAmount        = $transactionUnits > 0 && $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT
                 ? round((float) $deliveryNoteItem->transaction?->net_amount * (float) $deliveryNoteItem->quantity_required / $transactionUnits, 2)
                 : 0;
 
@@ -92,7 +93,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
     public function resolveOrgPartner(DeliveryNote $deliveryNote): ?OrgPartner
     {
         $order = $deliveryNote->orders()->first();
-        if (!$order || $order->salesChannel?->code !== 'intercompany') {
+        if (!$order || $order->source_id || $deliveryNote->source_id) {
             return null;
         }
 

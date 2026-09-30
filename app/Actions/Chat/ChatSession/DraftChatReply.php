@@ -9,7 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Helpers\AI\AskToAi;
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -48,6 +48,12 @@ class DraftChatReply implements ShouldBeUnique
      */
     private const array KNOWLEDGE_ASKS = ['returns_policy', 'shipping_cost', 'delivery_time', 'ship_to_country', 'minimum_order', 'payment_methods', 'vat', 'how_to_order', 'platforms', 'discount_missing'];
 
+    /**
+     * A quote shorter than this, links left out, matches too much to prove anything: a fact
+     * that is only a page's link, or a common phrase found on any page.
+     */
+    private const int MIN_QUOTE = 30;
+
     private const array DRAFTED_TOPICS = [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY, ChatTopicEnum::PRODUCT_QUERY, ChatTopicEnum::DROPSHIPPING_INTEGRATION, ChatTopicEnum::OTHER];
 
     public int $jobTimeout = 120;
@@ -75,7 +81,7 @@ class DraftChatReply implements ShouldBeUnique
         $text    = GetChatClaimDetails::run($chatSession, $since)['text'];
         $trigger = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::GUEST, ChatSenderTypeEnum::USER])->latest('id')->first();
 
-        if (mb_strlen($text) < 10 || !$trigger) {
+        if (mb_strlen($text) < 10 || !$trigger || data_get($trigger->metadata, 'auto_reply')) {
             return null;
         }
 
@@ -128,7 +134,7 @@ class DraftChatReply implements ShouldBeUnique
 
         if (!$answer
             || !self::isGrounded($answer['topic'], $answer['reply'], $facts)
-            || DetectLanguageWithAI::run($answer['reply'], $language)?->id !== $language->id
+            || DetectLanguageWithJev::run($answer['reply'], [$language])?->id !== $language->id
             || !$this->survivesReview($text, $weSaid, $facts, $answer['reply'])) {
             return null;
         }
@@ -205,14 +211,14 @@ class DraftChatReply implements ShouldBeUnique
         $source   = collect($pages)->first(fn (array $page) => str_contains(GetShopPageText::normalised($page['text']), GetShopPageText::normalised((string) ($answer['quote'] ?? ''))));
         $inFacts  = $answer && collect($known)->contains(fn (string $fact) => str_contains(GetShopPageText::normalised($fact), GetShopPageText::normalised($answer['quote'])));
 
-        if (!$answer || mb_strlen($answer['quote']) < 15 || (!$source && !$inFacts)) {
+        if (!$answer || mb_strlen(trim((string) preg_replace('~https?://\S+~u', '', $answer['quote']))) < self::MIN_QUOTE || (!$source && !$inFacts)) {
             return null;
         }
 
         $reply = !empty($source['url']) && !str_contains($answer['reply'], $source['url']) ? $answer['reply']."\n".$source['url'] : $answer['reply'];
         $facts = ['ask' => $ask, 'quote' => $answer['quote'], 'knowledge' => $source['id'] ?? null, 'source' => $source['url'] ?? 'facts', 'facts' => $known];
 
-        if (DetectLanguageWithAI::run($answer['reply'], $language)?->id !== $language->id
+        if (DetectLanguageWithJev::run($answer['reply'], [$language])?->id !== $language->id
             || !$this->survivesReview($text, $weSaid, ['page' => $source['text'] ?? null, 'facts' => $known], $reply)) {
             return null;
         }
@@ -322,7 +328,7 @@ class DraftChatReply implements ShouldBeUnique
     {
         $chatLanguage = $chatSession->language ?? $chatSession->shop?->language;
 
-        return $trigger->originalLanguage ?? DetectLanguageWithAI::run($text, $chatLanguage) ?? $chatLanguage;
+        return $trigger->originalLanguage ?? DetectLanguageWithJev::inConversation($text, $chatSession) ?? $chatLanguage;
     }
 
     /**

@@ -105,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/meta/sessions/{metaChatSession:ulid}/ai-draft', [HandleChatAiDraft::class, 'inMetaChatSession'])->name('meta.sessions.ai_draft.show');
     Route::post('/sessions/{chatSession:ulid}/suggestion-used', [HandleChatAiDraft::class, 'suggestionUsed'])->name('sessions.suggestion_used');
     Route::post('/meta/sessions/{metaChatSession:ulid}/suggestion-used', [HandleChatAiDraft::class, 'suggestionUsedInMetaChatSession'])->name('meta.sessions.suggestion_used');
+    Route::post('/sessions/{chatSession:ulid}/goodbye', [HandleChatAiDraft::class, 'goodbye'])->name('sessions.goodbye');
+    Route::post('/meta/sessions/{metaChatSession:ulid}/goodbye', [HandleChatAiDraft::class, 'goodbyeInMetaChatSession'])->name('meta.sessions.goodbye');
     Route::post('/sessions/{chatSession:ulid}/engineer-ticket', RaiseChatEngineerTicket::class)->name('sessions.engineer_ticket');
     Route::post('/meta/sessions/{metaChatSession:ulid}/engineer-ticket', [RaiseChatEngineerTicket::class, 'inMetaChatSession'])->name('meta.sessions.engineer_ticket');
     Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');

@@ -60,7 +60,9 @@ class GetChatSessions
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'promised'        => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
+            'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
@@ -212,9 +214,10 @@ class GetChatSessions
             $query->where('is_rubbish', $isRubbishView);
         }
 
-        // Couriers are answered from their own folder and nowhere else.
+        // Couriers and colleagues are answered from their own folders and nowhere else.
         if (!$isTrashView) {
-            $query->where('is_carrier', !empty($filters['carrier']));
+            $query->where('is_carrier', !empty($filters['carrier']))
+                ->where('is_colleague', !empty($filters['colleague']));
         }
 
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
@@ -252,6 +255,10 @@ class GetChatSessions
         // (waiting/active/closed + my/team) and just restricts to highlighted sessions.
         if (!empty($filters['highlighted'])) {
             $query->where('is_highlighted', true);
+        }
+
+        if (!empty($filters['promised'])) {
+            GetChatReplyPromise::scopeWaiting($query);
         }
 
         if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {

@@ -15,6 +15,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
+use App\Actions\Chat\ChatSession\GetChatReplyPromise;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
@@ -51,6 +52,7 @@ class GetMetaChatSessions
             'pairs'          => ['sometimes', 'array'],
             'pairs.*'        => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'highlighted'    => ['sometimes', 'boolean'],
+            'promised'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'      => ['sometimes', 'boolean'],
             'trashed'        => ['sometimes', 'boolean'],
@@ -200,6 +202,10 @@ class GetMetaChatSessions
         // the highlighted threads.
         if (!empty($filters['highlighted'])) {
             $query->where('is_highlighted', true);
+        }
+
+        if (!empty($filters['promised'])) {
+            GetChatReplyPromise::scopeWaiting($query);
         }
 
         if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {

@@ -8,12 +8,17 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\SupplierResource;
+use App\Models\Helpers\Currency;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Rules\IUnique;
@@ -21,8 +26,10 @@ use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSupplier extends OrgAction
@@ -72,7 +79,12 @@ class UpdateSupplier extends OrgAction
             $supplier = SetSupplierAgent::run($supplier, Agent::find(Arr::pull($modelData, 'agent_id')));
         }
 
-        $modelData = $this->pullSupplierJsonColumns($modelData);
+        $modelData         = $this->pullSupplierJsonColumns($modelData);
+        $productsCurrency  = Arr::pull($modelData, 'products_currency');
+        $productsCostRate  = null;
+        if ($productsCurrency && Arr::has($modelData, 'currency_id') && (int) $modelData['currency_id'] !== $supplier->currency_id) {
+            $productsCostRate = $this->getProductsCostRate($supplier, Currency::find($modelData['currency_id']), $productsCurrency === 'convert');
+        }
 
         if (Arr::has($modelData, 'image')) {
             $image = Arr::pull($modelData, 'image');
@@ -100,7 +112,18 @@ class UpdateSupplier extends OrgAction
             );
         }
 
-        $supplier = $this->update($supplier, $modelData, ['data', 'settings']);
+        $supplier = DB::transaction(function () use ($supplier, $modelData, $productsCostRate) {
+            $supplier = $this->update($supplier, $modelData, ['data', 'settings']);
+            if ($productsCostRate !== null) {
+                $this->moveSupplierProductsToCurrency($supplier, $productsCostRate);
+            }
+
+            return $supplier;
+        });
+
+        if ($productsCostRate !== null) {
+            $this->hydrateSupplierProductsOrgStockCosts($supplier);
+        }
 
         if ($leavingContainer) {
             $supplier->update(['data' => Arr::except($supplier->data, self::CONTAINER_ONLY_FIELDS)]);
@@ -118,6 +141,41 @@ class UpdateSupplier extends OrgAction
         }
 
         return $supplier;
+    }
+
+    private function getProductsCostRate(Supplier $supplier, Currency $newCurrency, bool $convertCosts): float
+    {
+        if (!$convertCosts) {
+            return 1.0;
+        }
+
+        $rate = GetCurrencyExchange::run($supplier->currency, $newCurrency);
+        if (!$rate) {
+            throw ValidationException::withMessages([
+                'products_currency' => __('No exchange rate from :from to :to, the costs cannot be converted', ['from' => $supplier->currency->code, 'to' => $newCurrency->code]),
+            ]);
+        }
+
+        return $rate;
+    }
+
+    private function moveSupplierProductsToCurrency(Supplier $supplier, float $rate): void
+    {
+        foreach ($supplier->supplierProducts as $supplierProduct) {
+            $modelData = ['currency_id' => $supplier->currency_id];
+            if ($rate !== 1.0) {
+                $modelData['cost'] = round($supplierProduct->cost * $rate, 4);
+            }
+            UpdateSupplierProduct::run($supplierProduct, $modelData);
+        }
+    }
+
+    private function hydrateSupplierProductsOrgStockCosts(Supplier $supplier): void
+    {
+        $orgStocks = OrgStock::whereHas('orgSupplierProducts', fn ($query) => $query->whereIn('supplier_product_id', $supplier->supplierProducts()->select('id')))->get();
+        foreach ($orgStocks as $orgStock) {
+            OrgStockHydrateCurrentSupplierSkuCost::dispatch($orgStock);
+        }
     }
 
     public function rules(): array
@@ -146,7 +204,19 @@ class UpdateSupplier extends OrgAction
             'email'           => ['sometimes', 'nullable', 'email'],
             'phone'           => ['sometimes', 'nullable', new Phone()],
             'address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
-            'currency_id'     => ['sometimes', 'required', 'exists:currencies,id'],
+            'currency_id'     => [
+                'sometimes',
+                'required',
+                'exists:currencies,id',
+            ],
+            'products_currency' => [
+                Rule::requiredIf(fn () => $this->strict
+                    && $this->has('currency_id')
+                    && (int) $this->get('currency_id') !== $this->supplier->currency_id
+                    && $this->supplier->supplierProducts()->exists()),
+                'nullable',
+                Rule::in(['relabel', 'convert']),
+            ],
             'image'           => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'agent_id'        => [
                 'sometimes',

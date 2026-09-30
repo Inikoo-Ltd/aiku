@@ -67,7 +67,7 @@ class StoreFirstOrderBonus extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('First Order Bonus', $english, $shop->language, 'gpt-5-nano'),
+            Translate::run('First Order Bonus', $english, $shop->language, 'catalogue'),
             false
         );
 

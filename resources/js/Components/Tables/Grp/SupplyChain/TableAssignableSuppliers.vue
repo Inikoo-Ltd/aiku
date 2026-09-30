@@ -15,7 +15,7 @@ interface AssignableSupplier {
     location: object
     agent_code: string | null
     agent_name: string | null
-    organisations_losing_supplier: string | null
+    organisations_joining_agent: string | null
 }
 
 const props = defineProps<{
@@ -37,8 +37,8 @@ function confirmationDescription(supplier: AssignableSupplier): string {
             : ctrans("This free supplier will be bought through :agent.", { agent: props.agent.name }),
     ]
 
-    if (supplier.organisations_losing_supplier) {
-        lines.push(ctrans("These organisations don't trade with :agent and will stop buying from this supplier: :organisations.", { agent: props.agent.name, organisations: supplier.organisations_losing_supplier }))
+    if (supplier.organisations_joining_agent) {
+        lines.push(ctrans("These organisations don't trade with :agent yet. They will be set up with :agent and keep buying from this supplier through it: :organisations.", { agent: props.agent.name, organisations: supplier.organisations_joining_agent }))
     }
 
     return lines.join(" ")

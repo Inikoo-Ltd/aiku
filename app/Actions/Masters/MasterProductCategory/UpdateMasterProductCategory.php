@@ -203,35 +203,35 @@ class UpdateMasterProductCategory extends OrgAction
                 // Regardless, update is_x_reviewed to false when master is updated, to make it easier to track changes
                 if (Arr::has($changed, 'name')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'catalogue');
                     }
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_title')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'catalogue');
                     }
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'catalogue');
                     }
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_extra')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'catalogue');
                     }
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'category_comparison')) {
                     if ($followMaster) {
-                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'gpt-5-nano');
+                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'catalogue');
                         if (is_string($translatedCategoryComparison)) {
                             $translatedCategoryComparison = json_decode($translatedCategoryComparison, true);
                         }

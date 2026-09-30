@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -21,6 +22,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
 {
+    use WithDeliveryNotesChannel;
+
     public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -50,9 +53,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
             $query->where('delivery_note_items.has_waiting_crm', true);
         }
 
-        if ($shopType !== 'all') {
-            $query->where('shops.type', $shopType);
-        }
+        $this->whereDeliveryNotesChannel($query, $shopType);
 
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->distinct()

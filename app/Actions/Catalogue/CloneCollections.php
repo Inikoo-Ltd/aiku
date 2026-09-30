@@ -271,10 +271,10 @@ class CloneCollections
 
 
             $name = $collection->name;
-            $name = Translate::run($name, $originalLanguage, $english, 'gpt-5-nano');
+            $name = Translate::run($name, $originalLanguage, $english, 'catalogue');
 
             $description = $collection->description;
-            $description = Translate::run($description, $originalLanguage, $english, 'gpt-5-nano');
+            $description = Translate::run($description, $originalLanguage, $english, 'catalogue');
 
 
             $foundMasterCollection = StoreMasterCollection::make()->action(
@@ -346,8 +346,8 @@ class CloneCollections
 
         if (!$foundCollectionData) {
             $descriptionFields = [
-                'name'        => Translate::run($collection->name, $fromLanguage, $toLanguage, 'gpt-5-nano'),
-                'description' => Translate::run($collection->description, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'name'        => Translate::run($collection->name, $fromLanguage, $toLanguage, 'catalogue'),
+                'description' => Translate::run($collection->description, $fromLanguage, $toLanguage, 'catalogue'),
             ];
 
             $foundCollection = StoreCollection::make()->action(
@@ -365,11 +365,11 @@ class CloneCollections
             if ($foundCollection && !$doNotUpdate) {
                 $descriptionFields = [];
                 if ($foundCollection->name == '' && $collection->name) {
-                    $descriptionFields['name']             = Translate::run($collection->name, $fromLanguage, $toLanguage, 'gpt-5-nano');
+                    $descriptionFields['name']             = Translate::run($collection->name, $fromLanguage, $toLanguage, 'catalogue');
                     $descriptionFields['is_name_reviewed'] = false;
                 }
                 if ($foundCollection->description == '' && $collection->description) {
-                    $descriptionFields['description']             = Translate::run($collection->description, $fromLanguage, $toLanguage, 'gpt-5-nano');
+                    $descriptionFields['description']             = Translate::run($collection->description, $fromLanguage, $toLanguage, 'catalogue');
                     $descriptionFields['is_description_reviewed'] = false;
                 }
 

@@ -77,7 +77,7 @@ class VerifyChatImageMessage
      */
     protected function askIsImageAiGenerated(string $base64Image): array
     {
-        $chat = new OpenAIChat($this->aiLLPhantConfig('gpt-5', config('auto-translations.drivers.gpt-5-nano.api_key')));
+        $chat = new OpenAIChat($this->aiLLPhantConfig('gpt-5'));
 
         $chat->setSystemMessage(
             'You are an image forensics assistant. Analyse the given image and judge whether AI tooling ' .

@@ -43,14 +43,10 @@ class DetectLanguageWithAI extends OrgAction
         }
 
         try {
-            $driverName = config('auto-translations.default_driver_detect_language', 'gpt-5-nano');
-
-            $driverConfig = config("auto-translations.drivers.$driverName");
-
-            $apiKey = $this->aiApiKey($driverConfig['api_key'] ?? null);
+            $apiKey = $this->aiApiKey();
 
             if (empty($apiKey)) {
-                Log::error("DetectLanguageWithAI: Missing API Key for driver $driverName");
+                Log::error('DetectLanguageWithAI: Missing API Key');
 
                 return null;
             }

@@ -624,6 +624,7 @@ class ShowStockDelivery extends OrgAction
             'currency'                   => $stockDelivery->currency?->code,
             'currency_id'                => $stockDelivery->currency_id,
             'org_currency'               => $stockDelivery->organisation->currency->code,
+            'org_currency_id'            => $stockDelivery->organisation->currency_id,
             'org_exchange'               => $stockDelivery->org_exchange,
             'updateRoute'                => [
                 'name'       => 'grp.models.stock-delivery.update',

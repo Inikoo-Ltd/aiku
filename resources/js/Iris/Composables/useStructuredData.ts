@@ -30,6 +30,8 @@ type BuildStructuredDataOptions = {
 
 const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
 
+const MODEL_TYPES_WITH_INDEPENDENT_STRUCTURED_DATA = ["Product", "ProductCategory"]
+
 const normalizeWebBlocks = (webBlocks: GenerateProductsStructureOptions["webBlocks"]): any[] => {
     if (Array.isArray(webBlocks)) return webBlocks
     if (!webBlocks || typeof webBlocks !== "object") return []
@@ -476,9 +478,11 @@ export const buildStructuredData = ({
     // components (product-1 / product-2) via useProductStructuredData, and Department
     // page structured data in SubDepartmentsIris via useDepartmentStructuredData, so
     // each lives in its own <script> and stays separate from the rest of the page schema.
+    if (MODEL_TYPES_WITH_INDEPENDENT_STRUCTURED_DATA.includes(webpageData?.model_type ?? "")) {
+        return null
+    }
 
-    return null
-
+    return parseStructuredData(webpageData?.seo_data?.structured_data)
 }
 
 export const useStructuredData = () => {

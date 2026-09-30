@@ -91,6 +91,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ))
             ->addSelect([
                  'un_numbers' => $this->getUnNumbersSubquery(),
+                'indivisible_set' => $this->getIndivisibleSetSubquery(),
                 'location_org_stocks' => DB::table('location_org_stocks')
                     ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
                     ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')

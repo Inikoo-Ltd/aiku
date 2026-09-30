@@ -8,94 +8,38 @@
 
 use App\Actions\Helpers\Translations\ChatGPT5Driver;
 
+/*
+ * Chosen by translations:evaluate-models on real catalogue texts and chats in every shop
+ * language (30 Sep 2026). Set here, not in .env, so a server can not quietly run another model.
+ */
+$geminiCheckedBySonnet = [
+    'class'           => ChatGPT5Driver::class,
+    'model'           => 'google/gemini-3.1-flash-lite',
+    'temperature'     => 0.2,
+    'max_tokens'      => 16384,
+    'http_timeout'    => 60,
+    'fallback_models' => ['gpt-4o-mini'],
+    'quality_check'   => [
+        'min_score'    => 2.5,
+        'retry_driver' => 'sonnet',
+    ],
+];
+
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Language Files Path
-    |--------------------------------------------------------------------------
-    |
-    | The base path where your language files are stored. By default, it's
-    | the 'lang' directory. You can change this to match your application's
-    | structure.
-    |
-    */
-
-    'lang_path' => lang_path(),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Translation Driver
-    |--------------------------------------------------------------------------
-    |
-    | The default translation driver to use when none is specified. You can
-    | set this to any of the drivers defined in the 'drivers' array below.
-    |
-    */
-
-    'default_driver'                 => env('TRANSLATION_DEFAULT_DRIVER', 'gpt-4o-mini'),
-    'default_driver_detect_language' => env('DETECT_LANGUAGE_DEFAULT_DRIVER', 'gpt-5-nano'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Source Language Code
-    |--------------------------------------------------------------------------
-    |
-    | The default source language code of your application. This will be used
-    | as the source language for translations unless specified otherwise.
-    |
-    */
-
-    'source_language' => env('TRANSLATION_SOURCE_LANGUAGE', 'en'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Available Translation Drivers
-    |--------------------------------------------------------------------------
-    |
-    | Configure as many translation drivers as you wish. Each driver should
-    | have a unique name and its own configuration settings.
-    |
-    */
+    'lang_path'       => lang_path(),
+    'source_language' => 'en',
+    'default_driver'  => 'sonnet',
 
     'drivers' => [
-
-        'gpt-3.5-turbo' => [
-            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model'        => env('CHATGPT_MODEL', 'gpt-3.5-turbo'),
-            'temperature'  => (float)env('CHATGPT_TEMPERATURE', 0.7),
-            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 4096),
-            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 300),
+        'sonnet' => [
+            'class'           => ChatGPT5Driver::class,
+            'model'           => 'anthropic/claude-sonnet-5.5',
+            'temperature'     => 0.2,
+            'max_tokens'      => 16384,
+            'http_timeout'    => 60,
+            'fallback_models' => ['google/gemini-3.1-flash-lite', 'gpt-4o-mini'],
         ],
-
-        'google' => [
-            'api_key' => env('GOOGLE_API_KEY'),
-        ],
-
-        'deepl'      => [
-            'api_key' => env('DEEPL_API_KEY'),
-            'api_url' => env('DEEPL_API_URL', 'https://api-free.deepl.com/v2/translate'),
-        ],
-        'gpt-5-nano' => [
-            'class'        => ChatGPT5Driver::class,
-            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model'        => env('CHATGPT_MODEL', 'gpt-5-nano'),
-            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
-            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 740),
-        ],
-        'gpt-4o-mini' => [
-            'class'        => ChatGPT5Driver::class,
-            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model'        => env('CHATGPT_MODEL', 'gpt-4o-mini'),
-            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
-            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 500),
-        ],
-        'gpt-4o' => [
-            'class'        => ChatGPT5Driver::class,
-            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model'        => 'gpt-4o',
-            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
-            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 900),
-        ],
+        'catalogue' => $geminiCheckedBySonnet,
+        'email'     => $geminiCheckedBySonnet,
     ],
 ];
