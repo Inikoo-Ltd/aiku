@@ -294,3 +294,28 @@ it('maps the detector codes onto ours and falls back to the conversation languag
     expect(App\Actions\Helpers\Translations\DetectLanguageWithJev::run('Hola', [$spanish])->code)->toBe('es')
         ->and(App\Actions\Helpers\Translations\DetectLanguageWithJev::run('Hola'))->toBeNull();
 });
+
+class NulTranslationDriver implements TranslationDriver
+{
+    public function __construct(public array $config)
+    {
+    }
+
+    public function translate(array $texts, string $sourceLang, string $targetLang): array
+    {
+        return array_map(fn (string $text) => "Jab\0on $text", $texts);
+    }
+}
+
+it('strips NUL characters from fresh and cached translations', function () {
+    config()->set('auto-translations.drivers.nul', ['class' => NulTranslationDriver::class]);
+    $english = (new App\Models\Helpers\Language())->forceFill(['code' => 'en']);
+    $french  = (new App\Models\Helpers\Language())->forceFill(['code' => 'fr']);
+    $translate = App\Actions\Helpers\Translations\Translate::make();
+
+    expect($translate->handle('soap', $english, $french, 'nul'))->toBe('Jabon soap');
+
+    Illuminate\Support\Facades\Cache::put('translate:'.sha1('en|fr|hello'), "bon\0jour");
+
+    expect($translate->handle('hello', $english, $french, 'nul'))->toBe('bonjour');
+});

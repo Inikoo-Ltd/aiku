@@ -36,7 +36,7 @@ class Translate extends OrgAction
             $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
-                return $this->unescapeJsonEchoes($text, $cachedTranslation);
+                return $this->unescapeJsonEchoes($text, str_replace("\0", '', $cachedTranslation));
             }
 
             if (app()->environment('local') && !config('app.sandbox.translate')) {
@@ -74,7 +74,7 @@ class Translate extends OrgAction
 
         $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver);
 
-        return $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text));
+        return str_replace("\0", '', $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text)));
     }
 
     /**
