@@ -20,6 +20,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AddShopifyLocationToDeliveryProfiles;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Product\BulkUpdateShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
@@ -855,7 +856,8 @@ test('matching to a product sold as several variants links the variant that carr
         ->and(ShopifyFake::calls('InventoryActivate')[0]['variables']['inventoryItemId'])->toBe('gid://shopify/InventoryItem/8402')
         ->and($portfolio->platform_product_id)->toBe('gid://shopify/Product/7400')
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8402')
-        ->and($portfolio->sku)->toBe('CRBASK-05A')
+        ->and($portfolio->sku)->toBe('crbask-05a')
+        ->and($portfolio->platform_sku)->toBeNull()
         ->and($portfolio->isShopifyVariantAdopted())->toBeTrue()
         ->and($portfolio->errors_response)->toBeNull()
         ->and($portfolio->platform_status)->toBeTrue();
@@ -865,6 +867,49 @@ test('matching to a product sold as several variants links the variant that carr
         ['variantId' => 'gid://shopify/ProductVariant/8402', 'inventoryItemId' => 'gid://shopify/InventoryItem/8402', 'sku' => 'CRBASK-05A'],
     ];
     expect(BulkUpdateShopifyPortfolio::resolveVariant($portfolio, $this->product, $pushedVariants)['variantId'])->toBe('gid://shopify/ProductVariant/8402');
+});
+
+test('matching to a single-variant listing links the merchant variant whatever its sku, never replaces it, and stock, orders and fetch stock find it by that sku', function () {
+    Queue::fake();
+    $shopifyUser = shopifyVariantLinkingChannel($this, 'product-adopt-single');
+    $channel     = $shopifyUser->customerSalesChannel;
+    $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update(['sku' => 'our-sku', 'customer_price' => 12]);
+
+    ShopifyFake::fake([
+        'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/ProductVariant/8601', 'sku' => 'MERCHANT-1']],
+        ]]]]),
+        'ProductVariantAdopt'           => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8601']], 'userErrors' => []]]),
+        'GetVariantInventoryItem'       => ShopifyFake::graphql(['productVariant' => ['inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8601']]]),
+        'InventoryActivate'             => ShopifyFake::graphql(['inventoryActivate' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/6'], 'userErrors' => []]]),
+        'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8601', 'MERCHANT-1', '9.00')]),
+        'GET shop.json'                 => ['shop' => ['id' => 1]],
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7600', 'title' => 'Merchant Listing', 'status' => 'ACTIVE']]),
+        'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/ProductVariant/8601', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/6']]]],
+        ]]]]),
+    ]);
+
+    MatchPortfolioToCurrentShopifyProduct::run($portfolio->refresh(), ['shopify_product_id' => 'gid://shopify/Product/7600']);
+    $portfolio->refresh();
+
+    expect(ShopifyFake::calls('ProductVariantsCreate'))->toBeEmpty()
+        ->and(ShopifyFake::calls('ProductVariantAdopt')[0]['variables']['variants'][0])->toBe(['id' => 'gid://shopify/ProductVariant/8601', 'inventoryItem' => ['tracked' => true]])
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8601')
+        ->and($portfolio->sku)->toBe('our-sku')
+        ->and($portfolio->platform_sku)->toBe('MERCHANT-1')
+        ->and($portfolio->isShopifyVariantAdopted())->toBeTrue()
+        ->and($portfolio->platform_status)->toBeTrue();
+
+    $pushedVariants = [['variantId' => 'gid://shopify/ProductVariant/8601', 'inventoryItemId' => 'gid://shopify/InventoryItem/8601', 'sku' => 'MERCHANT-1']];
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($portfolio, $this->product, $pushedVariants, [$this->product->code, 'merchant-1'])['variantId'])->toBe('gid://shopify/ProductVariant/8601');
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, null, 'merchant-1', false)?->id)->toBe($portfolio->id)
+        ->and(CallbackFetchStock::make()->handle($shopifyUser))->toHaveKeys(['our-sku', 'MERCHANT-1']);
 });
 
 test('a linked variant whose stock could not be activated is not shown as connected because a sibling variant is', function () {
@@ -1073,7 +1118,7 @@ test('matching refuses to link, and creates nothing, when the variants of the pr
     'no variant carries it'                             => [['colour-red', 'colour-blue']],
 ]);
 
-test('the product picker says which existing variant a portfolio will link to, only for products sold as several variants', function () {
+test('the product picker says which existing variant a portfolio will link to, the only one of a single-variant product whatever its sku', function () {
     $shopifyUser = shopifyVariantLinkingChannel($this, 'product-picker-hint');
     $channel     = $shopifyUser->customerSalesChannel;
     $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
@@ -1092,7 +1137,7 @@ test('the product picker says which existing variant a portfolio will link to, o
 
     $products = GetShopifyProducts::make()->handle($channel, ['portfolio' => $portfolio->id])['products'];
 
-    expect(Arr::pluck($products, 'variant_to_link'))->toBe(['CRBASK-05A', null, null, null])
+    expect(Arr::pluck($products, 'variant_to_link'))->toBe(['CRBASK-05A', 'crbask-05a', null, null])
         ->and(GetShopifyProducts::make()->handle($channel, [])['products'][0])->not->toHaveKey('variant_to_link');
 });
 
@@ -1583,7 +1628,7 @@ test('repairing a channel re-points portfolios whose product is gone onto the on
         ->and(array_unique(array_column(ShopifyFake::$requests, 'operation')))->toBe(['auditProductVariants']);
 });
 
-test('reading a listing back never gives a portfolio the sku that is the code of another product of the shop', function () {
+test('reading a listing back keeps our sku and records a different listing sku in platform_sku', function () {
     Queue::fake();
     $shopifyUser   = shopifyProductChannel($this, 'product-borrowed-sku');
     $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
@@ -1593,11 +1638,18 @@ test('reading a listing back never gives a portfolio the sku that is the code of
     ShopifyFake::fake(['getProduct' => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', Str::upper($secondProduct->code))])]);
     SaveShopifyProductData::run($portfolio->refresh());
     expect($portfolio->refresh()->sku)->toBe('own-sku')
+        ->and($portfolio->platform_sku)->toBe(Str::upper($secondProduct->code))
         ->and(Arr::get($portfolio->data, 'shopify_product.id'))->toBe('gid://shopify/Product/7300');
 
     ShopifyFake::fake(['getProduct' => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', 'merchant-own-text')])]);
     SaveShopifyProductData::run($portfolio->refresh());
-    expect($portfolio->refresh()->sku)->toBe('merchant-own-text');
+    expect($portfolio->refresh()->sku)->toBe('own-sku')
+        ->and($portfolio->platform_sku)->toBe('merchant-own-text');
+
+    ShopifyFake::fake(['getProduct' => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', 'OWN-SKU')])]);
+    SaveShopifyProductData::run($portfolio->refresh());
+    expect($portfolio->refresh()->sku)->toBe('own-sku')
+        ->and($portfolio->platform_sku)->toBeNull();
 });
 
 test('an upload never creates a second product for a portfolio whose product is already in shopify, it only creates the variant', function () {

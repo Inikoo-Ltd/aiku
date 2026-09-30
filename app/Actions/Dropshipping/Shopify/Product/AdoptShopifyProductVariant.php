@@ -21,12 +21,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
 /**
- * A merchant who already sells our products as the variants of one Shopify product (one per colour
- * or design, each carrying our sku) needs the portfolio linked to that variant: creating another
- * variant, which is what matching does otherwise, would duplicate it (HELP-3180).
+ * Matching links the portfolio to the variant the merchant already has instead of creating ours
+ * (HELP-3180, INI-028 step 4): replacing it deleted the merchant's variant with its sku, price and
+ * barcode. On a product with several variants the one carrying our sku is taken; a product with a
+ * single variant is taken whatever its sku, and a sku that is not ours is kept in platform_sku.
  *
- * Only products with several variants are handled here, a product with a single variant keeps going
- * through StoreShopifyProductVariant. The merchant's price, sku and barcode are never written.
+ * The merchant's price, sku and barcode are never written. Only on channels with the
+ * link_existing_variants switch; the others still go through StoreShopifyProductVariant.
  */
 class AdoptShopifyProductVariant
 {
@@ -38,7 +39,7 @@ class AdoptShopifyProductVariant
     private const int MAX_VARIANT_PAGES = 10;
 
     /**
-     * @return array{0: bool, 1: string}|null null when the product has a single variant, which is not adopted
+     * @return array{0: bool, 1: string}|null null when the channel does not adopt variants
      */
     public function handle(Portfolio $portfolio, string $shopifyProductId): ?array
     {
@@ -55,11 +56,11 @@ class AdoptShopifyProductVariant
         try {
             $variants = $this->getVariants($shopifyUser, $shopifyProductId);
 
-            if (count($variants) < 2) {
-                return null;
+            if ($variants === []) {
+                return $this->fail($portfolio, 'This Shopify product is no longer in your store');
             }
 
-            $matchingVariants = self::variantsCarryingPortfolioSku($portfolio, $variants);
+            $matchingVariants = count($variants) === 1 ? $variants : self::variantsCarryingPortfolioSku($portfolio, $variants);
 
             if (empty($matchingVariants)) {
                 return $this->fail($portfolio, 'None of the variants of this Shopify product has the sku '.$portfolio->sku.'. Set that sku on the variant you want to link and try again');
@@ -84,8 +85,10 @@ class AdoptShopifyProductVariant
                 return $this->fail($portfolio, 'No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent');
             }
 
-            if (LinkShopifyPortfolio::variantHolder($portfolio->customerSalesChannel, $variant['id'], $portfolio)) {
-                return $this->fail($portfolio, 'The variant with the sku '.$portfolio->sku.' is already linked to another product in this channel');
+            $holder = LinkShopifyPortfolio::variantHolder($portfolio->customerSalesChannel, $variant['id'], $portfolio);
+
+            if ($holder) {
+                return $this->fail($portfolio, 'This Shopify variant is already linked to '.$holder->item_code.' in this channel');
             }
 
             $this->trackVariantStock($shopifyUser, $portfolio, $shopifyProductId, $variant['id']);
@@ -99,6 +102,7 @@ class AdoptShopifyProductVariant
 
         [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, $shopifyProductId, $variant['id'], [
             'platform_status' => false,
+            'platform_sku'    => self::variantsCarryingPortfolioSku($portfolio, [$variant]) === [] && $variant['sku'] !== '' ? $variant['sku'] : null,
             'errors_response' => null
         ]);
 

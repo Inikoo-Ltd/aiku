@@ -71,7 +71,8 @@ trait WithShopifyPortfolioMatching
             ->where('status', true)
             ->where(function ($query) use ($sku) {
                 $query->whereRaw('lower(sku) = ?', [$sku])
-                    ->orWhereRaw('lower(item_code) = ?', [$sku]);
+                    ->orWhereRaw('lower(item_code) = ?', [$sku])
+                    ->orWhereRaw('lower(platform_sku) = ?', [$sku]);
             })
             ->orderByRaw('(lower(item_code) = ?) desc nulls last', [$sku])
             ->orderBy('id')

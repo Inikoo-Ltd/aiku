@@ -188,6 +188,10 @@ class FixShopifyPortfolios
 
     private function linkToMatch(Portfolio $portfolio, string $shopifyProductId): void
     {
+        if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) !== null) {
+            return;
+        }
+
         $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
 
         if ($replacedVariantOwner !== null) {

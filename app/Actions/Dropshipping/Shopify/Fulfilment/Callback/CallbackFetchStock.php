@@ -54,25 +54,30 @@ class CallbackFetchStock extends OrgAction
                 ->get()
                 ->keyBy('id');
 
-            $stock = [];
+            $stock        = [];
+            $platformSkus = [];
             foreach (
                 Portfolio::where('customer_sales_channel_id', $channelId)
                     ->where('item_type', 'Product')
-                    ->get(['sku', 'item_id']) as $portfolio
+                    ->get(['sku', 'platform_sku', 'item_id']) as $portfolio
             ) {
-                if ($portfolio->sku === null) {
-                    continue;
-                }
-
                 $product = $products->get($portfolio->item_id);
                 if (!$product) {
                     continue;
                 }
 
-                $stock[$portfolio->sku] = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
+                $quantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
+
+                if ($portfolio->sku !== null) {
+                    $stock[$portfolio->sku] = $quantity;
+                }
+
+                if ($portfolio->platform_sku !== null) {
+                    $platformSkus[$portfolio->platform_sku] = $quantity;
+                }
             }
 
-            return $stock;
+            return $stock + $platformSkus;
         });
     }
 

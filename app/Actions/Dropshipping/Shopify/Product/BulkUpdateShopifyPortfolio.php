@@ -329,7 +329,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             return null;
         }
 
-        $ownSkus = array_filter([Str::lower((string)$product->code), Str::lower((string)$portfolio->sku)]);
+        $ownSkus = array_filter([Str::lower((string)$product->code), Str::lower((string)$portfolio->sku), Str::lower((string)$portfolio->platform_sku)]);
 
         foreach ($ownSkus as $ownSku) {
             foreach ($variants as $variant) {
