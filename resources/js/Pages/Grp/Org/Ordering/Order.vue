@@ -2308,6 +2308,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     note?.reference
                                 }}
                                 </Link>
+                                <a :href="route('grp.pdfs.packing-lists', { deliveryNote: note?.slug })" target="_blank" rel="noopener noreferrer"
+                                    class="text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Packing list')">
+                                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                                </a>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                                     {{ ctrans(note?.state_icon?.tooltip) }}
                                     <Icon :data="note?.state_icon" />

@@ -1635,6 +1635,73 @@ test('a delivery note going to a box packing list destination is packed only onc
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
 });
 
+test('packing list counts the products the customer ordered, not SKOs, and has no prices', function () {
+    [$deliveryNote, $item] = finalisedDeliveryNote($this);
+    $transaction           = $item->transaction;
+    $action                = \App\Actions\Dispatching\DeliveryNote\PdfPackingList::make();
+
+    expect($action->handle($deliveryNote)->getStatusCode())->toBe(200)
+        ->and($action->lines($deliveryNote->refresh())->first())->toBe([
+            'sko_code'     => $item->orgStock->code,
+            'product_code' => $transaction->historicAsset->code,
+            'description'  => $transaction->historicAsset->name,
+            'quantity'     => (float) round((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus),
+            'components'   => [],
+        ]);
+
+    $item->quantity_required = 0.1;
+    $item->quantity_packed   = 0.05;
+    $transaction->quantity_ordered = 2;
+    $transaction->quantity_bonus   = 0;
+
+    expect($action->line($item, 0.05)['quantity'])->toBe(1.0);
+
+    $html = view('deliveryNote.templates.pdf.packing-list', [
+        'deliveryNote'    => $deliveryNote,
+        'order'           => $deliveryNote->orders()->first(),
+        'lines'           => $action->lines($deliveryNote),
+        'boxes'           => collect(),
+        'numberBoxes'     => 0,
+        'deliveryAddress' => null,
+    ])->render();
+
+    expect($html)->toContain('SKO Code')->toContain('Product Code')->not->toContain('Price');
+});
+
+test('packing list shows a product made of several SKOs once, with its SKOs listed under it', function () {
+    $transaction = new \App\Models\Ordering\Transaction(['quantity_ordered' => 2, 'quantity_bonus' => 0]);
+    $transaction->id = 1;
+    $transaction->setRelation('historicAsset', new \App\Models\Catalogue\HistoricAsset(['code' => 'SET-01', 'name' => 'Gift set']));
+
+    $part = function (string $skoCode, float $required, float $packed) use ($transaction) {
+        $item = new \App\Models\Dispatching\DeliveryNoteItem(['quantity_required' => $required, 'quantity_packed' => $packed]);
+        $item->transaction_id = $transaction->id;
+        $item->setRelation('transaction', $transaction);
+        $item->setRelation('orgStock', new \App\Models\Inventory\OrgStock(['code' => $skoCode, 'name' => $skoCode.' name']));
+
+        return $item;
+    };
+
+    $deliveryNote = new \App\Models\Dispatching\DeliveryNote();
+    $deliveryNote->setRelation('deliveryNoteItems', collect([
+        $part('SOAP', 4, 4),
+        $part('BOMB', 0.125, 0.126),
+        $part('BOX', 2, 1),
+    ]));
+
+    expect(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::make()->lines($deliveryNote)->all())->toBe([[
+        'sko_code'     => '',
+        'product_code' => 'SET-01',
+        'description'  => 'Gift set',
+        'quantity'     => 1.0,
+        'components'   => [
+            ['sko_code' => 'SOAP', 'description' => 'SOAP name', 'quantity' => 4.0],
+            ['sko_code' => 'BOMB', 'description' => 'BOMB name', 'quantity' => 2.0],
+            ['sko_code' => 'BOX', 'description' => 'BOX name', 'quantity' => 1.0],
+        ],
+    ]]);
+});
+
 test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {
     [$deliveryNote, $item] = finalisedDeliveryNote($this);
     $order                 = $deliveryNote->orders()->first();

@@ -22,6 +22,7 @@ use App\Actions\Retina\Ecom\Orders\EcomPdfProformaInvoice;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Retina\Ecom\Orders\ShowRetinaEcomOrder;
 use App\Actions\Retina\Ecom\Orders\ShowRetinaEcomOrderReview;
+use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList;
 use App\Actions\Retina\Ecom\PreviouslyOrdered\UI\IndexRetinaEcomPreviouslyOrdered;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,8 @@ Route::prefix('orders')->name('orders.')->group(function () {
     Route::get('{order}/review', ShowRetinaEcomOrderReview::class)->name('review');
     Route::get('{order}/proforma-invoice', EcomPdfProformaInvoice::class)->name('proforma_invoice.download');
 });
+
+Route::get('packing-lists/{deliveryNote}/pdf', PdfRetinaDropshippingPackingList::class)->name('packing_lists.pdf');
 
 Route::prefix('interest')->as('interest.')->group(function () {
     Route::prefix('favourites')->as('favourites.')->group(function () {

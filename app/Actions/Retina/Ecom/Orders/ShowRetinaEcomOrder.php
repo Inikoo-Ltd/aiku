@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\DB;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Http\Resources\Ordering\RetinaOrderReviewListResource;
 use Illuminate\Support\Arr;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -299,10 +300,12 @@ class ShowRetinaEcomOrder extends RetinaAction
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
                 $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
-                    'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    'id'               => $deliveryNote->id,
+                    'slug'             => $deliveryNote->slug,
+                    'reference'        => $deliveryNote->reference,
+                    'state'            => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'has_packing_list' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED]),
+                    'shipments'        => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
         }

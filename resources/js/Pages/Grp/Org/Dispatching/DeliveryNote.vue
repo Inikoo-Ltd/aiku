@@ -934,21 +934,13 @@ const stopSocketListener = () => {
 					</ToggleSwitch>
 				</div>
 			</div>
-			<!-- Button: Download PDF -->
-			<!-- <div class="relative" v-if="route().params.deliveryNote">
-				<a	v-if="route().params.deliveryNote"
-					:href="
-						route('grp.pdfs.delivery-notes', {
-							deliveryNote: route().params.deliveryNote,
-						})
-					"
-					as="a"
-					target="_blank"
-					class="flex items-center"
-					v-tooltip="ctrans('Download PDF of this Delivery Note')">
-					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-				</a>
-			</div> -->
+			<a v-if="route().params.deliveryNote"
+				:href="route('grp.pdfs.packing-lists', { deliveryNote: route().params.deliveryNote })"
+				target="_blank"
+				rel="noopener noreferrer"
+				v-tooltip="ctrans('Download the packing list')">
+				<Button :label="ctrans('Packing list')" icon="fal fa-file-pdf" type="tertiary" />
+			</a>
 		</template>
 
 		<template #other>
