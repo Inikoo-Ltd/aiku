@@ -307,7 +307,7 @@ defineExpose({
                 </div>
           
 
-                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2 flex items-center gap-1.5">
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute left-2 right-2 bottom-2 flex items-center justify-end gap-1.5">
                     <NewAddToCartButton v-if="((product.stock && !product.is_coming_soon) || product.pre_order) && basketButton" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
@@ -318,7 +318,7 @@ defineExpose({
                             @toggle="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)" />
                         <button
                             @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            class="shrink-0 rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                             v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
                             <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
