@@ -188,6 +188,13 @@ use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Actions\Catalogue\Shop\CalculateShopOrderAlertSizes;
+use App\Actions\Ordering\Order\SendNewOrderAlert;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
+use App\Enums\Ordering\Order\OrderAlertTypeEnum;
+use App\Events\BroadcastNewOrderAlert;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\Event;
 use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -5567,4 +5574,136 @@ describe('pre-orders (HELP-3432)', function () {
         expect($second['success'])->toBeFalse()
             ->and((float) $order->fresh()->payment_amount)->toBe((float) $order->fresh()->total_amount);
     });
+});
+
+test('submitting an ecom order broadcasts a new order alert sized against the shop', function () {
+    Event::fake([BroadcastNewOrderAlert::class]);
+    $this->shop->update(['settings' => array_merge($this->shop->settings, ['order_alerts' => ['small_below' => 1000000, 'big_above' => 2000000]])]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    Event::assertDispatched(BroadcastNewOrderAlert::class, fn (BroadcastNewOrderAlert $event) => $event->shopId === $this->shop->id
+        && $event->alert['types'] === [OrderAlertTypeEnum::ECOM_SMALL->value]
+        && $event->alert['reference'] === $order->reference
+        && str_ends_with($event->alert['url'], '/orders/'.$order->slug)
+        && $event->broadcastOn()[0]->name === 'private-grp.shop.'.$this->shop->id.'.new-orders');
+
+    $this->shop->update(['settings' => Arr::except($this->shop->fresh()->settings, 'order_alerts')]);
+});
+
+test('ecom order size follows the nightly limits, and is normal while a shop has too few orders', function () {
+    $order = new Order(['net_amount' => 500]);
+    $order->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B, 'settings' => ['order_alerts' => ['small_below' => 50, 'big_above' => 400]]]));
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_BIG);
+
+    $order->net_amount = 20;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_SMALL);
+
+    $order->net_amount = 100;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_NORMAL);
+
+    $order->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B, 'settings' => ['order_alerts' => ['orders' => 3]]]));
+    $order->net_amount = 99999;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_NORMAL);
+
+    CalculateShopOrderAlertSizes::run($this->shop);
+    $sizes = Arr::get($this->shop->fresh()->settings, 'order_alerts');
+    expect(isset($sizes['big_above'], $sizes['small_below']))->toBe($sizes['orders'] >= CalculateShopOrderAlertSizes::MIN_ORDERS);
+    $this->shop->update(['settings' => Arr::except($this->shop->fresh()->settings, 'order_alerts')]);
+});
+
+test('dropshipping rings only for an unpaid order or the first order of a connected store', function () {
+    $dropshippingShop = new Shop(['type' => ShopTypeEnum::DROPSHIPPING]);
+
+    $firstUnpaid = new Order(['state' => OrderStateEnum::SUBMITTED]);
+    $firstUnpaid->customer_sales_channel_id = PHP_INT_MAX;
+    $firstUnpaid->setRelation('shop', $dropshippingShop);
+    $firstUnpaid->setRelation('platform', new Platform(['type' => PlatformTypeEnum::SHOPIFY]));
+
+    expect(SendNewOrderAlert::make()->alertTypes($firstUnpaid))->toBe([OrderAlertTypeEnum::DROPSHIPPING_FIRST_CHANNEL_ORDER, OrderAlertTypeEnum::DROPSHIPPING_UNPAID]);
+
+    $paidManual = new Order(['state' => OrderStateEnum::IN_WAREHOUSE, 'pay_status' => OrderPayStatusEnum::PAID]);
+    $paidManual->customer_sales_channel_id = PHP_INT_MAX;
+    $paidManual->setRelation('shop', $dropshippingShop);
+    $paidManual->setRelation('platform', new Platform(['type' => PlatformTypeEnum::MANUAL]));
+
+    expect(SendNewOrderAlert::make()->alertTypes($paidManual))->toBe([]);
+});
+
+test('only users who can see the shop orders may listen to its new order alerts', function () {
+    $nobody = new User(['group_id' => $this->group->id]);
+
+    expect(GetUserOrderAlerts::make()->canHear($this->user, $this->shop->id))->toBeTrue()
+        ->and(GetUserOrderAlerts::make()->canHear($nobody, $this->shop->id))->toBeFalse()
+        ->and(GetUserOrderAlerts::run($nobody)['shops'])->toBe([]);
+});
+
+test('order alert settings are saved on the user and reach the layout', function () {
+    $types = [
+        'ecom_small'  => ['enabled' => false, 'sound' => 'bell'],
+        'ecom_normal' => ['enabled' => true, 'sound' => 'coins'],
+        'ecom_big'    => ['enabled' => true, 'sound' => 'oh_yeah', 'muted' => true],
+    ];
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => [
+            'shops' => [$this->shop->id, 999999],
+            'types' => $types,
+            'popup' => ['show' => true],
+        ]])
+        ->assertSuccessful();
+
+    $user = $this->user->fresh();
+
+    expect(Arr::get($user->settings, 'order_alerts.shops'))->toBe([$this->shop->id])
+        ->and(Arr::get($user->settings, 'order_alerts.types.ecom_big'))->toEqual(['enabled' => true, 'sound' => 'oh_yeah', 'muted' => true])
+        ->and(GetUserOrderAlerts::run($user)['sounds']['ecom_big'])->toBe('silent')
+        ->and(Arr::get($user->settings, 'order_alerts.types.dropshipping_unpaid.enabled'))->toBeFalse()
+        ->and(array_keys(GetUserOrderAlerts::run($user)['shops']))->toBe([$this->shop->id])
+        ->and(GetUserOrderAlerts::run($user)['shops'][$this->shop->id])->toEqualCanonicalizing(['ecom_normal', 'ecom_big'])
+        ->and(GetUserOrderAlerts::run($user)['popup'])->toEqual(['show' => true])
+        ->and(GetUserOrderAlerts::run($user)['sounds']['ecom_normal'])->toBe('coins');
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => ['types' => ['ecom_big' => ['sound' => 'air-horn']], 'popup' => ['show' => 'maybe']]])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['order_alerts.types.ecom_big.sound', 'order_alerts.popup.show']);
+
+    $user->update(['settings' => Arr::except($user->settings, 'order_alerts')]);
+    $this->shop->update(['state' => $shopState]);
+});
+
+test('staff entered and partner orders do not ring, and a failing alert never stops the order', function () {
+    Event::fake([BroadcastNewOrderAlert::class]);
+
+    $phoneOrder = new Order();
+    $phoneOrder->setRelation('salesChannel', new SalesChannel(['type' => SalesChannelTypeEnum::PHONE]));
+    SendNewOrderAlert::run($phoneOrder);
+
+    $partnerOrder = new Order();
+    $partnerOrder->setRelation('salesChannel', new SalesChannel(['type' => SalesChannelTypeEnum::OTHER, 'code' => 'intercompany']));
+    SendNewOrderAlert::run($partnerOrder);
+
+    $brokenOrder = new Order(['net_amount' => 10]);
+    $brokenOrder->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B]));
+    $brokenOrder->setRelation('currency', null);
+    SendNewOrderAlert::run($brokenOrder);
+
+    Event::assertNotDispatched(BroadcastNewOrderAlert::class);
+});
+
+test('role defaults ring for big orders on the admin shops and never for small ones', function () {
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $defaults = GetUserOrderAlerts::make()->defaultShopTypes($this->user);
+
+    $this->shop->update(['state' => $shopState]);
+
+    expect($defaults)->toHaveKey($this->shop->id)
+        ->and($defaults[$this->shop->id])->toContain(OrderAlertTypeEnum::ECOM_BIG->value)
+        ->and($defaults[$this->shop->id])->not->toContain(OrderAlertTypeEnum::ECOM_SMALL->value);
 });

@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
@@ -29,7 +29,7 @@ import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { startWorkAlerts } from "@/Composables/useNotificationSound"
+import { startOrderAlerts, startWorkAlerts } from "@/Composables/useNotificationSound"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
@@ -158,6 +158,7 @@ provide("isEmbedded", isEmbedded)
 onMounted(() => {
     if (!isEmbedded) {
         startWorkAlerts(useStaffMessaging())
+        startOrderAlerts()
     }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
@@ -410,6 +411,30 @@ const safeTheme = computed(() => {
         :pauseOnHover="true">
         <template #body="props">
             <Notification :notification="props" />
+        </template>
+    </notifications>
+
+    <notifications
+        group="order-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="flex items-center justify-between gap-x-2 text-xs text-gray-500">
+                    <span>{{ item.title }}</span>
+                    <span v-if="item.data.is_unpaid" class="rounded bg-amber-100 px-1.5 text-amber-800">{{ ctrans("Unpaid") }}</span>
+                </div>
+                <div class="mt-1 truncate text-sm font-semibold text-gray-900">{{ item.data.reference }} · {{ item.data.customer }}</div>
+                <div class="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{{ item.data.money }}</div>
+                <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
+            </Link>
         </template>
     </notifications>
     </template>

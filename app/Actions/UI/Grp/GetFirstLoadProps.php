@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireSkippedBadgeData;
@@ -134,6 +135,7 @@ class GetFirstLoadProps
             'environment'      => app()->environment(),
             'help_portal_url'  => config('app.help_portal_url'),
             'avatar_thumbnail' => $image,
+            'order_alerts'     => $user ? GetUserOrderAlerts::run($user) : null,
         ];
     }
 

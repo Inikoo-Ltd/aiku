@@ -269,6 +269,10 @@ export const initialiseApp = () => {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
 
+        if (usePage().props.order_alerts !== undefined) {
+            layout.order_alerts = usePage().props.order_alerts as any
+        }
+
         if (usePage().props.ticket_badges !== undefined) {
             layout.ticket_badges = usePage().props.ticket_badges as any
         }

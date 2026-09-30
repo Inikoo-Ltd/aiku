@@ -1,4 +1,6 @@
 import axios from "axios"
+import { router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
 import { computed, ref, watch } from "vue"
 import { openChatPane } from "@/Composables/useChatPane"
 import { useLayoutStore } from "@/Stores/layout"
@@ -206,6 +208,7 @@ type Alert = {
 	url?: string | null
 	onOpen?: () => void
 	sticky?: boolean
+	play?: () => Promise<boolean>
 }
 
 const ALERTS_KEY = "aiku-alerts"
@@ -225,7 +228,9 @@ const withTimeout = <T>(promise: Promise<T>, ms: number) =>
 
 type Tone = [frequency: number, ms: number, endFrequency?: number]
 
-const playTones = async (tones: Tone[], volume: number, type: OscillatorType, ringFor = 1): Promise<boolean> => {
+type ToneShape = { gapMs?: number, hold?: number }
+
+const playTones = async (tones: Tone[], volume: number, type: OscillatorType, ringFor = 1, shape: ToneShape = {}): Promise<boolean> => {
 	const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext
 	if (!Ctx) return false
 	audioCtx ??= new Ctx()
@@ -242,19 +247,25 @@ const playTones = async (tones: Tone[], volume: number, type: OscillatorType, ri
 		oscillator.type = type
 		oscillator.frequency.setValueAtTime(frequency, startAt)
 		if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, startAt + ms / 1000)
-		gain.gain.setValueAtTime(volume, startAt)
+		if (shape.hold) {
+			gain.gain.setValueAtTime(0.0001, startAt)
+			gain.gain.linearRampToValueAtTime(volume, startAt + 0.005)
+			gain.gain.setValueAtTime(volume, startAt + (ms * shape.hold) / 1000)
+		} else {
+			gain.gain.setValueAtTime(volume, startAt)
+		}
 		gain.gain.exponentialRampToValueAtTime(0.0001, endAt)
 		oscillator.connect(gain).connect(ctx.destination)
 		oscillator.start(startAt)
 		oscillator.stop(endAt)
-		startAt += (ms + 70) / 1000
+		startAt += (ms + (shape.gapMs ?? 70)) / 1000
 	}
 	return true
 }
 
-const playFile = async (volume: number): Promise<boolean> => {
+const playFile = async (volume: number, fileName = "notification.mp3"): Promise<boolean> => {
 	try {
-		const audio = new Audio(buildStorageUrl("sound/notification.mp3", useLayoutStore().appUrl))
+		const audio = new Audio(buildStorageUrl(`sound/${fileName}`, useLayoutStore().appUrl))
 		audio.volume = volume
 		await withTimeout(audio.play(), 2000)
 		return true
@@ -263,11 +274,14 @@ const playFile = async (volume: number): Promise<boolean> => {
 	}
 }
 
-const speak = (text: string) => new Promise<boolean>((resolve) => {
+const speak = (text: string, voice: { lang?: string, pitch?: number, rate?: number, volume?: number } = {}) => new Promise<boolean>((resolve) => {
 	const synth = window.speechSynthesis
 	if (!synth || !text) return resolve(false)
 	const utterance = new SpeechSynthesisUtterance(text)
-	utterance.lang = document.documentElement.lang || navigator.language
+	utterance.lang = voice.lang ?? (document.documentElement.lang || navigator.language)
+	utterance.pitch = voice.pitch ?? 1
+	utterance.rate = voice.rate ?? 1
+	utterance.volume = voice.volume ?? 1
 	utterance.onstart = () => resolve(true)
 	utterance.onerror = () => resolve(false)
 	synth.speak(utterance)
@@ -291,6 +305,9 @@ export const playChosenSound = (sound: AlertSound, spoken = ""): Promise<boolean
 }
 
 const playAlertSound = async (alert: Alert): Promise<boolean> => {
+	if (alert.play) {
+		return alert.play()
+	}
 	if (alert.escalation === "alarm") {
 		return playTones([[880, 220], [620, 220], [880, 220], [620, 220], [880, 220], [620, 220]], 0.25, "square")
 	}
@@ -525,4 +542,138 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		})
 	}
 	setInterval(escalateUnansweredChat, 5000)
+}
+
+export const ORDER_ALERT_SOUNDS = ["till", "yeehaw", "bell", "coins", "funny", "oh_yeah"] as const
+export type OrderAlertSound = typeof ORDER_ALERT_SOUNDS[number] | "silent"
+export type OrderAlertPunch = 1 | 2 | 3
+
+export const orderAlertSoundLabels = (): Record<OrderAlertSound, string> => ({
+	till: ctrans("Cash till"),
+	yeehaw: ctrans("Cowboy: yee-haw"),
+	bell: ctrans("Bell"),
+	coins: ctrans("Coins"),
+	funny: ctrans("Funny"),
+	oh_yeah: ctrans("Cheeky: oh yeah"),
+	silent: ctrans("Silent"),
+})
+
+export const ORDER_ALERT_PUNCH: Record<string, OrderAlertPunch> = {
+	ecom_small: 1,
+	ecom_normal: 2,
+	ecom_big: 3,
+	dropshipping_unpaid: 2,
+	dropshipping_first_channel_order: 3,
+}
+
+const coinTones = (count: number): Tone[] => Array.from({ length: count }, () => [2400 + Math.random() * 1800, 45])
+
+const coins = (count: number, volume: number) => playTones(coinTones(count), volume * 0.6, "sine", 1.5, { gapMs: 25, hold: 0.2 })
+
+export const playOrderAlertSound = async (sound: OrderAlertSound, punch: OrderAlertPunch): Promise<boolean> => {
+	const volume = [0.08, 0.14, 0.2][punch - 1]
+	switch (sound) {
+		case "silent": return true
+		case "till": return playFile([0.6, 0.9, 1][punch - 1], ["cash-register-small.mp3", "cash-register.mp3", "cash-register-big.mp3"][punch - 1])
+		case "yeehaw": return playFile([0.5, 0.8, 1][punch - 1], "yeehaw.mp3")
+		case "bell": return playTones(Array.from({ length: punch }, (): Tone => [1760, 280]), volume, "sine", punch + 1, { hold: 0.1 })
+		case "coins": return coins(punch * 8, volume * 1.5)
+		case "funny": return playTones(punch === 1 ? [[160, 300, 820]] : [[400, 160 * punch, 1800], [1800, 140 * punch, 400], [160, 380, 820]], volume, "sine", 1, { gapMs: 20, hold: 0.7 })
+		case "oh_yeah": {
+			const synth = window.speechSynthesis
+			if (!synth) return playOrderAlertSound("till", punch)
+			synth.cancel()
+			speak(punch === 3 ? "Oh... yeah!" : "Oh yeah", { lang: "en-US", pitch: punch === 3 ? 0.4 : 0.6, rate: punch === 3 ? 0.6 : 0.85, volume: [0.5, 0.8, 1][punch - 1] })
+			return true
+		}
+	}
+}
+
+const ORDER_SOUND_KEY = "aiku-order-sound"
+const ORDER_SOUND_COOLDOWN = 20_000
+
+const playOrderSoundAfterCooldown = async (sound: OrderAlertSound, punch: OrderAlertPunch): Promise<boolean> => {
+	const last = readStorage(ORDER_SOUND_KEY)
+	if (last && Date.now() - last.at < ORDER_SOUND_COOLDOWN && punch <= last.punch) return true
+	const played = await playOrderAlertSound(sound, punch)
+	if (played) writeStorage(ORDER_SOUND_KEY, { at: Date.now(), punch })
+	return played
+}
+
+type NewOrderEvent = {
+	order_id: number
+	shop_id: number
+	shop: string
+	types: string[]
+	reference: string
+	customer: string
+	amount: number
+	currency: string
+	is_unpaid: boolean
+	url: string
+}
+
+const formatMoney = (amount: number, currency: string) => {
+	try {
+		return new Intl.NumberFormat(undefined, { style: "currency", currency, currencyDisplay: "narrowSymbol" }).format(amount)
+	} catch {
+		return `${amount} ${currency}`
+	}
+}
+
+let orderAlertsStarted = false
+
+export const startOrderAlerts = () => {
+	if (orderAlertsStarted || typeof window === "undefined") return
+	orderAlertsStarted = true
+
+	const layout = useLayoutStore()
+	const listening = new Set<number>()
+
+	const onNewOrder = (event: NewOrderEvent) => {
+		const preferences = layout.order_alerts
+		const type = event.types
+			.filter((alertType) => preferences?.shops?.[event.shop_id]?.includes(alertType))
+			.sort((a, b) => (ORDER_ALERT_PUNCH[b] ?? 2) - (ORDER_ALERT_PUNCH[a] ?? 2))[0]
+		if (!preferences || !type) return
+		const punch = ORDER_ALERT_PUNCH[type] ?? 2
+
+		const title = event.is_unpaid ? ctrans("Unpaid order · :shop", { shop: event.shop }) : ctrans("New order · :shop", { shop: event.shop })
+		const body = `${event.reference} · ${event.customer} · ${formatMoney(event.amount, event.currency)}`
+
+		if (preferences.popup.show && document.visibilityState === "visible") {
+			notify({
+				group: "order-alerts",
+				title,
+				text: body,
+				duration: (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000,
+				data: { ...event, type, money: formatMoney(event.amount, event.currency), sound_blocked: (navigator as any).userActivation?.hasBeenActive === false },
+			})
+		}
+
+		alertOnce({
+			key: `order:${event.order_id}`,
+			title,
+			body,
+			tag: `order-${event.order_id}`,
+			sound: "silent",
+			play: () => playOrderSoundAfterCooldown((preferences.sounds[type] ?? "till") as OrderAlertSound, punch),
+			onOpen: () => router.visit(event.url),
+		})
+	}
+
+	const listen = () => Object.keys(layout.order_alerts?.shops ?? {}).map(Number)
+		.filter((shopId) => !listening.has(shopId))
+		.forEach((shopId) => {
+			listening.add(shopId)
+			window.Echo.private(`grp.shop.${shopId}.new-orders`).listen(".new-order", onNewOrder)
+		})
+
+	const echoReady = setInterval(() => {
+		if ((window as any).Echo?.connector?.pusher) {
+			clearInterval(echoReady)
+			listen()
+			watch(() => layout.order_alerts?.shops, listen, { deep: true })
+		}
+	}, 300)
 }

@@ -223,6 +223,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('shops:order_alert_sizes')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'CalculateShopOrderAlertSizes',
+                ),
+                name: 'CalculateShopOrderAlertSizes',
+                type: 'command',
+                scheduledAt: '02:45'
+            );
+
+            $this->logSchedule(
                 $schedule->job(RemindChannelOrdersOnHold::makeJob())->dailyAt('08:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RemindChannelOrdersOnHold',
                 ),

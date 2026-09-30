@@ -80,6 +80,11 @@ export const layoutStructure = {
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
+    order_alerts: null as {
+        shops: Record<number, string[]>
+        sounds: Record<string, string>
+        popup: { show: boolean }
+    } | null,
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
 

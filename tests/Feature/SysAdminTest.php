@@ -2391,12 +2391,12 @@ test('address boxes come in the order the country writes an address', function (
         ->and(array_slice($order('US'), 0, 2))->toBe(['address_line_1', 'address_line_2']);
 });
 
-test('edit profile includes preferences sections', function (Guest $guest) {
+test('edit profile includes the settings sections', function (Guest $guest) {
     $blueprint = \App\Actions\UI\Profile\EditProfile::make()->generateBlueprint($guest->getUser())['formData']['blueprint'];
 
     expect(collect($blueprint)->pluck('label')->all())
-        ->toContain(__('Notifications'), __('Log in'), __('Preferences'), __('Timezone'))
-        ->not->toContain(__('Profile'));
+        ->toContain(__('Notifications'), __('Log in'), __('Language'), __('Appearance'), __('Alerts'), __('Printers'), __('Timezone'))
+        ->not->toContain(__('Profile'), __('Preferences'));
 
     $channels = collect($blueprint)->firstWhere('label', __('Notifications'))['fields']['notifications']['channels'];
     expect(collect($channels)->pluck('value')->all())->toBe(['email', 'slack', 'browser']);

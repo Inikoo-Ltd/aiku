@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
+use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
 use App\Actions\Ordering\PreOrder\SplitOrderPreOrders;
@@ -238,6 +239,8 @@ class SubmitOrder extends OrgAction
         if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);
         }
+
+        SendNewOrderAlert::run($order->refresh());
 
         $customerSalesChannel = $order->customerSalesChannel;
         if ($customerSalesChannel) {

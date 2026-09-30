@@ -9,6 +9,7 @@
 use App\Broadcasting\ChatListChannel;
 use App\Broadcasting\MetaChatSessionChannel;
 use App\Broadcasting\WhatsappCallChannel;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
@@ -90,6 +91,10 @@ Broadcast::channel('grp.org.{organisationId}.production-queues', function (User 
             "productions_operations.$productionId.view",
             "productions_procurement.$productionId.view",
         ]));
+});
+
+Broadcast::channel('grp.shop.{shopId}.new-orders', function (User $user, int $shopId) {
+    return GetUserOrderAlerts::make()->canHear($user, $shopId);
 });
 
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {

@@ -11,7 +11,9 @@ namespace App\Actions\UI\Profile;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
+use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -80,8 +82,8 @@ class EditProfileSettings
             "formData" => [
                 "blueprint" => [
                     [
-                        "label"  => __("Preferences"),
-                        "icon"   => "fal fa-sliders-v",
+                        "label"  => __("Language"),
+                        "icon"   => "fal fa-language",
                         "fields" => [
                             "language_id" => [
                                 "type"    => "select",
@@ -89,6 +91,12 @@ class EditProfileSettings
                                 "value"   => $user->language_id,
                                 'options' => GetLanguagesOptions::make()->translated(),
                             ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Appearance"),
+                        "icon"   => "fal fa-paint-brush",
+                        "fields" => [
                             "app_theme" => [
                                 "type"  => "app_theme",
                                 "label" => __("Theme color"),
@@ -112,22 +120,6 @@ class EditProfileSettings
                                 "label" => __("Chat panel color"),
                                 "value" => Arr::get($user->settings, 'chat_theme'),
                             ],
-                            "alert_sounds" => [
-                                "type"        => "alert_sounds",
-                                "label"       => __("Alert sounds"),
-                                "information" => __("The sound played when a customer or a colleague writes to you. Customer still waiting rings again every 30 seconds while a website or WhatsApp chat is unanswered, Silent turns it off"),
-                                "value"       => Arr::get($user->settings, 'alert_sounds'),
-                            ],
-                            "alert_preview_seconds" => [
-                                "type"        => "select",
-                                "label"       => __("Message preview time"),
-                                "information" => __("How long a new customer message shows beside the customers waiting box"),
-                                "value"       => Arr::get($user->settings, 'alert_preview_seconds', 6),
-                                "options"     => collect([3, 4, 6, 8, 10, 15, 20])->map(fn (int $seconds) => [
-                                    'value' => $seconds,
-                                    'label' => __(':count seconds', ['count' => $seconds]),
-                                ])->all(),
-                            ],
                             "hide_logo" => [
                                 "type"    => "toggle",
                                 "label"   => __("Hide logo"),
@@ -135,6 +127,54 @@ class EditProfileSettings
                                 "value"   => Arr::get($user->settings, 'hide_logo'),
 
                             ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Alerts"),
+                        "icon"   => "fal fa-volume-up",
+                        "fields" => [
+                            "alert_preview_seconds" => [
+                                "type"        => "select",
+                                "label"       => __("Pop-up time"),
+                                "information" => __("How long a new customer message or a new order stays on screen"),
+                                "value"       => Arr::get($user->settings, 'alert_preview_seconds', 6),
+                                "options"     => collect([3, 4, 6, 8, 10, 15, 20])->map(fn (int $seconds) => [
+                                    'value' => $seconds,
+                                    'label' => __(':count seconds', ['count' => $seconds]),
+                                ])->all(),
+                            ],
+                            "alert_sounds" => [
+                                "type"        => "alert_sounds",
+                                "label"       => __("Chat alerts"),
+                                "full"        => true,
+                                "information" => __("The sound played when a customer or a colleague writes to you. The speaker button mutes a sound"),
+                                "value"       => Arr::get($user->settings, 'alert_sounds'),
+                            ],
+                            "order_alerts" => [
+                                "type"        => "order_alerts",
+                                "label"       => __("New order alerts"),
+                                "information" => __("A sound and a pop-up when a shop you follow gets an order. Ecom orders are small, normal or big compared with that shop's orders in the last 90 days, worked out every night. Dropshipping rings when an order is left unpaid or a customer's store sends its first order"),
+                                "full"        => true,
+                                "options"     => [
+                                    "shops" => GetUserOrderAlerts::make()->shopOptions($user)->map(fn ($shop) => [
+                                        'id'    => $shop->id,
+                                        'code'  => $shop->code,
+                                        'label' => $shop->name,
+                                        'type'  => $shop->type->value,
+                                    ])->all(),
+                                    "types" => collect(OrderAlertTypeEnum::cases())->map(fn (OrderAlertTypeEnum $type) => [
+                                        'value' => $type->value,
+                                        'label' => $type->label(),
+                                    ])->all(),
+                                ],
+                                "value"       => GetUserOrderAlerts::make()->formValue($user),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Printers"),
+                        "icon"   => "fal fa-print",
+                        "fields" => [
                             'preferred_printer' => [
                                 'type'     => 'select_printer',
                                 'label'    => __('Preferred printer'),
