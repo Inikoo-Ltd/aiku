@@ -81,7 +81,7 @@ class IndexAssignableSuppliers extends OrgAction
                     where org_suppliers.supplier_id = suppliers.id
                     and org_suppliers.status = true
                     and org_suppliers.organisation_id not in (select org_agents.organisation_id from org_agents where org_agents.agent_id = ?)
-                ) as organisations_losing_supplier",
+                ) as organisations_joining_agent",
                 [$agent->id]
             )
             ->allowedSorts(['code', 'name', 'agent_code', 'location'])

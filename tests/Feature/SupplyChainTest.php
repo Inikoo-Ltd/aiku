@@ -25,6 +25,7 @@ use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\User\StoreUser;
@@ -53,6 +54,8 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierStats;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\Helpers\Currency;
+use Illuminate\Validation\ValidationException;
 use App\Models\SupplyChain\SupplierProduct;
 use Inertia\Testing\AssertableInertia;
 
@@ -1062,7 +1065,7 @@ test('UI assignable suppliers list free and other agents suppliers, not the agen
         ->and($rows['ASSIGNFREE']['agent_code'])->toBeNull()
         ->and($rows['ASSIGNSTEAL']['agent_code'])->toBe($otherAgent->code);
 
-    $expectedLosing = \App\Models\Procurement\OrgSupplier::query()
+    $expectedJoining = \App\Models\Procurement\OrgSupplier::query()
         ->where('supplier_id', $free->id)
         ->where('status', true)
         ->whereNotIn('organisation_id', $agent->orgAgents()->pluck('organisation_id'))
@@ -1072,7 +1075,7 @@ test('UI assignable suppliers list free and other agents suppliers, not the agen
         ->sort()
         ->implode(', ');
 
-    expect($rows['ASSIGNFREE']['organisations_losing_supplier'])->toBe($expectedLosing ?: null);
+    expect($rows['ASSIGNFREE']['organisations_joining_agent'])->toBe($expectedJoining ?: null);
 
     $country       = $free->refresh()->location[0];
     $filteredCodes = collect(
@@ -1297,6 +1300,47 @@ test('move independent supplier to an agent and free it again', function () {
         ->and($orgSupplier->org_agent_id)->toBeNull()
         ->and($orgSupplier->status)->toBeTrue()
         ->and($orgSupplier->orgSupplierProducts()->whereNotNull('org_agent_id')->count())->toBe(0);
+});
+
+test('a supplier with products must say what happens to their costs when its currency changes', function () {
+    $supplier            = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct  = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    $originalCurrency = $supplier->currency;
+    $otherCurrency    = Currency::where('id', '!=', $originalCurrency->id)->first();
+    $originalCost     = (float) $supplierProduct->cost;
+
+    expect(fn () => UpdateSupplier::make()->action($supplier, ['currency_id' => $otherCurrency->id]))
+        ->toThrow(ValidationException::class);
+
+    UpdateSupplier::make()->action($supplier->refresh(), ['currency_id' => $otherCurrency->id, 'products_currency' => 'relabel']);
+    $supplierProduct->refresh();
+    expect($supplierProduct->currency_id)->toBe($otherCurrency->id)
+        ->and((float) $supplierProduct->cost)->toBe($originalCost);
+
+    GetCurrencyExchange::shouldRun()
+        ->once()
+        ->with(Mockery::on(fn ($from) => $from->id === $otherCurrency->id), Mockery::on(fn ($to) => $to->id === $originalCurrency->id))
+        ->andReturn(2.0);
+    UpdateSupplier::make()->action($supplier->refresh(), ['currency_id' => $originalCurrency->id, 'products_currency' => 'convert']);
+    $supplierProduct->refresh();
+    expect($supplierProduct->currency_id)->toBe($originalCurrency->id)
+        ->and((float) $supplierProduct->cost)->toBe(round($originalCost * 2, 4));
+});
+
+test('organisations buying from a supplier follow it onto an agent they did not trade with yet', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $organisationIds = $supplier->orgSuppliers()->where('status', true)->pluck('organisation_id');
+    expect($organisationIds)->not->toBeEmpty()
+        ->and($agent->orgAgents()->count())->toBe(0);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    expect($agent->orgAgents()->pluck('organisation_id')->sort()->values()->all())->toBe($organisationIds->sort()->values()->all())
+        ->and($supplier->orgSuppliers()->whereIn('organisation_id', $organisationIds)->where('status', true)->whereNotNull('org_agent_id')->count())->toBe($organisationIds->count());
 });
 
 test('supplier product sheet with an ORDER tab creates the products and a draft purchase order, or nothing when the order has mistakes', function () {
