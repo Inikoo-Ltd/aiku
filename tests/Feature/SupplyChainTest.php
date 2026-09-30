@@ -1421,3 +1421,35 @@ test('supplier product sheet with an ORDER tab creates the products and a draft 
         ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'OPN-03')->exists())->toBeFalse()
         ->and($purchaseOrder->purchaseOrderTransactions()->count())->toBe(2);
 });
+
+test('only supply chain editors attach and detach agent and supplier documents', function () {
+    setPermissionsTeamId($this->group->id);
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $newUser  = fn (array $permissions) => tap(
+        \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+    $pdf = fn () => ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('contract.pdf', 10, 'application/pdf')], 'scope' => 'Contract'];
+
+    actingAs($newUser(['supply-chain.view']));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertForbidden();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertForbidden();
+
+    actingAs($newUser(["procurement.{$supplier->orgSuppliers()->first()->organisation_id}.edit"]));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertForbidden();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertSessionHasNoErrors();
+
+    actingAs($newUser(['supply-chain.edit']));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertSessionHasNoErrors();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertSessionHasNoErrors();
+    $attachment = $agent->attachments()->first();
+
+    actingAs($newUser(['supply-chain.view']));
+    $this->delete(route('grp.models.agent.attachment.detach', [$agent->id, $attachment->id]))->assertForbidden();
+
+    actingAs($newUser(['supply-chain.edit']));
+    $this->delete(route('grp.models.agent.attachment.detach', [$agent->id, $attachment->id]))->assertSuccessful();
+
+    expect($agent->attachments()->count())->toBe(0)
+        ->and($supplier->attachments()->count())->toBeGreaterThan(0);
+});

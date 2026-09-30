@@ -1590,6 +1590,49 @@ test('a compliance editor sees supply chain, goods and products, and edits only 
     patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
 });
 
+test('only goods, masters or media editors change trade unit media, and attachments follow the edit permission of their model', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn (array $permissions) => tap(
+        StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $pdf       = fn () => ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('terms.pdf', 10, 'application/pdf')], 'scope' => 'Other'];
+
+    actingAs($newUser(["crm.{$this->shop->id}.edit"]));
+    $this->post(route('grp.models.customer.attachment.attach', ['customer' => $this->customer->id]), $pdf())->assertSessionHasNoErrors();
+    $attachment = $this->customer->attachments()->first();
+    expect($attachment)->not->toBeNull();
+
+    $mediaRoutes = [
+        ['post', route('grp.models.trade-unit.upload_images', $tradeUnit->id)],
+        ['post', route('grp.models.trade-unit.attach_images', $tradeUnit->id)],
+        ['post', route('grp.models.trade-unit.upload_audio', $tradeUnit->id)],
+        ['patch', route('grp.models.trade-unit.update_images', $tradeUnit->id)],
+        ['patch', route('grp.models.trade-unit.update_image_alt', [$tradeUnit->id, $attachment->id])],
+        ['delete', route('grp.models.trade-unit.detach_image', [$tradeUnit->id, $attachment->id])],
+    ];
+
+    actingAs($newUser(['goods.view', 'masters.view', "crm.{$this->shop->id}.view"]));
+    foreach ($mediaRoutes as [$method, $url]) {
+        $this->{$method}($url)->assertForbidden();
+    }
+    $this->post(route('grp.models.customer.attachment.attach', ['customer' => $this->customer->id]), $pdf())->assertForbidden();
+    $this->delete(route('grp.models.customer.attachment.detach', [$this->customer->id, $attachment->id]))->assertForbidden();
+    expect($this->customer->attachments()->count())->toBe(1);
+
+    foreach (['goods.edit', 'masters.edit', 'group-webmaster.media-edit'] as $permission) {
+        actingAs($newUser([$permission]));
+        $this->post(route('grp.models.trade-unit.upload_images', $tradeUnit->id))->assertSessionHasErrors('images');
+        $this->post(route('grp.models.trade-unit.upload_audio', $tradeUnit->id))->assertSessionHasErrors('audio');
+    }
+
+    actingAs($newUser(["crm.{$this->shop->id}.edit"]));
+    $this->delete(route('grp.models.customer.attachment.detach', [$this->customer->id, $attachment->id]))->assertSuccessful();
+    expect($this->customer->attachments()->count())->toBe(0);
+});
+
 test('accounts can edit billables, staff without product or accounting edit cannot', function () {
     setPermissionsTeamId($this->group->id);
     $newUser = function (array $permissions) {

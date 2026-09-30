@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Actions\Traits\WithImageColumns;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromTradeUnit extends OrgAction
 {
+    use WithTradeUnitMediaEditAuthorisation;
     use WithImageColumns;
 
     public function handle(TradeUnit $tradeUnit, Media $media, bool $updateDependants = false): TradeUnit
