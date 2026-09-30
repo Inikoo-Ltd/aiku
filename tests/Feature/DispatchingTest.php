@@ -5012,6 +5012,29 @@ test('finishing a return only marks the still unhandled quantity as not returned
     expect((float) $returnItem->refresh()->total_item_not_returned)->toBe(2.0);
 });
 
+test('a return that needs no action can be finished without a refund or a replacement (HELP-3569)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+    $order = $deliveryNote->orders()->first();
+    \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, array_merge(\App\Models\Accounting\Invoice::factory()->definition(), [
+        'billing_address' => new Address(Address::factory()->definition()),
+    ]), strict: false);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    request()->setUserResolver(fn () => $this->user);
+    $finished = \App\Actions\GoodsIn\ReturnDeliveryNote\SetDoneReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh(), [
+        'createRefund'      => false,
+        'createReplacement' => false,
+    ]);
+
+    expect($finished->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE)
+        ->and($finished->refund_id)->toBeNull()
+        ->and($finished->replacement_id)->toBeNull();
+});
+
 test('a second return only covers what was not returned yet and waits for the first to finish (HELP-3194)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);

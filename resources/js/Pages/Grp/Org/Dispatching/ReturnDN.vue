@@ -282,7 +282,7 @@ const confirmAndSubmitRefund = () => {
 				isFinishReturnModal.value = false
 				notify({
 					title: ctrans("Success"),
-					text: ctrans("Successfully processed return with refunds"),
+					text: ctrans("Return finished"),
 					type: "success",
 				})
 			},
@@ -442,7 +442,7 @@ const confirmAndSubmitRefund = () => {
 				</div>
 
 				<div class="text-center italic text-xs opacity-70 text-balance">
-					{{ ctrans("Check the summary of items to be refunded/replaced. You can go back and make changes if needed before confirming the refund.") }}
+					{{ ctrans("Check the summary of items to be refunded/replaced. If the return needs no action, turn both off and finish it.") }}
 				</div>
 			</div>
 
@@ -504,7 +504,7 @@ const confirmAndSubmitRefund = () => {
 					{{ ctrans('Create Replacement') }}
 				</div>
 				<div class="flex flex-col items-center text-xl font-bold ml-auto">
-					<ToggleSwitch v-model="createReplacement" :disabled="refundSummary.totalAmount == 0">
+					<ToggleSwitch v-model="createReplacement" :disabled="replacementSummary.totalQuantity == 0">
 						<template #handle="{ checked }">
 							<FontAwesomeIcon
 								:icon="checked ? faCheck : faTimes"
@@ -548,6 +548,10 @@ const confirmAndSubmitRefund = () => {
 				</table>
 			</div>
 
+			<div v-if="!createRefund && !createReplacement" class="rounded bg-gray-50 px-4 py-3 text-sm text-gray-600">
+				{{ ctrans("No refund or replacement: the return is closed as done, no further action.") }}
+			</div>
+
 			<div class="flex gap-x-3 justify-end pt-2">
 				<Button
 					@click="isFinishReturnModal = false"
@@ -557,7 +561,7 @@ const confirmAndSubmitRefund = () => {
 				/>
 				<Button
 					@click="confirmAndSubmitRefund"
-					:label="ctrans('Finish Return')"
+					:label="!createRefund && !createReplacement ? ctrans('Finish, no action required') : ctrans('Finish Return')"
 					icon="fas fa-box-check"
 					type="primary"
 					full
