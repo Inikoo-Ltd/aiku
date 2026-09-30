@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import Chart from "primevue/chart"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { router } from "@inertiajs/vue3"
@@ -10,10 +10,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faBullseyeArrow, faChartPie } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faPencil, faBullseyeArrow, faChartPie)
 
-const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", thisYear: "#4f46e5", lastYear: "#9ca3af", target: "#1f845a" }
+const layout = inject("layout", layoutStructure)
+
+const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#9ca3af", target: "#1f845a" }
+const thisYearColor = computed(() => layout.app?.theme?.[4] || "#4f46e5")
 
 interface PeriodTarget {
     month: string
@@ -113,7 +117,7 @@ const dayLabel = (unit: number) => {
 const chartData = computed(() => ({
     labels: periodData.value.chart.days.map(dayLabel),
     datasets: [
-        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
+        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: thisYearColor.value, backgroundColor: thisYearColor.value, tension: 0, borderWidth: 1.5, pointRadius: 2 },
         { label: periodData.value.last_year_label, data: periodData.value.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
         ...(target.value ? [{ label: ctrans("Target"), data: periodData.value.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
     ],
@@ -161,15 +165,15 @@ const donutOptions = {
     <DashboardWidgetBox storageKey="shop_dashboard_month_target_collapsed" class="mx-4 mt-4">
         <template #header>
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-indigo-600" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-[var(--theme-color-4)]" fixed-width aria-hidden="true" />
                 {{ ctrans(":month target", { month: periodData.month_label }) }}
             </span>
             <span class="text-xs text-gray-400">
                 {{ ctrans(":invoiced invoiced · :pipeline in the pipeline · :days days left", { invoiced: money(periodData.sales_so_far), pipeline: money(periodData.pipeline.amount), days: String(periodData.remaining_days) }) }}
             </span>
             <div v-if="yearTarget" class="ml-auto flex rounded-md border border-gray-200 text-xs">
-                <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="selectPeriod('month')">{{ ctrans("This month") }}</button>
-                <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="selectPeriod('year')">{{ ctrans("Year to date") }}</button>
+                <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'text-gray-500'" @click="selectPeriod('month')">{{ ctrans("This month") }}</button>
+                <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'text-gray-500'" @click="selectPeriod('year')">{{ ctrans("Year to date") }}</button>
             </div>
         </template>
 
@@ -183,7 +187,7 @@ const donutOptions = {
                     <div>
                         <form v-if="isEditing" class="flex items-center gap-2" @submit.prevent="saveTarget">
                             <input v-model.number="newTarget" type="number" min="0" step="1" class="w-36 rounded border-gray-300 text-lg font-bold" :aria-label="ctrans('Target')" autofocus />
-                            <button type="submit" :disabled="isSaving" class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50">{{ ctrans("Save") }}</button>
+                            <button type="submit" :disabled="isSaving" class="rounded bg-[var(--theme-color-4)] px-3 py-1.5 text-sm text-[var(--theme-color-5)] disabled:opacity-50">{{ ctrans("Save") }}</button>
                             <button type="button" class="text-sm text-gray-500" @click="isEditing = false">{{ ctrans("Cancel") }}</button>
                         </form>
                         <p v-else class="text-2xl font-bold tabular-nums">
