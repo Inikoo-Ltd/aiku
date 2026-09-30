@@ -78,6 +78,7 @@ class ShowDeliveryNote extends OrgAction
     use WithMarginData;
     use GetPlatformLogo;
     use WithBucketNavigation;
+    use WithDeliveryNotesChannel;
     use WithOrderForbiddenCountryCheck;
     use WithDeliveryNotePackaging;
     use WithDeliveryNoteLeaflets;
@@ -1813,7 +1814,8 @@ class ShowDeliveryNote extends OrgAction
             ->whereRelation('shop', 'is_aiku', $deliveryNote->shop->is_aiku);
 
         if ($shopType = $request->input('bucket_shop_type')) {
-            $query->whereRelation('shop', 'type', $shopType);
+            $query->whereRelation('shop', 'type', $this->channelShopType($shopType));
+            $this->whereDeliveryNotesPartnership($query, $shopType);
         }
 
         $sort = $request->input('bucket_sort');

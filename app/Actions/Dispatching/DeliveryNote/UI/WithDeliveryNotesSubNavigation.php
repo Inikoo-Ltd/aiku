@@ -9,13 +9,19 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+
 trait WithDeliveryNotesSubNavigation
 {
+    use WithDeliveryNotesChannel;
+
     protected function getDeliveryNotesSubNavigation(string $shopType): array
     {
         $organisation = $this->organisation;
 
-        $isAll = $shopType == 'all';
+        $isAll              = $shopType == 'all';
+        $partnerStateCounts = in_array($shopType, [self::PARTNERS_CHANNEL, ShopTypeEnum::B2B->value], true) ? $this->partnerDeliveryNotesStateCounts($organisation) : [];
+        $count              = fn (?string $state = null) => $this->channelDeliveryNotesCount($organisation, $shopType, $state, $partnerStateCounts);
 
         return [
                 [
@@ -28,9 +34,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.dispatched.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_dispatched
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_dispatched'},
+                    'number' => $count('dispatched'),
                 ],
                 [
                     'align' => 'right',
@@ -42,9 +46,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes'},
+                    'number' => $count(),
                 ],
                 [
                     'label'  => __('To do'),
@@ -55,9 +57,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.unassigned.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_unassigned
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_unassigned'},
+                    'number' => $count('unassigned'),
                 ],
                 [
                     'label'  => __('Queued'),
@@ -68,9 +68,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_queued
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_queued'},
+                    'number' => $count('queued'),
                 ],
                 [
                     'label'  => __('Handling'),
@@ -81,9 +79,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_handling
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling'},
+                    'number' => $count('handling'),
                 ],
                 [
                     'label'  => __('Waiting'),
@@ -94,9 +90,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_handling_blocked
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling_blocked'},
+                    'number' => $count('handling_blocked'),
                 ],
                 [
                     'label'  => __('Picked'),
@@ -107,9 +101,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_picked
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_picked'},
+                    'number' => $count('picked'),
                 ],
                 [
                     'label'  => __('Packing'),
@@ -120,9 +112,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_packing
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_packing'},
+                    'number' => $count('packing'),
                 ],
                 [
                     'label'  => __('Packed'),
@@ -133,9 +123,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_packed
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_packed'},
+                    'number' => $count('packed'),
                 ],
                 [
                     'label'  => __('Finalised'),
@@ -146,9 +134,7 @@ trait WithDeliveryNotesSubNavigation
                         'name'       => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
                     ],
-                    'number' => $isAll
-                        ? $organisation->orderingStats->number_delivery_notes_state_finalised
-                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_finalised'},
+                    'number' => $count('finalised'),
                 ],
             ];
     }
