@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
+import { inject, ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from './Elements/Buttons/Button.vue'
 import axios from 'axios'
@@ -71,6 +71,8 @@ const hideStockUnavailable = ref(false)
 
 const isLoadingFetch = ref(false)
 const showDialog = ref(false)
+// Thumbnails that failed to load, shown as the no-image placeholder instead
+const failedImages = reactive(new Set<number>())
 
 const queryPortfolio = ref('')
 const list = ref<Portfolio[]>([])
@@ -445,22 +447,26 @@ defineExpose({
                                    <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                <div v-tooltip="trans('The warehouse stores this as packs of :packed_in (SKO). Selling :quantity means the picker takes :quantity of a :packed_in-pack.', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
-                                    class="text-sm px-3 text-teal-600 whitespace-nowrap w-full flex items-baseline gap-1">
-                                    <span>{{ trans('Picks') }}</span>
-                                    <span v-if="orgPicksSummary(item)" class="font-bold">{{ orgPicksSummary(item) }}</span>
-                                    <span v-else class="font-bold">
-                                        <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
+                                <!-- One tooltip per part: nesting them stacked two tooltips over each other -->
+                                <div class="text-sm px-3 text-teal-600 whitespace-nowrap w-full flex items-baseline gap-1">
+                                    <span v-tooltip="trans('Selling :quantity means the picker takes :quantity of a :packed_in-pack (SKO).', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
+                                        class="flex items-baseline gap-1 cursor-help">
+                                        <span>{{ trans('Picks') }}</span>
+                                        <span v-if="orgPicksSummary(item)" class="font-bold">{{ orgPicksSummary(item) }}</span>
+                                        <span v-else class="font-bold">
+                                            <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
+                                        </span>
+                                        <span>{{ trans('SKO') }}</span>
                                     </span>
-                                    <span>{{ trans('SKO') }}</span>
-                                    <span v-if="orgPackedInSummary(item)"
+                                    <button v-if="orgPackedInSummary(item)"
+                                        type="button"
                                         @click.stop.prevent="openPackedInDialog(item)"
-                                        v-tooltip="trans('Click to edit how each warehouse packs this SKU')"
-                                        class="cursor-pointer underline decoration-dotted underline-offset-2"
-                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-sky-600/70'">
+                                        v-tooltip="trans('Edit how each warehouse packs this SKU')"
+                                        class="rounded underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--app-accent)] hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-teal-600/70'">
                                         {{ orgPackedInSummary(item)!.label }}
-                                    </span>
-                                    <span v-else class="text-sky-600/70">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
+                                    </button>
+                                    <span v-else class="text-teal-600/70">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
                                 </div>
 
                                 </template>
@@ -485,7 +491,7 @@ defineExpose({
         </div>
 
         <!-- Dialog -->
-        <Dialog v-model:visible="showDialog" modal header="Select Products"
+        <Dialog v-model:visible="showDialog" modal :header="trans('Select products')"
             :style="{ width: '80vw', maxWidth: '1200px' }"
             :content-style="{ overflow: 'hidden', paddingLeft: '20px', paddingRight: '20px', }" @hide="$emit('close')">
 
@@ -496,27 +502,28 @@ defineExpose({
                 </div>
 
                 <!-- Tabs -->
-                <div v-if="tabs?.length" class="flex gap-4 mb-4 border-b">
-                <div
-                    v-for="(tab, index) in tabs"
-                    :key="index"
-                    @click="changeTab(index)"
-                    class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2"
-                    :class="
-                    activeTab === index
-                        ? 'text-indigo-600 border-indigo-600'
-                        : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-                    "
-                >
-                    {{ trans(tab.label) }}
-                </div>
+                <div v-if="tabs?.length" class="flex items-center gap-4 mb-4 border-b" role="tablist">
+                    <button
+                        v-for="(tab, index) in tabs"
+                        :key="index"
+                        type="button"
+                        role="tab"
+                        :aria-selected="activeTab === index"
+                        @click="changeTab(index)"
+                        class="px-4 py-2 -mb-px font-medium border-b-2 transition-colors focus:outline-none focus-visible:bg-[var(--app-accent-soft)]"
+                        :class="
+                        activeTab === index
+                            ? 'text-[var(--app-accent)] border-[var(--app-accent)]'
+                            : 'text-gray-500 border-transparent hover:text-[var(--app-accent)] hover:border-[var(--app-accent-soft)]'
+                        "
+                    >
+                        {{ trans(tab.label) }}
+                    </button>
 
-                <div
-                    class="ml-auto cursor-pointer px-4 py-2 -mb-px font-medium border-b-2 text-gray-500 border-transparent"
-                >
-                   {{ trans("Hide out of stock")}}
-                   <Toggle v-model="hideStockUnavailable" />
-                </div>
+                    <label class="ml-auto flex items-center gap-2 py-2 text-sm text-gray-500">
+                        {{ trans("Hide out of stock") }}
+                        <Toggle v-model="hideStockUnavailable" />
+                    </label>
                 </div>
 
 
@@ -537,16 +544,16 @@ defineExpose({
                             <div class="font-semibold text-lg py-1">
                                 {{ props.label_result ?? trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
                             </div>
-                            <div class="flex gap-2">
-                                <div @click="selectAllProducts"
-                                    :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                                    {{ trans("Select :number products in this page", { number: list.length }) }}
-                                </div>
-                                <div v-if="compSelectedProduct.length" @click="clearAll"
-                                    class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                                    {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                            <div class="flex items-center gap-4 text-sm">
+                                <button v-if="!isAllSelected && list.length" type="button" @click="selectAllProducts"
+                                    class="text-[var(--app-accent)] underline-offset-2 hover:text-[var(--app-accent-strong)] hover:underline">
+                                    {{ trans("Select all :number on this page", { number: String(list.length) }) }}
+                                </button>
+                                <button v-if="compSelectedProduct.length" type="button" @click="clearAll"
+                                    class="text-gray-500 underline-offset-2 hover:text-red-600 hover:underline">
+                                    {{ trans('Clear :number selected', { number: String(compSelectedProduct.length) }) }}
                                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
-                                </div>
+                                </button>
                             </div>
                         </div>
 
@@ -558,36 +565,41 @@ defineExpose({
                                 <template v-if="!isLoadingFetch">
                                     <template v-if="list.length > 0">
                                         <div v-for="(item, index) in listData" :key="index" @click="selectProduct(item)"
-                                            class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                            role="checkbox" tabindex="0"
+                                            :aria-checked="compSelectedProduct.includes(item.id)"
+                                            @keydown.enter.prevent="selectProduct(item)"
+                                            @keydown.space.prevent="selectProduct(item)"
+                                            class="relative h-full rounded-md cursor-pointer p-2 flex flex-col md:flex-row gap-x-3 border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
                                             :class="[
                                                 compSelectedProduct.includes(item.id)
-                                                    ? 'bg-indigo-100 border-indigo-300'
-                                                    : 'bg-white hover:bg-gray-200 border-gray-300',
+                                                    ? 'bg-[var(--app-accent-soft)] border-[var(--app-accent)]'
+                                                    : 'bg-white border-gray-200 hover:border-[var(--app-accent)] hover:bg-gray-50',
                                             ]">
 
                                             <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
                                                 icon="fas fa-check-circle"
-                                                class="bottom-2 right-2 absolute text-green-500" fixed-width
+                                                class="top-2 right-2 absolute text-[var(--app-accent)]" fixed-width
                                                 aria-hidden="true" />
 
                                             <slot name="product" :item="item">
-                                                <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
+                                                <!-- error does not bubble, so capture it here: a broken thumbnail showed its alt text squeezed into the box -->
+                                                <div class="w-16 h-16 shrink-0 border border-gray-200 rounded bg-gray-50 overflow-hidden flex items-center justify-center"
+                                                    @error.capture="failedImages.add(item.id)">
                                                     <Image
-                                                        v-if="item.image"
+                                                        v-if="item.image && !failedImages.has(item.id)"
                                                         :src="item.image?.thumbnail"
                                                         imageCover
-                                                        :alt="item.name"
+                                                        alt=""
                                                     />
-                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70 text-xl" fixed-width aria-hidden="true" />
-
+                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="text-gray-300 text-xl" fixed-width aria-hidden="true" />
                                                 </div>
                                                 
                                                 <div class="flex flex-col justify-between w-full">
-                                                    <div v-if="!item.no_code" class="font-semibold">
-                                                        {{ item.code || 'no code' }}
+                                                    <div v-if="!item.no_code" class="font-semibold pr-6">
+                                                        {{ item.code || trans('No code') }}
                                                     </div>
-                                                    <div class="flex items-center gap-2 text-xs">
-                                                        <div class="leading-none mb-1">{{ item.name || 'noname' }}</div>
+                                                    <div class="text-xs text-gray-600 leading-snug mb-1 line-clamp-2" :title="item.name">
+                                                        {{ item.name || trans('No name') }}
                                                     </div>
                                                     <div v-if="item.reference" class="text-xs text-gray-400 italic">
                                                         {{ item.reference }}
@@ -608,7 +620,7 @@ defineExpose({
                                         </div>
                                     </template>
                                     <div v-else class="text-center text-gray-500 col-span-3">
-                                        {{ trans("No Results found") }}
+                                        {{ trans("No products found") }}
                                     </div>
                                 </template>
                                 <div v-else v-for="(item, index) in 6" :key="index"
@@ -624,8 +636,9 @@ defineExpose({
 
             <!-- footer -->
             <template #footer>
-                <Button type="secondary" @click="showDialog = false" label="Cancel"></Button>
-                <Button type="create" @click="confirmSelection" label="Select"></Button>
+                <Button type="secondary" @click="showDialog = false" :label="trans('Cancel')"></Button>
+                <Button type="create" @click="confirmSelection"
+                    :label="compSelectedProduct.length ? trans('Select :number', { number: String(compSelectedProduct.length) }) : trans('Select')"></Button>
             </template>
         </Dialog>
 
