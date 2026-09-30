@@ -35,7 +35,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
-import Timeline from "@/Components/Utils/Timeline.vue";
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
 import { computed, provide, ref, watch, onMounted, onUnmounted, inject } from "vue";
 import type { Component } from "vue";
@@ -1203,7 +1203,7 @@ const stopSocketListener = () => {
 
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-		<Timeline
+		<TimelineResponsive
 			:options="timelines"
 			:state="delivery_note.state"
 			:slidesPerView="6"
@@ -1286,6 +1286,7 @@ const stopSocketListener = () => {
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
+			scrollOnMobile
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes

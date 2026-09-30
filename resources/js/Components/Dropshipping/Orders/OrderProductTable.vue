@@ -60,6 +60,8 @@ const props = defineProps<{
     routesProductsListModification?: routeType
     is_shop_external: boolean
     allow_order_modification: boolean
+    /** Grp order page only: below lg the table keeps a minimum width and scrolls sideways with arrows instead of squashing. Off by default so RetinaOrder, which shares this table, keeps its layout. */
+    scrollOnMobile?: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -499,8 +501,10 @@ const isOffersData = (offersData: any): boolean => {
                     return 'bg-yellow-50'
                 }
                 return ''
-            }" 
+            }"
             :useTopPagination="true"
+            :tableClass="scrollOnMobile ? 'max-lg:min-w-[56rem]' : ''"
+            :withScrollArrows="scrollOnMobile"
         >
 
             <template #cell(image)="{ item }">

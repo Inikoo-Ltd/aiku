@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -185,8 +185,8 @@ const onUpdatePicker = () => {
 
     if (!pickerId) {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Picker is not selected"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Picker is not selected"),
             type: "error"
         });
         return;
@@ -212,8 +212,8 @@ const onUpdatePicker = () => {
     router.patch(route(routeName, routeParams), payload, {
         onError: (error) => {
             notify({
-                title: trans("Something went wrong"),
-                text: error?.message ?? trans("Unknown error"),
+                title: ctrans("Something went wrong"),
+                text: error?.message ?? ctrans("Unknown error"),
                 type: "error"
             });
         },
@@ -244,7 +244,7 @@ const assignSelfTemporarily = () => {
         {
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -287,8 +287,8 @@ const onSubmitParcels = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to add Shipment. Please try again or contact administrator."),
                     type: "error",
                 })
             },
@@ -362,12 +362,12 @@ const replacementRoute = (replacement) => {
 </script>
 
 <template>
-    <div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b border-gray-200">
         <!-- Box: Order -->
-        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="min-w-0 py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
-                    {{ trans("Order") }}
+                    {{ ctrans("Order") }}
                 </div>
 
                 <div class="space-y-0.5 pl-1">
@@ -379,7 +379,7 @@ const replacementRoute = (replacement) => {
                         <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
                             class="text-gray-500" />
                     </dt>
-                    <dd class="text-gray-500 " v-tooltip="trans('Order')">
+                    <dd class="text-gray-500 " v-tooltip="ctrans('Order')">
                         {{ boxStats?.order?.reference }}
                     </dd>
                     </Link>
@@ -391,13 +391,13 @@ const replacementRoute = (replacement) => {
                         <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                             aria-hidden="true" />
                     </dt>
-                    <dd class="text-gray-500" v-tooltip="trans('Customer')">
+                    <dd class="text-gray-500" v-tooltip="ctrans('Customer')">
                          {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
                     </dd>
                     </Link>
                     <!-- Field: Contact name -->
                     <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-                        v-tooltip="trans('Contact name')">
+                        v-tooltip="ctrans('Contact name')">
                         <dt class="flex-none">
                             <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
@@ -405,7 +405,7 @@ const replacementRoute = (replacement) => {
                     </div>
                     <!-- Field: Company name -->
                     <div v-if="boxStats?.customer.company_name && boxStats?.customer.company_name!=boxStats?.customer.name " class="pl-1 flex items-center w-full flex-none gap-x-2"
-                        v-tooltip="trans('Company name')">
+                        v-tooltip="ctrans('Company name')">
                         <dt class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
@@ -446,12 +446,12 @@ const replacementRoute = (replacement) => {
         </BoxStatPallet>
 
         <!-- Box: Shipping -->
-        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="min-w-0 py-2 px-3 border-t border-gray-200 md:border-t-0 md:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{ trans("Shipping") }}
+                        {{ ctrans("Shipping") }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -459,14 +459,14 @@ const replacementRoute = (replacement) => {
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
-                                        <strong>{{ trans("Name") }}:</strong>
+                                        <strong>{{ ctrans("Name") }}:</strong>
                                         {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
+                                        <strong>{{ ctrans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
+                                        <strong>{{ ctrans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -477,20 +477,20 @@ const replacementRoute = (replacement) => {
                     </div>
 
                     <div v-else class="text-gray-500 italic pl-2">
-                        {{ trans("No shipping information available.") }}
+                        {{ ctrans("No shipping information available.") }}
                     </div>
 
 
                 </template>
-                <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+                <div v-else class="font-semibold xmb-2 text-base"> {{ ctrans("For collection") }}</div>
 
                 <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
                     <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" fixed-width />
-                    {{ trans('Cash on Delivery') }}
+                    {{ ctrans('Cash on Delivery') }}
                 </div>
 
                 <div v-if="boxStats.refund || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
-                    {{ trans("Refund") }}
+                    {{ ctrans("Refund") }}
                 </div>
                 <div v-if="boxStats.refund" class="pl-2 w-max">
                     <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
@@ -502,7 +502,7 @@ const replacementRoute = (replacement) => {
                         :class="boxStats.refund.pay_status.tooltip == 'Unpaid' ? 'animate-pulse' : ''"
                     />
                     <span v-if="boxStats.refund.pay_status.tooltip == 'Unpaid'" class="pl-1 text-xs italic text-gray-500">
-                        {{ trans('Refund has not been processed') }}
+                        {{ ctrans('Refund has not been processed') }}
                     </span>
                 </div>
                 <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
@@ -513,7 +513,7 @@ const replacementRoute = (replacement) => {
                 </div>
 
                 <div v-if="boxStats.replacement || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
-                    {{ trans("Replacement") }}
+                    {{ ctrans("Replacement") }}
                 </div>
                 <div v-if="boxStats.replacement" class="pl-2 w-max">
                     <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
@@ -525,7 +525,7 @@ const replacementRoute = (replacement) => {
                         :class="boxStats.replacement.state !== 'dispatched' ? '!text-red-500 animate-pulse' : ''"
                     />
                     <span v-if="boxStats.replacement.state !== 'dispatched'" class="pl-1 text-xs italic text-gray-500">
-                        {{ trans('Replacement has not been processed') }}
+                        {{ ctrans('Replacement has not been processed') }}
                     </span>
                 </div>
                 <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
@@ -538,10 +538,10 @@ const replacementRoute = (replacement) => {
         </BoxStatPallet>
 
         <!-- Box: Delivery Note -->
-        <BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-t md:border-t-0 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2.5 pl-2.5 pr-3 border-t border-gray-200 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
-                    {{ trans("Delivery Note") }} 
+                    {{ ctrans("Delivery Note") }} 
                     <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
                         <FontAwesomeIcon :icon="faTruck" fixed-width/>
                         {{ boxStats.parentDeliveryNote?.reference }}
@@ -565,22 +565,22 @@ const replacementRoute = (replacement) => {
                         <template v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker">
                             <FontAwesomeIcon
                                 v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id"
-                                v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                                v-tooltip="allowActions ? ctrans('Delivery note unlocked') : ctrans('Locked, only assigned picker can process this delivery note')"
                                 class="cursor-pointer focus:outline-none"
                                 :icon="allowActions ? faLockOpen : faLock"
                                 @click="assignSelfTemporarily()" fixed-width
                             />
-                            <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+                            <Button @click="isModalToQueue = true" :label="ctrans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
 
                     <!-- Section: Packer name -->
                     <div class="flex gap-x-4 items-center">
                         <div v-if="boxStats?.packer?.contact_name">
-                            <dl v-tooltip="trans('Packer name')"
+                            <dl v-tooltip="ctrans('Packer name')"
                                 class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
-                                    {{ trans("Packer") }}:
+                                    {{ ctrans("Packer") }}:
                                 </dt>
                                 <dd class="text-gray-500">
                                     {{ boxStats?.packer?.contact_name }}
@@ -591,12 +591,12 @@ const replacementRoute = (replacement) => {
                         <template v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker">
                             <FontAwesomeIcon
                                 v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id"
-                                v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                                v-tooltip="allowActions ? ctrans('Delivery note unlocked') : ctrans('Locked, only assigned picker can process this delivery note')"
                                 class="cursor-pointer focus:outline-none"
                                 :icon="allowActions ? faLockOpen : faLock"
                                 @click="assignSelfTemporarily()" fixed-width
                             />
-                            <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                            <Button @click="isModalToQueue = true" :label="ctrans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
 
@@ -613,7 +613,7 @@ const replacementRoute = (replacement) => {
                     <!-- <div class="!mt-1.5 flex gap-x-2 items-center">
                         <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
-                                {{ trans("Picked bays") }}:
+                                {{ ctrans("Picked bays") }}:
                             </dt>
                             <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
@@ -644,7 +644,7 @@ const replacementRoute = (replacement) => {
                     <!-- Total Items -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width
+                            <FontAwesomeIcon v-tooltip="ctrans('Total items')" icon="fal fa-cube" fixed-width
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
@@ -655,7 +655,7 @@ const replacementRoute = (replacement) => {
                     <!-- Weight -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight"
+                            <FontAwesomeIcon v-tooltip="ctrans('Estimated weight of all items')" icon="fal fa-weight"
                                 fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
@@ -666,7 +666,7 @@ const replacementRoute = (replacement) => {
                     <!-- Dispatched at -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Dispatched at')" icon="fal fa-check-double" fixed-width aria-hidden="true" class="text-green-500" />
+                            <FontAwesomeIcon v-tooltip="ctrans('Dispatched at')" icon="fal fa-check-double" fixed-width aria-hidden="true" class="text-green-500" />
                         </dt>
                         <dd class="text-gray-500">
                             {{ deliveryNote?.dispatched_at ? useFormatTime(deliveryNote.dispatched_at, { formatTime: 'hm' }) : '-' }}
@@ -700,7 +700,7 @@ const replacementRoute = (replacement) => {
                     <!-- Section: Shipments -->
                     <dl v-if="boxStats.shipments" class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none mt-1">
-                            <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
+                            <FontAwesomeIcon v-tooltip="ctrans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
@@ -728,7 +728,7 @@ const replacementRoute = (replacement) => {
                         <dt class="flex-none">
                             <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
                         </dt>
-                        <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                        <dd class="text-gray-500 " v-tooltip="ctrans('Delivery Note')">
                             {{ boxStats?.delivery_note?.reference }}
                         </dd>
                     </Link>
@@ -739,11 +739,11 @@ const replacementRoute = (replacement) => {
         <!-- Modal: Parcels -->
         <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
             <div class="text-center font-bold mb-4">
-                {{ trans('Add shipment') }}
+                {{ ctrans('Add shipment') }}
             </div>
 
             <div>
-                <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+                <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
                     <!-- Header Row -->
                     <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
                         <div class="flex justify-center">
@@ -833,7 +833,7 @@ const replacementRoute = (replacement) => {
                             </div>
                         </TransitionGroup>
                         <div v-else class="text-center text-gray-400">
-                            {{ trans('No parcels') }}
+                            {{ ctrans('No parcels') }}
                         </div>
                     </div>
 
@@ -843,7 +843,7 @@ const replacementRoute = (replacement) => {
                         <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                            {{ trans("Add another parcel") }}
+                            {{ ctrans("Add another parcel") }}
                         </div>
                     </div>
                 </Fieldset>
@@ -863,20 +863,20 @@ const replacementRoute = (replacement) => {
     <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
-				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? ctrans("Select packer") : ctrans("Select picker") }} 
 			</div>
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
 					<div class="flex justify-between text-sm font-medium py-2">
-						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
-                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? ctrans("Select packer") : ctrans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="ctrans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"
 						required
 						:fetchRoute="routes.pickers_list"
-						:placeholder="trans('Select picker')"
+						:placeholder="ctrans('Select picker')"
 						labelProp="contact_name"
 						valueProp="id"
 						object
@@ -925,14 +925,14 @@ const replacementRoute = (replacement) => {
 					@click="onUpdatePicker()"
 					:label="
 						delivery_note_state === 'queued'
-							? trans('Change picker')
-							: trans('Set Picker')
+							? ctrans('Change picker')
+							: ctrans('Set Picker')
 					"
 					:iconRight="['fas', 'fa-arrow-right']"
 					full
 					:loading="isLoadingToQueue"
 					:disabled="!selectedPicker"
-					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+					v-tooltip="selectedPicker ? '' : ctrans('Select picker before set to queue')">
 				</Button>
 			</div>
 		</div>

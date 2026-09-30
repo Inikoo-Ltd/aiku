@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { onBeforeMount, nextTick, ref, watch } from 'vue'
+import { onBeforeMount, nextTick, ref, watch, inject } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare, faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Select from 'primevue/select'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useDateIntervals } from '@/Composables/useDateIntervals'
 import { Popover } from 'primevue'
 
 library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt)
+
+const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('desktop'))
 
 
 const props = defineProps<{
@@ -228,7 +230,7 @@ const toggle = (event) => {
 
         <div
             @click="toggle"
-            v-tooltip="trans('Filter by dates')"
+            v-tooltip="ctrans('Filter by dates')"
             class="cursor-pointer group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
         >
             <div class="h-9 rounded flex justify-center items-center gap-2 border"
@@ -248,12 +250,12 @@ const toggle = (event) => {
 
 
         <Popover ref="_popover">
-            <div class="bg-gray-50 border border-gray-300 rounded-md xabsolute right-0 z-10 mt-3 w-fit transform px-4 pt-4 pb-6" >
-                <div class="flex items-center gap-x-3 mb-3">
+            <div class="bg-gray-50 border border-gray-300 rounded-md xabsolute right-0 z-10 mt-3 w-fit max-sm:w-[calc(100vw-2.5rem)] transform px-4 pt-4 pb-6 max-sm:px-3 max-sm:pt-3 max-sm:pb-3" >
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
                     <Select
                         v-model="selectedPeriodType"
                         :options="optionsList"
-                        :placeholder="trans('Dates range')"
+                        :placeholder="ctrans('Dates range')"
                         class="flex-1"
                     />
 
@@ -262,20 +264,21 @@ const toggle = (event) => {
                         :options="dateIntervals.map(i => ({ label: i.label, value: i.value }))"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Quick intervals')"
+                        :placeholder="ctrans('Quick intervals')"
                         class="flex-1"
                     />
 
                     <div @click="resetFilter" class="text-red-400 hover:text-red-600 cursor-pointer whitespace-nowrap">
-                        {{ trans("Reset") }}
+                        {{ ctrans("Reset") }}
                     </div>
                 </div>
 
-                <div class="flex justify-end w-[520px]">
+                <div class="flex justify-end w-full sm:w-[520px] max-sm:[--dp-cell-size:28px] max-sm:[--dp-cell-padding:3px] max-sm:[--dp-font-size:0.8125rem] max-sm:[--dp-row-margin:1px_0] max-sm:[--dp-month-year-row-height:28px] max-sm:[--dp-button-height:28px] max-sm:[--dp-menu-padding:4px_6px]">
                     <VueDatePicker
                         v-model="dateFilterValue"
                         range
-                        multi-calendars
+                        :multi-calendars="screenType !== 'mobile'"
+                        class="max-sm:w-full"
                         inline
                         auto-apply
                         :enableTimePicker="false"
@@ -287,14 +290,14 @@ const toggle = (event) => {
             <div class="grid grid-cols-2 text-sm mt-3">
                 <!-- cccccccccccccccccccccccccc -->
                 <div class="text-left px-1.5">
-                    <div class="text-gray-400">{{ trans("Since") }}</div>
+                    <div class="text-gray-400">{{ ctrans("Since") }}</div>
                     <div class="">
                         {{ dateFilterValue?.[0] ? useFormatTime(dateFilterValue[0]) : '-' }}
                     </div>
                 </div>
 
                 <div class="justify-self-end text-right px-1.5">
-                    <div class="text-gray-400">{{ trans("Until") }}</div>
+                    <div class="text-gray-400">{{ ctrans("Until") }}</div>
                     <div class="">
                         {{ dateFilterValue?.[1] ? useFormatTime(dateFilterValue[1]) : '-' }}
                     </div>
