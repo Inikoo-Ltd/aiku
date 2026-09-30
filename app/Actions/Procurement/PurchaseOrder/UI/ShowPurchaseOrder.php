@@ -132,6 +132,15 @@ class ShowPurchaseOrder extends OrgAction
                     'purchaseOrder' => $purchaseOrder->slug,
                 ],
             ];
+        } elseif ($purchaseOrder->parent instanceof OrgPartner) {
+            $productListRoute = [
+                'method'     => 'get',
+                'name'       => 'grp.json.org-partner.purchase-order-org-stocks',
+                'parameters' => [
+                    'orgPartner'    => $purchaseOrder->parent->id,
+                    'purchaseOrder' => $purchaseOrder->slug,
+                ],
+            ];
         } elseif ($purchaseOrder->parent instanceof OrgSupplier) {
             $orderer = OrgSupplierResource::make($purchaseOrder->parent)->toArray($request);
             $productListRoute = [
@@ -412,7 +421,7 @@ class ShowPurchaseOrder extends OrgAction
     {
         return match ($purchaseOrder->state) {
             PurchaseOrderStateEnum::IN_PROCESS => [
-                $showProductsTab ? [
+                $showProductsTab || $purchaseOrder->parent instanceof OrgPartner ? [
                     'label'   => __('Add Product'),
                     'tooltip' => __('Add Product'),
                     'type'    => 'button',

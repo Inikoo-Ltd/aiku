@@ -13,12 +13,15 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -151,6 +154,75 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         $this->initialisation($orgSupplier->organisation, $request);
 
         return $this->handle($orgSupplier, $purchaseOrder);
+    }
+
+    public function inOrgPartner(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($orgPartner->organisation, $request);
+
+        return $this->partnerOrgStocks($orgPartner, $purchaseOrder);
+    }
+
+    /**
+     * Our SKOs the partner sells too, priced at what the partner sells one SKO for.
+     */
+    public function partnerOrgStocks(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('org_stocks.code', $value)
+                    ->orWhereAnyWordStartWith('org_stocks.name', $value);
+            });
+        });
+
+        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id');
+
+        $paginator = QueryBuilder::for(OrgStock::class)
+            ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {
+                $join->on('seller_org_stocks.stock_id', 'org_stocks.stock_id')
+                    ->where('seller_org_stocks.organisation_id', $orgPartner->partner_id)
+                    ->where('seller_org_stocks.state', OrgStockStateEnum::ACTIVE->value);
+            })
+            ->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder) {
+                $join->on('purchase_order_transactions.org_stock_id', 'org_stocks.id')
+                    ->where('purchase_order_transactions.purchase_order_id', $purchaseOrder->id)
+                    ->whereNull('purchase_order_transactions.deleted_at');
+            })
+            ->where('org_stocks.organisation_id', $purchaseOrder->organisation_id)
+            ->where(function ($query) use ($pricePerSko) {
+                $query->whereNotNull('purchase_order_transactions.id')
+                    ->orWhere(fn ($query) => $query->whereIn('org_stocks.state', [OrgStockStateEnum::ACTIVE->value])->whereRaw("$pricePerSko is not null"));
+            })
+            ->defaultSort('org_stocks.code')
+            ->select([
+                'org_stocks.id',
+                'org_stocks.code',
+                'org_stocks.name',
+                'org_stocks.id as org_stock_id',
+                'org_stocks.packed_in as units_per_pack',
+                'purchase_order_transactions.quantity_ordered',
+                'purchase_order_transactions.net_amount',
+                'purchase_order_transactions.org_net_amount',
+                'purchase_order_transactions.org_exchange',
+                'purchase_order_transactions.id as purchase_order_transaction_id',
+            ])
+            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $pricePerSko / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
+            ->selectRaw('null as units_per_carton')
+            ->selectRaw('true as is_partner_org_stock')
+            ->selectRaw('? as supplier_name', [$orgPartner->partner->name])
+            ->selectRaw('? as net_currency', [$purchaseOrder->currency->code])
+            ->selectRaw('? as org_currency', [$purchaseOrder->organisation->currency->code])
+            ->selectRaw("{$purchaseOrder->id} as purchase_order_id")
+            ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
+            ->allowedSorts(['code', 'name'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator(null, tableName: request()->route()?->getName())
+            ->withQueryString();
+
+        $this->attachOrgStockData($paginator);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
+
+        return $paginator;
     }
 
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection

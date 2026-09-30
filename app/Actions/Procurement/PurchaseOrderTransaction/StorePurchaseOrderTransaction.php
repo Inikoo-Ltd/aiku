@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
@@ -21,6 +22,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -103,6 +105,54 @@ class StorePurchaseOrderTransaction extends OrgAction
         $this->initialisation($purchaseOrder->organisation, $request);
 
         $this->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, $this->validatedData);
+    }
+
+    public function inPartnerPurchaseOrder(PurchaseOrder $purchaseOrder, OrgStock $orgStock, ActionRequest $request): void
+    {
+        $this->initialisation($purchaseOrder->organisation, $request);
+
+        $this->addPartnerOrgStock($purchaseOrder, $orgStock, $this->validatedData);
+    }
+
+    /**
+     * A partner purchase order is priced at what the partner sells the SKO for; the invoice the
+     * partner sends is what costs the delivery in the end.
+     *
+     * @param  array<string, mixed>  $modelData
+     * @throws ValidationException
+     */
+    public function addPartnerOrgStock(PurchaseOrder $purchaseOrder, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
+    {
+        return DB::transaction(function () use ($purchaseOrder, $orgStock, $modelData) {
+            $fail = fn (string $message) => throw ValidationException::withMessages(['org_stock' => $message]);
+
+            if (!$purchaseOrder->parent instanceof OrgPartner) {
+                $fail(__('Only a purchase order to a partner takes SKOs directly'));
+            }
+            if ($purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+                $fail(__('Products can only be added while the purchase order is in process'));
+            }
+            if ($orgStock->organisation_id !== $purchaseOrder->organisation_id) {
+                $fail(__('This SKO belongs to another organisation'));
+            }
+            if (in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {
+                $fail(__('SKO :code is :state and cannot be ordered', ['code' => $orgStock->code, 'state' => $orgStock->state->labels()[$orgStock->state->value]]));
+            }
+            if ($purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $orgStock->id)->exists()) {
+                $fail(__(':code is already on this purchase order, change its quantity instead', ['code' => $orgStock->code]));
+            }
+
+            $product   = GetPartnerSellingProduct::run($purchaseOrder->parent, $orgStock->stock_id);
+            $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
+            if ($unitPrice === null) {
+                $fail(__(':partner does not sell :code', ['partner' => $purchaseOrder->parent->partner->name, 'code' => $orgStock->code]));
+            }
+
+            return $this->handle($purchaseOrder, null, $orgStock, array_merge($modelData, [
+                'unit_cost'  => round($unitPrice, 6),
+                'net_amount' => round($unitPrice * (float) $modelData['quantity_ordered'], 2),
+            ]));
+        });
     }
 
     /**

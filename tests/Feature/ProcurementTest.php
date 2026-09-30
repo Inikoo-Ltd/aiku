@@ -4299,6 +4299,51 @@ describe('partner shopping list', function () {
             ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('a purchase order to a partner that is not the hub becomes an order there and a stock delivery here', function () {
+        $seller = $this->orgPartner->partner;
+        $seller->update([
+            'is_manufacturing_hub' => false,
+            'settings'             => array_replace_recursive($seller->settings ?? [], ['procurement' => ['shop_id' => $this->sellerShop->id]]),
+        ]);
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->delete();
+        $this->orgPartner->organisation->warehouses()->with('address')->get()->each(fn ($warehouse) => $warehouse->address?->update(['country_code' => $warehouse->address->country_code ?? 'GB']));
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $this->buyerOrgStock->update(['packed_in' => $sellerOrgStock->packed_in]);
+        $unitsPerProduct = (float) $sellerOrgStock->pivot->quantity * (float) ($sellerOrgStock->packed_in ?: 1);
+
+        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, []);
+        $line          = StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $this->buyerOrgStock->refresh(), ['quantity_ordered' => 3 * $unitsPerProduct]);
+
+        expect($purchaseOrder->currency_id)->toBe($seller->currency_id)
+            ->and((float) $line->net_amount)->toBe(round(3 * (float) $this->sellerProduct->price, 2));
+
+        $row = collect($this->getJson(route('grp.json.org-partner.purchase-order-org-stocks', [$this->orgPartner->id, $purchaseOrder->slug]))->assertOk()->json('data'))
+            ->firstWhere('id', $this->buyerOrgStock->id);
+        expect($row['purchase_order_transaction_id'])->toBe($line->id)
+            ->and($row['saveRoute']['name'])->toBe('grp.models.purchase-order.transaction.update');
+
+        UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+        $purchaseOrder->refresh();
+        $order         = \App\Models\Ordering\Order::find(data_get($purchaseOrder->data, 'seller_order_id'));
+        $stockDelivery = $purchaseOrder->stockDeliveries()->first();
+
+        expect($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+            ->and($order->shop_id)->toBe($this->sellerShop->id)
+            ->and($order->customer_reference)->toBe($purchaseOrder->reference)
+            ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and((float) $order->transactions()->first()->quantity_ordered)->toBe(3.0)
+            ->and($stockDelivery)->not->toBeNull()
+            ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
+            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+
+        $seller->update(['is_manufacturing_hub' => true]);
+        expect(fn () => StorePurchaseOrder::make()->action($this->orgPartner, []))->toThrow(ValidationException::class);
+    });
+
     test('send partner order to warehouse creates DN and mirror stock delivery in buyer org', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
@@ -4487,6 +4532,7 @@ describe('partner shopping list', function () {
     });
 
     test('a partner purchase order raised after the partner moved to aiku can not create its own stock delivery', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
         $partnerData = $this->orgPartner->data;
         data_set($partnerData, 'intercompany_customers', [$this->sellerShop->id => 1]);
         $this->orgPartner->update(['data' => $partnerData]);

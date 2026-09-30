@@ -19,6 +19,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,9 +44,20 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             ->doesntExist()) {
             $validator->errors()->add('transactions', __('Purchase order must have at least one item to be submitted'));
         }
+
+        if (SendPartnerPurchaseOrderToSeller::appliesTo($this->purchaseOrder)) {
+            foreach (SendPartnerPurchaseOrderToSeller::make()->problems($this->purchaseOrder) as $problem) {
+                $validator->errors()->add('purchase_order', $problem);
+            }
+        }
     }
 
     public function handle(PurchaseOrder $purchaseOrder, ?string $sendVia = null): PurchaseOrder
+    {
+        return DB::transaction(fn () => $this->submit($purchaseOrder, $sendVia));
+    }
+
+    private function submit(PurchaseOrder $purchaseOrder, ?string $sendVia): PurchaseOrder
     {
         $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
@@ -78,6 +90,12 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrderHydrate($purchaseOrder);
 
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
+
+        if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
+            SendPartnerPurchaseOrderToSeller::run($purchaseOrder);
+
+            return $purchaseOrder->refresh();
+        }
 
         if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($purchaseOrder), 'channel'), true)) {
             SendPurchaseOrderToSupplier::dispatch($purchaseOrder, $sendVia);

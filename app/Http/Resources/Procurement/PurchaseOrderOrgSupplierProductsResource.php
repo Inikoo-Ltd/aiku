@@ -37,6 +37,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \Illuminate\Support\Collection|null $quarterly_usage
  * @property \Illuminate\Support\Collection|null $other_open_purchase_orders
  * @property array|null $stock_deliveries
+ * @property bool|null $is_partner_org_stock
  */
 class PurchaseOrderOrgSupplierProductsResource extends JsonResource
 {
@@ -51,14 +52,23 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ]
-            : [
-                'name'       => 'grp.models.purchase-order.transaction.store',
-                'parameters' => [
-                    'purchaseOrder'      => $this->purchase_order_id,
-                    'orgSupplierProduct' => $this->id,
-                ],
-                'method'     => 'post',
-            ];
+            : ($this->is_partner_org_stock
+                ? [
+                    'name'       => 'grp.models.purchase-order.transaction.store_org_stock',
+                    'parameters' => [
+                        'purchaseOrder' => $this->purchase_order_id,
+                        'orgStock'      => $this->id,
+                    ],
+                    'method'     => 'post',
+                ]
+                : [
+                    'name'       => 'grp.models.purchase-order.transaction.store',
+                    'parameters' => [
+                        'purchaseOrder'      => $this->purchase_order_id,
+                        'orgSupplierProduct' => $this->id,
+                    ],
+                    'method'     => 'post',
+                ]);
 
         return [
             'id'               => $this->id,

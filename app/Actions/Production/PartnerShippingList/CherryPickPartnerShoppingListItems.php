@@ -183,7 +183,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         return $products->first();
     }
 
-    private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
+    public function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
         $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
         if ($customer) {
@@ -238,7 +238,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         ]);
     }
 
-    private function intercompanySalesChannel(int $groupId): SalesChannel
+    public function intercompanySalesChannel(int $groupId): SalesChannel
     {
         $channel = SalesChannel::where('group_id', $groupId)
             ->where('code', 'intercompany')
