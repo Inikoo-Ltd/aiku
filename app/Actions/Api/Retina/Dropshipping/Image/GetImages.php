@@ -33,7 +33,7 @@ class GetImages extends RetinaApiAction
     public function handle(): LengthAwarePaginator
     {
         $model = $this->model;
-        $query = QueryBuilder::for(Media::class);
+        $query = QueryBuilder::for(Media::class)->select('media.*');
         if ($model instanceof Portfolio) {
             $query->join('model_has_media', 'media.id', '=', 'model_has_media.media_id')
                 ->where('model_has_media.model_id', $model->item_id)
