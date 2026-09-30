@@ -16,7 +16,9 @@ use App\Actions\Production\PartnerShippingList\FulfilToProduceItemsFromSurplus;
 use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
@@ -131,6 +133,15 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     'state'       => JobOrderStateEnum::RECEIVED,
                     'received_at' => now(),
                 ]);
+
+                // Our own restock and hand-made lines have no order to dispatch and no partner to
+                // pick for, so nothing else closes them: left open they vanish from the board yet
+                // keep counting and block the product from being queued again.
+                PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
+                    ->whereNull('partner_organisation_id')
+                    ->whereNull('transaction_id')
+                    ->where('state', ShoppingListItemStateEnum::OPEN)
+                    ->update(['state' => ShoppingListItemStateEnum::DISMISSED]);
             }
         });
 

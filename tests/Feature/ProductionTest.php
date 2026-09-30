@@ -1753,6 +1753,18 @@ test('completed job order is received into stock with a batch code', function ()
         'quantity'    => 10,
     ]);
 
+    $boardLine = fn (array $extra) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stock->id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 10,
+        'state'           => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN,
+        'job_order_id'    => $jobOrder->id,
+    ] + $extra);
+    $restockLine = $boardLine([]);
+    $partnerLine = $boardLine(['partner_organisation_id' => $this->organisation->id]);
+
     ConfirmJobOrder::make()->action($jobOrder);
 
     $task = $jobOrderItem->tasks()->first();
@@ -1763,6 +1775,9 @@ test('completed job order is received into stock with a batch code', function ()
     $jobOrder = \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, [
         'location_id' => $location->id,
     ]);
+
+    expect($restockLine->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($partnerLine->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN);
 
     expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED)
         ->and(fn () => \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), [
