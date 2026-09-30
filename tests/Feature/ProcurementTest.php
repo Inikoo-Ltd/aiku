@@ -3471,7 +3471,7 @@ describe('stock delivery costing checklist', function () {
 
     test('costs in another currency are converted to the delivery currency', function () {
         $stockDelivery = $this->costingStockDelivery;
-        $otherCurrency = Currency::where('id', '!=', $stockDelivery->currency_id)->first();
+        $otherCurrency = Currency::whereNotIn('id', [$stockDelivery->currency_id, $stockDelivery->organisation->currency_id])->first();
 
         $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
             'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
@@ -3502,6 +3502,32 @@ describe('stock delivery costing checklist', function () {
         expect((float) $stockDelivery->refresh()->org_exchange)->toBe(2.5)
             ->and((float) $item->org_exchange)->toBe(2.5)
             ->and((float) $item->org_net_amount)->toBe(100.0);
+    });
+
+    test('a cost in the organisation currency keeps its amount through the invoice exchange rate', function () {
+        $stockDelivery = $this->costingStockDelivery;
+        $stockDelivery->update([
+            'currency_id'  => Currency::where('id', '!=', $stockDelivery->organisation->currency_id)->value('id'),
+            'org_exchange' => 0.75,
+        ]);
+        $orgStock = OrgStock::where('organisation_id', $stockDelivery->organisation_id)->first();
+        $item     = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
+        UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 40], strict: false);
+
+        $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount'      => 589.98,
+            'currency_id' => $stockDelivery->organisation->currency_id,
+            'exchange'    => 1.3,
+        ]);
+
+        expect(round($shipping->amountInDeliveryCurrency() * 0.75, 2))->toBe(589.98)
+            ->and(round((float) $stockDelivery->items()->sum('cost_shipping'), 2))->toBe(786.64);
+
+        UpdateStockDelivery::make()->action($stockDelivery, ['org_exchange' => 0.8]);
+
+        expect(round($shipping->fresh()->amountInDeliveryCurrency() * 0.8, 2))->toBe(589.98)
+            ->and(round((float) $stockDelivery->items()->sum('cost_shipping'), 2))->toBe(737.48);
     });
 
     test('non extra cost types are singletons', function () {
