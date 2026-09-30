@@ -7,13 +7,17 @@
 
 namespace App\Actions\Chat\Whatsapp\Calls;
 
-use App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage;
+use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
+use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
 use App\Events\BroadcastWhatsappCallEvent;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatCall;
+use App\Models\Chat\MetaChatSession;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -112,7 +116,7 @@ class HandleWhatsappCallEvent
 
         $digits          = preg_replace('/\D/', '', (string) Arr::get($call, 'from'));
         $profileName     = Arr::get($value, 'contacts.0.profile.name');
-        $metaChatSession = StoreIncomingWhatsappMessage::make()->resolveSession($shop, $metaChannel, $digits, $profileName);
+        $metaChatSession = $this->resolveSession($shop, $metaChannel, $digits, $profileName);
 
         $metaChatCall = MetaChatCall::create([
             'meta_channel_id'      => $metaChannel->id,
@@ -134,6 +138,45 @@ class HandleWhatsappCallEvent
         ]);
 
         BroadcastWhatsappCallEvent::dispatch($metaChatCall);
+    }
+
+    /**
+     * Messages and calls from one number are one conversation: the session the number already
+     * has, reopened if closed, or a new one when the number has never reached the shop before.
+     * ponytail: mirrors the lookup in StoreIncomingWhatsappMessage::storeMessage(), keep the two in step.
+     */
+    protected function resolveSession(Shop $shop, MetaChannel $metaChannel, string $digits, ?string $profileName): MetaChatSession
+    {
+        $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
+            ->where('shop_id', $shop->id)
+            ->whereIn('phone_number', ['+'.$digits, $digits])
+            ->latest('id')
+            ->first();
+
+        if (!$metaChatSession) {
+            return StoreMetaChatSession::run([
+                'shop_id'      => $shop->id,
+                'customer_id'  => $this->findCustomer($shop, $digits)?->id,
+                'phone_number' => '+'.$digits,
+                'name'         => $profileName,
+            ]);
+        }
+
+        if ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
+            return ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
+        }
+
+        return $metaChatSession;
+    }
+
+    protected function findCustomer(Shop $shop, string $digits): ?Customer
+    {
+        $customers = fn () => Customer::where('shop_id', $shop->id)
+            ->orderByRaw('last_invoiced_at desc nulls last')
+            ->orderByDesc('id');
+
+        return $customers()->where('phone', '+'.$digits)->first()
+            ?? $customers()->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])->first();
     }
 
     /**
