@@ -18,13 +18,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class GetVariantAndProducts extends IrisAction
 {
     use WithStepDiscountColumn;
+    use WithVariantAxisLabelColumn;
 
     public function handle(Variant $variant): array
     {
         $data             = $variant->data;
         $visibleProducts  = collect(data_get($variant->data, 'products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
         $products         = $variant->allProductForSale()
-            ->select('products.*', $this->getStepDiscountColumn())
+            ->select('products.*', $this->getStepDiscountColumn(), $this->getVariantAxisLabelColumn())
             ->whereIn('id', $visibleProducts->keys())
             ->get();
         $visibleProducts  = $visibleProducts->only($products->pluck('id')->all());

@@ -32,6 +32,7 @@ trait HasProductOfferPrices
             'is_coming_soon'             => $this->status === ProductStatusEnum::COMING_SOON,
             'is_golden_product'          => (bool)$this->is_golden_product,
             'variant'                    => $this->variant_id,
+            'variant_axis_label'         => $this->variant_axis_label,
             'product_offers_data'        => $productOffersData,
             'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
             'discounted_price_per_unit'  => $pricePerUnitDiscounted,

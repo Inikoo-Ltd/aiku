@@ -20,6 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 trait WithIrisProductsInWebpage
 {
     use WithStepDiscountColumn;
+    use WithVariantAxisLabelColumn;
 
     public function getGlobalSearch(): AllowedFilter
     {
@@ -181,6 +182,7 @@ trait WithIrisProductsInWebpage
             DB::raw("(SELECT brands.name FROM brands INNER JOIN model_has_brands ON brands.id = model_has_brands.brand_id WHERE model_has_brands.model_id = products.id AND model_has_brands.model_type = 'Product' LIMIT 1) as brand_name"),
             DB::raw("(SELECT product_categories.code FROM product_categories WHERE product_categories.id = products.family_id) as family_code"),
             $this->getStepDiscountColumn(),
+            $this->getVariantAxisLabelColumn(),
             ...$additionalColumns
         ];
 
