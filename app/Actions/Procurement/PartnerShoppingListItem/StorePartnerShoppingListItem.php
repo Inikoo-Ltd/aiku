@@ -47,6 +47,8 @@ class StorePartnerShoppingListItem extends OrgAction
                 ?? StoreOrgStock::make()->action($orgPartner->organisation, $orgStock->stock);
         }
 
+        EnsurePartnerOrderPackedInMatches::make()->guard($orgPartner, [$buyerOrgStock->stock_id]);
+
         data_set($modelData, 'group_id', $orgPartner->group_id);
         data_set($modelData, 'organisation_id', $orgPartner->organisation_id);
         data_set($modelData, 'org_partner_id', $orgPartner->id);

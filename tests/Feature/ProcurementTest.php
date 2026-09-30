@@ -119,6 +119,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
@@ -4506,6 +4507,34 @@ describe('partner shopping list', function () {
         }
 
         expect($refusal)->not->toContain('dispatches the order');
+    });
+
+    test('a SKO packed differently at the buyer and the seller can not be ordered between them', function () {
+        $buyerOrganisation  = $this->buyerOrgStock->organisation;
+        $sellerOrganisation = $this->agent->organisation;
+        $orgPartner         = OrgPartner::where('organisation_id', $buyerOrganisation->id)->where('partner_id', $sellerOrganisation->id)->first()
+            ?? StoreOrgPartner::make()->action($buyerOrganisation, $sellerOrganisation);
+        $sellerOrgStock     = OrgStock::where('organisation_id', $sellerOrganisation->id)->where('stock_id', $this->buyerOrgStock->stock_id)->first()
+            ?? \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($sellerOrganisation, $this->buyerOrgStock->stock);
+        $sellerPackedIn     = $sellerOrgStock->packed_in;
+        $guard              = EnsurePartnerOrderPackedInMatches::make();
+
+        $sellerOrgStock->update(['packed_in' => null]);
+        $this->buyerOrgStock->update(['packed_in' => 1]);
+        expect($guard->mismatches($orgPartner, [$this->buyerOrgStock->stock_id]))->toBeEmpty();
+
+        $sellerOrgStock->update(['packed_in' => 3]);
+
+        expect($guard->mismatches($orgPartner, [$this->buyerOrgStock->stock_id])[0])->toContain($sellerOrgStock->code)
+            ->and(fn () => StorePartnerShoppingListItem::make()->action($orgPartner, $sellerOrgStock, ['quantity' => 2]))->toThrow(ValidationException::class);
+
+        $bulk = StorePartnerShoppingListItems::make()->action($orgPartner, [['org_stock_id' => $sellerOrgStock->id, 'quantity' => 2]]);
+
+        expect($bulk['created'])->toBe(0)
+            ->and($bulk['skipped'])->toHaveCount(1)
+            ->and($bulk['skipped'][0]['reason'])->toContain('packed in');
+
+        $sellerOrgStock->update(['packed_in' => $sellerPackedIn]);
     });
 
     test('buyer can not change a partner stock delivery before the seller dispatches it', function () {
