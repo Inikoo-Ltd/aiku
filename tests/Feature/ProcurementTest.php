@@ -4345,6 +4345,74 @@ describe('partner shopping list', function () {
         DB::table('delivery_note_items')->where('delivery_note_id', $resentDeliveryNote->id)->update(['quantity_dispatched' => 0]);
     });
 
+    test('an order the seller enters by hand for the partner customer gets a mirror stock delivery on dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 4,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+        $order->update(['sales_channel_id' => null]);
+        SubmitOrder::make()->action($order->refresh());
+
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            $deliveryNoteItem->update(['quantity_dispatched' => $deliveryNoteItem->quantity_required]);
+        }
+
+        $stockDelivery = SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect($stockDelivery)->not->toBeNull()
+            ->and($stockDelivery->organisation_id)->toBe($this->orgPartner->organisation_id)
+            ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+    });
+
+    test('an order fetched from aurora gets no mirror stock delivery on dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        $order->update(['source_id' => '4:999999']);
+
+        expect(SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh()))->toBeNull();
+    });
+
+    test('a partner purchase order raised after the partner moved to aiku can not create its own stock delivery', function () {
+        $partnerData = $this->orgPartner->data;
+        data_set($partnerData, 'intercompany_customers', [$this->sellerShop->id => 1]);
+        $this->orgPartner->update(['data' => $partnerData]);
+        $this->sellerShop->update(['migrated_to_aiku_on' => now()->subDays(10)]);
+
+        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, PurchaseOrder::factory()->definition());
+        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED]);
+
+        expect(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))
+            ->toThrow(ValidationException::class);
+
+        $purchaseOrder->update(['created_at' => now()->subDays(20)]);
+
+        $refusal = '';
+        try {
+            StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+        } catch (ValidationException $exception) {
+            $refusal = implode(' ', Arr::flatten($exception->errors()));
+        }
+
+        expect($refusal)->not->toContain('dispatches the order');
+    });
+
     test('buyer can not change a partner stock delivery before the seller dispatches it', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
