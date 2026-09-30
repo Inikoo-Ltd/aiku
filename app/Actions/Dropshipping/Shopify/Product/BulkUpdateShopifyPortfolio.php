@@ -36,12 +36,18 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
     private const string ACTIVE_STATUS = 'ACTIVE';
 
-    public function getJobUniqueId(?int $customerSalesChannelId): string
+    /**
+     * The scheduled push waits up to six hours before it runs and holds its lock all that time,
+     * so it locks apart from the one a customer asks for: sharing the lock dropped their click
+     * without a word (HELP-3560). Each kind still only queues once per channel.
+     */
+    public function getJobUniqueId(?int $customerSalesChannelId, ?Command $command = null, bool $isScheduled = false): string
     {
-        return $customerSalesChannelId ?? 'empty';
+        return ($isScheduled ? 'scheduled-' : '').($customerSalesChannelId ?? 'empty');
     }
 
-    public function handle(?int $customerSalesChannelId, ?Command $command = null): void
+    /** @noinspection PhpUnusedParameterInspection */
+    public function handle(?int $customerSalesChannelId, ?Command $command = null, bool $isScheduled = false): void
     {
         if (!$customerSalesChannelId) {
             return;

@@ -467,6 +467,20 @@ test('the stock push sends product ids as a list even when the portfolios are ke
         ->and($ids)->toBe(['gid://shopify/Product/1', 'gid://shopify/Product/2']);
 });
 
+test('asking for a stock update goes through while the scheduled push is still waiting, and asking twice queues it once', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'stock-push-lock')->customerSalesChannel;
+    \Illuminate\Support\Facades\Cache::flush();
+
+    BulkUpdateShopifyPortfolio::dispatch($channel->id, null, true)->delay(now()->addHours(5));
+    \App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyCustomerSalesChannel::run($channel);
+    \App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyCustomerSalesChannel::run($channel);
+    BulkUpdateShopifyPortfolio::dispatch($channel->id, null, true);
+
+    BulkUpdateShopifyPortfolio::assertPushed(2);
+    BulkUpdateShopifyPortfolio::assertPushed(fn ($action, $parameters) => ($parameters[2] ?? false) === false);
+});
+
 test('the stock push resolves the variant by sku and never falls back to a sibling variant', function () {
     $variant   = fn (string $id, string $sku) => ['variantId' => "gid://shopify/ProductVariant/$id", 'inventoryItemId' => "gid://shopify/InventoryItem/$id", 'sku' => $sku];
     $bracelets = [$variant('1', 'BFGx-01'), $variant('3', 'BFGx-03')];
