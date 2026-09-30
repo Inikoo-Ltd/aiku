@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandlingBlocked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
 
@@ -32,6 +34,8 @@ class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
             return $deliveryNote;
         }
 
+        $oldState = $deliveryNote->state;
+
         data_set($modelData, 'handling_blocked_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
 
@@ -41,6 +45,9 @@ class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
         if ($order && $deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
             UpdateOrderStateToHandlingBlocked::make()->action($order, $deliveryNote);
         }
+
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING_BLOCKED);
 
         return $deliveryNote;
     }
