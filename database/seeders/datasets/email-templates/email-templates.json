@@ -550,5 +550,16 @@
     "arguments": [
       "order"
     ]
+  },
+  {
+    "outboxes": [
+      "pre_order_update"
+    ],
+    "name": "Pre-order update",
+    "content": "pre_order_update.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "order"
+    ]
   }
 ]

@@ -6,7 +6,8 @@
 -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
+import RetinaPreOrderPanel, { PreOrderShowcase } from "@/Components/Retina/PreOrder/RetinaPreOrderPanel.vue"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -45,6 +46,8 @@ library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign
 
 
 const props = defineProps<{
+    pre_order?: PreOrderShowcase | null
+    split_pre_order?: { reference: string, slug: string } | null
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
@@ -223,6 +226,15 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
             />
         </div>
     </Message>
+
+    <div v-if="pre_order" class="mx-4 mt-4">
+        <RetinaPreOrderPanel :pre_order :orderId="data?.data?.id" :orderSlug="data?.data?.slug" showPayButton />
+    </div>
+
+    <div v-if="split_pre_order" class="mx-4 mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        {{ ctrans("The pre-order items of this order are in order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
+        <Link :href="route('retina.ecom.orders.show', { order: split_pre_order.slug })" class="underline">{{ ctrans("View") }}</Link>
+    </div>
 
     <EcomCheckoutSummary
         :summary

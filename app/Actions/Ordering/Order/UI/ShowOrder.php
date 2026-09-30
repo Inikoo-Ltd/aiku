@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
+use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -280,7 +282,8 @@ class ShowOrder extends OrgAction
         $orderBanStatus = $this->isForbiddenDetailed($order);
 
         $lockedInAurora = $order->isLockedInAurora();
-        $canEdit        = $this->canEdit && !$lockedInAurora;
+        $preOrderLocked = $order->preOrder && !$order->preOrder->canBeEditedBy($request->user());
+        $canEdit        = $this->canEdit && !$lockedInAurora && !$preOrderLocked;
 
         $actions = match (true) {
             $lockedInAurora => [],
@@ -290,6 +293,7 @@ class ShowOrder extends OrgAction
 
         if (!$canEdit
             && !$lockedInAurora
+            && !$preOrderLocked
             && $order->state == OrderStateEnum::SUBMITTED
             && $order->pay_status != OrderPayStatusEnum::PAID
             && $order->transactions()->exists()
@@ -315,7 +319,7 @@ class ShowOrder extends OrgAction
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora) {
+        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora && !$preOrderLocked) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -539,6 +543,23 @@ class ShowOrder extends OrgAction
                     'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
                 ],
                 'data'                        => OrderResource::make($order),
+                'pre_order'                   => $order->preOrder ? array_merge(GetPreOrderShowcase::run($order->preOrder), [
+                    'update_route'         => [
+                        'name'       => 'grp.models.order.pre_order.update',
+                        'parameters' => ['order' => $order->id],
+                        'method'     => 'patch',
+                    ],
+                    'cancellation_reasons' => PreOrderCancellationReasonEnum::valuesWithLabels(),
+                    'lock'                 => [
+                        'is_locked'        => $order->preOrder->isLocked(),
+                        'is_locked_for_me' => $preOrderLocked,
+                        'unlocked_until'   => $order->preOrder->isUnlockedFor($request->user()) ? $order->preOrder->unlockedUntil()?->toIso8601String() : null,
+                    ],
+                ]) : null,
+                'split_pre_order'             => $order->splitPreOrder ? [
+                    'reference' => $order->splitPreOrder->order->reference,
+                    'slug'      => $order->splitPreOrder->order->slug,
+                ] : null,
                 'delivery_note'               => $deliveryNoteResource,
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),

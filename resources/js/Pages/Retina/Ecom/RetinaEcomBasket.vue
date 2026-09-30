@@ -17,6 +17,7 @@ import GiftMessagePanel from "@/Components/Order/GiftMessagePanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
@@ -157,6 +158,7 @@ const props = defineProps<{
     }
     missed_offers: Record<string, { label: string }>
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData | null
     voucher: {
         id: number
         voucher_code: string
@@ -647,6 +649,7 @@ const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
 const isGiftMessageMissing = computed(() =>
     !!(props.order as any)?.has_gift_message && !!giftMessagePanel.value?.isMissing
 )
+const isPreOrderTermsPending = computed(() => !!props.pre_orders?.has_pre_orders && !props.pre_orders.is_accepted)
 
 
 // Section: Charge Insurance
@@ -745,6 +748,7 @@ const onChangeInsurance = async (val: boolean) => {
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
+                :preOrderLines="pre_orders?.lines"
             >
                 <template #gridHeaderActions>
                     <Button
@@ -988,6 +992,10 @@ const onChangeInsurance = async (val: boolean) => {
                 <BasketStockIssues :stock_issues />
             </div>
 
+            <div v-if="pre_orders?.has_pre_orders" class="px-4 md:px-8 pb-4">
+                <BasketPreOrders :pre_orders :orderId="order?.id" :currencyCode="order?.currency_code" />
+            </div>
+
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
                 <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || order.is_collection" class="w-full md:w-72">
@@ -1001,9 +1009,16 @@ const onChangeInsurance = async (val: boolean) => {
                             :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
                             :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
-                                || isGiftMessageMissing"
+                                || isGiftMessageMissing
+                                || isPreOrderTermsPending"
                         >
                         </ButtonWithLink>
+                        <div v-if="isPreOrderTermsPending" class="text-xs text-amber-700 mt-2 flex items-start gap-x-1">
+                            <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
+                            <div class="leading-5">
+                                {{ ctrans("Accept the pre-order terms above to place your order.") }}
+                            </div>
+                        </div>
                         <div class="text-xs text-gray-600 mt-2 italic flex items-start gap-x-1">
                             <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                             <div class="leading-5">

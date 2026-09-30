@@ -45,7 +45,7 @@ class StoreRetinaTransaction extends RetinaAction
             );
         }
 
-        $this->ensureHistoricAssetIsPurchasableByCustomer($historicAsset, $order->customer);
+        $this->ensureHistoricAssetIsPurchasableByCustomer($historicAsset, $order->customer, Arr::get($modelData, 'quantity'));
 
         $order->update([
             'updated_by_customer_at' => now()

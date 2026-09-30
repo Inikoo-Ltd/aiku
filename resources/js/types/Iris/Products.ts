@@ -6,6 +6,20 @@
 */
 import { Image as ImageTS } from '@/types/Image'
 
+export interface PreOrder {
+	type: 'back_order' | 'made_to_order'
+	type_label: string
+	lead_time_days: number
+	dispatch_from_weeks: number
+	dispatch_to_weeks: number
+	dispatch_label: string
+	max_quantity: number | null
+	deposit_percentage: number
+	is_pallet_delivery: boolean
+	pallet_estimate_label?: string | null
+	terms: string[]
+}
+
 export interface ProductResource {
 	id: number
 	name: string
@@ -27,6 +41,7 @@ export interface ProductResource {
 	is_favourite?: boolean
 	is_back_in_stock?: boolean
 	expected_back_in_stock_at?: string | null
+	pre_order?: PreOrder | null
 	is_golden_product?: boolean
 	is_variant?: boolean
 	top_seller: number | null

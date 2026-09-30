@@ -86,12 +86,16 @@ use App\Actions\Procurement\SupplierMessage\SendSupplierEmail;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
 use App\Actions\Procurement\SupplierMessage\UI\ShowSupplierMessage;
 use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
+use App\Actions\Procurement\UI\IndexPreOrdersBySupplier;
+use App\Actions\Procurement\UpdatePreOrdersForSupplier;
 use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
 Route::get('/stock-cover', IndexOrganisationStockCoverItems::class)->name('stock_cover.index');
 Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->name('stock_cover.export');
+Route::get('/pre-orders', IndexPreOrdersBySupplier::class)->name('pre_orders.index');
+Route::patch('/pre-orders', UpdatePreOrdersForSupplier::class)->name('pre_orders.update');
 
 Route::prefix('settings')->as('settings.')->group(function () {
     Route::get('', EditProcurementSettings::class)->name('edit');

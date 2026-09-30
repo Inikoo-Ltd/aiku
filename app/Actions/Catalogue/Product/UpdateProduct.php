@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
@@ -324,6 +325,7 @@ class UpdateProduct extends OrgAction
         $fieldsUsedInWebpages = array_merge(
             $productContentFields,
             ['rrp', 'units', 'unit'],
+            Product::PRE_ORDER_FIELDS,
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );
@@ -347,6 +349,10 @@ class UpdateProduct extends OrgAction
                 || $isInStock != $oldIsInStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
+        if (Arr::hasAny($changed, ['is_back_order', 'is_made_to_order'])) {
+            SyncBasketLinesWithProductStock::dispatch($product);
         }
 
         if (Arr::has($changed, 'available_quantity')) {
@@ -541,6 +547,11 @@ class UpdateProduct extends OrgAction
             'independent_barcode'           => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
             'is_indivisible'                => ['sometimes', 'boolean'],
+            'is_back_order'                 => ['sometimes', 'boolean'],
+            'is_made_to_order'              => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage'  => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'pre_order_lead_time_days'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
+            'max_quantity_per_order'        => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
 
 

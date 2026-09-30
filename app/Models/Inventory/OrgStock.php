@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
  * @property numeric $quantity_in_submitted_orders
  * @property numeric $quantity_to_be_picked
+ * @property numeric $quantity_reserved_for_pre_orders Goods that arrived for pre-orders whose balance is due
  * @property numeric $quantity_available
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked

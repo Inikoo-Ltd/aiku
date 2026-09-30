@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Comms\Traits\WithOrderingCustomerNotification;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
@@ -204,6 +205,8 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 );
             }
 
+            $discountLabel .= $this->preOrderLineNoteHtml($transaction->data);
+
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="padding:12px 8px; vertical-align:middle;">
@@ -349,7 +352,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . __('To Pay Amount') . '</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . ($order->preOrder ? __('Balance due when the goods arrive') : __('To Pay Amount')) . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">%s%s</td>
             </tr>',
             $currency,
@@ -358,6 +361,53 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
         $html .= '</table>';
         $html .= '</div>'; // Close padding wrapper
+
+        return $html.$this->generatePreOrderHtml($order);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $transactionData
+     */
+    private function preOrderLineNoteHtml(?array $transactionData): string
+    {
+        $preOrderNote = GetProductPreOrder::make()->lineNote(Arr::get($transactionData, 'pre_order'));
+
+        return $preOrderNote
+            ? '<br/><span style="display: inline-block; margin-top: 4px; padding: 2px 4px; font-size: 11px; font-weight: bold; color: #92400e; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px;">'.e($preOrderNote).'</span>'
+            : '';
+    }
+
+    /**
+     * HELP-3432: when the pre-order items are sent, and the terms the customer accepted.
+     */
+    public function generatePreOrderHtml(Order $order): string
+    {
+        $paragraph = 'style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 13px; color: #92400e; line-height: 1.5em; margin: 0 0 8px;"';
+
+        if ($splitPreOrder = $order->splitPreOrder) {
+            return '<div style="padding: 0 22px 22px 22px;"><p '.$paragraph.'>'.e(__('Your pre-order items are in order :reference, which is sent separately when they arrive.', [
+                'reference' => $splitPreOrder->order->reference,
+            ])).'</p></div>';
+        }
+
+        $preOrder = $order->preOrder;
+        if (!$preOrder) {
+            return '';
+        }
+
+        $html = '<div style="padding: 0 22px 22px 22px;">';
+        $html .= '<p '.$paragraph.'><strong>'.e(__('Pre-order: estimated dispatch between :from and :to.', [
+            'from' => $preOrder->estimated_dispatch_from?->toFormattedDateString(),
+            'to'   => $preOrder->estimated_dispatch_to?->toFormattedDateString(),
+        ])).'</strong></p>';
+        if ($preOrder->parentOrder) {
+            $html .= '<p '.$paragraph.'>'.e(__('The in-stock items of your order are in order :reference, sent now.', ['reference' => $preOrder->parentOrder->reference])).'</p>';
+        }
+        $html .= '<ul style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 12px; color: #555; margin: 0; padding-left: 18px;">';
+        foreach ($preOrder->terms as $term) {
+            $html .= '<li>'.e($term).'</li>';
+        }
+        $html .= '</ul></div>';
 
         return $html;
     }

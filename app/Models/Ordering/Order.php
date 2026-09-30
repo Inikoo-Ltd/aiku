@@ -490,6 +490,22 @@ class Order extends Model implements HasMedia, Auditable
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Set when this order is a pre-order held until its goods arrive (HELP-3432).
+     */
+    public function preOrder(): HasOne
+    {
+        return $this->hasOne(PreOrder::class);
+    }
+
+    /**
+     * The pre-order split off this order at submit, when the basket mixed in-stock and pre-order items.
+     */
+    public function splitPreOrder(): HasOne
+    {
+        return $this->hasOne(PreOrder::class, 'parent_order_id');
+    }
+
     public function stats(): HasOne
     {
         return $this->hasOne(OrderStats::class);

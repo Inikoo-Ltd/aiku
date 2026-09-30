@@ -8,6 +8,8 @@
 
 namespace App\Actions\Procurement\UI;
 
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
+use App\Models\Ordering\PreOrder;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
@@ -177,6 +179,14 @@ class ShowProcurementDashboard extends OrgAction
                     $this->dashboardMetric(__('Receiving'), $receivingDeliveries, 'grp.org.procurement.stock_deliveries.index', ['elements[state]' => 'received,checked,booking_in,booked_in']),
                 ],
                 ['elements[state]' => 'in_process,confirmed,ready_to_ship,dispatched,received,checked,booking_in,booked_in']
+            ),
+            $this->dashboardCard(
+                __('Pre-orders'),
+                __('Customer pre-orders waiting for goods, by supplier'),
+                'fal fa-hourglass-half',
+                PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count(),
+                'amber',
+                'grp.org.procurement.pre_orders.index'
             ),
         ];
     }

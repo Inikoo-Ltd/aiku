@@ -37,6 +37,9 @@ trait WithSupplierJsonColumns
         'cooling_period',
         'po_by_email',
         'po_email',
+        'pre_order_lead_time',
+        'pre_order_lead_time_unit',
+        'pre_order_order_by_date',
     ];
 
     /**
@@ -71,6 +74,9 @@ trait WithSupplierJsonColumns
             'cooling_period'                  => ['sometimes', 'nullable', 'integer', 'min:0'],
             'po_by_email'                     => ['sometimes', 'boolean'],
             'po_email'                        => ['sometimes', 'nullable', 'email', 'max:255'],
+            'pre_order_lead_time'             => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
+            'pre_order_lead_time_unit'        => ['sometimes', 'nullable', 'string', 'in:days,weeks'],
+            'pre_order_order_by_date'         => ['sometimes', 'nullable', 'date'],
         ];
     }
 }

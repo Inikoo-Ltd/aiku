@@ -55,7 +55,7 @@ class StoreEcomBasketTransaction extends IrisAction
             );
         }
 
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
+        $this->ensureProductIsPurchasableByCustomer($product, $customer, Arr::get($modelData, 'quantity'));
 
         if (!$order) {
             $order = StoreEcomOrder::make()->action($customer);

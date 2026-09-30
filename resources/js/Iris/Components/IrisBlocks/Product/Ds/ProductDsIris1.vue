@@ -20,6 +20,7 @@ import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { useBundle } from "@/Composables/useBundle"
+import PreOrderInfo from "@/Components/Iris/Products/PreOrderInfo.vue"
 import Button from "@/Iris/Components/IrisButton.vue"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
@@ -146,14 +147,15 @@ const openBundlePanel = (product:any) => {
                                         }}
                                     </span>
                                 </div>
-                                <div v-if="layout?.iris?.is_logged_in && !product.stock && useExpectedBackInStockLabel(product)"
+                                <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order" class="mt-2" :preOrder="product.pre_order" :stock="product.stock" />
+                                <div v-else-if="layout?.iris?.is_logged_in && !product.stock && useExpectedBackInStockLabel(product)"
                                     class="mt-0.5 pl-[18px] text-xs text-gray-500">
                                     {{ useExpectedBackInStockLabel(product) }}
                                 </div>
                             </div>
 
                             <!-- RIGHT BUTTON -->
-                            <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+                            <button v-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state === 'active'"
                                 v-tooltip="product?.back_in_stock
                                     ? ctrans('You will be notify via email when the product back in stock')
                                     : ctrans('Click to be notified via email when the product back in stock')" 

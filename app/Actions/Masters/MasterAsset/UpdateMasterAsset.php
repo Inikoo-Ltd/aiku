@@ -35,6 +35,7 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
@@ -315,6 +316,13 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        $changedPreOrderFields = array_intersect(Product::PRE_ORDER_FIELDS, array_keys($masterAsset->getChanges()));
+        if ($changedPreOrderFields) {
+            foreach ($masterAsset->products as $product) {
+                UpdateProduct::run($product, $masterAsset->only($changedPreOrderFields));
+            }
+        }
+
         if ($wasChanged('master_family_id')) {
             if ($masterAsset->masterFamily) {
                 foreach ($masterAsset->products as $product) {
@@ -509,6 +517,11 @@ class UpdateMasterAsset extends OrgAction
             'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
             'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
             'is_for_sale'                => ['sometimes', 'boolean'],
+            'is_back_order'                => ['sometimes', 'boolean'],
+            'is_made_to_order'             => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'pre_order_lead_time_days'     => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
+            'max_quantity_per_order'       => ['sometimes', 'nullable', 'integer', 'min:1'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array'],

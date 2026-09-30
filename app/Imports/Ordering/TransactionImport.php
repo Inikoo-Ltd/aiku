@@ -100,7 +100,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
                 if ($existingTransaction) {
                     $this->ensureCustomerCanChangeLine($existingTransaction, $modelData['quantity_ordered']);
                 } else {
-                    $this->ensureProductIsPurchasableByCustomer($product, $this->scope->customer);
+                    $this->ensureProductIsPurchasableByCustomer($product, $this->scope->customer, $modelData['quantity_ordered']);
                 }
             }
 

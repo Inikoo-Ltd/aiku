@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -52,8 +52,8 @@ const onPayWithBalance = () => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to pay order with customer balance"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to pay order with customer balance"),
                     type: "error"
                 })
             },
@@ -68,12 +68,13 @@ const onPayWithBalance = () => {
 <template>
     <dd class="relative w-full flex flex-col xpy-3">
         <!-- Section: Balance (pay with balance) -->
-        <div v-if="Number(payAmount) > 0" class="mt-2 text-sm text-gray-500 font-light whitespace-nowrap px-2.5 mb-1.5">
-            {{ trans('Current balance') }}: {{ locale.currencyFormat(currencyCode, Number(balance)) }}
+        <div v-if="Number(payAmount) > 0" class="mt-2 text-sm text-gray-500 font-light px-2.5 mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <span class="whitespace-nowrap">{{ ctrans('My balance') }}: {{ locale.currencyFormat(currencyCode, Number(balance)) }}</span>
             <Button
                 v-if="Number(balance) >= Number(payAmount) && Number(payAmount) > 0"
                 size="xxs"
-                :label="trans('Pay with balance')"
+                class="shrink-0 whitespace-nowrap"
+                :label="ctrans('Pay with balance')"
                 xtype="secondary"
                 @click="() => onPayWithBalance()"
                 :loading="isLoadingPayWithBalance"
@@ -90,15 +91,15 @@ const onPayWithBalance = () => {
                 <!-- Section: Remaining -->
                 <div class="text-center relative">
                     <div class="text-lg font-bold">
-                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-if="toBePaidBy?.value">{{ ctrans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
                         <span v-else>
-                            {{ trans("Unpaid") }}
+                            {{ ctrans("Unpaid") }}
                         </span>
-                        <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
+                        <!-- <FontAwesomeIcon v-tooltip="ctrans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
                     </div>
     
                     <div class="opacity-70">
-                        {{ trans("Total to pay") }}: {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
+                        {{ ctrans("Total to pay") }}: {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
                     </div>
                 </div>
             </div>
@@ -108,15 +109,15 @@ const onPayWithBalance = () => {
                 <!-- Section: Remaining -->
                 <div class="text-center relative">
                     <div class="text-lg font-bold">
-                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-if="toBePaidBy?.value">{{ ctrans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
                         <span v-else>
-                            {{ trans("Unpaid") }}
+                            {{ ctrans("Unpaid") }}
                         </span>
-                        <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
+                        <!-- <FontAwesomeIcon v-tooltip="ctrans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
                     </div>
     
                     <div class="opacity-70">
-                        {{ trans("Need to pay :payAmount of :totalAmount", { payAmount: locale.currencyFormat(currencyCode, Number(payAmount)), totalAmount: locale.currencyFormat(currencyCode, Number(totalAmount)) }) }}
+                        {{ ctrans("Need to pay :payAmount of :totalAmount", { payAmount: locale.currencyFormat(currencyCode, Number(payAmount)), totalAmount: locale.currencyFormat(currencyCode, Number(totalAmount)) }) }}
                     </div>
                 </div>
             </div>
@@ -124,8 +125,8 @@ const onPayWithBalance = () => {
             <!-- Section: if fully paid -->
             <div v-if="Number(paidAmount) >= Number(totalAmount)" class="text-center relative w-full">
                 <div v-tooltip="locale.currencyFormat(currencyCode, Number(paidAmount))" class="text-2xl font-bold text-green-600">
-                    {{ trans("Paid") }}
-                    <FontAwesomeIcon v-tooltip="trans('Fully paid')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                    {{ ctrans("Paid") }}
+                    <FontAwesomeIcon v-tooltip="ctrans('Fully paid')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
                 </div>
             </div>
         </div>

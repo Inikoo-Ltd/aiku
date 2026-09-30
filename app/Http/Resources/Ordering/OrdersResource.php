@@ -65,6 +65,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $is_customer_vip
  * @property mixed $attribution_share
  * @property mixed $last_touch_at
+ * @property mixed $is_pre_order
  */
 class OrdersResource extends JsonResource
 {
@@ -114,6 +115,7 @@ class OrdersResource extends JsonResource
             'sales_channel_type'          => $this->sales_channel_type,
             'sales_channel_name'          => $this->sales_channel_name,
             'is_intercompany'             => $this->sales_channel_code === 'intercompany',
+            'is_pre_order'                => (bool) $this->is_pre_order,
             'total_amount'                => $this->total_amount,
             'customer_name'               => $this->customer_name,
             'customer_slug'               => $this->customer_slug,

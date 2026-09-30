@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Catalogue\Product\Traits\WithPreOrderEditFields;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
@@ -31,6 +32,7 @@ class EditMasterProduct extends OrgAction
     use WithMasterProductNavigation;
     use WithLineTaxCategories;
     use WithUnitsChangeConfirmation;
+    use WithPreOrderEditFields;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -457,6 +459,7 @@ class EditMasterProduct extends OrgAction
                     ],
                 ],
             ],
+            $this->preOrderEditFieldsSection($masterProduct),
             !$masterProduct->is_single_trade_unit
                 ? []
                 : [

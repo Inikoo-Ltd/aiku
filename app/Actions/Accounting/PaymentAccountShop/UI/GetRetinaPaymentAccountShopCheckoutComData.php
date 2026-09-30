@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Models\Accounting\OrderPaymentApiPoint;
@@ -38,7 +39,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
         $amountsTpBePaidDifferentPaymentAccounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
+            GetOrderAmountToPayNow::run($order),
             $order->customer->balance
         );
 
