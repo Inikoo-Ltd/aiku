@@ -302,16 +302,9 @@ const canIgnore = computed(() =>
 
 const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
-// Ending a live chat nobody ever answered is rude: from the other side it reads as being
-// shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
-// An email customer is never told it was closed, and is often already being helped on a chat.
-const hasBeenAnswered = computed(() =>
-    messagesLocal.value.some((message) => message.sender_type === "agent")
-)
-
-const canEndChat = computed(() =>
-    (hasBeenAnswered.value || (props.session as any)?.channel === "email") && !isClosed.value && !isTrashed.value && !props.readOnly
-)
+// Offered before anybody has replied too: customers often open a second chat with the same
+// question, and once it is answered on one the duplicate has to be closed without a reply.
+const canEndChat = computed(() => !isClosed.value && !isTrashed.value && !props.readOnly)
 
 // The header goes to two rows by the width it actually has, not the screen's: on a tablet the
 // app menu and the conversation list leave the thread a phone's width on an lg screen.
