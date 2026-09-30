@@ -276,7 +276,7 @@ class IndexTickets extends OrgAction
 
         return $queryBuilder
             ->select(['tickets.*', 'users.username as assignee_username'])
-            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $qaRequestedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
+            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $qaRequestedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter, ...$this->extraFilters()])
             ->defaultSort('-tickets.created_at')
             ->allowedSorts(['reference', 'subject', 'status', 'qa_status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -285,6 +285,14 @@ class IndexTickets extends OrgAction
 
     protected function pinToTop($queryBuilder): void
     {
+    }
+
+    /**
+     * @return array<int, AllowedFilter>
+     */
+    protected function extraFilters(): array
+    {
+        return [];
     }
 
     protected function restrictRows($queryBuilder, ?string $prefix): void
@@ -405,8 +413,14 @@ class IndexTickets extends OrgAction
                 'createdInterval'  => $this->createdInterval(),
                 'listTip'          => $this->listTip(),
                 'listTipTitle'     => $this->listTipTitle(),
+                'listSummary'      => $this->listSummary(),
             ]
         )->table($this->tableStructure($this->group));
+    }
+
+    protected function listSummary(): ?array
+    {
+        return null;
     }
 
     protected function listTitle(): string

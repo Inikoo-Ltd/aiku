@@ -19,6 +19,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { useTicketStatusActions, type TicketStatusAction } from "@/Composables/useTicketStatusActions"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import TicketsQaSummary from "@/Components/Tickets/TicketsQaSummary.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -43,6 +45,7 @@ const props = defineProps<{
     searchHelp: string[]
     listTip?: string | null
     listTipTitle?: string | null
+    listSummary?: { done: number, passed: number, failed: number, skipped: number, in_qa: number, not_checked: number } | null
     updateRoute: string
     can_assign: boolean
     can_manage?: boolean
@@ -185,8 +188,15 @@ const closeQuickLook = () => {
     router.reload({ only: ["data"] })
 }
 
+const loadingType = ref<string | null | undefined>(undefined)
+
 const filterByType = (type: string | null) =>
-    router.reload({ data: { "elements[type]": type ?? undefined, page: 1 }, preserveScroll: true })
+    router.reload({
+        data: { "elements[type]": type ?? undefined, page: 1 },
+        preserveScroll: true,
+        onStart: () => (loadingType.value = type),
+        onFinish: () => (loadingType.value = undefined),
+    })
 
 const savedMineFilter = ref(props.mineFilter)
 
@@ -204,14 +214,17 @@ watch(
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <TicketsQaSummary v-if="listSummary" :summary="listSummary" :periodLabel="createdIntervals[createdInterval]" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
     <div v-if="typeOptions?.length" class="mx-4 mt-2 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
         <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
         <button
             type="button"
-            class="rounded-md px-3 py-1 transition duration-200"
+            class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
             :class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :disabled="loadingType !== undefined"
             @click="filterByType(null)">
+            <LoadingIcon v-if="loadingType === null" />
             {{ ctrans("All") }}
         </button>
         <button
@@ -220,8 +233,10 @@ watch(
             type="button"
             class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
             :class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :disabled="loadingType !== undefined"
             @click="filterByType(option.value)">
-            <Icon v-if="option.icon" :data="option.icon" />
+            <LoadingIcon v-if="loadingType === option.value" />
+            <Icon v-else-if="option.icon" :data="option.icon" />
             {{ option.label }}
         </button>
     </div>

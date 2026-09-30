@@ -15,6 +15,7 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexQaTickets extends IndexTickets
 {
@@ -75,8 +76,9 @@ class IndexQaTickets extends IndexTickets
             ->orWhere('tickets.qa_status', TicketQaStatusEnum::CHECKING));
 
         $checkerFilter = explode(',', (string) request()->input(($prefix ? $prefix.'_' : '').'elements.qa_checker', ''));
+        $qaStateFilter = request()->input(($prefix ? $prefix.'_' : '').'filter.qa_state');
 
-        if (in_array('everyone', $checkerFilter, true)) {
+        if (in_array('everyone', $checkerFilter, true) || filled($qaStateFilter)) {
             return;
         }
 
@@ -85,6 +87,26 @@ class IndexQaTickets extends IndexTickets
         $queryBuilder->where(fn ($query) => $query
             ->whereNull('tickets.qa_user_id')
             ->orWhere('tickets.qa_user_id', $user->id));
+    }
+
+    /**
+     * @return array<int, AllowedFilter>
+     */
+    protected function extraFilters(): array
+    {
+        return [
+            AllowedFilter::callback('qa_state', function ($query, $value) {
+                $query->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+
+                if (in_array($value, [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value, TicketQaStatusEnum::SKIPPED->value], true)) {
+                    $query->where('tickets.qa_status', $value);
+                } elseif ($value === 'in_qa') {
+                    $query->whereIn('tickets.qa_status', [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING]);
+                } elseif ($value === 'not_checked') {
+                    $query->whereNull('tickets.qa_status');
+                }
+            }),
+        ];
     }
 
     protected function combinesKindAndModule(): bool
@@ -118,6 +140,32 @@ class IndexQaTickets extends IndexTickets
     protected function listTipTitle(): ?string
     {
         return __("QA Tips");
+    }
+
+    /**
+     * @return array{done: int, passed: int, failed: int, skipped: int, in_qa: int, not_checked: int}
+     */
+    protected function listSummary(): array
+    {
+        $counts = $this->elementGroupsBase($this->group)
+            ->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY])
+            ->toBase()
+            ->selectRaw('count(*) as done')
+            ->selectRaw('count(*) filter (where tickets.qa_status = ?) as passed', [TicketQaStatusEnum::PASSED->value])
+            ->selectRaw('count(*) filter (where tickets.qa_status = ?) as failed', [TicketQaStatusEnum::FAILED->value])
+            ->selectRaw('count(*) filter (where tickets.qa_status = ?) as skipped', [TicketQaStatusEnum::SKIPPED->value])
+            ->selectRaw('count(*) filter (where tickets.qa_status in (?, ?)) as in_qa', [TicketQaStatusEnum::REQUESTED->value, TicketQaStatusEnum::CHECKING->value])
+            ->selectRaw('count(*) filter (where tickets.qa_status is null) as not_checked')
+            ->first();
+
+        return [
+            'done'        => (int) $counts->done,
+            'passed'      => (int) $counts->passed,
+            'failed'      => (int) $counts->failed,
+            'skipped'     => (int) $counts->skipped,
+            'in_qa'       => (int) $counts->in_qa,
+            'not_checked' => (int) $counts->not_checked,
+        ];
     }
 
     protected function listTitle(): string

@@ -1423,6 +1423,55 @@ test('QA has its own ticket list, filtered first by QA assignee, and the ticket 
         ->assertInertia(fn (AssertableInertia $page) => $page->where('listTip', null)->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->firstWhere('key', 'qa_status')['sortable'] === true));
 });
 
+test('the QA list shows at a glance how far QA is behind on the tickets done', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    actingAs($qa);
+
+    $summary = fn () => get(route('grp.tickets.qa_list'))->viewData('page')['props']['listSummary'];
+    $before  = $summary();
+
+    $references = [];
+    foreach ([
+        'not_checked'  => [TicketStatusEnum::RESOLVED, null],
+        'passed'       => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::PASSED],
+        'failed'       => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::FAILED],
+        'skipped'      => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::SKIPPED],
+        'requested'    => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::REQUESTED],
+        'checking'     => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::CHECKING],
+        'not_done_yet' => [TicketStatusEnum::IN_PROGRESS, TicketQaStatusEnum::CHECKING],
+    ] as $key => [$status, $qaStatus]) {
+        $ticket = StoreTicket::make()->action($this->group, ['subject' => 'QA summary '.$key]);
+        Ticket::whereKey($ticket->id)->update(['status' => $status, 'qa_status' => $qaStatus, 'qa_user_id' => $key === 'passed' ? $otherQa->id : null]);
+        $references[$key] = $ticket->reference;
+    }
+
+    $listedFor = fn (string $qaState) => collect(get(route('grp.tickets.qa_list', [
+        'filter'   => ['qa_state' => $qaState],
+        'elements' => ['qa_status' => '', 'qa_checker' => ''],
+        'perPage'  => 1000,
+    ]))->viewData('page')['props']['data']['data'])->pluck('reference')->intersect($references)->sort()->values()->all();
+
+    expect($listedFor('passed'))->toBe([$references['passed']])
+        ->and($listedFor('in_qa'))->toBe(collect([$references['requested'], $references['checking']])->sort()->values()->all())
+        ->and($listedFor('not_checked'))->toBe([$references['not_checked']]);
+
+    $after = $summary();
+
+    expect(collect($after)->map(fn (int $count, string $key) => $count - $before[$key])->all())->toBe([
+        'done'        => 6,
+        'passed'      => 1,
+        'failed'      => 1,
+        'skipped'     => 1,
+        'in_qa'       => 2,
+        'not_checked' => 1,
+    ]);
+
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->where('listSummary', null));
+});
+
 test('the dashboard shows QA details to QA, and the urgent check lands on requested tickets only', function () {
     $engineer = User::factory()->create(['group_id' => $this->group->id]);
     $qa       = User::factory()->create(['group_id' => $this->group->id]);
