@@ -70,7 +70,7 @@ class AskToAi extends OrgAction
                         'content' => $prompt
                     ],
                 ],
-            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : [], $this->usesOpenRouter() ? $options : []));
+            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : [], $this->usesOpenRouter() ? $options + (config('services.openrouter.model_options')[$model] ?? []) : []));
 
         if (!$response->successful()) {
             Log::error("AskToAi API Error: " . $response->body());

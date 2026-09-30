@@ -205,7 +205,7 @@ class DraftChatReply implements ShouldBeUnique
      */
     public static function suggestionModel(ChatSession|MetaChatSession $chatSession): string
     {
-        $models = array_keys(config('chat.suggestion_models'));
+        $models = config('chat.suggestion_models');
         $chosen = config('chat.suggestion_model');
 
         return $chosen ?: $models[crc32(class_basename($chatSession).':'.$chatSession->id) % count($models)];
@@ -293,7 +293,7 @@ class DraftChatReply implements ShouldBeUnique
         {"topic": "missing_or_damaged", "reply": "the reply"}
         EOT;
 
-        $response = AskToAi::run($prompt, $model, config('chat.suggestion_models')[$model] ?? []);
+        $response = AskToAi::run($prompt, $model);
         $data     = is_string($response) ? json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($response))), true) : null;
         $reply    = trim((string) Arr::get(is_array($data) ? $data : [], 'reply'));
 

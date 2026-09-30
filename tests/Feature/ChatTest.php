@@ -5932,6 +5932,7 @@ test('SummarizeChatSession classifies what the customer wanted and leaves system
     expect($chatSession->topic)->toBe(ChatTopicEnum::MISSING_OR_DAMAGED->value)
         ->and($chatSession->summarised_at)->not->toBeNull()
         ->and(Arr::get($chatSession->metadata, 'ai_summary.summary'))->toContain('GB589048')
+        ->and(Arr::get($chatSession->metadata, 'ai_summary.model'))->toBe(config('chat.summary_writer_model'))
         ->and(Arr::get($chatSession->metadata, 'ai_summary'))->not->toHaveKey('topic');
 
     \Illuminate\Support\Facades\Http::assertSent(
@@ -6826,6 +6827,7 @@ test('the model only hints until it is allowed to put aside, never touches a cus
     expect($pitch->is_spam)->toBeFalse()
         ->and($pitch->noise_verdict)->toBe('spam')
         ->and($pitch->noise_confidence)->toBe(95)
+        ->and(data_get($pitch->metadata, 'noise_model'))->toBe(config('chat.noise_model'))
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($pitch))->toMatchArray(['automatic' => false, 'source' => 'ai']);
 
     \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($pitch);
@@ -11156,7 +11158,7 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
         ->and(\App\Actions\Chat\ChatSession\DraftChatReply::usesOnlyKnownNumbers('Your order GB123456 left today.', 'order GB589594'))->toBeFalse();
 
     $writers = collect(range(1, 40))->map(fn (int $id) => \App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel((new ChatSession())->forceFill(['id' => $id])))->unique()->sort()->values()->all();
-    expect($writers)->toBe(collect(array_keys(config('chat.suggestion_models')))->sort()->values()->all());
+    expect($writers)->toBe(collect(config('chat.suggestion_models'))->sort()->values()->all());
     config(['chat.suggestion_model' => 'openai/gpt-5.6-luna']);
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel($session))->toBe('openai/gpt-5.6-luna');
 

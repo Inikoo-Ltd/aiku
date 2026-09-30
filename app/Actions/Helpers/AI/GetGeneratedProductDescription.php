@@ -45,7 +45,7 @@ class GetGeneratedProductDescription extends OrgAction
 
         try {
             $response = $client->chat()->create([
-                'model'      => $this->aiModel('gpt-4o'),
+                'model'      => $this->aiModel('gpt-5.6-luna'),
                 'messages'   => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user',   'content' => $userContent],

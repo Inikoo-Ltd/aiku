@@ -46,12 +46,12 @@ class GetGeneratedProductTitle extends OrgAction
 
         try {
             $response = $client->chat()->create([
-                'model'      => $this->aiModel('gpt-4o'),
+                'model'      => $this->aiModel('gpt-5.6-luna'),
                 'messages'   => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user',   'content' => $userContent],
                 ],
-                'max_tokens' => 100,
+                'max_tokens' => 200,
             ]);
         } catch (Throwable $e) {
             $this->rethrowAICreditThrowable($e);

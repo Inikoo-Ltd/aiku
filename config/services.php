@@ -134,6 +134,10 @@ return [
         'api_key'        => env('OPENROUTER_API_KEY'),
         'decision_model' => env('OPENROUTER_DECISION_MODEL', '~typesafe/jev-latest'),
         'low_credit_alert' => (float) env('OPENROUTER_LOW_CREDIT_ALERT', 5),
+        // Sent with every request to these models. DeepSeek V4.1 Flash thinks first by default: 40 seconds and five times the price for the same answer.
+        'model_options' => [
+            'deepseek/deepseek-v4.1-flash' => ['reasoning' => ['enabled' => false], 'provider' => ['data_collection' => 'deny']],
+        ],
     ],
     'pastpay' => [
         'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
