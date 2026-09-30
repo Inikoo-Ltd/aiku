@@ -15,12 +15,12 @@ import 'swiper/css/navigation'
 import { format } from 'date-fns'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faChevronLeft, faChevronRight } from '@fal'
+import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle } from '@fal'
 import { faThumbtack } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
-import { ctrans } from '@/Composables/useTrans'
-library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faThumbtack, faChevronLeft, faChevronRight)
+import ScrollFadeArrow from '@/Components/Utils/ScrollFadeArrow.vue'
+library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faThumbtack)
 import type { Timeline } from '@/types/Timeline'
 
 const props = defineProps<{
@@ -214,21 +214,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
             </template>
         </Swiper>
 
-        <button
-            v-if="canSlidePrev"
-            type="button"
-            class="absolute inset-y-0 left-0 z-30 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-            :aria-label="ctrans('Scroll left')"
-            @click="swiperInstance?.slidePrev()">
-            <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
-        </button>
-        <button
-            v-if="canSlideNext"
-            type="button"
-            class="absolute inset-y-0 right-0 z-30 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-            :aria-label="ctrans('Scroll right')"
-            @click="swiperInstance?.slideNext()">
-            <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
-        </button>
+        <ScrollFadeArrow direction="left" :visible="canSlidePrev" wrapperClass="!z-30" @click="swiperInstance?.slidePrev()" />
+        <ScrollFadeArrow direction="right" :visible="canSlideNext" wrapperClass="!z-30" @click="swiperInstance?.slideNext()" />
     </div>
 </template>

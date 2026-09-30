@@ -42,6 +42,7 @@ import { faLayerPlus } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { inject, ref } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import { faChevronLeft as faChevronLeftLight, faChevronRight as faChevronRightLight } from "@fal"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -51,7 +52,7 @@ import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
 import ButtonExport from "@/Components/ButtonExport.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
 	faTruckCouch,
@@ -117,7 +118,7 @@ const isShowDummySlotName = false
 const setError = (e) => {
 	console.error("Error", e)
 	notify({
-		title: trans("Something went wrong"),
+		title: ctrans("Something went wrong"),
 		text: e.message || "failed.",
 		type: "error",
 	})
@@ -272,7 +273,7 @@ const setError = (e) => {
 								v-tooltip="data.platform.title || data.platform.name" />
                             <button
                                 v-if="data.platform?.order_id"
-                                v-tooltip="isPlatformOrderIdCopied ? trans('Copied') : trans('Click to copy') + ': ' + breakableId(data.platform.order_id)"
+                                v-tooltip="isPlatformOrderIdCopied ? ctrans('Copied') : ctrans('Click to copy') + ': ' + breakableId(data.platform.order_id)"
                                 type="button"
                                 class="inline-block max-w-[14rem] truncate align-middle text-sm font-normal tracking-normal transition duration-200 hover:text-gray-800"
                                 :class="isPlatformOrderIdCopied ? 'text-green-600' : 'text-gray-500'"
@@ -415,7 +416,7 @@ const setError = (e) => {
 										@start="() => (isButtonLoading = 'buttonGroup' + index)"
 										@error="(err) => {
 											console.log(err);
-											let msg = trans('Error processing action.\n')
+											let msg = ctrans('Error processing action.\n')
 											Object.entries(err).forEach(([key, value]) => {
 												msg += value + '. \n'
 											})
@@ -461,22 +462,8 @@ const setError = (e) => {
 
 				<slot name="other" :dataPageHead="{ ...props }" />
 				</div>
-				<button
-					v-if="canScrollActionsLeft"
-					type="button"
-					class="absolute inset-y-0 left-0 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800 sm:hidden"
-					:aria-label="trans('Scroll left')"
-					@click="scrollActions(-1)">
-					<FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
-				</button>
-				<button
-					v-if="canScrollActionsRight"
-					type="button"
-					class="absolute inset-y-0 right-0 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800 sm:hidden"
-					:aria-label="trans('Scroll right')"
-					@click="scrollActions(1)">
-					<FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
-				</button>
+				<ScrollFadeArrow direction="left" :visible="canScrollActionsLeft" wrapperClass="sm:hidden" @click="scrollActions(-1)" />
+				<ScrollFadeArrow direction="right" :visible="canScrollActionsRight" wrapperClass="sm:hidden" @click="scrollActions(1)" />
 				</div>
 
 				<Popover

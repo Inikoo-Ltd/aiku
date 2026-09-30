@@ -9,6 +9,7 @@ import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { Link, router } from "@inertiajs/vue3"
 import { computed, defineAsyncComponent, reactive, inject, ref } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
 import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
@@ -403,22 +404,8 @@ const label = {
                         <div class="relative flex h-full min-w-0">
                             <div ref="subsectionScroller" class="flex h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 md:[&>*>span]:inline" id="TopBarSubsections">
                             </div>
-                            <button
-                                v-if="canScrollSubsectionsLeft"
-                                type="button"
-                                class="absolute inset-y-0 left-0 flex w-6 items-center justify-center bg-gray-50 text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                                :aria-label="ctrans('Scroll left')"
-                                @click="scrollSubsections(-1)">
-                                <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
-                            </button>
-                            <button
-                                v-if="canScrollSubsectionsRight"
-                                type="button"
-                                class="absolute inset-y-0 right-0 flex w-6 items-center justify-center bg-gray-50 text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                                :aria-label="ctrans('Scroll right')"
-                                @click="scrollSubsections(1)">
-                                <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
-                            </button>
+                            <ScrollFadeArrow direction="left" tone="gray" :visible="canScrollSubsectionsLeft" @click="scrollSubsections(-1)" />
+                            <ScrollFadeArrow direction="right" tone="gray" :visible="canScrollSubsectionsRight" @click="scrollSubsections(1)" />
                         </div>
 
                     </div>

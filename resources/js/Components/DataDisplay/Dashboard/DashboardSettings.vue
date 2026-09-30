@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import { readableTextOn } from "@/Composables/useAppAccent"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -262,23 +263,8 @@ const updateTopCustomersLimit = (value: number) => {
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">
-                <!-- Left overflow indicator -->
-                <transition name="fade">
-                    <div v-if="hasOverflowLeft"
-                         @click="scrollLeft"
-                         class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
-                    </div>
-                </transition>
-
-                <!-- Right overflow indicator -->
-                <transition name="fade">
-                    <div v-if="hasOverflowRight"
-                         @click="scrollRight"
-                         class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
-                    </div>
-                </transition>
+                <ScrollFadeArrow direction="left" rounded :visible="hasOverflowLeft" @click="scrollLeft" />
+                <ScrollFadeArrow direction="right" rounded :visible="hasOverflowRight" @click="scrollRight" />
 
                 <nav
                     ref="navElement"

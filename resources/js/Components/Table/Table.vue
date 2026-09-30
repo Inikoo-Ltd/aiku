@@ -12,6 +12,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { ctrans } from '@/Composables/useTrans'
 import { useScrollArrows } from '@/Composables/useScrollArrows'
+import ScrollFadeArrow from '@/Components/Utils/ScrollFadeArrow.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
@@ -25,7 +26,7 @@ import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle, faChevronLeft, faChevronRight } from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle } from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
@@ -36,7 +37,7 @@ import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import { Message } from 'primevue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle, faChevronLeft, faChevronRight)
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -1734,22 +1735,8 @@ const getSeverity = (type?: string) => {
                             </tbody>
                         </table>
                         </div>
-                        <button
-                            v-if="canScrollTableLeft"
-                            type="button"
-                            class="absolute inset-y-0 left-0 z-20 flex w-6 items-center justify-center bg-white/95 text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                            :aria-label="ctrans('Scroll left')"
-                            @click="scrollTable(-1)">
-                            <FontAwesomeIcon icon="fal fa-chevron-left" class="sticky top-24 bottom-24" fixed-width aria-hidden="true" />
-                        </button>
-                        <button
-                            v-if="canScrollTableRight"
-                            type="button"
-                            class="absolute inset-y-0 right-0 z-20 flex w-6 items-center justify-center bg-white/95 text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                            :aria-label="ctrans('Scroll right')"
-                            @click="scrollTable(1)">
-                            <FontAwesomeIcon icon="fal fa-chevron-right" class="sticky top-24 bottom-24" fixed-width aria-hidden="true" />
-                        </button>
+                        <ScrollFadeArrow direction="left" :visible="canScrollTableLeft" iconClass="sticky top-24 bottom-24" @click="scrollTable(-1)" />
+                        <ScrollFadeArrow direction="right" :visible="canScrollTableRight" iconClass="sticky top-24 bottom-24" @click="scrollTable(1)" />
                         </div>
                     </slot>
 
