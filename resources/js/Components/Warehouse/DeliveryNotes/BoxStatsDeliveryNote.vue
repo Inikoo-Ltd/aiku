@@ -441,9 +441,9 @@ function returnNoteRoute(returnDeliveryNote) {
 </script>
 
 <template>
-    <div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b border-gray-200">
         <!-- Box: Order -->
-        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="min-w-0 py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ ctrans("Order") }}
@@ -542,7 +542,7 @@ function returnNoteRoute(returnDeliveryNote) {
         </BoxStatPallet>
 
         <!-- Box: Shipping -->
-        <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet v-once class="min-w-0 py-2 px-3 border-t border-gray-200 md:border-t-0 md:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
 
@@ -607,7 +607,7 @@ function returnNoteRoute(returnDeliveryNote) {
         </BoxStatPallet>
 
         <!-- Box: Delivery Note -->
-        <BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-t md:border-t-0 border-r border-gray-200" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2.5 pl-2.5 pr-3 border-t border-gray-200 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ ctrans("Delivery Note") }}

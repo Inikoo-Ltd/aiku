@@ -335,7 +335,7 @@ class GenerateInvoiceFromOrder extends OrgAction
         ];
     }
 
-    private function isIndivisible(Transaction $transaction): bool
+    public function isIndivisible(Transaction $transaction): bool
     {
         return $transaction->model_type == 'Product'
             && (bool)DB::table('products')->where('id', $transaction->model_id)->value('is_indivisible');

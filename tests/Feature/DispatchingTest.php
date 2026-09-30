@@ -591,8 +591,8 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
     $transaction = $picking->deliveryNoteItem->transaction;
     $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
     expect($order->state)->toBe(OrderStateEnum::HANDLING)
-        ->and($notPicked['amount'])->toBe(round(10 * $transaction->net_amount / $transaction->quantity_ordered * (1 + $order->tax_amount / $order->net_amount), 2))
-        ->and($notPicked['expected_return'])->toBe(round(max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount'])), 2));
+        ->and($notPicked['amount'])->toBe(round($transaction->net_amount * $picking->deliveryNoteItem->quantity_not_picked / $picking->deliveryNoteItem->quantity_required * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBe(round(min($notPicked['amount'], max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount']))), 2));
 
     $picking->refresh();
 
@@ -5261,6 +5261,19 @@ test('a set sold only complete waits until its other parts are put back, then re
         ->and((float)$item->quantity_picked)->toBe(0.0)
         ->and($item->is_handled)->toBeTrue()
         ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});
+
+test('a set sold only complete with a part not found counts the product once in what customer services sees as out of stock (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['quantity_not_picked' => 10]);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $order       = $deliveryNote->orders()->first()->refresh();
+    $transaction = $item->transaction->refresh();
+    $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
+
+    expect($notPicked['amount'])->toBe(round($transaction->net_amount * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBeLessThanOrEqual($notPicked['amount']);
 });
 
 test('the picking list shows which set sold only complete an item is a part of (HELP-3548)', function () {

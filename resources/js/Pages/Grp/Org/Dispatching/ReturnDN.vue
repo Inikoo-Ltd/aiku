@@ -12,13 +12,13 @@ import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import Timeline from '@/Components/Utils/Timeline.vue'
+import TimelineResponsive from '@/Components/Utils/TimelineResponsive.vue'
 import BoxNote from '@/Components/Pallet/BoxNote.vue'
 import TableReturnDNItems from '@/Components/Warehouse/DeliveryNotes/TableReturnDNItems.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import BoxStatsDeliveryNote from '@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue'
 import { faBoxOpen, faCheck, faExchangeAlt, faTimes, faUserSlash } from '@fal'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { ToggleSwitch } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -125,7 +125,7 @@ const onUpdateHandler = () => {
         {
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -256,7 +256,7 @@ const setAsReturned = (routeData: any) => {
 			onSuccess: () => {},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: error.message,
 					type: "error",
 				})
@@ -281,14 +281,14 @@ const confirmAndSubmitRefund = () => {
 			onSuccess: () => {
 				isFinishReturnModal.value = false
 				notify({
-					title: trans("Success"),
-					text: trans("Successfully processed return with refunds"),
+					title: ctrans("Success"),
+					text: ctrans("Successfully processed return with refunds"),
 					type: "success",
 				})
 			},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: error.message,
 					type: "error",
 				})
@@ -310,7 +310,7 @@ const confirmAndSubmitRefund = () => {
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
 					<span class="text-sm text-gray-700 font-medium mx-2">
-						{{ trans("Worker View") }}
+						{{ ctrans("Worker View") }}
 					</span>
 					<ToggleSwitch v-model="pickingView">
 						<template #handle="{ checked }">
@@ -352,10 +352,10 @@ const confirmAndSubmitRefund = () => {
 		<template #button-finish-return="{ action }">
             <ModalConfirmation
 				v-if="action.showWarning"
-				:title="trans('Are you sure you want to finish returning this item?')"
-                :description="trans('Unprocessed items will be marked as not returned')"
+				:title="ctrans('Are you sure you want to finish returning this item?')"
+                :description="ctrans('Unprocessed items will be marked as not returned')"
                 isFullLoading
-				:noLabel="trans('Cancel')"
+				:noLabel="ctrans('Cancel')"
 			>
                 <template #default="{ isOpenModal, changeModel }">
 					<Button
@@ -368,7 +368,7 @@ const confirmAndSubmitRefund = () => {
                 </template>
                 <template #btn-yes>
                     <Button 
-						:label="trans('Set as Returned')" 
+						:label="ctrans('Set as Returned')" 
 						@click="setAsReturned(action.route)"
                         type="submit" 
 						:icon="action.icon" 
@@ -405,7 +405,7 @@ const confirmAndSubmitRefund = () => {
 
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-		<Timeline
+		<TimelineResponsive
 			:options="timelines"
 			:state="returned_delivery_note_state.value"
 			:slidesPerView="6"
@@ -428,6 +428,7 @@ const confirmAndSubmitRefund = () => {
 		:is="component"
 		:data="props[currentTab as keyof typeof props]"
 		:tab="currentTab"
+		scrollOnMobile
 		:is_editable="is_editable"
 		@onChangeRefund="setRefund"
 	/>
@@ -448,7 +449,7 @@ const confirmAndSubmitRefund = () => {
 			<!-- Refund Data -->
 			<div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 text-sm">
 				<div class="flex flex-col items-center text-xl font-bold">
-					{{ trans('Create Refund') }}
+					{{ ctrans('Create Refund') }}
 				</div>
 				<div class="flex flex-col items-center text-xl font-bold ml-auto">
 					<ToggleSwitch v-model="createRefund" :disabled="refundSummary.totalAmount == 0">
@@ -500,7 +501,7 @@ const confirmAndSubmitRefund = () => {
 			<!-- Replacement Data -->
 			 <div class="flex items-center gap-x-6 bg-gray-50 rounded px-4 text-sm">
 				<div class="flex flex-col items-center text-xl font-bold">
-					{{ trans('Create Replacement') }}
+					{{ ctrans('Create Replacement') }}
 				</div>
 				<div class="flex flex-col items-center text-xl font-bold ml-auto">
 					<ToggleSwitch v-model="createReplacement" :disabled="refundSummary.totalAmount == 0">
@@ -567,7 +568,7 @@ const confirmAndSubmitRefund = () => {
 	</Modal>
 
 	<!-- Modal: Select picker -->
-	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="trans('Select Picker')">
+	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title="ctrans('Select Picker')">
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
 				{{ ctrans("Select Handler") }}
@@ -637,7 +638,7 @@ const confirmAndSubmitRefund = () => {
 					full
 					:loading="isLoadingToQueue"
 					:disabled="!selectedPicker"
-					v-tooltip="selectedPicker ? '' : trans('Select handler before submit')">
+					v-tooltip="selectedPicker ? '' : ctrans('Select handler before submit')">
 				</Button>
 			</div>
 		</div>

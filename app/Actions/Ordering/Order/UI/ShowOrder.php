@@ -803,14 +803,15 @@ class ShowOrder extends OrgAction
             return $boxStats;
         }
 
-        $symbol = $order->currency->symbol ?? $order->currency->code;
+        $symbol      = $order->currency->symbol ?? $order->currency->code;
+        $profitLabel = ($summary['profit_amount'] < 0 ? '-' : '').$symbol.number_format(abs($summary['profit_amount']), 2);
 
         $marginRow = [
             'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
-            'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
-            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]),
+            'profit_label'  => $profitLabel,
+            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $profitLabel]),
             'below'         => $summary['is_below_break_even'] ? __('below :pct% break-even', ['pct' => $summary['break_even_pct']]) : null,
             'without_cost'  => $summary['lines_without_cost'] > 0 ? __(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]) : null,
         ];

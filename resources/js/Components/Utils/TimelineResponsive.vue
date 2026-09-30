@@ -1,0 +1,234 @@
+<!--
+    Mobile-friendly copy of Timeline.vue, same props and events.
+    Use this one on grp pages that are worked on a phone (Order, Delivery Note): on narrow
+    screens it shows fewer steps (3 on a phone, 4 on a tablet, slidesPerView from 1024px up)
+    and chevron arrows appear whenever there are more steps to either side.
+    Timeline.vue is left untouched on purpose because Retina and Iris pages use it; switch a
+    page over here rather than changing Timeline.vue, so customer-facing pages do not move.
+-->
+
+<script setup lang='ts'>
+import { ref, watch, onBeforeMount, computed, nextTick, onMounted } from 'vue'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import { format } from 'date-fns'
+
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faChevronLeft, faChevronRight } from '@fal'
+import { faThumbtack } from '@fas'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
+import { ctrans } from '@/Composables/useTrans'
+library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faThumbtack, faChevronLeft, faChevronRight)
+import type { Timeline } from '@/types/Timeline'
+
+const props = defineProps<{
+    options: Timeline[] | {[key: string]: Timeline}
+    state?: string
+    width?: string | Number
+    slidesPerView?: number
+    formatTime?: string  // 'EEE, do MMM yy'
+}>()
+
+// console.log('ssss',props)
+const emits = defineEmits<{
+    (e: 'updateButton', value: {step: Timeline, options: Timeline[]}): void
+}>()
+
+const _swiperRef = ref()
+const swiperInstance = ref()
+// const finalOptions = ref<Timeline[]>([])
+
+const computedXxx = computed(() => {
+    const finalData = []
+    Object.entries(props.options).forEach(([key, value], index) => {
+        finalData.push({ ...value, index });
+    });
+
+    return finalData
+})
+
+// const stepsWithIndex = (() => {
+//     const finalData = []
+//     Object.entries(props.options).forEach(([key, value], index) => {
+//         finalData.push({ ...value, index });
+//     });
+
+//     // Do something with finalData array
+//     finalOptions.value = finalData
+//     // console.log(finalData)
+// });
+
+const setupState = (step: Timeline) => {
+    const foundState = computedXxx.value.find((item) => item.key === props.state)
+    if(foundState){
+        const set = step.key == props.state || step.index < foundState.index
+        return set
+    }else return
+}
+
+const isDangerStep = (step: Timeline) => {
+    return setupState(step) && ['cancelled', 'not_received'].includes(step.key)
+}
+
+const responsiveBreakpoints = computed(() => props.slidesPerView
+    ? {
+        0: { slidesPerView: Math.min(3, props.slidesPerView) },
+        640: { slidesPerView: Math.min(4, props.slidesPerView) },
+        1024: { slidesPerView: props.slidesPerView },
+    }
+    : undefined)
+
+const canSlidePrev = ref(false)
+const canSlideNext = ref(false)
+
+const updateSlideArrows = (swiper) => {
+    canSlidePrev.value = !swiper.isLocked && !swiper.isBeginning
+    canSlideNext.value = !swiper.isLocked && !swiper.isEnd
+}
+
+// Handle Swiper initialization
+const onSwiper = (swiper) => {
+    swiperInstance.value = swiper
+    updateSlideArrows(swiper)
+    // Auto scroll to active step after Swiper is initialized
+    setTimeout(() => {
+        scrollToActiveStep()
+    }, 100)
+}
+
+// Auto scroll to active step
+const scrollToActiveStep = async (withDelay = false) => {
+    if (!swiperInstance.value || !props.state) return
+    
+    await nextTick()
+    
+    // Add delay for initial load to ensure Swiper is fully initialized
+    if (withDelay) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    const activeStepIndex = computedXxx.value.findIndex(step => step.key === props.state)
+    if (activeStepIndex !== -1) {
+        try {
+            swiperInstance.value.slideTo(activeStepIndex, 500) // 500ms animation duration
+        } catch (error) {
+            console.log('Error sliding to active step:', error)
+        }
+    }
+}
+
+// Watch for state changes and scroll to active step (including initial load)
+watch(() => props.state, () => {
+    scrollToActiveStep()
+}, { immediate: true })
+
+// Watch for options changes and scroll to active step (including initial load)
+watch(() => props.options, () => {
+    scrollToActiveStep(true) // Use delay for options change as it might affect Swiper initialization
+}, { immediate: true })
+
+// Scroll to active step on mount with delay
+onMounted(() => {
+    setTimeout(() => {
+        scrollToActiveStep(true)
+    }, 150) // Additional delay to ensure Swiper is fully ready
+})
+
+// Format Date
+const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
+    if (!dateIso) return '-'
+
+    let tempLocaleCode = OptionsTime?.localeCode === 'zh-Hans' ? 'zhCN' : OptionsTime?.localeCode ?? 'enUS'
+    let tempDateIso = new Date(dateIso)
+
+    return format(tempDateIso, props.formatTime || 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] }) // October 13th, 2023
+}
+
+</script>
+
+<template>
+    <div class="relative w-full py-5 sm:py-2 flex flex-col isolate">
+        <Swiper ref="_swiperRef" :slideToClickedSlide="false" :slidesPerView="slidesPerView"
+            :breakpoints="responsiveBreakpoints"
+            :centerInsufficientSlides="true" :pagination="{ clickable: true, }"
+            @swiper="onSwiper"
+            @slideChange="updateSlideArrows"
+            @progress="updateSlideArrows"
+            @resize="updateSlideArrows"
+            @breakpoint="updateSlideArrows"
+            @lock="updateSlideArrows"
+            @unlock="updateSlideArrows"
+            class="w-full h-fit isolate">
+            <template v-for="(step, stepIndex) in computedXxx" :key="stepIndex">
+                <SwiperSlide>
+                    <!-- Section: Title -->
+                    <div class="w-fit mx-auto text-xxs md:text-xs text-center whitespace-nowrap truncate max-w-full px-2"
+                        :class="step.timestamp || state == step.key ? 'text-[#888] ' : 'text-gray-300'">
+                        <FontAwesomeIcon v-if="step.icon" :icon='step.icon' class='text-sm' fixed-width aria-hidden='true' />
+                        {{ step.label }}
+                    </div>
+
+                    <div class="relative flex items-center mt-2.5 mb-0.5">
+                        <!-- Step: Tail -->
+                        <div v-if="stepIndex != 0"
+                            class="z-10 px-1 w-full absolute flex align-center items-center align-middle content-center -translate-x-1/2 top-1/2 -translate-y-1/2">
+                            <div class="w-full rounded items-center align-middle align-center flex-1">
+                                <div class="w-full py-[1px] rounded ml-[1px]"
+                                    :class="setupState(step) ? (isDangerStep(step) ? 'bg-red-400' : 'bg-[#66dc71]') : 'bg-gray-300'" />
+                            </div>
+                        </div>
+
+                        <!-- Step: Head -->
+                        <div @click="() => emits('updateButton', { step: step, options: computedXxx })"
+                            v-tooltip="step.label"
+                            class="z-20 aspect-square mx-auto rounded-full text-lg flex justify-center items-center"
+                            :class="[
+                                setupState(step)
+                                    ? (isDangerStep(step) ? 'text-red-600 bg-red-400 h-3' : 'text-green-600 bg-[#66dc71] h-3')
+                                    : 'border border-gray-300 text-gray-400 bg-white h-3'
+                            ]"
+                        >
+                        </div>
+                    </div>
+
+                    <!-- <pre>{{ step }}</pre> -->
+
+                    <!-- Step: Description -->
+                    <div v-tooltip="step.timestamp ? useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' }) : undefined"
+                        class="text-xxs md:text-xs text-[#555] text-center select-none">
+                        <template v-if="step.timestamp">
+                            <FontAwesomeIcon v-if="step.timestamp_icon" v-tooltip="step.timestamp_tooltip"
+                                :icon="step.timestamp_icon" class="mr-1 text-xs text-gray-400" fixed-width aria-hidden="true" />
+                            <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
+                            <span v-else>{{ useFormatTime(step.timestamp) }}</span>
+                        </template>
+                        <span v-else-if="step.sub_label" class="italic text-gray-400 whitespace-nowrap">
+                            <FontAwesomeIcon :icon="faInfoCircle" class="text-xxs" fixed-width aria-hidden="true" />
+                            {{ step.sub_label }}
+                        </span>
+                        <span v-else>{{ useFormatTime(step.timestamp) }}</span>
+                    </div>
+                </SwiperSlide>
+            </template>
+        </Swiper>
+
+        <button
+            v-if="canSlidePrev"
+            type="button"
+            class="absolute inset-y-0 left-0 z-30 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
+            :aria-label="ctrans('Scroll left')"
+            @click="swiperInstance?.slidePrev()">
+            <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+        </button>
+        <button
+            v-if="canSlideNext"
+            type="button"
+            class="absolute inset-y-0 right-0 z-30 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
+            :aria-label="ctrans('Scroll right')"
+            @click="swiperInstance?.slideNext()">
+            <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+        </button>
+    </div>
+</template>

@@ -10,7 +10,8 @@ import TableColumns from '@/Components/Table/TableColumns.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
+import { useScrollArrows } from '@/Composables/useScrollArrows'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
@@ -24,7 +25,7 @@ import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle} from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle, faChevronLeft, faChevronRight } from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
@@ -35,7 +36,7 @@ import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import { Message } from 'primevue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle, faChevronLeft, faChevronRight)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -180,6 +181,16 @@ const props = defineProps(
             default: () => {
                 return ''
             },
+            required: false,
+        },
+        tableClass: {
+            type: String,
+            default: '',
+            required: false,
+        },
+        withScrollArrows: {
+            type: Boolean,
+            default: false,
             required: false,
         },
         isParentLoading : {
@@ -915,6 +926,8 @@ const virtualRowOffsets = computed(() => {
 })
 
 const virtualContainerRef = ref<HTMLElement | null>(null)
+const scrollArrowsContainer = computed(() => props.withScrollArrows ? virtualContainerRef.value : null)
+const { canScrollLeft: canScrollTableLeft, canScrollRight: canScrollTableRight, scrollBy: scrollTable } = useScrollArrows(scrollArrowsContainer)
 const virtualWindow = ref({
     start: 0,
     end: Math.min(compResourceData.value?.length ?? 0, props.virtualOverscan + 20),
@@ -1146,8 +1159,8 @@ const getSeverity = (type?: string) => {
                                         {{
                                         compResourceMeta.total > 1
                                         ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
-                                        trans('records')
-                                        : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                        ctrans('records')
+                                        : queryBuilderProps.labelRecord?.[0] || ctrans('record')
                                         }}
                                         <slot name="afterRecordCount" />
                                     </span>
@@ -1324,8 +1337,8 @@ const getSeverity = (type?: string) => {
                                                     {{
                                                     compResourceMeta.total > 1
                                                     ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
-                                                    trans('records')
-                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    ctrans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || ctrans('record')
                                                     }}
                                                     <slot name="afterRecordCount" />
                                                 </span>
@@ -1386,11 +1399,12 @@ const getSeverity = (type?: string) => {
                     </slot>
 
                     <slot name="table">
+                        <div class="relative">
                         <div ref="virtualContainerRef"
                             class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
-                        <table class="divide-y divide-gray-200 bg-white min-w-full">
+                        <table class="divide-y divide-gray-200 bg-white min-w-full" :class="tableClass">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
                                 <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
@@ -1719,6 +1733,23 @@ const getSeverity = (type?: string) => {
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
+                        <button
+                            v-if="canScrollTableLeft"
+                            type="button"
+                            class="absolute inset-y-0 left-0 z-20 flex w-6 items-center justify-center bg-white/95 text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
+                            :aria-label="ctrans('Scroll left')"
+                            @click="scrollTable(-1)">
+                            <FontAwesomeIcon icon="fal fa-chevron-left" class="sticky top-24 bottom-24" fixed-width aria-hidden="true" />
+                        </button>
+                        <button
+                            v-if="canScrollTableRight"
+                            type="button"
+                            class="absolute inset-y-0 right-0 z-20 flex w-6 items-center justify-center bg-white/95 text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
+                            :aria-label="ctrans('Scroll right')"
+                            @click="scrollTable(1)">
+                            <FontAwesomeIcon icon="fal fa-chevron-right" class="sticky top-24 bottom-24" fixed-width aria-hidden="true" />
+                        </button>
                         </div>
                     </slot>
 

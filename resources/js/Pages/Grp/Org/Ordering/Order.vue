@@ -13,7 +13,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import Timeline from "@/Components/Utils/Timeline.vue"
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -1881,14 +1881,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
+        <TimelineResponsive v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
             formatTime="EEE, do MMM yy, HH:mm" />
     </div>
 
     <div v-if="currentTab != 'products'"
-        class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b border-gray-200">
         <!-- start: Order Section -->
-        <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ ctrans("Order") }}
@@ -2123,7 +2123,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2 px-3 border-t border-gray-300 md:border-t-0 md:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
                     <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
@@ -2169,7 +2169,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && (Number(box_stats.products.payment.total_amount) > 0 || Number(box_stats.products.excesses_payment?.amount) > 0)"
                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
+                            <div class="w-full rounded-md shadow pxb-2 isolate border max-md:rounded-none max-md:border-0 max-md:shadow-none" :class="[
                                 Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : isOrderAmountsProvisional ? 'border-gray-300' : 'border-red-500',
                             ]">
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
@@ -2288,7 +2288,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
                     <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
-                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
+                        class="mt-4 bg-white border-t border-gray-200 pt-4 md:border md:rounded-lg md:p-4 md:shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                             <div class="text-sm font-semibold text-gray-800">
@@ -2463,7 +2463,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
 
         <!-- Box: Order summary -->
-        <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
+        <BoxStatPallet class="min-w-0 pb-4 border-t border-gray-300 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l">
             <div class="text-xs md:text-sm">
                 <div class="pt-2 px-3 flex justify-between items-center">
                     <div class="font-semibold xmb-2 text-base">
@@ -2632,19 +2632,24 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                     <span>{{ fieldSummary.label }}</span>
                                 </div>
-                                <span v-if="fieldSummary.margin" class="text-xs text-gray-400 flex items-center gap-1">
-                                    <span
-                                        :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
-                                        v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
-                                    <span>·</span>
-                                    <span v-tooltip="fieldSummary.margin.tooltip" class="flex items-center gap-0.5 cursor-help">
-                                        <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
-                                        {{ fieldSummary.margin.profit_label }}
-                                    </span>
-                                    <span v-if="fieldSummary.margin.below" class="text-red-600">— {{ fieldSummary.margin.below }}</span>
-                                    <span v-if="fieldSummary.margin.without_cost" class="text-yellow-600">— {{ fieldSummary.margin.without_cost }}</span>
-                                </span>
                             </dt>
+                            <dd v-if="fieldSummary.margin" class="order-last col-span-7 mt-0.5 mb-1 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-400">
+                                <span
+                                    class="whitespace-nowrap tabular-nums"
+                                    :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
+                                    v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
+                                <span aria-hidden="true">·</span>
+                                <span v-tooltip="fieldSummary.margin.tooltip" class="inline-flex cursor-help items-center gap-0.5 whitespace-nowrap tabular-nums">
+                                    <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
+                                    {{ fieldSummary.margin.profit_label }}
+                                </span>
+                                <span v-if="fieldSummary.margin.below" class="whitespace-nowrap rounded bg-red-50 px-2 py-0.5 text-red-600 ring-1 ring-inset ring-red-200">
+                                    {{ fieldSummary.margin.below }}
+                                </span>
+                                <span v-if="fieldSummary.margin.without_cost" class="whitespace-nowrap rounded bg-yellow-50 px-2 py-0.5 text-yellow-700 ring-1 ring-inset ring-yellow-200">
+                                    {{ fieldSummary.margin.without_cost }}
+                                </span>
+                            </dd>
                         </template>
 
                         <template #cell_charges_1="{ fieldSummary }">
@@ -2819,6 +2824,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+            scrollOnMobile
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"

@@ -1031,8 +1031,10 @@ const onSaveSplitBoxes = async () => {
         class="mt-5"
         rowAlignTop
         :rowspan-columns="['packaging', 'leaflets', 'print_status']"
-        xisUseVMemo 
+        xisUseVMemo
         :useTopPagination="true"
+        tableClass="max-lg:min-w-[64rem]"
+        withScrollArrows
         :rowColorFunction="(item) => {
             if (item.is_dirty) {
                 return '!bg-[#fff6db]'
@@ -1941,7 +1943,7 @@ const onSaveSplitBoxes = async () => {
                         v-if="item.is_done_packing || item.is_partially_packed"
                         v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
                         type="negative"
-                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :size="screenType != 'mobile' ? 'xs' : 'md'"
                         :bindToLink="{preserveScroll: true}"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.delete',
