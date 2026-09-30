@@ -29,6 +29,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -1193,6 +1194,18 @@ test('shop dashboard sales table shows departments, with brands as an icon on th
 
     expect($subDepartmentsTable['header']['columns']['label']['formatted_value'])->toBe('Sub-department')
         ->and($subDepartmentsTable)->toHaveKeys(['body', 'totals']);
+});
+
+test('shop top menu links to the target section of the shop dashboard', function () {
+    $target = collect(GetShopNavigation::run($this->shop, $this->user)['dashboard']['topMenu']['subSections'])->filter()->first();
+
+    expect($target['root'])->toBe('grp.org.shops.show.dashboard.show')
+        ->and($target['route']['name'])->toBe('grp.org.shops.show.dashboard.show')
+        ->and($target['route']['parameters']['section'])->toBe(ShopDashboardSectionsEnum::TARGET->value);
+
+    get(route($target['route']['name'], $target['route']['parameters']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks.0.sections.current', ShopDashboardSectionsEnum::TARGET->value));
 });
 
 test('shop month sales target defaults to last year plus growth until management sets it', function () {

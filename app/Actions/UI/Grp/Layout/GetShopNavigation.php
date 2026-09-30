@@ -13,6 +13,7 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -40,6 +41,20 @@ class GetShopNavigation
 
             'topMenu' => [
                 'subSections' => [
+                    [
+                        "label"   => __("Target"),
+                        "tooltip" => __("Sales target"),
+                        "icon"    => ["fal", "fa-bullseye-arrow"],
+                        "root"    => "grp.org.shops.show.dashboard.show",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.show",
+                            "parameters" => [
+                                "organisation" => $shop->organisation->slug,
+                                "shop"         => $shop->slug,
+                                "section"      => ShopDashboardSectionsEnum::TARGET->value,
+                            ],
+                        ],
+                    ],
                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
