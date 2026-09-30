@@ -12,6 +12,7 @@ import {
     faTools,
     faGem,
     faChartLine,
+    faCubes,
 } from '@fal'
 import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -43,11 +44,12 @@ import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { faShapes, faStar, faExclamationTriangle } from '@fas'
+import { faShapes, faStar, faExclamationTriangle, faLink, faCircle } from '@fas'
 import { faHatCowboy } from "@far"
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
+import Popover from "primevue/popover"
 import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -129,6 +131,10 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     salesData?: object
     is_single_trade_unit?: boolean
+    indivisible_set?: {
+        parts: { code: string, name: string, quantity: number }[]
+        route: routeType | null
+    } | null
     reminders?: {}
     trade_unit_slug?: string
     shop_data: {
@@ -152,6 +158,7 @@ const currentTab = ref(props.tabs.current)
 const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 const isOpenDialog = ref(false)
+const indivisiblePopover = ref<InstanceType<typeof Popover> | null>(null)
 const reviewPayload = ref(null)
 const openDialog = () => {
     isOpenDialog.value = true
@@ -320,6 +327,44 @@ const saveProductReview = async () => {
                     :class="'text-red-500'" fixed-width
                 />
             </FontAwesomeLayers>
+
+            <component
+                v-if="indivisible_set"
+                :is="indivisible_set.route ? Link : 'span'"
+                :href="indivisible_set.route ? route(indivisible_set.route.name, indivisible_set.route.parameters) : undefined"
+                class="inline-flex rounded transition-opacity hover:opacity-75 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                :style="{ color: 'var(--app-accent)' }"
+                :aria-label="ctrans('Sold only as a complete set')"
+                tabindex="0"
+                @mouseenter="(event: Event) => indivisiblePopover?.show(event)"
+                @mouseleave="indivisiblePopover?.hide()"
+                @focus="(event: Event) => indivisiblePopover?.show(event)"
+                @blur="indivisiblePopover?.hide()"
+            >
+                <FontAwesomeLayers fixed-width>
+                    <FontAwesomeIcon :icon="faCubes" fixed-width />
+                    <FontAwesomeIcon :icon="faCircle" class="text-white" transform="shrink-6 down-5 right-6" fixed-width />
+                    <FontAwesomeIcon :icon="faLink" transform="shrink-9 down-5 right-6" fixed-width />
+                </FontAwesomeLayers>
+            </component>
+            <Popover v-if="indivisible_set" ref="indivisiblePopover">
+                <div class="max-w-xs space-y-2 text-sm font-normal tracking-normal">
+                    <p class="font-semibold text-gray-800">{{ ctrans('Sold only as a complete set') }}</p>
+                    <p class="text-gray-500">
+                        {{ ctrans('If one part can not be picked, the warehouse puts the other parts back and the customer is refunded the whole product.') }}
+                    </p>
+                    <ul class="divide-y divide-gray-100 border-t border-gray-100">
+                        <li v-for="part in indivisible_set.parts" :key="part.code" class="flex items-baseline gap-x-2 py-1.5">
+                            <span class="tabular-nums font-semibold" :style="{ color: 'var(--app-accent)' }">{{ part.quantity }}&times;</span>
+                            <span class="min-w-0">
+                                <span class="block text-gray-700">{{ part.name }}</span>
+                                <span class="block text-xs text-gray-400">{{ part.code }}</span>
+                            </span>
+                        </li>
+                    </ul>
+                    <p v-if="indivisible_set.route" class="text-xs text-gray-400">{{ ctrans('Click the icon to change it in Composition') }}</p>
+                </div>
+            </Popover>
 
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="ctrans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />

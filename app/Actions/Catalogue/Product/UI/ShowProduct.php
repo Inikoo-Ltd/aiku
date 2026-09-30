@@ -500,6 +500,7 @@ class ShowProduct extends OrgAction
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
                 'retirement_decision'       => $this->canEdit ? $this->getRetirementDecision($product) : null,
                 'is_single_trade_unit'      => $product->is_single_trade_unit,
+                'indivisible_set'           => $this->getIndivisibleSet($product),
                 'trade_unit_slug'           => $product->tradeUnits?->first->slug,
                 ...$componentData,
                 'variant'       => $product->variant,
@@ -561,6 +562,33 @@ class ShowProduct extends OrgAction
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * The parts a complete set is made of, for the heading icon popover. Null when the
+     * product can be sent with parts missing, so the icon is not shown.
+     */
+    private function getIndivisibleSet(Product $product): ?array
+    {
+        if (!$product->is_indivisible) {
+            return null;
+        }
+
+        return [
+            'parts' => $product->tradeUnits->unique('id')->map(fn ($tradeUnit) => [
+                'code'     => $tradeUnit->code,
+                'name'     => $tradeUnit->name,
+                'quantity' => (float) $tradeUnit->pivot->quantity,
+            ])->values()->all(),
+            'route' => $this->canEdit && $product->shop->type != ShopTypeEnum::EXTERNAL ? [
+                'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                'parameters' => [
+                    'organisation' => $product->organisation->slug,
+                    'shop'         => $product->shop->slug,
+                    'product'      => $product->slug,
+                ]
+            ] : null,
+        ];
     }
 
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array

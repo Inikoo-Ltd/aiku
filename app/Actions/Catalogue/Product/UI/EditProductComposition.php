@@ -141,6 +141,7 @@ class EditProductComposition extends OrgAction
                         'information'     => __('Turn on when a part is useless without the others, like a lamp with its bulb and cable. If one part can not be picked, the warehouse puts the other parts back and the customer is refunded the whole product. When off, the parts found are sent and the customer is refunded only the value of the missing ones.'),
                         'noSaveButton'    => true,
                         'submitOnConfirm' => true,
+                        ...$this->getIndivisibleToggleConfirmations($product),
                     ] : null,
                 ]),
             ],
