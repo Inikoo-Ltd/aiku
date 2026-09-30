@@ -28,6 +28,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Dashboards\GetGroupWarehouseDashboardData;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\Catalogue\Shop\UI\GetCatalogueShowcase;
 use App\Actions\UI\Grp\Layout\GetShopNavigation;
@@ -55,6 +56,10 @@ use App\Models\Catalogue\ShopSalesTarget;
 use App\Models\Catalogue\ShopTimeSeries;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
@@ -1309,6 +1314,142 @@ test('shop year sales target compares the same days last year, January included,
     expect($block['target']['amount'])->toEqualWithDelta(8000 * (1 + $growth) + 5000, 0.05)
         ->and($block['target']['is_default'])->toBeFalse()
         ->and($block['target']['months_set'])->toBe(1);
+});
+
+test('organisation target adds up its shops, leaving closed shops out of the target', function () {
+    $secondShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $closedShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $closedShop->update(['state' => ShopStateEnum::CLOSED]);
+    $today = Carbon::parse('2034-06-10', 'UTC');
+
+    $seed = function (Shop $shop, TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales]
+            );
+        }
+    };
+
+    $seed($this->shop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 1000]);
+    $seed($this->shop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 400, '2034-06-03' => 300]);
+    $seed($secondShop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 2000]);
+    $seed($secondShop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 600, '2034-06-03' => 700]);
+    $seed($closedShop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 5000]);
+    $seed($closedShop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 100]);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $month  = GetShopMonthSalesTarget::run($this->organisation, $this->user, $today);
+
+    expect($month['sales_so_far'])->toBe(1000.0)
+        ->and($month['last_year_so_far'])->toBe(1100.0)
+        ->and($month['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['can_edit'])->toBeFalse()
+        ->and($month['update_route'])->toBeNull()
+        ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(3000 * (1 + $growth), 0.05);
+
+    UpdateShopSalesTarget::make()->action($secondShop, ['target_org_currency' => 5000, 'month' => '2034-06']);
+
+    expect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target'])->toMatchArray(['is_default' => false])
+        ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(400 * (1 + $growth) + 5000, 0.05)
+        ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth) + 5000, 0.05);
+
+    get(route('grp.org.dashboard.show', $this->organisation->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+
+    $secondShop->update(['state' => ShopStateEnum::CLOSED]);
+});
+
+test('group target adds up every organisation in the group currency', function () {
+    $today = Carbon::parse('2036-03-10', 'UTC');
+
+    $seed = function (Shop $shop, TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales * 10, 'sales_grp_currency_external' => $sales]
+            );
+        }
+    };
+
+    $seed($this->shop, TimeSeriesFrequencyEnum::MONTHLY, ['2035-03' => 2000]);
+    $seed($this->shop, TimeSeriesFrequencyEnum::DAILY, ['2035-03-05' => 800, '2036-03-03' => 900]);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $month  = GetShopMonthSalesTarget::run($this->group, $this->user, $today);
+
+    expect($month['sales_so_far'])->toBe(900.0)
+        ->and($month['last_year_so_far'])->toBe(800.0)
+        ->and($month['currency_code'])->toBe($this->group->currency->code)
+        ->and($month['target']['amount'])->toEqualWithDelta(800 * (1 + $growth), 0.05)
+        ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['can_edit'])->toBeFalse()
+        ->and(GetShopYearSalesTarget::run($this->group, null, $today)['target']['amount'])->toEqualWithDelta(2000 * (1 + $growth), 0.05);
+
+    get(route('grp.dashboard.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+});
+
+test('group warehouse overview derives its numbers from the hydrated stats', function () {
+    $orderingStats = [
+        'number_delivery_notes_state_unassigned'       => 2,
+        'number_delivery_notes_state_queued'            => 3,
+        'number_delivery_notes_state_handling'         => 4,
+        'number_delivery_notes_state_handling_blocked' => 1,
+        'number_delivery_notes_state_picked'           => 5,
+        'number_delivery_notes_state_packing'          => 6,
+        'number_delivery_notes_state_packed'           => 7,
+        'number_delivery_notes_state_finalised'        => 8,
+    ];
+    $procurementStats = [
+        'number_stock_deliveries_state_confirmed'      => 1,
+        'number_stock_deliveries_state_ready_to_ship'  => 2,
+        'number_stock_deliveries_state_dispatched'     => 3,
+        'number_stock_deliveries_state_received'       => 4,
+        'number_stock_deliveries_state_checked'        => 5,
+        'number_stock_deliveries_state_booking_in'     => 6,
+        'number_open_purchase_orders'                  => 7,
+    ];
+    foreach ([$this->group, $this->organisation] as $owner) {
+        $owner->orderHandlingStats()->update($orderingStats);
+        $owner->procurementStats()->update($procurementStats);
+    }
+
+    Cache::forget("group-warehouse-stock-health:{$this->group->id}");
+    $currentOrgStocks = DB::table('org_stocks')
+        ->where('group_id', $this->group->id)
+        ->whereIn('state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])
+        ->where('quantity_status', OrgStockQuantityStatusEnum::OUT_OF_STOCK->value)
+        ->count();
+
+    $overview = GetGroupWarehouseDashboardData::run($this->group->refresh());
+
+    expect($overview['totals']['work'])->toBe([
+        'waiting'           => 5,
+        'picking'           => 4,
+        'blocked'           => 1,
+        'packing'           => 11,
+        'ready_to_ship'     => 15,
+    ])
+        ->and($overview['totals']['goods_in'])->toBe([
+            'confirmed'            => 1,
+            'on_the_way'           => 5,
+            'to_book_in'           => 9,
+            'booking_in'           => 6,
+            'open_purchase_orders' => 7,
+        ])
+        ->and($overview['totals']['stock_health'])->toHaveKeys(['out_of_stock', 'critical', 'low', 'ideal', 'excess', 'error'])
+        ->and($overview['totals']['stock_health']['out_of_stock'])->toBe($currentOrgStocks);
+
+    $organisationRow = collect($overview['organisations'])->firstWhere('slug', $this->organisation->slug);
+    expect($organisationRow['work']['waiting'])->toBe(5)
+        ->and($organisationRow['routes']['goods_in']['name'])->toBe('grp.org.procurement.stock_deliveries.index');
+
+    get(route('grp.dashboard.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('warehouseOverview.totals.work')->has('warehouseOverview.organisations'));
 });
 
 test('shop dashboard tab data serves the sub-departments table', function () {

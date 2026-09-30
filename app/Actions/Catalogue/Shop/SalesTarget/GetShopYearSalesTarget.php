@@ -12,8 +12,11 @@ use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasOrdersPipeline;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -27,44 +30,48 @@ class GetShopYearSalesTarget
     use AsObject;
     use HasOrdersPipeline;
 
-    public function handle(Shop $shop, ?User $user = null, ?Carbon $today = null): array
+    public function handle(Shop|Organisation|Group $parent, ?User $user = null, ?Carbon $today = null): array
     {
         $today         = ($today ?? now('UTC'))->copy()->startOfDay();
         $yearStart     = $today->copy()->startOfYear();
         $monthOfYear   = $today->month;
         $lastYearStart = $yearStart->copy()->subYear();
 
-        $lastYearMonthly = $this->monthlySales($shop, $lastYearStart);
-        $thisYearMonthly = array_filter($this->monthlySales($shop, $yearStart), fn ($month) => $month < $monthOfYear, ARRAY_FILTER_USE_KEY);
-        $thisYearMonthly[$monthOfYear] = $this->dailySalesTotal($shop, $today->copy()->startOfMonth(), $today);
+        $shopIds         = $this->salesShopIds($parent);
+        $salesColumn     = $this->salesColumn($parent);
+        $lastYearMonthly = $this->monthlySales($shopIds, $lastYearStart, $salesColumn);
+        $thisYearMonthly = array_filter($this->monthlySales($shopIds, $yearStart, $salesColumn), fn ($month) => $month < $monthOfYear, ARRAY_FILTER_USE_KEY);
+        $thisYearMonthly[$monthOfYear] = $this->dailySalesTotal($shopIds, $today->copy()->startOfMonth(), $today, $salesColumn);
 
         $lastYearMonthStart = $today->copy()->startOfMonth()->subYear();
         $lastYearSameDay    = $lastYearMonthStart->copy()->day(min($today->day, $lastYearMonthStart->daysInMonth));
 
         $salesSoFar    = array_sum($thisYearMonthly);
         $lastYearSoFar = array_sum(array_filter($lastYearMonthly, fn ($month) => $month < $monthOfYear, ARRAY_FILTER_USE_KEY))
-            + $this->dailySalesTotal($shop, $lastYearMonthStart, $lastYearSameDay);
+            + $this->dailySalesTotal($shopIds, $lastYearMonthStart, $lastYearSameDay, $salesColumn);
         $lastYearTotal = array_sum($lastYearMonthly);
 
-        $targets = ShopSalesTarget::where('shop_id', $shop->id)
+        $targetShopIds = $this->targetShopIds($parent);
+        $targets       = ShopSalesTarget::whereIn('shop_id', $targetShopIds)
             ->whereBetween('month', [$yearStart->toDateString(), $yearStart->copy()->endOfYear()->toDateString()])
-            ->with('setBy')
+            ->with($this->targetRelations($parent))
             ->get()
-            ->keyBy(fn (ShopSalesTarget $target) => $target->month->month);
+            ->keyBy(fn (ShopSalesTarget $target) => $target->shop_id.'-'.$target->month->month);
 
-        $growth = (float) config('marketing.default_sales_target_growth');
+        $growth               = (float) config('marketing.default_sales_target_growth');
+        $lastYearMonthlyShops = $this->monthlySalesByShop($targetShopIds, $lastYearStart, $salesColumn);
 
         $targetAmount = 0.0;
-        foreach (range(1, 12) as $month) {
-            $explicitTarget = $targets->get($month);
-            $targetAmount   += $explicitTarget
-                ? (float) $explicitTarget->target_org_currency
-                : round(($lastYearMonthly[$month] ?? 0) * (1 + $growth), 2);
+        foreach ($targetShopIds as $shopId) {
+            foreach (range(1, 12) as $month) {
+                $explicitTarget = $targets->has($shopId.'-'.$month) ? $this->targetInParentCurrency($targets->get($shopId.'-'.$month), $parent) : null;
+                $targetAmount   += $explicitTarget ?? round(($lastYearMonthlyShops[$shopId][$month] ?? 0) * (1 + $growth), 2);
+            }
         }
         $targetAmount = $targetAmount > 0 ? round($targetAmount, 2) : null;
 
         $lastSetTarget = $targets->sortByDesc('updated_at')->first();
-        $pipeline      = $this->pipeline($shop);
+        $pipeline      = $this->pipeline($parent);
         $remainingDays = $today->daysInYear - $today->dayOfYear;
         $gap           = $targetAmount === null ? null : max(0, $targetAmount - $salesSoFar - $pipeline['amount']);
 
@@ -72,7 +79,7 @@ class GetShopYearSalesTarget
             'month'             => $yearStart->format('Y-m'),
             'month_label'       => __(':year year to date', ['year' => $yearStart->format('Y')]),
             'last_year_label'   => $lastYearStart->format('Y'),
-            'currency_code'     => $shop->organisation->currency->code,
+            'currency_code'     => $this->currencyCode($parent),
             'day_of_month'      => $today->dayOfYear,
             'days_in_month'     => $today->daysInYear,
             'sales_so_far'      => round($salesSoFar, 2),
@@ -84,6 +91,7 @@ class GetShopYearSalesTarget
                 'amount'      => $targetAmount,
                 'is_default'  => $targets->isEmpty(),
                 'months_set'  => $targets->count(),
+                'is_sum_of_shops' => !$parent instanceof Shop,
                 'growth'      => $growth,
                 'set_by'      => $lastSetTarget?->setBy?->contact_name,
                 'set_at'      => $lastSetTarget?->updated_at,
@@ -107,26 +115,46 @@ class GetShopYearSalesTarget
      *
      * @return array<int, float> month of year => invoiced sales (org currency, partners excluded)
      */
-    private function monthlySales(Shop $shop, Carbon $yearStart): array
+    private function monthlySales(array $shopIds, Carbon $yearStart, string $salesColumn): array
     {
-        return DB::table('shop_time_series_records')
-            ->join('shop_time_series', 'shop_time_series.id', '=', 'shop_time_series_records.shop_time_series_id')
-            ->where('shop_time_series.shop_id', $shop->id)
-            ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
-            ->whereBetween('shop_time_series_records.period', [$yearStart->format('Y-m'), $yearStart->copy()->endOfYear()->format('Y-m')])
-            ->pluck('shop_time_series_records.sales_org_currency_external', 'shop_time_series_records.period')
+        return $this->monthlyRecords($shopIds, $yearStart)
+            ->groupBy('shop_time_series_records.period')
+            ->selectRaw("shop_time_series_records.period, sum(shop_time_series_records.$salesColumn) as sales")
+            ->pluck('sales', 'period')
             ->mapWithKeys(fn ($sales, $period) => [(int) substr($period, 5, 2) => (float) $sales])
             ->all();
     }
 
-    private function dailySalesTotal(Shop $shop, Carbon $from, Carbon $to): float
+    /**
+     * @return array<int, array<int, float>> shop id => month of year => invoiced sales
+     */
+    private function monthlySalesByShop(array $shopIds, Carbon $yearStart, string $salesColumn): array
+    {
+        $byShop = [];
+        foreach ($this->monthlyRecords($shopIds, $yearStart)->get(['shop_time_series.shop_id', 'shop_time_series_records.period', "shop_time_series_records.$salesColumn as sales"]) as $record) {
+            $byShop[$record->shop_id][(int) substr($record->period, 5, 2)] = (float) $record->sales;
+        }
+
+        return $byShop;
+    }
+
+    private function monthlyRecords(array $shopIds, Carbon $yearStart): Builder
+    {
+        return DB::table('shop_time_series_records')
+            ->join('shop_time_series', 'shop_time_series.id', '=', 'shop_time_series_records.shop_time_series_id')
+            ->whereIn('shop_time_series.shop_id', $shopIds)
+            ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+            ->whereBetween('shop_time_series_records.period', [$yearStart->format('Y-m'), $yearStart->copy()->endOfYear()->format('Y-m')]);
+    }
+
+    private function dailySalesTotal(array $shopIds, Carbon $from, Carbon $to, string $salesColumn): float
     {
         return (float) DB::table('shop_time_series_records')
             ->join('shop_time_series', 'shop_time_series.id', '=', 'shop_time_series_records.shop_time_series_id')
-            ->where('shop_time_series.shop_id', $shop->id)
+            ->whereIn('shop_time_series.shop_id', $shopIds)
             ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
             ->whereBetween('shop_time_series_records.period', [$from->toDateString(), $to->toDateString()])
-            ->sum('shop_time_series_records.sales_org_currency_external');
+            ->sum("shop_time_series_records.$salesColumn");
     }
 
     private function cumulative(array $monthly, int $untilMonth): array

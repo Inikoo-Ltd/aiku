@@ -31,7 +31,7 @@ interface PeriodTarget {
     last_year_total: number
     expected: number
     pipeline: { amount: number, orders: number, submitted_amount: number, in_warehouse_amount: number }
-    target: { amount: number | null, is_default: boolean, months_set?: number, growth: number, set_by: string | null }
+    target: { amount: number | null, is_default: boolean, is_sum_of_shops?: boolean, months_set?: number, growth: number, set_by: string | null }
     gap: number | null
     needed_per_day: number | null
     remaining_days: number
@@ -69,6 +69,19 @@ const versusLastYear = computed(() => {
 })
 
 const expectedVersusTarget = computed(() => (target.value ? (periodData.value.expected / target.value) * 100 : null))
+const expectedVersusTargetLabel = computed(() => {
+    if (expectedVersusTarget.value === null) {
+        return ""
+    }
+
+    const percent = Math.round(expectedVersusTarget.value)
+
+    if (percent > 100) {
+        return ctrans(":percent% above target", { percent: String(percent - 100) })
+    }
+
+    return percent === 100 ? ctrans("On target") : ctrans(":percent% of target", { percent: String(percent) })
+})
 
 const isEditing = ref(false)
 const isSaving = ref(false)
@@ -128,7 +141,7 @@ const chartOptions = computed(() => ({
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-        legend: { position: "bottom", labels: { boxWidth: 12 } },
+        legend: { display: false },
         tooltip: { callbacks: { label: (item: any) => `${item.dataset.label}: ${money(item.raw)}` } },
     },
     scales: {
@@ -163,27 +176,44 @@ const donutOptions = {
 
 <template>
     <DashboardWidgetBox storageKey="shop_dashboard_month_target_collapsed" class="mx-4 mt-4">
-        <template #header>
+        <template #header="{ collapsed }">
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                 <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-[var(--theme-color-4)]" fixed-width aria-hidden="true" />
                 {{ ctrans(":month target", { month: periodData.month_label }) }}
             </span>
-            <span class="text-xs text-gray-400">
+            <span v-if="collapsed && target" class="flex items-center gap-3 text-xs tabular-nums text-gray-500">
+                <span class="relative h-2 w-28 overflow-hidden rounded-full bg-gray-100">
+                    <span class="absolute inset-y-0 left-0" :style="{ width: Math.min(100, invoicedWidth) + '%', backgroundColor: COLORS.invoiced }" />
+                    <span class="absolute inset-y-0" :style="{ left: Math.min(100, invoicedWidth) + '%', width: Math.max(0, Math.min(100 - invoicedWidth, percentOf(periodData.pipeline.amount, target))) + '%', backgroundColor: COLORS.pipeline }" />
+                </span>
+                <span>{{ ctrans(":invoiced of :target (:percent%)", { invoiced: money(periodData.sales_so_far), target: money(target), percent: String(Math.round(invoicedWidth)) }) }}</span>
+                <span v-if="expectedVersusTarget !== null" :class="expectedVersusTarget < 100 ? 'text-red-600' : 'text-green-600'">
+                    {{ ctrans("expected :amount (:versus_target)", { amount: money(periodData.expected), versus_target: expectedVersusTargetLabel }) }}
+                </span>
+                <span class="text-gray-400">{{ ctrans(":days days left", { days: String(periodData.remaining_days) }) }}</span>
+            </span>
+            <span v-if="!collapsed" class="ml-6 hidden items-center gap-3 text-xs text-gray-500 xl:flex">
+                <span v-for="dataset in chartData.datasets" :key="dataset.label" class="flex items-center gap-1.5">
+                    <span class="w-4 border-t-2" :class="dataset.borderDash ? 'border-dashed' : ''" :style="{ borderColor: dataset.borderColor }" />
+                    {{ dataset.label }}
+                </span>
+            </span>
+            <span v-if="!collapsed || !target" class="ml-auto text-xs text-gray-400">
                 {{ ctrans(":invoiced invoiced · :pipeline in the pipeline · :days days left", { invoiced: money(periodData.sales_so_far), pipeline: money(periodData.pipeline.amount), days: String(periodData.remaining_days) }) }}
             </span>
-            <div v-if="yearTarget" class="ml-auto flex rounded-md border border-gray-200 text-xs">
+            <div v-if="yearTarget" class="flex rounded-md border border-gray-200 text-xs" :class="collapsed && target ? 'ml-auto' : ''">
                 <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'text-gray-500'" @click="selectPeriod('month')">{{ ctrans("This month") }}</button>
                 <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'text-gray-500'" @click="selectPeriod('year')">{{ ctrans("Year to date") }}</button>
             </div>
         </template>
 
         <div class="grid gap-6 lg:grid-cols-5">
-            <div class="h-72 lg:col-span-3">
+            <div class="h-56 lg:col-span-3">
                 <Chart type="line" :data="chartData" :options="chartOptions" class="h-full" />
             </div>
 
             <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
-                <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+                <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
                     <div>
                         <form v-if="isEditing" class="flex items-center gap-2" @submit.prevent="saveTarget">
                             <input v-model.number="newTarget" type="number" min="0" step="1" class="w-36 rounded border-gray-300 text-lg font-bold" :aria-label="ctrans('Target')" autofocus />
@@ -197,7 +227,8 @@ const donutOptions = {
                             </button>
                         </p>
                         <p class="text-xs text-gray-400">
-                            <template v-if="periodData.target.months_set && periodData.target.months_set < 12">{{ ctrans(":count of 12 months set by management, the rest :last_year sales plus :growth%", { count: String(periodData.target.months_set), last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
+                            <template v-if="periodData.target.is_sum_of_shops">{{ ctrans("Sum of the shops' targets") }}</template>
+                            <template v-else-if="periodData.target.months_set && periodData.target.months_set < 12">{{ ctrans(":count of 12 months set by management, the rest :last_year sales plus :growth%", { count: String(periodData.target.months_set), last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
                             <template v-else-if="!periodData.target.is_default">{{ ctrans("Target set by :name", { name: periodData.target.set_by ?? ctrans("management") }) }}</template>
                             <template v-else-if="target">{{ ctrans("Target: :last_year sales plus :growth%", { last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
                         </p>
@@ -205,15 +236,20 @@ const donutOptions = {
                     <div class="text-right">
                         <p class="text-xs text-gray-500">{{ periodData.granularity === "year" ? ctrans("Expected by year end") : ctrans("Expected by month end") }}</p>
                         <p class="text-2xl font-bold tabular-nums" :class="expectedVersusTarget !== null && expectedVersusTarget < 100 ? 'text-red-600' : 'text-green-600'">{{ money(periodData.expected) }}</p>
-                        <p v-if="expectedVersusTarget !== null" class="text-xs text-gray-400">{{ ctrans(":percent% of target", { percent: String(Math.round(expectedVersusTarget)) }) }}</p>
+                        <p v-if="expectedVersusTarget !== null" class="text-xs text-gray-400">
+                            {{ expectedVersusTargetLabel }}
+                            <span v-if="target" class="font-medium tabular-nums" :class="periodData.sales_so_far < target ? 'text-gray-600' : 'text-green-600'">
+                                · {{ periodData.sales_so_far < target ? ctrans(":amount to go", { amount: money(target - periodData.sales_so_far) }) : ctrans("Target reached") }}
+                            </span>
+                        </p>
                     </div>
                 </div>
 
                 <div v-if="target" class="flex items-center gap-4">
-                    <div class="relative h-40 w-40 shrink-0">
+                    <div class="relative h-32 w-32 shrink-0">
                         <Chart type="doughnut" :data="donutData" :options="donutOptions" class="relative z-10 h-full" />
                         <div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
-                            <span class="text-3xl font-bold">{{ Math.round(invoicedWidth) }}%</span>
+                            <span class="text-2xl font-bold">{{ Math.round(invoicedWidth) }}%</span>
                             <span class="text-xs text-gray-500">{{ ctrans("invoiced") }}</span>
                         </div>
                     </div>
@@ -233,7 +269,7 @@ const donutOptions = {
                     </table>
                 </div>
 
-                <p class="mt-3 text-xs text-gray-500">
+                <p class="mt-2 text-xs text-gray-500">
                     <span v-if="versusLastYear !== null" :class="versusLastYear < 0 ? 'text-red-600' : 'text-green-600'">{{ ctrans(":change% vs same days last year", { change: (versusLastYear > 0 ? "+" : "") + versusLastYear.toFixed(1) }) }}</span>
                     <template v-if="periodData.needed_per_day"> · {{ ctrans(":amount needed per day", { amount: money(periodData.needed_per_day) }) }}</template>
                     · {{ ctrans(":orders orders in the pipeline", { orders: String(periodData.pipeline.orders) }) }}

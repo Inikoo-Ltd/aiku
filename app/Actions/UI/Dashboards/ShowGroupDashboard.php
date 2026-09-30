@@ -2,6 +2,8 @@
 
 namespace App\Actions\UI\Dashboards;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
@@ -82,6 +84,8 @@ class ShowGroupDashboard extends OrgAction
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
+                    'month_target' => GetShopMonthSalesTarget::run($group, $user),
+                    'year_target'  => GetShopYearSalesTarget::run($group, $user),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
@@ -118,6 +122,7 @@ class ShowGroupDashboard extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard'          => $dashboard,
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
+                'warehouseOverview'  => GetGroupWarehouseDashboardData::run($group),
             ]
         );
     }
