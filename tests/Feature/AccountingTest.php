@@ -75,6 +75,7 @@ use App\Actions\Dashboard\GetOrganisationDashboardTimeSeriesData;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -1675,6 +1676,18 @@ test('refund pdf lines include shipping and charge refunds', function () {
         ->and($invoiceLineTypes)->not->toContain('Charge')
         ->and($refundLineTypes)->toContain('ShippingZone')
         ->and($refundLineTypes)->toContain('Charge');
+
+    $renderedPdfHtml = function (Invoice $document): string {
+        $viewData = null;
+        Event::listen('composing: invoices.templates.pdf.invoice', function ($view) use (&$viewData) {
+            $viewData ??= $view->getData();
+        });
+        PdfInvoice::make()->getInvoicePdfContent($document);
+
+        return view('invoices.templates.pdf.invoice', $viewData)->render();
+    };
+
+    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>');
 });
 
 test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {
