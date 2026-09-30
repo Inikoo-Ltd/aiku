@@ -884,7 +884,9 @@ const filteredContacts = computed(() => {
     const list = contacts.value.filter(matchesCurrentView)
     const linked = linkedContact.value
 
-    if (linked && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
+    const linkedChannelShown = isMergedView.value || !selectedChannels.value.length || isChannelOn(linked?.channel as string)
+
+    if (linked && linkedChannelShown && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
         return [linked, ...list]
     }
 
