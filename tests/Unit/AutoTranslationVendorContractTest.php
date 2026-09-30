@@ -246,7 +246,7 @@ it('keeps the first translation when the stronger retry comes back untranslated,
     $untranslated = 'bye '.uniqid();
     App\Actions\Helpers\Translations\Translate::make()->handle($untranslated, $english, $french, 'sonnet');
 
-    expect(Illuminate\Support\Facades\Cache::has('translate:'.sha1('en|fr|'.$untranslated)))->toBeFalse();
+    expect(Illuminate\Support\Facades\Cache::has('translate:sonnet:'.sha1('en|fr|'.$untranslated)))->toBeFalse();
 });
 
 it('sends only an openai model when there is no openrouter key, and reads json wrapped in prose', function () {
@@ -315,7 +315,7 @@ it('strips NUL characters from fresh and cached translations', function () {
 
     expect($translate->handle('soap', $english, $french, 'nul'))->toBe('Jabon soap');
 
-    Illuminate\Support\Facades\Cache::put('translate:'.sha1('en|fr|hello'), "bon\0jour");
+    Illuminate\Support\Facades\Cache::put('translate:nul:'.sha1('en|fr|hello'), "bon\0jour");
 
     expect($translate->handle('hello', $english, $french, 'nul'))->toBe('bonjour');
 });

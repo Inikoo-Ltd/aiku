@@ -33,7 +33,8 @@ class Translate extends OrgAction
                 return $text ?? '';
             }
 
-            $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $translationDriver ??= config('auto-translations.default_driver');
+            $cacheKey          = 'translate:'.$translationDriver.':'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
                 return $this->unescapeJsonEchoes($text, str_replace("\0", '', $cachedTranslation));
@@ -42,8 +43,7 @@ class Translate extends OrgAction
             if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
             }
-            $translationDriver ??= config('auto-translations.default_driver');
-            $translated        = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver);
+            $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver);
 
             $qualityCheck = config("auto-translations.drivers.$translationDriver.quality_check");
             if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
