@@ -45,6 +45,8 @@ import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
+import { useWhatsappCall } from "@/Composables/useWhatsappCall"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -103,6 +105,8 @@ const lastMessageStamp = computed(() => {
 const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success", "task-created"])
 
 const isSpamMarking = ref(false)
+
+const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
 
 const markSpam = async () => {
     if (!props.session?.ulid || isSpamMarking.value) return
@@ -842,6 +846,7 @@ let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
 let onClosing: ((payload: any) => void) | null = null
+let onCall: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -849,9 +854,11 @@ const stopSocket = () => {
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
     if (onClosing) chatChannel?.stopListening(".closing", onClosing)
     onClosing = null
+    if (onCall) chatChannel?.stopListening(".call", onCall)
     onMessage = null
     onReaction = null
     onStatus = null
+    onCall = null
     chatChannel = null
 }
 
@@ -943,11 +950,19 @@ const initSocket = () => {
         }
     }
 
+    onCall = (payload: any) => {
+        if (!payload?.id) return
+        const isCustomerService = (layout.user?.customer_service_shops ?? []).includes(chatSession.value?.shop?.id)
+        if (payload.direction === "user_initiated" && !isCustomerService) return
+        applyCallBroadcast(payload, props.organisationSlug)
+    }
+
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
     onClosing = onClosingEvent
     chatChannel.listen(".closing", onClosing)
+    chatChannel.listen(".call", onCall)
 }
 
 watch(
@@ -1080,6 +1095,10 @@ onUnmounted(() => {
                 </template>
             </ModalConfirmationDelete>
         </header>
+
+        <div v-if="!readOnly" class="px-3 pt-2 empty:hidden">
+            <WhatsappCallBar :organisation="props.organisationSlug" />
+        </div>
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">

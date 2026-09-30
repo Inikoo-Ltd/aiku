@@ -35,6 +35,10 @@ use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\Whatsapp\Calls\AnswerWhatsappCall;
+use App\Actions\Chat\Whatsapp\Calls\EndWhatsappCall;
+use App\Actions\Chat\Whatsapp\Calls\GetWhatsappCallOffer;
+use App\Actions\Chat\Whatsapp\Calls\StartWhatsappCall;
 use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
 use App\Actions\Chat\MetaChatSession\MarkMetaChatSessionAsSpam;
 use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
@@ -88,6 +92,14 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.sessions.trash');
     Route::patch('/whatsapp/{metaChatSession:ulid}/restore', RestoreMetaChatSession::class)
         ->name('whatsapp.sessions.restore')->withTrashed();
+    Route::post('/whatsapp/{metaChatSession:ulid}/calls', StartWhatsappCall::class)
+        ->name('whatsapp.calls.start');
+    Route::get('/whatsapp/calls/{metaChatCall}/offer', GetWhatsappCallOffer::class)
+        ->name('whatsapp.calls.offer');
+    Route::post('/whatsapp/calls/{metaChatCall}/answer', AnswerWhatsappCall::class)
+        ->name('whatsapp.calls.answer');
+    Route::post('/whatsapp/calls/{metaChatCall}/end', EndWhatsappCall::class)
+        ->name('whatsapp.calls.end');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/redact', RedactChatMessage::class)->name('messages.redact');
     Route::post('/messages/{chatSession:ulid}/{chatMessage}/pending-attachments', ImportPendingGmailAttachments::class)->name('messages.pending_attachments');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/redact-attachment', [RedactChatMessage::class, 'inAttachment'])->name('messages.redact_attachment');

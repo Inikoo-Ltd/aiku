@@ -20,6 +20,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, isAlerting, isWorkThread, type StaffCoworker } from "@/Stores/staff-messaging"
 import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
+import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
 library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube)
@@ -403,6 +404,7 @@ onUnmounted(() => {
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
         <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
+            <WhatsappCallAlert micro />
             <CustomersWaiting v-if="layout?.user?.is_agent" micro />
             <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
                 <FontAwesomeIcon :icon="group.icon" class="text-[8px] text-[var(--chat-muted)]" fixed-width :title="group.label" aria-hidden="true" />
