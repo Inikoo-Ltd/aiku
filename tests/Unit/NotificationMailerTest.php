@@ -11,6 +11,14 @@ test('staff mail notifications go out through ses from a verified sender in prod
         ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
 });
 
+test('a conversation forwarded to a colleague renders as an email with its transcript', function () {
+    $mail = (new ForwardedChatSessionNotification('Order question', 'Ana', 'Please look', "Customer: where is my order?\n\nAgent: checking", 'https://app.aiku.test/x', null))->toMail(new stdClass());
+
+    expect((string) $mail->render())->toContain('where is my order?')
+        ->toContain('Please look')
+        ->toContain(config('app.name'));
+});
+
 test('the rental agreement login email never contains a password', function () {
     $webUser = new App\Models\CRM\WebUser(['username' => 'jane']);
     $webUser->setRelation('shop', new App\Models\Catalogue\Shop(['name' => 'AW Fulfilment', 'email' => 'fulfilment@example.com']));
