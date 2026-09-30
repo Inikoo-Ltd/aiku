@@ -2123,7 +2123,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="min-w-0 py-2 px-3 border-t border-gray-300 md:border-t-0 md:border-l" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2 px-3 border-t border-gray-300 max-md:order-2 md:border-t-0 md:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
                     <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
@@ -2467,7 +2467,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
 
         <!-- Box: Order summary -->
-        <BoxStatPallet class="min-w-0 pb-4 border-t border-gray-300 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l">
+        <BoxStatPallet class="min-w-0 pb-4 border-t border-gray-300 max-md:order-1 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l">
             <div class="text-xs md:text-sm">
                 <div class="pt-2 px-3 flex justify-between items-center">
                     <div class="font-semibold xmb-2 text-base">

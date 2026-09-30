@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -65,7 +65,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('CRM Waiting Items') }}
+            {{ ctrans('CRM Waiting Items') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
@@ -102,13 +102,13 @@ function toggleOrg(orgSlug: string): void {
                             v-if="warehouse.waiting_crm_items.count > 0"
                             :href="route(warehouse.waiting_crm_items.route.name, warehouse.waiting_crm_items.route.parameters)"
                             @click="close()"
-                            class="flex items-center justify-between px-2 py-1 rounded hover:bg-blue-50 group"
+                            class="flex items-center justify-between px-2 py-1 rounded hover:bg-purple-50 group"
                         >
-                            <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-blue-700">
-                                <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-blue-400" fixed-width />
-                                <span>{{ trans('CRM Waiting Items') }}</span>
+                            <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-purple-700">
+                                <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-purple-400" fixed-width />
+                                <span>{{ ctrans('CRM Waiting Items') }}</span>
                             </div>
-                            <span class="text-xs font-semibold text-blue-600 bg-blue-100 rounded-full px-1.5 py-0.5">
+                            <span class="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-1.5 py-0.5">
                                 {{ warehouse.waiting_crm_items.count }}
                             </span>
                         </Link>
@@ -117,13 +117,13 @@ function toggleOrg(orgSlug: string): void {
                             v-if="warehouse.waiting_crm_items_still_picking.count > 0"
                             :href="route(warehouse.waiting_crm_items_still_picking.route.name, warehouse.waiting_crm_items_still_picking.route.parameters)"
                             @click="close()"
-                            class="flex items-center justify-between px-2 py-1 rounded hover:bg-indigo-50 group"
+                            class="flex items-center justify-between px-2 py-1 rounded hover:bg-violet-50 group"
                         >
-                            <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-indigo-700">
-                                <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-indigo-500" fixed-width />
-                                <span>{{ trans('Still Picking') }}</span>
+                            <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-violet-700">
+                                <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-violet-500" fixed-width />
+                                <span>{{ ctrans('Still Picking') }}</span>
                             </div>
-                            <span class="text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full px-1.5 py-0.5">
+                            <span class="text-xs font-semibold text-violet-700 bg-violet-100 rounded-full px-1.5 py-0.5">
                                 {{ warehouse.waiting_crm_items_still_picking.count }}
                             </span>
                         </Link>
@@ -132,7 +132,7 @@ function toggleOrg(orgSlug: string): void {
                             v-if="warehouse.waiting_crm_items.count === 0 && warehouse.waiting_crm_items_still_picking.count === 0"
                             class="px-2 py-1 text-xs text-gray-400 italic"
                         >
-                            {{ trans('No CRM waiting items') }}
+                            {{ ctrans('No CRM waiting items') }}
                         </div>
                     </div>
                 </div>
