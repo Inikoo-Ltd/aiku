@@ -19,8 +19,6 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
 import ChatPane from "@/Layouts/Grp/ChatPane.vue"
-import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
-import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -49,6 +47,9 @@ provide("locale", useLocaleStore())
 provide("isMovePallet", true)
 
 initialiseApp()
+
+const MessagingDock = defineAsyncComponent(() => import("@/Components/Messaging/MessagingDock.vue"))
+const PhoneCallDock = defineAsyncComponent(() => import("@/Components/Chat/PhoneCallDock.vue"))
 
 
 const layout = useLayoutStore()
