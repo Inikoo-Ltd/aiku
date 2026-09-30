@@ -197,9 +197,15 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.slug',
             'stock_deliveries.reference',
             'stock_deliveries.parent_name',
+            'stock_deliveries.parent_type',
             'stock_deliveries.state',
             'stock_deliveries.date',
-        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date");
+        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date")
+            ->selectRaw("case stock_deliveries.parent_type
+                when 'OrgSupplier' then (select org_suppliers.slug from org_suppliers where org_suppliers.id = stock_deliveries.parent_id)
+                when 'OrgAgent' then (select org_agents.slug from org_agents where org_agents.id = stock_deliveries.parent_id)
+                when 'OrgPartner' then stock_deliveries.parent_id::text
+            end as parent_route_key");
 
         if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query

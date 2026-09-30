@@ -5,14 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrophy as falTrophy, faSnooze, faPallet, faStopCircle, faTimes } from "@fal"
 import { faTrophy as fasTrophy } from "@fas"
@@ -68,10 +68,10 @@ function setPreferred(supplierProduct: any) {
                         valueProp="id"
                         labelProp="code"
                         labelAdditionalProp="name"
-                        :placeholder="trans('Search supplier product')" />
+                        :placeholder="ctrans('Search supplier product')" />
                 </div>
                 <Button
-                    :label="trans('Attach supplier')"
+                    :label="ctrans('Attach supplier')"
                     icon="fal fa-link"
                     size="s"
                     :loading="isAttaching"
@@ -80,13 +80,23 @@ function setPreferred(supplierProduct: any) {
             </div>
         </template>
 
+        <template #cell(supplier_name)="{ item: supplierProduct }">
+            <Link
+                v-if="supplierProduct.org_supplier_slug"
+                :href="route('grp.org.procurement.org_suppliers.show', [routeParams.organisation, supplierProduct.org_supplier_slug])"
+                class="primaryLink">
+                {{ supplierProduct.supplier_name }}
+            </Link>
+            <span v-else>{{ supplierProduct.supplier_name }}</span>
+        </template>
+
         <template #cell(preferred)="{ item: supplierProduct }">
             <Icon
                 v-if="supplierProduct.is_preferred"
-                :data="{ icon: 'fas fa-trophy', class: 'text-amber-500', tooltip: trans('Preferred supplier') }" />
+                :data="{ icon: 'fas fa-trophy', class: 'text-amber-500', tooltip: ctrans('Preferred supplier') }" />
             <Icon
                 v-else
-                :data="{ icon: 'fal fa-snooze', class: 'text-gray-400', tooltip: trans('Backup supplier') }" />
+                :data="{ icon: 'fal fa-snooze', class: 'text-gray-400', tooltip: ctrans('Backup supplier') }" />
         </template>
 
         <template #cell(unit_cost)="{ item: supplierProduct }">
@@ -101,14 +111,14 @@ function setPreferred(supplierProduct: any) {
         </template>
 
         <template #cell(units_per_carton)="{ item: supplierProduct }">
-            <span v-tooltip="trans('Units per carton')" class="inline-flex items-center gap-0.5">
+            <span v-tooltip="ctrans('Units per carton')" class="inline-flex items-center gap-0.5">
                 <Icon :data="{ icon: 'fal fa-stop-circle', class: 'text-gray-300' }" />
                 <Icon :data="{ icon: 'fal fa-times', class: 'text-gray-300' }" />
                 <span>{{ supplierProduct.units_per_carton }}</span>
             </span>
             <span
                 v-if="supplierProduct.packages_per_carton"
-                v-tooltip="trans('Packages (SKOs) per carton')"
+                v-tooltip="ctrans('Packages (SKOs) per carton')"
                 class="text-gray-400">
                 ({{ supplierProduct.packages_per_carton }})
             </span>
@@ -119,9 +129,9 @@ function setPreferred(supplierProduct: any) {
                 v-if="!supplierProduct.is_preferred"
                 type="button"
                 class="inline-flex items-center gap-1 text-gray-400 hover:text-amber-500"
-                v-tooltip="trans('Set as preferred supplier')"
+                v-tooltip="ctrans('Set as preferred supplier')"
                 @click="setPreferred(supplierProduct)">
-                <span class="text-xs">{{ trans("Set as") }}</span>
+                <span class="text-xs">{{ ctrans("Set as") }}</span>
                 <Icon :data="{ icon: 'fal fa-trophy' }" />
             </button>
         </template>

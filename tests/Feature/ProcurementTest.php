@@ -2559,7 +2559,9 @@ test('UI Index stock deliveries shows the expected received date', function () {
 
     $data = $response->viewData('page')['props']['data'];
     $row  = collect($data['data'] ?? $data)->firstWhere('id', $stockDelivery->id);
-    expect($row['estimated_receiving_date'])->toBe('2026-10-15');
+    expect($row['estimated_receiving_date'])->toBe('2026-10-15')
+        ->and($row['parent_type'])->toBe('OrgAgent')
+        ->and($row['parent_route_key'])->toBe($this->orgAgent->slug);
 });
 
 test('UI Index org agent stock deliveries shows deliveries with empty between filter', function () {
