@@ -41,6 +41,10 @@ class StoreOrgSupplierFromFreeSupplier extends OrgAction
 
     public function getOrganisations(Supplier $supplier): Collection
     {
+        if ($supplier->scope_type === 'Organisation') {
+            return Organisation::where('id', $supplier->scope_id)->get();
+        }
+
         $countryId = $supplier->address?->country_id;
 
         return Organisation::where('group_id', $supplier->group_id)

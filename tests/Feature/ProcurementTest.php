@@ -195,6 +195,7 @@ use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -3329,7 +3330,7 @@ test('agent organisation creates a supplier under its own agent', function () {
     $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.procurement.org_suppliers.create_for_agent', [$ownAgent->organisation->slug]))
+    $this->get(route('grp.org.procurement.org_suppliers.create_new', [$ownAgent->organisation->slug]))
         ->assertOk();
 
     $storeData = Supplier::factory()->definition();
@@ -7551,4 +7552,135 @@ test('purchase orders and stock deliveries from an agent use the agent organisat
 
     expect($purchaseOrder->currency_id)->toBe($rupee->id)
         ->and($stockDelivery->currency_id)->toBe($rupee->id);
+});
+
+test('procurement and accounting dashboards warn about stock deliveries waiting for costing', function () {
+    $token  = uniqid();
+    $before = \App\Actions\Procurement\GetUncostedStockDeliveriesCard::run($this->organisation);
+
+    $staleDelivery       = createStockDeliveryWithItems($this, "UNCOSTED-OLD-$token", [10]);
+    $recentDelivery      = createStockDeliveryWithItems($this, "UNCOSTED-NEW-$token", [10]);
+    $placedDelivery      = createStockDeliveryWithItems($this, "UNCOSTED-PLACED-$token", [10]);
+    $agentDelivery       = createStockDeliveryWithItems($this, "UNCOSTED-AGENT-$token", [10]);
+    $costedAgentDelivery = createStockDeliveryWithItems($this, "COSTED-AGENT-$token", [10]);
+
+    $staleDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN, 'booked_in_at' => now()->subDays(8)]);
+    $recentDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN, 'booked_in_at' => now()->subDay()]);
+    $placedDelivery->update(['state' => StockDeliveryStateEnum::PLACED, 'booked_in_at' => now()->subDays(8), 'placed_at' => now()->subDays(7)]);
+    $agentDelivery->update(['state' => StockDeliveryStateEnum::PLACED, 'parent_type' => 'OrgAgent', 'placed_at' => now()->subDays(5), 'is_costed' => false]);
+    $costedAgentDelivery->update(['state' => StockDeliveryStateEnum::PLACED, 'parent_type' => 'OrgAgent', 'placed_at' => now()->subDays(5), 'is_costed' => true]);
+
+    $card = \App\Actions\Procurement\GetUncostedStockDeliveriesCard::run($this->organisation);
+
+    expect($card['metrics'][0]['value'])->toBe(($before['metrics'][0]['value'] ?? 0) + 1)
+        ->and($card['metrics'][1]['value'])->toBe(($before['metrics'][1]['value'] ?? 0) + 1)
+        ->and($card['value'])->toBe($card['metrics'][0]['value'] + $card['metrics'][1]['value'])
+        ->and($card['metrics'][0]['route']['parameters']['_query']['between[booked_in_at]'])->toEndWith('-'.now()->subDays(4)->format('Ymd'));
+
+    $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboardCards.0.label', 'Not costed')->etc());
+
+    $this->get(route('grp.org.accounting.dashboard', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('uncostedStockDeliveries.value', $card['value'])->etc());
+
+    foreach ($card['metrics'] as $metric) {
+        $references = collect($this->get(route($metric['route']['name'], [$this->organisation->slug, ...$metric['route']['parameters']['_query']]))
+            ->viewData('page')['props']['data']['data'])->pluck('reference');
+
+        expect($references)->toHaveCount($metric['value'])
+            ->not->toContain("UNCOSTED-NEW-$token", "UNCOSTED-PLACED-$token", "COSTED-AGENT-$token");
+    }
+});
+
+describe('HELP-3519 buyer adds a new supplier and assigns an existing SKO to it', function () {
+    beforeEach(function () {
+        setPermissionsTeamId($this->group->id);
+
+        $this->otherOrganisation = Organisation::where('code', 'prc2')->first()
+            ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+
+        $this->buyer = User::where('username', 'help-3519-buyer')->first();
+        if ($this->buyer) {
+            return;
+        }
+
+        $buyerPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'buy')->firstOrFail();
+        $employee      = StoreEmployee::make()->action($this->organisation, [
+            'worker_number'   => 'help-3519-buyer',
+            'alias'           => 'help-3519-buyer',
+            'contact_name'    => 'Buyer',
+            'state'           => EmployeeStateEnum::WORKING,
+            'type'            => EmployeeTypeEnum::EMPLOYEE,
+            'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            'positions'       => [['slug' => $buyerPosition->slug, 'scopes' => []]],
+        ]);
+        $this->buyer = StoreUser::make()->action($employee, [
+            'username'       => 'help-3519-buyer',
+            'password'       => Str::random(32),
+            'status'         => true,
+            'reset_password' => false,
+        ]);
+    });
+
+    test('the new supplier belongs only to the buyer organisation', function () {
+        expect($this->buyer->authTo("procurement.{$this->organisation->id}.edit"))->toBeTrue()
+            ->and($this->buyer->authTo('supply-chain.edit'))->toBeFalse();
+
+        actingAs($this->buyer);
+
+        $this->get(route('grp.org.procurement.org_suppliers.create_new', [$this->organisation->slug]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.route.name', 'grp.models.org.supplier.store'));
+
+        $storeData = Supplier::factory()->definition();
+        $this->post(route('grp.models.org.supplier.store', $this->organisation->id), $storeData)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $supplier = Supplier::where('code', $storeData['code'])->firstOrFail();
+        expect($supplier->scope_type)->toBe('Organisation')
+            ->and($supplier->scope_id)->toBe($this->organisation->id)
+            ->and($supplier->orgSuppliers()->pluck('organisation_id')->all())->toBe([$this->organisation->id]);
+
+        expect(CreateOrgSupplier::make()->handle($this->otherOrganisation)->getCollection()->pluck('id'))->not->toContain($supplier->id);
+
+        $this->post(route('grp.models.org.supplier.store', $this->otherOrganisation->id), Supplier::factory()->definition())
+            ->assertForbidden();
+    });
+
+    test('an existing SKO is assigned to the supplier with the supplier code, cost and packing', function () {
+        $orgStock = $this->orgStocks[1];
+
+        actingAs($this->buyer);
+
+        $this->post(route('grp.models.org_stock.supplier_product.store', $orgStock->id), [
+            'org_supplier_id'  => $this->orgSupplier->id,
+            'code'             => 'HELP-3519-A',
+            'name'             => 'Amber bottle 10ml',
+            'cost'             => 0.17,
+            'units_per_pack'   => 1,
+            'units_per_carton' => 192,
+        ])->assertSessionHasNoErrors();
+
+        $link = OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)
+            ->whereHas('orgSupplierProduct.supplierProduct', fn ($query) => $query->where('code', 'HELP-3519-A'))
+            ->sole();
+        expect($link->orgSupplierProduct->org_supplier_id)->toBe($this->orgSupplier->id)
+            ->and($link->orgSupplierProduct->supplierProduct->code)->toBe('HELP-3519-A')
+            ->and((float) $link->orgSupplierProduct->supplierProduct->cost)->toBe(0.17)
+            ->and($link->orgSupplierProduct->supplierProduct->tradeUnits()->pluck('trade_units.id')->all())
+            ->toEqualCanonicalizing($orgStock->tradeUnits()->pluck('trade_units.id')->all());
+
+        $otherOrgSupplier = OrgSupplier::where('organisation_id', $this->otherOrganisation->id)->where('supplier_id', $this->orgSupplier->supplier_id)->first()
+            ?? StoreOrgSupplier::make()->action($this->otherOrganisation, $this->orgSupplier->supplier);
+
+        $this->post(route('grp.models.org_stock.supplier_product.store', $orgStock->id), [
+            'org_supplier_id'  => $otherOrgSupplier->id,
+            'code'             => 'HELP-3519-B',
+            'name'             => 'Other org',
+            'cost'             => 1,
+            'units_per_pack'   => 1,
+            'units_per_carton' => 1,
+        ])->assertSessionHasErrors('org_supplier_id');
+    });
 });

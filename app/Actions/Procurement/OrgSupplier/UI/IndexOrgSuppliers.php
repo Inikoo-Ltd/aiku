@@ -184,7 +184,7 @@ class IndexOrgSuppliers extends OrgAction
                             'tooltip' => __('Add suppliers'),
                             'label'   => __('Add suppliers'),
                             'route'   => [
-                                'name'       => $isAgent ? 'grp.org.procurement.org_suppliers.create_for_agent' : 'grp.org.procurement.org_suppliers.create',
+                                'name'       => $isAgent ? 'grp.org.procurement.org_suppliers.create_new' : 'grp.org.procurement.org_suppliers.create',
                                 'parameters' => [$this->parent->slug],
                             ],
                         ] : false,

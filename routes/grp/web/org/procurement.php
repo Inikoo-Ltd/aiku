@@ -156,7 +156,7 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('', IndexOrgSuppliers::class)->name('index');
     Route::get('export', ExportOrgSuppliers::class)->name('export');
     Route::get('create', CreateOrgSupplier::class)->name('create');
-    Route::get('create-for-agent', [CreateSupplier::class, 'inOrganisation'])->name('create_for_agent');
+    Route::get('create-new', [CreateSupplier::class, 'inOrganisation'])->name('create_new');
     Route::get('{orgSupplier}', ShowOrgSupplier::class)->name('show');
     Route::get('{orgSupplier}/edit', EditOrgSupplier::class)->name('edit');
     Route::get('{orgSupplier}/purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgSupplier'])->name('show.purchase-orders.show');
