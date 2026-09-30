@@ -298,13 +298,13 @@ defineExpose({
                     <template #default>
                         <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
-                            {{ product.name }}
+                            {{ product.variant_title || product.name }}
                         </p>
                     </template>
                 </LinkIris>
 
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.variant_title || product.name }}
                 </div>
 
                 <div v-if="product.pre_order && layout?.iris?.is_logged_in" class="text-xs text-amber-800">

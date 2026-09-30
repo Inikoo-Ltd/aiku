@@ -171,6 +171,23 @@ const modalDetail = ref(false)
 
 const currentRouteParams = route().params as RouteParams
 
+const waitingItemsUrl = (waitingFor: 'warehouse' | 'crm', shopType?: string, deliveryNoteState?: string) => {
+    if (!currentRouteParams.organisation || !currentRouteParams.warehouse || !shopType) {
+        return undefined
+    }
+
+    const isStillPicking = deliveryNoteState === 'handling'
+    const routeName = waitingFor === 'warehouse'
+        ? (isStillPicking ? 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop' : 'grp.org.warehouses.show.dispatching.waiting_items.shop')
+        : (isStillPicking ? 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop' : 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop')
+
+    return route(routeName, {
+        organisation: currentRouteParams.organisation,
+        warehouse: currentRouteParams.warehouse,
+        shopType,
+    })
+}
+
 const orgStockRouteCache = new Map<string, string>()
 function showOrgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if (!deliveryNoteItem.org_stock_slug) {
@@ -502,6 +519,8 @@ onUnmounted(() => {
 
 <template>
     <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo
+        tableClass="max-lg:min-w-[64rem]"
+        withScrollArrows
         :rowColorFunction="(row) => quantityToPutBack(row.id) > 0 ? '!bg-red-50' : ''">
         <template #before-table>
             <div v-if="tab === 'itemized' && incompleteSets?.length" class="mx-3 mb-3 space-y-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -687,9 +706,9 @@ onUnmounted(() => {
 
         <template #cell(items)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.items.length" v-for="(deliveryItem, index) in itemValue.items"
-                :key="deliveryItem.id || index" class="space-y-2">
+                :key="deliveryItem.id || index" class="space-y-2 border-b border-gray-100 py-1.5 last:border-0">
 
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center gap-x-3">
                     <div class="space-x-1">
                         <span v-if="itemValue.items.some((groupItem) => groupItem.indivisible_set)" class="inline-flex w-5 justify-center align-middle">
                             <IndivisibleSetIcon
@@ -797,11 +816,12 @@ onUnmounted(() => {
                     </template>
 
                     <!-- Section: items are waiting -->
-                    <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 || Number(deliveryItem.quantity_waiting_crm) > 0" class="flex items-center gap-x-2">
+                    <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 || Number(deliveryItem.quantity_waiting_crm) > 0" class="my-1 flex items-center gap-x-2">
                         <LabelItemsWaitingForWarehouse
                             v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0"
                             :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)"
                             :fractionData="GetWaitingWarehouseFractional(deliveryItem)"
+                            :href="waitingItemsUrl('warehouse', deliveryItem.delivery_note_shop_type, itemValue.delivery_note_state)"
                         />
                         <ButtonWithLink
                             v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 && (pickingSession.state == 'handling' || pickingSession.state == 'handling_blocked')"
@@ -820,6 +840,7 @@ onUnmounted(() => {
                             v-if="Number(deliveryItem.quantity_waiting_crm) > 0"
                             :qty_waiting_crm="Number(deliveryItem.quantity_waiting_crm)"
                             :fractionData="GetWaitingCrmFractional(deliveryItem)"
+                            :href="waitingItemsUrl('crm', deliveryItem.delivery_note_shop_type, itemValue.delivery_note_state)"
                         />
                     </div>
 
@@ -897,6 +918,7 @@ onUnmounted(() => {
                 <LabelItemsWaitingForWarehouse
                     :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)"
                     :fractionData="GetWaitingWarehouseFractional(itemValue)"
+                    :href="waitingItemsUrl('warehouse', itemValue.delivery_note_shop_type, itemValue.delivery_note_state)"
                 />
                 <ButtonWithLink
                     v-if="pickingSession.state == 'handling'"
@@ -918,6 +940,7 @@ onUnmounted(() => {
                 <LabelItemsWaitingForCrm
                     :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)"
                     :fractionData="GetWaitingCrmFractional(itemValue)"
+                    :href="waitingItemsUrl('crm', itemValue.delivery_note_shop_type, itemValue.delivery_note_state)"
                 />
             </div>
 
@@ -1218,7 +1241,7 @@ onUnmounted(() => {
         />
     </Dialog>
 
-    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
+    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-full max-w-4xl" closeButton>
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
                           @SuccsesUpdateState="() => { onCloseModalDetail() }" />
     </Modal>

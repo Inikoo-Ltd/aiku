@@ -14,7 +14,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue"
 import TablePalletReturnInPickingSessions from "@/Components/Warehouse/PickingSessions/TablePalletReturnInPickingSessions.vue"
 import TableFulfilmentPickingSessionStoredItems from "@/Components/Warehouse/PickingSessions/TableFulfilmentPickingSessionStoredItems.vue"
-import Timeline from "@/Components/Utils/Timeline.vue"
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import SelectDeliveryNotesModal from "@/Components/Warehouse/PickingSessions/SelectDeliveryNotesModal.vue"
 import SelectPalletReturnsModal from "@/Components/Warehouse/PickingSessions/SelectPalletReturnsModal.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -273,7 +273,7 @@ const handleModalSuccess = () => {
         </template>
     </PageHeading>
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-        <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
+        <TimelineResponsive :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
     <!-- Section: Scan a barcode to pack the matching item of the delivery note it belongs to -->
     <ScanToPackDeliveryNote

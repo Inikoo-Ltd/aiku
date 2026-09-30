@@ -188,7 +188,7 @@ defineExpose({
                         <span v-if="product.units != 1">
                             {{ product.units }}x
                         </span>
-                        {{ product.name }}
+                        {{ product.variant_title || product.name }}
                     </component>
 
                     <!-- CODE + RRP -->

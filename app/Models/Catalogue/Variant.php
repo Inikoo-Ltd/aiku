@@ -43,6 +43,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $master_variant_id
  * @property string $slug
  * @property bool $status
+ * @property string|null $label
+ * @property bool $is_label_reviewed
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProductForSale
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
