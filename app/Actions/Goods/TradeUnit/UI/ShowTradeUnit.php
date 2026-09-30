@@ -103,7 +103,7 @@ class ShowTradeUnit extends OrgAction
                         'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
                     'actions'    => [
-                        $this->canEdit && blank($tradeUnit->barcode) ? [
+                        ($this->canEdit || $this->canEditCompliance) && blank($tradeUnit->barcode) ? [
                             'type'    => 'button',
                             'style'   => 'secondary',
                             'icon'    => 'fal fa-barcode',
@@ -117,7 +117,7 @@ class ShowTradeUnit extends OrgAction
                                 ],
                             ],
                         ] : false,
-                        $this->canEdit ? [
+                        $this->canEdit || $this->canEditCompliance ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [

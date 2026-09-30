@@ -60,6 +60,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 
@@ -1382,4 +1383,55 @@ test('shop dashboard widgets compute only the widgets a tab asks for', function 
 
     expect($response->json())->toHaveKeys(['top_products', 'top_families', 'department_movers.growing', 'department_movers.falling', 'family_movers.period', 'out_of_stock.products', 'out_of_stock.estimated_lost', 'out_of_stock.rows', 'out_of_stock_month.estimated_lost', 'customer_actions.at_risk', 'customer_actions.overdue', 'routes'])
         ->not->toHaveKeys(['marketing', 'email', 'channels']);
+});
+
+test('a compliance editor sees supply chain, goods and products, and edits only compliance information', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn () => StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    $tradeUnit  = $this->product->tradeUnits()->first();
+    $compliance = $newUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    get(route('grp.supply-chain.supplier_products.index'))->assertOk();
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))->assertOk();
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->collapse()->keys()->doesntContain('name')
+                && collect($blueprint)->pluck('fields')->collapse()->has('gpsr_warnings')));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'Keep away from children'])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['name' => 'Renamed by compliance'])->assertSessionHasErrors('name');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_manual' => 'Read first', 'name' => 'Renamed by compliance'])->assertSessionHasErrors('name');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['label_info_approved' => true])->assertSessionHasErrors('label_info_approved');
+    patch(route('grp.models.product.update', $this->product->id), ['marketing_weight' => 321])->assertSessionHasNoErrors();
+    patch(route('grp.models.product.update', $this->product->id), ['price' => 1])->assertSessionHasErrors('price');
+
+    expect($tradeUnit->refresh()->gpsr_warnings)->toBe('Keep away from children')
+        ->and($tradeUnit->name)->not->toBe('Renamed by compliance')
+        ->and((int) $this->product->refresh()->marketing_weight)->toBe(321);
+
+    expect($tradeUnit->refresh()->gpsr_manual)->not->toBe('Read first');
+
+    $compliance->givePermissionTo('compliance.publish');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['label_info_approved' => true])->assertSessionHasNoErrors();
+
+    $viewer = $newUser();
+    $viewer->givePermissionTo('compliance.view');
+    actingAs($viewer);
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))->assertOk();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
+
+    $unrelated = $newUser();
+    $unrelated->givePermissionTo('human-resources.'.$this->organisation->id.'.view');
+    actingAs($unrelated);
+
+    patch(route('grp.models.product.update', $this->product->id), ['price' => 1])->assertForbidden();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
 });

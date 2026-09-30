@@ -39,6 +39,15 @@ class EditMasterProduct extends OrgAction
         return $masterAsset;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo('masters.edit');
+    }
+
     public function asController(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->initialisationFromGroup($masterShop->group, $request);

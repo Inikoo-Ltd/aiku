@@ -51,6 +51,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -59,6 +60,7 @@ class UpdateProduct extends OrgAction
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithComplianceEditing;
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
@@ -623,8 +625,28 @@ class UpdateProduct extends OrgAction
         return $modelData;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $this->canEdit           = $request->user()->authTo([
+            "products.{$this->shop->id}.edit",
+            "web.{$this->shop->id}.edit",
+            'group-webmaster.edit',
+            'masters.edit',
+            ...($this->shop->fulfilment ? ["fulfilment-shop.{$this->shop->fulfilment->id}.edit", "supervisor-fulfilment-shop.{$this->shop->fulfilment->id}"] : []),
+        ]);
+        $this->canEditCompliance = $request->user()->authTo('compliance.edit');
+
+        return $this->canEdit || $this->canEditCompliance;
+    }
+
     public function afterValidator(Validator $validator): void
     {
+        $this->rejectNonComplianceFields($validator);
+
         if ($this->strict) {
             $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
         }

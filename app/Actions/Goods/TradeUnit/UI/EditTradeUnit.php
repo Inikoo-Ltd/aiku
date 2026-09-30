@@ -17,6 +17,7 @@ use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 
@@ -26,6 +27,7 @@ class EditTradeUnit extends OrgAction
 
     use WithGoodsAuthorisation;
     use WithTradeUnitEditSections;
+    use WithComplianceEditing;
 
 
     public function handle(TradeUnit $tradeUnit): TradeUnit
@@ -139,7 +141,7 @@ class EditTradeUnit extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => $this->complianceOnlyBlueprint([
                         [
                             'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
@@ -390,7 +392,7 @@ class EditTradeUnit extends OrgAction
                                 ],
                             ],
                         ],
-                    ],
+                    ]),
 
 
                     'args' => [

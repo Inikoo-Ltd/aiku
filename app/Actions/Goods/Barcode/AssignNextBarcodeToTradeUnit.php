@@ -52,7 +52,7 @@ class AssignNextBarcodeToTradeUnit extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo('goods.edit');
+        return $request->user()->authTo(['goods.edit', 'compliance.edit']);
     }
 
     /**
