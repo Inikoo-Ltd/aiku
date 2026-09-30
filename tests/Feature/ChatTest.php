@@ -10470,12 +10470,19 @@ test('the reply promise says when the shop opens, turns overdue an hour later, a
     $queue = collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['statuses' => ['waiting'], 'allowed_shop_ids' => [$this->shop->id]])->items())->pluck('id');
     expect($queue->search($olderPlain->id))->toBeLessThan($queue->search($waiting->id));
 
+    $promisedList = collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['statuses' => ['waiting', 'active'], 'promised' => true, 'allowed_shop_ids' => [$this->shop->id]])->items())->pluck('id');
+    expect($promisedList)->toContain($waiting->id)
+        ->and($promisedList)->toContain($keptCase->id)
+        ->and($promisedList)->not->toContain($olderPlain->id);
+
     $waiting->update(['status' => ChatSessionStatusEnum::CLOSED]);
     expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($waiting->refresh()))->toBeNull();
     $waiting->update(['status' => ChatSessionStatusEnum::WAITING]);
 
     $waiting->update(['last_agent_message_at' => now()]);
     expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::run($waiting->refresh()))->toBeNull();
+    expect(collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['statuses' => ['waiting', 'active'], 'promised' => true, 'allowed_shop_ids' => [$this->shop->id]])->items())->pluck('id'))
+        ->not->toContain($waiting->id);
 
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-25 10:20', 'Europe/London'));
     ChatMessage::create([

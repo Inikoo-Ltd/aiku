@@ -45,6 +45,7 @@ class GetCrossChannelSessions
             'is_rubbish'      => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'promised'        => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],

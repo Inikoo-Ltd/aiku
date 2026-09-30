@@ -12,6 +12,7 @@ use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -50,6 +51,22 @@ class GetChatReplyPromise
         $answeredAt = $session->last_agent_message_at ? Carbon::parse($session->last_agent_message_at) : null;
 
         return !$answeredAt || $answeredAt->lt(Carbon::parse($repliedAt));
+    }
+
+    /**
+     * The same test as isWaiting, for a query: what the Promised capsule lists and counts.
+     *
+     * @param  Builder<ChatSession>|Builder<MetaChatSession>  $query
+     */
+    public static function scopeWaiting(Builder $query): void
+    {
+        $table = $query->getModel()->getTable();
+        $key   = SendOutOfHoursReply::SENT_KEY;
+
+        $query->whereNotNull("$table.metadata->$key")
+            ->where("$table.status", '!=', ChatSessionStatusEnum::CLOSED->value)
+            ->where(fn ($answered) => $answered->whereNull("$table.last_agent_message_at")
+                ->orWhereRaw("$table.last_agent_message_at < ($table.metadata->>'$key')::timestamptz"));
     }
 
     /**

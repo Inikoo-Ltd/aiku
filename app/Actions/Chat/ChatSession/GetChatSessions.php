@@ -60,6 +60,7 @@ class GetChatSessions
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'promised'        => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
@@ -254,6 +255,10 @@ class GetChatSessions
         // (waiting/active/closed + my/team) and just restricts to highlighted sessions.
         if (!empty($filters['highlighted'])) {
             $query->where('is_highlighted', true);
+        }
+
+        if (!empty($filters['promised'])) {
+            GetChatReplyPromise::scopeWaiting($query);
         }
 
         if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {

@@ -224,6 +224,11 @@ const carrierView = ref(false)
 const carriersCount = ref(0)
 const colleagueView = ref(false)
 const colleaguesCount = ref(0)
+// Told while we were closed that we would answer when we open: every one still unanswered in
+// the shops picked, whoever holds it, so the morning starts with them and the number on the
+// capsule is the list.
+const promisedOnly = ref(false)
+const promisedCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -607,7 +612,28 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
 
 const isMultiChannel = computed(() => selectedChannels.value.length > 1)
 
-const buildParams = (page: number) => ({
+const promisedCapsuleShown = computed(() =>
+    !spamView.value && !trashView.value && !unclaimedView.value && !rubbishView.value && !highlightView.value
+    && !carrierView.value && !colleagueView.value && !agentView.value
+)
+
+const isPromisedList = computed(() => promisedOnly.value && promisedCapsuleShown.value)
+
+// The capsule only appears while there is a promise to keep, so the row is the usual three for
+// most of the day. Kept on screen while it is switched on, or there would be no way back.
+watch(promisedCount, (count) => {
+    if (!count && promisedOnly.value && !contacts.value.some((c) => c.promise)) {
+        promisedOnly.value = false
+    }
+})
+
+const buildParams = (page: number) => isPromisedList.value ? ({
+    promised: 1,
+    statuses: ["waiting", "active"],
+    page,
+    ...(selectedShopIds.value.length ? { shop_ids: selectedShopIds.value } : {}),
+    ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
+}) : ({
     ...(trashView.value
         ? { trashed: 1 }
         : rubbishView.value
@@ -639,7 +665,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value || agentView.value
+    isPromisedList.value || spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -847,6 +873,7 @@ const revealViewFor = (contact: Contact): void => {
 }
 
 const matchesCurrentView = (c: Contact) =>
+    (!isPromisedList.value || (!!c.promise && ["waiting", "active"].includes(c.status as string))) &&
     (spamView.value || trashView.value || unclaimedView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
     (agentView.value || !selectedShopIds.value.length
         || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
@@ -1473,6 +1500,7 @@ const fetchAgentNotifications = async () => {
         unclaimedCount.value = data?.data?.unclaimed ?? 0
         carriersCount.value = data?.data?.carriers ?? 0
         colleaguesCount.value = data?.data?.colleagues ?? 0
+        promisedCount.value = data?.data?.promised ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -1725,7 +1753,7 @@ const onTransferAgentSuccess = async () => {
 }
 
 
-watch([selectedStatuses, viewMode], async () => {
+watch([selectedStatuses, viewMode, promisedOnly], async () => {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
@@ -2409,7 +2437,7 @@ onUnmounted(() => {
             <!-- Status capsules: any combination, never none -->
             <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-2 border-b">
                 <div class="flex items-center gap-1.5 text-xs">
-                    <button v-for="capsule in statusCapsules" :key="capsule.key" type="button"
+                    <button v-for="capsule in statusCapsules" v-show="!isPromisedList" :key="capsule.key" type="button"
                         v-tooltip="ctrans('Show or hide these, at least one stays on')"
                         class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
                         :class="isStatusOn(capsule.key)
@@ -2423,11 +2451,23 @@ onUnmounted(() => {
                             :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
                             :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
                     </button>
+                    <button v-if="promisedCapsuleShown && (promisedCount || promisedOnly)" type="button"
+                        v-tooltip="ctrans('Only the chats told while we were closed that we would reply when we open, not answered yet, in every channel and whoever holds them')"
+                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        :class="promisedOnly
+                            ? 'bg-amber-50 shadow-sm font-semibold border-amber-400 text-amber-700'
+                            : 'border-gray-200 text-gray-500 hover:text-gray-700'"
+                        @click="promisedOnly = !promisedOnly">
+                        {{ ctrans("Promised") }}
+                        <span v-if="promisedCount"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
+                            :class="promisedOnly ? 'text-white bg-amber-500' : 'text-amber-700 bg-amber-100'">{{ promisedCount }}</span>
+                    </button>
                 </div>
 
                 <!-- How far back the closed list reaches. Only on when closed is being looked
                      at: waiting and active are open work and have no period. -->
-                <div v-if="isStatusOn('closed')" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                <div v-if="isStatusOn('closed') && !isPromisedList" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
                     <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Closed") }}</span>
                     <button v-for="period in closedPeriods" :key="period.key" type="button"
                         class="px-1.5 py-0.5 rounded transition-colors"

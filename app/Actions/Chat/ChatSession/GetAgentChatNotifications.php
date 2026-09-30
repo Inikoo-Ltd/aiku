@@ -52,7 +52,7 @@ class GetAgentChatNotifications
                 ->count();
 
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => 0];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => 0, 'colleagues' => 0, 'promised' => 0];
         }
 
         return [
@@ -61,6 +61,7 @@ class GetAgentChatNotifications
             'spam'        => $this->spamCount($shopIds),
             'carriers'    => $this->carrierCount($shopIds),
             'colleagues'  => $this->colleagueCount($shopIds),
+            'promised'    => $this->promisedCount($shopIds),
         ];
     }
 
@@ -100,6 +101,30 @@ class GetAgentChatNotifications
             ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
             ->whereIn('shop_id', $shopIds)
             ->count();
+    }
+
+    /**
+     * Told while we were closed that we would answer when we open, and not answered yet: what
+     * the Promised capsule lists over the same shops.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function promisedCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
+            ->whereHas('messages')
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('is_carrier', false)
+            ->where('is_colleague', false)
+            ->whereIn('shop_id', $shopIds)
+            ->count()
+            + MetaChatSession::query()
+                ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
+                ->where('is_spam', false)
+                ->whereIn('shop_id', $shopIds)
+                ->count();
     }
 
     private function spamCount($shopIds): int
