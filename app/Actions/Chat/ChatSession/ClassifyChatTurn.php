@@ -546,13 +546,15 @@ class ClassifyChatTurn
 
     /**
      * Cancel or change of address, flagged on even odds: a missed one ships, a wrong one costs
-     * an agent a glance.
+     * an agent a glance. Cancelling it all, taking items off and holding it are one request to
+     * stop the order as it is. Agreeing to leave out what we said is out of stock is not: the
+     * order ships as we proposed.
      *
      * @param  array<string, mixed>  $answers
      */
     public static function urgent(array $answers): ?string
     {
-        $cancel  = (float) Arr::get($answers, 'request.probabilities.cancel_order', 0);
+        $cancel  = array_sum(array_map(fn (string $option) => (float) Arr::get($answers, "request.probabilities.$option", 0), ['cancel_all', 'remove_items', 'hold']));
         $address = (float) Arr::get($answers, 'request.probabilities.change_address', 0);
 
         return match (true) {
@@ -626,10 +628,13 @@ class ClassifyChatTurn
                 'integration' => 'Dropshipping store connections, Shopify, eBay, API, feeds',
                 'other'       => 'None of these: thanks, sourcing offers, notifications, anything else',
             ]),
-            'request'              => self::choice('Do they ask us to cancel an order or change its delivery address?', [
-                'cancel_order'   => 'They ask us to cancel an order they placed, or part of it, before it ships',
-                'change_address' => 'They ask to change or correct the delivery address of an order they placed',
-                'none'           => 'Neither of these',
+            'request'              => self::choice('Do they ask us to cancel, change or hold an order they placed?', [
+                'cancel_all'     => 'Cancel an order they placed, or not send it at all',
+                'remove_items'   => 'Take items they chose off an order they placed, before it ships: added by mistake, too many, changed their mind',
+                'hold'           => 'Stop, hold or delay an order they placed before it ships',
+                'change_address' => 'Change or correct the delivery address of an order they placed, or send it somewhere else',
+                'accept_ours'    => 'Agree to what we proposed, such as sending it without the items we said are out of stock and refunding those',
+                'none'           => 'None of these: where an order is, adding or swapping items, a return or refund after delivery, the address on their account, anything else',
             ]),
             'needs_engineer'       => self::noul('Is this something only our programmers can fix?', 'Our system is failing them: an error, a store connection or sync that does not work, products, stock, prices, orders or bundles not updating or shown wrong, a website or checkout feature broken', 'Customer service can answer or sort it: a question, an order, a delivery, stock, a return, a request, or something the customer can do themselves'),
             'act'                  => self::choice("What is the customer's latest message doing?", [
@@ -718,16 +723,23 @@ class ClassifyChatTurn
     }
 
     /**
+     * A problem with an order is a claim even when the customer only reports it: "nine lamps
+     * arrived broken, photos attached" asks for nothing in words, and Jev then doubts they want
+     * something, but reporting it is the request.
+     *
      * @param  array<string, mixed>  $answers
      */
     public static function branch(array $answers): ?string
     {
-        if (self::yes($answers, 'wants_something') < 0.5) {
-            return null;
+        $wantsSomething = self::yes($answers, 'wants_something') >= 0.5;
+
+        if (self::yes($answers, 'problem') >= 0.5 && self::yes($answers, 'about_existing_order') >= 0.5
+            && ($wantsSomething || Arr::get($answers, 'act.choice') === 'asking')) {
+            return 'problem';
         }
 
-        if (self::yes($answers, 'problem') >= 0.5 && self::yes($answers, 'about_existing_order') >= 0.5) {
-            return 'problem';
+        if (!$wantsSomething) {
+            return null;
         }
 
         $subject = Arr::get($answers, 'subject.choice');

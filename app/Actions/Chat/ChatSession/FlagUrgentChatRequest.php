@@ -23,11 +23,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * The inbox is worked in the order customers wrote, except for a request to cancel an order
  * or change its delivery address: those go wrong for good once the order ships, so they go
- * to the front until an agent answers. Every new customer message is read by Jev's cascade
- * (ClassifyChatTurn), which also says whether it only closes the conversation and, for a
- * dropshipping customer, which queue it belongs to. Without Jev a chat model reads the request
- * and nothing closes; without either, words that say it in the languages our customers write
- * in decide, so an outage flags too many rather than too few.
+ * to the front until an agent answers. Every new customer message, but not a courier's, is
+ * read by Jev's cascade (ClassifyChatTurn), which also says whether it only closes the
+ * conversation and, for a dropshipping customer, which queue it belongs to. Without Jev a chat
+ * model reads the request and nothing closes; without either, words that say it in the
+ * languages our customers write in decide, so an outage flags too many rather than too few.
  */
 class FlagUrgentChatRequest
 {
@@ -63,7 +63,7 @@ class FlagUrgentChatRequest
     {
         WaitForCustomerReply::stop($chatSession);
 
-        if ($chatSession->status === ChatSessionStatusEnum::CLOSED) {
+        if ($chatSession->status === ChatSessionStatusEnum::CLOSED || ($chatSession instanceof ChatSession && $chatSession->is_carrier)) {
             return null;
         }
 
@@ -239,8 +239,10 @@ class FlagUrgentChatRequest
         what the customer is asking now.
 
         "request" is:
-        - "cancel_order" if the customer asks us to cancel an order, or part of one, that is
-          already placed, or asks us not to send it or to stop or hold it.
+        - "cancel_order" if the customer asks us to cancel an order that is already placed, or
+          to take items they chose off it, or asks us not to send it or to stop or hold it.
+          Accepting that items we said are out of stock are left out and refunded is "none":
+          the order still ships.
         - "change_address" if the customer asks us to change, correct or confirm the delivery
           address of an order already placed, to send it somewhere else, or to send it with a
           different courier or delivery method.

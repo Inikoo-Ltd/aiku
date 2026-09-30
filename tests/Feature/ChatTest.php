@@ -6009,7 +6009,7 @@ test('with jev the urgent flag and the dropshipping queue come from the cascade,
     try {
         $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
         \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(fn (array $state, array $questions) => isset($questions['request']) ? [
-            'request' => ['type' => 'choice', 'choice' => 'cancel_order', 'probabilities' => ['cancel_order' => 0.93, 'none' => 0.07]],
+            'request' => ['type' => 'choice', 'choice' => 'cancel_all', 'probabilities' => ['cancel_all' => 0.93, 'none' => 0.07]],
             'ds_kind' => ['type' => 'choice', 'choice' => 'documents', 'probabilities' => ['documents' => 0.9]],
         ] : null);
 
@@ -6112,6 +6112,11 @@ test('a fact drawer opens only what is on the menu and only for the customer who
         ->and($drawer->handle('order_lines', $this->shop, $customer, $facts))->toBeNull()
         ->and($drawer->handle('order_payment', $this->shop, null, $facts))->toBeNull()
         ->and($drawer->handle('replacements', $this->shop, null, []))->toBeNull()
+    $courier = noiseTestEmailSession($this->shop, 'incidencias@gls-spain.es', 'Envío 1307', 'Falta el bulto 2, ¿autorizáis entrega parcial o anulamos el envío?');
+    $courier->update(['is_carrier' => true]);
+    expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($courier))->toBeNull()
+        ->and(data_get($courier->refresh()->metadata, 'urgent_request'))->toBeNull();
+
         ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull()
         ->and($drawer->handle('shop_policies', $this->shop, null, []))->toBeNull();
 
@@ -10957,9 +10962,15 @@ test('jev works out what the customer wants in rounds, and only a clear single q
 
     expect($damaged['claim'])->toBeTrue()
         ->and($whenBack['claim'])->toBeFalse()
-        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.45, 'change_address' => 0.1]]]))->toBe('cancel_order')
-        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.02, 'change_address' => 0.92]]]))->toBe('change_address')
-        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.2, 'none' => 0.8]]]))->toBeNull();
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_all' => 0.45, 'change_address' => 0.1]]]))->toBe('cancel_order')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['remove_items' => 0.25, 'hold' => 0.2, 'none' => 0.55]]]))->toBe('cancel_order')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_all' => 0.02, 'change_address' => 0.92]]]))->toBe('change_address')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_all' => 0.04, 'accept_ours' => 0.94]]]))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_all' => 0.2, 'none' => 0.8]]]))->toBeNull();
+
+    $onlyReports = ['wants_something' => $noul(0.48), 'problem' => $noul(0.98), 'about_existing_order' => $noul(0.96), 'act' => $choice('asking', 0.8)];
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::branch($onlyReports))->toBe('problem')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::branch(['act' => $choice('closing', 0.9)] + $onlyReports))->toBeNull();
 
     $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
     $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'guides' => [$hint], 'engineer' => null]], 'last_agent_message_at' => now()->subMinute()]);
