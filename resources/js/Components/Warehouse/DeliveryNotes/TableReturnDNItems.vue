@@ -255,7 +255,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :useTopPagination="true" tableClass="max-lg:min-w-[56rem]" withScrollArrows>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :useTopPagination="true" tableClass="max-lg:min-w-[max(100%,56rem)]" withScrollArrows>
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
                 <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />

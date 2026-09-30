@@ -202,7 +202,7 @@ const getTradeUnitHistory = (oldData, newData) => {
         </button>
     </div>
 
-    <Table v-if="data" :resource="data" class="mt-5" :name="tab" :tableClass="scrollOnMobile ? 'max-lg:min-w-[48rem]' : ''" :withScrollArrows="scrollOnMobile">
+    <Table v-if="data" :resource="data" class="mt-5" :name="tab" :tableClass="scrollOnMobile ? 'max-md:min-w-[max(100%,40rem)]' : ''" :withScrollArrows="scrollOnMobile">
         <template #cell(record)="{ item: history }">
             <span class="whitespace-nowrap text-xs text-gray-600">{{ history.record }}</span>
         </template>

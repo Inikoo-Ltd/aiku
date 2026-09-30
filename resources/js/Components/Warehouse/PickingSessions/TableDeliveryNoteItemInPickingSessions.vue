@@ -519,7 +519,7 @@ onUnmounted(() => {
 
 <template>
     <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo
-        tableClass="max-lg:min-w-[64rem]"
+        tableClass="max-lg:min-w-[max(100%,64rem)]"
         withScrollArrows
         :rowColorFunction="(row) => quantityToPutBack(row.id) > 0 ? '!bg-red-50' : ''">
         <template #before-table>

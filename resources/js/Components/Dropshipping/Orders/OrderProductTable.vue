@@ -504,7 +504,7 @@ const isOffersData = (offersData: any): boolean => {
                 return ''
             }"
             :useTopPagination="true"
-            :tableClass="scrollOnMobile ? 'max-lg:min-w-[56rem]' : ''"
+            :tableClass="scrollOnMobile ? 'max-lg:min-w-[max(100%,56rem)]' : ''"
             :withScrollArrows="scrollOnMobile"
         >
 

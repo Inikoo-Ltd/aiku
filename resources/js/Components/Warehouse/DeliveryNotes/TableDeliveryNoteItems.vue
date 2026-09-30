@@ -1033,7 +1033,7 @@ const onSaveSplitBoxes = async () => {
         :rowspan-columns="['packaging', 'leaflets', 'print_status']"
         xisUseVMemo
         :useTopPagination="true"
-        tableClass="max-lg:min-w-[64rem]"
+        tableClass="max-lg:min-w-[max(100%,64rem)]"
         withScrollArrows
         :rowColorFunction="(item) => {
             if (item.is_dirty) {
