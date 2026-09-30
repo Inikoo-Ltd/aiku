@@ -7618,7 +7618,7 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     $forbid = false;
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/*'                       => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
-        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'p1'], ['id' => 'p2']], 'nextPageToken' => 'page-2']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'p1'], ['id' => 'p2'], ['id' => 'p3']], 'nextPageToken' => 'page-2']),
         'gmail.googleapis.com/gmail/v1/users/me/messages/*' => function ($request) use ($raw, &$refuse, &$forbid) {
             $id = basename(parse_url($request->url(), PHP_URL_PATH));
 
@@ -7637,7 +7637,11 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
 
     $refuse = false;
     $action->asJob($this->shop, 12);
-    expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->count())->toBe(2)
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=metadata&metadataHeaders=From'));
+    \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=full'));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p1?format=full'));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'q=newer_than%3A12m') && str_contains(urldecode($request->url()), '-category:promotions'));
+    expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2', 'p3'])->count())->toBe(2)
         ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
     \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
 
