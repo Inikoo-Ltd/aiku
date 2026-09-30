@@ -1451,7 +1451,7 @@ const openPendingSession = async () => {
         // Cleared before the reload below, because that reload calls back into here.
         pendingSessionUlid.value = null
 
-        if (mapped.shop?.id && mapped.shop.id !== selectedShopId.value) {
+        if (mapped.shop?.id && (mapped.shop.id !== selectedShopId.value || !isChannelOn(mapped.channel as string))) {
             revealInbox(mapped.shop.id, mapped.channel)
         }
 
@@ -1867,7 +1867,7 @@ onMounted(async () => {
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        revealInbox(init.shop.id, urlChannel)
+        revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
     if (init) {
