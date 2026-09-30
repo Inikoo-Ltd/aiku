@@ -10,7 +10,6 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 import ProfileHistory from "@/Components/Profile/ProfileHistory.vue"
-import ProfileShowcase from "@/Components/Profile/ProfileShowcase.vue"
 import ProfileHeader from "@/Components/Profile/ProfileHeader.vue"
 import ProfileKPIs from "@/Components/Profile/ProfileKPIs.vue"
 import ProfileTimesheets from "@/Components/Profile/ProfileTimesheets.vue"
@@ -20,7 +19,7 @@ import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
 import ProfileApiTokens from "@/Components/Profile/ProfileApiTokens.vue"
 
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
@@ -59,8 +58,8 @@ const fetchPageHead = async () => {
     } catch (error: any) {
         dataProfile.value = null
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to show Profile page.'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to show Profile page.'),
             type: 'error',
         })
     }
@@ -77,7 +76,6 @@ const component = computed(() => {
         api_tokens: ProfileApiTokens,
         visit_logs: ProfileVisitLogs,
         timesheets: ProfileTimesheets,
-        dashboard: ProfileShowcase,
         history: ProfileHistory,
     }
 
@@ -98,16 +96,10 @@ const handleTabUpdate = (newTabSlug: string) => {
 }
 const isTabLoading = ref(false)
 const headerLayoutVersion = ref(0)
-const viewportFittedTabs = ['notifications', 'dashboard', 'timesheets']
+const viewportFittedTabs = ['notifications', 'timesheets']
 const isViewportFittedTab = computed(() => viewportFittedTabs.includes(currentTab.value))
 const dataTab = ref(null)
 const fetchTabData = async (tabSlug: string) => {
-    if (tabSlug === 'dashboard') {
-        dataTab.value = {}
-        currentTab.value = tabSlug
-        return
-    }
-
     isTabLoading.value = true
     let routeName = ''
 
@@ -130,9 +122,6 @@ const fetchTabData = async (tabSlug: string) => {
         case 'timesheets':
             routeName = 'grp.profile.timesheets.index'
             break
-        case 'dashboard':
-            routeName = 'grp.profile.showcase.show'
-            break
         case 'history':
             routeName = 'grp.profile.history.index'
             break
@@ -154,7 +143,7 @@ const fetchTabData = async (tabSlug: string) => {
     } catch (error: any) {
         dataTab.value = null
         notify({
-            title: trans('Something went wrong.'),
+            title: ctrans('Something went wrong.'),
             text: `Failed to show ${dataProfile.value?.tabs.navigation[tabSlug].title} tab.`,
             type: 'error',
         })
@@ -210,7 +199,7 @@ onMounted(async () => {
 
 
 <template>
-    <Head :title="trans('Profile')" />
+    <Head :title="ctrans('Profile')" />
     <ProfileHeader :isLoadingLogout="isLoadingLogout" @logout="onLogoutAuth" @loaded="headerLayoutVersion++" />
 
     <template v-if="dataProfile?.tabs?.navigation">
@@ -226,7 +215,7 @@ onMounted(async () => {
             <component :is="component" :data="dataTab" :tab="currentTab" v-bind="isViewportFittedTab ? { layoutVersion: headerLayoutVersion } : {}" />
         </div>
         <div v-else class="h-full w-full flex items-center justify-center text-gray-400 italic">
-            {{ trans('No data to shown.') }}
+            {{ ctrans('No data to shown.') }}
         </div>
     </template>
 

@@ -77,10 +77,6 @@ class ShowProfile extends OrgAction
                     'navigation' => ProfileTabsEnum::navigation()
                 ],
 
-                ProfileTabsEnum::DASHBOARD->value => $this->tab == ProfileTabsEnum::DASHBOARD->value ?
-                    fn () => GetProfileShowcase::run($user)
-                    : Inertia::optional(fn () => GetProfileShowcase::run($user)),
-
                 ProfileTabsEnum::TIMESHEETS->value => $this->tab == ProfileTabsEnum::TIMESHEETS->value ?
                     fn () => TimesheetsResource::collection(IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value))
                     : Inertia::optional(fn () => TimesheetsResource::collection(IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value))),
