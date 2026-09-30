@@ -6,8 +6,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -18,9 +20,11 @@ use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Language;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
@@ -135,18 +139,48 @@ test('the unit label is translated for shops in another language that follow the
     expect($this->product->refresh()->unit)->toBe('bouteille');
 });
 
-test('a shop that does not follow the master keeps its own unit label', function () {
-    $french = Language::where('code', 'fr')->first();
+test('a shop that does not follow the master keeps its own unit label and its shopkeeper is asked to change it', function () {
+    Translate::mock()->shouldReceive('handle')->andReturn('bouteille');
+    $shopkeeper = $this->user;
     $this->shop->updateQuietly([
-        'language_id' => $french->id,
+        'language_id' => Language::where('code', 'fr')->first()->id,
         'settings'    => array_merge($this->shop->settings ?? [], [
             'catalog' => ['product_follow_master' => false],
         ]),
     ]);
+    UpdateShop::make()->action($this->shop, ['shopkeeper_in_charge_id' => $shopkeeper->id]);
 
     UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
 
-    expect($this->product->refresh()->unit)->toBe('piece');
+    $task = StaffTask::where('data->kind', AskShopkeeperToUpdateProductUnit::TASK_KIND)->where('data->shop_id', $this->shop->id)->sole();
+
+    expect($this->product->refresh()->unit)->toBe('piece')
+        ->and($task->assignee_id)->toBe($shopkeeper->id)
+        ->and($task->description)->toContain($this->product->code)
+        ->and($task->description)->toContain('«bouteille»');
+});
+
+test('unit changes pile onto the shop open unit task, and a new task starts once it is done', function () {
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => $text.'-fr');
+    $this->shop->updateQuietly([
+        'language_id' => Language::where('code', 'fr')->first()->id,
+        'settings'    => array_merge($this->shop->settings ?? [], ['catalog' => ['product_follow_master' => false]]),
+    ]);
+    $unitTasks = fn () => StaffTask::where('data->kind', AskShopkeeperToUpdateProductUnit::TASK_KIND)->where('data->shop_id', $this->shop->id);
+    $unitTasks()->delete();
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'jar']);
+
+    $task = $unitTasks()->sole();
+    expect($task->department)->toBe('products')
+        ->and($task->description)->toContain('«bottle-fr»')
+        ->and($task->description)->toContain('«jar-fr»');
+
+    $task->update(['status' => StaffTaskStatusEnum::DONE]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'box']);
+
+    expect($unitTasks()->count())->toBe(2);
 });
 
 test('a master name change is copied to a shop that speaks the master language', function () {

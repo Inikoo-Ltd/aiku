@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
+use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
@@ -42,6 +43,7 @@ use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\SysAdmin\User;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -275,12 +277,25 @@ class UpdateMasterAsset extends OrgAction
                     continue;
                 }
 
-                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                $followsMaster = data_get($shop->settings, 'catalog.product_follow_master');
+                $requester     = auth()->user();
+
+                if (!$masterAsset->unit || (!$followsMaster && !$requester instanceof User)) {
+                    continue;
+                }
+
+                $translatedUnit = Translate::run($masterAsset->unit, $english, $shop->language, 'catalogue');
+
+                if (!$followsMaster) {
+                    if ($product->unit !== $translatedUnit) {
+                        AskShopkeeperToUpdateProductUnit::run($product, $translatedUnit, $requester);
+                    }
+
                     continue;
                 }
 
                 UpdateProduct::run($product, [
-                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'catalogue'),
+                    'unit' => $translatedUnit,
                 ]);
             }
         }

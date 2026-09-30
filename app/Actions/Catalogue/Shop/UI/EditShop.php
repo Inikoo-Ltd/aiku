@@ -318,6 +318,16 @@ class EditShop extends OrgAction
                             'information' => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'shopkeeper_in_charge_id'                  => [
+                            'type'        => 'select',
+                            'label'       => __('Shopkeeper in charge'),
+                            'information' => __('Gets the tasks to update this shop\'s products when the master changes something the shop keeps its own copy of, such as the unit. Empty sends them to the products department.'),
+                            'options'     => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                            'searchable'  => true,
+                            'value'       => data_get($shop->settings, 'catalog.shopkeeper_in_charge_id'),
+                        ],
                         'family_indexing_follow_master'            => [
                             'label'       => __('Family Page Product Index Follow Master'),
                             'type'        => 'toggle',
