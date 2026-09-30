@@ -110,7 +110,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV, $author) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
