@@ -10,7 +10,7 @@ namespace App\Actions\Billables\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Billables\UI\BillablesTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowBillablesDashboard extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
 
 

@@ -12,7 +12,7 @@ use App\Actions\Billables\ShippingZone\UI\IndexShippingZones;
 use App\Actions\Billables\ShippingZoneSchema\WithShippingZoneSchemaSubNavigation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Http\Resources\Catalogue\ShippingZoneSchemaResource;
 use App\Http\Resources\Catalogue\ShippingZonesResource;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShippingZoneSchema extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
     use WithShippingZoneSchemaSubNavigation;
 
     public function handle(ShippingZoneSchema $shippingZoneSchema): ShippingZoneSchema

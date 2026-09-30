@@ -8,7 +8,7 @@
 namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\Charge;
@@ -26,7 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomersInCharge extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, Charge $charge, ActionRequest $request): LengthAwarePaginator
     {

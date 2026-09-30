@@ -10,6 +10,7 @@ namespace App\Actions\Billables\Packaging;
 
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePackaging extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
 
     private Packaging $packaging;
@@ -60,15 +62,6 @@ class UpdatePackaging extends OrgAction
         $packaging->refresh();
 
         return $packaging;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

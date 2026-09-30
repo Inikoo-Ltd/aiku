@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\Leaflet;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
@@ -20,20 +21,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLeaflet extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(Leaflet $leaflet, array $modelData): Leaflet
     {
         return $this->update($leaflet, $modelData);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

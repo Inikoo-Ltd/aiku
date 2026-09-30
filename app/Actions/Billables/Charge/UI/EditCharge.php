@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Billables\Charge;
@@ -23,7 +23,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditCharge extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Charge $charge): Charge
     {

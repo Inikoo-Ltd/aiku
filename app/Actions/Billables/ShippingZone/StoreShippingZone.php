@@ -12,6 +12,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Models\Billables\ShippingZone;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreShippingZone extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

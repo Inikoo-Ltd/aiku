@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\Leaflet;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Billables\Leaflet;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreLeaflet extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(Shop $shop, array $modelData): Leaflet
     {
         if (!Arr::has($modelData, 'state')) {
@@ -33,15 +35,6 @@ class StoreLeaflet extends OrgAction
         data_set($modelData, 'currency_id', $shop->currency_id);
 
         return Leaflet::create($modelData);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

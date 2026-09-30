@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Packaging\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -20,7 +20,7 @@ use Spatie\LaravelOptions\Options;
 
 class CreatePackaging extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Shop $shop, ActionRequest $request): Response
     {

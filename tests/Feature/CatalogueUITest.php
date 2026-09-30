@@ -1435,3 +1435,32 @@ test('a compliance editor sees supply chain, goods and products, and edits only 
     patch(route('grp.models.product.update', $this->product->id), ['price' => 1])->assertForbidden();
     patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
 });
+
+test('accounts can edit billables, staff without product or accounting edit cannot', function () {
+    setPermissionsTeamId($this->group->id);
+    $newUser = function (array $permissions) {
+        $user = StoreGuest::make()->action(
+            $this->group,
+            array_merge(Guest::factory()->definition(), ['positions' => []])
+        )->getUser();
+        $user->givePermissionTo($permissions);
+
+        return $user->refresh();
+    };
+
+    actingAs($newUser(["accounting.{$this->organisation->id}.view"]));
+    get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0', false));
+    patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Viewer rename'])->assertForbidden();
+    patch(route('grp.models.charge.update', $this->charge->id), ['name' => 'Viewer rename'])->assertForbidden();
+
+    actingAs($newUser(["accounting.{$this->organisation->id}.view", "accounting.{$this->organisation->id}.edit"]));
+    get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.style', 'edit'));
+    get(route('grp.org.shops.show.billables.services.edit', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))->assertOk();
+    patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Accounts rename'])->assertSessionHasNoErrors();
+    patch(route('grp.models.charge.update', $this->charge->id), ['name' => 'Accounts rename'])->assertSessionHasNoErrors();
+
+    expect($this->service->refresh()->name)->toBe('Accounts rename')
+        ->and($this->charge->refresh()->name)->toBe('Accounts rename');
+});

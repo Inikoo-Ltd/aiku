@@ -10,6 +10,7 @@ namespace App\Actions\Billables\ShippingZoneSchema;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShippingZoneSchemas;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreShippingZoneSchema extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     /**
      * @throws \Throwable
      */

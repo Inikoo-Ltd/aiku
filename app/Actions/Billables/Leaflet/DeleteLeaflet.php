@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\Leaflet;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Models\Billables\Leaflet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -16,20 +17,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteLeaflet extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(Leaflet $leaflet): Leaflet
     {
         $leaflet->delete();
 
         return $leaflet;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function action(Leaflet $leaflet): Leaflet

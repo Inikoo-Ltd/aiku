@@ -12,6 +12,7 @@ use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCharge extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 

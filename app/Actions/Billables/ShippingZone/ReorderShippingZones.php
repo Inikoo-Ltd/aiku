@@ -8,6 +8,7 @@
 namespace App\Actions\Billables\ShippingZone;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Http\Resources\Catalogue\ShippingZonesResource;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReorderShippingZones extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(ShippingZoneSchema $shippingZoneSchema, array $modelData): ShippingZoneSchema
     {
         $positions = Arr::get($modelData, 'positions', []);
