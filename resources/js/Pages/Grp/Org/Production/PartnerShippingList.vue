@@ -21,6 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
+import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
 
 library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag)
 
@@ -110,10 +111,20 @@ const props = defineProps<{
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
     hitchhikers?: { count: number, showing: boolean }
     pipeline?: { count: number, ignoring: boolean }
+    canCreateJobOrder?: boolean
+    manualJobOrder?: { reasons: string[], artefacts: { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }[] } | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
 const selected = reactive<Record<number, number>>({})
+
+const isCreatingJobOrder = ref(false)
+const pageUrl = new URL(window.location.href)
+if (pageUrl.searchParams.has("create")) {
+    isCreatingJobOrder.value = !!props.canCreateJobOrder
+    pageUrl.searchParams.delete("create")
+    window.history.replaceState(window.history.state, "", pageUrl.toString())
+}
 
 const hiddenGroupsKey = `to-produce-hidden-${props.groupBy}`
 const hiddenGroups = ref<string[]>(JSON.parse(localStorage.getItem(hiddenGroupsKey) || "[]"))
@@ -689,6 +700,17 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </div>
     </Teleport>
 
+    <div v-if="groupBy === 'board' && canCreateJobOrder" class="mx-4 mt-4 flex justify-end">
+        <button type="button" class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700" @click="isCreatingJobOrder = true">
+            + {{ ctrans("Create job order") }}
+        </button>
+    </div>
+    <ModalCreateManualJobOrder
+        :isOpen="isCreatingJobOrder"
+        :options="manualJobOrder ?? null"
+        :artisans="(artisanWorkload ?? []).filter(artisan => !artisan.hidden)"
+        @onClose="isCreatingJobOrder = false" />
+
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 text-sm">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
             <div v-for="(label, key) in { family: ctrans('Category'), requester: ctrans('Requester'), priority: ctrans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
@@ -816,9 +838,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
                     <div class="flex items-center gap-1 text-gray-400">
-                        <span>{{ item.buyer_code ?? item.customer_name }}</span>
+                        <span>{{ item.buyer_code ?? item.customer_name ?? item.notes }}</span>
                         <span v-if="item.family">· {{ item.family }}</span>
-                        <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
+                        <span v-if="laneIndex === LANE_ASSIGNED && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
+                        <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="laneIndex === LANE_ASSIGNED && isReassignable(item) ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
                     <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
                         <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
