@@ -15,6 +15,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
@@ -341,7 +342,7 @@ class ShowProcurementDashboard extends OrgAction
 
                 'shippers' => Shipper::query()->get(),
                 'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
-                'dashboardCards' => $this->getDashboardCards($numbers),
+                'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'shoppingLists' => $this->getShoppingLists(),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
                 'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period'))) : null,

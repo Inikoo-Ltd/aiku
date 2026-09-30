@@ -16,10 +16,10 @@ import { ctrans } from "@/Composables/useTrans"
 
 import SearchDemandOpportunities from "@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faShoppingBasket } from "@fal"
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faShoppingBasket, faExclamationTriangle } from "@fal"
 import { faChartNetwork } from "@fal"
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faShoppingBasket, faChartNetwork)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faShoppingBasket, faExclamationTriangle, faChartNetwork)
 
 defineProps(["title", "pageHead", "dashboardCards", "search_demand", "shoppingLists", "stockLevels", "stockOuts"])
 </script>

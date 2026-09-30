@@ -107,7 +107,7 @@ class IndexStockDeliveries extends OrgAction
             ],
         ];
 
-        if (isset($this->parent) && $this->parent instanceof Warehouse) {
+        if (isset($this->parent) && ($this->parent instanceof Warehouse || $this->parent instanceof Organisation)) {
             $sourceCounts = $this->applyParentFilter(StockDelivery::query())
                 ->selectRaw('stock_deliveries.parent_type, count(*) as total')
                 ->groupBy('stock_deliveries.parent_type')
@@ -124,6 +124,25 @@ class IndexStockDeliveries extends OrgAction
                 ],
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('stock_deliveries.parent_type', $elements);
+                },
+            ];
+        }
+
+        if (isset($this->parent) && $this->parent instanceof Organisation) {
+            $costedCounts = $this->applyParentFilter(StockDelivery::query())
+                ->selectRaw('stock_deliveries.is_costed, count(*) as total')
+                ->groupBy('stock_deliveries.is_costed')
+                ->pluck('total', 'is_costed')
+                ->all();
+
+            $elementGroups['costing'] = [
+                'label'    => __('Costing'),
+                'elements' => [
+                    'costed'     => [__('Costed'), $costedCounts[1] ?? 0],
+                    'not_costed' => [__('Not costed'), $costedCounts[0] ?? 0],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->where('stock_deliveries.is_costed', in_array('costed', $elements));
                 },
             ];
         }
