@@ -248,6 +248,7 @@ class AppServiceProvider extends ServiceProvider
                 // Goods
                 'Ingredient'                       => 'App\Models\Goods\Ingredient',
                 'MasterAsset'                      => 'App\Models\Masters\MasterAsset',
+                'MasterAssetPriceTip'              => 'App\Models\Masters\MasterAssetPriceTip',
                 'MasterVariant'                    => 'App\Models\Masters\MasterVariant',
                 'MasterCollection'                 => 'App\Models\Masters\MasterCollection',
                 'MasterProductCategory'            => 'App\Models\Masters\MasterProductCategory',

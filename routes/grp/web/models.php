@@ -376,6 +376,8 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
+use App\Actions\Masters\MasterAsset\DismissMasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
@@ -785,6 +787,8 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
+Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/apply', ApplyMasterAssetPriceTip::class)->name('master_asset_price_tip.apply');
+Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 

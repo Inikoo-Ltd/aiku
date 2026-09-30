@@ -1181,6 +1181,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('masters:price-tips')->dailyAt('05:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'GenerateMasterAssetPriceTips',
+                ),
+                name: 'GenerateMasterAssetPriceTips',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:hydrate-knowledge')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'HydrateChatKnowledge',
                 ),

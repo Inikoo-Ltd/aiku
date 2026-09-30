@@ -32,7 +32,7 @@ class GetMasterProductsPriceTips
 
     private const float SLOW_MOVER_DAYS = 180;
     private const float FAST_SELLER_DAYS = 30;
-    private const float MINIMUM_MARKUP_OVER_COST = 1.25;
+    public const float MINIMUM_MARKUP_OVER_COST = 1.25;
     private const int MINIMUM_CHANGE = 3;
 
     /**
