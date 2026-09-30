@@ -9,6 +9,7 @@
 
 namespace App\Actions\Ordering\PreOrder;
 
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Event;
@@ -39,6 +40,10 @@ class UnlockPreOrder
         }
 
         $preOrder->update(['data' => $data]);
+
+        if (!$unlock && in_array($preOrder->state, PreOrderStateEnum::holdingStock())) {
+            HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+        }
 
         $order                 = $preOrder->order;
         $order->auditEvent     = $unlock ? 'pre_order_unlocked' : 'pre_order_locked';

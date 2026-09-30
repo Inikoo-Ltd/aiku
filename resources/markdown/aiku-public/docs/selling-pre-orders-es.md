@@ -88,7 +88,7 @@ Cuando llega el stock de todo lo que hay en el pedido anticipado, los pedidos an
 - si no queda nada por pagar, el pedido va al almacén de inmediato;
 - si no, se envía al cliente un correo con un enlace para pagar el **saldo pendiente**, antes de los días que marca la tienda. En cuanto se paga, el pedido va al almacén por sí solo.
 
-Si no se paga el saldo, el cliente recibe recordatorios en los días que marca la tienda. Pasado el límite de la tienda, el pedido se cancela, se retiene el depósito, y la mercancía vuelve a estar a la venta.
+Si no se paga el saldo, el cliente recibe recordatorios en los días que marca la tienda. Pasado el límite de la tienda, el pedido se cancela y la mercancía vuelve a estar a la venta. Solo se retiene el depósito de los artículos hechos por encargo; el resto de lo pagado se reembolsa, y en dropshipping se devuelve todo.
 
 Si el pedido de compra de un back-order llega ahora más tarde de la fecha de envío que prometimos, se envía automáticamente al cliente un correo con las nuevas fechas y sus opciones de cancelación. Cuando cambian las fechas de cualquier otro pedido anticipado, usa **Change dispatch dates** (cambiar fechas de envío) en su panel y se envía al cliente el mismo correo.
 
@@ -101,7 +101,7 @@ Los productos más pesados o más largos que los límites de palé de la tienda 
 
 ## Cancelar
 
-Un cliente puede cancelar desde la página de su pedido, y ve cuánto se le devuelve antes de confirmar. El personal cancela desde el panel del pedido anticipado y elige el motivo. El reembolso va al saldo de la cuenta del cliente.
+Los clientes no pueden cancelar un pedido anticipado por su cuenta: contactan con atención al cliente, que lo cancela desde el panel del pedido anticipado y elige el motivo, que decide cuánto se reembolsa. El reembolso va al saldo de la cuenta del cliente.
 
 - **Our failure to deliver** (fallo nuestro en la entrega) — nos retrasamos más del límite de la tienda respecto a la fecha estimada de envío, el proveedor no puede suministrar, no se alcanzó el pedido mínimo del proveedor, o el presupuesto de palé supera la estimación: **se reembolsa todo**, depósito incluido, tanto para trade como para dropshipping.
 - **Trade, back-order** — se puede cancelar en cualquier momento antes del envío con reembolso completo.

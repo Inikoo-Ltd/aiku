@@ -239,7 +239,7 @@ class CancelOrder extends OrgAction
             'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
             'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'refund_to_original_payment' => ['sometimes', 'boolean'],
-            'refund_amount'       => ['sometimes', 'numeric', 'min:0'],
+            ...($this->asAction ? ['refund_amount' => ['sometimes', 'numeric', 'min:0']] : []),
         ];
     }
 

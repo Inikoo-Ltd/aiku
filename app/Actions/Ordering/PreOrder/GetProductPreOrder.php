@@ -17,6 +17,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -183,7 +184,7 @@ class GetProductPreOrder
             $terms[] = __('Pre-order items are paid in full at checkout, and the payment is not refundable once the order is placed.');
         } else {
             if ($hasBackOrder) {
-                $terms[] = __('Back-order items are paid in full at checkout, and can be cancelled any time before dispatch for a full refund.');
+                $terms[] = __('Back-order items are paid in full at checkout. To cancel them before dispatch, contact us for a full refund.');
             }
             if ($hasMadeToOrder) {
                 $terms[] = __(':percentage% deposit on made-to-order items at checkout (orders under :amount are paid in full). The balance is requested by email when the goods reach our warehouse and is due within :days days; if it is not paid within :cancel_days days the order is cancelled and the deposit kept.', [
@@ -192,13 +193,13 @@ class GetProductPreOrder
                     'days'        => $shop->preOrderSetting('balance_due_days'),
                     'cancel_days' => $shop->preOrderSetting('balance_cancel_after_days'),
                 ]);
-                $terms[] = __('Made-to-order items can be cancelled free of charge within :days working days of ordering, until we place the order with our supplier. After that the deposit is not refunded.', [
+                $terms[] = __('To cancel made-to-order items, contact us. Within :days working days of ordering, and until we place the order with our supplier, it is free of charge. After that the deposit is not refunded.', [
                     'days' => $shop->preOrderSetting('free_cancellation_working_days'),
                 ]);
             }
         }
 
-        $terms[] = __('If our supplier cannot supply, or we are more than :days days past the estimated dispatch, you can cancel for a full refund.', [
+        $terms[] = __('If our supplier cannot supply, or we are more than :days days past the estimated dispatch, contact us to cancel for a full refund.', [
             'days' => $shop->preOrderSetting('late_cancellation_days'),
         ]);
 
@@ -276,8 +277,17 @@ class GetProductPreOrder
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * The website shows the dispatch window in weeks, never the supplier's lead time in days.
+     */
+    public function forWebsite(?array $preOrder): ?array
+    {
+        return $preOrder ? Arr::except($preOrder, ['lead_time_days']) : null;
+    }
+
     public function withPalletEstimateFor(?array $preOrder, ?Customer $customer): ?array
     {
+        $preOrder = $this->forWebsite($preOrder);
         if (!$preOrder || !$preOrder['is_pallet_delivery'] || !$customer) {
             return $preOrder;
         }

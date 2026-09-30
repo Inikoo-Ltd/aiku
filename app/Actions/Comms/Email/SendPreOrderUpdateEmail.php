@@ -157,7 +157,7 @@ class SendPreOrderUpdateEmail extends OrgAction
                 if ($reason = Arr::get($context, 'reason')) {
                     $paragraphs[] = $reason;
                 }
-                $paragraphs[] = __('You can cancel the order from your account for a refund as set out in the pre-order terms. If we are more than :days days past the estimated dispatch, you get a full refund, deposit included.', [
+                $paragraphs[] = __('To cancel the order, contact us: the refund is as set out in the pre-order terms. If we are more than :days days past the estimated dispatch, you get a full refund, deposit included.', [
                     'days' => $shop->preOrderSetting('late_cancellation_days'),
                 ]);
                 break;
@@ -178,6 +178,9 @@ class SendPreOrderUpdateEmail extends OrgAction
         $html = implode('', array_map(fn ($text) => '<p '.$paragraph.'>'.e($text).'</p>', $paragraphs));
 
         if ($type != self::CANCELLED && $orderLink = $this->orderLink($preOrder)) {
+            if (in_array($type, [self::BALANCE_REQUEST, self::BALANCE_REMINDER]) && $preOrder->is_trade) {
+                $orderLink .= '/pay-balance';
+            }
             $html .= '<p style="margin: 0 0 24px;"><a href="'.$orderLink.'" '
                 .'style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; color: #fff; background-color: #4f46e5; '
                 .'text-decoration: none; padding: 12px 20px; border-radius: 4px; display: inline-block;">'

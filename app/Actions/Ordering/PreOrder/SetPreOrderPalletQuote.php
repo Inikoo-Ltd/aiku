@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\PreOrder;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -22,16 +23,22 @@ class SetPreOrderPalletQuote
 {
     use AsObject;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(PreOrder $preOrder, float $amount): PreOrder
     {
-        $preOrder->update(['pallet_quote_amount' => $amount]);
+        return DB::transaction(function () use ($preOrder, $amount) {
+            $preOrder->lockInState(PreOrderStateEnum::open());
+            $preOrder->update(['pallet_quote_amount' => $amount]);
 
-        UpdateOrderShippingEngineAsManual::run($preOrder->order, ['shipping_amount' => $amount]);
+            UpdateOrderShippingEngineAsManual::run($preOrder->order, ['shipping_amount' => $amount]);
 
-        if ($preOrder->state == PreOrderStateEnum::AWAITING_PALLET_QUOTE) {
-            return RequestPreOrderBalance::run($preOrder);
-        }
+            if ($preOrder->state == PreOrderStateEnum::AWAITING_PALLET_QUOTE) {
+                return RequestPreOrderBalance::run($preOrder);
+            }
 
-        return $preOrder;
+            return $preOrder;
+        });
     }
 }

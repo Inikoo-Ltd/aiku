@@ -27,7 +27,6 @@ class GetPreOrderShowcase
     {
         $order         = $preOrder->order;
         $isOpen        = in_array($preOrder->state, PreOrderStateEnum::open());
-        $customerReason = CancelPreOrder::make()->customerReason($preOrder);
 
         return [
             'id'                       => $preOrder->id,
@@ -61,12 +60,6 @@ class GetPreOrderShowcase
             'pallet_quote_amount'      => $preOrder->pallet_quote_amount !== null ? (float) $preOrder->pallet_quote_amount : null,
             'pallet_quote_over_estimate' => SendPreOrderUpdateEmail::make()->isPalletQuoteOverTolerance($preOrder),
             'can_pay_balance'          => $isOpen && (float) $order->total_amount > (float) $order->payment_amount,
-            'can_cancel'               => $isOpen,
-            'customer_cancellation'    => [
-                'reason'        => $customerReason->value,
-                'reason_label'  => $customerReason->label(),
-                'refund_amount' => $isOpen ? CancelPreOrder::make()->refundAmount($preOrder, $customerReason) : 0,
-            ],
             'terms'                    => $preOrder->terms,
         ];
     }

@@ -87,7 +87,7 @@ When stock of everything in the pre-order arrives, the pre-orders waiting for it
 - if nothing is left to pay, the order goes to the warehouse straight away;
 - otherwise the customer is emailed a link to pay the **balance**, due within the shop's days. As soon as it is paid, the order goes to the warehouse by itself.
 
-If the balance is not paid, the customer gets reminders on the shop's reminder days. After the shop's limit the order is cancelled, the deposit is kept, and the goods go back on sale.
+If the balance is not paid, the customer gets reminders on the shop's reminder days. After the shop's limit the order is cancelled and the goods go back on sale. Only the made-to-order deposit is kept; anything else paid is refunded, and dropshipping gets everything back.
 
 If a back-order's purchase order now arrives later than the dispatch we promised, the customer is emailed the new dates automatically, with their cancellation options. When the dates of any other pre-order change, use **Change dispatch dates** on its panel and the customer is emailed the same way.
 
@@ -100,7 +100,7 @@ Products heavier or longer than the shop's pallet limits are marked **pallet del
 
 ## Cancelling
 
-A customer can cancel from their order page, and sees how much comes back before confirming. Staff cancel from the pre-order panel and choose the reason. The refund goes to the customer's account balance.
+Customers cannot cancel a pre-order themselves: they contact customer service, who cancel it from the pre-order panel and choose the reason, which sets what is refunded. The refund goes to the customer's account balance.
 
 - **Our failure to deliver** — we are later than the shop's limit past the estimated dispatch, the supplier cannot supply, the supplier's minimum order was not met, or the pallet quote is over the estimate: **everything is refunded**, deposit included, for trade and dropshipping.
 - **Trade, back-order** — cancelled at any time before dispatch for a full refund.

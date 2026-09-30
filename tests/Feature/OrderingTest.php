@@ -5257,6 +5257,9 @@ describe('pre-orders (HELP-3432)', function () {
 
         $this->shop->update(['settings' => array_merge($this->shop->settings, ['pre_orders' => ['enabled' => false]])]);
         expect(fn () => $purchasable->check($backOrder->fresh(), $this->customer, 1))->toThrow(ValidationException::class);
+
+        DB::table('products')->where('id', $backOrder->id)->update(['status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 100]);
+        $purchasable->check($backOrder->fresh(), $this->customer, 6);
     });
 
     test('the dispatch estimate is a range in weeks from the product, then the supplier, then the shop lead time', function () {
@@ -5295,10 +5298,11 @@ describe('pre-orders (HELP-3432)', function () {
         expect($basketPreOrders['has_pre_orders'])->toBeTrue()
             ->and($basketPreOrders['has_in_stock_lines'])->toBeTrue()
             ->and($basketPreOrders['deferred_amount'])->toBe(round(200 * 0.7 * $taxFactor, 2))
-            ->and(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket))->toBe(round((float) $basket->total_amount - $basketPreOrders['deferred_amount'], 2));
+            ->and(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket))->toBe((float) $basket->total_amount);
 
         \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket, false);
-        expect(\App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket->fresh())['is_accepted'])->toBeTrue();
+        expect(\App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket->fresh())['is_accepted'])->toBeTrue()
+            ->and(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket->fresh()))->toBe(round((float) $basket->total_amount - $basketPreOrders['deferred_amount'], 2));
 
         $result = PayRetinaOrderWithBalance::make()->handle($basket->fresh());
         expect($result['success'])->toBeTrue();
@@ -5456,5 +5460,111 @@ describe('pre-orders (HELP-3432)', function () {
         expect($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::CANCELLED)
             ->and($preOrder->order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
             ->and(round((float) $preOrder->customer->refresh()->balance - $balanceBefore, 2))->toBe($paid);
+    });
+
+    test('a basket with pre-order lines and no accepted terms is never split, charges in full, and cannot be placed from Retina', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        $basket->refresh();
+
+        expect(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket))->toBe((float) $basket->total_amount)
+            ->and(\App\Actions\Retina\GetRetinaPaymentMethods::make()->checkoutPaymentAccountShops($basket))->toBeEmpty()
+            ->and(fn () => \App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder::make()->handle($basket->fresh()))->toThrow(ValidationException::class)
+            ->and($basket->fresh()->state)->toBe(OrderStateEnum::CREATING);
+
+        $channelOrder = SubmitOrder::make()->action($basket->fresh());
+
+        expect($channelOrder->fresh()->preOrder)->toBeNull()
+            ->and($channelOrder->splitPreOrder)->toBeNull()
+            ->and(\App\Models\Ordering\PreOrder::where('customer_id', $customer->id)->exists())->toBeFalse();
+    });
+
+    test('a cancelled pre-order stays cancelled, and a release needs the balance paid and happens once', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+
+        $placePreOrder = function () use ($madeToOrder) {
+            $customer = ($this->fundedCustomer)(10000);
+            $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+            StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+            \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+            PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+
+            return $basket->fresh()->preOrder;
+        };
+
+        $cancelled = $placePreOrder();
+        $stale     = \App\Models\Ordering\PreOrder::find($cancelled->id);
+        \App\Actions\Ordering\PreOrder\CancelPreOrder::run($cancelled, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY);
+
+        expect(fn () => \App\Actions\Ordering\PreOrder\ArrivePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\SetPreOrderPalletQuote::run($stale, 99))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\CancelPreOrder::run($stale, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::LATE))->toThrow(ValidationException::class)
+            ->and($cancelled->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::CANCELLED)
+            ->and($cancelled->goods_arrived_at)->toBeNull()
+            ->and($cancelled->order->deliveryNotes()->count())->toBe(0);
+
+        $preOrder = $placePreOrder();
+        expect(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($preOrder))->toThrow(ValidationException::class)
+            ->and($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::WAITING_FOR_GOODS);
+
+        PayOrderWithCustomerBalance::make()->handle($preOrder->order->fresh());
+        $stale = \App\Models\Ordering\PreOrder::find($preOrder->id);
+        \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($preOrder);
+
+        expect(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::RELEASED)
+            ->and($preOrder->order->deliveryNotes()->count())->toBe(1);
+    });
+
+    test('a balance not paid in time keeps at most the made-to-order deposit, and nothing for dropshipping', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+        PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+        $preOrder = $basket->fresh()->preOrder;
+        $paid     = (float) $preOrder->order->payment_amount;
+        $deposit  = (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount');
+        $reason   = \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::BALANCE_NOT_PAID;
+
+        expect(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, $reason))->toBe(round($paid - $deposit, 2));
+
+        $preOrder->is_trade = false;
+        expect(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, $reason))->toBe($paid)
+            ->and(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::CUSTOMER_REQUEST))->toBe(0.0);
+    });
+
+    test('a line split between stock and pre-order keeps its free goods on the in-stock order only', function () {
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'available_quantity' => 1]);
+        $backOrder->orgStocks()->update(['quantity_available' => 1]);
+        $customer = ($this->fundedCustomer)(10000);
+        $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+        $line     = StoreTransaction::make()->action($basket, $backOrder->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+        $line->update(['quantity_bonus' => 1]);
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+
+        $preOrder     = \App\Actions\Ordering\PreOrder\SplitOrderPreOrders::run($basket->fresh());
+        $preOrderLine = $preOrder->order->transactions()->where('model_type', 'Product')->first();
+
+        expect((float) $line->refresh()->quantity_ordered)->toBe(1.0)
+            ->and((float) $line->quantity_bonus)->toBe(1.0)
+            ->and((float) $preOrderLine->quantity_ordered)->toBe(2.0)
+            ->and((float) $preOrderLine->quantity_bonus)->toBe(0.0);
+    });
+
+    test('paying with balance twice from the same page charges once', function () {
+        $order = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        $staleOrder = $order->fresh();
+
+        PayOrderWithCustomerBalance::make()->handle($staleOrder);
+        $second = PayOrderWithCustomerBalance::make()->handle($staleOrder);
+
+        expect($second['success'])->toBeFalse()
+            ->and((float) $order->fresh()->payment_amount)->toBe((float) $order->fresh()->total_amount);
     });
 });

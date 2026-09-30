@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The goods are here: the customer is emailed a payment link for what is still owed and the
@@ -23,24 +24,31 @@ class RequestPreOrderBalance
 {
     use AsObject;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(PreOrder $preOrder): PreOrder
     {
-        $order = UpdateOrderPaymentsStatus::run($preOrder->order);
+        return DB::transaction(function () use ($preOrder) {
+            $preOrder->lockInState([PreOrderStateEnum::WAITING_FOR_GOODS, PreOrderStateEnum::AWAITING_PALLET_QUOTE]);
 
-        if ($order->pay_status == OrderPayStatusEnum::PAID) {
-            return ReleasePreOrder::run($preOrder);
-        }
+            $order = UpdateOrderPaymentsStatus::run($preOrder->order);
 
-        $preOrder->update([
-            'state'                => PreOrderStateEnum::BALANCE_REQUESTED,
-            'balance_requested_at' => now(),
-            'balance_due_at'       => now()->addDays((int) $preOrder->shop->preOrderSetting('balance_due_days')),
-        ]);
+            if ($order->pay_status == OrderPayStatusEnum::PAID) {
+                return ReleasePreOrder::run($preOrder);
+            }
 
-        HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+            $preOrder->update([
+                'state'                => PreOrderStateEnum::BALANCE_REQUESTED,
+                'balance_requested_at' => now(),
+                'balance_due_at'       => now()->addDays((int) $preOrder->shop->preOrderSetting('balance_due_days')),
+            ]);
 
-        SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::BALANCE_REQUEST)->afterCommit();
+            HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
 
-        return $preOrder;
+            SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::BALANCE_REQUEST)->afterCommit();
+
+            return $preOrder;
+        });
     }
 }

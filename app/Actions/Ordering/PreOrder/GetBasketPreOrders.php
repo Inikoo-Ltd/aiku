@@ -8,11 +8,13 @@
 
 namespace App\Actions\Ordering\PreOrder;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PreOrder\PreOrderTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -68,7 +70,7 @@ class GetBasketPreOrders
         $collection = collect($lines);
         $types      = $collection->pluck('type')->unique()->map(fn (string $type) => PreOrderTypeEnum::from($type))->values()->all();
         $terms      = $collection->isEmpty() ? [] : GetProductPreOrder::make()->terms($order->shop, $types, $collection->contains('is_pallet_delivery', true));
-        $signature  = $this->signature($lines, $terms);
+        $signature  = $this->signature($order, $lines);
 
         $deferredAmount = $this->deferredAmount($order, $collection->all());
 
@@ -136,19 +138,39 @@ class GetBasketPreOrders
     }
 
     /**
-     * What the customer accepted: which lines, how many beyond stock, and the terms shown. Any
-     * change to them after accepting asks the customer to accept again.
+     * What the customer accepted: which lines, how many beyond stock, and the shop's terms. Any
+     * change to them after accepting asks the customer to accept again. The terms enter as the
+     * shop settings they are written from, not as text, so switching language keeps the acceptance.
      *
      * @param  array<int, array<string, mixed>>  $lines
-     * @param  array<int, string>  $terms
      */
-    private function signature(array $lines, array $terms): string
+    private function signature(Order $order, array $lines): string
     {
         ksort($lines);
 
         return hash('sha256', json_encode([
-            array_map(fn ($line) => [$line['transaction_id'], $line['pre_order_quantity'], $line['type']], array_values($lines)),
-            $terms,
+            array_map(fn ($line) => [$line['transaction_id'], $line['pre_order_quantity'], $line['type'], $line['is_pallet_delivery']], array_values($lines)),
+            Arr::get($order->shop->settings, 'pre_orders', []),
         ]));
+    }
+
+    /**
+     * Every way a customer places a basket from Retina asks for this first: pre-order lines go only
+     * with the terms accepted.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function ensureTermsAccepted(Order $order): void
+    {
+        if ($order->state != OrderStateEnum::CREATING || $order->preOrder || !$order->shop->hasPreOrders()) {
+            return;
+        }
+
+        $basketPreOrders = $this->handle($order);
+        if ($basketPreOrders['has_pre_orders'] && !$basketPreOrders['is_accepted']) {
+            throw ValidationException::withMessages([
+                'pre_order' => __('Please accept the pre-order terms before placing your order.'),
+            ]);
+        }
     }
 }

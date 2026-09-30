@@ -15,7 +15,7 @@ use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -33,51 +33,64 @@ class CancelPreOrder
     use AsObject;
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function handle(PreOrder $preOrder, PreOrderCancellationReasonEnum $reason, ?string $notes = null): PreOrder
     {
-        if (!in_array($preOrder->state, PreOrderStateEnum::open())) {
-            throw ValidationException::withMessages([
-                'pre_order' => __('This pre-order can no longer be cancelled.'),
+        return DB::transaction(function () use ($preOrder, $reason, $notes) {
+            $preOrder->lockInState(PreOrderStateEnum::open());
+
+            $order           = $preOrder->order->refresh();
+            $refundAmount    = $this->refundAmount($preOrder, $reason);
+            $keptAmount      = round(max(0, (float) $order->payment_amount - $refundAmount), 2);
+            $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
+
+            $preOrder->update([
+                'state'               => PreOrderStateEnum::CANCELLED,
+                'cancelled_at'        => now(),
+                'cancellation_reason' => $reason->value,
             ]);
-        }
 
-        $refundAmount    = $this->refundAmount($preOrder, $reason);
-        $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
+            CancelOrder::make()->action($order, [
+                'cancellation_reason' => $reason == PreOrderCancellationReasonEnum::CUSTOMER_REQUEST
+                    ? OrderCancellationReasonEnum::CUSTOMER_REQUEST->value
+                    : OrderCancellationReasonEnum::OTHER->value,
+                'cancellation_notes'  => trim(implode(' ', array_filter([
+                    $reason->label().'.',
+                    $keptAmount > 0 ? __('Deposit kept: :amount.', ['amount' => $keptAmount]) : null,
+                    $notes,
+                ]))),
+                'refund_amount'       => $refundAmount,
+            ]);
 
-        $preOrder->update([
-            'state'               => PreOrderStateEnum::CANCELLED,
-            'cancelled_at'        => now(),
-            'cancellation_reason' => $reason->value,
-        ]);
+            if ($wasHoldingStock) {
+                HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+            }
 
-        CancelOrder::make()->action($preOrder->order, [
-            'cancellation_reason' => $reason == PreOrderCancellationReasonEnum::CUSTOMER_REQUEST
-                ? OrderCancellationReasonEnum::CUSTOMER_REQUEST->value
-                : OrderCancellationReasonEnum::OTHER->value,
-            'cancellation_notes'  => trim($reason->label().'. '.$notes),
-            'refund_amount'       => $refundAmount,
-        ]);
+            SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::CANCELLED, [
+                'reason'        => $reason->label(),
+                'refund_amount' => $refundAmount,
+            ])->afterCommit();
 
-        if ($wasHoldingStock) {
-            HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
-        }
-
-        SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::CANCELLED, [
-            'reason'        => $reason->label(),
-            'refund_amount' => $refundAmount,
-        ])->afterCommit();
-
-        return $preOrder;
+            return $preOrder;
+        });
     }
 
+    /**
+     * A balance not paid in time keeps at most the made-to-order deposit, and dropshipping has
+     * none: the rest of what was paid, pennies left short by the split included, goes back.
+     */
     public function refundAmount(PreOrder $preOrder, PreOrderCancellationReasonEnum $reason): float
     {
-        $paid = max(0, (float) $preOrder->order->payment_amount);
+        $paid    = max(0, (float) $preOrder->order->payment_amount);
+        $deposit = $preOrder->is_trade ? (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount', 0) : 0;
 
         if ($reason->isFullRefund()) {
             return $paid;
+        }
+
+        if ($reason == PreOrderCancellationReasonEnum::BALANCE_NOT_PAID) {
+            return round(max(0, $paid - $deposit), 2);
         }
 
         if (!$preOrder->is_trade) {
@@ -88,23 +101,6 @@ class CancelPreOrder
             return $paid;
         }
 
-        return round(max(0, $paid - (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount', 0)), 2);
-    }
-
-    /**
-     * What a customer cancelling now is entitled to: being late, or a pallet quote over the
-     * estimate, is our failure.
-     */
-    public function customerReason(PreOrder $preOrder): PreOrderCancellationReasonEnum
-    {
-        if ($preOrder->isLate()) {
-            return PreOrderCancellationReasonEnum::LATE;
-        }
-
-        if ($preOrder->is_trade && SendPreOrderUpdateEmail::make()->isPalletQuoteOverTolerance($preOrder)) {
-            return PreOrderCancellationReasonEnum::PALLET_QUOTE_OVER_ESTIMATE;
-        }
-
-        return PreOrderCancellationReasonEnum::CUSTOMER_REQUEST;
+        return round(max(0, $paid - $deposit), 2);
     }
 }

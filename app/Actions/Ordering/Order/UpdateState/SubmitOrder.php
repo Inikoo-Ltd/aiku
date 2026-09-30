@@ -139,50 +139,55 @@ class SubmitOrder extends OrgAction
             ->get()
             ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
 
-        $splitPreOrder = SplitOrderPreOrders::run($order);
-        $order->load('preOrder');
+        /** The split, the money moved to the pre-order and its submit stand or fall together: a failure must not leave a pre-order basket to be paid again */
+        $order = DB::transaction(function () use ($order, $modelData, $date) {
+            $splitPreOrder = SplitOrderPreOrders::run($order);
+            $order->load('preOrder');
 
-        /**
-         * The submitted_* columns freeze each line at the price it was sold at, copied column to
-         * column so the stored value is exact by construction. Transaction has no observers or
-         * auditing, so the per-line model save added nothing but a query per line. A line with no
-         * offer carries offers_data as an empty json array, which the model save never wrote
-         * (an empty array is equivalent to the {} default under the array cast), so the snapshot
-         * keeps {} for anything that is not a json object, as RepairAuroraSubmittedTransactionSnapshots does.
-         */
-        $order->transactions()->where('state', TransactionStateEnum::CREATING)->update([
-            'state'                       => TransactionStateEnum::SUBMITTED,
-            'submitted_at'                => $date,
-            'status'                      => TransactionStatusEnum::PROCESSING,
-            'submitted_quantity_ordered'  => DB::raw('quantity_ordered'),
-            'submitted_gross_amount'      => DB::raw('gross_amount'),
-            'submitted_net_amount'        => DB::raw('net_amount'),
-            'submitted_discount_factor'   => DB::raw('current_discount_factor'),
-            'submitted_offers_data'       => DB::raw("CASE WHEN jsonb_typeof(offers_data::jsonb) = 'object' THEN offers_data::jsonb ELSE '{}'::jsonb END"),
-            'has_discount_when_submitted' => DB::raw('current_discount_factor < 1'),
-        ]);
+            /**
+             * The submitted_* columns freeze each line at the price it was sold at, copied column to
+             * column so the stored value is exact by construction. Transaction has no observers or
+             * auditing, so the per-line model save added nothing but a query per line. A line with no
+             * offer carries offers_data as an empty json array, which the model save never wrote
+             * (an empty array is equivalent to the {} default under the array cast), so the snapshot
+             * keeps {} for anything that is not a json object, as RepairAuroraSubmittedTransactionSnapshots does.
+             */
+            $order->transactions()->where('state', TransactionStateEnum::CREATING)->update([
+                'state'                       => TransactionStateEnum::SUBMITTED,
+                'submitted_at'                => $date,
+                'status'                      => TransactionStatusEnum::PROCESSING,
+                'submitted_quantity_ordered'  => DB::raw('quantity_ordered'),
+                'submitted_gross_amount'      => DB::raw('gross_amount'),
+                'submitted_net_amount'        => DB::raw('net_amount'),
+                'submitted_discount_factor'   => DB::raw('current_discount_factor'),
+                'submitted_offers_data'       => DB::raw("CASE WHEN jsonb_typeof(offers_data::jsonb) = 'object' THEN offers_data::jsonb ELSE '{}'::jsonb END"),
+                'has_discount_when_submitted' => DB::raw('current_discount_factor < 1'),
+            ]);
 
-        $this->update($order, $modelData);
+            $this->update($order, $modelData);
 
-        /**
-         * An order that never reached a payment attempt - no balance to settle and no working saved
-         * card - keeps the null pay_status it was created with, and then belongs to neither the
-         * submitted paid nor the submitted unpaid queue, so nobody ever chases it (HELP-3116).
-         */
-        if ($order->pay_status === null) {
-            $order = UpdateOrderPaymentsStatus::run($order);
-        }
-
-        if ($splitPreOrder?->parent_order_id) {
-            MoveOrderExcessPaymentToPreOrder::run($order, $splitPreOrder->order);
-            $order = UpdateOrderPaymentsStatus::run($order);
-            SubmitOrder::run($splitPreOrder->order->refresh());
-
-            /** Dropshipping pays pre-orders in full upfront, second delivery and pallet estimate included (HELP-3432) */
-            if (!$splitPreOrder->is_trade) {
-                PayOrderWithCustomerBalance::make()->handle($splitPreOrder->order->refresh());
+            /**
+             * An order that never reached a payment attempt - no balance to settle and no working saved
+             * card - keeps the null pay_status it was created with, and then belongs to neither the
+             * submitted paid nor the submitted unpaid queue, so nobody ever chases it (HELP-3116).
+             */
+            if ($order->pay_status === null) {
+                $order = UpdateOrderPaymentsStatus::run($order);
             }
-        }
+
+            if ($splitPreOrder?->parent_order_id) {
+                MoveOrderExcessPaymentToPreOrder::run($order, $splitPreOrder->order);
+                $order = UpdateOrderPaymentsStatus::run($order);
+                SubmitOrder::run($splitPreOrder->order->refresh());
+
+                /** Dropshipping pays pre-orders in full upfront, second delivery and pallet estimate included (HELP-3432) */
+                if (!$splitPreOrder->is_trade) {
+                    PayOrderWithCustomerBalance::make()->handle($splitPreOrder->order->refresh());
+                }
+            }
+
+            return $order;
+        });
 
         if ($order->customer->warehouse_temporary_notes) {
             UpdateCustomer::make()->action($order->customer, [

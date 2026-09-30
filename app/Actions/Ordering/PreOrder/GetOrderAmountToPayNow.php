@@ -32,6 +32,8 @@ class GetOrderAmountToPayNow
             return (float) $order->total_amount;
         }
 
-        return GetBasketPreOrders::run($order)['pay_now_amount'];
+        $basketPreOrders = GetBasketPreOrders::run($order);
+
+        return $basketPreOrders['is_accepted'] ? $basketPreOrders['pay_now_amount'] : (float) $order->total_amount;
     }
 }

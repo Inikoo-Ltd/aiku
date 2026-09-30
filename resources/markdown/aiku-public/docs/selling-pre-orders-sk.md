@@ -88,7 +88,7 @@ Keď dorazí sklad všetkého, čo je v predobjednávke, prevezmú si ho čakaj�
 - ak nezostáva nič na doplatenie, objednávka ide rovno do skladu;
 - inak dostane zákazník e-mailom odkaz na zaplatenie **doplatku**, splatného v lehote obchodu. Hneď ako je zaplatený, objednávka sama prejde do skladu.
 
-Ak doplatok nie je zaplatený, zákazník dostáva pripomienky v pripomienkových dňoch obchodu. Po prekročení limitu obchodu sa objednávka zruší, záloha sa ponechá a tovar sa vráti do predaja.
+Ak doplatok nie je zaplatený, zákazník dostáva pripomienky v pripomienkových dňoch obchodu. Po prekročení limitu obchodu sa objednávka zruší a tovar sa vráti do predaja. Ponechá sa len záloha za made-to-order položky; zvyšok zaplatenej sumy sa vráti a pri dropshippingu sa vráti všetko.
 
 Ak objednávka u dodávateľa pre back-order teraz dorazí neskôr, než sme sľúbili pri odoslaní, zákazníkovi sa automaticky e-mailom pošlú nové termíny spolu s možnosťami zrušenia. Keď sa zmenia termíny inej predobjednávky, použite **Change dispatch dates** na jej paneli a zákazník dostane e-mail rovnako.
 
@@ -101,7 +101,7 @@ Produkty ťažšie alebo dlhšie, než sú limity obchodu pre paletu, sú označ
 
 ## Zrušenie
 
-Zákazník môže zrušiť objednávku na stránke svojej objednávky a pred potvrdením vidí, koľko sa mu vráti. Zamestnanci rušia z panela predobjednávky a vyberajú dôvod. Vrátená suma ide na zostatok na účte zákazníka.
+Zákazník nemôže zrušiť predobjednávku sám: kontaktuje zákaznícky servis, ktorý ju zruší z panela predobjednávky a vyberie dôvod, podľa ktorého sa určí vrátená suma. Vrátená suma ide na zostatok na účte zákazníka.
 
 - **Naše zlyhanie pri dodaní** — meškáme viac, než je limit obchodu po odhadovanom termíne odoslania, dodávateľ nedokáže dodať, nebola dosiahnutá minimálna objednávka u dodávateľa, alebo je cenová ponuka za paletu vyššia než odhad: **vráti sa všetko**, vrátane zálohy, pre trade aj dropshipping.
 - **Trade, back-order** — dá sa zrušiť kedykoľvek pred odoslaním, s plným vrátením peňazí.

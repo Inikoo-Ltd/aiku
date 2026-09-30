@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
-import { router, Link } from "@inertiajs/vue3"
+import { inject } from "vue"
+import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -26,8 +26,6 @@ export interface PreOrderShowcase {
     pallet_estimate_amount: number | null
     pallet_quote_amount: number | null
     can_pay_balance: boolean
-    can_cancel: boolean
-    customer_cancellation: { reason: string, reason_label: string, refund_amount: number }
     terms: string[]
 }
 
@@ -39,21 +37,8 @@ const props = defineProps<{
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
-const isConfirmingCancel = ref(false)
-const isCancelling = ref(false)
-
 const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateString() : ""
 
-const cancelPreOrder = () => {
-    router.patch(route("retina.models.order.cancel_pre_order", { order: props.orderId }), {}, {
-        preserveScroll: true,
-        onStart: () => (isCancelling.value = true),
-        onFinish: () => {
-            isCancelling.value = false
-            isConfirmingCancel.value = false
-        },
-    })
-}
 </script>
 
 <template>
@@ -79,8 +64,8 @@ const cancelPreOrder = () => {
             <span v-else-if="pre_order.pallet_estimate_amount !== null">{{ ctrans("Pallet delivery estimate") }}: <b>{{ locale.currencyFormat(pre_order.currency_code, pre_order.pallet_estimate_amount) }}</b></span>
         </div>
 
-        <div v-if="pre_order.free_cancellation_until" class="text-xs">
-            {{ ctrans("Free cancellation until :date.", { date: formatDate(pre_order.free_cancellation_until) }) }}
+        <div v-if="pre_order.is_open" class="text-xs">
+            {{ ctrans("To cancel this pre-order, please contact us.") }}
         </div>
 
         <details class="text-xs">
@@ -94,19 +79,6 @@ const cancelPreOrder = () => {
             <Link v-if="showPayButton && pre_order.can_pay_balance" :href="route('retina.ecom.orders.pay_balance', { order: orderSlug })">
                 <Button type="positive" :label="ctrans('Pay the balance')" />
             </Link>
-
-            <template v-if="pre_order.can_cancel">
-                <Button v-if="!isConfirmingCancel" type="tertiary" :label="ctrans('Cancel pre-order')" @click="isConfirmingCancel = true" />
-                <div v-else class="flex flex-wrap items-center gap-2 rounded border border-red-300 bg-white px-3 py-2">
-                    <span>
-                        {{ pre_order.customer_cancellation.refund_amount > 0
-                            ? ctrans(":amount will be returned to your account balance.", { amount: locale.currencyFormat(pre_order.currency_code, pre_order.customer_cancellation.refund_amount) })
-                            : ctrans("No refund is due under the pre-order terms.") }}
-                    </span>
-                    <Button type="negative" :label="ctrans('Confirm cancellation')" :loading="isCancelling" @click="cancelPreOrder" />
-                    <Button type="tertiary" :label="ctrans('Keep the order')" @click="isConfirmingCancel = false" />
-                </div>
-            </template>
         </div>
     </div>
 </template>

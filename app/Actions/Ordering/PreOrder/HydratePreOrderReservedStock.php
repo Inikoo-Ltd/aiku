@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\PreOrder;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -51,11 +52,14 @@ class HydratePreOrderReservedStock
     }
 
     /**
+     * The org stocks of the pre-order's lines now, plus those it held before: a line staff removed
+     * or changed while it was unlocked must still give its stock back.
+     *
      * @return array<int, int>
      */
     public function orgStockIds(PreOrder $preOrder): array
     {
-        return DB::table('transactions')
+        $current = DB::table('transactions')
             ->join('product_has_org_stocks', 'product_has_org_stocks.product_id', 'transactions.model_id')
             ->where('transactions.order_id', $preOrder->order_id)
             ->where('transactions.model_type', 'Product')
@@ -63,5 +67,10 @@ class HydratePreOrderReservedStock
             ->distinct()
             ->pluck('product_has_org_stocks.org_stock_id')
             ->all();
+
+        $previous = Arr::get($preOrder->data, 'reserved_org_stock_ids', []);
+        $preOrder->update(['data' => array_merge($preOrder->data ?? [], ['reserved_org_stock_ids' => $current])]);
+
+        return array_values(array_unique(array_merge($current, $previous)));
     }
 }

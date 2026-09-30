@@ -45,8 +45,9 @@ class SplitOrderPreOrders
             return null;
         }
 
+        /** Only a Retina checkout basket whose customer accepted the terms: channel, API and staff orders go as they are */
         $basketPreOrders = GetBasketPreOrders::run($order);
-        if (!$basketPreOrders['has_pre_orders']) {
+        if (!$basketPreOrders['has_pre_orders'] || !$basketPreOrders['is_accepted']) {
             return null;
         }
 
@@ -84,6 +85,8 @@ class SplitOrderPreOrders
 
         $preOrderOrder->update(array_filter([
             'customer_reference'   => $order->customer_reference,
+            'customer_sales_channel_id' => $order->customer_sales_channel_id,
+            'platform_id'          => $order->platform_id,
             'shipping_notes'       => $order->shipping_notes,
             'to_be_paid_by'        => $order->to_be_paid_by,
             'collection_address_id' => $order->collection_address_id,
@@ -128,6 +131,7 @@ class SplitOrderPreOrders
 
         $preOrderLine->order_id         = $preOrderOrder->id;
         $preOrderLine->quantity_ordered = $line['pre_order_quantity'];
+        $preOrderLine->quantity_bonus   = 0;
         $inStockAmounts                 = ['quantity_ordered' => $line['in_stock_quantity']];
         foreach (self::SCALED_AMOUNTS as $column) {
             if ($transaction->{$column} === null) {
@@ -139,7 +143,35 @@ class SplitOrderPreOrders
         $preOrderLine->save();
         $transaction->update($inStockAmounts);
 
+        $this->splitAllowances($transaction, $preOrderLine, $ratio);
+
         $this->tagLine($preOrderLine, $line);
+    }
+
+    /**
+     * The discount on a split line follows its quantity; free items stay with the in-stock line,
+     * which keeps the bonus.
+     */
+    private function splitAllowances(Transaction $transaction, Transaction $preOrderLine, float $ratio): void
+    {
+        foreach (DB::table('transaction_has_offer_allowances')->where('transaction_id', $transaction->id)->get() as $allowance) {
+            $preOrderDiscount = round((float) $allowance->discounted_amount * $ratio, 2);
+
+            $preOrderAllowance = Arr::except((array) $allowance, ['id', 'source_id', 'source_alt_id', 'fetched_at', 'last_fetched_at']);
+            DB::table('transaction_has_offer_allowances')->insert(array_merge($preOrderAllowance, [
+                'order_id'             => $preOrderLine->order_id,
+                'transaction_id'       => $preOrderLine->id,
+                'discounted_amount'    => $preOrderDiscount,
+                'free_items_value'     => 0,
+                'number_of_free_items' => 0,
+                'created_at'           => now(),
+                'updated_at'           => now(),
+            ]));
+
+            DB::table('transaction_has_offer_allowances')->where('id', $allowance->id)->update([
+                'discounted_amount' => round((float) $allowance->discounted_amount - $preOrderDiscount, 2),
+            ]);
+        }
     }
 
     /**

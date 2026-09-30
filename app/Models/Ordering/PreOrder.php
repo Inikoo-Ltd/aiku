@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 /**
  * HELP-3432. The order a customer pre-ordered, held out of the warehouse until its goods are
@@ -158,6 +159,29 @@ class PreOrder extends Model
     public function canBeEditedBy(?User $user): bool
     {
         return !$this->isLocked() || $this->isUnlockedFor($user);
+    }
+
+    /**
+     * Every change of state goes through here, inside a transaction: the row is locked and re-read,
+     * so two requests or jobs racing on one pre-order cannot both move it, and a cancelled or
+     * released pre-order never comes back.
+     *
+     * @param  array<int, PreOrderStateEnum>  $states
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function lockInState(array $states): static
+    {
+        $locked = static::whereKey($this->id)->lockForUpdate()->firstOrFail();
+        $this->setRawAttributes($locked->getAttributes(), true);
+
+        if (!in_array($this->state, $states, true)) {
+            throw ValidationException::withMessages([
+                'pre_order' => __('This pre-order is :state, it cannot be changed this way.', ['state' => $this->state->label()]),
+            ]);
+        }
+
+        return $this;
     }
 
     public function lockMessage(): string

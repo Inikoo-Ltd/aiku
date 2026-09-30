@@ -129,7 +129,7 @@ class WebBlockProductResource extends JsonResource
                 ? null
                 : GetProductIncomingStock::make()->earliestEta($product),
             'back_in_stock'     => $back_in_stock,
-            'pre_order'         => GetProductPreOrder::make()->handle($product),
+            'pre_order'         => GetProductPreOrder::make()->forWebsite(GetProductPreOrder::make()->handle($product)),
 
 
             'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),

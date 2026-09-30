@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\PreOrder;
 
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -21,17 +22,23 @@ class ArrivePreOrder
 {
     use AsObject;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(PreOrder $preOrder): PreOrder
     {
-        $preOrder->update(['goods_arrived_at' => now()]);
+        return DB::transaction(function () use ($preOrder) {
+            $preOrder->lockInState([PreOrderStateEnum::WAITING_FOR_GOODS]);
+            $preOrder->update(['goods_arrived_at' => now()]);
 
-        if ($preOrder->is_trade && $preOrder->has_pallet_delivery && $preOrder->pallet_quote_amount === null) {
-            $preOrder->update(['state' => PreOrderStateEnum::AWAITING_PALLET_QUOTE]);
-            HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+            if ($preOrder->is_trade && $preOrder->has_pallet_delivery && $preOrder->pallet_quote_amount === null) {
+                $preOrder->update(['state' => PreOrderStateEnum::AWAITING_PALLET_QUOTE]);
+                HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
 
-            return $preOrder;
-        }
+                return $preOrder;
+            }
 
-        return RequestPreOrderBalance::run($preOrder);
+            return RequestPreOrderBalance::run($preOrder);
+        });
     }
 }

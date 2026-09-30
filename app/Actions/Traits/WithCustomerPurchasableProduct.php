@@ -78,7 +78,7 @@ trait WithCustomerPurchasableProduct
      */
     protected function ensureQuantityWithinProductLimit(Product $product, mixed $quantity): void
     {
-        if ($product->max_quantity_per_order && $quantity !== null && (float) $quantity > $product->max_quantity_per_order) {
+        if ($product->max_quantity_per_order && $quantity !== null && (float) $quantity > $product->max_quantity_per_order && $product->shop->hasPreOrders()) {
             throw ValidationException::withMessages([
                 'message' => __('You can order up to :quantity of :product per order', ['quantity' => $product->max_quantity_per_order, 'product' => $product->code]),
             ]);

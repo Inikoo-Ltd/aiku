@@ -60,7 +60,10 @@ const cancellationReason = ref("customer_request")
 const cancellationNotes = ref("")
 const isSubmitting = ref(false)
 
-const submit = (operation: string, data: Record<string, unknown> = {}) => {
+const submit = (operation: string, data: Record<string, unknown> = {}, confirmText?: string) => {
+    if (confirmText && !window.confirm(confirmText)) {
+        return
+    }
     router[props.pre_order.update_route.method ?? "patch"](
         route(props.pre_order.update_route.name, props.pre_order.update_route.parameters),
         { operation, ...data },
@@ -82,7 +85,7 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
             <span v-if="pre_order.has_made_to_order" class="text-xs">{{ ctrans("Made to order") }}</span>
             <span v-if="pre_order.has_back_order" class="text-xs">{{ ctrans("Back-order") }}</span>
             <span v-if="pre_order.has_pallet_delivery" class="text-xs">{{ ctrans("Pallet delivery") }}</span>
-            <span v-if="pre_order.is_late" class="text-xs font-semibold text-red-700">{{ ctrans("Late: the customer may cancel for a full refund") }}</span>
+            <span v-if="pre_order.is_late" class="text-xs font-semibold text-red-700">{{ ctrans("Late: cancelling it now refunds everything, deposit included") }}</span>
             <span v-if="pre_order.parent_order_reference" class="text-xs">{{ ctrans("Split from :reference", { reference: pre_order.parent_order_reference }) }}</span>
 
             <button v-if="pre_order.lock?.is_locked"
@@ -120,11 +123,11 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
         </div>
 
         <div v-if="pre_order.is_open" class="flex flex-wrap gap-2">
-            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. Make the deposit are no longer refundable')" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
-            <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
+            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. From then on the made-to-order deposit is no longer refundable')" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered', {}, ctrans('Mark this pre-order as ordered from the supplier? The made-to-order deposit is then no longer refundable. This cannot be undone.'))" />
+            <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived', {}, ctrans('Mark the goods as arrived? The customer is emailed a request to pay the balance. This cannot be undone.'))" />
             <Button v-if="pre_order.has_pallet_delivery" v-tooltip="ctrans('Enter the final pallet delivery cost. It replaces the shipping on the order and, if the goods have arrived, the balance is requested from the customer')" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
             <Button v-tooltip="ctrans('Change the estimated dispatch window. The customer is emailed the new dates')" size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
-            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" v-tooltip="ctrans('The pre-order is fully paid: close it and send the order to the warehouse to be picked and dispatched')" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
+            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" v-tooltip="ctrans('The pre-order is fully paid: close it and send the order to the warehouse to be picked and dispatched')" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release', {}, ctrans('Send this order to the warehouse to be picked and dispatched? This cannot be undone.'))" />
             <Button v-tooltip="ctrans('Choose a reason and cancel the pre-order. The refund follows the terms the customer accepted at checkout')" size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
         </div>
 

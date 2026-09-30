@@ -9,7 +9,6 @@ import { Image as ImageTS } from '@/types/Image'
 export interface PreOrder {
 	type: 'back_order' | 'made_to_order'
 	type_label: string
-	lead_time_days: number
 	dispatch_from_weeks: number
 	dispatch_to_weeks: number
 	dispatch_label: string
