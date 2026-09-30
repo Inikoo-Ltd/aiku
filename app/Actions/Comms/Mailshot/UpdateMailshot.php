@@ -35,6 +35,10 @@ class UpdateMailshot extends OrgAction
             $mailshot->email->update(['subject' => $mailshot->subject]);
         }
 
+        if ($mailshot->wasChanged('subject') && $mailshot->secondWave) {
+            SyncMailshotSecondWaveSubject::run($mailshot);
+        }
+
         if ($mailshot->wasChanged('preview_text') && $mailshot->secondWave) {
             $mailshot->secondWave->update(['preview_text' => $mailshot->preview_text]);
         }

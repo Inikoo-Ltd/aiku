@@ -14,6 +14,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use App\Models\Comms\Mailshot;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class RunMailshotSecondWave
 {
@@ -53,12 +56,29 @@ class RunMailshotSecondWave
         // NOTE: for debug the SQL query
         // \Log::info($secondWaveQuery->toRawSql());
         foreach ($secondWaveQuery->cursor() as $secondWave) {
-            PrepareMailshotSecondWaveRecipients::dispatch($secondWave);
+            try {
+                SyncMailshotSecondWaveSubject::run($secondWave->parentMailshot);
+                $secondWave->refresh();
+                SyncMailshotSecondWaveSubject::make()->assertSendable($secondWave);
 
-            $secondWave->update([
-                'state' => MailshotStateEnum::SENDING,
-                'start_sending_at' => Carbon::now()->utc()
-            ]);
+                $claimed = Mailshot::whereKey($secondWave->id)
+                    ->where('state', MailshotStateEnum::READY)
+                    ->whereNull('start_sending_at')
+                    ->update([
+                        'state'            => MailshotStateEnum::SENDING,
+                        'start_sending_at' => Carbon::now()->utc(),
+                    ]);
+
+                if ($claimed === 1) {
+                    PrepareMailshotSecondWaveRecipients::dispatch($secondWave);
+                }
+            } catch (ValidationException $exception) {
+                Log::warning('Second wave not sent: '.collect($exception->errors())->flatten()->implode(' '), [
+                    'mailshot_id' => $secondWave->id,
+                ]);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
         }
     }
 

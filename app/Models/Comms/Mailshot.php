@@ -141,6 +141,7 @@ class Mailshot extends Model implements Auditable
     protected array $auditInclude = [
         'subject',
         'schedule_at',
+        'is_second_wave_enabled',
     ];
 
     public function getRouteKeyName(): string

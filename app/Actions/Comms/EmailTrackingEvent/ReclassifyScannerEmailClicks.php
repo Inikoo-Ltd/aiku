@@ -15,6 +15,7 @@ use App\Actions\CRM\TrafficSource\RecordTrafficSourceClick;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailTrackingEvent;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -76,11 +77,13 @@ class ReclassifyScannerEmailClicks
            own every click, the email falls back to what the reader actually did. UNSUBSCRIBED and
            SPAM outrank clicks and are never touched. */
         if ($dispatchedEmail->number_clicks == 0 && $dispatchedEmail->state == DispatchedEmailStateEnum::CLICKED) {
-            $dispatchedEmail->update([
-                'state' => $dispatchedEmail->number_reads > 0
-                    ? DispatchedEmailStateEnum::OPENED
-                    : DispatchedEmailStateEnum::DELIVERED,
-            ]);
+            DispatchedEmail::whereKey($dispatchedEmail->id)
+                ->where('state', DispatchedEmailStateEnum::CLICKED)
+                ->update([
+                    'state' => $dispatchedEmail->number_reads > 0
+                        ? DispatchedEmailStateEnum::OPENED
+                        : DispatchedEmailStateEnum::DELIVERED,
+                ]);
         }
 
         if ($mailshot) {
