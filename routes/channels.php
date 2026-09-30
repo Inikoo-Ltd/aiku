@@ -8,6 +8,7 @@
 
 use App\Broadcasting\ChatListChannel;
 use App\Broadcasting\MetaChatSessionChannel;
+use App\Broadcasting\WhatsappCallChannel;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
@@ -214,6 +215,8 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
 Broadcast::channel('meta-chat-session.{ulid}', MetaChatSessionChannel::class);
 
 Broadcast::channel('chat-list.{shopId}', ChatListChannel::class);
+
+Broadcast::channel('whatsapp-calls.{shopId}', WhatsappCallChannel::class);
 
 Broadcast::channel('website.{websiteId}.analytics', function (User $user, int|string $websiteId) {
     return Website::where('id', $websiteId)->value('group_id') === $user->group_id;

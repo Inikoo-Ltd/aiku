@@ -20,6 +20,7 @@ import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
 import CustomersWaiting from './CustomersWaiting.vue';
+import WhatsappCallAlert from './WhatsappCallAlert.vue';
 import { computed } from 'vue'
 library.add(faCircle, faLifeRing, faShoppingCart, faCube)
 
@@ -59,6 +60,7 @@ const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + 
 
         <div :class="layout.messagingSidebar.show ? 'flex flex-col gap-2' : 'contents'">
 
+        <WhatsappCallAlert />
         <CustomersWaiting />
 
         <div

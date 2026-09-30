@@ -743,6 +743,7 @@ test('cached family product list carries the same shop-wide offer prices as the 
         'is_coming_soon',
         'is_golden_product',
         'variant',
+        'variant_axis_label',
         'product_offers_data',
         'discounted_price',
         'discounted_price_per_unit',
@@ -896,6 +897,46 @@ test('iris variant products list sends the offers and step discount each variant
         ->and($variantProduct['family_id'])->toBe($product->family_id)
         ->and(collect($variantProduct['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5])
         ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
+});
+
+test('iris product lists name the first variant axis so the choose button can read choose size', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => [
+            'variants' => [
+                ['label' => 'Size', 'options' => ['S', 'M']],
+                ['label' => 'Colour', 'options' => ['Red', 'Blue']],
+            ],
+            'products' => [$product->id => ['product' => ['id' => $product->id]]],
+        ],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($row)->not->toBeNull()
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_axis_label'])->toBe('Size')
+        ->and($variantProduct['variant_axis_label'])->toBe('Size');
 });
 
 test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {

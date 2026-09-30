@@ -334,7 +334,7 @@ defineExpose({
                             @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" >
                         <template #label>
                             <span>
-                                {{ ctrans('Choose variants') }}
+                                {{ product.variant_axis_label ? ctrans('Choose :axis', { axis: product.variant_axis_label }) : ctrans('Choose variants') }}
                             </span>
                         </template>
                         </Button>
