@@ -9807,6 +9807,13 @@ test('an email picture is pointed at wherever its file is served from when the m
 });
 
 test('removing the photographs of an email also removes the small pictures written into its body', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'chat_redaction_unarchived'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists chat_redaction_unarchived');
+
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -10905,6 +10912,8 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
             ['id' => 'LI', 'name' => 'aiku/imported'],
             ['id' => 'LU', 'name' => 'aiku/unmatched'],
             ['id' => 'LC', 'name' => 'aiku/spam-checked'],
+            ['id' => 'LF', 'name' => 'aiku/filtered'],
+            ['id' => 'LS', 'name' => 'aiku/spam'],
         ]]),
         'gmail.googleapis.com/gmail/v1/users/me/messages?*' => fn ($request) => \Illuminate\Support\Facades\Http::response(
             str_contains($request->data()['q'] ?? '', 'in:spam') ? ['messages' => [['id' => 'sp1']]] : []

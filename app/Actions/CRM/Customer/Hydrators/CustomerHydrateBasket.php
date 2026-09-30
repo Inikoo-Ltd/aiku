@@ -44,7 +44,10 @@ class CustomerHydrateBasket implements ShouldBeUnique
         }
 
         /** @var Order $order */
-        $order = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first();
+        $order = $customer->orders()->where('state', OrderStateEnum::CREATING->value)
+            ->orderByRaw('orders.id = ? desc', [$customer->current_order_in_basket_id ?? 0])
+            ->latest('orders.id')
+            ->first();
 
         $stats = [
             'amount_in_basket'           => $order ? $order->total_amount : 0,

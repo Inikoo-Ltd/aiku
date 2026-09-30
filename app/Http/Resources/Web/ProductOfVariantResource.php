@@ -136,6 +136,8 @@ class ProductOfVariantResource extends JsonResource
             'is_golden_product'          => (bool)$product->is_golden_product,
             'offers_data'                => $productOffersData,
             'step_discount'              => $this->getStepDiscount(),
+            'variant_axis_label'         => $product->variant_axis_label,
+            'variant_title'              => $product->variant_title,
 
 
         ];

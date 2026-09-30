@@ -2360,9 +2360,10 @@ test('UI show mailshot', function (Mailshot $mailshot) {
 })->depends('create mailshot with recipe for filters');
 
 test('index mailshot recipients', function (Mailshot $mailshot) {
+    $recipient       = StoreCustomer::make()->action($mailshot->shop, Customer::factory()->definition());
     $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
         $mailshot,
-        $this->customer,
+        $recipient,
         ['email_address' => 'index-recipient@example.com']
     );
     $channel = \App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel::run($mailshot, [
@@ -2372,8 +2373,8 @@ test('index mailshot recipients', function (Mailshot $mailshot) {
     StoreMailshotRecipient::make()->handle($mailshot, [
         'dispatched_email_id' => $dispatchedEmail->id,
         'recipient_type'      => 'Customer',
-        'recipient_id'        => $this->customer->id,
-        'recipient_name'      => $this->customer->name,
+        'recipient_id'        => $recipient->id,
+        'recipient_name'      => $recipient->name,
         'channel'             => $channel->id,
     ]);
 

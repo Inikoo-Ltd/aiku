@@ -183,7 +183,7 @@ class BlogPosts
     private static function helpIndex(): array
     {
         $files   = File::glob(self::directory('docs').'/*.md');
-        $version = md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.filemtime($path), $files)));
+        $version = md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
 
         return Cache::remember('grp-help-index:'.$version, now()->addDay(), fn () => self::everything('docs')
             ->map(fn (array $doc) => Arr::only($doc, ['slug', 'base_slug', 'lang', 'title', 'help_routes']))

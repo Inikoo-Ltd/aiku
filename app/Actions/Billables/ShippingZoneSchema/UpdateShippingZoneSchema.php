@@ -59,6 +59,7 @@ class UpdateShippingZoneSchema extends OrgAction
         if (!$audit) {
             ShippingZoneSchema::disableAuditing();
         }
+        $this->asAction           = true;
         $this->strict             = $strict;
         $this->hydratorsDelay     = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);

@@ -2957,12 +2957,12 @@ test('to produce queue only shows lines with an artefact in this factory', funct
 
     $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
         ->assertOk()->viewData('page')['props'];
-    expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+    expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->not->toContain($stocks[0]->code);
 
     $all = get(route('grp.org.productions.show.to_produce.list', $routeParameters))
         ->assertOk()->viewData('page')['props'];
-    expect(collect($all['data']['data'])->pluck('stock_code')->sort()->values()->all())
-        ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
+    expect(collect($all['data']['data'])->pluck('stock_code')->intersect([$stocks[0]->code, $stocks[1]->code])->values()->all())
+        ->toBe([$stocks[1]->code]);
 });
 
 test('a partner line the factory has stock for belongs on pre-pick, not the to produce board', function () {

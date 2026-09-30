@@ -428,6 +428,7 @@ test('help falls back to English when the requested translation is missing', fun
     $slug = 'test-fallback-'.uniqid();
     $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
     File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$path]);
+    File::shouldReceive('lastModified')->with($path)->andReturn(0);
     File::shouldReceive('get')->with($path)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 

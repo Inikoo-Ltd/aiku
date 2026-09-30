@@ -1528,8 +1528,7 @@ test('UI show goods dashboard group', function () {
         $page
             ->component('Goods/ProductCommandControl')
             ->where('pageHead.title', 'Product Command & Control')
-            ->has('kpis')
-            ->has('rows');
+            ->loadDeferredProps('dashboard', fn (AssertableInertia $reload) => $reload->has('kpis')->has('rows'));
     });
 });
 

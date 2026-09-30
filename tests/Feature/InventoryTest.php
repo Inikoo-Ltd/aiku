@@ -4062,8 +4062,17 @@ describe('discontinue confirm', function () {
     test('product command control shows the stock in every organisation and a status set shows on the next load', function () {
         $orgStock = $this->orgStocks[1];
         $stock    = $orgStock->stock;
-        $row      = fn () => collect($this->get(route('grp.goods.dashboard', ['search' => $stock->code]))
-            ->assertOk()->viewData('page')['props']['rows'])->firstWhere('id', $stock->id);
+        $row      = function () use ($stock) {
+            $rows = [];
+            $this->get(route('grp.goods.dashboard', ['search' => $stock->code]))->assertOk()
+                ->assertInertia(function (AssertableInertia $page) use (&$rows) {
+                    $page->loadDeferredProps('dashboard', function (AssertableInertia $reload) use (&$rows) {
+                        $rows = $reload->toArray()['props']['rows'];
+                    });
+                });
+
+            return collect($rows)->firstWhere('id', $stock->id);
+        };
 
         $before = $row();
         expect($before['state'])->toBe('active')

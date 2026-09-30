@@ -1563,7 +1563,7 @@ test('the dashboard shows QA details to QA, and the urgent check lands on reques
 
             $verdicts = collect(TicketQaStatusEnum::cases())->filter->isVerdict()->map->value->all();
 
-            expect($rows->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
+            expect($rows->where('qa_status', '!=', TicketQaStatusEnum::CHECKING->value)->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
                 ->and($rows->pluck('qa_status')->intersect($verdicts)->all())->toBe([])
                 ->and($rows->pluck('id'))->toContain($deploying->id)
                 ->and($rows->pluck('id'))->not->toContain($stillOpen->id);

@@ -7545,7 +7545,7 @@ test('purchase orders and stock deliveries from an agent use the agent organisat
     $agentOrganisationCurrency = $agentOrganisation->currency_id;
     $agentOrganisation->update(['currency_id' => $rupee->id]);
 
-    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent->refresh(), []);
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent->refresh(), ['reference' => 'AGENT-INR-'.uniqid(), 'date' => now()], strict: false);
     $stockDelivery = StoreStockDelivery::make()->action($this->orgAgent, ['reference' => 'AGENT-INR-'.uniqid(), 'date' => now()], strict: false);
 
     $agentOrganisation->update(['currency_id' => $agentOrganisationCurrency]);
