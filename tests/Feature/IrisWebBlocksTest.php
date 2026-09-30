@@ -53,6 +53,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 const PRODUCT_WEBPAGE_BLOCKS = [
     'product',
@@ -936,7 +937,86 @@ test('iris product lists name the first variant axis so the choose button can re
 
     expect($row)->not->toBeNull()
         ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_axis_label'])->toBe('Size')
-        ->and($variantProduct['variant_axis_label'])->toBe('Size');
+        ->and($variantProduct['variant_axis_label'])->toBe('Size')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe($product->name)
+        ->and($variantProduct['variant_title'])->toBe($product->name);
+});
+
+test('master variant label is dispatched to each shop variant translated and titles the product card', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterVariant\UpdateMasterVariant::make()->action($masterVariant, ['label' => 'Compass of Life T-shirt']);
+
+    expect($masterVariant->refresh()->label)->toBe('Compass of Life T-shirt');
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::assertPushed(1);
+
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tričko Kompas života');
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant, 'Compass of Life T-shirt');
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe('Tričko Kompas života')
+        ->and(\App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0]['variant_title'])->toBe('Tričko Kompas života');
+});
+
+test('shop can translate its variant label and the master label no longer overwrites it', function () {
+    [, $product] = createProduct($this->shop);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'label'    => 'Compass of Life T-shirt',
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, [
+        'label'             => 'Tričko Kompas života',
+        'is_label_reviewed' => true,
+    ]);
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant->refresh(), 'Compass of Life T-shirt v2');
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and($variant->is_label_reviewed)->toBeTrue()
+        ->and($product->refresh()->variant_id)->toBe($variant->id);
 });
 
 test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {

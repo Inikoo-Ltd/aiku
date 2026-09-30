@@ -33,6 +33,7 @@ trait HasProductOfferPrices
             'is_golden_product'          => (bool)$this->is_golden_product,
             'variant'                    => $this->variant_id,
             'variant_axis_label'         => $this->variant_axis_label,
+            'variant_title'              => $this->variant_title,
             'product_offers_data'        => $productOffersData,
             'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
             'discounted_price_per_unit'  => $pricePerUnitDiscounted,

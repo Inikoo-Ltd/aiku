@@ -11,10 +11,15 @@ namespace App\Actions\Catalogue\Product\Json;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 
-trait WithVariantAxisLabelColumn
+trait WithVariantColumns
 {
     public function getVariantAxisLabelColumn(): Expression
     {
         return DB::raw("(SELECT variants.data->'variants'->0->>'label' FROM variants WHERE variants.id = products.variant_id) as variant_axis_label");
+    }
+
+    public function getVariantTitleColumn(): Expression
+    {
+        return DB::raw("(SELECT COALESCE(NULLIF(variants.label, ''), leaders.name) FROM variants LEFT JOIN products AS leaders ON leaders.id = variants.leader_id WHERE variants.id = products.variant_id) as variant_title");
     }
 }
