@@ -11,7 +11,7 @@ import axios from 'axios'
 import Dialog from 'primevue/dialog';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
@@ -148,7 +148,6 @@ const onSendPublish = async (data: any) => {
             }
         }
     } catch (error) {
-        console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
         notify({
             title: "Something went wrong.",
@@ -181,8 +180,8 @@ const sendTestToServer = () => {
         { ...temporaryData.value, email: email.value }
     ).then((response) => {
         notify({
-            title: trans('Success!'),
-            text: trans('Test email sent successfully'),
+            title: ctrans('Success!'),
+            text: ctrans('Test email sent successfully'),
             type: 'success',
         });
         email.value = '';
@@ -222,8 +221,8 @@ const saveTemplate = async () => {
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
             notify({
-                title: trans('Success'),
-                text: trans('Saved successfully'),
+                title: ctrans('Success'),
+                text: ctrans('Saved successfully'),
                 type: 'success',
             })
         })
@@ -245,22 +244,20 @@ const updateActiveValue = async (action) => {
     router.patch(route(action.name, action.parameters),
         { active: active.value },
         {
-            onStart: () => console.log('start'),
             onSuccess: () => {
                 notify({
-                    title: trans('Success!'),
-                    text: trans('change status'),
+                    title: ctrans('Success!'),
+                    text: ctrans('change status'),
                     type: 'success',
                 })
             },
             onError: () => {
                 notify({
-                    title: trans('Something went wrong'),
-                    text: trans('Unsuccessfully change status'),
+                    title: ctrans('Something went wrong'),
+                    text: ctrans('Unsuccessfully change status'),
                     type: 'error',
                 })
             },
-            onFinish: () => console.log('finish'),
         }
     )
 }
@@ -302,9 +299,7 @@ const schedulePublish = async () => {
             layout: JSON.parse(data?.jsonFile),
             compiled_layout: data?.htmlFile
         });
-        console.log("Publish response:", response.data);
     } catch (error) {
-        console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
         notify({
             title: "Something went wrong.",
@@ -388,7 +383,7 @@ onMounted(() => {
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>
-            <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
+            <Button @click="() => isModalCloneTemplateEmail = true" :label="ctrans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faSyncAlt" :disabled="!isBeefreeReady" />
         </template>
@@ -408,13 +403,13 @@ onMounted(() => {
     <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
         <div class="p-2 text-center">
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
-            <h2 class="text-lg font-semibold mb-2">{{ trans('Your email is not saved yet') }}</h2>
+            <h2 class="text-lg font-semibold mb-2">{{ ctrans('Your email is not saved yet') }}</h2>
             <p class="text-gray-600 mb-4">
-                {{ trans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+                {{ ctrans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
             </p>
             <div class="flex justify-center gap-x-2">
-                <Button type="tertiary" :label="trans('Review & send anyway')" @click="goToReviewAnyway" />
-                <Button :label="trans('Keep editing')" @click="showUnpublishedWarning = false" />
+                <Button type="tertiary" :label="ctrans('Review & send anyway')" @click="goToReviewAnyway" />
+                <Button :label="ctrans('Keep editing')" @click="showUnpublishedWarning = false" />
             </div>
         </div>
     </Modal>
@@ -425,14 +420,14 @@ onMounted(() => {
             <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" class="flex-1" />
             <div class="flex items-center rounded-md border border-gray-300 overflow-hidden shrink-0">
                 <button
-                    v-tooltip="trans('Gallery')"
+                    v-tooltip="ctrans('Gallery')"
                     class="px-2 py-1"
                     :class="templateView === 'gallery' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
                     @click="setTemplateView('gallery')">
                     <FontAwesomeIcon icon="fal fa-th-large" fixed-width aria-hidden="true" />
                 </button>
                 <button
-                    v-tooltip="trans('List')"
+                    v-tooltip="ctrans('List')"
                     class="px-2 py-1"
                     :class="templateView === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
                     @click="setTemplateView('list')">

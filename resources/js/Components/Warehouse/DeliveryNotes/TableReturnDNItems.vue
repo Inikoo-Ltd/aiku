@@ -77,7 +77,6 @@ function orgStockRoute(deliveryNoteItem: any) {
 const isMounted = ref(false)
 let socketChannel: any = null
 
-console.log(props.data.data);
 
 const initSocketListener = () => {
     const socketEvent = `grp.${route().params['organisation']}.stock_movement`;

@@ -22,7 +22,6 @@ defineProps<{
 const locale = useLocaleStore();
 
 function topUpRoute(topUp: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.dashboard.payments.accounting.top_ups.index":
             return route(

@@ -15,7 +15,7 @@ import {
     faRocket,
     faExternalLink,
     faFolderDownload,
-    faDownload
+    faDownload, faTerminal
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -38,7 +38,6 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
-import { trans } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -57,7 +56,7 @@ library.add(
     faRocket,
     faExternalLink,
     faFolderDownload,
-    faDownload
+    faDownload, faTerminal
 )
 
 
@@ -105,8 +104,8 @@ const downloadCsv = () => {
 
     setTimeout(() => {
         notify({
-            title: trans('Export CSV'),
-            text: trans('Download will start shortly...'),
+            title: ctrans('Export CSV'),
+            text: ctrans('Download will start shortly...'),
             type: 'info',
         })
         const url = route(props.download_route.name, { ...props.download_route.parameters, type: 'csv' })
@@ -127,7 +126,6 @@ const form = useForm({
 })
 const submitForm = () => {
     if (!props?.route_redirects?.submit?.name) {
-        console.log('No submit route')
         return 
     }
     form.post(route(props.route_redirects.submit.name, props.route_redirects.submit.parameters), {
@@ -136,8 +134,8 @@ const submitForm = () => {
             openModal.value = false
             form.reset()
             notify({
-                title: trans("Success!"),
-                text: trans("New redirect created successfully."),
+                title: ctrans("Success!"),
+                text: ctrans("New redirect created successfully."),
                 type: "success",
             })
         },
@@ -163,7 +161,7 @@ const submitForm = () => {
                 :loading="isDownloadingCsv"
                 @click="downloadCsv"
             />
-            <Button type="create" :label="trans('Redirect')" @click="openModal = true" />
+            <Button type="create" :label="ctrans('Redirect')" @click="openModal = true" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -177,13 +175,13 @@ const submitForm = () => {
         <slot name="modal" :closeModal="() => openModal = false">
             <div class="space-y-2">
                 <!-- Modal Title -->
-                <h2 class="text-xl font-semibold pb-2 border-b">{{ trans("Create Redirect") }}</h2>
+                <h2 class="text-xl font-semibold pb-2 border-b">{{ ctrans("Create Redirect") }}</h2>
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm" class="space-y-3">
                     <!-- From URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">{{ trans("From URL:") }}</div>
+                        <div class="block text-sm font-medium py-2">{{ ctrans("From URL:") }}</div>
                         <PureInput
                             v-model="form.from_url"
                             placeholder="e.g. /old-page"
@@ -197,11 +195,11 @@ const submitForm = () => {
 
                     <!-- To URL -->
                     <div>
-                        <div class="block text-sm font-medium py-2">{{ trans("Target URL:") }}</div>
+                        <div class="block text-sm font-medium py-2">{{ ctrans("Target URL:") }}</div>
                         <PureMultiselectInfiniteScroll
                             v-model="form.to_url"
                             :fetchRoute="route_redirects.fetch_live_webpages"
-                            :placeholder="trans('Select Redirect')"
+                            :placeholder="ctrans('Select Redirect')"
                             valueProp="id"
                             labelProp="url"
                             :disabled="form.processing"
@@ -229,7 +227,7 @@ const submitForm = () => {
                     <!-- Action Buttons -->
                     <div class="flex justify-end space-x-2">
                         <Button label="Cancel" @click="() => openModal = false" type="white" />
-                        <Button type="save" :label="trans('Create Redirect')" full :disabled="form.processing"  @click="() => submitForm()" />
+                        <Button type="save" :label="ctrans('Create Redirect')" full :disabled="form.processing"  @click="() => submitForm()" />
                     </div>
                 </form>
             </div>

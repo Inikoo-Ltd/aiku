@@ -60,7 +60,6 @@ const props = defineProps<{
         navigation: object;
     }
 }>()
-console.log("props", props)
 
 const layout = inject("layout", layoutStructure)
 

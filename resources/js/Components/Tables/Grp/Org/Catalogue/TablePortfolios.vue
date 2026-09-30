@@ -33,7 +33,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import Multiselect from "@vueform/multiselect"
 import SelectButton from "primevue/selectbutton"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import DataView from "primevue/dataview"
 import DataTable from "primevue/datatable"
 import { FilterMatchMode } from "@primevue/core/api"
@@ -119,13 +119,13 @@ const actionInput = ref(1)
 const optionsView = [
 	{
 		id: 1,
-		label: trans("Grid"),
+		label: ctrans("Grid"),
 		value: "grid",
 		icon: "fal fa-th-large",
 	},
 	{
 		id: 2,
-		label: trans("List"),
+		label: ctrans("List"),
 		value: "list",
 		icon: "fal fa-list-ul",
 	},
@@ -223,7 +223,6 @@ onUnmounted(() => {
 })
 
 function isShopifyAdmin() {
-	console.log(window.location.hostname)
 	return window.location.hostname === "admin.shopify.com"
 }
 
@@ -232,7 +231,6 @@ const isSelected = (item_id: number) => {
 }
 
 const toggleItem = (id) => {
-	console.log(id, "asdxxca")
 
 	const index = selectedProducts.value.findIndex((item) => item.id === id)
 	if (index !== -1) {
@@ -270,7 +268,6 @@ const selectedProductsWithQuantity = computed(() => {
 })
 
 const onSubmitProduct = () => {
-	console.log()
 
 	router.post(
 		route(props.order_route.name, props.order_route.parameters),
@@ -287,19 +284,19 @@ const onSubmitProduct = () => {
 			},
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
+					title: ctrans("Success"),
 					text:
-						trans("Successfully added") +
+						ctrans("Successfully added") +
 						` ${selectedProductsWithQuantity.value.length} ` +
-						trans("Order"),
+						ctrans("Order"),
 					type: "success",
 				})
 				selectedProductsWithQuantity.value = []
 			},
 			onError: () => {
 				notify({
-					title: trans("Failed"),
-					text: trans("Something went wrong. Try again."),
+					title: ctrans("Failed"),
+					text: ctrans("Something went wrong. Try again."),
 					type: "error",
 				})
 			},
@@ -411,7 +408,7 @@ watch(
 								</InputIcon>
 								<InputText
 									v-model="filters['global'].value"
-									:placeholder="trans('Search...')"
+									:placeholder="ctrans('Search...')"
 									class="w-full" />
 							</IconField>
 						</div>

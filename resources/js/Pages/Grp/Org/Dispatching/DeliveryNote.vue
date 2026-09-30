@@ -889,7 +889,6 @@ const stopSocketListener = () => {
 					method: 'patch'
 				}"
 				@error="(e) => {
-					console.log('eeee', e)
 					notify({
 						title: ctrans('Failed to set return'),
 						text: e.message || ctrans('Please try again later or contact administrator'),

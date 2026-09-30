@@ -25,7 +25,7 @@ import {
 import { faEyeSlash } from "@fal"
 import { faHeart, faLowVision } from "@far"
 import { debounce, get } from "lodash"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { routeType } from "@/types/route"
 
@@ -66,13 +66,13 @@ const selectedTab = ref(data.value ? 1 : 0)
 
 
 const tabs = computed(() => [
-	{ label: "Templates", icon: faThLarge, tooltip: trans("Template") },
-	{ label: "Menu", icon: faList, tooltip: trans("Menu") },
-	{ label: "Styling", icon: faPaintBrushAlt, tooltip: trans("Styling") },
+	{ label: "Templates", icon: faThLarge, tooltip: ctrans("Template") },
+	{ label: "Menu", icon: faList, tooltip: ctrans("Menu") },
+	{ label: "Styling", icon: faPaintBrushAlt, tooltip: ctrans("Styling") },
 	{
 		label: "Styling (custom navigation)",
 		icon: faPaintBrush,
-		tooltip: trans("Styling (custom navigation)"),
+		tooltip: ctrans("Styling (custom navigation)"),
 	},
 ])
 
@@ -86,7 +86,6 @@ const changeTab = (index: number) => {
 
 
 const autoSave = (value: any) => {
-	console.log("Auto saving...", value)
 	emits("auto-save", value)
 }
 
@@ -168,7 +167,7 @@ const updateFieldValue = (value: any) => {
 								class="text-5xl"
 								fixed-width
 							/>
-							{{ trans("Will not showing due the data follow Sidebar") }}
+							{{ ctrans("Will not showing due the data follow Sidebar") }}
 						</div>
 					</Transition>
 				</div>

@@ -12,7 +12,7 @@
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeadingTypes } from '@/types/PageHeading'
   import { useFormatTime } from '@/Composables/useFormatTime'
-  import { trans } from 'laravel-vue-i18n'
+  import { ctrans } from '@/Composables/useTrans'
   import Tag from '@/Components/Tag.vue'
   
   
@@ -26,27 +26,27 @@
   
   const dataCompany = [
       {
-          label: trans('Contact name'),
+          label: ctrans('Contact name'),
           key: 'contact',
           value: props.data.contact_name ?? '-'
       },
       {
-          label: trans('Username'),
+          label: ctrans('Username'),
           key: 'username',
           value: props.data.username
       },
       {
-          label: trans('Email'),
+          label: ctrans('Email'),
           key: 'email',
           value: props.data.email
       },
       {
-          label: trans('Last login'),
+          label: ctrans('Last login'),
           key: 'last_login',
           value: props.data.last_login ?? '-'
       },
       {
-          label: trans('Created at'),
+          label: ctrans('Created at'),
           key: 'created_At',
           value: useFormatTime(props.data.customer?.created_at)
       },
@@ -55,7 +55,6 @@
           value: props.data.status
       },
   ]
-  console.log(props)
   </script>
   
   
@@ -66,7 +65,7 @@
   
           <!-- Section: field data -->
           <div>
-              <div class="text-xl font-bold mb-2">{{ trans('User details') }}</div>
+              <div class="text-xl font-bold mb-2">{{ ctrans('User details') }}</div>
               <div class="h-fit w-80 relative grid grid-cols-1 divide-y divide-gray-300 border border-gray-300 rounded-md">
                   <div v-for="(print, index) in dataCompany" class="py-2.5 px-4">
                       <div class="text-gray-400 text-xs">

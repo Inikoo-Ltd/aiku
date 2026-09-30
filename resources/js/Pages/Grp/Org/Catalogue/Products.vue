@@ -24,15 +24,16 @@ import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { notify } from '@kyvg/vue3-notification'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
+import { faCube } from "@fal"
 
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools, faCube)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     editable_table: boolean
     title: string
     currencies?: any
-    familyId : number
+    familyId?: number
     tabs: {
         current: string
         navigation: Record<string, string>
@@ -43,7 +44,7 @@ const props = defineProps<{
     edit?: Record<string, any>
     bulk_unit?: Record<string, any>
     sales?: Record<string, any>
-    routes: {
+    routes?: {
         families_route: routeType
         submit_route: routeType
     }
@@ -158,7 +159,6 @@ const saveUnit = () => onSaveEditBulkProduct("unit", form.value.unit)
 
 
 const repairTradeUnitToChildren = async () => {
-    console.log("REPAIRING");
     await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
         masterAsset: props.masterAsset.id,
     })).then((response) => {
@@ -310,7 +310,7 @@ const replaceProps = (updatedData) => {
         :key="currentTab + key"
         :tab="currentTab"
         :data="localData[currentTab]"
-        :pasteLookupRoute="currentTab === 'index_ordering' ? { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } : null"
+        v-bind="currentTab === 'index_ordering' ? { pasteLookupRoute: { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } } : {}"
         :isCheckboxProducts="currentTab === 'bulk_unit' || isStepDiscountAvailable"
         :selectedProductsId="selectedProductsId"
         :variantSlugs="variantSlugs"

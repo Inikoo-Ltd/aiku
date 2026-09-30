@@ -3,7 +3,7 @@ import { Link, router, useForm } from "@inertiajs/vue3"
 import { ref, onMounted, nextTick, watch, computed, inject } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 // import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
 import Address from "@/Components/Forms/Fields/Address.vue"
@@ -151,15 +151,15 @@ const onCallbackGoogleLogin = (e) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully register"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully register"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to login with Google. Please contact administrator."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to login with Google. Please contact administrator."),
                     type: "error"
                 })
             },
@@ -182,7 +182,7 @@ const onCallbackGoogleLogin = (e) => {
                 <!-- Username Field -->
                 <div>
                     <label for="username" class="block text-sm font-medium text-gray-700">
-                        {{ trans('Email') }}
+                        {{ ctrans('Email') }}
                     </label>
                     <div class="mt-1">
                         <PureInput
@@ -231,7 +231,7 @@ const onCallbackGoogleLogin = (e) => {
 
 				<Transition name="slide-to-right">
 					<div v-if="!isPasswordSame" class="-mt-4 text-red-500 italic">
-						{{ trans("Password is not match") }}
+						{{ ctrans("Password is not match") }}
 					</div>
 				</Transition>
 
@@ -252,7 +252,7 @@ const onCallbackGoogleLogin = (e) => {
                         :clientId="google.client_id"
                         popup-type="TOKEN"
                         :callback="(e) => onCallbackGoogleLogin(e)"
-                        :error="(e) => console.log('yyyyyy error', e)"
+                        :error="(e) => console.error('error', e)"
                     >
                     
                     </GoogleLogin>
@@ -261,10 +261,10 @@ const onCallbackGoogleLogin = (e) => {
                 <!-- Registration Link -->
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
-                        <span class="font-normal">{{ trans("Already have an account?") }}</span>
+                        <span class="font-normal">{{ ctrans("Already have an account?") }}</span>
                         <Link :href="route('retina.login.show')"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
-                            {{ trans("Login here") }}
+                            {{ ctrans("Login here") }}
                         </Link>
                     </p>
                 </div>
@@ -281,7 +281,7 @@ const onCallbackGoogleLogin = (e) => {
 			</div>
 			<form @submit.prevent="submitRegister" class="space-y-12 px-14 py-10">
 				<div class="text-xl font-semibold flex justify-center">
-					{{ trans("Join Our Dropshipping Shop – Register Now!") }}
+					{{ ctrans("Join Our Dropshipping Shop – Register Now!") }}
 				</div>
 				<div class="border-b border-gray-900/10 pb-12">
 					<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -290,7 +290,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="name"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Name") }}</label
+								>{{ ctrans("Name") }}</label
 							>
 							<div class="mt-2">
 								<IconField>
@@ -318,7 +318,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="email"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Email") }}</label
+								>{{ ctrans("Email") }}</label
 							>
 							<div class="mt-2">
 								<!-- make IconField full-width -->
@@ -347,7 +347,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="phone-number"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Phone Number") }}</label
+								>{{ ctrans("Phone Number") }}</label
 							>
 							<div class="mt-2">
 								<IconField class="w-full">
@@ -375,7 +375,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="business-name"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Business Name") }}</label
+								>{{ ctrans("Business Name") }}</label
 							>
 							<div class="mt-2">
 								<IconField class="w-full">
@@ -404,7 +404,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="website"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Website") }}</label
+								>{{ ctrans("Website") }}</label
 							>
 							<div class="mt-2">
 								<IconField class="w-full">
@@ -428,7 +428,7 @@ const onCallbackGoogleLogin = (e) => {
 							<label
 								for="website"
 								class="capitalize block text-sm font-medium text-gray-700"
-								>{{ trans("Country") }}</label
+								>{{ ctrans("Country") }}</label
 							>
 							<Address
 								v-model="form[contact_address]"
@@ -525,7 +525,7 @@ const onCallbackGoogleLogin = (e) => {
 						type="submit"
 						class="inline-flex items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
 						<span v-if="isLoading" class="loader mr-2"></span>
-						{{ trans("Register") }}
+						{{ ctrans("Register") }}
 					</button>
 				</div>
 			</form>

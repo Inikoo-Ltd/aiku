@@ -11,9 +11,9 @@ import TableMailshots from "@/Components/Tables/TableMailshots.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxIn, faDumpsterFire, faThumbsDown } from "@fal";
+import { faInboxIn, faDumpsterFire, faThumbsDown, faNewspaper } from "@fal";
 
-library.add(faInboxIn, faDumpsterFire, faThumbsDown);
+library.add(faInboxIn, faDumpsterFire, faThumbsDown, faNewspaper);
 
 
 defineProps<{

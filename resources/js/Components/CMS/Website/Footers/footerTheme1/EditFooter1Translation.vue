@@ -59,7 +59,6 @@ const handle = (type: 'save' | 'cancel') => {
   emit(type)
 }
 
-console.log('visibleColumns',visibleColumns)
 </script>
 
 <template>

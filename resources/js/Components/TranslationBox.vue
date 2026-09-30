@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, inject } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLanguage } from '@fas'
@@ -124,14 +124,13 @@ const saveTranslation = () => {
         formErrors.value = {}
       },
       onSuccess: () => {
-        notify({ title: trans('Success'), text: trans('Success to save translation'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Success to save translation'), type: 'success' })
       },
       onError: (errors) => {
-        console.log(errors)
         formErrors.value = errors
         notify({
-          title: trans('Validation Error'),
-          text: errors || trans('Please check highlighted fields'),
+          title: ctrans('Validation Error'),
+          text: errors || ctrans('Please check highlighted fields'),
           type: 'error',
           duration: 8000
         })
@@ -169,25 +168,25 @@ const saveTranslation = () => {
 
           <!-- Master Language Form -->
           <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
-            <h3 class="text-base font-semibold mb-3">{{ trans('Master') }}</h3>
+            <h3 class="text-base font-semibold mb-3">{{ ctrans('Master') }}</h3>
             <div class="space-y-3">
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Title') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Title') }}</label>
                 <PureInput v-model="props.master.name" placeholder="Enter title" class="text-sm" />
                 <p v-if="errorFor('name')" class="text-red-500 text-xs mt-1">{{ errorFor('name') }}</p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description Title') }}</label>
                 <PureInput v-model="props.master.description_title" placeholder="Enter description title" class="text-sm" />
                 <p v-if="errorFor('description_title')" class="text-red-500 text-xs mt-1">{{ errorFor('master.description_title') }}</p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description') }}</label>
                 <SideEditorInputHTML v-model="props.master.description" rows="3" class="text-sm" />
                 <p v-if="errorFor('description')" class="text-red-500 text-xs mt-1">{{ errorFor('description') }}</p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Extra') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description Extra') }}</label>
                 <SideEditorInputHTML v-model="props.master.description_extra" rows="3" class="text-sm" />
                 <p v-if="errorFor('description_extra')" class="text-red-500 text-xs mt-1">{{ errorFor('description_extra') }}</p>
               </div>
@@ -197,32 +196,32 @@ const saveTranslation = () => {
           <!-- Translated Language Form -->
           <div class="bg-white border border-gray-300 rounded-md p-4 shadow-sm">
             <h3 class="text-base font-semibold mb-3">
-              {{ trans('Translation') }} ({{ selectedLangCode?.toUpperCase() || '—' }})
+              {{ ctrans('Translation') }} ({{ selectedLangCode?.toUpperCase() || '—' }})
             </h3>
             <div class="space-y-3">
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Title') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Title') }}</label>
                 <PureInput v-model="translationTitle" placeholder="Enter translated title" class="text-sm" />
                 <p v-if="errorFor(`translations.${selectedLangCode}.name`)" class="text-red-500 text-xs mt-1">
                   {{ errorFor(`translations.${selectedLangCode}.name`) }}
                 </p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description Title') }}</label>
                 <PureInput v-model="translationDescTitle" placeholder="Enter translated description title" class="text-sm" />
                 <p v-if="errorFor(`translations.${selectedLangCode}.description_title`)" class="text-red-500 text-xs mt-1">
                   {{ errorFor(`translations.${selectedLangCode}.description_title`) }}
                 </p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description') }}</label>
                 <SideEditorInputHTML v-model="translationDescription" rows="3" class="text-sm" />
                 <p v-if="errorFor(`translations.${selectedLangCode}.description`)" class="text-red-500 text-xs mt-1">
                   {{ errorFor(`translations.${selectedLangCode}.description`) }}
                 </p>
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Extra') }}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ ctrans('Description Extra') }}</label>
                 <SideEditorInputHTML v-model="translationDescExtra" rows="3" class="text-sm" />
                 <p v-if="errorFor(`translations.${selectedLangCode}.description_extra`)" class="text-red-500 text-xs mt-1">
                   {{ errorFor(`translations.${selectedLangCode}.description_extra`) }}

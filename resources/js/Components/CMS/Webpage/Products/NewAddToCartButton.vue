@@ -142,7 +142,7 @@ const fetchProduct = async (transId?: string|number|null) => {
         })
 
     } catch (error: any) {
-        console.log('error', error)
+        console.error('error', error)
     }
 }
 

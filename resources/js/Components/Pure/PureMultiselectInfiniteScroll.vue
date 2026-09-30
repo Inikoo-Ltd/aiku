@@ -6,7 +6,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { Links, Meta } from '@/types/Table'
 import { inject, onMounted, onUnmounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { routeType } from "@/types/route"
 
@@ -100,10 +100,9 @@ const fetchProductList = async (url) => {
         if (sequence !== fetchSequence) {
             return
         }
-        console.log(error)
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to get the options list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to get the options list'),
             type: 'error',
         })
     }
@@ -197,7 +196,7 @@ defineExpose({
         :canDeselect="!required" :hideSelected="false" :clearOnSelect="props?.clearOnSelect ?? false" searchable
         :clearOnBlur="props?.clearOnBlur ?? false" clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
-        :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
+        :placeholder="placeholder || ctrans('Select option')" :resolve-on-load="true" :min-chars="1"
         @open="() => onOpen()"
         @search-change="(val: string) => { emits('searchChange', val ?? ''); val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({ 'filter[global]': '' }), 'search')) }">
 

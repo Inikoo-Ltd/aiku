@@ -37,16 +37,13 @@ export function useCheckoutCom(checkoutComData: CheckoutComFlow, otherOptions?: 
         locale: checkoutComData.locale ?? 'en',
         translations: selectedTranslation,
         onReady: () => {
-          console.log("onReady")
         },
         onPaymentCompleted: (_component, paymentResponse) => {
-          console.log("Create Payment with PaymentId: ", paymentResponse.id)
         },
         onChange: (component) => {
-          console.log(`onChange() -> isValid: "${component.isValid()}" for "${component.type}"`)
         },
         onError: (component, error) => {
-          console.log("onError", error, "Component", component.type)
+          console.error("onError", error, "Component", component.type)
         },
         appearance: {
           // colorPrimary: '#ff0000',

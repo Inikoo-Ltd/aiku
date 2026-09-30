@@ -100,7 +100,6 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
         set(layout, 'rightbasket.products', response.data?.products || [])
         // }
     } catch (error: any) {
-        console.log('errorzzzzz', error)
         // notify({
         //     title: ctrans("Something went wrong"),
         //     text: error.message || ctrans("Please try again or contact administrator"),
@@ -184,7 +183,7 @@ const onRemoveFromBasket = (product) => {
                 // isLoadingSubmitQuantityProduct.value = true
             },
             onError: (e) => {
-                console.log('error', e)
+                console.error('error', e)
                 product.isLoadingRemove = false
             },
             onSuccess: () => {
@@ -264,7 +263,6 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
         }
 
     } catch (error: any) {
-        console.log('eerr charge', error)
         notify({
             title: ctrans("Something went wrong"),
             text: ctrans("Failed to update, try again."),

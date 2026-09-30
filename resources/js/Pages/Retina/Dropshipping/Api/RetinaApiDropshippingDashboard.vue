@@ -7,7 +7,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Head, Link, router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "lodash-es"
 import { computed, ref } from "vue"
 import type { Component } from "vue";
@@ -68,7 +68,6 @@ const onGenerateApiToken = async () => {
             }
         );
 
-        console.log("Generate API Token response:", data.data)
         newToken.value = data.data.token;
 
         router.reload(
@@ -78,10 +77,9 @@ const onGenerateApiToken = async () => {
         );
 
     } catch (error) {
-        console.log("error", error)
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to create API Token"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to create API Token"),
             type: "error"
         });
     } finally {
@@ -119,7 +117,7 @@ const component = computed(() => {
 	<Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
 		<template #otherBefore>
-			<Button v-if="currentTab === 'api_tokens'" @click="() => isModalApiToken = true" :label="trans('Generate API token')" type="tertiary" />
+			<Button v-if="currentTab === 'api_tokens'" @click="() => isModalApiToken = true" :label="ctrans('Generate API token')" type="tertiary" />
 		</template>
 	</PageHeading>
 	
@@ -128,11 +126,11 @@ const component = computed(() => {
         <div class="flex justify-between w-full">
 			<div class="flex items-center gap-x-2 text-yellow-700">
 				<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500 text-lg" fixed-width aria-hidden="true" />
-				{{ trans("You have no cards saved yet.") }}
+				{{ ctrans("You have no cards saved yet.") }}
 			</div>
 			
 			<ButtonWithLink
-				:label="trans('Add card')"
+				:label="ctrans('Add card')"
 				icon="fas fa-plus"
 				:routeTarget="{
 					'name': 'retina.dropshipping.mit_saved_cards.create',
@@ -158,11 +156,11 @@ const component = computed(() => {
         <div class="mt-3">
             <div class="text-center sm:mt-5">
                 <div as="h3" class="text-base font-semibold">
-                    {{ trans("Generate API Token") }}
+                    {{ ctrans("Generate API Token") }}
                 </div>
 
                 <div class="text-sm text-gray-500">
-                    {{ trans("You can Generate a new API Token for this user. This token can be used to authenticate API requests.") }}
+                    {{ ctrans("You can Generate a new API Token for this user. This token can be used to authenticate API requests.") }}
                 </div>
             </div>
         </div>
@@ -171,7 +169,7 @@ const component = computed(() => {
             <div v-if="newToken" class="w-full max-w-xl">
                 <div class="grid w-full max-w- mx-auto xflex items-center gap-x-2">
                     <div class="text-gray-500 text-sm text-center">
-                        {{ trans("Here is your new API Token") }}:
+                        {{ ctrans("Here is your new API Token") }}:
                     </div>
 
                     <div class="w-full max-w-full relative pr-10 overflow-hidden bg-gray-50 border border-gray-200 rounded-md px-3 py-3 text-gray-500 text-sm inline-flex items-center gap-x-2">
@@ -189,7 +187,7 @@ const component = computed(() => {
                     </div>
 
 
-                    <!-- <div @click="() => onGenerateApiToken(true)" v-tooltip="trans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                    <!-- <div @click="() => onGenerateApiToken(true)" v-tooltip="ctrans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
                         <LoadingIcon v-if="isNewRegenerate" />
                         <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
                     </div> -->
@@ -197,14 +195,14 @@ const component = computed(() => {
 
                 <div class="mt-2 text-amber-500 text-sm items-center gap-x-2 text-center">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-lg" fixed-width aria-hidden="true" />
-                    <span class="text-center">{{ trans("Put this token in a safe place, you won't be able to see it again.") }}</span>
+                    <span class="text-center">{{ ctrans("Put this token in a safe place, you won't be able to see it again.") }}</span>
                 </div>
             </div>
 
             <div v-else class="flex flex-col items-center gap-y-3">
                 <label class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" v-model="isReadOnlyToken" class="rounded border-gray-300" />
-                    {{ trans("Read only (cannot create, change or submit orders)") }}
+                    {{ ctrans("Read only (cannot create, change or submit orders)") }}
                 </label>
                 <Button
                     @click="onGenerateApiToken"

@@ -12,8 +12,9 @@ import StatsBox from '@/Components/Stats/StatsBox.vue'
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Intervals } from "@/types/Components/Dashboard"
+import { faChartNetwork, faCoin, faWeightHanging } from "@fal"
 
-library.add(faCheckCircle, faTimesCircle)
+library.add(faCheckCircle, faTimesCircle, faChartNetwork, faCoin, faWeightHanging)
 
 interface Stat {
     id?: number

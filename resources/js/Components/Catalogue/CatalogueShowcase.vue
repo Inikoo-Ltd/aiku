@@ -71,6 +71,7 @@ interface TopSelling {
 }
 
 const props = defineProps<{
+    tab?: string
     data: {
         stats: any
         top_selling: TopSelling

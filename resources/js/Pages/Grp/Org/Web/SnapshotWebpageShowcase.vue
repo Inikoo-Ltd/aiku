@@ -12,7 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from "primevue/useconfirm";
 import Dialog from 'primevue/dialog';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import {
   faUser,
@@ -55,7 +55,6 @@ const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
 const visible = ref(false)
 
-console.log(props)
 const iframeSrc = route('grp.org.shops.show.web.webpages.snapshot.preview',
   {
     organisation: route().params['organisation'],
@@ -119,19 +118,18 @@ const updateSnapshot = () => {
     },
     {
       onSuccess: () => {
-        console.log("✅ Snapshot updated successfully");
         visible.value = false
         notify({
-          title: trans("Success"),
-          text: trans("Success edit snapshot"),
+          title: ctrans("Success"),
+          text: ctrans("Success edit snapshot"),
           type: "success",
         })
       },
       onError: (errors) => {
         console.error("❌ Failed to update snapshot:", errors);
         notify({
-          title: trans("Something went wrong."),
-          text: trans("Failed to edit snapshot."),
+          title: ctrans("Something went wrong."),
+          text: ctrans("Failed to edit snapshot."),
           type: "error",
         })
       },

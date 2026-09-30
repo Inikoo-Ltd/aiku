@@ -29,7 +29,7 @@ library.add(faCheck, faOctopusDeploy)
 defineProps<{
     data: object
     tab?: string,
-    routes: {
+    routes?: {
         dataList: routeType
         submitAttach: routeType
         detach: routeType

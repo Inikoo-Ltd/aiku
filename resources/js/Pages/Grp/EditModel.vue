@@ -87,7 +87,7 @@ import {
     faGem,
     faHashtag,
     faPrint,
-    faVolumeUp,
+    faVolumeUp, faComments, faBooks, faCoins, faSignOut
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -179,7 +179,7 @@ library.add(
     faCameraRetro,
     faBalanceScale,
     faCamera,
-    faStamp
+    faStamp, faComments, faBooks, faCoins, faSignOut
 )
 
 const props = defineProps<{

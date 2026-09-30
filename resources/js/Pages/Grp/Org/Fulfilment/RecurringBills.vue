@@ -10,6 +10,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableRecurringBills from "@/Components/Tables/Grp/Org/Fulfilment/TableRecurringBills.vue";
 import {capitalize} from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faReceipt } from "@fal"
+library.add(faReceipt)
 
 defineProps<{
   pageHead: PageHeadingTypes

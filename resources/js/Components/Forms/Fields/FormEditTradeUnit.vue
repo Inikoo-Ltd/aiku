@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, computed, watch } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Link } from "@inertiajs/vue3"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
@@ -45,7 +45,6 @@ const props = defineProps<{
 
 
 
-console.log("tradeunit.vue", props)
 const selectedTradeUnit = ref(props.fieldData.trade_units.length > 0 ? props.fieldData.trade_units[0].tradeUnit.code : null)
 const compSelectedTradeUnit = computed(() => {
     return props.fieldData.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
@@ -72,7 +71,7 @@ const compSelectedTradeUnit = computed(() => {
                                 class="w-full sm:w-80" />
                             <Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
                                 :href="route('grp.trade_units.units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-                                v-tooltip="trans('Open trade unit')"
+                                v-tooltip="ctrans('Open trade unit')"
                                 class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
                             <FontAwesomeIcon icon="fal fa-external-link" fixed-width />
                             </Link>
@@ -80,7 +79,7 @@ const compSelectedTradeUnit = computed(() => {
                         <EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
                     </template>
                     <div v-else class="text-gray-500 text-center py-4">
-                        {{ trans("No trade units for this product") }}
+                        {{ ctrans("No trade units for this product") }}
                     </div>
                 </div>
             </template>

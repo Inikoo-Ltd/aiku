@@ -6,7 +6,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from "@common/Components/Image.vue";
@@ -122,8 +122,8 @@ const getPortfoliosList = async (url?: string) => {
     } catch (e) {
         console.error('Error', e)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while getting the portfolios list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while getting the portfolios list."),
             type: "error"
         })
     } finally {
@@ -199,14 +199,12 @@ const deleteFormCommited = (item) => {
 const updateProduct = (updated: Portfolio) => {
     committedProducts.value = committedProducts.value.map(p => {
         if (p.id === updated.id) {
-            console.log("✅ Match found:", p);
 
             const merged = {
                 ...p,
                 ...updated
             };
 
-            console.log("🔹 After merge:", merged);
 
             return merged;
         }
@@ -214,10 +212,8 @@ const updateProduct = (updated: Portfolio) => {
         return p;
     });
 
-    console.log("🔹 After update (committedProducts):", committedProducts.value);
 
     emits("update:modelValue", [...committedProducts.value]);
-    console.log("📤 Emitted updated modelValue:", [...committedProducts.value]);
 };
 
 // Section: per-organisation packed_in — the OS-TU leg of the triangle, editable in place
@@ -233,7 +229,7 @@ const orgPackedInSummary = (item: any): { label: string; diverges: boolean } | n
     }
     const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
     if (distinct.length === 1) {
-        return { label: trans('(SKO packed in :packs)', { packs: distinct[0] + 's' }), diverges: false }
+        return { label: ctrans('(SKO packed in :packs)', { packs: distinct[0] + 's' }), diverges: false }
     }
     return {
         label: '(' + groupOrgsByValue(orgs, org => Number(org.packed_in) + 's') + ')',
@@ -301,15 +297,15 @@ const savePackedIn = async () => {
                 if (!recountWarning) {
                     throw error
                 }
-                if (!window.confirm(recountWarning + '\n\n' + trans('Change the packing anyway?'))) {
-                    notify({ title: trans('Skipped'), text: trans('Packing of :org left unchanged', { org: edit.org_code }), type: 'info' })
+                if (!window.confirm(recountWarning + '\n\n' + ctrans('Change the packing anyway?'))) {
+                    notify({ title: ctrans('Skipped'), text: ctrans('Packing of :org left unchanged', { org: edit.org_code }), type: 'info' })
                     continue
                 }
                 const conversionPreview = error.response?.data?.errors?.stock_conversion_preview
                 let stockStrategy = 'keep'
                 if (conversionPreview?.length && window.confirm(
-                    trans('Convert the stored counts to the new packing?') + '\n\n' + conversionPreview.join('\n')
-                    + '\n\n' + trans('OK converts them; Cancel keeps the numbers and flags the locations for recount.')
+                    ctrans('Convert the stored counts to the new packing?') + '\n\n' + conversionPreview.join('\n')
+                    + '\n\n' + ctrans('OK converts them; Cancel keeps the numbers and flags the locations for recount.')
                 )) {
                     stockStrategy = 'convert'
                 }
@@ -320,7 +316,7 @@ const savePackedIn = async () => {
             }
             original.packed_in = Number(edit.packed_in)
         }
-        notify({ title: trans('Success'), text: trans('Warehouse packing updated'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Warehouse packing updated'), type: 'success' })
 
         const distinct = [...new Set(item.packed_in_by_org.map((org: OrgPackedIn) => Number(org.packed_in)))]
         if (distinct.length === 1) {
@@ -330,8 +326,8 @@ const savePackedIn = async () => {
         packedInDialogItem.value = null
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong.'),
-            text: error.response?.data?.message || trans('Could not update warehouse packing'),
+            title: ctrans('Something went wrong.'),
+            text: error.response?.data?.message || ctrans('Could not update warehouse packing'),
             type: 'error',
         })
     } finally {
@@ -346,7 +342,6 @@ const listData = computed(() => {
     return list.value
 })
 
-console.log(route().params)
 
 /** item.packed_in can lag behind the per-org reality; trust packed_in_by_org when it agrees. */
 const effectivePackedIn = (item: any): number => {
@@ -391,7 +386,7 @@ defineExpose({
         <div class="">
             <div class="flex justify-between">
                 <div>
-                    <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
+                    <h3 class="font-semibold mb-2">{{ ctrans(props.head_label) }}</h3>
                 </div>
                 <div>
                     <Button v-if="committedProducts.length" @click="openDialog" :label="'select'" size="xs"
@@ -429,11 +424,11 @@ defineExpose({
 
                         <!-- Warning: partial pack, the classic sign one side of the composition is wrong -->
                         <div v-if="partialPackOrgs(item)"
-                            v-tooltip="trans('This quantity is not a whole number of warehouse packs of :packed_in. Either this quantity or the SKU packing is wrong, check both before saving.', { packed_in: partialPackOrgs(item) })"
+                            v-tooltip="ctrans('This quantity is not a whole number of warehouse packs of :packed_in. Either this quantity or the SKU packing is wrong, check both before saving.', { packed_in: partialPackOrgs(item) })"
                             class="text-xs text-amber-600 whitespace-nowrap"
                         >
                             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
-                            {{ trans('Partial pack') }}: {{ item[props.key_quantity] || 1 }} / {{ partialPackOrgs(item) }}
+                            {{ ctrans('Partial pack') }}: {{ item[props.key_quantity] || 1 }} / {{ partialPackOrgs(item) }}
                         </div>
 
                         <!-- Quantity + Delete -->
@@ -449,24 +444,24 @@ defineExpose({
                                  <template #prefix>
                                 <!-- One tooltip per part: nesting them stacked two tooltips over each other -->
                                 <div class="text-sm px-3 text-teal-600 whitespace-nowrap w-full flex items-baseline gap-1">
-                                    <span v-tooltip="trans('Selling :quantity means the picker takes :quantity of a :packed_in-pack (SKO).', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
+                                    <span v-tooltip="ctrans('Selling :quantity means the picker takes :quantity of a :packed_in-pack (SKO).', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
                                         class="flex items-baseline gap-1 cursor-help">
-                                        <span>{{ trans('Picks') }}</span>
+                                        <span>{{ ctrans('Picks') }}</span>
                                         <span v-if="orgPicksSummary(item)" class="font-bold">{{ orgPicksSummary(item) }}</span>
                                         <span v-else class="font-bold">
                                             <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                         </span>
-                                        <span>{{ trans('SKO') }}</span>
+                                        <span>{{ ctrans('SKO') }}</span>
                                     </span>
                                     <button v-if="orgPackedInSummary(item)"
                                         type="button"
                                         @click.stop.prevent="openPackedInDialog(item)"
-                                        v-tooltip="trans('Edit how each warehouse packs this SKU')"
+                                        v-tooltip="ctrans('Edit how each warehouse packs this SKU')"
                                         class="rounded underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--app-accent)] hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
                                         :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-teal-600/70'">
                                         {{ orgPackedInSummary(item)!.label }}
                                     </button>
-                                    <span v-else class="text-teal-600/70">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
+                                    <span v-else class="text-teal-600/70">{{ ctrans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
                                 </div>
 
                                 </template>
@@ -491,7 +486,7 @@ defineExpose({
         </div>
 
         <!-- Dialog -->
-        <Dialog v-model:visible="showDialog" modal :header="trans('Select products')"
+        <Dialog v-model:visible="showDialog" modal :header="ctrans('Select products')"
             :style="{ width: '80vw', maxWidth: '1200px' }"
             :content-style="{ overflow: 'hidden', paddingLeft: '20px', paddingRight: '20px', }" @hide="$emit('close')">
 
@@ -517,11 +512,11 @@ defineExpose({
                             : 'text-gray-500 border-transparent hover:text-[var(--app-accent)] hover:border-[var(--app-accent-soft)]'
                         "
                     >
-                        {{ trans(tab.label) }}
+                        {{ ctrans(tab.label) }}
                     </button>
 
                     <label class="ml-auto flex items-center gap-2 py-2 text-sm text-gray-500">
-                        {{ trans("Hide out of stock") }}
+                        {{ ctrans("Hide out of stock") }}
                         <Toggle v-model="hideStockUnavailable" />
                     </label>
                 </div>
@@ -530,7 +525,7 @@ defineExpose({
                 <div class="mb-2">
                     <div v-if="tabs?.length && tabs[activeTab]?.search" class="mb-2">
                         <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
-                            :placeholder="trans('Input to search')" />
+                            :placeholder="ctrans('Input to search')" />
                     </div>
 
                 </div>
@@ -542,16 +537,16 @@ defineExpose({
                         <!-- header -->
                         <div class="flex justify-between items-center">
                             <div class="font-semibold text-lg py-1">
-                                {{ props.label_result ?? trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
+                                {{ props.label_result ?? ctrans("Result") }} ({{ locale?.number(meta?.total || 0) }})
                             </div>
                             <div class="flex items-center gap-4 text-sm">
                                 <button v-if="!isAllSelected && list.length" type="button" @click="selectAllProducts"
                                     class="text-[var(--app-accent)] underline-offset-2 hover:text-[var(--app-accent-strong)] hover:underline">
-                                    {{ trans("Select all :number on this page", { number: String(list.length) }) }}
+                                    {{ ctrans("Select all :number on this page", { number: String(list.length) }) }}
                                 </button>
                                 <button v-if="compSelectedProduct.length" type="button" @click="clearAll"
                                     class="text-gray-500 underline-offset-2 hover:text-red-600 hover:underline">
-                                    {{ trans('Clear :number selected', { number: String(compSelectedProduct.length) }) }}
+                                    {{ ctrans('Clear :number selected', { number: String(compSelectedProduct.length) }) }}
                                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                                 </button>
                             </div>
@@ -591,15 +586,15 @@ defineExpose({
                                                         imageCover
                                                         alt=""
                                                     />
-                                                    <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="text-gray-300 text-xl" fixed-width aria-hidden="true" />
+                                                    <FontAwesomeIcon v-else v-tooltip="ctrans('No image')" icon="fal fa-image" class="text-gray-300 text-xl" fixed-width aria-hidden="true" />
                                                 </div>
                                                 
                                                 <div class="flex flex-col justify-between w-full">
                                                     <div v-if="!item.no_code" class="font-semibold pr-6">
-                                                        {{ item.code || trans('No code') }}
+                                                        {{ item.code || ctrans('No code') }}
                                                     </div>
                                                     <div class="text-xs text-gray-600 leading-snug mb-1 line-clamp-2" :title="item.name">
-                                                        {{ item.name || trans('No name') }}
+                                                        {{ item.name || ctrans('No name') }}
                                                     </div>
                                                     <div v-if="item.reference" class="text-xs text-gray-400 italic">
                                                         {{ item.reference }}
@@ -611,7 +606,7 @@ defineExpose({
                                                     </div>
 
                                                     
-                                                    <div v-tooltip="trans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                                    <div v-tooltip="ctrans('Packed in :qty', { qty: item.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
                                                         <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
                                                         {{ item.packed_in }} [{{ item.type }}]
                                                     </div>
@@ -620,7 +615,7 @@ defineExpose({
                                         </div>
                                     </template>
                                     <div v-else class="text-center text-gray-500 col-span-3">
-                                        {{ trans("No products found") }}
+                                        {{ ctrans("No products found") }}
                                     </div>
                                 </template>
                                 <div v-else v-for="(item, index) in 6" :key="index"
@@ -636,17 +631,17 @@ defineExpose({
 
             <!-- footer -->
             <template #footer>
-                <Button type="secondary" @click="showDialog = false" :label="trans('Cancel')"></Button>
+                <Button type="secondary" @click="showDialog = false" :label="ctrans('Cancel')"></Button>
                 <Button type="create" @click="confirmSelection"
-                    :label="compSelectedProduct.length ? trans('Select :number', { number: String(compSelectedProduct.length) }) : trans('Select')"></Button>
+                    :label="compSelectedProduct.length ? ctrans('Select :number', { number: String(compSelectedProduct.length) }) : ctrans('Select')"></Button>
             </template>
         </Dialog>
 
         <!-- Dialog: per-organisation warehouse packing (OS-TU) -->
         <Dialog :visible="!!packedInDialogItem" @update:visible="(open: boolean) => { if (!open) packedInDialogItem = null }"
-            modal :style="{ width: '26rem' }" :header="trans('Warehouse packing') + (packedInDialogItem ? ` — ${packedInDialogItem.code}` : '')">
+            modal :style="{ width: '26rem' }" :header="ctrans('Warehouse packing') + (packedInDialogItem ? ` — ${packedInDialogItem.code}` : '')">
             <div class="text-xs text-gray-500 mb-3">
-                {{ trans('How each warehouse physically packs this SKU. This is the picking reality: changing it re-syncs product picking and open delivery notes for that organisation only.') }}
+                {{ ctrans('How each warehouse physically packs this SKU. This is the picking reality: changing it re-syncs product picking and open delivery notes for that organisation only.') }}
             </div>
             <div class="flex flex-col gap-2">
                 <div v-for="edit in packedInEdits" :key="edit.org_stock_id" class="flex items-center gap-3">
@@ -655,7 +650,7 @@ defineExpose({
                         :modelValue="edit.packed_in" :bindToTarget="{ min: 1 }"
                         @update:modelValue="(val: number) => edit.packed_in = val"
                         noUndoButton noSaveButton parentClass="w-min" />
-                    <span class="text-xs text-gray-400">{{ trans('per pack') }}</span>
+                    <span class="text-xs text-gray-400">{{ ctrans('per pack') }}</span>
                 </div>
             </div>
             <template #footer>

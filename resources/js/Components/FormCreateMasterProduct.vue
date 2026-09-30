@@ -179,7 +179,6 @@ const getTableData = (data) => {
                 { signal: abortController.signal }
             )
 
-            console.log("Response data:", response.data)
             for (const item of response.data.shops) {
                 const index = tableData.value.data.findIndex((row: any) => row.id == item.id)
                 if (index !== -1) {
@@ -336,7 +335,6 @@ const submitForm = async (redirect = true) => {
         }
     }
 
-    console.log("Payload to submit:", payload)
     try {
         const response = await axios.post(
             route(props.storeProductRoute.name, props.storeProductRoute.parameters),
@@ -358,7 +356,6 @@ const submitForm = async (redirect = true) => {
             notify({ title: ctrans("success"), text: "success to create product", type: "success" })
         }
     } catch (error: any) {
-        console.log("Error response:", error.response)
         if (error.response && error.response.status === 422) {
             form.errors = error.response.data.errors || {}
             if (form.errors.code || form.errors.unit || form.errors.name) {

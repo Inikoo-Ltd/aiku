@@ -68,6 +68,11 @@ const weightComparison = computed(() => {
     return `${emoji} ${ctrans('about the weight of :thing', { thing: label })}`
 })
 
+const inputNumberBind = computed(() => {
+    const bind = props.fieldData?.bind as Record<string, unknown> | undefined
+    return bind?.step === undefined ? bind : { ...bind, step: Number(bind.step) }
+})
+
 </script>
 <template>
     <div class="relative">
@@ -78,7 +83,7 @@ const weightComparison = computed(() => {
                 inputId="horizontal-buttons"
                 :minFractionDigits="0"
                 :maxFractionDigits="2"
-                v-bind="fieldData?.bind"
+                v-bind="inputNumberBind"
                 showButtons
             >
                 <!--                <template #incrementbuttonicon>

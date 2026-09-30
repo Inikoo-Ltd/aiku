@@ -12,13 +12,13 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import Icon from "@/Components/Icon.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChair, faHandPaper, faBoxCheck} from "@fal";
+import { faChair, faHandPaper, faBoxCheck, faStream, faWarehouseAlt} from "@fal";
 import { computed, ref, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import type { Tabs as TSTabs } from "@/types/Tabs";
 
-library.add(faChair, faHandPaper, faBoxCheck);
+library.add(faChair, faHandPaper, faBoxCheck, faStream, faWarehouseAlt);
 
 const props = defineProps<{
   data: any
@@ -88,7 +88,7 @@ function referenceRoute(item: any) {
       </Link>
       <FontAwesomeIcon
         v-if="item.is_waiting_ready"
-        v-tooltip="trans('Waiting items picked, ready to continue')"
+        v-tooltip="ctrans('Waiting items picked, ready to continue')"
         icon="fal fa-box-check"
         class="ml-2 text-green-500 animate-pulse"
         fixed-width

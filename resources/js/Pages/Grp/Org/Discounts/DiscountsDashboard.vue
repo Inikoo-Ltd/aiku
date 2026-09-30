@@ -7,10 +7,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue";
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue";
-import { faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faSortAmountUp, faHandHoldingUsd } from "@fal";
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faSortAmountUp, faHandHoldingUsd, faChartNetwork } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faSortAmountUp, faHandHoldingUsd);
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faSortAmountUp, faHandHoldingUsd, faChartNetwork);
 
 const props = defineProps<{
     title: string;
@@ -19,21 +19,6 @@ const props = defineProps<{
     settings: any;
     tabs: TSTabs;
     blocks: any;
-    stats: {
-        label: string
-        count: number
-        icon: string
-    }[];
-    first_order_bonus: {
-        name: string
-        state: string
-        status: string
-        trigger_data: {
-            min_amount: number
-            order_number: 1
-        }
-        duration: string  // 'permanent'
-    }[]
     data: {
         currency: {
             code: string
@@ -42,7 +27,6 @@ const props = defineProps<{
 }>();
 
 
-console.log("Discounts Dashboard Props: ", props);
 </script>
 
 <template>

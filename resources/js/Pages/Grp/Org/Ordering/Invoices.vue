@@ -7,6 +7,10 @@ import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import type { PageHeadingTypes } from "@/types/PageHeading"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faFileInvoiceDollar, faBars } from "@fal"
+import { faExclamationCircle } from "@fas"
+library.add(faFileInvoiceDollar, faBars, faExclamationCircle)
 
 type InvoiceTab = "all" | "paid" | "unpaid"
 

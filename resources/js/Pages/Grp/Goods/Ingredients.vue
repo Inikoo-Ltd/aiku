@@ -10,6 +10,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import TableIngredients from "@/Components/Tables/Grp/Goods/TableIngredients.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faAppleCrate } from "@fal"
+library.add(faAppleCrate)
 
 defineProps<{
   data: object

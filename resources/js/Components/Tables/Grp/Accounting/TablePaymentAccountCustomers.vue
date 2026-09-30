@@ -15,7 +15,6 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 const locale = inject('locale', aikuLocaleStructure)
 
 function paymentServiceProviderRoute(paymentServiceAccount: PaymentServiceProvider) {
-    console.log(route().current())
     switch (route().current()) {
         case 'grp.org.accounting.org_payment_service_providers.index':
             return route(

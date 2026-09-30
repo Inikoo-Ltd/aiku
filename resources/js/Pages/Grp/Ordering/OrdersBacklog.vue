@@ -5,20 +5,20 @@
   -->
 <script setup lang="ts">
 import { Head, usePage, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen, faAppleCrate } from '@fal'
 import { useTabChange, useCurrentTab } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue'
 import { computed } from 'vue'
 
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen)
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen, faAppleCrate)
 
 const props = defineProps<{
     title: string
@@ -94,13 +94,13 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
     <PageHeading :data="pageHead"></PageHeading>
 
     <div v-if="hasDateFilter" class="px-4 pt-2 text-xs text-gray-500">
-        {{ trans("Current backlog") }}
+        {{ ctrans("Current backlog") }}
     </div>
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>
     <div v-if="scope_filter" class="mx-4 mt-3 flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
-        <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Destination") }}</span>
+        <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Destination") }}</span>
         <button
             v-for="scope in (['domestic', 'export'] as const)"
             :key="scope"
@@ -110,10 +110,10 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
                 ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
                 : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
             @click="setScope(scope)">
-            <span>{{ scope === 'domestic' ? trans('Domestic') : trans('Export') }}</span>
+            <span>{{ scope === 'domestic' ? ctrans('Domestic') : ctrans('Export') }}</span>
             <span class="rounded-full px-1.5 text-xs tabular-nums" :class="scope_filter.current === scope ? 'bg-white/20' : 'bg-white text-gray-500'">{{ scope_filter.counts[scope] }}</span>
         </button>
-        <button v-if="scope_filter.current" type="button" class="ml-2 text-xs text-gray-400 hover:text-gray-600" @click="setScope(scope_filter.current)">× {{ trans("Clear") }}</button>
+        <button v-if="scope_filter.current" type="button" class="ml-2 text-xs text-gray-400 hover:text-gray-600" @click="setScope(scope_filter.current)">× {{ ctrans("Clear") }}</button>
     </div>
     <!-- <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders> -->
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>

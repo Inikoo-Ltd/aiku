@@ -7,7 +7,7 @@ import { faEdit, faSave, faSignOutAlt } from "@fortawesome/free-solid-svg-icons"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faPlus } from "@far"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -29,7 +29,6 @@ const subscriberList = ref([...props.widget])
 // Inject global locale and layout stores
 const locale = inject("locale", aikuLocaleStructure)
 const layoutStore = inject("layout", layoutStructure)
-console.log('vvvv', layoutStore)
 const confirm = useConfirm()
 
 // Track edit mode, modal visibility, and unsaved changes
@@ -82,7 +81,6 @@ const addExternalEmail = () => {
 
 const deleteWidgetItem = (item: any, index: number) => {
 	const subscriber_id = item.subscriber_id
-	console.log(item, index)
 	const routeToDelete = {
 		name: "grp.models.outboxes.subscriber.delete",
 		parameters: [route().params["outbox"], subscriber_id],
@@ -91,8 +89,8 @@ const deleteWidgetItem = (item: any, index: number) => {
 		preserveScroll: true,
 		onSuccess: () => {
 			notify({
-				title: trans("Success"),
-				text: trans("Successful Delete"),
+				title: ctrans("Success"),
+				text: ctrans("Successful Delete"),
 				type: "success",
 			})
 			// Remove the deleted item from the reactive copy
@@ -129,8 +127,6 @@ const saveChanges = () => {
 		name: "grp.models.outboxes.subscriber.store",
 		parameters: [route().params["outbox"]],
 	}
-    console.log("test->",route(routeToSubmit.name, routeToSubmit.parameters))
-	console.log(payload, "payload to submit")
 	router.post(route(routeToSubmit.name, routeToSubmit.parameters), payload, {
 		preserveScroll: true,
 		onStart: () => {
@@ -141,8 +137,8 @@ const saveChanges = () => {
 			subscriberList.value = page.props.showcase.outbox_subscribe.data
 			
 			notify({
-				title: trans("Success"),
-				text: trans("Successfully attach"),
+				title: ctrans("Success"),
+				text: ctrans("Successfully attach"),
 				type: "success",
 			})
 			newUserInputs.value = []
@@ -152,8 +148,8 @@ const saveChanges = () => {
 		},
 		onError: (errors: any) => {
 			notify({
-				title: trans("Something went wrong."),
-				text: trans(errors["external_emails.0"] || errors.users_id),
+				title: ctrans("Something went wrong."),
+				text: ctrans(errors["external_emails.0"] || errors.users_id),
 				type: "error",
 			})
 		},
@@ -190,8 +186,8 @@ const addMySelfAsSubscriber = () => {
 				subscriberList.value = page.props.showcase.outbox_subscribe.data
 				
 				notify({
-					title: trans("Success"),
-					text: trans("Successfully add yourself as subscriber"),
+					title: ctrans("Success"),
+					text: ctrans("Successfully add yourself as subscriber"),
 					type: "success",
 				})
 				newUserInputs.value = []
@@ -202,8 +198,8 @@ const addMySelfAsSubscriber = () => {
 			onError: (errors: any) => {
 				console.error('error add my self:', errors)
 				notify({
-					title: trans("Something went wrong."),
-					text: trans("Failed to add yourself as subscriber"),
+					title: ctrans("Something went wrong."),
+					text: ctrans("Failed to add yourself as subscriber"),
 					type: "error",
 				})
 			},
@@ -248,7 +244,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 		<div class="rounded-lg bg-white shadow border border-gray-200 md:col-span-3">
 			<!-- Card Header -->
 			<div class="px-4 py-5 flex items-center justify-between">
-				<dt class="text-lg font-semibold text-gray-500">{{ trans("Subscriber") }}</dt>
+				<dt class="text-lg font-semibold text-gray-500">{{ ctrans("Subscriber") }}</dt>
 				<FontAwesomeIcon
 					:icon="faEdit"
 					class="text-blue-500 cursor-pointer"
@@ -266,10 +262,10 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 							<span class="italic opacity-70">
 								<template v-if="item.email"> ({{ item.email }}) </template>
 								<template v-else>
-									(<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 mr-1" fixed-width /> {{ trans("no email set") }})
+									(<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 mr-1" fixed-width /> {{ ctrans("no email set") }})
 								</template>
 							</span>
-							<span v-if="item.user_id == layoutStore.user.id" class="text-indigo-500 text-sm">({{ trans("You") }})</span>
+							<span v-if="item.user_id == layoutStore.user.id" class="text-indigo-500 text-sm">({{ ctrans("You") }})</span>
 						</div>
 					</template>
 
@@ -279,7 +275,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 						</span>
 						<Tag noHoverColor>
 							<template #label>
-								<span class="whitespace-nowrap">{{trans('External email')}}</span>
+								<span class="whitespace-nowrap">{{ctrans('External email')}}</span>
 							</template>
 						</Tag>
 
@@ -287,7 +283,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 
 				</div>
 				<div v-if="!hasSubscriptions" class="mt-2">
-					<p class="text-gray-600 italic">{{trans('Nobody has subscribed yet')}}</p>
+					<p class="text-gray-600 italic">{{ctrans('Nobody has subscribed yet')}}</p>
 				</div>
 			</div>
 		</div>
@@ -339,7 +335,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 						<PureMultiselectInfiniteScroll
 							v-model="formAddUser.user_id"
 							:fetchRoute="routeIndexUser"
-							:placeholder="trans('Select User')"
+							:placeholder="ctrans('Select User')"
 							valueProp="id"
 							@optionsList="(options) => (dataUserList = options)">
 							<template #singlelabel="{ value }">
@@ -359,10 +355,10 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 							</template>
 				
 							<template #option="{ option }">
-								<div v-tooltip="option.disabled ? trans('User has no associated email') : ''" class="w-full">
+								<div v-tooltip="option.disabled ? ctrans('User has no associated email') : ''" class="w-full">
 									{{ option.username }}
 									<span class="text-sm" >| {{ useTruncate(option.contact_name, 11) }}</span>
-									<span v-if="option.disabled" class="text-sm italic opacity-70" > ({{ trans("No email") }})</span>
+									<span v-if="option.disabled" class="text-sm italic opacity-70" > ({{ ctrans("No email") }})</span>
 									<span v-else class="text-sm opacity-70" > ({{ option.email }})</span>
 								</div>
 							</template>
@@ -377,7 +373,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 				</div>
 
 				<div v-if="!subscriberList.some(item => item.user_id === layoutStore.user.id)" @click="() => addMySelfAsSubscriber()" class="text-xs text-gray-400 mt-1 underline hover:text-gray-700 cursor-pointer w-fit">
-					{{ trans("Add myself as subscriber (:email)", { email: layoutStore.user.email }) }}
+					{{ ctrans("Add myself as subscriber (:email)", { email: layoutStore.user.email }) }}
 				</div>
 			</div>
 

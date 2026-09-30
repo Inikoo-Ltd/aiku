@@ -311,7 +311,6 @@ const onNoStructureUpload = () => {
     })
 }
 
-console.log('basket ds', props)
 
 const isLoadingPriorityDispatch = ref(false)
 const onChangePriorityDispatch = async (val: boolean) => {

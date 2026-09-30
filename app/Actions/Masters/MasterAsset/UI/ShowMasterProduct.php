@@ -272,7 +272,7 @@ class ShowMasterProduct extends OrgAction
                         'masterProduct' => $masterAsset->slug,
                     ]
                 ] : null),
-                'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
+                'trade_unit_slug'      => $masterAsset->tradeUnits->first()?->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
                     'navigation' => $navigation

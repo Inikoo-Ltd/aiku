@@ -13,6 +13,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faIndustry } from "@fal"
+library.add(faIndustry)
 
 interface FloorStep {
     id: number

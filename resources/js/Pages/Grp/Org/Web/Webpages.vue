@@ -9,13 +9,13 @@ import { Head, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload, faSkull } from '@fal'
+import { faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload, faSkull, faStream, faCodeBranch } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Popover from '@/Components/Popover.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { get } from 'lodash-es'
@@ -26,7 +26,7 @@ import { routeType } from '@/types/route'
 import { ulid } from 'ulid'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
-library.add(faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload)
+library.add(faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload, faStream, faCodeBranch)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -63,8 +63,8 @@ const onSubmitCreateWebpageProduct = (closedPopover: Function) => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans('Something went wrong.'),
-                    text: trans('Failed to create product webpage, please try again.'),
+                    title: ctrans('Something went wrong.'),
+                    text: ctrans('Failed to create product webpage, please try again.'),
                     type: 'error',
                 })
             },
@@ -98,20 +98,20 @@ const resetSelection = () => {
             <div class="relative">
                 <Popover>
                     <template #button="{ open }">
-                        <Button :label="trans('Product Webpage')" icon="fas fa-plus">
+                        <Button :label="ctrans('Product Webpage')" icon="fas fa-plus">
 
                         </Button>
                     </template>
 
                     <template #content="{ close: closed }">
                         <div class="w-[300px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Select product:') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Select product:') }}: </span>
                             <div class="">
 
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddWebpageProduct.product_id"
                                     :fetchRoute="props.routes_list.fetch_products_without_webpage"
-                                    :placeholder="trans('Select product')"
+                                    :placeholder="ctrans('Select product')"
                                     valueProp="id"
                                     aoptionsList="(options) => dataServiceList = options">
                                     <template #singlelabel="{ value }">
@@ -145,7 +145,7 @@ const resetSelection = () => {
                                     :style="'save'"
                                     :loading="isLoadingData"
                                     :disabled="!formAddWebpageProduct.product_id"
-                                    :label="trans('Create')" full />
+                                    :label="ctrans('Create')" full />
                             </div>
 
                             <!-- Loading: fetching service list -->
@@ -311,7 +311,7 @@ const resetSelection = () => {
                                     excluded_list: selectedWebpagesList
                                 }
                             }"
-                            :placeholder="trans('Select Redirect')"
+                            :placeholder="ctrans('Select Redirect')"
                             :required="true"
                             valueProp="id"
                             labelProp="url"

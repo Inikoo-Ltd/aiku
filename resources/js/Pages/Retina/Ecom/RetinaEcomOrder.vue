@@ -119,7 +119,6 @@ const component = computed(() => {
 })
 
 const locale = inject("locale", aikuLocaleStructure)
-console.log("DS Orders", props)
 
 
 const noteToSubmit = ref(props?.data?.data?.customer_notes || "")

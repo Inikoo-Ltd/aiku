@@ -15,7 +15,7 @@ import { inject } from "vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { RouteParams } from "@/types/route-params";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
@@ -35,7 +35,6 @@ const props = defineProps<{
 const locale = inject("locale", null);
 
 function orderRoute(order) {
-  console.log(route().current());
   switch (route().current()) {
     case "retina.dropshipping.orders.index":
       return route(
@@ -82,17 +81,17 @@ function clientRoute(order) {
           {{ item["reference"] }}
         </Link>
         <span class="whitespace-nowrap text-yellow-500">
-          <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="" fixed-width aria-hidden="true" />
-          <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="" fixed-width aria-hidden="true" />
-          <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
         </span>
         <div
           v-if="!(item.payment_amount >= item.total_amount) && (item.state && item.state != 'cancelled')"
           class="cursor-default text-xs text-red-500 italic bg-red-100 px-1.5 py-0.5 w-fit rounded-sm mt-0.5 border border-red-300"
-          v-tooltip="trans('If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment') + '.'"
+          v-tooltip="ctrans('If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment') + '.'"
         >
           <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-          {{ trans("Unpaid") }}
+          {{ ctrans("Unpaid") }}
         </div>
       </template>
 
@@ -127,7 +126,7 @@ function clientRoute(order) {
           <Icon :data="order['type_icon']" class="px-1" />
           <TagPallet :stateIcon="order.state_icon" /> 
           <!-- To display if order have missing items / items that are not picked -->
-          <FontAwesomeIcon v-if="order.has_modified" :icon="faCircleExclamation" class="ms-2 text-yellow-500 text-lg" v-tooltip="trans('Some items in the order are not being dispatched/picked. Excessive payments have already been automatically refunded')" fixed-width/>
+          <FontAwesomeIcon v-if="order.has_modified" :icon="faCircleExclamation" class="ms-2 text-yellow-500 text-lg" v-tooltip="ctrans('Some items in the order are not being dispatched/picked. Excessive payments have already been automatically refunded')" fixed-width/>
         </div>
       </template>
 
@@ -145,17 +144,17 @@ function clientRoute(order) {
         <ModalConfirmationDelete
             v-if="order.delete_route"
             :routeDelete="order.delete_route"
-            :title="trans('Are you sure you want to delete this order?')"
+            :title="ctrans('Are you sure you want to delete this order?')"
             isFullLoading
         >
             <template #default="{ isOpenModal, changeModel }">
                 <div class="w-fit mx-auto">
                   <Button
-                      v-tooltip="trans('Delete basket')"
+                      v-tooltip="ctrans('Delete basket')"
                       @click="() => changeModel()"
                       type="negative"
                       icon="fal fa-trash-alt"
-                      :label="trans('Delete')"
+                      :label="ctrans('Delete')"
                       size="s"
                       :key="1"
                   />

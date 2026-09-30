@@ -510,7 +510,7 @@ class ShowProduct extends OrgAction
                         'product'      => $product->slug,
                     ]
                 ] : null),
-                'trade_unit_slug'           => $product->tradeUnits?->first->slug,
+                'trade_unit_slug'           => $product->tradeUnits->first()?->slug,
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,

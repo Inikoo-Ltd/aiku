@@ -415,7 +415,6 @@ const setError = (e) => {
 										:method="button.route?.method || 'get'"
 										@start="() => (isButtonLoading = 'buttonGroup' + index)"
 										@error="(err) => {
-											console.log(err);
 											let msg = ctrans('Error processing action.\n')
 											Object.entries(err).forEach(([key, value]) => {
 												msg += value + '. \n'

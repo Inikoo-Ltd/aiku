@@ -13,13 +13,13 @@ import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSetti
 import { capitalize } from "@/Composables/capitalize"
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {
-  faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faCoins,
+  faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faCoins, faChartNetwork, faBars, faPiggyBank
 } from '@fal';
 defineProps(['title', 'pageHead', 'flatTreeMaps', 'payment_methods', 'intervals', 'settings']);
 
 
 
-library.add(faCoins, faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar);
+library.add(faCoins, faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faChartNetwork, faBars, faPiggyBank);
 
 </script>
 

@@ -9,13 +9,13 @@ import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faHatChef, faUserHardHat } from "@fal"
+import { faHatChef, faUserHardHat, faChartNetwork } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faHatChef, faUserHardHat)
+library.add(faHatChef, faUserHardHat, faChartNetwork)
 
 const props = defineProps<{
     title: string
@@ -52,15 +52,15 @@ function initials(name: string) {
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-lg font-semibold">
                     <FontAwesomeIcon :icon="['fal', 'user-hard-hat']" fixed-width class="text-gray-400 mr-1" />
-                    {{ trans('Roster') }}
+                    {{ ctrans('Roster') }}
                 </h2>
                 <Link :href="route(floor_route.name, floor_route.parameters)" class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-1.5 transition duration-200 hover:bg-[--app-accent-strong]">
-                    {{ trans('Open manufacture floor') }}
+                    {{ ctrans('Open manufacture floor') }}
                 </Link>
             </div>
 
             <div v-if="!artisans.length" class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-lg">
-                {{ trans('No artisans in this factory yet') }}
+                {{ ctrans('No artisans in this factory yet') }}
             </div>
             <div v-for="artisan in artisans" :key="artisan.id"
                 class="mb-2 rounded-lg border px-4 py-2 flex items-center justify-between gap-3 text-sm"
@@ -72,19 +72,19 @@ function initials(name: string) {
                 </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
                     <template v-if="artisan.queued || artisan.assigned">
-                        <Link v-if="artisan.working_now" :href="route(floor_route.name, floor_route.parameters)" class="hover:underline">{{ trans('working') }} · </Link>
-                        <Link v-if="artisan.assigned" :href="jobOrdersHref(artisan.id, 'in_process')" class="hover:underline">{{ artisan.assigned }} {{ trans('assigned') }}</Link>
+                        <Link v-if="artisan.working_now" :href="route(floor_route.name, floor_route.parameters)" class="hover:underline">{{ ctrans('working') }} · </Link>
+                        <Link v-if="artisan.assigned" :href="jobOrdersHref(artisan.id, 'in_process')" class="hover:underline">{{ artisan.assigned }} {{ ctrans('assigned') }}</Link>
                         <span v-if="artisan.assigned && artisan.queued"> · </span>
-                        <Link v-if="artisan.queued" :href="jobOrdersHref(artisan.id, 'confirmed')" class="hover:underline">{{ artisan.queued }} {{ trans('on floor') }}</Link>
+                        <Link v-if="artisan.queued" :href="jobOrdersHref(artisan.id, 'confirmed')" class="hover:underline">{{ artisan.queued }} {{ ctrans('on floor') }}</Link>
                     </template>
-                    <template v-else>{{ trans('nothing queued') }}</template>
+                    <template v-else>{{ ctrans('nothing queued') }}</template>
                 </span>
             </div>
         </div>
 
         <div>
             <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-[--app-accent-strong] hover:underline">
-                {{ trans('View performance by artisan') }}
+                {{ ctrans('View performance by artisan') }}
             </Link>
         </div>
     </div>

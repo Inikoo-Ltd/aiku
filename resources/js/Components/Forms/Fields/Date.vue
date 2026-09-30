@@ -33,7 +33,6 @@ const props = defineProps<{
 const _datePicker: any = ref(null)
 
 
-console.log('Picker Props: ', props.fieldName, props);
 
 </script>
 

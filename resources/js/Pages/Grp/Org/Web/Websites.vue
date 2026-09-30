@@ -15,7 +15,6 @@ const props = defineProps <{
     title: string
     data:object
 }>()
-console.log(props.pageHead)
 </script>
 
 <template>

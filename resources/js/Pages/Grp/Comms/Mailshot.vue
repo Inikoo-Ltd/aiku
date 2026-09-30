@@ -209,7 +209,6 @@ const handleSendNow = async () => {
 
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -284,7 +283,6 @@ const confirmSchedule = async () => {
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -398,7 +396,6 @@ const handleDelete = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -454,7 +451,6 @@ const handleCancelSchedule = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',

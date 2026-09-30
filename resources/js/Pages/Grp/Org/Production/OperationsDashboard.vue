@@ -10,7 +10,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import ManufactureWorkingCard from "@/Components/ManufactureWorkingCard.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSeedling, faThumbsDown, faUserHardHat, faTasks, faHandshake, faInventory } from "@fal";
+import { faSeedling, faThumbsDown, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes } from "@fal";
 import { faCheckCircle, faTimesCircle, faPauseCircle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
@@ -20,7 +20,7 @@ import { useLocaleStore } from "@/Stores/locale";
 
 import { PageHeadingTypes } from "@/types/PageHeading";
 
-library.add(faSeedling, faThumbsDown, faTimesCircle, faPauseCircle, faCheckCircle, faUserHardHat, faTasks, faHandshake, faInventory);
+library.add(faSeedling, faThumbsDown, faTimesCircle, faPauseCircle, faCheckCircle, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes);
 
 interface QueueTask {
     id: number

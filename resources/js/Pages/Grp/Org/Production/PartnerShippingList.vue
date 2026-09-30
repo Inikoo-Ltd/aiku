@@ -18,12 +18,12 @@ import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag } from "@fal"
+import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
 
-library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding)
 
 type PublishedLabel = { id: number, name: string, run_sources: string[], pdf_url: string }
 

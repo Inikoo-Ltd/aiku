@@ -10,7 +10,7 @@ library.add(faExclamationTriangle, faCheck)
 const props = defineProps<{
     form?: any
     fieldName: any
-    options: string[] | object
+    options?: string[] | object
     fieldData?: {
         placeholder?: string
         required?: boolean

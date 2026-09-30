@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faCube, faLink,  } from "@fal"
-import { faHeart as  faFilePdf, faFileDownload } from "@fas"
+import { faHeart as  faFilePdf, faFileDownload, faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, computed } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getBestOffer } from "@/Composables/useOffers"
 
-library.add(faCube, faLink, faFilePdf, faFileDownload)
+library.add(faCube, faLink, faFilePdf, faFileDownload, faCircle)
 
 const props = defineProps<{
     product: {
@@ -28,17 +29,17 @@ const bestOffer = computed(() => {
 
     <div class="grid grid-cols-5">
         <div class="col-span-3 space-y-1.5 flex items-end w-full">
-            <div class="border-b border-gray-300 pb-1 w-full">{{ trans("Price") }} ({{ trans("Excl. Tax") }})</div>
+            <div class="border-b border-gray-300 pb-1 w-full">{{ ctrans("Price") }} ({{ ctrans("Excl. Tax") }})</div>
 
         </div>
 
         <div v-if="product?.rrp_per_unit > 0" class="col-span-2 text-right space-y-1.5">
             <div class="border-b border-gray-300 pb-1">
-                <span v-tooltip="trans('Recommended Retail Price')" class="inline-block">{{ trans("RRP") }}
+                <span v-tooltip="ctrans('Recommended Retail Price')" class="inline-block">{{ ctrans("RRP") }}
 
                    <!--  <span class="whitespace-nowrap ml-1 bg-gray-300 border border-gray-400 px-1 py-0.5 rounded-full text-xxs align-middle inline">
                         <FontAwesomeIcon icon="fas fa-circle" class="text-white text-xs" fixed-width aria-hidden="true" />
-                        {{ trans("Excl. Tax") }}
+                        {{ ctrans("Excl. Tax") }}
                     </span> -->
                 </span>
             </div>

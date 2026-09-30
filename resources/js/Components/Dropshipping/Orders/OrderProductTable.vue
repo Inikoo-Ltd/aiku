@@ -205,8 +205,6 @@ async function onSave() {
         return
     }
 
-    console.log("🟢 changedItems:", changedItems)
-    console.log("🟡 newProducts:", newProducts)
 
     router.patch(
         route(props.modifyRoute.name, props.modifyRoute.parameters),
@@ -415,9 +413,7 @@ const restoreDiscount = (item) => {
 
 const onSubmitEditNetAmount = () => {
 
-    console.log("ccc", selectedItemToEditNetAmount.value)
     if (!selectedItemToEditNetAmount.value) {
-        console.log("No item net amount selected")
         return
     }
 
@@ -694,7 +690,7 @@ const isOffersData = (offersData: any): boolean => {
                                     (createNewQty[item.id].quantity_ordered_fractional[0] * createNewQty[item.id].quantity_ordered_fractional[1][1]) + createNewQty[item.id].quantity_ordered_fractional[1][0]
                                 ) : createNewQty[item.id].quantity_ordered"
                                 @update:modelValue="(e: number) => {
-                                    createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])
+                                    createNewQty[item.id].amount_modified = e
                                 }"
                                 inputId="horizontal-buttons" 
                                 showButtons 

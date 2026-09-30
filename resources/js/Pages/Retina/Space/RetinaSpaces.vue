@@ -27,7 +27,6 @@ defineProps<{
 const locale = useLocaleStore()
 
 function spaceRoute(space) {
-    console.log(space)
     switch (route().current()) {
         case "grp.org.fulfilments.show.crm.customers.show.spaces.index":
             return route("grp.org.fulfilments.show.crm.customers.show.spaces.show", [

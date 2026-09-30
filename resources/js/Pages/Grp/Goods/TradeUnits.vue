@@ -86,7 +86,7 @@ const addTradeUnit = () => {
                 modalVisible.value = false;
             },
             onError: (errors) => {
-                console.log(errors);
+                console.error(errors);
             },
             onFinish : () => {loading.value = false}
         }

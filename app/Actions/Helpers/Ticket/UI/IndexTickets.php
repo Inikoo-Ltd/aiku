@@ -414,6 +414,7 @@ class IndexTickets extends OrgAction
                 'listTip'          => $this->listTip(),
                 'listTipTitle'     => $this->listTipTitle(),
                 'listSummary'      => $this->listSummary(),
+                'searchHelp'       => ApplyTicketSearch::HELP,
             ]
         )->table($this->tableStructure($this->group));
     }

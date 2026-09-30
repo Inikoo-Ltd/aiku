@@ -119,7 +119,6 @@ const fetchCreationData = async () => {
                 }
             }
         }
-        console.log('product_creation_data', response.data )
         currencies_data.value = response.data.currencies
         form.master_prices = response.data.master_prices
         form.master_rrps = response.data.master_rrps

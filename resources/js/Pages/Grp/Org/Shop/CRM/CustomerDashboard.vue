@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors, BarElement, CategoryScale, LinearScale } from "chart.js";
 import { Pie, Bar } from "vue-chartjs";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle, faEnvelope } from "@fal";
+import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle, faEnvelope, faCircleNotch } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useLocaleStore } from "@/Stores/locale";
 import { capitalize } from "@/Composables/capitalize";
@@ -11,8 +11,9 @@ import { computed, onMounted, onUnmounted, provide, ref } from "vue";
 import { Link, router } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
+import { faExclamationCircle } from "@fas"
 
-library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle, faEnvelope);
+library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle, faEnvelope, faCircleNotch, faExclamationCircle);
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors, BarElement, CategoryScale, LinearScale);
 
@@ -175,7 +176,7 @@ const buildBarOptions = (group: SegmentGroup) => ({
 					return `${context.dataset.label}: ${context.parsed.x} customers`
 				},
 				afterBody: function () {
-					return trans('Click to list these customers')
+					return ctrans('Click to list these customers')
 				}
 			}
 		}
@@ -210,14 +211,14 @@ const chartData = (type: 'recency' | 'frequency' | 'monetary', currentColor: str
 		labels: segments,
 		datasets: [
 			{
-				label: trans('End of period'),
+				label: ctrans('End of period'),
 				data: segments.map(segment => currentData[segment] || 0),
 				backgroundColor: currentColor,
 				borderWidth: 1,
 				borderRadius: 4,
 			},
 			{
-				label: trans('Start of period'),
+				label: ctrans('Start of period'),
 				data: segments.map(segment => previousData[segment] || 0),
 				backgroundColor: previousColor,
 				borderWidth: 1,
@@ -237,7 +238,7 @@ const monetaryBarOptions = computed(() => buildBarOptions(props.data.segments.mo
 
 const formatDate = (date: string | null) => {
 	if (!date) {
-		return trans('no data');
+		return ctrans('no data');
 	}
 
 	return new Date(date).toLocaleDateString('en-US', {
@@ -306,7 +307,7 @@ const isLoadingVisit = ref<number | null>(null)
 							<div class="flex gap-x-2 items-end">
 								{{ locale.number(customerStats.count) }}
 								<span class="text-sm font-medium leading-4 text-gray-500">
-                                {{ trans("in total") }}
+                                {{ ctrans("in total") }}
                             </span>
 							</div>
 
@@ -372,7 +373,7 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ trans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
+						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
@@ -407,7 +408,7 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ trans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
+						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
@@ -442,14 +443,14 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ trans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
+						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div v-if="data.newsletterRevenue" class="mt-4 border-t border-gray-100 pt-3">
 						<div class="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
 							<span class="flex items-center gap-1">
 								<FontAwesomeIcon :icon="['fal', 'envelope']" class="text-purple-400" fixed-width />
-								{{ trans('Newsletter revenue') }}
+								{{ ctrans('Newsletter revenue') }}
 							</span>
 							<span class="font-semibold text-gray-700">
 								{{ locale.currencyFormat(data.newsletterRevenue.currency, totalNewsletterRevenue) }}
@@ -488,8 +489,8 @@ const isLoadingVisit = ref<number | null>(null)
 			</div>
 
 			<p v-if="data.segments && !data.comparison.current.is_live" class="mt-3 text-xs text-gray-500">
-				{{ trans('Counts taken from the snapshot on') }} {{ currentDate }}.
-				{{ trans('Customer tags only reflect today, so you can open a segment customer list from a period that ends today.') }}
+				{{ ctrans('Counts taken from the snapshot on') }} {{ currentDate }}.
+				{{ ctrans('Customer tags only reflect today, so you can open a segment customer list from a period that ends today.') }}
 			</p>
 		</div>
 	</div>

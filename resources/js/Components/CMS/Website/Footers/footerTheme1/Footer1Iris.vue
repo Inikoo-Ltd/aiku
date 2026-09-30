@@ -52,7 +52,6 @@ const onSubmitSubscribe = async () => {
 
 
     if (!layout?.iris?.website?.id) {
-        console.log('--1')
         setTimeout(() => {
             inputEmail.value = ""
             currentState.value = 'success'

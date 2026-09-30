@@ -981,3 +981,23 @@ test('a product takes the tags of the trade units it is made of', function () {
     SyncProductTradeUnits::run($this->product->refresh(), [['id' => $this->plug->id, 'quantity' => 1]]);
     expect($this->product->refresh()->tags->pluck('id'))->toContain($tag->id);
 });
+
+test('product and master product pages send the slug of their trade unit', function () {
+    $tradeUnitSlugs = [$this->bottle->refresh()->slug, $this->plug->refresh()->slug];
+    $isTradeUnitSlug = fn ($slug) => in_array($slug, $tradeUnitSlugs, true);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->product->shop->slug,
+        $this->product->refresh()->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('trade_unit_slug', $isTradeUnitSlug)
+        ->etc());
+
+    get(route('grp.masters.master_shops.show.master_products.show', [
+        $this->masterAsset->masterShop->slug,
+        $this->masterAsset->refresh()->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('trade_unit_slug', $isTradeUnitSlug)
+        ->etc());
+});

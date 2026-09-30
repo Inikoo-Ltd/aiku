@@ -71,7 +71,6 @@ const computedTabs = computed(() => {
 let controller: AbortController | null = null
 const autoSave = async (value) => {
 
-	console.log(value);
   // Cancel the previous request if still pending
   if (controller) {
     controller.abort()
@@ -89,7 +88,6 @@ const autoSave = async (value) => {
     emits('sendToIframe', { key: "reload", value: {} })
   } catch (error: any) {
     if (axios.isCancel(error) || error.name === "CanceledError" || error.message === "canceled") {
-      console.log("Autosave request cancelled")
       return
     }
 

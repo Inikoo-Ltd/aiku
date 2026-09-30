@@ -19,7 +19,7 @@ import { faCloud, faCompress, faExpandArrowsAlt, faSearch, faSpinner } from "@fa
 import { faMinus, faPlus, faSave, faUndo } from "@fas";
 
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import QuantityInput from "@/Components/Utils/QuantityInput.vue"
 
 library.add(
@@ -65,7 +65,6 @@ const onClickProduct = async (tabSlug: string) => {
   if (tabSlug === currentTab.value) return;
   emits("update:tab", tabSlug);
   isModalUploadOpen.value = true;
-  console.log(isModalUploadOpen.value);
 };
 
 const resetIcons = (id: number) => {
@@ -111,7 +110,6 @@ const getUrlFetch = (additionalParams: {}) => {
 const fetchProductList = async (url?: string) => {
   isLoading.value = true;
   const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters);
-  console.log(urlToFetch, "heheh");
 
   try {
     const response = await axios.get(urlToFetch);
@@ -126,7 +124,6 @@ const fetchProductList = async (url?: string) => {
 
     optionsMeta.value = data.meta;
     optionsLinks.value = data.links;
-    console.log(products, "hhohoho");
 
     if (!addedProductIds.value) {
       addedProductIds.value = new Set();
@@ -152,7 +149,6 @@ const debouncedFetch = debounce((query: string) => {
 
 // Search handler
 const onSearchQuery = (query: string) => {
-  console.log(query, "Search query updated");
   debouncedFetch(query);
 };
 
@@ -163,7 +159,6 @@ const formProducts = useForm({
 // Submit handler for adding products
 const onSubmitAddProducts = async (data: any, slotProps: any) => {
   const productId = slotProps.data.purchase_order_id;
-  console.log("Decrement:", slotProps.data.quantity_ordered);
 
   try {
     if (slotProps.data.quantity_ordered > 0) {
@@ -207,8 +202,8 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 
       // Notify success
       notify({
-        title: trans("Success!"),
-        text: trans("Product successfully added or updated."),
+        title: ctrans("Success!"),
+        text: ctrans("Product successfully added or updated."),
         type: "success",
       });
     } else if (slotProps.data.quantity_ordered === 0) {
@@ -228,8 +223,8 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 
         // Notify success
         notify({
-          title: trans("Success!"),
-          text: trans("Product successfully deleted."),
+          title: ctrans("Success!"),
+          text: ctrans("Product successfully deleted."),
           type: "success",
         });
       }
@@ -239,8 +234,8 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 
     // Notify error
     notify({
-      title: trans("Something went wrong"),
-      text: trans("An error occurred while processing the product."),
+      title: ctrans("Something went wrong"),
+      text: ctrans("An error occurred while processing the product."),
       type: "error",
     });
   }
@@ -253,7 +248,6 @@ const onFetchNext = async () => {
 };
 
 const onKeyDown = (slotProps: any) => {
-  console.log(slotProps, "we ap ni");
   if (!slotProps.data.inputTriggered) {
     slotProps.data.inputTriggered = true;
     iconStates.value[slotProps.data.id] = {
@@ -315,7 +309,7 @@ onUnmounted(() => {
               </InputIcon>
               <InputText
                 v-model="searchQuery"
-                :placeholder="trans('Search products')"
+                :placeholder="ctrans('Search products')"
                 @input="onSearchQuery(searchQuery)"
                 class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
             </IconField>

@@ -112,7 +112,6 @@ const onSaveWorkshopFromId = () => {
 
     }
     debounceSaveWorkshop(props.webpage.layout.web_blocks)
-    console.log('Final Data Web Block', props.webpage.layout.web_blocks);
 };
 
 /* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */

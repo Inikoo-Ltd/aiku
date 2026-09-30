@@ -114,7 +114,7 @@ const props = defineProps<{
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
     is_external_shop?: boolean
-    product_state?: boolean
+    product_state?: string
     is_dependent_trade_unit?: boolean
     variant?: {}
     is_variant_leader?: boolean

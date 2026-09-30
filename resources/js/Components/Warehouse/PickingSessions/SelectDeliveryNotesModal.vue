@@ -3,7 +3,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLayoutStore } from "@/Stores/layout"
@@ -66,8 +66,8 @@ const fetchDeliveryNotes = async () => {
         )
         deliveryNotes.value = response.data
     } catch (e) {
-        console.log('Failed to load delivery notes', e)
-        error.value = trans('Failed to load delivery notes')
+        console.error('Failed to load delivery notes', e)
+        error.value = ctrans('Failed to load delivery notes')
     } finally {
         isLoading.value = false
     }
@@ -104,7 +104,7 @@ const isSelected = (id: number) => selectedDeliveryNotes.value.includes(id)
 
 const handleSubmit = async () => {
     if (selectedDeliveryNotes.value.length === 0) {
-        error.value = trans('Please select at least one delivery note')
+        error.value = ctrans('Please select at least one delivery note')
         return
     }
 
@@ -125,7 +125,7 @@ const handleSubmit = async () => {
                 emit('onClose')
             },
             onError: (errors) => {
-                error.value = Object.values(errors).flat().join(', ') || trans('An error occurred')
+                error.value = Object.values(errors).flat().join(', ') || ctrans('An error occurred')
             },
             onFinish: () => {
                 isSubmitting.value = false
@@ -185,7 +185,7 @@ const handleClose = () => {
                     </div>
                     <div class="flex flex-col items-end gap-0.5">
                         <div class="text-sm text-gray-500">{{ dn.state_label }}</div>
-                        <div class="text-xs text-gray-400">{{ dn.number_items }} {{ trans('items') }}</div>
+                        <div class="text-xs text-gray-400">{{ dn.number_items }} {{ ctrans('items') }}</div>
                     </div>
                 </div>
             </div>

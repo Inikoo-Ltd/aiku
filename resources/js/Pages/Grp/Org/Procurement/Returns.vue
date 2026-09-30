@@ -17,7 +17,7 @@ import { faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCh
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import { ref, inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Dialog } from 'primevue'
 import axios from 'axios'
 import { debounce } from 'lodash-es'
@@ -40,7 +40,6 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data?: {}
-    shopType: string
     warehouseId?: number | null
     unidentifiedReturns?: { data: UnidentifiedReturnItem[] } | null
 }>()
@@ -186,13 +185,13 @@ const onSaveUnidentifiedReturn = () => {
         </template>
     </PageHeading>
     <div v-if="unidentifiedReturns?.data?.length" class="px-4 py-3">
-        <div class="mb-2 text-base font-medium">{{ trans("Returns to identify") }}</div>
+        <div class="mb-2 text-base font-medium">{{ ctrans("Returns to identify") }}</div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div v-for="ur in unidentifiedReturns.data" :key="ur.id" class="rounded-md border border-amber-300 bg-amber-50 p-3">
                 <Image v-if="ur.image" :src="ur.image" class="mb-2 h-32 w-full rounded object-cover" imageCover />
                 <div v-if="ur.notes" class="text-sm text-gray-700 whitespace-pre-line">{{ ur.notes }}</div>
                 <div class="mt-1 text-sm text-gray-500">{{ ur.created_at }}</div>
-                <Button class="mt-2" type="secondary" :label="trans('Identify')" icon="fal fa-search" full
+                <Button class="mt-2" type="secondary" :label="ctrans('Identify')" icon="fal fa-search" full
                     @click="() => onOpenModal(ur)" />
             </div>
         </div>
@@ -205,7 +204,7 @@ const onSaveUnidentifiedReturn = () => {
             isOpenModalCreateReturn = false
         }">
         <div class="pt-4 pb-2 text-lg font-semibold">
-            {{ modalMode === 'log' ? trans("Log return to identify") : identifyingReturn ? trans("Identify return") : trans("Receive Return") }}
+            {{ modalMode === 'log' ? ctrans("Log return to identify") : identifyingReturn ? ctrans("Identify return") : ctrans("Receive Return") }}
         </div>
 
         <div v-if="identifyingReturn" class="mb-4 flex gap-x-3 rounded-md border border-amber-300 bg-amber-50 p-3">
@@ -218,7 +217,7 @@ const onSaveUnidentifiedReturn = () => {
 
         <template v-if="modalMode === 'log'">
             <div class="text-sm text-gray-600 mb-4">
-                {{ trans("Take a photo of the box and copy anything written on it, so the office can identify it later.") }}
+                {{ ctrans("Take a photo of the box and copy anything written on it, so the office can identify it later.") }}
             </div>
 
             <input
@@ -232,13 +231,13 @@ const onSaveUnidentifiedReturn = () => {
             <textarea
                 v-model="boxNotes"
                 rows="4"
-                :placeholder="trans('Anything written on the box: names, references, addresses, tracking numbers')"
+                :placeholder="ctrans('Anything written on the box: names, references, addresses, tracking numbers')"
                 class="mt-3 w-full rounded-md border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:ring-indigo-500"
             />
 
             <div class="flex justify-between gap-x-2 mt-6">
-                <Button type="tertiary" :label="trans('Back to search')" icon="fal fa-arrow-left" @click="() => modalMode = 'search'" />
-                <Button :label="trans('Save for identification')" icon="fal fa-camera"
+                <Button type="tertiary" :label="ctrans('Back to search')" icon="fal fa-arrow-left" @click="() => modalMode = 'search'" />
+                <Button :label="ctrans('Save for identification')" icon="fal fa-camera"
                     :disabled="(!boxNotes && !boxImage) || isSavingUnidentified"
                     :loading="isSavingUnidentified" @click="onSaveUnidentifiedReturn" />
             </div>
@@ -247,14 +246,14 @@ const onSaveUnidentifiedReturn = () => {
         <template v-else>
 
         <div class="text-sm text-gray-600 mb-4">
-            {{ trans("Select the delivery note this box came from.") }}
+            {{ ctrans("Select the delivery note this box came from.") }}
         </div>
 
         <input
             v-model="searchQuery"
             type="text"
             autofocus
-            :placeholder="trans('Search by delivery note, tracking number, customer or order reference') + ' ' + ctrans('(use ref:awd123 for exact search)')"
+            :placeholder="ctrans('Search by delivery note, tracking number, customer or order reference') + ' ' + ctrans('(use ref:awd123 for exact search)')"
             class="w-full rounded-md border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:ring-indigo-500"
             @input="onSearchInput"
         />
@@ -265,8 +264,8 @@ const onSaveUnidentifiedReturn = () => {
             </div>
 
             <div v-else-if="!deliveryNoteOptions.length" class="flex h-full flex-col items-center justify-center gap-y-3 text-sm text-gray-500">
-                {{ trans("No delivery notes found. Only dispatched notes without a return are listed.") }}
-                <Button v-if="warehouseId && !identifyingReturn" type="secondary" :label="trans('Can\'t find it? Log it to identify later')"
+                {{ ctrans("No delivery notes found. Only dispatched notes without a return are listed.") }}
+                <Button v-if="warehouseId && !identifyingReturn" type="secondary" :label="ctrans('Can\'t find it? Log it to identify later')"
                     icon="fal fa-camera" @click="() => modalMode = 'log'" />
             </div>
 
@@ -290,18 +289,18 @@ const onSaveUnidentifiedReturn = () => {
                 </button>
 
                 <div v-if="nextPageUrl" class="sm:col-span-2">
-                    <Button type="tertiary" :label="trans('Load more')" :loading="isLoadingMore" full @click="onLoadMore" />
+                    <Button type="tertiary" :label="ctrans('Load more')" :loading="isLoadingMore" full @click="onLoadMore" />
                 </div>
             </div>
         </div>
 
         <div class="flex items-center justify-between gap-x-2 mt-6">
-            <Button v-if="warehouseId && !identifyingReturn" type="tertiary" :label="trans('Can\'t find it?')" icon="fal fa-camera"
+            <Button v-if="warehouseId && !identifyingReturn" type="tertiary" :label="ctrans('Can\'t find it?')" icon="fal fa-camera"
                 @click="() => modalMode = 'log'" />
             <div v-else></div>
             <div class="flex gap-x-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="() => isOpenModalCreateReturn = false" />
-                <Button :label="selectedDeliveryNote ? trans('Receive Return') + ' ' + selectedDeliveryNote.reference : trans('Receive Return')"
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="() => isOpenModalCreateReturn = false" />
+                <Button :label="selectedDeliveryNote ? ctrans('Receive Return') + ' ' + selectedDeliveryNote.reference : ctrans('Receive Return')"
                     icon="fal fa-plus" :disabled="!selectedDeliveryNote || isSubmitting"
                     :loading="isSubmitting" @click="onCreateReturn" />
             </div>

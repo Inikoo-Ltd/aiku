@@ -34,7 +34,6 @@ function refundHref(refund: Invoice) {
 
 function refundRoute(refund: Invoice) {
 
-    console.log((route().current()))
 
     switch (route().current()) {
 

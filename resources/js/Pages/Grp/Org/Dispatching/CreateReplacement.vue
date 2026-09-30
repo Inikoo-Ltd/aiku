@@ -39,7 +39,7 @@ import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import type { DeliveryNote } from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import Message from 'primevue/message';
@@ -148,7 +148,6 @@ onMounted(() => {
         .listen(socketConfig.action, (eventData: any) => {
             debReloadPage()
         })
-    console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 
 // Section: Handle quantity to resend changes
@@ -216,8 +215,8 @@ const onCreateReplacement = (action: any) => {
 
     if (delivery_note_items.length === 0) {
         notify({
-            title: trans("No items selected"),
-            text: trans("Please select at least one item with quantity to resend"),
+            title: ctrans("No items selected"),
+            text: ctrans("Please select at least one item with quantity to resend"),
             type: "warning"
         });
         return;
@@ -225,7 +224,6 @@ const onCreateReplacement = (action: any) => {
 
     const payload = { delivery_note_items, private_warehouse_note: warehouseNote.value };
 
-    console.log('Creating replacement with payload:', payload);
 
     // Submit replacement request
     router[action.route.method](
@@ -236,8 +234,8 @@ const onCreateReplacement = (action: any) => {
             preserveScroll: true,
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Replacement delivery note created successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Replacement delivery note created successfully"),
                     type: "success"
                 });
                 // Reset quantity data after successful submission
@@ -246,8 +244,8 @@ const onCreateReplacement = (action: any) => {
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans("Failed to create replacement delivery note"),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans("Failed to create replacement delivery note"),
                     type: "error"
                 });
             }, 
@@ -320,8 +318,8 @@ const onCreateReplacement = (action: any) => {
     />
 
     <div class="px-4 pt-3">
-        <label class="text-sm font-medium text-gray-700">{{ trans("Note to warehouse") }}</label>
-        <textarea v-model="warehouseNote" rows="2" maxlength="4000" class="mt-1 w-full rounded-md border-gray-300 text-sm" :placeholder="trans('Leave empty to keep the order note')" />
+        <label class="text-sm font-medium text-gray-700">{{ ctrans("Note to warehouse") }}</label>
+        <textarea v-model="warehouseNote" rows="2" maxlength="4000" class="mt-1 w-full rounded-md border-gray-300 text-sm" :placeholder="ctrans('Leave empty to keep the order note')" />
     </div>
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

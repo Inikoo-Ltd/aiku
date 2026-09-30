@@ -309,7 +309,6 @@ const onSaveAddress = (submitShipment: Function) => {
 				formTrackingNumber.reset()
 			},
 			onError: (e) => {
-				console.log("error updating address", e)
 				if (e) {
 					const zzz = Object.values(e || {})[0]
 					if (zzz) {

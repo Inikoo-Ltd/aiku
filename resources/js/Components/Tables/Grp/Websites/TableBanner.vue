@@ -27,7 +27,6 @@ const props = defineProps<{
 
 
 function bannerRoute(banner: Banner) {
-  console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.web.banners.index":
             return route(

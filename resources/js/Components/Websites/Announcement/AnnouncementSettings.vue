@@ -13,7 +13,7 @@ import { Link } from '@inertiajs/vue3'
 import { faLink, faExternalLinkAlt } from '@fal'
 import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
@@ -65,7 +65,6 @@ const addSpecificPage = async () => {
         set(announcementDataSettings.value, ['target_pages', 'specific'], [newTargetPage])
     }
 
-    console.log('opopop', get(announcementDataSettings.value, ['target_pages', 'specific']))
     
     await nextTick()
     specificNew.value.url = ''
@@ -160,8 +159,8 @@ const onCheckActiveAnnouncements = async () => {
         }
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     }
@@ -444,7 +443,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
         <div class="grid grid-cols-1 h-fit gap-y-4 ">
             <!-- Section: Start date -->
             <fieldset class="">
-                <div class="text-sm/6 font-semibold ">{{ trans("Start date") }}</div>
+                <div class="text-sm/6 font-semibold ">{{ ctrans("Start date") }}</div>
                 <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input

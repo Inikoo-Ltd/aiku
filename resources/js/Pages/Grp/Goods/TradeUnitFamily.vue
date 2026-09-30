@@ -67,7 +67,6 @@ const props = defineProps<{
 const _tableTradeUnits = ref<InstanceType<typeof TableTradeUnits> | null>(null)
 const selectedTradeUnits = ref<TradeUnit[]>([])
 const isBulkEditVisible = ref(false)
-console.log(props)
 const currentTab = ref(props.tabs.current)
 const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
 const handleTabUpdate = (tabSlug: string) => {

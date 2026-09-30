@@ -110,6 +110,7 @@ const props = defineProps<{
 		images: any
 		main_image: ImageTS
 	}
+	tab?: string
 	handleTabUpdate?: Function
 	salesData?: object
 	salesAnalysisTeaser?: object

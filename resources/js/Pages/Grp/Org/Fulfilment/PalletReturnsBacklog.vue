@@ -19,19 +19,18 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { faSeedling, faCheckCircle } from '@fal'
+import { faSeedling, faCheckCircle, faSignOutAlt, faAppleCrate, faBox } from '@fal'
 import {library} from "@fortawesome/fontawesome-svg-core";
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { KeepAlive } from 'vue'
 import TabsBox from '@/Components/Navigation/TabsBox.vue'
 
-library.add(faSeedling, faCheckCircle)
+library.add(faSeedling, faCheckCircle, faSignOutAlt, faAppleCrate, faBox)
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    data: {}
     tabs: TSTabs
     todo?: boolean
     picking_session_route?: routeType
@@ -65,8 +64,8 @@ function createPickingSession() {
 
     if (!props.picking_session_route) {
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Please try again or contact support.'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Please try again or contact support.'),
             type: 'error',
         })
         return
@@ -85,7 +84,7 @@ function createPickingSession() {
                 loading.value = false
                 if (errors.message) {
                     notify({
-                        title: trans('Validation Error'),
+                        title: ctrans('Validation Error'),
                         text: errors.message,
                         type: 'error',
                     })
@@ -103,7 +102,7 @@ function createPickingSession() {
             <Button
                 v-if="showPickingSessionButton"
                 type="create"
-                :label="trans('Picking session')"
+                :label="ctrans('Picking session')"
                 :loading="loading"
                 @click="createPickingSession"
             />

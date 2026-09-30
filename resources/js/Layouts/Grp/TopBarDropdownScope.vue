@@ -2,7 +2,7 @@
 import { inject, computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useTruncate } from '@/Composables/useTruncate'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { MenuItem } from '@headlessui/vue'
@@ -278,7 +278,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
             try {
                 router.visit(route(layout.currentRoute, { organisation: sub.org_slug, warehouse: sub.slug }))
             } catch (e) {
-                console.log('cathch', e)
+                console.error('cathch', e)
                 visitNormally()
             }
         } else if (layout.currentParams?.organisation && typeSub === 'shop') {
@@ -359,7 +359,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     <FontAwesomeIcon icon="fal fa-city" class="" fixed-width aria-hidden="true" />
                     <div class="space-x-1 whitespace-nowrap">
                         <span class="font-semibold">{{ layout.group?.label }}</span>
-                        <span class="text-[9px] leading-none text-gray-400">({{ trans("Group") }})</span>
+                        <span class="text-[9px] leading-none text-gray-400">({{ ctrans("Group") }})</span>
                     </div>
                 </div>
                 </MenuItem>
@@ -435,7 +435,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 @mouseleave="hideFlyout"
             >
                 <div v-if="isMobile" class="mb-3 flex items-center gap-x-1 border-b border-gray-200 pb-3">
-                    <button type="button" class="shrink-0 rounded p-2 text-gray-400 hover:text-gray-700" :aria-label="trans('Back')" @click="closePanel">
+                    <button type="button" class="shrink-0 rounded p-2 text-gray-400 hover:text-gray-700" :aria-label="ctrans('Back')" @click="closePanel">
                         <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
                     </button>
                     <a
@@ -454,7 +454,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <template v-if="getShopsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1">
                         <FontAwesomeIcon icon="fal fa-store-alt" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
-                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Shops') }}</span>
+                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ ctrans('Shops') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>
                     <div
@@ -483,7 +483,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <template v-if="getFulfilmentsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
                         <FontAwesomeIcon icon="fal fa-hand-holding-box" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
-                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Fulfilments') }}</span>
+                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ ctrans('Fulfilments') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>
                     <div
@@ -509,7 +509,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <template v-if="getWarehousesForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length || getFulfilmentsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
                         <FontAwesomeIcon icon="fal fa-warehouse-alt" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
-                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Warehouses') }}</span>
+                        <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ ctrans('Warehouses') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>
                     <div

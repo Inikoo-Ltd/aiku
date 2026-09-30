@@ -23,7 +23,6 @@ defineProps<{
 }>()
 
 function routePallet(storageData: any) {
-    console.log(storageData,'ssx');
     
 	if (storageData == "Deliveries") {
 		return route("grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.index", [

@@ -15,10 +15,10 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks } from "@fal"
+import { faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks, faShippingFast } from "@fal"
 import TableShippers from '@/Components/Tables/Grp/Org/Dispatching/TableShippers.vue'
 
-library.add(faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks)
+library.add(faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks, faShippingFast)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

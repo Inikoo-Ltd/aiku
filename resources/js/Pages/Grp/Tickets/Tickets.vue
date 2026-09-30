@@ -28,11 +28,11 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faForward, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle } from "@fal"
+import { faVial, faShieldCheck, faShield, faForward, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faFlag } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faVial, faShieldCheck, faShield, faForward, faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle)
+library.add(faVial, faShieldCheck, faShield, faForward, faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faFlag)
 
 type Option<Value> = { label: string; value: Value }
 

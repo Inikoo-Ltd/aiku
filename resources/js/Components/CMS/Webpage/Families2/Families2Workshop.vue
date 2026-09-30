@@ -6,7 +6,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -43,7 +43,6 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
-console.log('ssssddd', props)
 
 const layout: any = inject('layout', {})
 
@@ -214,7 +213,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
           <span class="whitespace-normal break-words text-center" :class="{
             '!text-xs': screenType === 'mobile'
           }">
-            {{ trans('View All') }}
+            {{ ctrans('View All') }}
           </span>
         </div>
       </LinkIris>

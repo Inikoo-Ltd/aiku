@@ -196,7 +196,6 @@ const groupPositionList = {
 }
 
 Object.keys(props.form[props.fieldName].organisations).forEach(key => {
-    console.log("key", key)
     if (Array.isArray(props.form[props.fieldName].organisations[key]) && props.form[props.fieldName].organisations[key].length === 0) {
         props.form[props.fieldName].organisations[key] = {}
     }
@@ -242,7 +241,6 @@ const onClickButtonGroup = (department: string, subDepartmentSlug: string) => {
     }
 }
 const submitGroupPermissions = () => {
-    console.log("Submit Group:", route(props.fieldData.updatePseudoJobPositionsRoute.name, props.fieldData.updatePseudoJobPositionsRoute.parameters))
     props.form
         .transform((data) => ({
             permissions: data[props.fieldName].group

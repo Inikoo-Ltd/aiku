@@ -116,14 +116,6 @@ export const initialiseApp = () => {
                 }
             }
 
-            if (usePage().props?.environment === 'local') {
-                console.log(
-                    '%cusePage().props',
-                    'background: yellow; color: black; font-size: 16px; font-weight: bold; padding: 3px 2px;',
-                    usePage().props
-                )
-            }
-
             const dataActiveUser = {
                 ...usePage().props.auth.user,
                 last_active: new Date(),

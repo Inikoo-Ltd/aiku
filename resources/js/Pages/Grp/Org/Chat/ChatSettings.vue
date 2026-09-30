@@ -19,10 +19,10 @@ import WhatsappTemplatesTable from "@/Components/Chat/WhatsappTemplatesTable.vue
 import { useCurrentTab, useTabChange } from "@/Composables/tab-change"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck } from "@fal"
+import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faBook } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp)
+library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook)
 
 const props = defineProps<{
     title: string

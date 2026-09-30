@@ -17,7 +17,7 @@ import { faAsterisk, faQuestion, faSpinner, faMinus as fasMinus, faPlus as fasPl
 import { useForm } from "@inertiajs/vue3"
 import LoadingIcon from "./Utils/LoadingIcon.vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { debounce } from 'lodash-es'
@@ -97,7 +97,6 @@ const formDefaultValue = ref({
 })
 
 const onSaveViaForm = async () => {
-	console.log("ewqewqewq")
 	if (!props.routeSubmit?.name) return
 
 	if (props.isUseAxios) {
@@ -116,10 +115,9 @@ const onSaveViaForm = async () => {
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
 		} catch (error) {
-			console.log("ERR1", error);
 			emits("onError", error?.response?.data)
 			notify({
-				title: trans("Something went wrong"),
+				title: ctrans("Something went wrong"),
 				text: error?.response?.data?.message || error?.response?.data,
 				type: "error",
 			})
@@ -138,7 +136,7 @@ const onSaveViaForm = async () => {
 				onError: (errors) => {
 					emits("onError", errors)
 					notify({
-						title: trans("Something went wrong"),
+						title: ctrans("Something went wrong"),
 						text: errors?.message || 'Failed to process this action',
 						type: "error",
 					})
@@ -285,7 +283,7 @@ const stopHold = () => {
 			<button
 				v-if="!noUndoButton"
 				@click.stop="() => (keyIconUndo++, form.reset('quantity'))"
-				v-tooltip="trans('Reset value')"
+				v-tooltip="ctrans('Reset value')"
 				class="relative flex items-center justify-center px-2.5 lg:px-1 py-2.5 lg:py-1.5"
 				:class="
 					form.isDirty

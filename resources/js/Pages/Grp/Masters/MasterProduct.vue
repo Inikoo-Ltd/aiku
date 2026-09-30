@@ -138,7 +138,6 @@ const routeVariant = () => {
 }
 
 const repairTradeUnitToChildren = async () => {
-    console.log("REPAIRING");
     await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
         masterAsset: props.masterAsset.id,
     })).then((response) => {
@@ -157,7 +156,6 @@ const repairTradeUnitToChildren = async () => {
     })
 }
 
-console.log(props)
 
 watch(() => currentTab.value, (value) => {
     if (value === "products") {

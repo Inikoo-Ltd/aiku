@@ -49,7 +49,7 @@ import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
 import ButtonExport from "@/Components/ButtonExport.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
 	faTruckCouch,
@@ -100,7 +100,7 @@ const isShowDummySlotName = false
 const setError = (e) => {
 	console.error("Error", e)
 	notify({
-		title: trans("Something went wrong"),
+		title: ctrans("Something went wrong"),
 		text: e.message || "failed.",
 		type: "error",
 	})
@@ -389,8 +389,7 @@ const setError = (e) => {
 										:method="button.route?.method || 'get'"
 										@start="() => (isButtonLoading = 'buttonGroup' + index)"
 										@error="(err) => {
-											console.log(err);
-											let msg = trans('Error processing action.\n')
+											let msg = ctrans('Error processing action.\n')
 											Object.entries(err).forEach(([key, value]) => {
 												msg += value + '. \n'
 											})

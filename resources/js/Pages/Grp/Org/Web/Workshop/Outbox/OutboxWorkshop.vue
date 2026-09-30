@@ -86,7 +86,6 @@ const onSendPublish = async (data) => {
             });
         }
     } catch (error) {
-        console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
         notify({
             title: "Something went wrong.",
@@ -179,7 +178,6 @@ const updateActiveValue = async (action) => {
     router.patch(route(action.name, action.parameters),
         { active: active.value },
         {
-            onStart: () => console.log('start'),
             onSuccess: () => {
                 notify({
                     title: ctrans('Success!'),
@@ -194,7 +192,6 @@ const updateActiveValue = async (action) => {
                     type: 'error',
                 })
             },
-            onFinish: () => console.log('finish'),
         }
     )
 }
@@ -209,7 +206,6 @@ const autoSave = async (jsonFile) => {
             },
         )
         .then((response) => {
-            console.log("autosave successful:", response.data);
             // Handle success (equivalent to onFinish)
         })
         .catch((error) => {
@@ -220,7 +216,6 @@ const autoSave = async (jsonFile) => {
             })
         })
         .finally(() => {
-            console.log("autosave finished.");
         });
 }
 
@@ -268,9 +263,7 @@ const schedulePublish = async () => {
             layout: JSON.parse(data?.jsonFile),
             compiled_layout: data?.htmlFile
         });
-        console.log("Publish response:", response.data);
     } catch (error) {
-        console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
         notify({
             title: "Something went wrong.",

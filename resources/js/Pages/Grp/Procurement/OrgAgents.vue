@@ -10,6 +10,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableOrgAgents from "@/Components/Tables/Grp/Org/Procurement/TableOrgAgents.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPeopleArrows } from "@fal"
+library.add(faPeopleArrows)
 
 defineProps<{
     pageHead: PageHeadingTypes

@@ -182,9 +182,7 @@ const locale = inject("locale", aikuLocaleStructure)
                         <Select
                             v-model="currentTab.key"
                             @update:modelValue="(val) => {
-                                console.log('val', val)
                                 const idx = paymentMethods.findIndex(pm => pm.key === val)
-                                console.log('idx', idx)
                                 if (idx !== -1) currentTab.index = idx
                             }"
                             :options="paymentMethods"

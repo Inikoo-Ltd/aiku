@@ -19,7 +19,6 @@ const props = defineProps<{
 const tiktokCode = route().queryParams?.tiktok_code
 
 const closePage = () => {
-	console.log('aaaaaaa')
 }
 </script>
 

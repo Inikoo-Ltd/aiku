@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableArtefacts from "@/Components/Tables/Grp/Org/Production/TableArtefacts.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { faBars, faIndustry } from "@fal";
+import { faBars, faIndustry, faFolderTree, faFolder, faTags, faHamsa } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -20,7 +20,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
-library.add(faBars, faIndustry);
+library.add(faBars, faIndustry, faFolderTree, faFolder, faTags, faHamsa);
 
 
 const props = defineProps<{

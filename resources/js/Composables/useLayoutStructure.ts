@@ -85,8 +85,6 @@ export const layoutStructure = {
         sounds: Record<string, string>
         popup: { show: boolean }
     } | null,
-    isShopPage: false as boolean,
-    isFulfilmentPage: false as boolean,
 
     ticket_badges: null as TicketBadges | null,
     dispatching_waiting_count: 0 as number,

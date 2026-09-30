@@ -104,7 +104,6 @@ const emits = defineEmits<{
     (e: 'hideBulkButton'): void
 }>()
 
-console.log(props)
 
 function portfolioRoute(product: Product) {
     if (product.type == "StoredItem") {
@@ -294,7 +293,6 @@ const filteredPortfolios = computed(() => {
 const selectedVariant = ref<Product | null>(null)
 const onSubmitVariant = () => {
 
-    console.log(selectedVariant.value)
 
     /* selectedVariant.value = null
     selectedPortfolio.value = null */
@@ -496,7 +494,6 @@ onMounted(() => {
                 if (isShopify) {
                     const pf = eventData.portfolio
                     errorBluk.value = []
-                    console.log('data from event : ', pf)
                     const isSuccess =
                         pf.has_valid_platform_product_id &&
                         pf.platform_status &&

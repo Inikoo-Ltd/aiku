@@ -26,7 +26,7 @@ import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Image from "@common/Components/Image.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
@@ -47,7 +47,7 @@ const props = defineProps<{
     data: {}
     editable_table: boolean
     tab?: string,
-    routes: {
+    routes?: {
         dataList: routeType
         submitAttach: routeType
         detach: routeType
@@ -193,15 +193,15 @@ function saveDescription() {
                 item.description = descriptionDraft.value
                 descriptionModalProduct.value = null
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Description updated"),
+                    title: ctrans("Success!"),
+                    text: ctrans("Description updated"),
                     type: "success"
                 })
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error?.description || trans("Failed to update description"),
+                    title: ctrans("Something went wrong"),
+                    text: error?.description || ctrans("Failed to update description"),
                     type: "error"
                 })
             },
@@ -682,7 +682,6 @@ const repairTradeUnitFromChildren = async (product) => {
     if (isLoadingRepairFromChildren.value != "") return;
 
     if (confirm("Are you sure you want to follow this child product trade unit? Doing so would cause master and the other children to have the same trade unit data.")) {
-        console.log("REPAIRING");
         
         router.patch(route('grp.models.products.repair_mismatch_trade_units', {
             product: product.id,
@@ -691,15 +690,15 @@ const repairTradeUnitFromChildren = async (product) => {
             onStart: () => isLoadingRepairFromChildren.value = product.id,
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully repaired the product details"),
+                    title: ctrans("Success!"),
+                    text: ctrans("Successfully repaired the product details"),
                     type: "success"
                 })
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message || ctrans("Failed to update product quantity in basket"),
                     type: "error"
                 })
             },
@@ -726,7 +725,7 @@ const familyRoute = (item) => {
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
 
         <template v-if="exportFields.length" #add-on-button>
-            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
+            <Button :icon="faDownload" :label="ctrans('Export')" type="tertiary" size="xs"
                 @click="exportPanel.toggle($event)" />
 
             <Popover ref="exportPanel">
@@ -739,13 +738,13 @@ const familyRoute = (item) => {
                     </div>
 
                     <label class="flex items-center justify-between px-1 py-1.5 border-y border-gray-200 cursor-pointer select-none"
-                        v-tooltip="trans('Image links always open as JPG, even when the picture was uploaded as PNG or GIF')">
-                        <span class="font-medium">{{ trans("Images as JPG") }}</span>
+                        v-tooltip="ctrans('Image links always open as JPG, even when the picture was uploaded as PNG or GIF')">
+                        <span class="font-medium">{{ ctrans("Images as JPG") }}</span>
                         <Checkbox v-model="exportImagesAsJpg" :binary="true" size="small" />
                     </label>
 
                     <label class="flex items-center justify-end px-1 pt-2 pb-1 border-b border-gray-200 cursor-pointer select-none">
-                        <span class="sr-only">{{ trans("Select all") }}</span>
+                        <span class="sr-only">{{ ctrans("Select all") }}</span>
                         <Checkbox v-model="allExportColumnsSelected" :binary="true" size="small" />
                     </label>
 
@@ -778,7 +777,7 @@ const familyRoute = (item) => {
 
         <template #cell(name)="{ item: product }">
             <div class="flex items-center">
-                <span v-if="mismatch_trade_unit_with_master && !hide_sku_in_name_column" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="trans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
+                <span v-if="mismatch_trade_unit_with_master && !hide_sku_in_name_column" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="ctrans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
                     <FontAwesomeLayers class="w-fit-content">
                         <FontAwesomeIcon :icon="faTools" style="right:-20; bottom:-5" class="text-xs" fixed-width/>
                         <FontAwesomeIcon :icon="faRunning" class="text-lg" fixed-width/>
@@ -817,7 +816,7 @@ const familyRoute = (item) => {
         <template #cell(description)="{ item: product }">
             <div class="flex items-center gap-2 max-w-xs">
                 <span class="truncate text-gray-500" v-tooltip="product.description">{{ product.description }}</span>
-                <button v-if="editable_table" class="shrink-0" @click="() => openDescriptionModal(product)" v-tooltip="trans('Edit description')">
+                <button v-if="editable_table" class="shrink-0" @click="() => openDescriptionModal(product)" v-tooltip="ctrans('Edit description')">
                     <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-500 hover:text-gray-700" fixed-width aria-hidden="true" />
                 </button>
             </div>
@@ -829,7 +828,7 @@ const familyRoute = (item) => {
                 @open-modal="fetchTradeUnits(product)"
                 @close-modal="resetTradeUnits()"
                 :forceOpenModal="true"
-                :hoverTooltip="trans('Click to set up Trade Units')"
+                :hoverTooltip="ctrans('Click to set up Trade Units')"
 				:product="product"
 				:trade_units="product.product_org_stocks"
                 :hideUnit="true"
@@ -839,12 +838,12 @@ const familyRoute = (item) => {
                 <template #modalBody>
                     <div v-if="isLoadingFetchTradeUnit" class="grid items-center justify-items-center ">
                         <span class="align-middle">
-                            <LoadingIcon class="text-xl"/> {{ trans('Fetching trade unit details') }}
+                            <LoadingIcon class="text-xl"/> {{ ctrans('Fetching trade unit details') }}
                         </span>
                     </div>
                     <div v-else-if="isErrorFetchingTradeUnit" class="text-md font-medium text-red-400 grid grid-cols-1">
                         <span>
-                            <FontAwesomeIcon :icon="faWarning" fixed-width/> {{ trans('Error fetching Trade Unit details') }}
+                            <FontAwesomeIcon :icon="faWarning" fixed-width/> {{ ctrans('Error fetching Trade Unit details') }}
                         </span>
                         <span class="mt-2">
                             Unable to modify trade unit here. Please access it from the Product Edit page
@@ -1077,7 +1076,7 @@ const familyRoute = (item) => {
 
         <template #cell(code)="{ item: product }">
             <div class="whitespace-nowrap">
-                <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
+                <Link :href="(masterProductRoute(product) as string)" v-tooltip="ctrans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>
@@ -1094,7 +1093,7 @@ const familyRoute = (item) => {
                     : 'text-gray-500'" fixed-width />
 
                 <div class="whitespace-nowrap flex items-center gap-1">
-                    <Link :href="masterProductRoute(product) as string" v-tooltip="trans('Go to Master')"
+                    <Link :href="masterProductRoute(product) as string" v-tooltip="ctrans('Go to Master')"
                         class="transition-opacity" :class="product.master_product_id
                             ? 'opacity-70 hover:opacity-100'
                             : 'opacity-0 pointer-events-none'">
@@ -1111,8 +1110,8 @@ const familyRoute = (item) => {
         <template #cell(variant_slug)="{ item: product }">
             <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
                 class="inline-block" v-tooltip="product.is_variant_leader
-                    ? trans('Leader product of ') + product.variant_code
-                    : trans('Follower product of ') + product.variant_code">
+                    ? ctrans('Leader product of ') + product.variant_code
+                    : ctrans('Follower product of ') + product.variant_code">
                 <span class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
 
@@ -1131,7 +1130,7 @@ const familyRoute = (item) => {
             </Link>
         <!--     <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
-               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+               border transition-colors duration-150 cursor-normal" v-tooltip="ctrans('Not in a Variant')">
                 -
             </span> -->
         </template>
@@ -1233,7 +1232,7 @@ const familyRoute = (item) => {
     </Table>
 
     <Dialog
-        :header="descriptionModalProduct ? `${descriptionModalProduct.code} — ${trans('Description')}` : ''"
+        :header="descriptionModalProduct ? `${descriptionModalProduct.code} — ${ctrans('Description')}` : ''"
         :visible="!!descriptionModalProduct"
         @update:visible="(val) => { if (!val) descriptionModalProduct = null }"
         modal
@@ -1246,7 +1245,7 @@ const familyRoute = (item) => {
             class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-indigo-500"
         />
         <div class="flex justify-end gap-2 mt-3">
-            <Button type="tertiary" :label="trans('Cancel')" @click="descriptionModalProduct = null" />
+            <Button type="tertiary" :label="ctrans('Cancel')" @click="descriptionModalProduct = null" />
             <Button type="save" :loading="isSavingDescription" @click="saveDescription" />
         </div>
     </Dialog>

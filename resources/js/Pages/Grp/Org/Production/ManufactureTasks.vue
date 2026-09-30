@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableManufactureTasks from "@/Components/Tables/Grp/Org/Production/TableManufactureTasks.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { faBars, faIndustry } from "@fal";
+import { faBars, faIndustry, faCodeMerge } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -18,7 +18,7 @@ import type { Navigation } from "@/types/Tabs";
 import { PageHeadingTypes } from "@/types/PageHeading";
 
 
-library.add(faBars, faIndustry);
+library.add(faBars, faIndustry, faCodeMerge);
 
 
 const props = defineProps<{

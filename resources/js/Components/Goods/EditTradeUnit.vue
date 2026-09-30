@@ -2,7 +2,7 @@
 import MultiSelect from 'primevue/multiselect';
 import { ref, watch } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router, useForm } from '@inertiajs/vue3'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -64,8 +64,8 @@ const onCreateNewTag = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully created new tag") + ': ' + newTagName.value,
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully created new tag") + ': ' + newTagName.value,
                     type: "success",
                 })
                 isModalTag.value = false
@@ -77,7 +77,7 @@ const onCreateNewTag = () => {
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error",
                 })
@@ -103,8 +103,8 @@ const fetchProductList = async (url?: string) => {
     } catch  {
         // console.log(error)
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch product list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch product list'),
             type: 'error',
         })
     }
@@ -124,8 +124,8 @@ const onManageTags = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully update tag for this unit"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully update tag for this unit"),
                     type: "success",
                 })
                 isModalTag.value = false
@@ -138,8 +138,8 @@ const onManageTags = () => {
             onError: (error) => {
                 console.error('Error managing tags:', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans('Failed to manage tags'),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans('Failed to manage tags'),
                     type: "error",
                 })
             }
@@ -176,8 +176,8 @@ const onEditTag = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully update tag name."),
+                    title: ctrans("Success!"),
+                    text: ctrans("Successfully update tag name."),
                     type: "success",
                 })
                 isModalUpdateTag.value = false
@@ -189,8 +189,8 @@ const onEditTag = () => {
             onError: (error) => {
                 console.error('Error editing tag:', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans('Failed to update tag'),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans('Failed to update tag'),
                     type: "error",
                 })
             }
@@ -220,8 +220,8 @@ const onCreateNewBrand = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully created new brand") + ': ' + newBrandName.value,
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully created new brand") + ': ' + newBrandName.value,
                     type: "success",
                 })
                 isModalBrand.value = false
@@ -234,7 +234,7 @@ const onCreateNewBrand = () => {
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error",
                 })
@@ -257,8 +257,8 @@ const onAttachBrand = (brandId: number) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully change brand for this unit"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully change brand for this unit"),
                     type: "success",
                 })
             },
@@ -268,8 +268,8 @@ const onAttachBrand = (brandId: number) => {
             onError: (error) => {
                 console.error('Error managing brand:', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans('Failed to change the brand'),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans('Failed to change the brand'),
                     type: "error",
                 })
             }
@@ -283,8 +283,6 @@ const isModalUpdateBrand = ref(false)
 const isLoadingUpdateBrand = ref(false)
 const selectedBrandToUpdate = ref<any>(null)
 const onEditBrand = () => {
-    console.log('=---', props.brand_routes.update_brand.name)
-    console.log('=---', props.brand_routes.update_brand.parameters, selectedBrandToUpdate.value?.id)
     router[props.brand_routes.update_brand.method || 'patch'](
         route(props.brand_routes.update_brand.name, {
             ...props.brand_routes.update_brand.parameters,
@@ -300,8 +298,8 @@ const onEditBrand = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully update brand name."),
+                    title: ctrans("Success!"),
+                    text: ctrans("Successfully update brand name."),
                     type: "success",
                 })
                 isModalUpdateBrand.value = false
@@ -313,8 +311,8 @@ const onEditBrand = () => {
             onError: (error) => {
                 console.error('Error editing brand:', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans('Failed to update brand'),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans('Failed to update brand'),
                     type: "error",
                 })
             }
@@ -340,7 +338,7 @@ const onEditBrand = () => {
                                 tag: tag.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to detach tag') + ` ${tag.name}?`"
+                        :title="ctrans('Are you sure you want to detach tag') + ` ${tag.name}?`"
                         isFullLoading
                     >
                         <template #default="{ isOpenModal, changeModel }">
@@ -375,7 +373,7 @@ const onEditBrand = () => {
                     <div class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
                         <Button
                             @click="() => (_multiselect_tags?.hide())"
-                            :label="formSelectedTags.isDirty ? trans('Save and close') : trans('Close')"
+                            :label="formSelectedTags.isDirty ? ctrans('Save and close') : ctrans('Close')"
                             xicon="fas fa-plus"
                             full
                             :key="`${formSelectedTags.isDirty}`"
@@ -384,7 +382,7 @@ const onEditBrand = () => {
                         
                         <Button
                             @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                            :label="trans('Create new tag')"
+                            :label="ctrans('Create new tag')"
                             icon="fas fa-plus"
                             full
                             type="dashed"
@@ -397,7 +395,7 @@ const onEditBrand = () => {
 
     <div v-if="props.brand_routes?.index_brand" class="w-full max-w-md py-4 gap-x-3 ">
         <div>
-            {{ trans("Brand") }}:
+            {{ ctrans("Brand") }}:
         </div>
 
         <div class="w-full">
@@ -405,7 +403,7 @@ const onEditBrand = () => {
                 :modelValue="props.brand?.id"
                 @update:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
                 :fetchRoute="props.brand_routes.index_brand"
-                :placeholder="trans('Select brand')"
+                :placeholder="ctrans('Select brand')"
                 valueProp="id"
                 required
                 aoptionsList="(options) => dataServiceList = options"
@@ -426,7 +424,7 @@ const onEditBrand = () => {
                                         brand: option.id,
                                     }
                                 }"
-                                :title="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                                :title="ctrans('Are you sure you want to delete brand') + ` ${option.name}?`"
                                 isFullLoading
                             >
                                 <template #default="{ isOpenModal, changeModel }">
@@ -459,8 +457,8 @@ const onEditBrand = () => {
             <ModalConfirmationDelete
                 v-if="props.brand?.id"
                 :routeDelete="props.brand_routes.detach_brand"
-                :title="trans('Are you sure you want to unselect brand?')"
-                :description="trans('This will remove the brand from this unit, but not delete it.')"
+                :title="ctrans('Are you sure you want to unselect brand?')"
+                :description="ctrans('This will remove the brand from this unit, but not delete it.')"
                 isFullLoading
                 noLabel="Unselect"
                 noIcon="fal fa-times"
@@ -468,7 +466,7 @@ const onEditBrand = () => {
                 <template #default="{ isOpenModal, changeModel }">
                     <div @click="changeModel" class="ml-auto w-fit text-xs text-red-500 hover:underline cursor-pointer">
                         <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
-                        {{ trans("Unselect brand") }}
+                        {{ ctrans("Unselect brand") }}
                     </div>
                 </template>
             </ModalConfirmationDelete>
@@ -480,13 +478,13 @@ const onEditBrand = () => {
     <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans('Create new tag') }}</h2>
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        {{ trans('Image') }}
+                        {{ ctrans('Image') }}
                     </label>
                     <div class="mt-1">
                         <PureImageCrop
@@ -498,7 +496,7 @@ const onEditBrand = () => {
 
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput v-model="newTagName" placeholder="1-64 characters" />
@@ -523,13 +521,13 @@ const onEditBrand = () => {
     <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit tag') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans('Edit tag') }}</h2>
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureImageCrop
@@ -542,7 +540,7 @@ const onEditBrand = () => {
 
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />
@@ -568,13 +566,13 @@ const onEditBrand = () => {
     <Modal :isOpen="isModalBrand" @onClose="isModalBrand = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans('Create new brand') }}</h2>
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        {{ trans('Image') }}
+                        {{ ctrans('Image') }}
                     </label>
                     <div class="mt-1">
                         <PureImageCrop
@@ -588,7 +586,7 @@ const onEditBrand = () => {
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Reference') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Reference') }}
                     </label>
                     <div class="mt-1">
                         <PureInput v-model="newBrandReference" placeholder="1-16 characters" />
@@ -597,7 +595,7 @@ const onEditBrand = () => {
 
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput v-model="newBrandName" placeholder="1-64 characters" />
@@ -622,13 +620,13 @@ const onEditBrand = () => {
     <Modal :isOpen="isModalUpdateBrand" @onClose="isModalUpdateBrand = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans('Create new brand') }}</h2>
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        {{ trans('Image') }}
+                        {{ ctrans('Image') }}
                     </label>
                     <div class="mt-1">
                         <PureImageCrop
@@ -641,7 +639,7 @@ const onEditBrand = () => {
 
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Reference') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Reference') }}
                     </label>
                     <div class="mt-1">
                         <PureInput :modelValue="selectedBrandToUpdate?.reference" @update:modelValue="(e) => set(selectedBrandToUpdate, ['reference'], e)" placeholder="1-16 characters" />
@@ -650,7 +648,7 @@ const onEditBrand = () => {
 
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput :modelValue="selectedBrandToUpdate?.name" @update:modelValue="(e) => set(selectedBrandToUpdate, ['name'], e)" placeholder="1-64 characters" />

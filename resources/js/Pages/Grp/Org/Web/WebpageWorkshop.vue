@@ -150,7 +150,6 @@ const canRedo = computed(() => future.value.length > 0);
 const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog', 'system_page'];
 const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
 
-console.log('layout',layout)
 
 const revealBlockOptions = computed(() =>
   (data.value?.layout?.web_blocks ?? [])
@@ -208,7 +207,6 @@ const addNewBlock = async ({ block, type }) => {
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => {
-        console.log('sss', error)
         notify({
           title: ctrans("Something went wrong"),
           text: error.message,
@@ -337,7 +335,6 @@ const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
       }
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
-        console.log(error)
         return;
       }
 
@@ -409,7 +406,6 @@ const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
 };
 
 const onSaveWorkshopFromId = (blockId, from) => {
-  if (from) console.log('onSaveWorkshopFromId from:', from);
   if (!blockId || !props.editable) return;
   if (cancelTokens.value[blockId]) cancelTokens.value[blockId]();
 
@@ -748,7 +744,6 @@ const onApplyTemplate = (payload: {
   if (!props.editable) return;
   isApplyingTemplate.value = true;
 
-  console.log(payload)
   axios.post(
     route(TEMPLATE_APPLY_ROUTE, { webpage: data.value.id }),
     payload
@@ -832,7 +827,6 @@ const afterUndoRedo = async (value) => {
     );
 
     data.value = { ...data.value, layout: response.data };
-    console.log('sss', response.data)
 
     sendToIframe({
       key: "setWebpage",
@@ -1140,7 +1134,6 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-console.log('props_workshop',props)
 </script>
 
 <template>

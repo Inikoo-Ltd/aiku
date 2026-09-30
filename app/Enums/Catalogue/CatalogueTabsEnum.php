@@ -24,7 +24,7 @@ enum CatalogueTabsEnum: string
             ],
             self::TOP_LISTED_FAMILIES => [
                 'title' => __('Top Listed Families'),
-                'icon'  => 'fal fal fa-bars',
+                'icon'  => 'fal fa-bars',
             ],
             self::TOP_LISTED_PRODUCTS => [
                 'title' => __('Top Listed Products'),

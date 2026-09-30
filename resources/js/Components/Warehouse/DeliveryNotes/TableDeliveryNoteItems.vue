@@ -664,7 +664,7 @@ const openPackingModal = async (item: any) => {
         packingDetailRows.value = res.data
         // console.log("packingDetailRows",packingDetailRows.value)
     } catch (e) {
-        console.log(e)
+        console.error(e)
         packingDetailRows.value = []
     } finally {
         isLoadingPackingDetail.value = false

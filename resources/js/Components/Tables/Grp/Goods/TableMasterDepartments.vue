@@ -49,7 +49,6 @@ function masterShopRoute(masterDepartment: MasterDepartment) {
 
 
 function subdepartmentRoute(masterDepartment: MasterDepartment) {
-    console.log(route().current())
   if (route().current()=='grp.masters.master_departments.index') {
     return route('grp.masters.master_departments.show.master_sub_departments.index',
       {

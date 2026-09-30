@@ -10,6 +10,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { capitalize } from "@/Composables/capitalize"
 import TableCustomerBalances from '@/Components/Tables/Grp/Org/Accounting/TableCustomerBalances.vue';
 import {PageHeadingTypes}  from '@/types/PageHeading'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faMoneyCheckAlt } from "@fal"
+library.add(faMoneyCheckAlt)
 
 const props = defineProps<{
     data: {}

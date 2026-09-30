@@ -137,7 +137,6 @@ const handleUpload = async (files: File[]) => {
 			const formData = new FormData()
 			formData.append("images[0]", file, file.name)
 
-			console.log('Uploading GIF file directly', file)
 
 			const response = await axios.post(
 				route(props.uploadRoutes.name, props.uploadRoutes.parameters),
@@ -224,7 +223,6 @@ const confirmCrop = async () => {
 
 		cancelCrop()
 	} catch (error: any) {
-		console.log('error', error)
 		const message = error.response?.data?.message || "Errorzzz while uploading image"
 		notify({
 			title: "Upload Failed",

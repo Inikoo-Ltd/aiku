@@ -42,7 +42,7 @@ const props = defineProps<{
     data: object
     tab?: string
     canMoveAllSku?:boolean,
-    location_id: number,
+    location_id?: number,
     transfer_reason?: {}
     discontinue_preview_route?: routeType | null
     discontinue_route?: routeType | null
@@ -160,7 +160,6 @@ function onToggleRemoveAfterMove(row: PartialMoveRow) {
 
 function onSavePartialMoveSku() {
     const params = route().params as RouteParams
-    console.log(partialForm)
     partialForm
         .transform((data) => ({
             location_id: data.location_id,

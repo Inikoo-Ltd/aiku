@@ -28,7 +28,6 @@
     pageHead: PageHeadingTypes
     data: {}
   }>()
-  console.log(props)
   </script>
 
 <template>

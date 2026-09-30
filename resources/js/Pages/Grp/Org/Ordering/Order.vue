@@ -1448,7 +1448,6 @@ const fetchChargesList = async (noLoading?: boolean) => {
         )
 
         chargesList.value = response.data.data
-        console.log('Response axios:', response.data)
     } catch (error: any) {
         notify({
             title: ctrans("Something went wrong"),
@@ -1526,7 +1525,6 @@ const submitNewCharge = async () => {
                 label: dataNewChargeToAdd.value.label,
             }
         )
-        console.log('Response axios:', response.data)
 
         fetchChargesList()
         dataNewChargeToAdd.value.label = ''

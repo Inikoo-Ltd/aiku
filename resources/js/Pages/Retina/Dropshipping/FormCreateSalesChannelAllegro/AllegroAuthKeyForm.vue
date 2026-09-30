@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { inject, ref } from "vue";
 import { faInfoCircle } from "@fal";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -43,7 +43,7 @@ const submitForm = async () => {
 		goNext();
 		isLoadingStep.value = false
 	} catch (err: any) {
-		console.log(err)
+		console.error(err)
 		isLoadingStep.value = false;
 		errors.value = err.response?.data?.errors;
 	}
@@ -52,19 +52,19 @@ const submitForm = async () => {
 
 <template>
 	<div class="flex flex-col gap-2">
-		<span class="text-lg font-semibold">{{ trans("Authentication Settings") }}</span>
+		<span class="text-lg font-semibold">{{ ctrans("Authentication Settings") }}</span>
 		<span class="text-sm">{{
-			trans("This is where you need to auth your TikTok store to our system.")
+			ctrans("This is where you need to auth your TikTok store to our system.")
 		}}</span>
 	</div>
 	<form class="flex flex-col gap-6">
 		<div class="flex items-center gap-2 w-full md:w-80">
 			<a target="_blank" :href="props?.props?.allegroAuth?.url" class="p-4 rounded bg-black text-white">
-				{{ trans("Auth Store") }}
+				{{ ctrans("Auth Store") }}
 			</a>
 			<FontAwesomeIcon
 				v-tooltip="
-					trans(
+					ctrans(
 						'Requests a token from TikTok so we can sync without you entering your account details each time'
 					)
 				"
@@ -75,10 +75,10 @@ const submitForm = async () => {
 		<hr class="w-full border-t" />
 		<div class="flex md:justify-end gap-4">
 			<Button type="secondary" size="sm" @click="closeCreateAllegroModal">{{
-				trans("Cancel")
+				ctrans("Cancel")
 			}}</Button>
 			<Button size="sm" :loading="isLoadingStep" @click="submitForm">{{
-				trans("Next")
+				ctrans("Next")
 			}}</Button>
 		</div>
 	</form>

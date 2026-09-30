@@ -5,7 +5,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight, faFilter, faTachometerAlt, faList, faLayerGroup } from "@fal";
@@ -169,7 +169,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                     @change="updateFilter"
                     class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
-                    <option :value="null">{{ trans('All Employees') }}</option>
+                    <option :value="null">{{ ctrans('All Employees') }}</option>
                     <option v-for="employee in employeeOptions" :key="employee.value" :value="employee.value">
                         {{ employee.label }}
                     </option>
@@ -180,7 +180,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                     @change="updateFilter"
                     class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
-                    <option :value="null">{{ trans('All Types') }}</option>
+                    <option :value="null">{{ ctrans('All Types') }}</option>
                     <option v-for="type in overtimeTypeOptions" :key="type.value" :value="type.value">
                         {{ type.label }}
                     </option>
@@ -215,7 +215,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                     <thead>
                         <tr>
                             <th class="p-2 border-b border-r border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 w-48 min-w-[12rem]">
-                                {{ trans('Employee') }}
+                                {{ ctrans('Employee') }}
                             </th>
                             <th
                                 v-for="day in days"
@@ -255,7 +255,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                         </tr>
                         <tr v-if="calendarData.length === 0">
                             <td :colspan="daysInMonth + 1" class="p-8 text-center text-gray-500">
-                                {{ trans('No employees found.') }}
+                                {{ ctrans('No employees found.') }}
                             </td>
                         </tr>
                     </tbody>
@@ -264,11 +264,11 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
         </div>
     </div>
 
-    <Modal :show="showModal" @close="closeModal">
+    <Modal :isOpen="showModal" @onClose="closeModal">
         <div class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-medium text-gray-900">
-                    {{ trans('Overtime Details') }}
+                    {{ ctrans('Overtime Details') }}
                 </h3>
                 <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
                     <span class="sr-only">Close</span>
@@ -281,11 +281,11 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
             <div v-if="selectedOvertime" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Staff Member') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Staff Member') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.employee_name }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Status') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Status') }}</label>
                         <div class="mt-1">
                             <span
                                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
@@ -300,38 +300,38 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Date') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Date') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.date }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Requested duration') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Requested duration') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.formatted_duration }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Requested time') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Requested time') }}</label>
                         <div class="mt-1 text-sm text-gray-900">
                             {{ useFormatTime(selectedOvertime.start_time, { formatTime: 'HH:mm' }) }} - {{ useFormatTime(selectedOvertime.end_time, { formatTime: 'HH:mm' }) }}
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Overtime Type') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Overtime Type') }}</label>
                         <div class="mt-1 text-sm text-gray-900 flex items-center gap-2">
                             <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: selectedOvertime.color || '#4F46E5' }"></span>
                             {{ selectedOvertime.overtime_type }}
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Approver') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Approver') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.approver_name }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Recorded duration') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Recorded duration') }}</label>
                         <div class="mt-1 text-sm text-gray-900">
                             {{ selectedOvertime.recorded_formatted_duration ?? '—' }}
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Recorded time') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ ctrans('Recorded time') }}</label>
                         <div class="mt-1 text-sm text-gray-900">
                             <template v-if="selectedOvertime.recorded_start_time && selectedOvertime.recorded_end_time">
                                 {{ useFormatTime(selectedOvertime.recorded_start_time, { formatTime: 'HH:mm' }) }} - {{ useFormatTime(selectedOvertime.recorded_end_time, { formatTime: 'HH:mm' }) }}
@@ -344,7 +344,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                 </div>
 
                 <div v-if="selectedOvertime.reason">
-                    <label class="block text-sm font-medium text-gray-500">{{ trans('Reason') }}</label>
+                    <label class="block text-sm font-medium text-gray-500">{{ ctrans('Reason') }}</label>
                     <div class="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md border border-gray-100">
                         {{ selectedOvertime.reason }}
                     </div>
@@ -353,7 +353,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
 
             <div class="mt-6 flex justify-end">
                 <Button type="secondary" @click="closeModal">
-                    {{ trans('Close') }}
+                    {{ ctrans('Close') }}
                 </Button>
             </div>
         </div>

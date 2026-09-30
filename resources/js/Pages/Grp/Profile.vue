@@ -128,7 +128,6 @@ const fetchTabData = async (tabSlug: string) => {
     }
 
     try {
-        console.log('tab', tabSlug, route(routeName))
         const { data } = await axios.get(
             route(routeName), {
                 headers: {
@@ -137,7 +136,6 @@ const fetchTabData = async (tabSlug: string) => {
             }
         )
         dataTab.value = data
-        console.log('daaataaa', dataTab.value)
         currentTab.value = tabSlug
         // console.log('response', dataTab.value)
     } catch (error: any) {

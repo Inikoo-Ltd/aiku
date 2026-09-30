@@ -30,7 +30,6 @@ export const setColorStyleRootByEl = (
 ) => {
   if (!el || !themeColors.length) return
 
-  console.log(el,themeColors)
 
    if (el) {        
         el.style.setProperty('--theme-color-0', themeColors?.[0])

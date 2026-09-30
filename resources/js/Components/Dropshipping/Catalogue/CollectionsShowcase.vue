@@ -44,7 +44,6 @@ const props = defineProps<{
   }
   salesData?: object
 }>()
-console.log(props)
 
 const isModalOpenDepartment = ref(false)
 const isModalOpenSubDepartment = ref(false)

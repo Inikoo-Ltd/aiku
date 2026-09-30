@@ -417,7 +417,6 @@ const showLockButton = () => {
     return handlerId != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(props.deliveryNote?.state)
 }
 
-console.log(layout)
 
 function returnNoteRoute(returnDeliveryNote) {
 	switch(route().current()) {

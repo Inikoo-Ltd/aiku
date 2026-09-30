@@ -34,7 +34,6 @@ const setAllToRead = async () => {
 
         layout.notifications.map(notif => notif.read = true)  // Manipulation data in FE
     } catch (error: any) {
-        console.log(error)
         notify({
             title: 'Error on set notifications.',
             text: error,
@@ -56,7 +55,6 @@ const setNotificationToRead = async (notifId: string) => {
             )
     
         } catch (error: any) {
-            console.log(error)
             notify({
                 title: 'Error on set notifications.',
                 text: error,

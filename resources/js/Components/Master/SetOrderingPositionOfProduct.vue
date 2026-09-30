@@ -5,7 +5,7 @@ import draggable from "vuedraggable"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { faCheck, faTimes } from "@fas";
 import { isEqual } from 'lodash-es'
 import { faTrash } from "@far";
@@ -81,7 +81,6 @@ const updateOrder = () => {
     }))
 
 
-    console.log("Updated order:", items.value)
     emits("update:data", items.value);
 }
 
@@ -235,11 +234,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-600 transition duration-200 hover:bg-gray-50 hover:text-gray-800"
                     @click="isPasteOpen = true">
                     <FontAwesomeIcon :icon="faCopy" fixed-width aria-hidden="true" />
-                    {{ trans("Paste order") }}
+                    {{ ctrans("Paste order") }}
                 </button>
                 <span
                     v-if="!disabled"
-                    v-tooltip="trans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
+                    v-tooltip="ctrans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
                     class="text-gray-400 hover:text-gray-600">
                     <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
                 </span>
@@ -268,7 +267,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         <template v-if="!items.length">
             <slot name="empty">
                 <div class="text-center py-10 text-gray-400 border rounded bg-white">
-                    {{ trans('No products found.') }}
+                    {{ ctrans('No products found.') }}
                 </div>
             </slot>
         </template>
