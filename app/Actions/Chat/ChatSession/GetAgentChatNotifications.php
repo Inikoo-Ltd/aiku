@@ -60,6 +60,7 @@ class GetAgentChatNotifications
             'unclaimed'   => $unclaimed,
             'spam'        => $this->spamCount($shopIds),
             'carriers'    => $this->carrierCount($shopIds),
+            'colleagues'  => $this->colleagueCount($shopIds),
         ];
     }
 
@@ -80,6 +81,20 @@ class GetAgentChatNotifications
     {
         return ChatSession::query()
             ->where('is_carrier', true)
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->whereIn('shop_id', $shopIds)
+            ->count();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function colleagueCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->where('is_colleague', true)
             ->where('is_spam', false)
             ->where('is_rubbish', false)
             ->where('status', '!=', ChatSessionStatusEnum::CLOSED)

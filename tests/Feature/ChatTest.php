@@ -5517,11 +5517,28 @@ test('mail from one of our own shops or a staff buying account never becomes a c
         ],
     ]);
 
+    $colleagueMessage = fn (string $id, string $to) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => 't'.$id,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Staff Buyer <buyer.staff@example.com>'],
+                ['name' => 'To', 'value' => $to],
+                ['name' => 'Subject', 'value' => 'Can you call this customer back?'],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode('please call them'), '+/', '-_'), '=')],
+        ],
+    ]);
+
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o1*' => $gmailMessage('o1', 'AW Artisan <hola@awartisan.es>'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o3*' => $gmailMessage('o3', 'Staff Buyer <buyer.staff@example.com>'),
-        'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c1*' => $colleagueMessage('c1', 'care@shop.test'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c2*' => $colleagueMessage('c2', 'care@shop.test, hola@awartisan.es'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c3*' => $colleagueMessage('c3', 'care@shop.test'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered'], ['id' => 'LI', 'name' => 'aiku/imported'], ['id' => 'LU', 'name' => 'aiku/unmatched']]]),
         'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
@@ -5534,6 +5551,35 @@ test('mail from one of our own shops or a staff buying account never becomes a c
 
     expect(ChatSession::count())->toBe($sessionsBefore)
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::ourOwnAddresses())->not->toHaveKey('david@ancientwisdom.biz');
+
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c2'))->toBeNull()
+        ->and(ChatSession::count())->toBe($sessionsBefore);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/c2/modify') && $request['addLabelIds'] === ['LF']);
+
+    $customerThread = ChatSession::create([
+        'ulid'        => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'status'      => ChatSessionStatusEnum::CLOSED->value,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'channel'     => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL->value,
+    ]);
+    $customerThread->update(['metadata' => ['gmail_thread_id' => 'tc3', 'email' => 'shopper@example.com']]);
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c3'))->toBeNull()
+        ->and($customerThread->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and(data_get($customerThread->fresh()->metadata, 'email'))->toBe('shopper@example.com');
+    $customerThread->forceDelete();
+
+    $colleagueSession = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c1')->chatSession;
+
+    expect($colleagueSession->is_colleague)->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['shop_ids' => [$this->shop->id]])->pluck('id'))->not->toContain($colleagueSession->id)
+        ->and(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['shop_ids' => [$this->shop->id], 'colleague' => 1])->pluck('id'))->toContain($colleagueSession->id);
+
+    $colleagueSession->messages()->forceDelete();
+    $colleagueSession->forceDelete();
 });
 
 test('the sweep marks email conversations already imported from our own addresses as rubbish', function () {

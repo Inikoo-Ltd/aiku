@@ -164,6 +164,10 @@ class ClassifyChatSessionNoise
             return false;
         }
 
+        if ($chatSession instanceof ChatSession && $chatSession->is_colleague) {
+            return false;
+        }
+
         return !$chatSession->last_agent_message_at
             && (self::isProvisional($chatSession) || (!$chatSession->noise_checked_at && !$chatSession->is_spam && !$chatSession->is_rubbish));
     }

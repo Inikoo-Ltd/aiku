@@ -35,6 +35,7 @@ class RubbishOwnMailChatSessions
 
         ChatSession::where('channel', ChatChannelEnum::EMAIL)
             ->where('is_rubbish', false)
+            ->where('is_colleague', false)
             ->whereIn(ChatSession::raw("lower(metadata->>'email')"), array_keys($ours))
             ->chunkById(200, function ($sessions) use ($ours, $dryRun, $command, &$marked) {
                 foreach ($sessions as $session) {

@@ -61,6 +61,7 @@ class GetChatSessions
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
+            'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
@@ -212,9 +213,10 @@ class GetChatSessions
             $query->where('is_rubbish', $isRubbishView);
         }
 
-        // Couriers are answered from their own folder and nowhere else.
+        // Couriers and colleagues are answered from their own folders and nowhere else.
         if (!$isTrashView) {
-            $query->where('is_carrier', !empty($filters['carrier']));
+            $query->where('is_carrier', !empty($filters['carrier']))
+                ->where('is_colleague', !empty($filters['colleague']));
         }
 
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.

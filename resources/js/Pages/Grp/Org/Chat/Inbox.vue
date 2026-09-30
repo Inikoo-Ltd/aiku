@@ -19,7 +19,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -222,6 +222,8 @@ const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
 const carrierView = ref(false)
 const carriersCount = ref(0)
+const colleagueView = ref(false)
+const colleaguesCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -233,7 +235,7 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
     && selectedShopIds.value.length !== 1)
 
 // Folders read the shops picked above: somebody covering many shops clears their own backlog,
@@ -572,7 +574,7 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !unclaimedView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
@@ -580,6 +582,7 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
         rubbishView.value = false
         trashView.value = false
         carrierView.value = false
+        colleagueView.value = false
         highlightView.value = false
         unclaimedView.value = false
         setShop(shopId)
@@ -617,7 +620,9 @@ const buildParams = (page: number) => ({
                         ? { highlighted: 1, statuses: selectedStatuses.value }
                         : carrierView.value
                             ? { carrier: 1, statuses: selectedStatuses.value }
-                            : { statuses: selectedStatuses.value }),
+                            : colleagueView.value
+                                ? { colleague: 1, statuses: selectedStatuses.value }
+                                : { statuses: selectedStatuses.value }),
     ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
@@ -634,7 +639,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || unclaimedView.value || agentView.value
+    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -865,7 +870,7 @@ const selectedInbox = computed(() =>
 
 const showDsKinds = computed(() =>
     selectedShopId.value !== null && selectedInbox.value?.type === "dropshipping"
-    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !unclaimedView.value
+    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
 )
 
 // Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
@@ -1064,6 +1069,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     rubbishView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     setShop(shopId)
@@ -1095,6 +1101,7 @@ const selectRubbish = () => {
     spamView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1111,6 +1118,7 @@ const selectSpam = () => {
     rubbishView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1127,6 +1135,7 @@ const selectTrash = () => {
     rubbishView.value = false
     spamView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1143,6 +1152,7 @@ const selectUnclaimed = () => {
     if (unclaimedView.value) return
     unclaimedView.value = true
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1158,6 +1168,24 @@ const selectUnclaimed = () => {
 const selectCarriers = () => {
     if (carrierView.value) return
     carrierView.value = true
+    colleagueView.value = false
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectColleagues = () => {
+    if (colleagueView.value) return
+    colleagueView.value = true
+    carrierView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1175,6 +1203,7 @@ const selectHighlight = () => {
     if (highlightView.value) return
     highlightView.value = true
     carrierView.value = false
+    colleagueView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
@@ -1443,6 +1472,7 @@ const fetchAgentNotifications = async () => {
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
         carriersCount.value = data?.data?.carriers ?? 0
+        colleaguesCount.value = data?.data?.colleagues ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -2175,6 +2205,21 @@ onUnmounted(() => {
                         {{ carriersCount }}
                     </span>
                 </button>
+                <button type="button" @click="selectColleagues"
+                    v-tooltip="ctrans('Emails colleagues wrote to this mailbox; their circulars, newsletters and notifications stay out')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        colleagueView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="colleagueView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faUsers" class="text-sm shrink-0" :class="colleagueView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Colleagues") }}</span>
+                    <span v-if="!railCollapsed && colleaguesCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ colleaguesCount }}
+                    </span>
+                </button>
             </div>
 
             <!-- Spam -->
@@ -2253,7 +2298,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : colleagueView ? ctrans("Colleagues") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
@@ -2261,7 +2306,7 @@ onUnmounted(() => {
                     <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
                         {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
                     </div>
-                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView" class="text-[11px] text-gray-500 truncate">
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView || colleagueView" class="text-[11px] text-gray-500 truncate">
                         {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">

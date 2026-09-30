@@ -46,6 +46,7 @@ class GetCrossChannelSessions
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
+            'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
@@ -85,7 +86,7 @@ class GetCrossChannelSessions
 
         // Rubbish is a mark on an imported mailbox's backlog; WhatsApp has no such history and
         // no such column, so its bin is email and website only.
-        $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false)) && (! ($filters['carrier'] ?? false))
+        $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false)) && (! ($filters['carrier'] ?? false)) && (! ($filters['colleague'] ?? false))
             && ($wantsAll || $channels->contains('whatsapp'));
         $wantsSessions = $wantsAll || $channels->contains(fn ($channel) => $channel !== 'whatsapp');
 
