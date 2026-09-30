@@ -9,7 +9,7 @@ import "./bootstrap";
 import "../css/app.css";
 
 import { createApp, h } from "vue";
-import { createInertiaApp } from "@inertiajs/vue3";
+import { createInertiaApp, router } from "@inertiajs/vue3";
 import { ZiggyVue } from "ziggy-js";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
@@ -84,6 +84,23 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
+const readBlocks = (page) => {
+  const webBlocks = page?.props?.web_blocks;
+  if (!webBlocks) {
+    return null;
+  }
+  const iris = page.props.iris;
+  const headerBlocks = [iris?.header?.topBar?.code, iris?.header?.header?.code, iris?.menu?.code].filter(Boolean).map((type) => ({ type }));
+
+  return { webBlocks: [...Object.values(webBlocks), ...headerBlocks], shopType: page.props.retina?.type };
+};
+
+let nextPageBlocks = readBlocks(JSON.parse(document.getElementById("app")?.dataset.page ?? "null"));
+
+router.on("beforeUpdate", (event) => {
+  nextPageBlocks = readBlocks(event.detail.page);
+});
+
 createInertiaApp(
   {
     resolve: async name => {
@@ -91,6 +108,12 @@ createInertiaApp(
       let page = await pages?.[`./Pages/Retina/${name}.vue`]?.();
       if (!page) console.error(`File './Pages/Retina/${name}.vue' is not exist`);
       page.default.layout = page.default?.layout || Layout;
+      if (name === "RetinaWebpage" && nextPageBlocks?.webBlocks) {
+        const { webBlocks, shopType } = nextPageBlocks;
+        nextPageBlocks = null;
+        const { preloadIrisBlocks } = await import("@/Iris/Composables/getIrisComponents");
+        await preloadIrisBlocks(webBlocks, shopType);
+      }
       return page;
     },
     setup({ el, App, props, plugin }) {
