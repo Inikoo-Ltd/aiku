@@ -2234,8 +2234,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 </div>
 
 
-                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0 && !isOrderAmountsProvisional"
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                    <div v-if="isOrderAmountsProvisional" class="mb-1.5 px-2.5 text-center text-xs text-yellow-700">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                                        {{ ctrans("Total can change if items go out of stock or are changed during picking") }}
+                                    </div>
                                     <div v-if="data?.data?.to_be_paid_by?.value"
                                         class="mx-auto w-fit flex items-center">
                                         <Button @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
