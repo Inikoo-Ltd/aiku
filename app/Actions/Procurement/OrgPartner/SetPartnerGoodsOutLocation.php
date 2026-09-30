@@ -26,6 +26,10 @@ class SetPartnerGoodsOutLocation
      */
     public function handle(OrgPartner $orgPartner, ?Location $location): OrgPartner
     {
+        if ($location && !$orgPartner->organisation->is_manufacturing_hub) {
+            throw ValidationException::withMessages(['location' => __('Only a manufacturing hub gathers stock for its partners')]);
+        }
+
         if ($location) {
             if ($location->organisation_id !== $orgPartner->organisation_id) {
                 throw ValidationException::withMessages(['location' => __('Location belongs to another organisation')]);

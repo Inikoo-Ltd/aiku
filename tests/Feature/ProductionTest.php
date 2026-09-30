@@ -2770,7 +2770,9 @@ test('an operative only sees the factory jobs page and nothing group or commerci
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
         ->not->toContain('overview', 'chat', 'calendar_offers')
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
-        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'pre_pick', 'artisans']);
+        ->toBe($this->production->organisation->is_manufacturing_hub
+            ? ['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'pre_pick', 'artisans']
+            : ['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'artisans']);
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));

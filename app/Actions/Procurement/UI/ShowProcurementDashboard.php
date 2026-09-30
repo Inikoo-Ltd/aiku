@@ -208,7 +208,7 @@ class ShowProcurementDashboard extends OrgAction
         $withItems = [];
         $empty     = [];
 
-        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->get() as $orgPartner) {
+        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->whereRelation('partner', 'is_manufacturing_hub', true)->get() as $orgPartner) {
             $miniCart = GetPartnerMiniCart::run($orgPartner);
 
             if ($miniCart['count'] > 0) {

@@ -89,6 +89,7 @@ use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
 use App\Actions\Procurement\UI\IndexPreOrdersBySupplier;
 use App\Actions\Procurement\UpdatePreOrdersForSupplier;
 use App\Actions\Procurement\ExportOrganisationStockCoverItems;
+use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
@@ -189,23 +190,25 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
             Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
         });
-        Route::prefix('shopping')->as('.shopping.')->group(function () {
-            Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
-            Route::patch('lead-time', UpdatePartnerLeadTimeEstimate::class)->name('lead_time.update');
-            Route::delete('misplaced', RemoveMisplacedShoppingListItems::class)->name('misplaced.destroy');
-            Route::get('items', IndexPartnerCoverBucketItems::class)->name('items.index');
-        });
-        Route::prefix('browse')->as('.browse.')->group(function () {
-            Route::get('', ShowPartnerBrowse::class)->name('index');
-        });
-        Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
-            Route::get('', IndexPartnerShoppingListItems::class)->name('index');
-            Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
-            Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
-            Route::delete('open', DeleteOpenPartnerShoppingListItems::class)->name('destroy_open');
-            Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
-            Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();
-            Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy')->withoutScopedBindings();
+        Route::middleware(EnsurePartnerIsManufacturingHub::class)->group(function () {
+            Route::prefix('shopping')->as('.shopping.')->group(function () {
+                Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
+                Route::patch('lead-time', UpdatePartnerLeadTimeEstimate::class)->name('lead_time.update');
+                Route::delete('misplaced', RemoveMisplacedShoppingListItems::class)->name('misplaced.destroy');
+                Route::get('items', IndexPartnerCoverBucketItems::class)->name('items.index');
+            });
+            Route::prefix('browse')->as('.browse.')->group(function () {
+                Route::get('', ShowPartnerBrowse::class)->name('index');
+            });
+            Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
+                Route::get('', IndexPartnerShoppingListItems::class)->name('index');
+                Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
+                Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
+                Route::delete('open', DeleteOpenPartnerShoppingListItems::class)->name('destroy_open');
+                Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
+                Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();
+                Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy')->withoutScopedBindings();
+            });
         });
     });
 

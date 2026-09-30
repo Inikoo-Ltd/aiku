@@ -314,6 +314,7 @@ beforeEach(function () {
         );
     }
 
+    $orgPartner->partner->update(['is_manufacturing_hub' => true]);
     $this->orgPartner = $orgPartner;
 
     $stockDelivery = StockDelivery::orderBy('id')->first();
@@ -5423,6 +5424,33 @@ test('pre-picking reserves stock for the partner without creating any order', fu
     $listed = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'];
     expect(collect($listed)->pluck('id'))->not->toContain($item->id);
+});
+
+test('only a manufacturing hub sells to its partners through the shopping list and pre-pick', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+    $buyerWasHub = $this->orgPartner->organisation->is_manufacturing_hub;
+    $seller->update(['is_manufacturing_hub' => false]);
+    $production->organisation->update(['is_manufacturing_hub' => false]);
+    $this->orgPartner->organisation->update(['is_manufacturing_hub' => false]);
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))->assertNotFound();
+    $this->get(route('grp.org.procurement.org_partners.show.shopping.dashboard', [$this->organisation->slug, $this->orgPartner->id]))->assertNotFound();
+    $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]))->assertNotFound();
+    $this->get(route('grp.org.productions.show.pre_pick.index', [$production->organisation->slug, $production->slug]))->assertForbidden();
+
+    $subNavigation = $this->get(route('grp.org.procurement.org_partners.show', [$this->organisation->slug, $this->orgPartner->id]))
+        ->assertOk()->viewData('page')['props']['pageHead']['subNavigation'];
+    expect(collect($subNavigation)->pluck('route.name'))->not->toContain('grp.org.procurement.org_partners.show.shopping.dashboard')
+        ->and(fn () => \App\Actions\Procurement\OrgPartner\SetPartnerGoodsOutLocation::run($this->orgPartner, new Location()))
+        ->toThrow(ValidationException::class);
+
+    $this->orgPartner->organisation->update(['is_manufacturing_hub' => $buyerWasHub]);
+    $seller->update(['is_manufacturing_hub' => true]);
+    $production->organisation->update(['is_manufacturing_hub' => true]);
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))->assertOk();
+    $this->get(route('grp.org.productions.show.pre_pick.index', [$production->organisation->slug, $production->slug]))->assertOk();
 });
 
 test('batch size is hinted to the partner buyer and to the factory board', function () {

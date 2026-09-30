@@ -173,16 +173,18 @@ class GetProductionNavigation
             ];
 
 
-            $navigation['pre_pick'] = [
-                'root'  => 'grp.org.productions.show.pre_pick.',
-                'label' => __('Pre-pick'),
-                'icon'  => ['fal', 'fa-hand-holding-box'],
+            if ($production->organisation->is_manufacturing_hub) {
+                $navigation['pre_pick'] = [
+                    'root'  => 'grp.org.productions.show.pre_pick.',
+                    'label' => __('Pre-pick'),
+                    'icon'  => ['fal', 'fa-hand-holding-box'],
 
-                'route' => [
-                    'name'       => 'grp.org.productions.show.pre_pick.index',
-                    'parameters' => [$production->organisation->slug, $production->slug]
-                ],
-            ];
+                    'route' => [
+                        'name'       => 'grp.org.productions.show.pre_pick.index',
+                        'parameters' => [$production->organisation->slug, $production->slug]
+                    ],
+                ];
+            }
 
 
             $navigation['artisans'] = [
