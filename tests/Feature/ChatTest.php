@@ -117,7 +117,9 @@ use App\Models\Web\Website;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Testing\AssertableInertia;
@@ -541,6 +543,48 @@ test('authenticated agent can assign chat session to self', function () {
     ]);
 });
 
+
+test('an agent replying to a waiting chat picks it up, and a chat can only have one active agent', function () {
+    $user = $this->user;
+
+    actingAs($user);
+    makeChatWorker($user, $this->shop);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $user->id],
+        [
+            'is_online'            => true,
+            'max_concurrent_chats' => 100,
+            'current_chat_count'   => 0,
+        ]
+    );
+
+    $chatSession = ChatSession::create([
+        'ulid'             => Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING->value,
+        'guest_identifier' => 'guest_reply_claims',
+        'language_id'      => 68,
+        'shop_id'          => $this->shop->id,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+    ]);
+
+    $this->postJson(route('grp.org.chat.agents.messages.send', [$this->organisation->slug, $chatSession->ulid]), [
+        'message_text' => 'Hello, how can I help?',
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+    ])->assertSuccessful();
+
+    expect($chatSession->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($chatSession->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->pluck('chat_agent_id')->all())->toBe([$agent->id]);
+
+    expect(fn () => $chatSession->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]))->toThrow(UniqueConstraintViolationException::class);
+});
 
 test('can send message from agent after assignment', function () {
     $user = $this->user;
@@ -3244,6 +3288,86 @@ test('new meta chat session response carries the assigned agent', function () {
     expect($payload['assigned_agent'])->not->toBeNull()
         ->and($payload['assigned_agent']['id'])->toBe($agent->id)
         ->and($payload['assigned_agent']['user_id'])->toBe($this->user->id);
+});
+
+test('an agent replying to a waiting whatsapp chat picks it up, but cannot write in one another agent holds', function () {
+    $shopSettings         = $this->shop->settings;
+    $organisationSettings = $this->organisation->settings;
+
+    $this->shop->update(['settings' => array_merge($shopSettings ?? [], [
+        'whatsapp' => ['phone_number_id' => '111', 'waba_id' => '222'],
+    ])]);
+    $this->organisation->update(['settings' => array_merge($organisationSettings ?? [], [
+        'meta' => ['access_key' => 'token'],
+    ])]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.CLAIM']]])]);
+
+    $channel   = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $otherUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+
+    actingAs($this->user);
+    makeChatWorker($this->user, $this->shop);
+
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => $otherUser->id]);
+
+    $makeWaitingSession = function (string $phone) use ($channel) {
+        $session = MetaChatSession::create([
+            'ulid'            => (string)Str::ulid(),
+            'meta_channel_id' => $channel->id,
+            'shop_id'         => $this->shop->id,
+            'phone_number'    => $phone,
+            'status'          => ChatSessionStatusEnum::WAITING,
+            'language_id'     => 68,
+            'priority'        => ChatPriorityEnum::NORMAL,
+        ]);
+
+        $session->messages()->create([
+            'meta_channel_id' => $channel->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'Is my order on its way?',
+            'created_at'      => now()->subMinutes(5),
+        ]);
+
+        return $session;
+    };
+
+    $waiting = $makeWaitingSession('+628777000111');
+
+    $this->postJson(route('grp.org.chat.agents.whatsapp.messages.send', [$this->organisation->slug, $waiting->ulid]), [
+        'message_text' => 'Yes, it left this morning',
+    ])->assertSuccessful();
+
+    expect($waiting->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($waiting->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->pluck('chat_agent_id')->all())->toBe([$mine->id]);
+
+    $heldByOther = $makeWaitingSession('+628777000222');
+    $heldByOther->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $other->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $this->postJson(route('grp.org.chat.agents.whatsapp.messages.send', [$this->organisation->slug, $heldByOther->ulid]), [
+        'message_text' => 'Let me check',
+    ])->assertForbidden();
+
+    expect($heldByOther->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->count())->toBe(0)
+        ->and(fn () => $heldByOther->assignments()->create([
+            'meta_channel_id' => $channel->id,
+            'chat_agent_id'   => $mine->id,
+            'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+            'assigned_at'     => now(),
+        ]))->toThrow(UniqueConstraintViolationException::class);
+
+    $this->shop->update(['settings' => $shopSettings]);
+    $this->organisation->update(['settings' => $organisationSettings]);
 });
 
 test('my chats excludes a whatsapp thread now held by another agent', function () {
@@ -5988,6 +6112,11 @@ test('a request to cancel or change the delivery address goes first in the queue
 
     expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($urgent))->toBe('cancel_order');
 
+    $courier = noiseTestEmailSession($this->shop, 'incidencias@gls-spain.es', 'Envío 1307', 'Falta el bulto 2, ¿autorizáis entrega parcial o anulamos el envío?');
+    $courier->update(['is_carrier' => true]);
+    expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($courier))->toBeNull()
+        ->and(data_get($courier->refresh()->metadata, 'urgent_request'))->toBeNull();
+
     $queue = fn () => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'statuses' => ['waiting']])->items())->pluck('id')->all();
 
     $waiting = $queue();
@@ -6112,11 +6241,6 @@ test('a fact drawer opens only what is on the menu and only for the customer who
         ->and($drawer->handle('order_lines', $this->shop, $customer, $facts))->toBeNull()
         ->and($drawer->handle('order_payment', $this->shop, null, $facts))->toBeNull()
         ->and($drawer->handle('replacements', $this->shop, null, []))->toBeNull()
-    $courier = noiseTestEmailSession($this->shop, 'incidencias@gls-spain.es', 'Envío 1307', 'Falta el bulto 2, ¿autorizáis entrega parcial o anulamos el envío?');
-    $courier->update(['is_carrier' => true]);
-    expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($courier))->toBeNull()
-        ->and(data_get($courier->refresh()->metadata, 'urgent_request'))->toBeNull();
-
         ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull()
         ->and($drawer->handle('shop_policies', $this->shop, null, []))->toBeNull();
 

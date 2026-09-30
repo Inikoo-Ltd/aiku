@@ -12,6 +12,10 @@ use App\Actions\Chat\ChatSession\SettleChatAiDraft;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
 use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
@@ -24,6 +28,9 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\MetaMessageTemplate;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -38,6 +45,7 @@ class SendMetaChatMessage
 {
     use AsAction;
     use WithWhatsappTemplatePayload;
+    use WithChatAgentAuthorisation;
 
     public function rules(): array
     {
@@ -267,7 +275,7 @@ class SendMetaChatMessage
      */
     public function asController(string $organisation, MetaChatSession $metaChatSession, ActionRequest $request): array
     {
-        $senderResult = $this->determineSenderData();
+        $senderResult = $this->determineSenderData($metaChatSession);
 
         if (!$senderResult['ok']) {
             return $senderResult;
@@ -276,11 +284,11 @@ class SendMetaChatMessage
         return $this->handle($metaChatSession, $senderResult['data']['agent'], $request->validated());
     }
 
-    protected function determineSenderData(): array
+    protected function determineSenderData(MetaChatSession $metaChatSession): array
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (!$user instanceof User) {
             return [
                 'ok'      => false,
                 'message' => __('Only authenticated agents can send chats'),
@@ -298,6 +306,19 @@ class SendMetaChatMessage
             ];
         }
 
+        $isAssigned = $metaChatSession->assignments()
+            ->where('chat_agent_id', $agent->id)
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->exists();
+
+        if (!$isAssigned) {
+            $claim = $this->claimUnheldChat($metaChatSession, $user, $agent);
+
+            if ($claim !== null) {
+                return $claim;
+            }
+        }
+
         return [
             'ok'   => true,
             'data' => [
@@ -308,6 +329,57 @@ class SendMetaChatMessage
         ];
     }
 
+
+    /**
+     * @return array{ok: bool, message: string, code: int}|null  a refusal, or null once claimed
+     */
+    private function claimUnheldChat(MetaChatSession $metaChatSession, User $user, ChatAgent $agent): ?array
+    {
+        if ($metaChatSession->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->exists()) {
+            return $this->heldByAnotherAgent($metaChatSession);
+        }
+
+        $shop = $metaChatSession->shop;
+
+        if (!$shop instanceof Shop || !$this->userCanActOnChatOnShop($user, $shop)) {
+            return [
+                'ok'      => false,
+                'message' => __('You do not work chat on this shop.'),
+                'code'    => 403,
+            ];
+        }
+
+        try {
+            $metaChatSession->assignments()->create([
+                'meta_channel_id' => $metaChatSession->meta_channel_id,
+                'chat_agent_id'   => $agent->id,
+                'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+                'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+                'note'            => 'Claimed by replying',
+                'assigned_at'     => now(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return $this->heldByAnotherAgent($metaChatSession);
+        }
+
+        $metaChatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+
+        BroadcastMetaChatListEvent::dispatch(null, $metaChatSession->fresh());
+
+        return null;
+    }
+
+    /**
+     * @return array{ok: bool, message: string, code: int}
+     */
+    private function heldByAnotherAgent(MetaChatSession $metaChatSession): array
+    {
+        return [
+            'ok'      => false,
+            'message' => $this->chatHeldByAnotherAgentMessage($metaChatSession),
+            'code'    => 403,
+        ];
+    }
 
     protected function resolveRepliedTo(MetaChatSession $metaChatSession, ?int $repliedToId): ?MetaChatMessage
     {

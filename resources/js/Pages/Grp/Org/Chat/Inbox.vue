@@ -1700,6 +1700,8 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
     onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
+    const sessionUlid = selectedSession.value.ulid
+    const claimsChat = selectedSession.value.status === "waiting"
     try {
         const formData = new FormData()
         formData.append("message_text", text ?? "")
@@ -1715,10 +1717,14 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
         }
 
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [props.organisation.slug, selectedSession.value.ulid]),
+            route("grp.org.chat.agents.messages.send", [props.organisation.slug, sessionUlid]),
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
+
+        if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
+            await onAssignSelfSuccess()
+        }
     } catch (error) {
         console.error("Error sending message:", error)
 

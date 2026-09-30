@@ -119,7 +119,11 @@ class StoreOfflineMessage
             ->latest('resolved_at')
             ->first();
 
-        if ($lastAssignment) {
+        $isAlreadyHeld = $session->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->exists();
+
+        if ($lastAssignment && !$isAlreadyHeld) {
             $lastAssignment->update([
                 'status'      => ChatAssignmentStatusEnum::ACTIVE->value,
                 'resolved_at' => null,
