@@ -38,6 +38,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooComm
 use App\Actions\Dropshipping\WooCommerce\Product\RetryTimedOutWooUploads;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Helpers\PlatformResponseFormatter;
@@ -1503,6 +1504,23 @@ test('a bulk upload shares one progress counter across its chunks and a killed p
     Event::assertDispatched(UploadProductToSalesChannelProgressEvent::class, fn ($event) => $event->statistics === ['total' => 1, 'success' => 0, 'fail' => 1]);
 });
 
+test('a bulk upload spaces its product creates by slot round so waiting jobs are not popped over and over', function () {
+    Queue::fake();
+    wooFake();
+
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $portfolio       = wooPortfolio($channel, $this->product, null, 'aw-bulk-stagger');
+
+    StoreBulkDispatchProductToCurrentWooCommerce::run($channel, $channel->portfolios()->whereKey($portfolio->id)->get(), ['cache_key' => 'stagger', 'total' => 9], 9);
+
+    $expectedDelay = intdiv(9, StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE) * StoreNewProductToCurrentWooCommerce::STAGGER_SECONDS_PER_SLOT_ROUND;
+
+    Queue::assertPushed(BoundedUniqueJobDecorator::class, fn (BoundedUniqueJobDecorator $job) => $job->getAction() instanceof StoreNewProductToCurrentWooCommerce
+        && abs(now()->diffInSeconds($job->delay) - $expectedDelay) <= 1
+        && $job->uniqueFor === (StoreNewProductToCurrentWooCommerce::RETRY_FOR_HOURS + 1) * 3600);
+});
+
 test('a created product is trusted from the create reply so a slow store is not asked again', function () {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
     $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-created-slow');
@@ -1530,7 +1548,7 @@ test('a product upload waits for a free slot when the store already has its maxi
     wooFake();
 
     $job = Mockery::mock(JobDecorator::class);
-    $job->shouldReceive('release')->once()->with(StoreNewProductToCurrentWooCommerce::WAIT_FOR_SLOT_SECONDS);
+    $job->shouldReceive('release')->once()->with(Mockery::on(fn (int $seconds) => $seconds >= StoreNewProductToCurrentWooCommerce::MIN_WAIT_FOR_SLOT_SECONDS && $seconds <= StoreNewProductToCurrentWooCommerce::MAX_WAIT_FOR_SLOT_SECONDS));
 
     $holdSlots = function (int $left) use (&$holdSlots, $funnel, $job, $wooCommerceUser, $portfolio) {
         if ($left === 0) {

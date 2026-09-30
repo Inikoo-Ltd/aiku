@@ -37,7 +37,25 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
      */
     public const int MAX_CONCURRENT_CREATES_PER_STORE = 4;
 
-    public const int WAIT_FOR_SLOT_SECONDS = 20;
+    /**
+     * At 4 creates at a time a store takes ~750 products an hour, so an 8k bulk upload queues for
+     * ~11h. A spread wait keeps thousands of waiting jobs from being popped every few seconds in
+     * lockstep, and retryUntil must outlast the whole upload. ponytail: fixed window, derive it from
+     * the store's backlog if uploads above ~18k products appear.
+     */
+    public const int MIN_WAIT_FOR_SLOT_SECONDS = 20;
+
+    public const int MAX_WAIT_FOR_SLOT_SECONDS = 180;
+
+    public const int RETRY_FOR_HOURS = 24;
+
+    /**
+     * A bulk upload staggers its creates at this pace so slots are rarely busy when a job arrives
+     * and waiting jobs are not popped over and over; a slow store still falls back to the funnel.
+     */
+    public const int STAGGER_SECONDS_PER_SLOT_ROUND = 10;
+
+    public int $jobUniqueFor = (self::RETRY_FOR_HOURS + 1) * 3600;
 
     public function getJobUniqueId(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): string
     {
@@ -89,13 +107,13 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
             ->block(0)
             ->then(
                 fn () => $this->handle($wooCommerceUser, $portfolio, $checkConnection, $bulkProgress),
-                fn () => $job->release(self::WAIT_FOR_SLOT_SECONDS)
+                fn () => $job->release(random_int(self::MIN_WAIT_FOR_SLOT_SECONDS, self::MAX_WAIT_FOR_SLOT_SECONDS))
             );
     }
 
     public function getJobRetryUntil(): \DateTimeInterface
     {
-        return now()->addHours(6);
+        return now()->addHours(self::RETRY_FOR_HOURS);
     }
 
     /**

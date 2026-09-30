@@ -37,16 +37,16 @@ class StoreBulkNewProductToCurrentWooCommerce extends OrgAction
             ->get();
 
         $cacheKey = 'upload_progress_'.$customerSalesChannel->id.'_'.uniqid();
-        Cache::put($cacheKey.'_success', 0, now()->addHour());
-        Cache::put($cacheKey.'_fail', 0, now()->addHour());
+        Cache::put($cacheKey.'_success', 0, now()->addHours(StoreNewProductToCurrentWooCommerce::RETRY_FOR_HOURS));
+        Cache::put($cacheKey.'_fail', 0, now()->addHours(StoreNewProductToCurrentWooCommerce::RETRY_FOR_HOURS));
 
         $bulkProgress = [
             'cache_key' => $cacheKey,
             'total'     => $portfolios->count(),
         ];
 
-        foreach ($portfolios->chunk(100) as $portfolioChunk) {
-            StoreBulkDispatchProductToCurrentWooCommerce::dispatch($customerSalesChannel, $portfolioChunk, $bulkProgress);
+        foreach ($portfolios->values()->chunk(100) as $portfolioChunk) {
+            StoreBulkDispatchProductToCurrentWooCommerce::dispatch($customerSalesChannel, $portfolioChunk, $bulkProgress, $portfolioChunk->keys()->first());
         }
     }
 }
