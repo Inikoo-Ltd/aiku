@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import { useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import DashboardSettingToggle from "@/Components/DataDisplay/Dashboard/DashboardSettingToggle.vue"
 import Chart from "primevue/chart"
@@ -250,7 +251,9 @@ const onQuickPeriod = (index: number | null) => {
 	applyPreset(presets[index])
 }
 
-const datePickerPt = { pcInputText: { root: { class: "!w-32 !py-1 !text-xs" } } }
+const isNarrowScreen = useMediaQuery("(max-width: 639px)")
+const dateFormat = computed(() => (isNarrowScreen.value ? "dd/mm/yy" : "d M yy"))
+const datePickerPt = computed(() => ({ pcInputText: { root: { class: isNarrowScreen.value ? "!w-28 !py-1 !text-xs" : "!w-32 !py-1 !text-xs" } } }))
 const filterSelectPt = { label: { class: "!py-1 !text-xs" } }
 const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
 
@@ -434,7 +437,7 @@ const chartOptions = computed(() => ({
 	interaction: { mode: "index", intersect: false },
 	plugins: {
 		salesAnalysisMarkers: { markers: { ...markers.value }, stockOutView: stockOutView.value },
-		legend: { position: "bottom", labels: { boxWidth: 12, boxHeight: 12 } },
+		legend: { position: "bottom", labels: isNarrowScreen.value ? { boxWidth: 10, boxHeight: 10, font: { size: 11 } } : { boxWidth: 12, boxHeight: 12 } },
 		tooltip: {
 			callbacks: {
 				title: (items: any[]) => (props.data.frequency === "weekly" ? ctrans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: props.data.frequency === "monthly" ? "MMM yyyy" : "PP" }),
@@ -456,7 +459,7 @@ const chartOptions = computed(() => ({
 		},
 	},
 	scales: {
-		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: isNarrowScreen.value ? 4 : 12, maxRotation: 0 } },
 		sales: { type: "linear", position: "left", beginAtZero: true, ticks: { callback: (value: number) => money(value) } },
 		stock: { type: "linear", position: "right", display: stockOutView.value === "line", beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { precision: 0, color: "#dc2626" } },
 		visitors: { type: "linear", position: "right", display: hasVisitors.value, beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { precision: 0, color: "#3b82f6" } },
@@ -557,13 +560,17 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				@change="updateIncludePartners" />
 
 			<div class="flex w-full flex-wrap items-center gap-1.5 border-t border-gray-200 pt-2 text-xs">
-				<DatePicker v-model="rangeFrom" :maxDate="rangeTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('From')" />
-				<span class="text-gray-400">–</span>
-				<DatePicker v-model="rangeTo" :minDate="rangeFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('To')" />
-				<span class="text-gray-500">{{ ctrans("vs") }}</span>
-				<DatePicker v-model="compareFrom" :maxDate="compareTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare from')" />
-				<span class="text-gray-400">–</span>
-				<DatePicker v-model="compareTo" :minDate="compareFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare to')" />
+				<div class="flex items-center gap-1.5">
+					<DatePicker v-model="rangeFrom" :maxDate="rangeTo ?? undefined" :dateFormat="dateFormat" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('From')" />
+					<span class="text-gray-400">–</span>
+					<DatePicker v-model="rangeTo" :minDate="rangeFrom ?? undefined" :dateFormat="dateFormat" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('To')" />
+				</div>
+				<div class="flex items-center gap-1.5">
+					<span class="text-gray-500">{{ ctrans("vs") }}</span>
+					<DatePicker v-model="compareFrom" :maxDate="compareTo ?? undefined" :dateFormat="dateFormat" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare from')" />
+					<span class="text-gray-400">–</span>
+					<DatePicker v-model="compareTo" :minDate="compareFrom ?? undefined" :dateFormat="dateFormat" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare to')" />
+				</div>
 				<FontAwesomeIcon v-if="isLoading" :icon="faSpinnerThird" spin class="text-[--app-accent]" fixed-width :aria-label="ctrans('Loading')" />
 				<Select
 					:modelValue="null"
@@ -571,8 +578,8 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					optionLabel="label"
 					optionValue="value"
 					:placeholder="ctrans('Quick periods')"
-					class="w-56"
-					:class="[fieldFocusClass, 'ml-auto']"
+					class="w-full sm:w-56"
+					:class="[fieldFocusClass, 'sm:ml-auto']"
 					:pt="filterSelectPt"
 					@update:modelValue="onQuickPeriod" />
 			</div>
@@ -585,12 +592,12 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 			</div>
 		</div>
 		<div class="space-y-4 transition-opacity" :class="isLoading ? 'pointer-events-none opacity-40' : ''" :aria-busy="isLoading">
-		<div v-if="compact" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+		<div v-if="compact || isNarrowScreen" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
 			<div
 				v-for="tile in tiles"
 				:key="tile.key"
 				v-tooltip="`${tile.label} · ${ctrans('was')} ${tile.previous}`"
-				class="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm tabular-nums transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+				class="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm tabular-nums transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md max-sm:last:odd:col-span-2">
 				<div class="flex items-center gap-1.5 text-xs text-gray-500">
 					<FontAwesomeIcon :icon="tile.icon" class="text-gray-400" fixed-width aria-hidden="true" />
 					<span class="truncate">{{ tile.label }}</span>
@@ -649,7 +656,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 
 		<div v-if="monthlySales.length" class="rounded-lg border border-gray-200 bg-white" data-monthly-sales>
 			<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Sales per month") }}</div>
-			<div class="max-h-[32rem] overflow-y-auto">
+			<div class="max-h-[32rem] overflow-auto">
 				<table class="w-full text-xs tabular-nums">
 					<thead class="sticky top-0 bg-white text-gray-600">
 						<tr class="border-b">
@@ -688,41 +695,43 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 		</div>
 
 		<div v-if="hasManyShops || data.breakdown.length" class="grid gap-6" :class="hasManyShops && data.breakdown.length ? 'xl:grid-cols-2' : ''">
-			<div v-if="hasManyShops" class="rounded-lg border border-gray-200 bg-white">
+			<div v-if="hasManyShops" class="min-w-0 rounded-lg border border-gray-200 bg-white">
 				<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Websites") }}</div>
-				<table class="w-full text-xs tabular-nums">
-					<thead class="text-gray-600">
-						<tr class="border-b">
-							<th class="px-4 py-2 text-left font-normal">{{ ctrans("Website") }}</th>
-							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
-							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
-							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
-							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Share of change") }}</th>
-							<th class="px-4 py-2 text-right font-normal">{{ ctrans("Days out of stock") }}</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y">
-						<tr v-for="shop in data.shops" :key="shop.shop_id" class="transition-colors hover:bg-gray-50">
-							<td class="px-4 py-1.5">
-								<span class="font-medium">{{ shop.shop_code }}</span>
-								<span class="ml-1 text-gray-500">{{ shop.shop_name }}</span>
-								<span v-if="shop.shop_state !== 'open' || (shop.node_state && shop.node_state !== 'active')" class="ml-1 text-gray-400">({{ shop.shop_state !== "open" ? shop.shop_state : shop.node_state }})</span>
-							</td>
-							<td class="px-2 py-1.5 text-right">{{ money(shop.previous_sales) }}</td>
-							<td class="px-2 py-1.5 text-right">{{ money(shop.sales) }}</td>
-							<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">
-								{{ formatChange(change(shop.sales, shop.previous_sales)) }}
-							</td>
-							<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">{{ shareOfChange(shop.sales - shop.previous_sales) }}</td>
-							<td class="px-4 py-1.5 text-right" :class="shop.stock_out_days ? 'text-red-600' : 'text-gray-400'">{{ shop.stock_out_days || "—" }}</td>
-						</tr>
-					</tbody>
-				</table>
+				<div class="overflow-x-auto">
+					<table class="w-full text-xs tabular-nums">
+						<thead class="text-gray-600">
+							<tr class="border-b">
+								<th class="px-4 py-2 text-left font-normal">{{ ctrans("Website") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Share of change") }}</th>
+								<th class="px-4 py-2 text-right font-normal">{{ ctrans("Days out of stock") }}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y">
+							<tr v-for="shop in data.shops" :key="shop.shop_id" class="transition-colors hover:bg-gray-50">
+								<td class="px-4 py-1.5">
+									<span class="font-medium">{{ shop.shop_code }}</span>
+									<span class="ml-1 text-gray-500">{{ shop.shop_name }}</span>
+									<span v-if="shop.shop_state !== 'open' || (shop.node_state && shop.node_state !== 'active')" class="ml-1 text-gray-400">({{ shop.shop_state !== "open" ? shop.shop_state : shop.node_state }})</span>
+								</td>
+								<td class="px-2 py-1.5 text-right">{{ money(shop.previous_sales) }}</td>
+								<td class="px-2 py-1.5 text-right">{{ money(shop.sales) }}</td>
+								<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">
+									{{ formatChange(change(shop.sales, shop.previous_sales)) }}
+								</td>
+								<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">{{ shareOfChange(shop.sales - shop.previous_sales) }}</td>
+								<td class="px-4 py-1.5 text-right" :class="shop.stock_out_days ? 'text-red-600' : 'text-gray-400'">{{ shop.stock_out_days || "—" }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
 
-			<div v-if="data.breakdown.length" class="rounded-lg border border-gray-200 bg-white">
+			<div v-if="data.breakdown.length" class="min-w-0 rounded-lg border border-gray-200 bg-white">
 				<div class="border-b px-4 py-2 font-semibold">{{ data.breakdown_label }}</div>
-				<div class="max-h-[32rem] overflow-y-auto">
+				<div class="max-h-[32rem] overflow-auto">
 					<table class="w-full text-xs tabular-nums">
 						<thead class="sticky top-0 bg-white text-gray-600">
 							<tr class="border-b">
@@ -788,7 +797,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				</button>
 			</div>
 			<div v-if="!visibleStockOuts.length" class="px-4 py-6 text-gray-500">{{ ctrans("No stock outs in this period") }}</div>
-			<div v-else class="max-h-[32rem] overflow-y-auto">
+			<div v-else class="max-h-[32rem] overflow-auto">
 				<table class="w-full text-xs tabular-nums">
 					<thead class="sticky top-0 bg-white text-gray-600">
 						<tr class="border-b">
