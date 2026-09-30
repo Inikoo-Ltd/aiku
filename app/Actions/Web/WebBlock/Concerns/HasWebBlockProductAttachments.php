@@ -17,14 +17,7 @@ trait HasWebBlockProductAttachments
                     ->where('model_has_attachments.model_id', $productId);
             })
             ->select(['model_has_attachments.caption', 'model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
-            ->whereIn('model_has_attachments.scope', [
-                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
-                TradeAttachmentScopeEnum::CPSR,
-                TradeAttachmentScopeEnum::DOC,
-                TradeAttachmentScopeEnum::IFRA,
-                TradeAttachmentScopeEnum::SDS,
-                TradeAttachmentScopeEnum::TEST_REPORTS,
-            ])
+            ->whereIn('model_has_attachments.scope', TradeAttachmentScopeEnum::publicScopes())
             ->get();
 
         return IrisAttachmentsResource::collection($attachments)->resolve();
