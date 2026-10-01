@@ -47,6 +47,11 @@ enum TicketQaStatusEnum: string
         return in_array($this, [self::PASSED, self::FAILED, self::SKIPPED], true);
     }
 
+    public function canBeCheckedAgain(): bool
+    {
+        return in_array($this, [self::PASSED, self::FAILED], true);
+    }
+
     public static function stateIcon(): array
     {
         return [

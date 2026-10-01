@@ -26,10 +26,38 @@ class IndexQaTickets extends IndexTickets
 
     protected function getElementGroups(Group $group): array
     {
+        $elementGroups           = Arr::except(parent::getElementGroups($group), ['mine']);
+        $elementGroups['status'] = $this->qaListStatusElementGroup($group, $elementGroups['status']);
+
         return [
             'qa_checker' => $this->qaAssigneeElementGroup($group),
-            ...Arr::except(parent::getElementGroups($group), ['mine', 'status']),
+            ...$elementGroups,
         ];
+    }
+
+    /**
+     * @param  array{label: string, elements: array<string, array{0: string, 1: int}>, engine: \Closure}  $statusElementGroup
+     *
+     * @return array{label: string, elements: array<string, array{0: string, 1: int}>, engine: \Closure}
+     */
+    protected function qaListStatusElementGroup(Group $group, array $statusElementGroup): array
+    {
+        $base = $this->elementGroupsBase($group)->where(fn ($query) => $this->whereInQaList($query));
+
+        $statusElementGroup['elements'] = collect(TicketStatusEnum::cases())
+            ->mapWithKeys(fn (TicketStatusEnum $status) => [
+                $status->value => [TicketStatusEnum::labels()[$status->value], (clone $base)->where('status', $status)->count()],
+            ])
+            ->filter(fn (array $element, string $status) => $element[1] > 0 || in_array($status, [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::PENDING_DEPLOY->value], true))
+            ->all();
+
+        return $statusElementGroup;
+    }
+
+    protected function whereInQaList($query): void
+    {
+        $query->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY])
+            ->orWhere('tickets.qa_status', TicketQaStatusEnum::CHECKING);
     }
 
     /**
@@ -71,9 +99,7 @@ class IndexQaTickets extends IndexTickets
        the QA assignee filter is the one way to see the whole team's work. */
     protected function restrictRows($queryBuilder, ?string $prefix): void
     {
-        $queryBuilder->where(fn ($query) => $query
-            ->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY])
-            ->orWhere('tickets.qa_status', TicketQaStatusEnum::CHECKING));
+        $queryBuilder->where(fn ($query) => $this->whereInQaList($query));
 
         $checkerFilter = explode(',', (string) request()->input(($prefix ? $prefix.'_' : '').'elements.qa_checker', ''));
         $qaStateFilter = request()->input(($prefix ? $prefix.'_' : '').'filter.qa_state');

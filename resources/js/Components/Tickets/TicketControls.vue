@@ -151,19 +151,28 @@ const qaNote = ref("")
 const qaImages = ref<File[]>([])
 const qaError = ref("")
 const isSendingVerdict = ref(false)
+const qaFailureReopensTicket = ref(true)
+const canQaFailureReopenTicket = computed(() => qaVerdict.value === "failed" && props.ticket.status === "resolved")
 
 const openQaVerdict = (verdict: QaVerdict) => {
     qaVerdict.value = verdict
     qaNote.value = ""
     qaImages.value = []
     qaError.value = ""
+    qaFailureReopensTicket.value = true
     isQaVerdictOpen.value = true
 }
 
 const sendQaVerdict = () => {
     router.post(
         route(props.routes.update.name, props.routes.update.parameters),
-        { _method: "patch", qa_status: qaVerdict.value, qa_note: qaNote.value, images: qaImages.value },
+        {
+            _method: "patch",
+            qa_status: qaVerdict.value,
+            qa_note: qaNote.value,
+            images: qaImages.value,
+            ...(canQaFailureReopenTicket.value ? { reopen: qaFailureReopensTicket.value } : {}),
+        },
         {
             preserveScroll: true,
             forceFormData: true,
@@ -627,6 +636,10 @@ const saveDeployComment = () => {
                 <TicketComposer v-model:body="qaNote" v-model:images="qaImages" :mentionable="options.mentionable" :placeholder="qaVerdictCopy.placeholder" />
                 <p v-if="qaError" class="mt-1 text-xs text-red-600">{{ qaError }}</p>
             </div>
+            <label v-if="canQaFailureReopenTicket" class="flex cursor-pointer items-center gap-x-2 text-gray-700">
+                <input v-model="qaFailureReopensTicket" type="checkbox" class="cursor-pointer rounded border-gray-300" />
+                {{ ctrans("Reopen ticket back") }}
+            </label>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isQaVerdictOpen = false" />
                 <Button :type="qaVerdictCopy.type" :label="qaVerdictCopy.label" :icon="qaVerdictCopy.icon" :loading="isSendingVerdict" :disabled="qaVerdict !== 'passed' && !qaNote.trim()" @click="sendQaVerdict" />
