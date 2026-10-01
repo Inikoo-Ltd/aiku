@@ -90,7 +90,7 @@ class ShowIrisFamily extends IrisAction
                 ]),
 
                 'data' => [
-                    'family'        => FamilyResource::make($family)->resolve(),
+                    'family'        => FamilyResource::make($family)->withoutProducts()->resolve(),
                     'data_feed_url' => route('iris.product_category.data_feed', ['productCategory' => $family->slug]),
                 ],
 
