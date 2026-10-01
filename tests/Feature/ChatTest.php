@@ -7727,9 +7727,17 @@ test('when gmail refuses the live fetch for its quota, the archive of that mailb
         'gmail.googleapis.com/*'    => \Illuminate\Support\Facades\Http::response($quota, 403),
     ]);
 
+    \Illuminate\Support\Facades\Log::spy();
+
     expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse()
         ->and(fn () => \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop))->toThrow(\Illuminate\Http\Client\RequestException::class)
-        ->and(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeTrue();
+        ->and(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeTrue()
+        ->and(fn () => \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop))->toThrow(\Illuminate\Http\Client\RequestException::class);
+
+    // The whole of Gmail's answer is logged once per refusal, not the truncated exception message.
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context) => str_contains($message, 'Gmail refused the fetch of new mail') && str_contains($context['body'], 'Total Query Cost'))
+        ->once();
 
     $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
     $page           = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archivePage($this->shop, 12);
@@ -7742,7 +7750,40 @@ test('when gmail refuses the live fetch for its quota, the archive of that mailb
     expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse();
 });
 
-test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again, after a long pause when it keeps refusing', function () {
+test('the archive reads at most its hourly share of a mailbox, a hundred mails a page, and waits for the next hour once it is spent', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::flush();
+    $this->travelTo(now()->startOfHour()->addMinutes(50));
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => collect(range(1, 4))->map(fn ($n) => ['id' => "budget-$n"])->all(), 'nextPageToken' => 'next']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/*' => fn ($request) => \Illuminate\Support\Facades\Http::response([
+            'id' => basename(parse_url($request->url(), PHP_URL_PATH)), 'threadId' => 'th-budget', 'labelIds' => ['INBOX'], 'internalDate' => '1780000000000',
+            'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'nobody@example.com'], ['name' => 'To', 'value' => 'care@shop.test']]],
+        ]),
+    ]);
+
+    $action = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make();
+    expect($action->archivePage($this->shop, 12))->toMatchArray(['rate_limited' => false, 'read' => 4]);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'users/me/messages?') && str_contains($request->url(), 'maxResults=100'));
+
+    \Illuminate\Support\Facades\Cache::increment('mailbox-archive-reads:'.$this->shop->id.':'.now()->format('YmdH'), 596);
+    $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
+    $spent          = $action->archivePage($this->shop, 12);
+
+    expect($spent['rate_limited'])->toBeTrue()
+        ->and($spent['pause'])->toBe(601)
+        ->and(count(\Illuminate\Support\Facades\Http::recorded()))->toBe($requestsBefore);
+
+    $this->travel(11)->minutes();
+    expect($action->archivePage($this->shop, 12)['rate_limited'])->toBeFalse();
+});
+
+test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again, after longer and longer pauses while it keeps refusing', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
@@ -7804,8 +7845,8 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     $reset();
     $refuse = true;
     $pages  = collect(range(1, 10))->map(fn () => $action->archivePage($this->shop, 12));
-    expect($pages->take(9)->pluck('pause')->unique()->all())->toBe([60])
-        ->and($pages->last())->toMatchArray(['rate_limited' => true, 'stopped' => false, 'pause' => 1800]);
+    expect($pages->pluck('pause')->all())->toBe([60, 120, 240, 480, 960, 1800, 1800, 1800, 1800, 1800])
+        ->and($pages->last())->toMatchArray(['rate_limited' => true, 'stopped' => false]);
 
     $reset();
     $refuse = false;

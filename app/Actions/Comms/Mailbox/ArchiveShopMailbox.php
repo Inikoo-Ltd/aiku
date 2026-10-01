@@ -39,9 +39,11 @@ use Throwable;
  * customer are fetched whole. Already archived mails are skipped and the page reached is
  * remembered, so a run that stops is continued by running it again. With --queue each mailbox is
  * read one page per job on the long-low-priority queue, three mailboxes at a time, a few mails
- * at a time, well inside Gmail's limit per mailbox; a page Gmail refuses is read again a minute
- * later, and after MAX_RATE_LIMITED refusals in a row LONG_PAUSE later, so Gmail holding a
- * mailbox back for a while never ends the run. Starting the command again replaces
+ * at a time. Gmail's allowance is per mailbox and the fetch of new customer mail needs it too, so
+ * the archive reads at most MAX_READS_PER_HOUR mails of a mailbox an hour, PAGE_SIZE at a time,
+ * and stands down while the fetch of that mailbox is being refused. A page Gmail refuses is read
+ * again a minute later, then two, four and so on up to LONG_PAUSE, so Gmail holding a mailbox
+ * back for a while never ends the run. Starting the command again replaces
  * the chain of jobs a mailbox already has, so two never read the same mailbox.
  *
  * With --top only the shop's best customers are read, all their mail however old: VIPs and those
@@ -61,11 +63,13 @@ class ArchiveShopMailbox
 
     private const int RATE_LIMIT_PAUSE = 60;
 
-    private const int MAX_RATE_LIMITED = 10;
-
     private const int LONG_PAUSE = 1800;
 
     private const int STAND_DOWN_PAUSE = 900;
+
+    private const int PAGE_SIZE = 100;
+
+    private const int MAX_READS_PER_HOUR = 600;
 
     private const int TOP_MONTHS = 24;
 
@@ -163,6 +167,10 @@ class ArchiveShopMailbox
             return ['rate_limited' => true, 'pause' => self::STAND_DOWN_PAUSE] + $result;
         }
 
+        if ((int) Cache::get(self::readsKey($shop)) >= self::MAX_READS_PER_HOUR) {
+            return ['rate_limited' => true, 'pause' => (int) now()->diffInSeconds(now()->addHour()->startOfHour()) + 1] + $result;
+        }
+
         $cursorKey = self::cursorKey($shop, $months, $top);
         $cursor    = $top ? Cache::get($cursorKey, ['search' => 0, 'page' => null]) : ['search' => 0, 'page' => Cache::get($cursorKey)];
         $searches  = $top ? array_chunk(self::topAddresses($shop), self::TOP_ADDRESSES_PER_SEARCH) : [["newer_than:{$months}m"]];
@@ -176,12 +184,12 @@ class ArchiveShopMailbox
         $search = $top
             ? '{'.collect($searches[$cursor['search']])->map(fn (string $address) => "from:$address to:$address cc:$address")->join(' ').'}'
             : $searches[0][0];
-        $page   = retry(4, fn () => $client->listMessageIds($search.' '.self::LEAVE_OUT, $cursor['page']), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
+        $page   = retry(4, fn () => $client->listMessageIds($search.' '.self::LEAVE_OUT, $cursor['page'], self::PAGE_SIZE), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
         $new       = array_values(array_diff($page['ids'], EmailArchiveMessage::where('shop_id', $shop->id)->whereIn('gmail_message_id', $page['ids'])->pluck('gmail_message_id')->all()));
         $worth     = [];
 
         foreach (array_chunk($new, self::CONCURRENCY) as $ids) {
-            $headers = $this->fetch($client, $ids, self::HEADERS);
+            $headers = $this->fetch($shop, $client, $ids, self::HEADERS);
 
             if ($headers === null) {
                 return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
@@ -201,7 +209,7 @@ class ArchiveShopMailbox
         }
 
         foreach (array_chunk($worth, self::CONCURRENCY) as $ids) {
-            $messages = $this->fetch($client, $ids);
+            $messages = $this->fetch($shop, $client, $ids);
 
             if ($messages === null) {
                 return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
@@ -290,6 +298,11 @@ class ArchiveShopMailbox
         });
     }
 
+    private static function readsKey(Shop $shop): string
+    {
+        return "mailbox-archive-reads:{$shop->id}:".now()->format('YmdH');
+    }
+
     private static function rateLimitedKey(Shop $shop): string
     {
         return "mailbox-archive-rate-limited:{$shop->id}";
@@ -298,15 +311,13 @@ class ArchiveShopMailbox
     private function pauseAfterRefusal(Shop $shop): int
     {
         $refusals = Cache::increment(self::rateLimitedKey($shop));
+        $pause    = (int) min(self::RATE_LIMIT_PAUSE * 2 ** ($refusals - 1), self::LONG_PAUSE);
 
-        if ($refusals < self::MAX_RATE_LIMITED) {
-            return self::RATE_LIMIT_PAUSE;
+        if ($pause === self::LONG_PAUSE) {
+            Log::warning("mailbox:archive {$shop->slug}: Gmail refused $refusals times in a row, trying again in ".(self::LONG_PAUSE / 60).' minutes');
         }
 
-        Cache::forget(self::rateLimitedKey($shop));
-        Log::warning("mailbox:archive {$shop->slug}: Gmail refused ".self::MAX_RATE_LIMITED.' times in a row, trying again in '.(self::LONG_PAUSE / 60).' minutes');
-
-        return self::LONG_PAUSE;
+        return $pause;
     }
 
     /**
@@ -316,8 +327,11 @@ class ArchiveShopMailbox
      * @param  array<int, string>  $onlyHeaders
      * @return array<string, array<string, mixed>|null>|null
      */
-    private function fetch(GmailClient $client, array $ids, array $onlyHeaders = []): ?array
+    private function fetch(Shop $shop, GmailClient $client, array $ids, array $onlyHeaders = []): ?array
     {
+        Cache::add(self::readsKey($shop), 0, now()->addHours(2));
+        Cache::increment(self::readsKey($shop), count($ids));
+
         $messages = $client->getMessages($ids, $onlyHeaders);
 
         if (in_array('rate_limited', $messages, true)) {

@@ -17,6 +17,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,6 +36,10 @@ class FetchShopMailboxMessages
             return $this->fetch($shop);
         } catch (RequestException $exception) {
             if (GmailClient::isRateLimited($exception->response)) {
+                if (! self::wasRecentlyRefused($shop)) {
+                    Log::warning("mailbox:fetch {$shop->slug}: Gmail refused the fetch of new mail", ['status' => $exception->response->status(), 'body' => $exception->response->body()]);
+                }
+
                 Cache::put(self::refusedKey($shop), true, now()->addMinutes(self::ARCHIVE_STANDS_DOWN_MINUTES));
             }
 
