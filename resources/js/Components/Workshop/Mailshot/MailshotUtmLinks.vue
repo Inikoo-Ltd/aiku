@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faRedo, faExclamationTriangle } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -51,6 +51,7 @@ const links = ref<UtmLink[]>([])
 const fields = ref<UtmField[]>([])
 const settings = ref<UtmSettings | null>(null)
 const drafts = reactive<Record<string, Record<string, string>>>({})
+const addressDrafts = reactive<Record<string, string>>({})
 const selectedUrl = ref<string | null>(null)
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -113,11 +114,12 @@ const loadLinks = async () => {
 
         for (const link of links.value) {
             drafts[link.url] = { ...emptyDraft(), ...link.utm }
+            addressDrafts[link.url] = link.url
         }
 
         selectedUrl.value = links.value[0]?.url ?? null
     } catch (error: any) {
-        loadError.value = error?.response?.data?.message || trans('Could not read the links of this email')
+        loadError.value = error?.response?.data?.message || ctrans('Could not read the links of this email')
     } finally {
         isLoading.value = false
     }
@@ -140,14 +142,14 @@ const saveSettings = async () => {
         )
 
         notify({
-            title: trans('Saved'),
-            text: trans('Automatic tagging updated'),
+            title: ctrans('Saved'),
+            text: ctrans('Automatic tagging updated'),
             type: 'success'
         })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to save the automatic tagging'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to save the automatic tagging'),
             type: 'error'
         })
     } finally {
@@ -159,12 +161,24 @@ const saveOverride = async () => {
     if (!selectedUrl.value || !draft.value) return
 
     isSaving.value = true
+    const newUrl = (addressDrafts[selectedUrl.value] ?? '').trim()
+    const isAddressChanged = newUrl !== '' && newUrl !== selectedUrl.value
 
     try {
         await axios.patch(
             route(props.updateUtmLinkRoute.name, props.updateUtmLinkRoute.parameters),
-            { url: selectedUrl.value, ...draft.value }
+            { url: selectedUrl.value, ...(isAddressChanged ? { new_url: newUrl } : {}), ...draft.value }
         )
+
+        if (isAddressChanged) {
+            notify({
+                title: ctrans('Link changed'),
+                text: ctrans('Every button, image and text using it now points to the new address. Reloading the editor.'),
+                type: 'success'
+            })
+            window.location.reload()
+            return
+        }
 
         const link = links.value.find(link => link.url === selectedUrl.value)
         if (link) {
@@ -172,14 +186,14 @@ const saveOverride = async () => {
         }
 
         notify({
-            title: trans('Saved'),
-            text: trans('Tracking saved for this link'),
+            title: ctrans('Saved'),
+            text: ctrans('Tracking saved for this link'),
             type: 'success'
         })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to save the tracking of this link'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to save the tracking of this link'),
             type: 'error'
         })
     } finally {
@@ -207,37 +221,37 @@ watch(() => props.isOpen, isOpen => {
         <div class="border-b border-gray-200 pb-4">
             <div class="flex items-start justify-between gap-x-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-gray-900">{{ trans('Link tracking') }}</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ ctrans('Link tracking') }}</h2>
                     <p class="text-sm text-gray-600 mt-1">
-                        {{ trans('Links to your own websites are tagged automatically, so your analytics can tell which email and which element brought a visitor. Links to other sites are left untouched.') }}
+                        {{ ctrans('Links to your own websites are tagged automatically, so your analytics can tell which email and which element brought a visitor. Links to other sites are left untouched.') }}
                     </p>
                 </div>
                 <button v-if="links.length" type="button" @click="loadLinks" :disabled="isLoading"
                     class="shrink-0 text-sm text-gray-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-2 py-1 disabled:opacity-50">
                     <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
-                    {{ trans('Reload links') }}
+                    {{ ctrans('Reload links') }}
                 </button>
             </div>
         </div>
 
         <div v-if="isLoading" class="py-16 text-center text-gray-500">
             <FontAwesomeIcon :icon="faSpinnerThird" spin fixed-width aria-hidden="true" />
-            <p class="mt-2 text-sm">{{ trans('Reading the links of your saved email') }}</p>
+            <p class="mt-2 text-sm">{{ ctrans('Reading the links of your saved email') }}</p>
         </div>
 
         <div v-else-if="loadError" class="py-16 text-center">
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500 text-2xl" fixed-width aria-hidden="true" />
             <p class="mt-2 text-sm text-gray-700">{{ loadError }}</p>
-            <Button class="mt-4" type="tertiary" :label="trans('Try again')" @click="loadLinks" />
+            <Button class="mt-4" type="tertiary" :label="ctrans('Try again')" @click="loadLinks" />
         </div>
 
         <template v-else>
             <div v-if="settings" class="py-4 border-b border-gray-200">
                 <div class="flex items-start justify-between gap-x-4">
                     <div>
-                        <div class="text-sm font-medium text-gray-800">{{ trans('Tag links automatically') }}</div>
+                        <div class="text-sm font-medium text-gray-800">{{ ctrans('Tag links automatically') }}</div>
                         <p class="text-xs text-gray-500 mt-0.5">
-                            {{ trans('Turn this off to send your links untouched, apart from the ones you set by hand below.') }}
+                            {{ ctrans('Turn this off to send your links untouched, apart from the ones you set by hand below.') }}
                         </p>
                     </div>
                     <Toggle v-model="settings.is_enabled" size="md" @update:modelValue="saveSettings" />
@@ -245,41 +259,41 @@ watch(() => props.isOpen, isOpen => {
 
                 <div v-if="settings.is_enabled" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                     <div>
-                        <label for="utm-settings-source" class="block text-sm font-medium text-gray-800">{{ trans('Source') }}</label>
-                        <div class="text-xs text-gray-500 mb-1">{{ trans('Same for every newsletter') }}</div>
+                        <label for="utm-settings-source" class="block text-sm font-medium text-gray-800">{{ ctrans('Source') }}</label>
+                        <div class="text-xs text-gray-500 mb-1">{{ ctrans('Same for every newsletter') }}</div>
                         <PureInput inputName="utm-settings-source" v-model="settings.source" :maxLength="255" @blur="saveSettings" />
                     </div>
                     <div>
-                        <label for="utm-settings-medium" class="block text-sm font-medium text-gray-800">{{ trans('Medium') }}</label>
-                        <div class="text-xs text-gray-500 mb-1">{{ trans('Same for every email you send') }}</div>
+                        <label for="utm-settings-medium" class="block text-sm font-medium text-gray-800">{{ ctrans('Medium') }}</label>
+                        <div class="text-xs text-gray-500 mb-1">{{ ctrans('Same for every email you send') }}</div>
                         <PureInput inputName="utm-settings-medium" v-model="settings.medium" :maxLength="255" @blur="saveSettings" />
                     </div>
                     <div>
-                        <label for="utm-settings-campaign" class="block text-sm font-medium text-gray-800">{{ trans('Campaign') }}</label>
-                        <div class="text-xs text-gray-500 mb-1">{{ trans('Name of this send, taken from the subject. Keep it short, it is added to every link') }}</div>
+                        <label for="utm-settings-campaign" class="block text-sm font-medium text-gray-800">{{ ctrans('Campaign') }}</label>
+                        <div class="text-xs text-gray-500 mb-1">{{ ctrans('Name of this send, taken from the subject. Keep it short, it is added to every link') }}</div>
                         <PureInput inputName="utm-settings-campaign" v-model="settings.campaign"
                             :placeholder="settings.default_campaign" :maxLength="255" @blur="saveSettings" />
                     </div>
                 </div>
 
                 <p v-if="settings.is_enabled" class="text-xs text-gray-500 mt-3">
-                    {{ trans('Campaign ID is the date this email goes out (:date), and content is filled per element, so a click on the hero image reads differently from a click on a button.', { date: settings.campaign_id }) }}
+                    {{ ctrans('Campaign ID is the date this email goes out (:date), and content is filled per element, so a click on the hero image reads differently from a click on a button.', { date: settings.campaign_id }) }}
                 </p>
             </div>
 
             <div v-if="!links.length" class="py-16 text-center">
                 <FontAwesomeIcon :icon="faLink" class="text-gray-300 text-2xl" fixed-width aria-hidden="true" />
-                <p class="mt-2 text-sm text-gray-700">{{ trans('This email has no links yet') }}</p>
+                <p class="mt-2 text-sm text-gray-700">{{ ctrans('This email has no links yet') }}</p>
                 <p class="text-sm text-gray-500">
-                    {{ trans('Add a link to a button, image or text in the editor, then check again.') }}
+                    {{ ctrans('Add a link to a button, image or text in the editor, then check again.') }}
                 </p>
-                <Button class="mt-4" type="tertiary" :label="trans('Check again')" @click="loadLinks" />
+                <Button class="mt-4" type="tertiary" :label="ctrans('Check again')" @click="loadLinks" />
             </div>
 
             <div v-else class="flex flex-col md:flex-row gap-6 pt-4">
                 <div class="w-full md:w-72 shrink-0">
                     <div class="text-xs uppercase text-gray-500 mb-2">
-                        {{ trans(':count links, :overridden set by hand', { count: links.length, overridden: overriddenCount }) }}
+                        {{ ctrans(':count links, :overridden set by hand', { count: links.length, overridden: overriddenCount }) }}
                     </div>
                     <div class="max-h-40 md:max-h-96 overflow-y-auto pr-1 space-y-1">
                         <button v-for="link in links" :key="link.url" type="button" @click="selectedUrl = link.url"
@@ -288,10 +302,10 @@ watch(() => props.isOpen, isOpen => {
                             :title="link.url">
                             <span v-if="!link.is_internal"
                                 class="mr-1.5 text-[10px] uppercase rounded px-1 py-0.5"
-                                :class="selectedUrl === link.url ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-600'">{{ trans('ext') }}</span>
+                                :class="selectedUrl === link.url ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-600'">{{ ctrans('ext') }}</span>
                             <span v-if="isTagged(link)" class="mr-1.5 text-xs"
                                 :class="selectedUrl === link.url ? 'text-emerald-300' : 'text-emerald-600'"
-                                :aria-label="trans('Set by hand')">●</span>
+                                :aria-label="ctrans('Set by hand')">●</span>
                             {{ shortUrl(link.url) }}
                         </button>
                     </div>
@@ -299,24 +313,32 @@ watch(() => props.isOpen, isOpen => {
 
                 <div v-if="draft" class="flex-1 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6">
                     <div v-if="selectedLink?.roles.length" class="mb-3 text-xs text-gray-600">
-                        {{ trans('Used by') }}:
+                        {{ ctrans('Used by') }}:
                         <span v-for="role in selectedLink.roles" :key="role"
                             class="inline-block bg-gray-100 text-gray-700 rounded px-1.5 py-0.5 mr-1 font-mono">{{ role }}</span>
                     </div>
 
                     <div v-if="selectedLink && !selectedLink.is_internal"
                         class="mb-3 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-2">
-                        {{ trans('This link points outside your own websites, so it is left alone by the automatic tagging. Anything you type here is still applied to it.') }}
+                        {{ ctrans('This link points outside your own websites, so it is left alone by the automatic tagging. Anything you type here is still applied to it.') }}
                     </div>
 
                     <div v-if="selectedLink?.is_tracking_redirect"
                         class="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
                         <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
-                        {{ trans('This link is already a tracking redirect, so the parameters stop there instead of reaching your website. Replace it with the real address.') }}
+                        {{ ctrans('This link is already a tracking redirect, so the parameters stop there instead of reaching your website. Replace it with the real address.') }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="utm-link-address" class="block text-sm font-medium text-gray-800">{{ ctrans('Address') }}</label>
+                        <div class="text-xs text-gray-500 mb-1">
+                            {{ ctrans('Change it here to change it everywhere in this email: every button, image and text that links to it. The editor reloads after saving, so wait for your last edits in the editor to be saved first.') }}
+                        </div>
+                        <PureInput inputName="utm-link-address" v-model="addressDrafts[selectedUrl]" :maxLength="2048" />
                     </div>
 
                     <p class="text-xs text-gray-500 mb-3">
-                        {{ trans('Leave a field empty to keep the automatic value. Anything you type here wins for this link.') }}
+                        {{ ctrans('Leave a field empty to keep the automatic value. Anything you type here wins for this link.') }}
                     </p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -331,7 +353,7 @@ watch(() => props.isOpen, isOpen => {
                     </div>
 
                     <div class="mt-4">
-                        <div class="text-xs uppercase text-gray-500 mb-1">{{ trans('Link that will be sent') }}</div>
+                        <div class="text-xs uppercase text-gray-500 mb-1">{{ ctrans('Link that will be sent') }}</div>
                         <p class="text-xs text-gray-700 break-all bg-gray-50 border border-gray-200 rounded-md p-2">
                             {{ finalUrl }}
                         </p>

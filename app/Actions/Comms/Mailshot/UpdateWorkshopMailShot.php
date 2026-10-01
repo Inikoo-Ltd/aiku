@@ -25,6 +25,7 @@ class UpdateWorkshopMailShot extends OrgAction
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
+        $modelData = UpdateMailshotUrlUtm::make()->applyReplacedLinks($mailshot, $modelData);
         $email = $mailshot->email;
         $outbox = $mailshot->outbox;
 
