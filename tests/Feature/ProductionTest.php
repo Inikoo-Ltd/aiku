@@ -3019,6 +3019,31 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
+test('the to produce board shows every open line, not only the newest page of the table', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    StoreArtefact::make()->action($this->production, ['code' => 'ALL-01', 'name' => 'Every line'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+    $lines = collect(range(1, 3))->map(fn ($day) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 5,
+        'created_at'      => now()->subDays($day),
+    ]));
+
+    config(['ui.table.max_records_per_page' => 2, 'ui.table.min_records_per_page' => 1]);
+    actingAs($this->guest->getUser());
+    $backlogIds = collect(collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->pluck('id');
+
+    expect($backlogIds->intersect($lines->pluck('id'))->count())->toBe(3);
+});
+
 test('a labelled run is prepared only with its batch code, and keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
     $stocks       = createStocks($this->group);
     $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
