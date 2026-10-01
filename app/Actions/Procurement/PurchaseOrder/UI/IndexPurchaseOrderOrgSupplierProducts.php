@@ -80,8 +80,17 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
         }
 
-        $queryBuilder->where(function ($query) {
-            $query->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+        $hasDiscontinuingSko = "exists (select 1 from org_stocks os
+            inner join stock_has_supplier_products shsp on shsp.stock_id = os.stock_id
+            where shsp.supplier_product_id = supplier_products.id
+                and os.organisation_id = {$orgId}
+                and os.state in ('".OrgStockStateEnum::DISCONTINUING->value."', '".OrgStockStateEnum::DISCONTINUED->value."'))";
+
+        $queryBuilder->where(function ($query) use ($hasDiscontinuingSko) {
+            $query->where(fn ($query) => $query->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+                ->where('org_supplier_products.is_available', true)
+                ->where('supplier_products.is_available', true)
+                ->whereRaw("not $hasDiscontinuingSko"))
                 ->orWhereNotNull('purchase_order_transactions.id');
         });
 

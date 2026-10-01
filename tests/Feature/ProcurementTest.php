@@ -998,6 +998,44 @@ test('all supplier products list shows the other open purchase orders each produ
         ->and($rowMatchedByOrgStock->other_open_purchase_orders->pluck('reference')->all())->toBe([$purchaseOrder->reference]);
 })->depends('add more items to purchase order');
 
+test('all supplier products list leaves out products whose SKO is discontinuing or discontinued or the supplier does not have, unless already ordered', function (PurchaseOrder $purchaseOrder) {
+    /** @var OrgSupplier $orgSupplier */
+    $orgSupplier = $purchaseOrder->parent;
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $newPurchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $listed           = fn (PurchaseOrder $order) => collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $order)->items())->pluck('id');
+
+    $transaction          = $purchaseOrder->purchaseOrderTransactions()->first();
+    $orgSupplierProductId = $transaction->org_supplier_product_id;
+    $orgStock             = OrgStock::find($transaction->org_stock_id);
+    $supplierProduct      = \App\Models\SupplyChain\SupplierProduct::find($transaction->supplier_product_id);
+    $linkId               = DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $supplierProduct->id]);
+    $originalState        = $orgStock->state;
+
+    $listedWhenAllGood = $listed($newPurchaseOrder);
+
+    $orgStock->updateQuietly(['state' => OrgStockStateEnum::DISCONTINUED]);
+    $listedWhenDiscontinued = $listed($newPurchaseOrder);
+    $listedOnOrderHavingIt  = $listed($purchaseOrder);
+    $orgStock->updateQuietly(['state' => OrgStockStateEnum::DISCONTINUING]);
+    $listedWhenDiscontinuing = $listed($newPurchaseOrder);
+    $orgStock->updateQuietly(['state' => $originalState]);
+
+    $supplierProduct->updateQuietly(['is_available' => false]);
+    $listedWhenSupplierUnavailable = $listed($newPurchaseOrder);
+    $supplierProduct->updateQuietly(['is_available' => true]);
+
+    DB::table('stock_has_supplier_products')->delete($linkId);
+    $newPurchaseOrder->forceDelete();
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS]);
+
+    expect($listedWhenAllGood)->toContain($orgSupplierProductId)
+        ->and($listedWhenDiscontinued)->not->toContain($orgSupplierProductId)
+        ->and($listedOnOrderHavingIt)->toContain($orgSupplierProductId)
+        ->and($listedWhenDiscontinuing)->not->toContain($orgSupplierProductId)
+        ->and($listedWhenSupplierUnavailable)->not->toContain($orgSupplierProductId);
+})->depends('add more items to purchase order');
+
 
 test('adding a product to a purchase order creates the missing org stock', function () {
     $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
