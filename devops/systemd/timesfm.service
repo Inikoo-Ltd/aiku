@@ -13,6 +13,7 @@ RestartSec=10
 Nice=10
 CPUWeight=50
 MemoryMax=8G
+MemorySwapMax=0
 
 [Install]
 WantedBy=multi-user.target

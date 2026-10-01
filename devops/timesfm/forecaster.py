@@ -6,6 +6,7 @@ import platform
 import numpy as np
 
 VERSION = os.environ.get("TIMESFM_VERSION", "3")
+SERIES_PER_PASS = int(os.environ.get("TIMESFM_SERIES_PER_PASS", "500"))
 
 
 class Forecaster:
@@ -37,7 +38,28 @@ class Forecaster:
 
         Covariates are per series, shaped (channels, context) for past-only and
         (channels, context + horizon) for past-future. TimesFM 2.5 takes past-future only.
+        Memory grows with the series in one pass (about 1.5 MB each on MLX: 5,000 at once
+        took a 64 GB Mac down), so passes hold at most SERIES_PER_PASS series, whatever comes in.
         """
+        passes = []
+        for start in range(0, len(contexts), SERIES_PER_PASS):
+            end = start + SERIES_PER_PASS
+            passes.append(self.pass_deciles(
+                contexts[start:end],
+                horizon,
+                past_only_covariates[start:end] if past_only_covariates is not None else None,
+                past_future_covariates[start:end] if past_future_covariates is not None else None,
+            ))
+            self.release_memory()
+        return np.concatenate(passes)
+
+    def release_memory(self):
+        if "mlx" in type(self.model).__module__:
+            import mlx.core as mx
+
+            mx.clear_cache()
+
+    def pass_deciles(self, contexts, horizon, past_only_covariates=None, past_future_covariates=None):
         if VERSION == "3":
             outputs = self.model.predict_batch(
                 contexts,
