@@ -113,7 +113,7 @@ class UploadRetinaLeaflet extends RetinaAction
                     ->where('shop_id', $this->shop->id)
                     ->where('state', PackagingStateEnum::ACTIVE->value),
             ],
-            'file'        => ['required', 'file', 'mimes:pdf', 'max:20480', new PdfPageSize(105, 148, 'A6')],
+            'file'        => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:20480'],
             'active'      => ['sometimes', 'boolean'],
         ];
     }
