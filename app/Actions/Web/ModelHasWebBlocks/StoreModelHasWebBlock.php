@@ -18,6 +18,7 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
+use App\Rules\NoBase64;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -92,8 +93,14 @@ class StoreModelHasWebBlock extends OrgAction
             ],
             'layout' => [
                 'sometimes'
-            ]
+            ],
+            'layout.data.fieldValue.value' => $this->isScriptBlock() ? ['sometimes', new NoBase64()] : [],
         ];
+    }
+
+    private function isScriptBlock(): bool
+    {
+        return WebBlockType::find($this->get('web_block_type_id'))?->code === 'script';
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): void

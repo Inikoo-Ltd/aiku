@@ -12,9 +12,11 @@ use App\Actions\Accounting\Invoice\CategoriseInvoice;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Models\Accounting\InvoiceCategory;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -62,13 +64,7 @@ class GetOrderBacklog
             $categoriser       = CategoriseInvoice::make();
             $invoiceCategories = $categoriser->getActiveInvoiceCategories($organisation);
 
-            Order::query()
-                ->select(array_merge(['id', 'organisation_id', 'shop_id', 'platform_id', 'billing_country_id', 'as_organisation_id', 'is_vip', 'sales_channel_id'], array_values(self::AMOUNT_FIELDS)))
-                ->with(['shop' => fn ($q) => $q->select(['id', 'type'])])
-                ->where('organisation_id', $organisation->id)
-                ->whereIn('state', self::STATES)
-                ->when(!$includePartners, fn ($q) => $q->whereNull('as_organisation_id'))
-                ->get()
+            $this->backlogOrders($organisation, $includePartners)
                 ->each(function (Order $order) use ($categoriser, $invoiceCategories, &$totals) {
                     $amounts = array_map(fn ($amountField) => (float) $order->getRawOriginal($amountField), self::AMOUNT_FIELDS);
 
@@ -85,6 +81,34 @@ class GetOrderBacklog
         });
 
         return array_map(fn (array $dimension) => array_map($this->toIntervals(...), $dimension), $totals);
+    }
+
+    /**
+     * @return array<int>
+     */
+    public function orderIdsInInvoiceCategory(InvoiceCategory $invoiceCategory, bool $includePartners = false): array
+    {
+        $categoriser       = CategoriseInvoice::make();
+        $invoiceCategories = $categoriser->getActiveInvoiceCategories($invoiceCategory->organisation);
+
+        return $this->backlogOrders($invoiceCategory->organisation, $includePartners)
+            ->filter(fn (Order $order) => $categoriser->getInvoiceCategory($order, $invoiceCategories)?->id === $invoiceCategory->id)
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @return EloquentCollection<int, Order>
+     */
+    private function backlogOrders(Organisation $organisation, bool $includePartners): EloquentCollection
+    {
+        return Order::query()
+            ->select(array_merge(['id', 'organisation_id', 'shop_id', 'platform_id', 'billing_country_id', 'as_organisation_id', 'is_vip', 'sales_channel_id'], array_values(self::AMOUNT_FIELDS)))
+            ->with(['shop' => fn ($q) => $q->select(['id', 'type'])])
+            ->where('organisation_id', $organisation->id)
+            ->whereIn('state', self::STATES)
+            ->when(!$includePartners, fn ($q) => $q->whereNull('as_organisation_id'))
+            ->get();
     }
 
     /**

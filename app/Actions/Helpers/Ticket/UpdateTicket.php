@@ -40,6 +40,7 @@ class UpdateTicket extends OrgAction
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
         $deployCommit = strtolower(trim((string) Arr::pull($modelData, 'deploy_commit', '')));
         $images = Arr::pull($modelData, 'images', []);
+        $reopensOnQaFailure = (bool) Arr::pull($modelData, 'reopen', true);
 
         $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
@@ -70,10 +71,12 @@ class UpdateTicket extends OrgAction
            is not finished, and a ticket left Closed drops off the board where nobody looks at it
            again. Only from Done - failing a ticket that is still in progress changes nothing,
            since it is already where it needs to be - and only when the caller is not setting a
-           status itself, so an explicit choice always wins. Passing and skipping never move a
+           status itself, so an explicit choice always wins, and only when QA left "Reopen ticket
+           back" ticked. Passing and skipping never move a
            ticket. The status block below does the rest: it clears resolved_at and closed_at and
            restores started_at, and the usual status notifications go out. */
         if (Arr::get($modelData, 'qa_status') === TicketQaStatusEnum::FAILED->value
+            && $reopensOnQaFailure
             && $ticket->status === TicketStatusEnum::RESOLVED
             && !Arr::exists($modelData, 'status')
         ) {
@@ -239,7 +242,9 @@ class UpdateTicket extends OrgAction
                     $current  = $this->updatingTicket;
                     $user     = request()->user();
 
-                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict()) {
+                    $isRecheck = $qaStatus === TicketQaStatusEnum::CHECKING && $current?->qa_status?->canBeCheckedAgain();
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict() && !$isRecheck) {
                         $fail(__('This ticket already has a QA verdict. Ask QA to check it again first.'));
 
                         return;
@@ -251,6 +256,7 @@ class UpdateTicket extends OrgAction
                 },
             ],
             'qa_note'       => ['nullable', 'string', 'max:10000', 'required_if:qa_status,'.TicketQaStatusEnum::FAILED->value.','.TicketQaStatusEnum::SKIPPED->value],
+            'reopen'        => ['sometimes', 'boolean'],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'deploy_commit' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
@@ -275,7 +281,7 @@ class UpdateTicket extends OrgAction
         $fields = array_keys($request->except('_method'));
 
         if ($request->has('qa_status')) {
-            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images']) !== []) {
+            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images', 'reopen']) !== []) {
                 return false;
             }
 

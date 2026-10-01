@@ -71,21 +71,35 @@ const defaults = {
     startVelocity: 30,
     shapes: ["star"],
     zIndex: 100,
+    disableForReducedMotion: false,
 };
 
 type ConfettiFn = typeof import('@tsparticles/confetti')['confetti']
 
+const getReducedMotionAdjustments = () => {
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    return {
+        particleMultiplier: isReducedMotion ? 3 : 1,
+        startVelocity: isReducedMotion ? 75 : defaults.startVelocity,
+    }
+}
+
 const shootConfetti = (confetti: ConfettiFn) => {
+    const { particleMultiplier, startVelocity } = getReducedMotionAdjustments()
+
     confetti('retina-confetti', {
         ...defaults,
-        particleCount: 40,
+        startVelocity,
+        particleCount: 40 * particleMultiplier,
         scalar: 1.2,
         shapes: ["star"],
     });
 
     confetti('retina-confetti', {
         ...defaults,
-        particleCount: 10,
+        startVelocity,
+        particleCount: 10 * particleMultiplier,
         scalar: 0.75,
         shapes: ["circle"],
     });

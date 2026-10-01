@@ -99,7 +99,18 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ], array_values($rows), false);
+        ], array_values($rows), false, $this === self::INVOICE_CATEGORIES ? self::invoiceCategoryBacklogRouteTarget(...) : null);
+    }
+
+    private static function invoiceCategoryBacklogRouteTarget(array $row): array
+    {
+        return [
+            'name'       => 'grp.org.accounting.invoice-categories.show.backlog.index',
+            'parameters' => [
+                'organisation'    => $row['organisation_slug'],
+                'invoiceCategory' => $row['slug'],
+            ],
+        ];
     }
 
     public static function tables(Organisation $organisation, array $timeSeriesData = []): array

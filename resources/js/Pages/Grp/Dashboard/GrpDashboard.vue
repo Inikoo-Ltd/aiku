@@ -297,7 +297,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		/>
 
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
-			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
+			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
 		</KeepAlive>
 
 		<ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />

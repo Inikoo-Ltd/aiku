@@ -51,7 +51,7 @@ class CallApiPacketaShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?string $senderName = null): array
     {
         $accessToken = $this->getAccessToken($shipper);
         $apiPassword = Arr::get($accessToken, 'api_password');
@@ -98,7 +98,7 @@ class CallApiPacketaShipping extends OrgAction
             'addressId'   => $addressId,
             'value'       => $value,
             'currency'    => $order->currency?->code ?? 'EUR',
-            'eshop'       => Arr::get($parentResource, 'from_company_name'),
+            'eshop'       => $senderName ?: Arr::get($parentResource, 'from_company_name'),
             'weight'      => $weight, // in kg
             'street'      => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
@@ -110,8 +110,8 @@ class CallApiPacketaShipping extends OrgAction
         $errorData = [];
         $modelData = [];
         try {
-            $shop            = $parent instanceof PalletReturn ? $parent->fulfilment->shop : $parent->shop;
-            $apiResponse     = $this->createPacket($url, $apiPassword, $packetAttributes, $shop->name);
+            $client          = new SoapClient($url);
+            $apiResponse     = $client->createPacket($apiPassword, $packetAttributes);
             $apiResponseData = json_decode(json_encode($apiResponse), true);
 
             $modelData                   = [
@@ -130,7 +130,17 @@ class CallApiPacketaShipping extends OrgAction
             $status = 'fail';
 
             if (isset($e->detail->PacketAttributesFault)) {
-                foreach ($this->getAttributeFaults($e) as $fault) {
+                $faults = $e->detail->PacketAttributesFault->attributes->fault;
+                if (!is_array($faults)) {
+                    $faults = [$faults];
+                }
+
+                foreach ($faults as $fault) {
+                    if (in_array($fault->name, ['eshop', 'eshop_id'])) {
+                        $errorData['sender'] = 'Sender "'.$packetAttributes['eshop'].'" was not found in Packeta or does not match the Indication of any sender in the Packeta client portal.';
+                        continue;
+                    }
+
                     if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip', 'phone']) && !isset($errorData['address'])) {
                         $errorData['address'] = "Invalid address for fields: ";
                     } elseif (!isset($errorData['others'])) {
@@ -169,7 +179,7 @@ class CallApiPacketaShipping extends OrgAction
                 $errorData['others'] = rtrim($errorData['others'], ',');
             }
 
-            $errorData['message'] = $errorData['address'] ?? $errorData['others'];
+            $errorData['message'] = $errorData['sender'] ?? $errorData['address'] ?? $errorData['others'];
         }
 
         return [
@@ -177,41 +187,6 @@ class CallApiPacketaShipping extends OrgAction
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
-    }
-
-    /**
-     * @throws SoapFault
-     */
-    private function createPacket(string $url, string $apiPassword, array $packetAttributes, string $fallbackSender): object
-    {
-        $client = new SoapClient($url);
-
-        try {
-            return $client->createPacket($apiPassword, $packetAttributes);
-        } catch (SoapFault $e) {
-            if ($packetAttributes['eshop'] === $fallbackSender || !$this->isSenderFault($e)) {
-                throw $e;
-            }
-
-            return $client->createPacket($apiPassword, array_merge($packetAttributes, ['eshop' => $fallbackSender]));
-        }
-    }
-
-    private function isSenderFault(SoapFault $e): bool
-    {
-        return collect($this->getAttributeFaults($e))
-            ->contains(fn ($fault) => in_array($fault->name, ['eshop', 'eshop_id']));
-    }
-
-    private function getAttributeFaults(SoapFault $e): array
-    {
-        if (!isset($e->detail->PacketAttributesFault)) {
-            return [];
-        }
-
-        $faults = $e->detail->PacketAttributesFault->attributes->fault;
-
-        return is_array($faults) ? $faults : [$faults];
     }
 
     public function getLabel(string $labelID, Shipper $shipper): string

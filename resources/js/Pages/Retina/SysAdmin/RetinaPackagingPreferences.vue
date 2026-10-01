@@ -227,7 +227,7 @@ const submitUpload = () => {
             onError: (errors) => {
                 notify({
                     title: trans("Upload failed"),
-                    text: errors?.file ?? trans("Inserts are printed from a PDF, so only PDF files can be uploaded."),
+                    text: errors?.file ?? trans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
                     type: "error",
                 })
             },
@@ -276,7 +276,7 @@ const submitEdit = () => {
             onError: (errors) => {
                 notify({
                     title: trans("Upload failed"),
-                    text: errors?.file ?? trans("Inserts are printed from a PDF, so only PDF files can be uploaded."),
+                    text: errors?.file ?? trans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
                     type: "error",
                 })
             },
@@ -563,11 +563,11 @@ const saveSettings = () => {
                             <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400">
                                 <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
                                 <span class="truncate" :class="uploadFileName ? '' : 'text-gray-400'">
-                                    {{ uploadFileName ?? trans("Choose a PDF (max 20MB)") }}
+                                    {{ uploadFileName ?? trans("Choose a file (PDF, JPG or PNG, max 20MB)") }}
                                 </span>
-                                <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onUploadFileSelected" />
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="hidden" @change="onUploadFileSelected" />
                             </label>
-                            <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm.") }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
                         </div>
                     </div>
                     <div class="mt-3 flex justify-end gap-2">
@@ -657,9 +657,9 @@ const saveSettings = () => {
                                                         <span class="truncate" :class="editFileName ? '' : 'text-gray-400'">
                                                             {{ editFileName ?? trans("Keep current file (optional)") }}
                                                         </span>
-                                                        <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onEditFileSelected" />
+                                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="hidden" @change="onEditFileSelected" />
                                                     </label>
-                                                    <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm.") }}</p>
+                                                    <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
                                                 </div>
                                             </div>
                                             <div class="mt-3 flex justify-end gap-2">

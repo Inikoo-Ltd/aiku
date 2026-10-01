@@ -47,7 +47,7 @@ export function useFilterRecipients(props: any) {
     }
 
      const FILTER_CONFLICTS: Record<string, string[]> = {
-        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','due_to_reorder','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_departments'],
+        registered_never_ordered: ['orders_in_basket','by_order_value','orders_collection','due_to_reorder','by_family','by_subdepartment','by_family_never_ordered','by_showroom_orders','by_departments','ordered_in_period','lapsed_customers','top_customers_by_revenue'],
         orders_in_basket: ['registered_never_ordered'],
         by_order_value: ['registered_never_ordered'],
         orders_collection: ['registered_never_ordered'],
@@ -57,6 +57,9 @@ export function useFilterRecipients(props: any) {
         by_family_never_ordered: ['registered_never_ordered'],
         by_showroom_orders: ['registered_never_ordered'],
         by_departments: ['registered_never_ordered'],
+        ordered_in_period: ['registered_never_ordered'],
+        lapsed_customers: ['registered_never_ordered'],
+        top_customers_by_revenue: ['registered_never_ordered'],
         by_interest: [],
         by_location: [],
         gold_reward_status: [],
@@ -99,12 +102,16 @@ export function useFilterRecipients(props: any) {
             if (config.options?.date_range?.presets) {
                 value.date_range_preset = null
             }
+
+            if (config.options?.percentage) {
+                value.percentage = config.options.percentage.default ?? null
+            }
         }
 
         if (config.type === 'select') value = config.options?.[0]?.value ?? null
         if (config.type === 'multiselect') value = config.label === 'By Family Never Ordered' ? { ids: null } : config.behavior_options ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' } : { ids: [] }
         if (config.type === 'daterange') value = { date_range: null }
-        if (config.type === 'entity_behaviour') value = { ids: [], behaviors: [], combine_logic: true }
+        if (config.type === 'entity_behaviour') value = { ids: [], behaviors: [], combine_logic: true, ...(config.fields?.date_range ? { date_range: null } : {}) }
         if (config.type === 'location') value = { mode:'direct', country_ids:[], postal_codes:[], location:'', radius:null, radius_custom:null, lat:null, lng:null, resolved:false }
 
         activeFilters.value[key] = { value, config }
@@ -156,6 +163,10 @@ export function useFilterRecipients(props: any) {
                     payloadValue.amount_range = val.amount_range ?? null
                 }
 
+                if (config.options?.percentage) {
+                    payloadValue.percentage = val.percentage ?? null
+                }
+
                 payload[key] = { value: payloadValue }
                 return
             }
@@ -168,7 +179,10 @@ export function useFilterRecipients(props: any) {
                         behaviors: val.combine_logic
                             ? (val.behaviors ?? [])
                             : (val.behaviors?.length ? [val.behaviors[0]] : []),
-                        combine_logic: val.combine_logic ?? true
+                        combine_logic: val.combine_logic ?? true,
+                        ...(config.fields?.date_range
+                            ? { date_range: val.date_range ? val.date_range.map((d: string) => formatDate(d)) : null }
+                            : {})
                     }
                 }
                 return
@@ -344,6 +358,10 @@ export function useFilterRecipients(props: any) {
                     }
                 }
 
+                if (config.options?.percentage) {
+                    uiValue.percentage = clean.percentage ?? config.options.percentage.default ?? null
+                }
+
             }
 
             else if (config.type === 'select') {
@@ -390,7 +408,10 @@ export function useFilterRecipients(props: any) {
                             : [],
                     combine_logic: typeof raw.combine_logic === 'boolean'
                         ? raw.combine_logic
-                        : true
+                        : true,
+                    ...(config.fields?.date_range
+                        ? { date_range: Array.isArray(raw.date_range) ? [normalizeDate(raw.date_range[0]), normalizeDate(raw.date_range[1])] : null }
+                        : {})
                 }
             }
 

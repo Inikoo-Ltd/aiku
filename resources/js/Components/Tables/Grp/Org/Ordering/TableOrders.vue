@@ -90,6 +90,7 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.org.accounting.invoice-categories.show.backlog.index":
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [order.organisation_slug, order.shop_slug, order.slug])
@@ -154,6 +155,7 @@ function customerRoute(order: Order) {
         case "grp.overview.ordering.orders_in_basket.index":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.org.accounting.invoice-categories.show.backlog.index":
         case "grp.marketing.channels.show":
             return route(
                 "grp.org.shops.show.crm.customers.show",

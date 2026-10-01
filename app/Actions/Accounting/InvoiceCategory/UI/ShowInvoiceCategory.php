@@ -173,7 +173,8 @@ class ShowInvoiceCategory extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.org.accounting.invoice-categories.show.invoices.index' => array_merge(
+            'grp.org.accounting.invoice-categories.show.invoices.index',
+            'grp.org.accounting.invoice-categories.show.backlog.index' => array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs(
                     'grp.org.accounting.dashboard',
                     Arr::only($routeParameters, ['organisation'])

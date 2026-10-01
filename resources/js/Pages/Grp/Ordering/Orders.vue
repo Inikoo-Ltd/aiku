@@ -124,7 +124,7 @@ const component = computed(() => {
         </template>
     </PageHeading>
 
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <Tabs v-if="Object.keys(tabs.navigation).length > 1" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
     <Modal :isOpen="isOrderModalOpen" @onClose="closeOrderModal">
         <h2 class="text-2xl font-bold text-center text-gray-900">{{ ctrans('Create Order') }}</h2>
