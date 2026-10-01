@@ -7915,6 +7915,54 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Carbon::setTestNow();
 });
 
+test('the best customers have all their mail archived, searched by their addresses with no date limit', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    $mailbox = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::class;
+
+    $buyer = function (string $key, float $amount) {
+        $customer = createOwnCustomer($this->shop, "archive-top-$key");
+        $customer->update(['email' => "top.$key.".Str::lower(Str::random(6)).'@example.com']);
+        foreach (range(1, 12) as $ignored) {
+            \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition())
+                ->update(['grp_net_amount' => $amount, 'date' => now()->subMonth()]);
+        }
+
+        return $customer;
+    };
+    $big   = $buyer('big', 1000000000);
+    $small = $buyer('small', 0.01);
+    $vip   = createOwnCustomer($this->shop, 'archive-top-vip');
+    $vip->update(['email' => 'top.vip.'.Str::lower(Str::random(6)).'@example.com', 'is_vip' => true]);
+
+    \Illuminate\Support\Facades\Cache::forget('mailbox-archive-top-addresses:'.$this->shop->id);
+    \Illuminate\Support\Facades\Cache::forget($mailbox::cursorKey($this->shop, 12, true));
+    expect($mailbox::topAddresses($this->shop))->toContain($big->email, $vip->email)->not->toContain($small->email);
+
+    $old = [
+        'id' => 'top-old-'.$vip->id, 'threadId' => 'th-top', 'labelIds' => ['INBOX'], 'internalDate' => '1500000000000',
+        'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => $vip->email], ['name' => 'To', 'value' => 'care@shop.test'], ['name' => 'Subject', 'value' => 'Our first order']],
+            'body' => ['data' => rtrim(strtr(base64_encode('Can we open an account?'), '+/', '-_'), '=')]],
+    ];
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => $old['id']]]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/*' => \Illuminate\Support\Facades\Http::response($old),
+    ]);
+
+    $this->artisan('mailbox:archive', ['shop' => $this->shop->slug, '--top' => true])->assertExitCode(0);
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), "from:{$vip->email} to:{$vip->email} cc:{$vip->email}") && !str_contains($request->url(), 'newer_than'));
+    expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->where('gmail_message_id', $old['id'])->value('customer_id'))->toBe($vip->id)
+        ->and(\Illuminate\Support\Facades\Cache::get($mailbox::cursorKey($this->shop, 12, true)))->toBeNull();
+
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', $old['id'])->delete();
+    \Illuminate\Support\Facades\Cache::forget('mailbox-archive-top-addresses:'.$this->shop->id);
+    \Illuminate\Support\Facades\Cache::forget($mailbox::runKey($this->shop, true));
+});
+
 test('what agents keep telling different customers is learned and put to staff once enough customers heard it, and only a person turns it on', function () {
     $shop = $this->shop;
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
