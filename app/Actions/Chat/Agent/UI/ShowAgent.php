@@ -83,11 +83,6 @@ class ShowAgent extends OrgAction
                     ],
                 ],
                 'data'   => ChatAgentResource::collection($agents),
-                'routes' => [
-                    'delete'       => 'grp.org.chat.agents.delete',
-                    'restore'      => 'grp.org.chat.agents.restore',
-                    'force_delete' => 'grp.org.chat.agents.force_delete',
-                ],
             ],
         )->table(
             $indexAgentAction->tableStructure(parent: $this->organisation, prefix: 'agents')

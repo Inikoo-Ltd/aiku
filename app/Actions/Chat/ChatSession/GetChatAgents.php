@@ -56,6 +56,14 @@ class GetChatAgents
             ->all();
     }
 
+    public function shopNamesFor(int $userId): string
+    {
+        $shopIds   = $this->shopsByUser([$userId])->get($userId, collect());
+        $shopNames = $this->shopNames($shopIds->all());
+
+        return $shopIds->map(fn ($id) => $shopNames[$id] ?? '-')->sort()->implode(', ');
+    }
+
     /**
      * @param  array<int, int>  $userIds
      * @return Collection<int, Collection<int, int>> shop ids keyed by user id
