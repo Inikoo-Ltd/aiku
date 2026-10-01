@@ -438,6 +438,25 @@ const safeTheme = computed(() => {
             </Link>
         </template>
     </notifications>
+
+    <notifications
+        group="ticket-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
+                <div class="mt-1 truncate text-xs text-gray-500">{{ item.text }}</div>
+            </Link>
+        </template>
+    </notifications>
     </template>
 </template>
 

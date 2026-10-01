@@ -361,9 +361,11 @@ test('staff reporter is told of the question by email and slack as their profile
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
     $reporter->update(['settings' => ['notifications' => ['ticket_resolved' => ['email']]]]);
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $reporter->id && ($event->notification['reason'] ?? null) === 'resolved');
 
     app()->detectEnvironment(fn () => 'production');
     $mail = (new TicketNotification($ticket, 'Subject', ['Line'], 'View'))->toMail($reporter);
