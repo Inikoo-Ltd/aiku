@@ -20,8 +20,7 @@ class GetCruxReport
     private const int WEEKS = 52;
 
     /**
-     * A page Google has no real user data for is shown the whole website's history instead, and
-     * the report says so.
+     * A page Google has no real user data for gets no history: the whole website's figures would read as the page's.
      *
      * @return array{scope: string|null, url: string|null, history: array<string, array<int, array<string, mixed>>>}
      */
@@ -32,13 +31,11 @@ class GetCruxReport
 
             $history = $this->history($website, $webpage);
 
-            if ($history) {
-                return [
-                    'scope'   => 'page',
-                    'url'     => FetchCruxHistory::publicUrl($webpage),
-                    'history' => $history,
-                ];
-            }
+            return [
+                'scope'   => $history ? 'page' : null,
+                'url'     => FetchCruxHistory::publicUrl($webpage),
+                'history' => $history,
+            ];
         }
 
         FetchCruxHistory::run($website);

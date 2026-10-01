@@ -2128,10 +2128,11 @@ test('real user speed from the chrome ux report is stored per page, and a page w
 
     $unvisitedReport = GetCruxReport::run($website, $unvisitedWebpage);
 
-    expect($unvisitedReport['scope'])->toBe('website')
-        ->and($unvisitedReport['url'])->toBe('https://www.crux-example.com')
-        ->and(end($unvisitedReport['history']['phone'])['lcp'])->toBe(2000)
+    expect($unvisitedReport['scope'])->toBeNull()
+        ->and($unvisitedReport['history'])->toBe([])
         ->and(CruxRecord::where('webpage_id', $unvisitedWebpage->id)->exists())->toBeFalse();
+
+    expect(end(GetCruxReport::run($website)['history']['phone'])['lcp'])->toBe(2000);
 
     $callsBefore = count(Http::recorded());
     GetCruxReport::run($website, $visitedWebpage);
@@ -2203,9 +2204,11 @@ test('the weekly chrome ux report fetch queues every live website and the pages 
         ->and($queued)->not->toContain([$website->id, $quietWebpage->id]);
 })->depends('launch website');
 
-test('our visitors web vitals are reported as the daily 75th percentile, a page with too few loads shows the whole website', function (Website $website) {
+test('our visitors web vitals are reported as the daily 75th percentile, weekly for a page with too few loads a day, never the whole website for a page', function (Website $website) {
     $measuredWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
     $quietWebpage    = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $sparseWebpage   = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $monday          = now()->utc()->startOfWeek();
     cache()->forget("web-vitals-report:$website->id");
 
     $sample = fn (?Webpage $webpage, string $device, int $lcp, int $daysAgo = 0) => [
@@ -2222,6 +2225,7 @@ test('our visitors web vitals are reported as the daily 75th percentile, a page 
         ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'phone', $lcp), [6000, 7000]),
         ...array_map(fn (int $lcp) => $sample($quietWebpage, 'desktop', $lcp), [900, 900, 900, 900]),
         $sample($measuredWebpage, 'desktop', 1000, GetWebVitalsReport::DAYS + 2),
+        ...array_map(fn (int $hours) => [...$sample($sparseWebpage, 'desktop', 800), 'created_at' => $monday->copy()->addHours($hours)], [1, 2, 3, 25, 26]),
     ]);
 
     $pageReport = GetWebVitalsReport::run($website, $measuredWebpage);
@@ -2235,9 +2239,16 @@ test('our visitors web vitals are reported as the daily 75th percentile, a page 
 
     $quietReport = GetWebVitalsReport::run($website, $quietWebpage);
 
-    expect($quietReport['scope'])->toBe('website')
-        ->and($quietReport['history']['desktop'][0]['samples'])->toBe(9)
-        ->and($quietReport['history']['all'][0]['samples'])->toBe(11);
+    expect($quietReport['scope'])->toBeNull()
+        ->and($quietReport['history'])->toBe([]);
+
+    $sparseReport = GetWebVitalsReport::run($website, $sparseWebpage);
+
+    expect($sparseReport['scope'])->toBe('page')
+        ->and($sparseReport['period'])->toBe('week')
+        ->and($sparseReport['history']['desktop'][0])->toMatchArray(['period_start' => $monday->toDateString(), 'samples' => 5, 'lcp' => 800])
+        ->and($pageReport['period'])->toBe('day')
+        ->and(GetWebVitalsReport::run($website)['scope'])->toBe('website');
 })->depends('launch website');
 
 test('UI show ads testing webpage does not offer page speed', function (Website $website) {

@@ -106,41 +106,25 @@ const eventsByDate = computed(() => {
 	return grouped
 })
 
+const pointRadius = computed(() => (labels.value.length > 40 ? 0 : 2))
+
+const line = (key: keyof typeof series, data: number[]) => ({
+	label: key === "sales" ? `${series.sales.label} (${props.data.currency})` : series[key].label,
+	data,
+	borderColor: series[key].color,
+	backgroundColor: series[key].color,
+	tension: 0,
+	borderWidth: 1.5,
+	pointRadius: pointRadius.value,
+	yAxisID: series[key].axis,
+})
+
 const chartData = computed(() => ({
 	labels: labels.value,
 	datasets: [
-		visible.value.clicks && {
-			type: "bar",
-			label: series.clicks.label,
-			data: labels.value.map((bucket) => clicksByBucket.value[bucket] ?? 0),
-			backgroundColor: series.clicks.color + "99",
-			borderRadius: 2,
-			barPercentage: 0.25,
-			yAxisID: "y2",
-			order: 3,
-		},
-		visible.value.impressions && {
-			label: series.impressions.label,
-			data: labels.value.map((bucket) => impressionsByBucket.value[bucket] ?? 0),
-			borderColor: series.impressions.color,
-			borderWidth: 2,
-			pointRadius: 0,
-			cubicInterpolationMode: "monotone",
-			yAxisID: "y1",
-			order: 2,
-		},
-		visible.value.sales && {
-			label: series.sales.label,
-			data: labels.value.map((bucket) => Math.round((salesByBucket.value[bucket] ?? 0) * 100) / 100),
-			borderColor: series.sales.color,
-			backgroundColor: "#0F9D5822",
-			borderWidth: 2,
-			pointRadius: 0,
-			fill: true,
-			cubicInterpolationMode: "monotone",
-			yAxisID: "y3",
-			order: 1,
-		},
+		visible.value.sales && line("sales", labels.value.map((bucket) => Math.round((salesByBucket.value[bucket] ?? 0) * 100) / 100)),
+		visible.value.impressions && line("impressions", labels.value.map((bucket) => impressionsByBucket.value[bucket] ?? 0)),
+		visible.value.clicks && line("clicks", labels.value.map((bucket) => clicksByBucket.value[bucket] ?? 0)),
 	].filter(Boolean),
 }))
 
@@ -148,18 +132,6 @@ const eventMarkers = {
 	id: "eventMarkers",
 	afterDatasetsDraw(chart: any) {
 		const { ctx, chartArea, scales } = chart
-		chart.data.datasets.forEach((dataset: any, datasetIndex: number) => {
-			if (dataset.type !== "bar") return
-			ctx.save()
-			ctx.fillStyle = series.clicks.color
-			ctx.font = "600 11px sans-serif"
-			ctx.textAlign = "center"
-			chart.getDatasetMeta(datasetIndex).data.forEach((bar: any, index: number) => {
-				const value = dataset.data[index]
-				if (value > 0) ctx.fillText(value.toLocaleString(), bar.x, bar.y - 4)
-			})
-			ctx.restore()
-		})
 		for (const [date, events] of Object.entries(eventsByDate.value)) {
 			const index = labels.value.indexOf(date)
 			if (index < 0) continue
@@ -189,7 +161,7 @@ const chartOptions = computed(() => ({
 	maintainAspectRatio: false,
 	interaction: { mode: "index", intersect: false },
 	plugins: {
-		legend: { display: false },
+		legend: { position: "bottom", labels: { boxWidth: 12, boxHeight: 12 } },
 		tooltip: {
 			backgroundColor: "#fff",
 			titleColor: "#111827",
@@ -200,7 +172,7 @@ const chartOptions = computed(() => ({
 			callbacks: {
 				title: (items: any[]) => (granularity.value === "week" ? ctrans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
 				label: (item: any) =>
-					item.dataset.yAxisID === "y3"
+					item.dataset.yAxisID === series.sales.axis
 						? `${item.dataset.label}: ${locale.currencyFormat(props.data.currency, item.raw)}`
 						: `${item.dataset.label}: ${item.raw.toLocaleString()}`,
 				afterBody: (items: any[]) => (eventsByDate.value[items[0].label] ?? []).map((event) => `• ${eventStyle[event.type].label}: ${event.label}`),
@@ -208,10 +180,10 @@ const chartOptions = computed(() => ({
 		},
 	},
 	scales: {
-		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, color: "#6b7280" } },
-		y1: { type: "linear", position: "left", display: visible.value.impressions, grid: { color: "#EDE7F6" }, ticks: { color: series.impressions.color }, beginAtZero: true, title: { display: true, text: series.impressions.label, color: series.impressions.color } },
-		y2: { type: "linear", position: "right", display: visible.value.clicks, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, beginAtZero: true, grace: "15%", title: { display: true, text: series.clicks.label, color: series.clicks.color } },
-		y3: { type: "linear", position: "right", display: visible.value.sales, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color }, min: 0, title: { display: true, text: `${series.sales.label} (${props.data.currency})`, color: series.sales.color } },
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0, color: "#6b7280", callback: (value: number) => useFormatTime(labels.value[value], { formatTime: "d MMM" }) } },
+		y1: { type: "linear", position: "left", display: visible.value.impressions, beginAtZero: true, ticks: { color: series.impressions.color, precision: 0 }, title: { display: true, text: series.impressions.label, color: series.impressions.color } },
+		y2: { type: "linear", position: "right", display: visible.value.clicks, beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, title: { display: true, text: series.clicks.label, color: series.clicks.color } },
+		y3: { type: "linear", position: "right", display: visible.value.sales, min: 0, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color, callback: (value: number) => locale.currencyFormat(props.data.currency, value) }, title: { display: true, text: `${series.sales.label} (${props.data.currency})`, color: series.sales.color } },
 	},
 }))
 
