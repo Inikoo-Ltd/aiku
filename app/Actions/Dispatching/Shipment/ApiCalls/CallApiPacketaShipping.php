@@ -51,7 +51,7 @@ class CallApiPacketaShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?string $senderName = null): array
     {
         $accessToken = $this->getAccessToken($shipper);
         $apiPassword = Arr::get($accessToken, 'api_password');
@@ -98,7 +98,7 @@ class CallApiPacketaShipping extends OrgAction
             'addressId'   => $addressId,
             'value'       => $value,
             'currency'    => $order->currency?->code ?? 'EUR',
-            'eshop'       => Arr::get($parentResource, 'from_company_name'),
+            'eshop'       => $senderName ?: Arr::get($parentResource, 'from_company_name'),
             'weight'      => $weight, // in kg
             'street'      => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
