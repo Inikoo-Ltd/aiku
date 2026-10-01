@@ -33,4 +33,11 @@ export const useComposerDraft = (key: () => string | null | undefined, text: Ref
             writeDraft(currentKey, value ?? "")
         }
     })
+
+    return () => {
+        const currentKey = key()
+        if (currentKey) {
+            writeDraft(currentKey, "")
+        }
+    }
 }

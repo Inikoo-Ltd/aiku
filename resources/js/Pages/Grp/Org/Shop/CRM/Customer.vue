@@ -135,11 +135,15 @@ const emailForm = useForm({
     attachments: [] as File[],
 })
 const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
-useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
-useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
+const clearSubjectDraft = useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
+const clearMessageDraft = useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
 const submitEmail = () => {
     emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
-        onSuccess: () => emailForm.reset('subject', 'message', 'attachments'),
+        onSuccess: () => {
+            clearSubjectDraft()
+            clearMessageDraft()
+            emailForm.reset('subject', 'message', 'attachments')
+        },
     })
 }
 
