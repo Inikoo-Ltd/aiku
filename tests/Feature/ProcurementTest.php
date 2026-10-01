@@ -6640,7 +6640,7 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
 });
 
 test('purchase order products and items tabs show stock and quarterly usage of each product', function () {
-    $this->travelTo(now()->firstOfQuarter()->addDays(45));
+    $this->travelTo('2030-05-15 12:00:00');
 
     $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
     $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
