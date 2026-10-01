@@ -1245,7 +1245,10 @@ test('catalogue top of the month links to the department, family and product wit
 });
 
 test('shop top menu links to the target section of the shop dashboard', function () {
-    $target = collect(GetShopNavigation::run($this->shop, $this->user)['dashboard']['topMenu']['subSections'])->filter()->first();
+    $shopNavigation = GetShopNavigation::run($this->shop, $this->user)['dashboard'];
+    $target         = collect($shopNavigation['topMenu']['subSections'])->filter()->first();
+
+    expect($shopNavigation['route']['parameters']['section'])->toBe(ShopDashboardSectionsEnum::TARGET->value);
 
     expect($target['root'])->toBe('grp.org.shops.show.dashboard.show')
         ->and($target['route']['name'])->toBe('grp.org.shops.show.dashboard.show')

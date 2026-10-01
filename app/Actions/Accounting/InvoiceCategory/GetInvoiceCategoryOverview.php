@@ -23,7 +23,7 @@ class GetInvoiceCategoryOverview
      *     currency_code: string|null,
      *     month: array<string, float|int>,
      *     year: array<string, float|int>,
-     *     monthly: list<array{period: string, sales: float, invoices: int}>
+     *     monthly: list<array{period: string, sales: float, invoices: int, refunds: int}>
      * }
      */
     public function handle(InvoiceCategory $invoiceCategory, ?Carbon $today = null): array
@@ -51,8 +51,8 @@ class GetInvoiceCategoryOverview
             ->where('from', '>=', $today->copy()->startOfMonth()->subMonths(12))
             ->where('from', '<', $end)
             ->orderBy('from')
-            ->get(['period', DB::raw('coalesce(sales_external, 0) + coalesce(sales_internal, 0) as sales'), 'invoices'])
-            ->map(fn ($record) => ['period' => $record->period, 'sales' => (float) $record->sales, 'invoices' => (int) $record->invoices])
+            ->get(['period', DB::raw('coalesce(sales_external, 0) + coalesce(sales_internal, 0) as sales'), 'invoices', 'refunds'])
+            ->map(fn ($record) => ['period' => $record->period, 'sales' => (float) $record->sales, 'invoices' => (int) $record->invoices, 'refunds' => (int) $record->refunds])
             ->all();
 
         return [

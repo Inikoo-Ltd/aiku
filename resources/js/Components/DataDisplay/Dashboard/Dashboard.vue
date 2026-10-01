@@ -5,7 +5,7 @@ import DashboardWidget from "./DashboardWidget.vue"
 import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import ShopDashboardWidgets from "./ShopDashboardWidgets.vue"
 import { ref, provide, computed, onMounted } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -124,9 +124,16 @@ const loadSectionTable = () => {
 
 const onChangeSection = (section: string) => {
     currentSection.value = section
+    const url = new URL(window.location.href)
+    url.searchParams.set("section", section)
     axios.patch(route("grp.models.profile.update"), { settings: { shop_dashboard_section: section } })
     loadSectionTable()
-    emit("sectionChanged", section)
+    router.replace({
+        url: url.pathname + url.search,
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => emit("sectionChanged", section),
+    })
 }
 
 onMounted(() => {
