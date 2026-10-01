@@ -233,7 +233,8 @@ class IndexStockDeliveryItems extends OrgAction
             ->column(key: 'cost_shipping', label: $costLabel(__('Shipping')), canBeHidden: false)
             ->column(key: 'cost_duties', label: $costLabel(__('Duties')), canBeHidden: false)
             ->column(key: 'cost_tax', label: $costLabel(__('Tax')), canBeHidden: false)
-            ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right');
+            ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right')
+            ->column(key: 'cost_per_sko_org', label: __('Landed cost / SKO').' ('.$stockDelivery->organisation->currency->code.')', canBeHidden: false, align: 'right');
 
         if (!$stockDelivery->is_costed) {
             $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');

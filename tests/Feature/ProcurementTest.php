@@ -2822,7 +2822,8 @@ test('UI placed stock delivery costing tab shows every item on one page', functi
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where(StockDeliveryTabsEnum::ITEMS->value.'.meta.per_page', config('ui.table.max_records_per_page'))
             ->has(StockDeliveryTabsEnum::ITEMS->value.'.data.0.updateCostRoute')
-            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.unit_quantity', fn ($unitQuantity) => (float) $unitQuantity === 10.0));
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.unit_quantity', fn ($unitQuantity) => (float) $unitQuantity === 10.0)
+            ->has(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cost_per_sko_org'));
 });
 
 test('UI edit stock delivery', function () {

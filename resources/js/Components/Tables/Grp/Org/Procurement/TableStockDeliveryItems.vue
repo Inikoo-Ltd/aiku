@@ -409,6 +409,10 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             </div>
         </template>
 
+        <template #cell(cost_per_sko_org)="{ item }">
+            <span v-if="item.cost_per_sko_org !== null" class="font-semibold text-gray-700 tabular-nums">{{ locale.currencyFormat(item.org_currency ?? 'GBP', Number(item.cost_per_sko_org)) }}</span>
+        </template>
+
         <template #cell(code)="{ item }">
             <div class="flex items-center gap-1.5">
                 <Link

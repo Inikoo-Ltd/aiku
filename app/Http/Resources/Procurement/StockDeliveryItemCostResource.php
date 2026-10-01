@@ -14,6 +14,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class StockDeliveryItemCostResource extends JsonResource
 {
+    /**
+     * Landed cost of one SKO in the organisation's currency, worked out as the stock is valued: the line's
+     * landed cost over the SKOs ordered.
+     */
+    private function costPerSkoInOrgCurrency(StockDeliveryItem $item): ?float
+    {
+        $skos = (float) $item->unit_quantity / $item->unitsPerSko();
+
+        if ($skos <= 0 || (float) $item->cost_total <= 0) {
+            return null;
+        }
+
+        return round((float) $item->cost_total * (float) ($item->org_exchange ?? $item->stockDelivery?->org_exchange ?? 1) / $skos, 4);
+    }
+
     public function toArray($request): array
     {
         /** @var StockDeliveryItem $item */
@@ -39,6 +54,8 @@ class StockDeliveryItemCostResource extends JsonResource
             'cost_duties'          => $item->cost_duties,
             'cost_tax'             => $item->cost_tax,
             'cost_total'           => $item->cost_total,
+            'org_currency'         => $stockDelivery?->organisation?->currency?->code,
+            'cost_per_sko_org'     => $this->costPerSkoInOrgCurrency($item),
             'updateCostRoute'      => $isEditable ? [
                 'name'       => 'grp.models.stock-delivery-item.update-cost',
                 'parameters' => ['stockDeliveryItem' => $item->id],
