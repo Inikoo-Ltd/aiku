@@ -3416,6 +3416,65 @@ test('a failed QA verdict leaves a ticket that is still being worked on exactly 
     expect($ticket->refresh()->status)->toBe(TicketStatusEnum::WAITING);
 });
 
+test('QA can fail a done ticket without reopening it by unticking Reopen ticket back', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Fail but keep done']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Minor, follow up separately', 'reopen' => false])->assertRedirect();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->qa_status)->toBe(TicketQaStatusEnum::FAILED);
+});
+
+test('any checker can pick up a failed or passed QA check again, whoever gave the verdict, but not a skipped one', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Check me again']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Still broken'])->assertRedirect();
+
+    actingAs($otherQa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($otherQa->id);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED);
+
+    actingAs($qa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($qa->id);
+
+    $skipped = StoreTicket::make()->action($this->group, ['subject' => 'Nothing to test']);
+    Ticket::whereKey($skipped->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::SKIPPED]);
+
+    get(route('grp.tickets.show', $skipped->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false));
+    patch(route('grp.models.ticket.update', $skipped->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+});
+
 test('a checker claims a ticket, it leaves every other checker\'s QA list, and only they can give its verdict', function () {
     Mail::fake();
     Notification::fake();
@@ -3490,7 +3549,7 @@ test('an engineer writes an incident post-mortem on a ticket and customers canno
         ->toThrow(Illuminate\Validation\ValidationException::class);
 });
 
-test('the QA list hides the status filter, keeps tickets being QA checked whatever their status, and the dashboard lists who is checking what', function () {
+test('the QA list filters by ticket status, keeps tickets being QA checked whatever their status, and the dashboard lists who is checking what', function () {
     $qa      = User::factory()->create(['group_id' => $this->group->id]);
     $otherQa = User::factory()->create(['group_id' => $this->group->id]);
     setPermissionsTeamId($this->group->id);
@@ -3510,13 +3569,14 @@ test('the QA list hides the status filter, keeps tickets being QA checked whatev
     $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
 
     get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) {
-        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
-        expect($keys)->not->toContain('status')
-            ->and(array_slice($keys, 0, 2))->toBe(['qa_checker', 'qa_status']);
+        $elementGroups = $page->toArray()['props']['queryBuilderProps']['default']['elementGroups'];
+        expect(array_slice(array_keys($elementGroups), 0, 3))->toBe(['qa_checker', 'status', 'qa_status'])
+            ->and(array_keys($elementGroups['status']['elements']))->toContain('resolved', 'pending_deploy', 'in_progress', 'assigned');
     });
     expect($qaListIds())->toContain($checkingOpen->id, $done->id)->not->toContain($openUnchecked->id, $checkingByOther->id)
         ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($checkingByOther->id)
-        ->and($qaListIds(['elements' => ['status' => 'in_progress', 'qa_status' => '']]))->not->toContain($openUnchecked->id);
+        ->and($qaListIds(['elements' => ['status' => 'in_progress', 'qa_status' => '']]))->toContain($checkingOpen->id)->not->toContain($openUnchecked->id, $done->id)
+        ->and($qaListIds(['elements' => ['status' => 'resolved']]))->toContain($done->id)->not->toContain($checkingOpen->id);
 
     get(route('grp.tickets.list'))->assertInertia(function (AssertableInertia $page) {
         $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);

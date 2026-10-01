@@ -247,6 +247,10 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function canBeClaimedForQaBy(?User $user): bool
     {
+        if ($this->qa_status?->canBeCheckedAgain()) {
+            return self::canGiveQaVerdict($user);
+        }
+
         return self::canGiveQaVerdict($user)
             && !$this->qa_status?->isVerdict()
             && $this->qa_status !== TicketQaStatusEnum::CHECKING
