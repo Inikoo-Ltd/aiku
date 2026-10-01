@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, ref } from "vue"
 import Chart from "primevue/chart"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { Link, router } from "@inertiajs/vue3"
@@ -10,14 +10,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faBullseyeArrow, faChartPie, faChevronDown, faExternalLink, faLightbulb } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faPencil, faBullseyeArrow, faChartPie, faChevronDown, faExternalLink, faLightbulb)
 
-const layout = inject("layout", layoutStructure)
-
-const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#9ca3af", target: "#1f845a", likelyRange: "rgba(156, 163, 175, 0.25)" }
-const thisYearColor = computed(() => layout.app?.theme?.[4] || "#4f46e5")
+const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#0ea5e9", target: "#334155", thisYear: "#1f845a", likelyRange: "rgba(156, 163, 175, 0.4)" }
 
 interface PeriodTarget {
     month: string
@@ -168,11 +164,11 @@ const forecast = computed(() => periodData.value.chart.forecast ?? null)
 const chartData = computed(() => ({
     labels: periodData.value.chart.days.map(dayLabel),
     datasets: [
-        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: thisYearColor.value, backgroundColor: thisYearColor.value, tension: 0, borderWidth: 1.5, pointRadius: 2 },
+        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
         ...(forecast.value ? [
-            { key: "forecast", label: ctrans("Forecast"), data: forecast.value.expected, borderColor: thisYearColor.value, backgroundColor: thisYearColor.value, borderDash: [2, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
-            { key: "band", label: ctrans("Likely range"), data: forecast.value.high, borderColor: "transparent", backgroundColor: COLORS.likelyRange, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0, isBand: true },
-            { key: "band_low", label: "", data: forecast.value.low, borderColor: "transparent", backgroundColor: COLORS.likelyRange, tension: 0, borderWidth: 0, pointRadius: 0, inLegend: false },
+            { key: "forecast", label: ctrans("Forecast"), data: forecast.value.expected, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, borderDash: [2, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+            { key: "band", label: ctrans("Likely range"), data: forecast.value.high, borderColor: "transparent", backgroundColor: COLORS.likelyRange, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0, order: 10, isBand: true },
+            { key: "band_low", label: "", data: forecast.value.low, borderColor: "transparent", backgroundColor: COLORS.likelyRange, tension: 0, borderWidth: 0, pointRadius: 0, order: 10, inLegend: false },
         ] : []),
         { label: periodData.value.last_year_label, data: periodData.value.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
         ...(target.value ? [{ label: ctrans("Target"), data: periodData.value.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
@@ -249,7 +245,7 @@ const donutOptions = {
             <span v-if="!collapsed" class="ml-6 hidden items-center gap-3 text-xs text-gray-500 xl:flex">
                 <span v-for="dataset in chartData.datasets.filter((dataset: any) => dataset.inLegend !== false)" :key="dataset.label" class="flex items-center gap-1.5">
                     <span v-if="(dataset as any).isBand" class="h-2.5 w-4 rounded-sm" :style="{ backgroundColor: dataset.backgroundColor }" />
-                    <span v-else class="w-4 border-t-2" :class="(dataset as any).borderDash ? 'border-dashed' : ''" :style="{ borderColor: dataset.borderColor }" />
+                    <span v-else class="w-4 border-t-2" :class="(dataset as any).key === 'forecast' ? 'border-dotted' : (dataset as any).borderDash ? 'border-dashed' : ''" :style="{ borderColor: dataset.borderColor }" />
                     {{ dataset.label }}
                 </span>
             </span>
