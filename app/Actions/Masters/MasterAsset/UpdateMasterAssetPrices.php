@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * Specialised save path for master price/rrp edits: cascades to child products with the
@@ -192,5 +193,10 @@ class UpdateMasterAssetPrices extends OrgAction
         $this->initialisationFromGroup($masterAsset->group, $modelData);
 
         return $this->handle($masterAsset, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

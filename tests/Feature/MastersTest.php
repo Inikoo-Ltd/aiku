@@ -4314,6 +4314,43 @@ describe('price tips from Jev, HELP-2331', function () {
             ->and($tip->dismissed_by_user_id)->toBe($this->adminGuest->getUser()->id)
             ->and($tip->audits()->where('new_values->status', 'dismissed')->exists())->toBeTrue();
     });
+
+    test('the master shop lists every open price tip in one place', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        $masterShop = $this->tipMasterAsset->masterShop;
+
+        get(route('grp.masters.master_shops.show.master_products.index', [$masterShop->slug, 'tab' => 'pricing']))
+            ->assertOk()
+            ->assertInertia(
+                fn (AssertableInertia $page) => $page
+                    ->where('tabs.navigation.pricing.title', 'Price tips')
+                    ->where('tabs.navigation.pricing.number', 1)
+                    ->has('pricing.data', 1)
+                    ->where('pricing.data.0.code', $this->tipMasterAsset->code)
+                    ->where('pricing.data.0.price_tip.change', -10)
+                    ->where('pricing.data.0.master_family_code', $this->tipMasterAsset->masterFamily->code)
+                    ->etc()
+            );
+
+        \Pest\Laravel\post(route('grp.json.master_shop.pricing_sales', $masterShop->slug), ['interval' => 'quarter', 'ids' => [$this->tipMasterAsset->id]])
+            ->assertOk();
+    });
+
+    test('why staff said a tip was wrong goes back to the AI for that product and its family', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => 'Christmas stock, sells in December'])
+            ->assertRedirect();
+
+        $feedback = GenerateMasterAssetPriceTips::make()->staffFeedback([], [$this->tipMasterAsset->master_family_id]);
+
+        expect($feedback)->toHaveCount(1)
+            ->and($feedback->first()->dismissed_reason)->toBe('Christmas stock, sells in December')
+            ->and((int) $feedback->first()->change)->toBe(-10)
+            ->and(GenerateMasterAssetPriceTips::make()->staffFeedback([], [0]))->toBeEmpty();
+    });
 });
 
 describe('competitor prices, HELP-3605', function () {

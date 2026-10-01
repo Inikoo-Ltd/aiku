@@ -227,7 +227,7 @@ class GenerateMasterAssetPriceTips
         return AskJev::make()->handle($signals, [
             'change'         => [
                 'type'         => 'choice',
-                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price).',
+                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price). staff_feedback lists earlier tips on this product or its family that staff rejected and why; do not repeat a change for a reason they gave.',
                 'criteria'     => [
                     'down_15' => 'Cut the price 15%: far too much stock, demand fell and is not coming back',
                     'down_10' => 'Cut the price 10%: too much stock and falling demand',
@@ -326,7 +326,7 @@ class GenerateMasterAssetPriceTips
 
         $masterAssets = DB::table('master_assets')
             ->whereIn('id', $masterAssetIds)
-            ->select(['id', 'code', 'name', 'units', 'master_prices', 'effective_cost'])
+            ->select(['id', 'code', 'name', 'units', 'master_prices', 'effective_cost', 'master_family_id'])
             ->selectSub(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql(), 'family_unit_price_median')
             ->get();
 
@@ -361,6 +361,7 @@ class GenerateMasterAssetPriceTips
         $offers       = $this->offers($masterAssetIds);
         $priceChanges = $this->priceChanges($masterAssetIds);
         $competitors  = GetConfirmedCompetitorPrices::run($masterAssetIds, $masterShop->group->currency);
+        $feedback     = $this->staffFeedback($masterAssetIds, $masterAssets->pluck('master_family_id')->filter()->unique()->all());
 
         $signals = [];
         foreach ($masterAssets as $masterAsset) {
@@ -407,10 +408,40 @@ class GenerateMasterAssetPriceTips
                 'offers'              => $offers->get($masterAsset->id, collect())->values()->all(),
                 'price_changes'       => static::withSalesResponse($priceChanges->get($masterAsset->id, []), $sales),
                 'competitors'         => $competitors->get($masterAsset->id, []),
+                'staff_feedback'      => $feedback
+                    ->filter(fn ($row) => $row->master_asset_id == $masterAsset->id || ($masterAsset->master_family_id && $row->master_family_id == $masterAsset->master_family_id))
+                    ->take(5)
+                    ->map(fn ($row) => [
+                        'product'        => $row->code,
+                        'tip_change_pct' => (int) $row->change,
+                        'why_wrong'      => $row->dismissed_reason,
+                        'date'           => Carbon::parse($row->dismissed_at)->toDateString(),
+                    ])
+                    ->values()
+                    ->all(),
             ];
         }
 
         return $signals;
+    }
+
+    /**
+     * Why staff rejected earlier tips on these products or their families, newest first.
+     *
+     * @param  array<int, int>  $masterAssetIds
+     * @param  array<int, int>  $masterFamilyIds
+     */
+    public function staffFeedback(array $masterAssetIds, array $masterFamilyIds): Collection
+    {
+        return DB::table('master_asset_price_tips')
+            ->join('master_assets', 'master_assets.id', '=', 'master_asset_price_tips.master_asset_id')
+            ->where('master_asset_price_tips.status', MasterAssetPriceTipStatusEnum::DISMISSED->value)
+            ->whereNotNull('master_asset_price_tips.dismissed_reason')
+            ->where('master_asset_price_tips.dismissed_at', '>', now()->subYear())
+            ->where(fn ($query) => $query->whereIn('master_asset_price_tips.master_asset_id', $masterAssetIds)->orWhereIn('master_assets.master_family_id', $masterFamilyIds))
+            ->orderByDesc('master_asset_price_tips.dismissed_at')
+            ->limit(500)
+            ->get(['master_asset_price_tips.master_asset_id', 'master_assets.master_family_id', 'master_assets.code', 'master_asset_price_tips.change', 'master_asset_price_tips.dismissed_reason', 'master_asset_price_tips.dismissed_at']);
     }
 
     /**

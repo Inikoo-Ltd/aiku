@@ -20,8 +20,8 @@ import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiplePriceCurrency from "@/Components/Pure/PureMultiplePriceCurrency.vue"
 import { useForm, router } from "@inertiajs/vue3"
-import { faPencil } from "@fal"
-library.add(faExclamationTriangle, faSpinnerThird, faPencil)
+import { faPencil, faQuestionCircle } from "@fal"
+library.add(faExclamationTriangle, faSpinnerThird, faPencil, faQuestionCircle)
 
 interface CurrencyValue {
     value: string | number | null
@@ -32,6 +32,9 @@ interface MasterProductPricing {
     id: number
     slug: string
     code: string
+    master_family_code?: string | null
+    master_family_slug?: string | null
+    master_department_slug?: string | null
     name: string
     units: number
     unit: string | null
@@ -261,19 +264,20 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     })
 }
 
-const dismissingTip = ref<MasterProductPricing | null>(null)
+const explainingTip = ref<MasterProductPricing | null>(null)
 const dismissForm = useForm({ dismissed_reason: '' })
 
-const openDismiss = (masterProduct: MasterProductPricing) => {
+const openExplain = (masterProduct: MasterProductPricing) => {
     dismissForm.reset()
-    dismissingTip.value = masterProduct
+    dismissForm.clearErrors()
+    explainingTip.value = masterProduct
 }
 
 const submitDismiss = () => {
-    dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: dismissingTip.value!.price_tip!.id }), {
+    dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {
         preserveScroll: true,
         onSuccess: () => {
-            dismissingTip.value = null
+            explainingTip.value = null
             router.reload({ only: ['pricing'] })
         },
     })
@@ -391,9 +395,9 @@ const cycleInterval = async () => {
     isLoadingSales.value = true
     try {
         const { data } = await axios.post(
-            route('grp.json.master_product_category.pricing_sales', {
-                masterProductCategory: props.masterProductCategoryId,
-            }),
+            props.masterProductCategoryId
+                ? route('grp.json.master_product_category.pricing_sales', { masterProductCategory: props.masterProductCategoryId })
+                : route('grp.json.master_shop.pricing_sales', { masterShop: (route().params as RouteParams).masterShop }),
             {
                 interval: interval,
                 ids: rowIds.value,
@@ -414,6 +418,14 @@ const productRoute = (masterProduct: MasterProductPricing) => {
         masterProduct: masterProduct.slug,
     })
 }
+
+const familyPricingRoute = (masterProduct: MasterProductPricing) =>
+    route("grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index", {
+        masterShop: (route().params as RouteParams).masterShop,
+        masterDepartment: masterProduct.master_department_slug,
+        masterFamily: masterProduct.master_family_slug,
+        tab: "pricing",
+    })
 
 const formatMoney = (value: string | number | null, currencyCode: string) => {
     if (value == null) {
@@ -491,6 +503,14 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 fixed-width
                 aria-hidden="true"
             />
+        </template>
+
+        <template #cell(master_family_code)="{ item: masterProduct }">
+            <Link v-if="masterProduct.master_family_slug && masterProduct.master_department_slug"
+                :href="familyPricingRoute(masterProduct)" class="secondaryLink">
+                {{ masterProduct.master_family_code }}
+            </Link>
+            <span v-else>{{ masterProduct.master_family_code }}</span>
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
@@ -625,20 +645,31 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </template>
 
         <template #cell(price_tip)="{ item: masterProduct }">
-            <div v-if="masterProduct.price_tip" class="flex flex-col items-end gap-1">
-                <button
-                    type="button"
-                    class="rounded border px-1.5 py-px text-xs font-medium tabular-nums"
-                    :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
-                    v-tooltip="`${masterProduct.price_tip.reason}. ${ctrans('Click to review the suggested prices and apply them')}`"
-                    @click="applyPriceTip(masterProduct)"
-                >
-                    {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
-                </button>
-                <span class="text-xs tabular-nums text-gray-400" v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
-                <button type="button" class="text-xs text-gray-400 underline hover:text-gray-600" @click="openDismiss(masterProduct)">
-                    {{ ctrans('Dismiss') }}
-                </button>
+            <div v-if="masterProduct.price_tip" class="flex items-center justify-end gap-x-3">
+                <div class="flex flex-col items-end gap-y-0.5">
+                    <button
+                        type="button"
+                        class="rounded border px-1.5 py-px text-xs font-medium tabular-nums"
+                        :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
+                        v-tooltip="ctrans('Why this price?')"
+                        @click="openExplain(masterProduct)"
+                    >
+                        {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
+                    </button>
+                    <span class="flex items-center gap-x-1 whitespace-nowrap text-xs tabular-nums text-gray-400">
+                        <span v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
+                        <button v-if="masterProduct.price_tip.reason" type="button" class="text-indigo-500 hover:text-indigo-700" v-tooltip="ctrans('Why this price?')" :aria-label="ctrans('Why this price?')" @click="openExplain(masterProduct)">
+                            <FontAwesomeIcon :icon="faQuestionCircle" fixed-width aria-hidden="true" />
+                        </button>
+                    </span>
+                </div>
+                <div class="flex flex-col items-end">
+                    <template v-for="code in majorCurrencies ?? []" :key="code">
+                        <span v-if="masterProduct.master_prices?.[code]?.value != null" class="whitespace-nowrap text-sm font-semibold tabular-nums text-gray-800" v-tooltip="ctrans('Recommended price')">
+                            {{ formatMoney(Math.round(Number(masterProduct.master_prices[code].value) * (1 + masterProduct.price_tip.change / 100) * 100) / 100, code) }}
+                        </span>
+                    </template>
+                </div>
             </div>
         </template>
 
@@ -729,17 +760,25 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </div>
     </Modal>
 
-    <Modal :isOpen="!!dismissingTip" @onClose="dismissingTip = null" width="w-full max-w-md">
-        <form v-if="dismissingTip" @submit.prevent="submitDismiss">
-            <div class="mb-2 text-sm font-medium text-gray-700">
-                {{ ctrans('Dismiss price tip') }} — {{ dismissingTip.code }}
+    <Modal :isOpen="!!explainingTip" @onClose="explainingTip = null" width="w-full max-w-md">
+        <form v-if="explainingTip?.price_tip" @submit.prevent="submitDismiss">
+            <div class="mb-1 text-sm font-medium text-gray-700">
+                {{ ctrans('Why :change', { change: `${explainingTip.price_tip.change > 0 ? '+' : ''}${explainingTip.price_tip.change}%` }) }} — {{ explainingTip.code }}
             </div>
-            <p class="mb-3 text-xs text-gray-500">{{ dismissingTip.price_tip?.reason }}</p>
-            <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is this tip wrong?') }}</label>
-            <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="3" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" />
-            <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
-            <div class="mt-3 flex justify-end">
-                <button type="submit" :disabled="dismissForm.processing" class="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white disabled:opacity-50">{{ ctrans('Dismiss') }}</button>
+            <p class="mb-3 text-xs text-gray-500">{{ explainingTip.name }} · {{ ctrans(':pct% sure', { pct: `${explainingTip.price_tip.confidence}` }) }}</p>
+            <ul class="list-disc space-y-1 pl-5 text-sm text-gray-700">
+                <li v-for="(line, index) in explainingTip.price_tip.reason.split(', ')" :key="index">{{ line }}</li>
+            </ul>
+            <div class="mt-4 flex justify-end">
+                <button type="button" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white" @click="() => { const product = explainingTip!; explainingTip = null; applyPriceTip(product) }">{{ ctrans('Review and apply') }}</button>
+            </div>
+            <div class="mt-4 border-t border-gray-100 pt-3">
+                <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Is this tip wrong? Tell us why, the AI learns from it') }}</label>
+                <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="2" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" :placeholder="ctrans('e.g. Christmas stock, sells in December')" />
+                <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
+                <div class="mt-2 flex justify-end">
+                    <button type="submit" :disabled="dismissForm.processing" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50">{{ ctrans('Tip is wrong, hide it') }}</button>
+                </div>
             </div>
         </form>
     </Modal>
