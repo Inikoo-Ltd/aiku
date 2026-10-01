@@ -24,6 +24,9 @@ use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Catalogue\Shop\SalesTarget\GenerateSalesTargetTips;
+use App\Actions\Helpers\AI\AskToAi;
+use App\Models\Catalogue\SalesTargetTip;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -1349,10 +1352,17 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
     $growth = (float) config('marketing.default_sales_target_growth');
     $month  = GetShopMonthSalesTarget::run($this->organisation, $this->user, $today);
 
+    $shopChildren = collect($month['children'])->keyBy('key');
+
     expect($month['sales_so_far'])->toBe(1000.0)
         ->and($month['last_year_so_far'])->toBe(1100.0)
         ->and($month['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
         ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['selection_setting'])->toBe('organisation_target_shop_'.$this->organisation->id)
+        ->and($shopChildren->has((string) $closedShop->id))->toBeFalse()
+        ->and($shopChildren[(string) $secondShop->id])->toMatchArray(['name' => $secondShop->name, 'sales_so_far' => 700.0, 'last_year_total' => 600.0])
+        ->and($shopChildren[(string) $secondShop->id]['target']['amount'])->toEqualWithDelta(600 * (1 + $growth), 0.05)
+        ->and($shopChildren[(string) $secondShop->id]['link']['parameters'])->toMatchArray(['shop' => $secondShop->slug, 'section' => 'target'])
         ->and($month['can_edit'])->toBeFalse()
         ->and($month['update_route'])->toBeNull()
         ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(3000 * (1 + $growth), 0.05);
@@ -1391,6 +1401,9 @@ test('group target adds up every organisation in the group currency', function (
     expect($month['sales_so_far'])->toBe(900.0)
         ->and($month['last_year_so_far'])->toBe(800.0)
         ->and($month['currency_code'])->toBe($this->group->currency->code)
+        ->and($month['selection_setting'])->toBe('group_target_organisation')
+        ->and(collect($month['children'])->sum('target.amount'))->toEqualWithDelta($month['target']['amount'], 0.05)
+        ->and(collect($month['children'])->firstWhere('key', (string) $this->organisation->id)['currency_code'])->toBe($this->group->currency->code)
         ->and($month['target']['amount'])->toEqualWithDelta(800 * (1 + $growth), 0.05)
         ->and($month['target']['is_sum_of_shops'])->toBeTrue()
         ->and($month['can_edit'])->toBeFalse()
@@ -1430,13 +1443,14 @@ test('a shop selling under several invoice categories targets their sum, partner
     $timeSeries->records()->updateOrCreate(['period' => '2038-05-04', 'frequency' => 'D'], ['sales_org_currency_external' => 0, 'sales_org_currency_internal' => 200]);
 
     $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
-    $byCategory = collect($block['categories'])->keyBy('invoice_category_id');
+    $byCategory = collect($block['children'])->keyBy('invoice_category_id');
 
     expect($block['sales_so_far'])->toBe(500.0)
         ->and($block['last_year_total'])->toBe(1000.0)
         ->and($block['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
         ->and($block['target']['is_sum_of_categories'])->toBeTrue()
-        ->and($block['selected_category'])->toBe('all')
+        ->and($block['selected_child'])->toBe('all')
+        ->and($block['selection_setting'])->toBe('shop_target_category_'.$shop->id)
         ->and($byCategory[$retail->id])->toMatchArray(['key' => (string) $retail->id, 'name' => $retail->name, 'sales_so_far' => 300.0, 'last_year_total' => 750.0, 'can_edit' => true])
         ->and($byCategory[$retail->id]['target']['is_share'])->toBeTrue()
         ->and($byCategory[$retail->id]['chart']['this_year'])->toHaveCount(10)
@@ -1450,17 +1464,43 @@ test('a shop selling under several invoice categories targets their sum, partner
     $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
 
     expect($block['target']['amount'])->toEqualWithDelta(750 * (1 + $growth) + 500, 0.05)
-        ->and(collect($block['categories'])->firstWhere('invoice_category_id', $partners->id)['target'])->toMatchArray(['amount' => 500.0, 'is_share' => false])
+        ->and(collect($block['children'])->firstWhere('invoice_category_id', $partners->id)['target'])->toMatchArray(['amount' => 500.0, 'is_share' => false])
         ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta($organisationTarget + 500 - 250 * (1 + $growth), 0.05);
 
     UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 2000, 'month' => '2038-05']);
 
-    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['categories'])->firstWhere('invoice_category_id', $retail->id)['target']['amount'])->toEqualWithDelta(1500, 0.05)
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['children'])->firstWhere('invoice_category_id', $retail->id)['target']['amount'])->toEqualWithDelta(1500, 0.05)
         ->and(GetShopYearSalesTarget::run($shop, null, $today)['target']['months_set'])->toBe(1);
 
     actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['shop_target_category_'.$shop->id => (string) $partners->id]])->assertSuccessful();
 
-    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_category'])->toBe((string) $partners->id);
+    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
+});
+
+test('each morning a tip on reaching the target is written for the shop and shown on its target block', function () {
+    $shop  = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $today = Carbon::parse('2039-05-06', 'UTC');
+
+    ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY])
+        ->records()->updateOrCreate(['period' => '2038-05-12', 'frequency' => 'D'], ['sales_org_currency_external' => 1000]);
+
+    AskToAi::shouldRun()->once()->andReturn('Call the customers due to reorder today.');
+
+    expect(GenerateSalesTargetTips::run($shop, $today))->toBe(1);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $tip    = SalesTargetTip::where('shop_id', $shop->id)->sole();
+    $block  = GetShopMonthSalesTarget::run($shop, null, $today);
+
+    expect($tip->invoice_category_id)->toBeNull()
+        ->and($tip->facts['target'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($tip->facts)->toHaveKeys(['customers_due_to_reorder_within_a_week', 'open_baskets_amount', 'customers_who_bought_same_month_last_year_not_yet_this_month'])
+        ->and($block['tip'])->toBe('Call the customers due to reorder today.')
+        ->and($block['needed_per_day'])->toEqualWithDelta(1000 * (1 + $growth) / 25, 0.05)
+        ->and($block['needed_this_week'])->toEqualWithDelta(1000 * (1 + $growth) * 3 / 26, 0.05)
+        ->and(GetShopMonthSalesTarget::run($shop, null, $today->copy()->addDay())['tip'])->toBeNull();
 
     $shop->update(['state' => ShopStateEnum::CLOSED]);
 });

@@ -39,22 +39,50 @@ trait HasOrdersPipeline
      */
     private function pipeline(Shop|Organisation|Group $parent): array
     {
+        return $this->sumPipelines($this->pipelineByShop($parent));
+    }
+
+    /**
+     * @return array<int, array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}>
+     */
+    private function pipelineByShop(Shop|Organisation|Group $parent): array
+    {
         $rows = DB::table('orders')
             ->whereIn('orders.shop_id', $this->salesShopIds($parent))
             ->whereIn('orders.state', array_map(fn (OrderStateEnum $state) => $state->value, self::PIPELINE_STATES))
             ->whereNull('orders.deleted_at')
-            ->selectRaw('orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.'.($parent instanceof Group ? 'grp_net_amount' : 'org_net_amount').'), 0) as amount', [OrderStateEnum::SUBMITTED->value])
-            ->groupByRaw('1')
+            ->selectRaw('orders.shop_id, orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.'.($parent instanceof Group ? 'grp_net_amount' : 'org_net_amount').'), 0) as amount', [OrderStateEnum::SUBMITTED->value])
+            ->groupByRaw('1, 2')
             ->get();
 
-        $submitted   = (float) ($rows->firstWhere('is_submitted', true)->amount ?? 0);
-        $inWarehouse = (float) ($rows->firstWhere('is_submitted', false)->amount ?? 0);
+        $pipelines = [];
+        foreach ($rows->groupBy('shop_id') as $shopId => $shopRows) {
+            $submitted   = (float) ($shopRows->firstWhere('is_submitted', true)->amount ?? 0);
+            $inWarehouse = (float) ($shopRows->firstWhere('is_submitted', false)->amount ?? 0);
 
+            $pipelines[$shopId] = [
+                'amount'              => round($submitted + $inWarehouse, 2),
+                'orders'              => (int) $shopRows->sum('orders'),
+                'submitted_amount'    => round($submitted, 2),
+                'in_warehouse_amount' => round($inWarehouse, 2),
+            ];
+        }
+
+        return $pipelines;
+    }
+
+    /**
+     * @param  array<array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}>  $pipelines
+     *
+     * @return array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}
+     */
+    private function sumPipelines(array $pipelines): array
+    {
         return [
-            'amount'              => round($submitted + $inWarehouse, 2),
-            'orders'              => (int) $rows->sum('orders'),
-            'submitted_amount'    => round($submitted, 2),
-            'in_warehouse_amount' => round($inWarehouse, 2),
+            'amount'              => round(array_sum(array_column($pipelines, 'amount')), 2),
+            'orders'              => (int) array_sum(array_column($pipelines, 'orders')),
+            'submitted_amount'    => round(array_sum(array_column($pipelines, 'submitted_amount')), 2),
+            'in_warehouse_amount' => round(array_sum(array_column($pipelines, 'in_warehouse_amount')), 2),
         ];
     }
 

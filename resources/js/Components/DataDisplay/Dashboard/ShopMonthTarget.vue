@@ -2,17 +2,17 @@
 import { computed, inject, ref } from "vue"
 import Chart from "primevue/chart"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faBullseyeArrow, faChartPie, faChevronDown } from "@fal"
+import { faPencil, faBullseyeArrow, faChartPie, faChevronDown, faExternalLink, faLightbulb } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faPencil, faBullseyeArrow, faChartPie, faChevronDown)
+library.add(faPencil, faBullseyeArrow, faChartPie, faChevronDown, faExternalLink, faLightbulb)
 
 const layout = inject("layout", layoutStructure)
 
@@ -34,19 +34,24 @@ interface PeriodTarget {
     target: { amount: number | null, is_default: boolean, is_sum_of_shops?: boolean, is_sum_of_categories?: boolean, is_share?: boolean, months_set?: number, growth: number, set_by: string | null }
     gap: number | null
     needed_per_day: number | null
+    needed_this_week?: number | null
+    tip?: string | null
     remaining_days: number
     chart: { days: number[], this_year: number[], last_year: number[] }
     granularity?: "month" | "year"
-    categories?: CategoryTarget[]
-    selected_category?: string
+    children?: ChildTarget[]
+    children_label?: string
+    selection_setting?: string
+    selected_child?: string
     can_edit: boolean
     update_route: { name: string, parameters: Record<string, number> } | null
 }
 
-interface CategoryTarget extends PeriodTarget {
+interface ChildTarget extends PeriodTarget {
     key: string
-    invoice_category_id: number | null
+    invoice_category_id?: number | null
     name: string
+    link?: { name: string, parameters: Record<string, string> }
 }
 
 const props = defineProps<{
@@ -55,16 +60,16 @@ const props = defineProps<{
 }>()
 
 const activePeriod = ref<"month" | "year">("month")
-const categories = computed(() => props.monthTarget.categories ?? [])
-const selectedCategoryKey = ref(categories.value.some((category) => category.key === props.monthTarget.selected_category) ? props.monthTarget.selected_category! : "all")
-const selectedCategory = computed(() => categories.value.find((category) => category.key === selectedCategoryKey.value) ?? null)
+const children = computed(() => props.monthTarget.children ?? [])
+const selectedChildKey = ref(children.value.some((child) => child.key === props.monthTarget.selected_child) ? props.monthTarget.selected_child! : "all")
+const selectedChild = computed(() => children.value.find((child) => child.key === selectedChildKey.value) ?? null)
 const showAllCategories = ref(false)
 
 const periodData = computed<PeriodTarget>(() => {
     if (activePeriod.value === "year" && props.yearTarget) {
         return props.yearTarget
     }
-    return selectedCategory.value ?? props.monthTarget
+    return selectedChild.value ?? props.monthTarget
 })
 
 const money = (amount: number | null) =>
@@ -111,13 +116,12 @@ const selectPeriod = (period: "month" | "year") => {
     activePeriod.value = period
 }
 
-const selectCategory = (key: string) => {
+const selectChild = (key: string) => {
     isEditing.value = false
     activePeriod.value = "month"
-    selectedCategoryKey.value = key
-    const shopId = props.monthTarget.update_route?.parameters.shop
-    if (shopId) {
-        axios.patch(route("grp.models.profile.update"), { settings: { [`shop_target_category_${shopId}`]: key } })
+    selectedChildKey.value = key
+    if (props.monthTarget.selection_setting) {
+        axios.patch(route("grp.models.profile.update"), { settings: { [props.monthTarget.selection_setting]: key } })
     }
 }
 
@@ -137,7 +141,7 @@ const saveTarget = async () => {
         await axios.patch(route(periodData.value.update_route.name, periodData.value.update_route.parameters), {
             target_org_currency: newTarget.value,
             month: periodData.value.month,
-            invoice_category_id: selectedCategory.value?.invoice_category_id ?? null,
+            invoice_category_id: selectedChild.value?.invoice_category_id ?? null,
         })
         isEditing.value = false
         router.reload({ only: ["dashboard"] })
@@ -212,7 +216,10 @@ const donutOptions = {
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                 <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-[var(--theme-color-4)]" fixed-width aria-hidden="true" />
                 {{ ctrans(":month target", { month: periodData.month_label }) }}
-                <span v-if="selectedCategory && activePeriod === 'month'" class="font-normal text-gray-500">· {{ selectedCategory.name }}</span>
+                <span v-if="selectedChild && activePeriod === 'month'" class="font-normal text-gray-500">· {{ selectedChild.name }}</span>
+                <Link v-if="selectedChild?.link && activePeriod === 'month'" :href="route(selectedChild.link.name, selectedChild.link.parameters)" class="text-xs font-normal text-gray-400 hover:text-gray-700" :aria-label="ctrans('Open dashboard')" @click.stop>
+                    <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
+                </Link>
             </span>
             <span v-if="collapsed && target" class="flex items-center gap-3 text-xs tabular-nums text-gray-500">
                 <span class="relative h-2 w-28 overflow-hidden rounded-full bg-gray-100">
@@ -240,19 +247,19 @@ const donutOptions = {
             </div>
         </template>
 
-        <div v-if="categories.length" class="mb-4 flex flex-wrap items-center gap-1.5 text-sm">
-            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Invoice category") }}</span>
+        <div v-if="children.length" class="mb-4 flex flex-wrap items-center gap-1.5 text-sm">
+            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ monthTarget.children_label }}</span>
             <button
-                v-for="chip in [{ key: 'all', name: ctrans('All'), block: monthTarget as PeriodTarget }, ...categories.map((category) => ({ key: category.key, name: category.name, block: category as PeriodTarget }))]"
+                v-for="chip in [{ key: 'all', name: ctrans('All'), block: monthTarget as PeriodTarget }, ...children.map((child) => ({ key: child.key, name: child.name, block: child as PeriodTarget }))]"
                 :key="chip.key"
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="selectedCategoryKey === chip.key && activePeriod === 'month'
+                :class="selectedChildKey === chip.key && activePeriod === 'month'
                     ? 'border-[var(--theme-color-4)] bg-[var(--theme-color-4)] text-[var(--theme-color-5)] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
-                @click="selectCategory(chip.key)">
+                @click="selectChild(chip.key)">
                 <span>{{ chip.name }}</span>
-                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedCategoryKey === chip.key && activePeriod === 'month' ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
+                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && activePeriod === 'month' ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
             </button>
         </div>
 
@@ -323,12 +330,18 @@ const donutOptions = {
                 <p class="mt-2 text-xs text-gray-500">
                     <span v-if="versusLastYear !== null" :class="versusLastYear < 0 ? 'text-red-600' : 'text-green-600'">{{ ctrans(":change% vs same days last year", { change: (versusLastYear > 0 ? "+" : "") + versusLastYear.toFixed(1) }) }}</span>
                     <template v-if="periodData.needed_per_day"> · {{ ctrans(":amount needed per day", { amount: money(periodData.needed_per_day) }) }}</template>
+                    <template v-if="periodData.needed_this_week && periodData.granularity !== 'year'"> · {{ ctrans(":amount this week", { amount: money(periodData.needed_this_week) }) }}</template>
                     · {{ ctrans(":orders orders in the pipeline", { orders: String(periodData.pipeline.orders) }) }}
                 </p>
             </div>
         </div>
 
-        <template v-if="categories.length">
+        <p v-if="periodData.tip && periodData.granularity !== 'year'" class="mt-4 flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <FontAwesomeIcon icon="fal fa-lightbulb" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+            <span><span class="font-semibold">{{ ctrans("Today's tip") }}:</span> {{ periodData.tip }}</span>
+        </p>
+
+        <template v-if="children.length">
             <div class="mt-3 flex justify-end">
                 <button type="button" class="text-xs text-gray-400 hover:text-gray-700" :aria-expanded="showAllCategories" @click="showAllCategories = !showAllCategories">
                     {{ showAllCategories ? ctrans("Hide all targets") : ctrans("Show all targets") }}
@@ -341,7 +354,7 @@ const donutOptions = {
                         <table class="w-full text-sm tabular-nums">
                             <thead class="text-xs text-gray-500">
                                 <tr>
-                                    <th class="py-1 pr-4 text-left font-normal">{{ ctrans("Invoice category") }}</th>
+                                    <th class="py-1 pr-4 text-left font-normal">{{ monthTarget.children_label }}</th>
                                     <th class="py-1 pr-4 text-right font-normal">{{ ctrans("Invoiced") }}</th>
                                     <th class="py-1 pr-4 text-right font-normal">{{ ctrans("Target") }}</th>
                                     <th class="w-40 py-1 pr-4 text-left font-normal">{{ ctrans("Progress") }}</th>
@@ -350,20 +363,20 @@ const donutOptions = {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="category in categories" :key="category.key" class="cursor-pointer border-t border-gray-50 hover:bg-gray-50" :class="selectedCategoryKey === category.key ? 'font-semibold' : ''" @click="selectCategory(category.key)">
-                                    <td class="py-1.5 pr-4">{{ category.name }}</td>
-                                    <td class="py-1.5 pr-4 text-right">{{ money(category.sales_so_far) }}</td>
-                                    <td class="py-1.5 pr-4 text-right" :class="category.target.is_share ? 'text-gray-500' : ''">{{ money(category.target.amount) }}</td>
+                                <tr v-for="child in children" :key="child.key" class="cursor-pointer border-t border-gray-50 hover:bg-gray-50" :class="selectedChildKey === child.key ? 'font-semibold' : ''" @click="selectChild(child.key)">
+                                    <td class="py-1.5 pr-4">{{ child.name }}</td>
+                                    <td class="py-1.5 pr-4 text-right">{{ money(child.sales_so_far) }}</td>
+                                    <td class="py-1.5 pr-4 text-right" :class="child.target.is_share ? 'text-gray-500' : ''">{{ money(child.target.amount) }}</td>
                                     <td class="py-1.5 pr-4">
                                         <span class="flex items-center gap-2">
                                             <span class="relative h-2 w-24 overflow-hidden rounded-full bg-gray-100">
-                                                <span class="absolute inset-y-0 left-0" :style="{ width: percentOf(category.sales_so_far, category.target.amount) + '%', backgroundColor: COLORS.invoiced }" />
+                                                <span class="absolute inset-y-0 left-0" :style="{ width: percentOf(child.sales_so_far, child.target.amount) + '%', backgroundColor: COLORS.invoiced }" />
                                             </span>
-                                            <span class="text-xs text-gray-500">{{ invoicedPercent(category) !== null ? invoicedPercent(category) + "%" : "" }}</span>
+                                            <span class="text-xs text-gray-500">{{ invoicedPercent(child) !== null ? invoicedPercent(child) + "%" : "" }}</span>
                                         </span>
                                     </td>
-                                    <td class="py-1.5 pr-4 text-right" :class="category.target.amount && category.sales_so_far >= category.target.amount ? 'text-green-600' : ''">{{ category.target.amount && category.sales_so_far < category.target.amount ? money(category.target.amount - category.sales_so_far) : category.target.amount ? ctrans("Target reached") : "" }}</td>
-                                    <td class="py-1.5 text-right text-gray-600">{{ category.target.amount && category.sales_so_far < category.target.amount ? money((category.target.amount - category.sales_so_far) / Math.max(1, category.remaining_days)) : "" }}</td>
+                                    <td class="py-1.5 pr-4 text-right" :class="child.target.amount && child.sales_so_far >= child.target.amount ? 'text-green-600' : ''">{{ child.target.amount && child.sales_so_far < child.target.amount ? money(child.target.amount - child.sales_so_far) : child.target.amount ? ctrans("Target reached") : "" }}</td>
+                                    <td class="py-1.5 text-right text-gray-600">{{ child.target.amount && child.sales_so_far < child.target.amount ? money((child.target.amount - child.sales_so_far) / Math.max(1, child.remaining_days)) : "" }}</td>
                                 </tr>
                             </tbody>
                         </table>
