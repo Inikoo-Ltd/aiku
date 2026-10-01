@@ -16,6 +16,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
+use App\Actions\Catalogue\Shop\SalesTarget\ForecastShopMonthSales;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
@@ -65,6 +66,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Guest;
@@ -1379,6 +1381,49 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
     $secondShop->update(['state' => ShopStateEnum::CLOSED]);
 });
 
+test('expected month end adds the TimesFM forecast of the days left, and falls back to last year without one', function () {
+    $shop  = $this->shop;
+    $today = Carbon::parse('2036-05-10', 'UTC');
+
+    $daily = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    for ($day = Carbon::parse('2036-04-01'); $day->lt($today); $day->addDay()) {
+        $daily->records()->updateOrCreate(
+            ['period' => $day->toDateString(), 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+            ['sales_org_currency_external' => $day->day === 3 ? 300 : 50, 'sales_grp_currency_external' => 40]
+        );
+    }
+
+    config(['services.timesfm.url' => 'http://timesfm.test', 'services.timesfm.token' => 'secret']);
+    Http::fake(['timesfm.test/forecast' => fn ($request) => Http::response([
+        'version' => '3',
+        'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], [-20, 40, 60, 80, 100, 120, 140, 160, 220])),
+    ])]);
+
+    expect(ForecastShopMonthSales::run($today))->toBeGreaterThanOrEqual(1);
+
+    Http::assertSent(fn ($request) => $request['horizon'] === 22 && $request->hasHeader('Authorization', 'Bearer secret'));
+
+    $forecast = $shop->stats->fresh()->sales_forecast;
+    expect($forecast['version'])->toBe('3')
+        ->and($forecast['from'])->toBe('2036-05-10')
+        ->and(array_keys($forecast['org']))->toBe(range(10, 31))
+        ->and($forecast['org'][10])->toEqual(102.22);
+
+    $salesSoFar = 300 + 8 * 50;
+    $block      = GetShopMonthSalesTarget::run($shop, null, $today);
+    expect($block['sales_so_far'])->toEqual($salesSoFar)
+        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01);
+
+    $shopChild = collect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['children'])->firstWhere('key', (string) $shop->id);
+    expect($shopChild['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+        ->and(GetShopMonthSalesTarget::run($shop, null, Carbon::parse('2036-06-02', 'UTC'))['expected'])->toEqual(0);
+
+    config(['services.timesfm.url' => null]);
+    expect(ForecastShopMonthSales::run($today))->toBe(0);
+
+    $shop->stats->update(['sales_forecast' => null, 'sales_forecast_hydrated_at' => null]);
+});
+
 test('group target adds up every organisation in the group currency', function () {
     $today = Carbon::parse('2036-03-10', 'UTC');
 
@@ -1475,6 +1520,14 @@ test('a shop selling under several invoice categories targets their sum, partner
     actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['shop_target_category_'.$shop->id => (string) $partners->id]])->assertSuccessful();
 
     expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
+
+    $shop->stats->update(['sales_forecast' => ['version' => '3', 'from' => '2038-05-10', 'org' => array_fill_keys(range(10, 31), 10.0), 'grp' => null]]);
+    $block      = GetShopMonthSalesTarget::run($shop, null, $today);
+    $byCategory = collect($block['children'])->keyBy('invoice_category_id');
+
+    expect($block['expected'])->toEqual(500 + 21 * 10)
+        ->and(array_sum(array_column($block['children'], 'expected')))->toEqualWithDelta(500 + 21 * 10, 0.01)
+        ->and($byCategory[$retail->id]['expected'])->toEqualWithDelta(300 + 210 * 630 / 1050, 0.01);
 
     $shop->update(['state' => ShopStateEnum::CLOSED]);
 });

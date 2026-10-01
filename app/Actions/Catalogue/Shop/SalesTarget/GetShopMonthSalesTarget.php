@@ -14,6 +14,7 @@ use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\SalesTargetTip;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\Catalogue\ShopStats;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -46,6 +47,8 @@ class GetShopMonthSalesTarget
         $lastYearDailyByShop = $this->dailySalesByShop($this->salesShopIds($parent), $lastYearStart, $lastYearStart->copy()->endOfMonth(), $salesExpression);
         $thisYearDaily       = $this->sumDaily($thisYearDailyByShop);
         $lastYearDaily       = $this->sumDaily($lastYearDailyByShop);
+        $forecastByShop      = $this->forecastRestOfMonthByShop($this->salesShopIds($parent), $today, $parent instanceof Group ? 'grp' : 'org');
+        $expectedOf          = fn (array $shopIds) => $this->expectedOfShops($shopIds, $forecastByShop, $thisYearDailyByShop, $lastYearDailyByShop, $today);
 
         $targetShopIds = $this->targetShopIds($parent);
         $targets       = ShopSalesTarget::whereIn('shop_id', $targetShopIds)->where('month', $monthStart->toDateString())->with($this->targetRelations($parent))->get();
@@ -67,9 +70,9 @@ class GetShopMonthSalesTarget
         $pipeline       = $this->sumPipelines($pipelineByShop);
 
         $children = match (true) {
-            $parent instanceof Shop         => $categories ? $this->categoryBlocks($parent, $categories, $targets, $monthStart, $today, $user, $growth) : [],
-            $parent instanceof Organisation => $this->shopBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth),
-            default                         => $this->organisationBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth),
+            $parent instanceof Shop         => $categories ? $this->categoryBlocks($parent, $categories, $targets, $monthStart, $today, $user, $growth, $forecastByShop[$parent->id] ?? null) : [],
+            $parent instanceof Organisation => $this->shopBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf),
+            default                         => $this->organisationBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf),
         };
         $tips = $parent instanceof Shop ? SalesTargetTip::where('shop_id', $parent->id)->where('date', $today->toDateString())->pluck('tip', 'invoice_category_id') : collect();
         $children = array_map(fn (array $child) => [...$child, 'tip' => isset($child['invoice_category_id']) ? $tips->get($child['invoice_category_id']) : null], $children);
@@ -81,7 +84,7 @@ class GetShopMonthSalesTarget
         };
 
         return [
-            ...$this->periodBlock($monthStart, $today, $thisYearDaily, $lastYearDaily, $targetAmount, $pipeline),
+            ...$this->periodBlock($monthStart, $today, $thisYearDaily, $lastYearDaily, $targetAmount, $pipeline, $expectedOf($this->salesShopIds($parent))),
             'currency_code'     => $this->currencyCode($parent),
             'target'            => [
                 'amount'               => $targetAmount,
@@ -111,10 +114,10 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function shopBlocks(Organisation $organisation, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth): array
+    private function shopBlocks(Organisation $organisation, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf): array
     {
         $blocks = Shop::whereIn('id', $shopIds)->get(['id', 'slug', 'name'])->map(fn (Shop $shop) => [
-            ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([])),
+            ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([]), $expectedOf([$shop->id])),
             'key'           => (string) $shop->id,
             'name'          => $shop->name,
             'currency_code' => $organisation->currency->code,
@@ -132,7 +135,7 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function organisationBlocks(Group $group, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth): array
+    private function organisationBlocks(Group $group, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf): array
     {
         $salesShopsByOrganisation = Shop::whereIn('id', $this->salesShopIds($group))->pluck('organisation_id', 'id')->groupBy(fn ($organisationId) => $organisationId, true);
         $blocks                   = [];
@@ -149,7 +152,8 @@ class GetShopMonthSalesTarget
                     $this->sumDaily(array_intersect_key($thisYearDailyByShop, array_flip($organisationShopIds))),
                     $this->sumDaily(array_intersect_key($lastYearDailyByShop, array_flip($organisationShopIds))),
                     $target > 0 ? round($target, 2) : null,
-                    $this->sumPipelines(array_intersect_key($pipelineByShop, array_flip($organisationShopIds)))
+                    $this->sumPipelines(array_intersect_key($pipelineByShop, array_flip($organisationShopIds))),
+                    $expectedOf($organisationShopIds)
                 ),
                 'key'           => (string) $organisation->id,
                 'name'          => $organisation->name,
@@ -205,7 +209,7 @@ class GetShopMonthSalesTarget
     /**
      * Sales, pipeline and target figures of one month, shared by the shop and each of its categories.
      */
-    private function periodBlock(Carbon $monthStart, Carbon $today, array $thisYearDaily, array $lastYearDaily, ?float $targetAmount, array $pipeline): array
+    private function periodBlock(Carbon $monthStart, Carbon $today, array $thisYearDaily, array $lastYearDaily, ?float $targetAmount, array $pipeline, ?float $expected = null): array
     {
         $daysInMonth   = $monthStart->daysInMonth;
         $dayOfMonth    = $today->day;
@@ -226,7 +230,7 @@ class GetShopMonthSalesTarget
             'sales_so_far'     => round($salesSoFar, 2),
             'last_year_so_far' => round($lastYearSoFar, 2),
             'last_year_total'  => round(array_sum($lastYearDaily), 2),
-            'expected'         => round($this->expected($salesSoFar, $lastYearSoFar, $lastYearDaily, $dayOfMonth, $daysInMonth), 2),
+            'expected'         => round($expected ?? $this->expected($salesSoFar, $lastYearSoFar, $lastYearDaily, $dayOfMonth, $daysInMonth), 2),
             'pipeline'         => $pipeline,
             'gap'              => $gap === null ? null : round($gap, 2),
             'needed_per_day'   => $gap === null ? null : round($remainingDays > 0 ? $gap / $remainingDays : $gap, 2),
@@ -264,7 +268,7 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function categoryBlocks(Shop $shop, array $categories, Collection $targets, Carbon $monthStart, Carbon $today, ?User $user, float $growth): array
+    private function categoryBlocks(Shop $shop, array $categories, Collection $targets, Carbon $monthStart, Carbon $today, ?User $user, float $growth, ?float $shopForecastRest): array
     {
         $pipelines = $this->pipelineByCategory($shop);
         foreach (array_diff(array_keys($pipelines), array_map(fn (array $category) => $category['invoice_category_id'] ?? 0, $categories)) as $categoryKey) {
@@ -276,13 +280,14 @@ class GetShopMonthSalesTarget
         $canEdit       = $user !== null && UpdateShopSalesTarget::canEdit($user, $shop);
 
         usort($categories, fn (array $a, array $b) => [$b['target'], $b['sales']] <=> [$a['target'], $a['sales']]);
+        $expectedByCategory = $this->shareForecastAcrossCategories($categories, $shopForecastRest, $today);
 
-        return array_map(function (array $category) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth) {
+        return array_map(function (array $category, int $position) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth, $expectedByCategory) {
             $categoryId = $category['invoice_category_id'];
             $setTarget  = $categoryId ? $targets->firstWhere('invoice_category_id', $categoryId) : null;
 
             return [
-                ...$this->periodBlock($monthStart, $today, $category['daily'], $category['last_year_daily'], $category['target'] > 0 ? $category['target'] : null, $pipelines[$categoryId ?? 0] ?? $emptyPipeline),
+                ...$this->periodBlock($monthStart, $today, $category['daily'], $category['last_year_daily'], $category['target'] > 0 ? $category['target'] : null, $pipelines[$categoryId ?? 0] ?? $emptyPipeline, $expectedByCategory[$position] ?? null),
                 'key'                 => (string) ($categoryId ?? 'none'),
                 'invoice_category_id' => $categoryId,
                 'name'                => $categoryId ? $names->get($categoryId, '') : __('No category'),
@@ -298,7 +303,34 @@ class GetShopMonthSalesTarget
                 'can_edit'            => $canEdit && $categoryId !== null,
                 'update_route'        => $this->updateRoute($shop),
             ];
-        }, $categories);
+        }, $categories, array_keys($categories));
+    }
+
+    /**
+     * The shop's forecast for the rest of the month split across its invoice categories by what
+     * each one's last-year pattern expects from it, so the categories add up to the shop.
+     *
+     * @return array<int, float> category position => expected month end
+     */
+    private function shareForecastAcrossCategories(array $categories, ?float $shopForecastRest, Carbon $today): array
+    {
+        if ($shopForecastRest === null) {
+            return [];
+        }
+
+        $salesSoFar = $patternRest = $lastYearRest = [];
+        foreach ($categories as $position => $category) {
+            $salesSoFar[$position]   = array_sum($category['daily']);
+            $lastYearSoFar           = array_sum(array_filter($category['last_year_daily'], fn ($day) => $day <= $today->day, ARRAY_FILTER_USE_KEY));
+            $lastYearRest[$position] = max(0.0, array_sum($category['last_year_daily']) - $lastYearSoFar);
+            $patternRest[$position]  = max(0.0, $this->expected($salesSoFar[$position], $lastYearSoFar, $category['last_year_daily'], $today->day, $today->daysInMonth) - $salesSoFar[$position]);
+        }
+
+        $weights = collect([$patternRest, $lastYearRest, array_map(fn (float $sales) => max(0.0, $sales), $salesSoFar)])
+            ->first(fn (array $candidate) => array_sum($candidate) > 0, array_fill_keys(array_keys($categories), 1.0));
+        $total   = array_sum($weights);
+
+        return array_map(fn (float $soFar, float $weight) => $soFar + $shopForecastRest * $weight / $total, $salesSoFar, $weights);
     }
 
     /**
@@ -338,6 +370,53 @@ class GetShopMonthSalesTarget
         }
 
         return $series;
+    }
+
+    /**
+     * The TimesFM forecast of each shop's days after today, from shop_stats.sales_forecast, when
+     * it was made this month (ForecastShopMonthSales runs nightly).
+     *
+     * @return array<int, float> shop id => forecast sales for the rest of the month
+     */
+    private function forecastRestOfMonthByShop(array $shopIds, Carbon $today, string $currency): array
+    {
+        $rest = [];
+        foreach (ShopStats::whereIn('shop_id', $shopIds)->whereNotNull('sales_forecast')->get(['shop_id', 'sales_forecast']) as $stats) {
+            $forecast = $stats->sales_forecast;
+            $madeOn   = Carbon::parse($forecast['from'] ?? '1970-01-01');
+            if (!is_array($forecast[$currency] ?? null) || !$madeOn->isSameMonth($today) || $madeOn->gt($today)) {
+                continue;
+            }
+            $rest[$stats->shop_id] = (float) array_sum(array_filter($forecast[$currency], fn ($day) => (int) $day > $today->day, ARRAY_FILTER_USE_KEY));
+        }
+
+        return $rest;
+    }
+
+    /**
+     * Expected month end of a group of shops: each shop's sales so far plus its forecast, or its
+     * own last-year pattern when it has none. Null when none of them has a forecast, so the
+     * block keeps the last-year pattern of its total.
+     */
+    private function expectedOfShops(array $shopIds, array $forecastByShop, array $thisYearDailyByShop, array $lastYearDailyByShop, Carbon $today): ?float
+    {
+        if (!array_intersect_key($forecastByShop, array_flip($shopIds))) {
+            return null;
+        }
+
+        $expected = 0.0;
+        foreach ($shopIds as $shopId) {
+            $salesSoFar = array_sum($thisYearDailyByShop[$shopId] ?? []);
+            if (isset($forecastByShop[$shopId])) {
+                $expected += $salesSoFar + $forecastByShop[$shopId];
+                continue;
+            }
+            $lastYearDaily  = $lastYearDailyByShop[$shopId] ?? [];
+            $lastYearSoFar  = array_sum(array_filter($lastYearDaily, fn ($day) => $day <= $today->day, ARRAY_FILTER_USE_KEY));
+            $expected      += $this->expected($salesSoFar, $lastYearSoFar, $lastYearDaily, $today->day, $today->daysInMonth);
+        }
+
+        return $expected;
     }
 
     /**

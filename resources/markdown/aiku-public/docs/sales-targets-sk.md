@@ -17,7 +17,7 @@ Každý dashboard sa otvára na <b>mesačnom cieli</b>. Skupina ho delí podľa 
 - **Fakturované:** predaje doteraz fakturované v tomto mesiaci.
 - **V skladovom pipeline:** objednávky, ktoré už boli odoslané a ešte nie sú fakturované.
 - **Ešte chýba:** cieľ mínus to, čo je fakturované a v pipeline.
-- **Očakávané do konca mesiaca:** zvyšok minuloročného mesiaca, prepočítaný podľa toho, ako sa tento mesiac darí oproti rovnakým dňom vlani.
+- **Očakávané do konca mesiaca:** doteraz fakturované predaje plus prognóza zostávajúcich dní. Prognóza sa robí každú noc z denných predajov obchodu za posledné tri roky. Obchod rozdelený podľa kategórií faktúr svoju prognózu medzi ne rozdelí podľa toho, ako sa jednotlivým kategóriám darilo vlani. Obchod, ktorý ešte nemá prognózu (nový obchod, alebo sa nočná prognóza nespustila), použije namiesto toho zvyšok minuloročného mesiaca, prepočítaný podľa toho, ako sa tento mesiac darí oproti rovnakým dňom vlani.
 - **Potrebné za deň** a **tento týždeň:** čo ešte chýba, rozložené na zostávajúce dni.
 
 Graf porovnáva tento mesiac deň po dni s rovnakým mesiacom vlani. **Od začiatku roka** ukazuje to isté za celý rok.
