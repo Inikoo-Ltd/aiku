@@ -3249,7 +3249,7 @@ test('marketing job positions can create and edit offers', function () {
         ->and($roles('mrk-c'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_CLERK);
 });
 
-test('a capitalised username on the new employee form is refused on the username field', function () {
+test('the new employee form shows login errors on its own fields', function () {
     $orgAdmin = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'org-admin')->firstOrFail();
     $administrator = StoreEmployee::make()->action($this->organisation, [
         'worker_number'   => 'hr-form-admin',
@@ -3277,6 +3277,11 @@ test('a capitalised username on the new employee form is refused on the username
 
     $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('Bicky'))
         ->assertSessionHasErrors('username');
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
+
+    $administrator->getUser()->update(['email' => 'taken-by-a-user@example.com']);
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), array_merge($newEmployee('bicky'), ['work_email' => 'taken-by-a-user@example.com']))
+        ->assertSessionHasErrors('work_email');
     expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
 
     $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('bicky'))
