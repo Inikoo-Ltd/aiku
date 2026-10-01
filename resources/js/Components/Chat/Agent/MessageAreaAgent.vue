@@ -618,11 +618,9 @@ const IMAGE_TYPES = [
     "image/avif",
 ]
 
-const FILE_TYPES = [
-    "application/pdf",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]
+const FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "pptx", "zip"]
+
+const isSupportedFile = (file: File) => FILE_EXTENSIONS.includes(file.name.split(".").pop()?.toLowerCase() ?? "")
 
 const MAX_SIZE = 10 * 1024 * 1024
 
@@ -669,7 +667,7 @@ const typingUser = ref<string | null>(null)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const MAX_ATTACHMENTS = 10
+const MAX_ATTACHMENTS = 30
 
 interface SelectedAttachment {
     file: File
@@ -730,7 +728,7 @@ const { rejectionFor } = useUploadLimits()
 
 const addAttachment = (file: File, isImage: boolean) => {
     if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
-        notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
+        notify({ title: ctrans("Failed"), text: ctrans("Maximum :count attachments", { count: MAX_ATTACHMENTS }), type: "error" })
         return
     }
 
@@ -739,8 +737,8 @@ const addAttachment = (file: File, isImage: boolean) => {
         return
     }
 
-    if (!isImage && !FILE_TYPES.includes(file.type)) {
-        notify({ title: "Failed", text: "File format not supported", type: "error" })
+    if (!isImage && !isSupportedFile(file)) {
+        notify({ title: ctrans("Failed"), text: ctrans("File format not supported"), type: "error" })
         return
     }
 
@@ -1719,7 +1717,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <footer v-else class="px-3 py-2 bg-white">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" :accept="FILE_EXTENSIONS.map((extension) => `.${extension}`).join(',')" multiple class="hidden" @change="handleDocSelect" />
 
             <div v-if="emailCopyCandidates.length" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
                 <span class="font-medium">{{ ctrans("Cc") }}</span>
@@ -1823,7 +1821,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" fixed-width />
                 <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
                 <div class="text-xs text-gray-400">
-                    {{ ctrans("Images, PDF and spreadsheets, up to 10 at a time, 10MB each") }}
+                    {{ ctrans("Images, documents, spreadsheets and zip files, up to 30 at a time, 10MB each") }}
                 </div>
             </div>
         </div>

@@ -37,7 +37,7 @@ The rail on the left lists your shops with what is <b>waiting</b> and <b>active<
 
 The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. <b>Assign to me</b> makes a waiting conversation yours; <b>Take Over</b> takes one from a colleague who has gone to lunch.
 
-Then it works like any messenger: type and send, add an emoji, attach as many images or documents as you need. <b>Translate</b> lets you read the customer in your language and answer in theirs.
+Then it works like any messenger: type and send, add an emoji, attach images and documents, up to 30 files at a time (see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a> for which files). <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
 

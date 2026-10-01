@@ -46,6 +46,10 @@ class SendChatMessage
     use WithChatAgentAuthorisation;
     use AsAction;
 
+    public const ATTACHMENT_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip'];
+
+    public const MAX_ATTACHMENTS = 30;
+
     /**
      * @throws \Throwable
      */
@@ -336,10 +340,10 @@ class SendChatMessage
             'attachments'    => [
                 'sometimes',
                 'array',
-                'max:10',
+                'max:'.self::MAX_ATTACHMENTS,
             ],
             'attachments.*'  => [
-                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                File::types(self::ATTACHMENT_TYPES)
                     ->max(20 * 1024)
             ],
             'is_email_notif' => [

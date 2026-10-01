@@ -37,7 +37,7 @@ La columna de la izquierda enumera tus tiendas con lo que está <b>waiting</b> (
 
 La bandeja tiene dos listas, cada una con su contador: <b>My Chats</b> (Mis chats) y <b>Colleagues' Chats</b> (Chats de compañeros), los que lleva otra persona en una tienda en la que también trabajas. Dentro de ellas, <b>Waiting</b> (Esperando) es lo que nadie ha recogido, <b>Active</b> (Activo) está en mano y <b>Closed</b> (Cerrado) es lo que se cerró hoy. <b>Assign to me</b> (Asignarme) hace tuya una conversación en espera; <b>Take Over</b> (Hacerse cargo) te la traspasa de un compañero que se ha ido a comer.
 
-Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta tantas imágenes o documentos como necesites. <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
+Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta imágenes y documentos, hasta 30 archivos a la vez (consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a> para ver qué archivos). <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
 
 Un mensaje enviado no se puede editar, porque el cliente ya lo tiene. <b>Take back</b> (Retirar) lo quita de todos los canales y avisa al cliente. <b>Redact</b> (Tachar) elimina para siempre el texto seleccionado de un mensaje - un número de tarjeta, una contraseña.
 

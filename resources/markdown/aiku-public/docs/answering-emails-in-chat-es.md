@@ -1,8 +1,8 @@
 ---
 title: Responder correos en Chat
 summary: El correo al buzón de la tienda llega como una conversación junto al chat de la web y WhatsApp, con todo el hilo, y tu respuesta sale desde la misma dirección con tu firma y tus adjuntos. Los clientes reales que Gmail pone en spam también llegan, con sus archivos retenidos por seguridad.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-10-01
+source_date: 2026-10-01
 tags: crm, chat, email
 category: crm
 series: Chat
@@ -20,6 +20,10 @@ El buzón de la tienda tiene que conectarse una vez - consulta <a href="/docs/co
 ## Leer y responder
 
 Un correo se suma a <b>Waiting</b> (Esperando) como cualquier conversación, y <b>Assign to me</b> (Asignarme) la hace tuya - consulta <a href="/docs/customer-chat-es">Hablar con clientes en Chat</a> para el resto. Todo el hilo llega con él. Tu respuesta se envía desde el buzón de la tienda en el mismo hilo, y cuando el cliente responde, vuelve a la misma conversación, no a una nueva.
+
+## Adjuntar archivos
+
+Haz clic en el clip, o suelta los archivos sobre la conversación. Puedes adjuntar imágenes (JPG, PNG, WebP, AVIF), PDF, Word, Excel, CSV, texto, PowerPoint y archivos zip, hasta 30 a la vez y de 10 MB cada uno. Lo mismo vale para <b>New email</b>. Los servicios de correo rechazan un correo de más de unos 25 MB en total, así que cuando un cliente pide muchos documentos a la vez, ponlos en un solo zip o envíalos en varios correos.
 
 ## Visitantes de la web en la lista de correo
 
@@ -46,6 +50,7 @@ aiku lee la bandeja de entrada del buzón y su carpeta de spam, y archiva el cor
 <ul>
 <li><b>Conectar el buzón:</b> <b>Settings</b> (Ajustes) de la tienda &rarr; <b>Customer mailbox</b>.</li>
 <li><b>Responder un correo:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; enciende el cuadro de email de tu tienda &rarr; una conversación en <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Adjuntar archivos a una respuesta:</b> el clip bajo el cuadro del mensaje, o suelta los archivos sobre la conversación.</li>
 <li><b>Abrir los archivos de un correo que salió del spam:</b> el correo en la conversación &rarr; <b>Show attachments</b>.</li>
 <li><b>Encontrar un correo que nunca llegó a la bandeja:</b> el Gmail de la tienda &rarr; <b>aiku/filtered</b>, y después el <b>Spam</b> de Gmail.</li>
 </ul>

@@ -8792,6 +8792,52 @@ test('a new email from the customer record carries the files the agent attached'
     });
 });
 
+test('a new email can carry Word documents, zip files and more than ten files', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent12', 'threadId' => 't12']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $attachments = [
+        \Illuminate\Http\UploadedFile::fake()->create('ingredients.docx', 10, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        \Illuminate\Http\UploadedFile::fake()->create('artwork.zip', 10, 'application/zip'),
+    ];
+    foreach (range(1, 10) as $index) {
+        $attachments[] = \Illuminate\Http\UploadedFile::fake()->create("sds-$index.pdf", 10, 'application/pdf');
+    }
+
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->customer->fresh(), [
+        'subject'     => 'Product documents',
+        'message'     => 'Please find the documents attached',
+        'attachments' => $attachments,
+    ]);
+
+    expect($session->messages()->first()->attachedFiles())->toHaveCount(12);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, 'filename="ingredients.docx"') && str_contains($raw, 'filename="artwork.zip"');
+    });
+});
+
 test('a new email to several addresses goes to the first and copies the rest', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
 

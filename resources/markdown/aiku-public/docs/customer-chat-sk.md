@@ -37,7 +37,7 @@ Lišta vľavo zobrazuje vaše obchody s tým, čo <b>čaká</b> (Waiting) a čo 
 
 Schránka má dva zoznamy, každý so svojím počtom: <b>My Chats</b> (moje chaty) a <b>Colleagues' Chats</b> (chaty kolegov), teda tie, ktoré drží niekto iný na obchode, ktorý máte tiež na starosti. V rámci nich <b>Waiting</b> (čaká) je to, čo si nikto neprevzal, <b>Active</b> (aktívne) je v riešení a <b>Closed</b> (zatvorené) je to, čo bolo zatvorené dnes. <b>Assign to me</b> (prideliť mne) urobí čakajúcu konverzáciu vašou; <b>Take Over</b> (prevziať) vezme konverzáciu kolegovi, ktorý odišiel na obed.
 
-Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte toľko obrázkov či dokumentov, koľko potrebujete. <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
+Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte obrázky a dokumenty, najviac 30 súborov naraz (ktoré súbory, nájdete v <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>). <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
 
 Odoslanú správu nemožno upraviť, pretože zákazník ju už má. <b>Take back</b> (vziať späť) ju odstráni na každom kanáli a oznámi to zákazníkovi. <b>Redact</b> (začierniť) natrvalo vymaže vybraný text - číslo karty, heslo - zo správy.
 
