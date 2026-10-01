@@ -52,6 +52,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCo
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
+use App\Actions\Inventory\OrgStock\ForecastOrgStockDemand;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
@@ -140,6 +141,7 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -4302,5 +4304,60 @@ describe('out of stock forecast', function () {
         expect($stats->forecast_source)->toBeNull()
             ->and($stats->predicted_daily_usage)->toBeNull()
             ->and($stats->recommended_order_quantity)->toBeNull();
+    });
+
+    test('a fresh TimesFM demand forecast, scaled to what the organisation dispatched, drives days of cover', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $orgStock             = $deliveryNoteItem->orgStock;
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 100]);
+        foreach (range(1, 20) as $weeksAgo) {
+            DB::table('delivery_note_items')->insert([
+                'group_id'            => $deliveryNoteItem->group_id,
+                'organisation_id'     => $deliveryNoteItem->organisation_id,
+                'shop_id'             => $deliveryNoteItem->shop_id,
+                'delivery_note_id'    => $deliveryNoteItem->delivery_note_id,
+                'org_stock_id'        => $orgStock->id,
+                'quantity_required'   => 7,
+                'quantity_dispatched' => 7,
+                'data'                => '{}',
+                'created_at'          => now()->subWeeks($weeksAgo)->startOfDay()->addHours(10),
+                'updated_at'          => now(),
+            ]);
+        }
+
+        config(['services.timesfm.url' => 'http://timesfm.test', 'services.timesfm.token' => 'secret']);
+        Http::fake(['timesfm.test/forecast' => fn ($request) => Http::response([
+            'version' => '3',
+            'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], array_fill(0, 9, 10))),
+        ])]);
+
+        expect(ForecastOrgStockDemand::run())->toBeGreaterThanOrEqual(1);
+        Http::assertSent(fn ($request) => $request['horizon'] === 8);
+        Http::assertSent(fn ($request) => $request['horizon'] === 6);
+
+        $forecast   = $orgStock->stats->refresh()->demand_forecast;
+        $correction = $forecast['correction'];
+        expect($correction)->toBeGreaterThanOrEqual(0.75)->toBeLessThanOrEqual(1.5)
+            ->and($forecast['weeks'])->toHaveCount(8)
+            ->and($forecast['weeks'][0][0])->toEqual(round(10 * $correction, 3))
+            ->and($forecast['record'])->toHaveCount(1);
+
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        $stats = $orgStock->stats->refresh();
+        expect($stats->forecast_source)->toBe('timesfm')
+            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta(round(10 * $correction, 3) / 7, 0.0001)
+            ->and((float) $stats->days_of_cover)->toEqualWithDelta(round(min(100 / round(round(10 * $correction, 3) / 7, 4), 730), 1), 0.2);
+
+        ForecastOrgStockDemand::run();
+        expect($orgStock->stats->refresh()->demand_forecast['record'])->toHaveCount(1);
+
+        $orgStock->update(['quantity_available' => 0]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
+        $orgStock->update(['quantity_available' => 100]);
+
+        $orgStock->stats->update(['demand_forecast' => [...$forecast, 'from' => now()->subDays(3)->toDateString()]]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
     });
 });
