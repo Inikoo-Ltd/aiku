@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, inject, onUnmounted, ref, watch } from "vue"
+import { onClickOutside, useEventListener } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,8 +21,8 @@ import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiplePriceCurrency from "@/Components/Pure/PureMultiplePriceCurrency.vue"
 import { useForm, router } from "@inertiajs/vue3"
-import { faPencil, faQuestionCircle } from "@fal"
-library.add(faExclamationTriangle, faSpinnerThird, faPencil, faQuestionCircle)
+import { faPencil, faQuestionCircle, faSave } from "@fal"
+library.add(faExclamationTriangle, faSpinnerThird, faPencil, faQuestionCircle, faSave)
 
 interface CurrencyValue {
     value: string | number | null
@@ -159,19 +160,6 @@ const openEdit = (masterProduct: MasterProductPricing, field: 'master_prices' | 
     subscribeCascade(masterProduct.id)
 }
 
-const applyingTipId = ref<number | null>(null)
-
-const applyPriceTip = (masterProduct: MasterProductPricing) => {
-    openEdit(masterProduct, 'master_prices')
-    applyingTipId.value = masterProduct.price_tip!.id
-    const factor = 1 + masterProduct.price_tip!.change / 100
-    for (const entry of Object.values(editForm.value.master_prices as Record<string, CurrencyValue>)) {
-        if (entry?.value != null) {
-            entry.value = Math.round(Number(entry.value) * factor * 100) / 100
-        }
-    }
-}
-
 const bulkPrefilled = ref(false)
 const bulkCounterpart = ref<Record<string, CurrencyValue> | null>(null)
 const bulkEffectiveCost = ref<number | null>(null)
@@ -268,25 +256,61 @@ const explainingTip = ref<MasterProductPricing | null>(null)
 const givingFeedback = ref(false)
 const dismissForm = useForm({ dismissed_reason: '' })
 
-const openExplain = (masterProduct: MasterProductPricing) => {
+const tipPanel = ref<HTMLElement | null>(null)
+const tipPanelPosition = ref({ top: 0, left: 0 })
+const TIP_PANEL_WIDTH = 380
+
+const openExplain = (masterProduct: MasterProductPricing, event: Event) => {
+    if (explainingTip.value?.id === masterProduct.id) {
+        closeExplain()
+        return
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    tipPanelPosition.value = {
+        top: rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - TIP_PANEL_WIDTH, window.innerWidth - TIP_PANEL_WIDTH - 8)),
+    }
     dismissForm.reset()
     dismissForm.clearErrors()
     givingFeedback.value = false
     explainingTip.value = masterProduct
 }
 
+const isApplyingTip = ref(false)
+
+const applyTipNow = () => {
+    const masterAssetId = explainingTip.value!.id
+    router.patch(route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {}, {
+        preserveScroll: true,
+        onStart: () => { isApplyingTip.value = true },
+        onFinish: () => { isApplyingTip.value = false },
+        onSuccess: () => {
+            closeExplain()
+            subscribeCascade(masterAssetId)
+            router.reload({ only: ['pricing'] })
+        },
+    })
+}
+
+const closeExplain = () => {
+    explainingTip.value = null
+}
+
+onClickOutside(tipPanel, closeExplain, { ignore: ['.price-tip-trigger'] })
+useEventListener('keydown', (event: KeyboardEvent) => event.key === 'Escape' && closeExplain())
+useEventListener('scroll', closeExplain, { capture: true, passive: true })
+
 const submitDismiss = () => {
     dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {
         preserveScroll: true,
         onSuccess: () => {
-            explainingTip.value = null
+            closeExplain()
             router.reload({ only: ['pricing'] })
         },
     })
 }
 
 const closeEdit = () => {
-    applyingTipId.value = null
     editingProduct.value = null
     editForm.value = null
     bulkMode.value = false
@@ -316,18 +340,10 @@ const submitEdit = () => {
         return
     }
 
-    editForm.value.patch(
-        applyingTipId.value
-            ? route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: applyingTipId.value })
-            : route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }),
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                applyingTipId.value = null
-                router.reload({ only: ['pricing'] })
-            },
-        }
-    )
+    editForm.value.patch(route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }), {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['pricing'] }),
+    })
 }
 
 const majorSet = computed(() => new Set(props.majorCurrencies ?? []))
@@ -455,9 +471,9 @@ const stockByOrgTooltip = (masterProduct: MasterProductPricing): string =>
         .map(orgStock => `${orgStock.code}: ${locale.number(Math.floor(Number(orgStock.qty)))}`)
         .join(' · ')
 
-const priceMarginPct = (masterProduct: MasterProductPricing, code: string): string | null => {
+const priceMarginPct = (masterProduct: MasterProductPricing, code: string, priceChangePct = 0): string | null => {
     const cost  = costsFor(masterProduct.effective_cost)?.[code] ?? null
-    const price = Number(masterProduct.master_prices?.[code]?.value ?? 0)
+    const price = Number(masterProduct.master_prices?.[code]?.value ?? 0) * (1 + priceChangePct / 100)
 
     if (!cost || !price) {
         return null
@@ -652,16 +668,16 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     <button
                         v-if="index === 0"
                         type="button"
-                        class="justify-self-end rounded border px-1 text-xs font-medium tabular-nums"
+                        class="price-tip-trigger justify-self-end rounded border px-1 text-xs font-medium tabular-nums"
                         :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
                         v-tooltip="ctrans('Why this price?')"
-                        @click="openExplain(masterProduct)"
+                        @click="openExplain(masterProduct, $event)"
                     >
                         {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
                     </button>
                     <span v-else-if="index === 1" class="flex items-center justify-end gap-x-1 whitespace-nowrap text-xs tabular-nums text-gray-400">
                         <span v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
-                        <button type="button" class="text-indigo-500 hover:text-indigo-700" v-tooltip="ctrans('Why this price?')" :aria-label="ctrans('Why this price?')" @click="openExplain(masterProduct)">
+                        <button type="button" class="price-tip-trigger text-indigo-500 hover:text-indigo-700" v-tooltip="ctrans('Why this price?')" :aria-label="ctrans('Why this price?')" @click="openExplain(masterProduct, $event)">
                             <FontAwesomeIcon :icon="faQuestionCircle" fixed-width aria-hidden="true" />
                         </button>
                     </span>
@@ -760,19 +776,41 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </div>
     </Modal>
 
-    <Modal :isOpen="!!explainingTip" @onClose="explainingTip = null" width="w-full max-w-md">
-        <form v-if="explainingTip?.price_tip" @submit.prevent="submitDismiss">
+    <Teleport to="body">
+        <form v-if="explainingTip?.price_tip" ref="tipPanel" class="fixed z-50 rounded-lg border border-gray-200 bg-white p-4 shadow-lg" :style="{ top: `${tipPanelPosition.top}px`, left: `${tipPanelPosition.left}px`, width: `${TIP_PANEL_WIDTH}px` }" @submit.prevent="submitDismiss">
             <div class="mb-1 text-sm font-medium text-gray-700">
-                {{ ctrans('Why :change', { change: `${explainingTip.price_tip.change > 0 ? '+' : ''}${explainingTip.price_tip.change}%` }) }} — {{ explainingTip.code }}
+                {{ ctrans('Why') }}
+                <span class="mx-0.5 rounded-full px-2 py-px text-xs font-semibold tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">{{ explainingTip.price_tip.change > 0 ? '+' : '' }}{{ explainingTip.price_tip.change }}%</span>
+                — {{ explainingTip.code }}
             </div>
             <p class="mb-3 text-xs text-gray-500">{{ explainingTip.name }} · {{ ctrans(':pct% sure', { pct: `${explainingTip.price_tip.confidence}` }) }}</p>
-            <ul class="list-disc space-y-1 pl-5 text-sm text-gray-700">
+            <ul class="list-disc space-y-0.5 pl-5 text-xs text-gray-700">
                 <li v-for="(line, index) in explainingTip.price_tip.reason.split(', ')" :key="index">{{ line }}</li>
             </ul>
+            <div class="mt-3 flex items-center justify-between gap-3 rounded-md bg-gray-50 px-3 py-2">
+                <div class="grid grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-0.5 text-sm tabular-nums">
+                    <template v-for="code in (majorCurrencies ?? []).filter(code => explainingTip!.master_prices?.[code]?.value != null)" :key="code">
+                        <span class="text-right text-gray-500">{{ formatMoney(explainingTip!.master_prices[code].value, code) }}</span>
+                        <span class="text-gray-400">→</span>
+                        <span class="text-right font-semibold" :class="explainingTip!.price_tip!.change < 0 ? 'text-amber-700' : 'text-green-700'">
+                            {{ formatMoney(Math.round(Number(explainingTip!.master_prices[code].value) * (1 + explainingTip!.price_tip!.change / 100) * 100) / 100, code) }}
+                        </span>
+                        <span class="whitespace-nowrap pl-2 text-xs text-gray-500" v-tooltip="ctrans('Margin vs effective cost')">
+                            <template v-if="priceMarginPct(explainingTip!, code)">{{ priceMarginPct(explainingTip!, code) }} → {{ priceMarginPct(explainingTip!, code, explainingTip!.price_tip!.change) }}</template>
+                        </span>
+                    </template>
+                </div>
+                <span class="whitespace-nowrap rounded border px-1.5 py-px text-sm font-medium tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'">
+                    {{ explainingTip.price_tip.change > 0 ? '▲ +' : '▼ ' }}{{ explainingTip.price_tip.change }}%
+                </span>
+            </div>
             <div class="mt-4 flex items-center justify-between gap-3">
                 <button v-if="!givingFeedback" type="button" class="text-xs text-gray-500 underline hover:text-gray-700" @click="givingFeedback = true">{{ ctrans('This tip is wrong') }}</button>
                 <span v-else />
-                <button type="button" class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700" @click="() => { const product = explainingTip!; explainingTip = null; applyPriceTip(product) }">{{ ctrans('Review and apply') }}</button>
+                <button type="button" :disabled="isApplyingTip" class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50" @click="applyTipNow">
+                    <FontAwesomeIcon :icon="isApplyingTip ? 'fad fa-spinner-third' : faSave" :class="{ 'animate-spin': isApplyingTip }" fixed-width aria-hidden="true" />
+                    {{ ctrans('Apply') }}
+                </button>
             </div>
             <div v-if="givingFeedback" class="mt-3 border-t border-gray-100 pt-3">
                 <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is it wrong? The AI learns from it') }}</label>
@@ -783,5 +821,5 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 </div>
             </div>
         </form>
-    </Modal>
+    </Teleport>
 </template>
