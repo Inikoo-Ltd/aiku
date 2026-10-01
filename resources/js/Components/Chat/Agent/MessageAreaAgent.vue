@@ -41,6 +41,7 @@ import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
+import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { notify } from "@kyvg/vue3-notification"
@@ -1321,7 +1322,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <!-- Header -->
         <!-- When the thread is too narrow for the name and the buttons side by side, the name and
              the menu keep the first row and the buttons drop to a second one beneath it. -->
-        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-1.5 border-b"
             :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button :class="{ '-order-2': isHeaderStacked }" @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
@@ -1390,29 +1391,18 @@ const handleClickOutside = (e: MouseEvent) => {
                 :description="ctrans('This closes the chat. Nothing is deleted, and it can be reopened.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
-                    <Button
-                        type="red"
-                        class="h-7"
-                        :label="ctrans('End chat')"
-                        @click="changeModel"
-                        icon="fal fa-times-circle"
-                        size="xs"
-                        key="3"
-                    />
-                    <!-- <button @click="changeModel"
-                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
-                        :class="isMyChat ? '' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'"
-                        :style="isMyChat ? { backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' } : {}">
-                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
+                    <button type="button" @click="changeModel"
+                        class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md bg-red-500 text-white transition hover:bg-red-600">
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width aria-hidden="true" />
                         {{ ctrans("End chat") }}
-                    </button> -->
+                    </button>
                 </template>
             </ModalConfirmationDelete>
 
             <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
                  an imported mailbox, and a choice nobody finds does not get made. -->
             <button v-if="canIgnore && (session as any)?.is_rubbish" type="button" :disabled="isSpamMarking"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                 @click="markRubbish(false)">
                 <FontAwesomeIcon :icon="faRotateLeft" class="text-[11px]" fixed-width />
                 {{ ctrans("Not ignored") }}
@@ -1421,7 +1411,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <div v-else-if="canIgnore" class="relative shrink-0" ref="ignoreMenuRef">
                 <button type="button" :disabled="isSpamMarking"
                     v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
-                    class="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                    class="inline-flex items-center gap-1.5 h-6 px-2 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                     @click.stop="isIgnoreMenuOpen = !isIgnoreMenuOpen">
                     <FontAwesomeIcon :icon="faArchive" class="text-[11px]" fixed-width />
                     {{ ctrans("Ignore") }}
@@ -1444,7 +1434,7 @@ const handleClickOutside = (e: MouseEvent) => {
                  customer writes again next week. -->
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
-                class="hidden lg:inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                class="hidden lg:inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam(!(session as any)?.is_spam)">
                 <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" fixed-width />
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
@@ -1454,7 +1444,7 @@ const handleClickOutside = (e: MouseEvent) => {
                  about to close a chat should not have to go looking for what is holding it. -->
             <button v-if="openTicketsCount && hasTicketsPanel" type="button" v-tooltip="openTicketsTooltip"
                 :aria-label="openTicketsTooltip"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border transition"
+                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border transition"
                 :class="blockingTicketsCount ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
                 @click="onViewTickets">
                 <FontAwesomeIcon :icon="blockingTicketsCount ? faLock : faLifeRing" class="text-[11px]" fixed-width />
@@ -1463,13 +1453,13 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
                 v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
-                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-6 px-2 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
                 <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
                 <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
             </a>
 
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
-                class="hidden lg:inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                class="hidden lg:inline-flex items-center justify-center shrink-0 h-6 w-6 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
                 <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
             </button>
@@ -1588,6 +1578,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     </div>
                 </template>
             </template>
+            <ChatBackToNewest :target="messagesContainer" />
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ ctrans("is typing...") }}
@@ -1713,7 +1704,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     @paste="onPasteAttachment" @submit="sendMessage" :enter-sends="!isEmailChat"
                     :allow-underline="(session as any)?.channel !== 'whatsapp'"
                     :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : ctrans('Type message...')"
-                    class="px-4 pt-3 pb-1 [&_.ProseMirror]:max-h-[120px]" />
+                    class="px-4 pt-3 pb-1 [&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">

@@ -434,6 +434,7 @@ onUnmounted(() => {
 
         <template v-else>
         <RailControls />
+        <div class="flex-1 min-h-0 flex flex-col" :class="!layout.messagingSidebar.show && 'overflow-y-auto custom-hide-scrollbar'">
 
         <!-- Section tabs: each one swaps the view below -->
         <!-- COLLAPSED -->
@@ -501,7 +502,7 @@ onUnmounted(() => {
         </div>
 
         <!-- COLLAPSED: avatar rail -->
-        <div v-if="!layout.messagingSidebar.show" class="flex-1 flex flex-col items-center gap-y-3 pt-4 overflow-y-auto custom-hide-scrollbar">
+        <div v-if="!layout.messagingSidebar.show" class="flex-1 shrink-0 flex flex-col items-center gap-y-3 pt-4 pb-2">
             <button
                 v-for="item in railVisible"
                 :key="'rail-' + item.coworker.id"
@@ -716,6 +717,7 @@ onUnmounted(() => {
                 {{ activeTab === 'team' && !teamCoworkers.length ? ctrans('No team members yet') : ctrans('Nobody online') }}
             </div>
             </template>
+        </div>
         </div>
 
         <!-- Bottom-pinned: micro-view buttons -->
