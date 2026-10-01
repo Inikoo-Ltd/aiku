@@ -9491,5 +9491,5 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} 1 दुकान उत्पाद को अपडेट करना 保存 कर रहा है और इसे एआई का उपयोग करके उस दुकान की भाषा में अनुवादित करता है।|[2,*] :count दुकान उत्पादों को अपडेट करना 保存 कर रहा है और उन्हें एआई का उपयोग करके प्रत्येक दुकान की भाषा में अनुवादित करता है।",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} यह 1 खुले आदेश का अर्थ बदल देगा|[2,*] यह :count खुले आदेश का अर्थ बदल देगा",
     "Δ 1Y": "Δ 1Y",
-    "(:time for you)": "(आपके लिए :time)"
+    "— that is :time for you": "— वह :time आपके लिए है"
 }
