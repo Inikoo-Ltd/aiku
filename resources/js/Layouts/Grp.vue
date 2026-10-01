@@ -11,6 +11,7 @@ import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } fro
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { Link, usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
+import DeploymentChangeLog from "@/Components/DevOps/DeploymentChangeLog.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
 import "@/Composables/Icon/NavigationImportIcon"
@@ -353,50 +354,50 @@ const safeTheme = computed(() => {
         :closable="false"
         :closeOnEscape="false"
         :showHeader="false"
-        :style="{ width: '32rem' }"
-        :breakpoints="{ '640px': '90vw' }">
-        <div class="pt-8 pb-4">
-            <div class="text-center">
+        :style="{ width: '38rem' }"
+        :breakpoints="{ '640px': '92vw' }">
+        <div class="pt-6 pb-4">
+            <div class="flex items-center justify-between gap-4">
                 <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
                     🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
                 </div>
-                <div v-else class="font-semibold text-2xl">
+                <div v-else class="font-semibold text-xl">
                     {{ ctrans("Hey, sorry for your inconvenience.") }}
                 </div>
 
-                <div
-                    v-if="deploymentInfo?.change_log"
-                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
-                    {{ deploymentInfo.change_log }}
-                </div>
-
-                <div v-else class="mt-2 text-sm text-gray-500">
-                    {{
-                        ctrans(
-                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                        )
-                    }}
-                </div>
-
-                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                <div v-if="deploymentInfo?.committers?.length" class="flex shrink-0 items-center -space-x-2">
                     <template v-for="committer in deploymentInfo.committers" :key="committer.email">
                         <img
                             v-if="committer.avatar"
                             :src="committer.avatar"
                             :alt="committer.name"
-                            :title="committer.name"
-                            class="size-7 rounded-full ring-2 ring-white" />
+                            v-tooltip="committer.name"
+                            class="size-8 rounded-full ring-2 ring-white" />
                         <div
                             v-else
-                            :title="committer.name"
-                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            v-tooltip="committer.name"
+                            class="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
                             {{ committer.name.charAt(0).toUpperCase() }}
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+            <div
+                v-if="deploymentInfo?.change_log"
+                class="mt-4 max-h-72 overflow-y-auto rounded-md bg-gray-50 px-4 pb-3 pt-1 text-left">
+                <DeploymentChangeLog :text="deploymentInfo.change_log" :clamped="false" />
+            </div>
+
+            <div v-else class="mt-3 text-sm text-gray-500">
+                {{
+                    ctrans(
+                        "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                    )
+                }}
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3">
                 <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
                 <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
             </div>
