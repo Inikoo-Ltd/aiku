@@ -1135,7 +1135,7 @@ onUnmounted(() => {
                 </div>
                 <div v-if="item.packaging?.dimensions" class="text-xs text-gray-400 pl-6">{{ item.packaging.dimensions }}</div>
                 <ChangePackagingSelect
-                    v-if="item.packaging_options?.length && item.delivery_note_state === 'handling'"
+                    v-if="item.packaging_options?.length && ['handling', 'picked'].includes(item.delivery_note_state)"
                     class="mt-1"
                     :options="item.packaging_options"
                     :selectedId="item.packaging?.id ?? null"

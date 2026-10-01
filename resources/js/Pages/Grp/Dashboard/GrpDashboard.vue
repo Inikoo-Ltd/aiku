@@ -74,6 +74,8 @@ const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
 const isLoadingOnTable = ref(false)
 provide("isLoadingOnTable", isLoadingOnTable)
+const failedTableTab = ref<string | null>(null)
+provide("failedTableTab", failedTableTab)
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -100,6 +102,7 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	}
 
 	isLoadingOnTable.value = true
+	failedTableTab.value = null
 	try {
 		const { data } = await axios.get(route(fetchRoute.name), {
 			params: {
@@ -114,6 +117,8 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 		if (data?.tab && data?.table_2) {
 			set(props, `dashboard.super_blocks[0].blocks_2[0].tables.${data.tab}`, data.table_2)
 		}
+	} catch {
+		failedTableTab.value = tabSlug
 	} finally {
 		isLoadingOnTable.value = false
 	}

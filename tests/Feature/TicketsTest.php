@@ -3642,3 +3642,53 @@ test('a pull request link is checked on GitHub before it is saved, and read from
     expect($ticket->fresh()->pull_request_url)->toBeNull()
         ->and(GetTicketPullRequest::make()->handle($ticket->fresh()))->toBe(['pull_request' => null, 'commits' => null, 'error' => null]);
 });
+
+test('changing a ticket, commenting on it or changing its collaborators tells the open ticket page to reload', function () {
+    Mail::fake();
+    Notification::fake();
+    Event::fake([\App\Events\BroadcastTicketUpdated::class]);
+
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Live page']);
+    $broadcastsFor = fn () => Event::dispatched(\App\Events\BroadcastTicketUpdated::class, fn ($event) => $event->ticketId === $ticket->id)->count();
+
+    expect($broadcastsFor())->toBe(0);
+
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $afterUpdate = $broadcastsFor();
+    expect($afterUpdate)->toBeGreaterThan(0);
+
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'Looking into it'], false);
+    $afterComment = $broadcastsFor();
+    expect($afterComment)->toBeGreaterThan($afterUpdate);
+
+    SyncTicketCollaborators::make()->action($ticket, [$collaborator->id]);
+    expect($broadcastsFor())->toBeGreaterThan($afterComment);
+
+    $event = new \App\Events\BroadcastTicketUpdated($ticket->id, $ticket->group_id);
+    expect(collect($event->broadcastOn())->pluck('name')->all())->toBe(['private-grp.ticket.'.$ticket->id, 'private-grp.'.$ticket->group_id.'.general'])
+        ->and($event->broadcastAs())->toBe('ticket-updated')
+        ->and($event->broadcastWith())->toBe(['id' => $ticket->id]);
+});
+
+test('a ticket list refetches one changed row, and a confidential ticket is not handed to someone who cannot see it', function () {
+    $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider->removeRole('group-admin');
+
+    $open         = StoreTicket::make()->action($this->group, ['subject' => 'Row to refresh', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $confidential = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+
+    actingAs($this->user);
+    get(route('grp.json.ticket.row', $open->id))->assertOk()
+        ->assertJsonPath('id', $open->id)
+        ->assertJsonPath('reference', $open->reference)
+        ->assertJsonPath('subject', 'Row to refresh');
+
+    actingAs($outsider);
+    get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
+});

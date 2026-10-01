@@ -48,6 +48,7 @@ class GetChatMessages
             ],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'cursor' => ['sometimes', 'date'],
+            'preview' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -61,7 +62,7 @@ class GetChatMessages
             && $chatSession->shop instanceof Shop
             && $this->userCanViewChatOnShop($user, $chatSession->shop);
 
-        if (array_key_exists('request_from', $validated)) {
+        if (array_key_exists('request_from', $validated) && !($validated['preview'] ?? false)) {
             $requestFrom = $validated['request_from'] ?? ChatSenderTypeEnum::GUEST->value;
             $readerType = ChatSenderTypeEnum::tryFrom($requestFrom) ?? ChatSenderTypeEnum::GUEST;
             MarkChatMessagesAsRead::run($chatSession, $readerType);

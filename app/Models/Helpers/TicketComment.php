@@ -45,7 +45,10 @@ class TicketComment extends Model implements HasMedia
 
     protected static function booted(): void
     {
-        $refresh = fn (TicketComment $comment) => Ticket::refreshSearchVectors($comment->ticket_id);
+        $refresh = function (TicketComment $comment) {
+            Ticket::refreshSearchVectors($comment->ticket_id);
+            $comment->ticket?->broadcastUpdated();
+        };
         static::saved($refresh);
         static::deleted($refresh);
     }

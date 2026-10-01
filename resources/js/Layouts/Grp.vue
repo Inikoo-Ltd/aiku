@@ -228,12 +228,12 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[23] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar
                 class="-left-2/3 z-20 block md:left-[0]"
-                :class="[{ 'left-[0]': sidebarOpen }]"
+                :class="[{ 'left-[0] max-md:z-[24]': sidebarOpen }]"
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 

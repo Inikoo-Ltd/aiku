@@ -10661,5 +10661,5 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} Il salvataggio aggiorna 1 prodotto del negozio e lo traduce con l'AI nella lingua del negozio. |[2,*] Il salvataggio aggiorna tutti i :count prodotti dei negozi e li traduce con l'AI nella lingua di ciascun negozio.",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} Questo cambierà il significato di 1 ordine aperto|[2,*] Questo cambierà il significato di :count ordini aperti",
     "Δ 1Y": "Δ 1Y",
-    "— that is :time for you": "— ovvero :time per te"
+    "(:time for you)": "(:time per te)"
 }
