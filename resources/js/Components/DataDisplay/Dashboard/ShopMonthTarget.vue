@@ -19,6 +19,15 @@ const layout = inject("layout", layoutStructure)
 const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#9ca3af", target: "#1f845a" }
 const thisYearColor = computed(() => layout.app?.theme?.[4] || "#4f46e5")
 
+interface CategoryTarget {
+    invoice_category_id: number | null
+    name: string
+    sales: number
+    last_year: number
+    target: number
+    is_set: boolean
+}
+
 interface PeriodTarget {
     month: string
     month_label: string
@@ -31,12 +40,13 @@ interface PeriodTarget {
     last_year_total: number
     expected: number
     pipeline: { amount: number, orders: number, submitted_amount: number, in_warehouse_amount: number }
-    target: { amount: number | null, is_default: boolean, is_sum_of_shops?: boolean, months_set?: number, growth: number, set_by: string | null }
+    target: { amount: number | null, is_default: boolean, is_sum_of_shops?: boolean, is_sum_of_categories?: boolean, months_set?: number, growth: number, set_by: string | null }
     gap: number | null
     needed_per_day: number | null
     remaining_days: number
     chart: { days: number[], this_year: number[], last_year: number[] }
     granularity?: "month" | "year"
+    categories?: CategoryTarget[]
     can_edit: boolean
     update_route: { name: string, parameters: Record<string, number> } | null
 }
@@ -86,15 +96,27 @@ const expectedVersusTargetLabel = computed(() => {
 const isEditing = ref(false)
 const isSaving = ref(false)
 const newTarget = ref<number | null>(null)
+const editingCategoryId = ref<number | null>(null)
+
+const categories = computed(() => (activePeriod.value === "month" ? props.monthTarget.categories ?? [] : []))
+const canEditTotal = computed(() => periodData.value.can_edit && !periodData.value.target.is_sum_of_categories)
 
 const selectPeriod = (period: "month" | "year") => {
     isEditing.value = false
+    editingCategoryId.value = null
     activePeriod.value = period
 }
 
 const startEditing = () => {
+    editingCategoryId.value = null
     newTarget.value = target.value ? Math.round(target.value) : null
     isEditing.value = true
+}
+
+const startEditingCategory = (category: CategoryTarget) => {
+    isEditing.value = false
+    newTarget.value = Math.round(category.target)
+    editingCategoryId.value = category.invoice_category_id
 }
 
 const saveTarget = async () => {
@@ -106,8 +128,10 @@ const saveTarget = async () => {
         await axios.patch(route(periodData.value.update_route.name, periodData.value.update_route.parameters), {
             target_org_currency: newTarget.value,
             month: periodData.value.month,
+            invoice_category_id: editingCategoryId.value,
         })
         isEditing.value = false
+        editingCategoryId.value = null
         router.reload({ only: ["dashboard"] })
     } catch (error: any) {
         notify({
@@ -222,12 +246,13 @@ const donutOptions = {
                         </form>
                         <p v-else class="text-2xl font-bold tabular-nums">
                             {{ target ? money(target) : ctrans("No target") }}
-                            <button v-if="periodData.can_edit" type="button" class="ml-1 align-middle text-sm text-gray-400 hover:text-gray-700" :aria-label="ctrans('Edit target')" @click="startEditing">
+                            <button v-if="canEditTotal" type="button" class="ml-1 align-middle text-sm text-gray-400 hover:text-gray-700" :aria-label="ctrans('Edit target')" @click="startEditing">
                                 <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                             </button>
                         </p>
                         <p class="text-xs text-gray-400">
                             <template v-if="periodData.target.is_sum_of_shops">{{ ctrans("Sum of the shops' targets") }}</template>
+                            <template v-else-if="periodData.target.is_sum_of_categories">{{ ctrans("Sum of the invoice categories' targets") }}</template>
                             <template v-else-if="periodData.target.months_set && periodData.target.months_set < 12">{{ ctrans(":count of 12 months set by management, the rest :last_year sales plus :growth%", { count: String(periodData.target.months_set), last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
                             <template v-else-if="!periodData.target.is_default">{{ ctrans("Target set by :name", { name: periodData.target.set_by ?? ctrans("management") }) }}</template>
                             <template v-else-if="target">{{ ctrans("Target: :last_year sales plus :growth%", { last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
@@ -275,6 +300,50 @@ const donutOptions = {
                     · {{ ctrans(":orders orders in the pipeline", { orders: String(periodData.pipeline.orders) }) }}
                 </p>
             </div>
+        </div>
+
+        <div v-if="categories.length" class="mt-4 overflow-x-auto border-t border-gray-100 pt-3">
+            <table class="w-full text-sm tabular-nums">
+                <thead class="text-xs text-gray-500">
+                    <tr>
+                        <th class="py-1 pr-4 text-left font-normal">{{ ctrans("Invoice category") }}</th>
+                        <th class="py-1 pr-4 text-right font-normal">{{ ctrans("Invoiced") }}</th>
+                        <th class="py-1 pr-4 text-right font-normal">{{ ctrans("Target") }}</th>
+                        <th class="w-40 py-1 pr-4 text-left font-normal">{{ ctrans("Progress") }}</th>
+                        <th class="py-1 pr-4 text-right font-normal">{{ ctrans("To go") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Per day") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="category in categories" :key="category.invoice_category_id ?? 0" class="border-t border-gray-50">
+                        <td class="py-1.5 pr-4">{{ category.name }}</td>
+                        <td class="py-1.5 pr-4 text-right font-medium">{{ money(category.sales) }}</td>
+                        <td class="py-1.5 pr-4 text-right">
+                            <form v-if="editingCategoryId !== null && editingCategoryId === category.invoice_category_id" class="flex items-center justify-end gap-2" @submit.prevent="saveTarget">
+                                <input v-model.number="newTarget" type="number" min="0" step="1" class="w-28 rounded border-gray-300 py-0.5 text-right text-sm" :aria-label="ctrans('Target')" autofocus />
+                                <button type="submit" :disabled="isSaving" class="rounded bg-[var(--theme-color-4)] px-2 py-0.5 text-xs text-[var(--theme-color-5)] disabled:opacity-50">{{ ctrans("Save") }}</button>
+                                <button type="button" class="text-xs text-gray-500" @click="editingCategoryId = null">{{ ctrans("Cancel") }}</button>
+                            </form>
+                            <template v-else>
+                                <span :class="category.is_set ? '' : 'text-gray-500'" v-tooltip="category.is_set ? ctrans('Set by management') : ctrans('Share of the shop target, from :last_year', { last_year: periodData.last_year_label })">{{ money(category.target) }}</span>
+                                <button v-if="periodData.can_edit && category.invoice_category_id" type="button" class="ml-1 text-xs text-gray-400 hover:text-gray-700" :aria-label="ctrans('Edit target')" @click="startEditingCategory(category)">
+                                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                </button>
+                            </template>
+                        </td>
+                        <td class="py-1.5 pr-4">
+                            <span class="flex items-center gap-2">
+                                <span class="relative h-2 w-24 overflow-hidden rounded-full bg-gray-100">
+                                    <span class="absolute inset-y-0 left-0" :style="{ width: percentOf(category.sales, category.target) + '%', backgroundColor: COLORS.invoiced }" />
+                                </span>
+                                <span class="text-xs text-gray-500">{{ category.target ? Math.round((category.sales / category.target) * 100) + "%" : "" }}</span>
+                            </span>
+                        </td>
+                        <td class="py-1.5 pr-4 text-right" :class="category.target && category.sales >= category.target ? 'text-green-600' : ''">{{ category.sales < category.target ? money(category.target - category.sales) : category.target ? ctrans("Target reached") : "" }}</td>
+                        <td class="py-1.5 text-right text-gray-600">{{ category.sales < category.target ? money((category.target - category.sales) / Math.max(1, periodData.remaining_days)) : "" }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </DashboardWidgetBox>
 </template>

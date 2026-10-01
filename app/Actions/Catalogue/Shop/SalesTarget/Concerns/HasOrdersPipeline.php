@@ -15,6 +15,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 trait HasOrdersPipeline
@@ -38,7 +41,6 @@ trait HasOrdersPipeline
             ->whereIn('orders.shop_id', $this->salesShopIds($parent))
             ->whereIn('orders.state', array_map(fn (OrderStateEnum $state) => $state->value, self::PIPELINE_STATES))
             ->whereNull('orders.deleted_at')
-            ->whereNotExists(fn ($query) => $query->from('org_partners')->whereColumn('org_partners.customer_id', 'orders.customer_id'))
             ->selectRaw('orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.'.($parent instanceof Group ? 'grp_net_amount' : 'org_net_amount').'), 0) as amount', [OrderStateEnum::SUBMITTED->value])
             ->groupByRaw('1')
             ->get();
@@ -72,9 +74,14 @@ trait HasOrdersPipeline
         return $parent instanceof Shop ? [$parent->id] : $parent->shops()->where('state', '!=', ShopStateEnum::CLOSED)->pluck('id')->all();
     }
 
-    private function salesColumn(Shop|Organisation|Group $parent): string
+    /**
+     * Sales to partner organisations count towards the target like any other customer's.
+     */
+    private function salesExpression(Shop|Organisation|Group $parent): string
     {
-        return $parent instanceof Group ? 'sales_grp_currency_external' : 'sales_org_currency_external';
+        $currency = $parent instanceof Group ? 'grp' : 'org';
+
+        return "shop_time_series_records.sales_{$currency}_currency_external + coalesce(shop_time_series_records.sales_{$currency}_currency_internal, 0)";
     }
 
     /**
@@ -96,8 +103,11 @@ trait HasOrdersPipeline
      */
     private function targetInParentCurrency(ShopSalesTarget $target, Shop|Organisation|Group $parent): ?float
     {
-        $amount = (float) $target->target_org_currency;
+        return $this->orgAmountInParentCurrency((float) $target->target_org_currency, $target, $parent);
+    }
 
+    private function orgAmountInParentCurrency(float $amount, ShopSalesTarget $target, Shop|Organisation|Group $parent): ?float
+    {
         if (!$parent instanceof Group) {
             return $amount;
         }
@@ -105,5 +115,94 @@ trait HasOrdersPipeline
         $rate = GetCurrencyExchange::run($target->shop->organisation->currency, $parent->currency);
 
         return $rate ? $amount * $rate : null;
+    }
+
+    /**
+     * One shop's target for one month, in the parent's currency. Once any of its invoice categories
+     * has a target the shop targets the sum of its categories.
+     *
+     * @param  Collection<int, ShopSalesTarget>  $targets  the shop's rows for that month
+     */
+    private function shopTarget(Shop|Organisation|Group $parent, int $shopId, Carbon $monthStart, Collection $targets, float $lastYearSales, float $growth): float
+    {
+        $shopTarget = $targets->first(fn (ShopSalesTarget $target) => $target->invoice_category_id === null);
+
+        if ($targets->whereNotNull('invoice_category_id')->isEmpty()) {
+            $explicitTarget = $shopTarget ? $this->targetInParentCurrency($shopTarget, $parent) : null;
+
+            return $explicitTarget ?? round($lastYearSales * (1 + $growth), 2);
+        }
+
+        $defaultTarget    = $parent instanceof Group ? null : round($lastYearSales * (1 + $growth), 2);
+        $categoriesTarget = array_sum(array_column($this->categoryTargets($shopId, $monthStart, $monthStart->copy()->endOfMonth(), $targets, $growth, $defaultTarget), 'target'));
+
+        return $this->orgAmountInParentCurrency($categoriesTarget, $targets->first(), $parent) ?? round($lastYearSales * (1 + $growth), 2);
+    }
+
+    /**
+     * Each invoice category of a shop with its sales and target, in the organisation's currency. A
+     * category without its own target gets the shop's target (set by management, otherwise last
+     * year plus growth) split by its share of the same month last year, so until a category is
+     * set the categories add up to the shop's target.
+     *
+     * @param  Collection<int, ShopSalesTarget>  $targets  the shop's rows for that month
+     * @param  float|null  $defaultTarget  the shop's default target in the organisation's currency
+     *
+     * @return array<int, array{invoice_category_id: int|null, sales: float, last_year: float, target: float, is_set: bool}>
+     */
+    private function categoryTargets(int $shopId, Carbon $monthStart, Carbon $until, Collection $targets, float $growth, ?float $defaultTarget = null): array
+    {
+        $sales           = $this->categorySales($shopId, $monthStart, $until);
+        $lastYearTotal   = array_sum(array_column($sales, 'last_year'));
+        $shopTarget      = $targets->first(fn (ShopSalesTarget $target) => $target->invoice_category_id === null);
+        $baseTarget      = $shopTarget ? (float) $shopTarget->target_org_currency : ($defaultTarget ?? $lastYearTotal * (1 + $growth));
+        $categoryTargets = $targets->whereNotNull('invoice_category_id')->keyBy('invoice_category_id');
+
+        foreach ($categoryTargets->keys() as $categoryId) {
+            $sales[$categoryId] ??= ['sales' => 0.0, 'last_year' => 0.0];
+        }
+
+        $categories = [];
+        foreach ($sales as $categoryKey => $categorySales) {
+            $categoryId     = $categoryKey ?: null;
+            $explicitTarget = $categoryId ? $categoryTargets->get($categoryId) : null;
+            $categories[]   = [
+                'invoice_category_id' => $categoryId,
+                'sales'               => round($categorySales['sales'], 2),
+                'last_year'           => round($categorySales['last_year'], 2),
+                'target'              => round($explicitTarget ? (float) $explicitTarget->target_org_currency : ($lastYearTotal > 0 ? $baseTarget * $categorySales['last_year'] / $lastYearTotal : 0), 2),
+                'is_set'              => $explicitTarget !== null,
+            ];
+        }
+
+        return $categories;
+    }
+
+    /**
+     * Invoiced sales per invoice category (0 for invoices without one) from the start of the month
+     * until the given day, and for the whole same month last year.
+     *
+     * @return array<int, array{sales: float, last_year: float}>
+     */
+    private function categorySales(int $shopId, Carbon $monthStart, Carbon $until): array
+    {
+        $lastYearStart = $monthStart->copy()->subYear();
+        $lastYearEnd   = $lastYearStart->copy()->endOfMonth();
+
+        return Cache::tags(["dashboard-shop-$shopId"])->remember(
+            "shop-category-sales:$shopId:{$monthStart->toDateString()}:{$until->toDateString()}",
+            now()->addSeconds(300),
+            fn () => DB::table('invoices')
+                ->where('shop_id', $shopId)
+                ->where('in_process', false)
+                ->whereNull('deleted_at')
+                ->where(fn ($query) => $query->whereBetween('date', [$monthStart->toDateString(), $until->copy()->endOfDay()->toDateTimeString()])
+                    ->orWhereBetween('date', [$lastYearStart->toDateString(), $lastYearEnd->copy()->endOfDay()->toDateTimeString()]))
+                ->groupBy('invoice_category_id')
+                ->selectRaw('coalesce(invoice_category_id, 0) as category_key, sum(case when date >= ? then org_net_amount else 0 end) as sales, sum(case when date < ? then org_net_amount else 0 end) as last_year', [$monthStart->toDateString(), $monthStart->toDateString()])
+                ->get()
+                ->mapWithKeys(fn ($row) => [(int) $row->category_key => ['sales' => (float) $row->sales, 'last_year' => (float) $row->last_year]])
+                ->all()
+        );
     }
 }

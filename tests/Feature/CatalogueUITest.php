@@ -23,6 +23,10 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -1394,6 +1398,64 @@ test('group target adds up every organisation in the group currency', function (
 
     get(route('grp.dashboard.show'))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+});
+
+test('a shop selling under several invoice categories targets their sum, partners included, each category taking its share of the shop target until set', function () {
+    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $customer = createCustomer($shop);
+    $today    = Carbon::parse('2038-05-10', 'UTC');
+    $growth   = (float) config('marketing.default_sales_target_growth');
+
+    $category = fn (string $name) => StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => $name,
+        'type'        => InvoiceCategoryTypeEnum::VIP->value,
+        'currency_id' => $this->organisation->currency_id,
+    ]);
+    $retail   = $category('Retail '.uniqid());
+    $partners = $category('Partners '.uniqid());
+
+    $invoice = function (string $date, int $invoiceCategoryId, float $amount) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, [...Invoice::factory()->definition(), 'date' => $date, 'in_process' => false]);
+        DB::table('invoices')->where('id', $invoice->id)->update(['invoice_category_id' => $invoiceCategoryId, 'org_net_amount' => $amount, 'in_process' => false]);
+    };
+    $invoice('2037-05-12', $retail->id, 750);
+    $invoice('2037-05-20', $partners->id, 250);
+    $invoice('2038-05-03', $retail->id, 300);
+    $invoice('2038-05-04', $partners->id, 200);
+
+    $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    $timeSeries->records()->updateOrCreate(['period' => '2037-05-12', 'frequency' => 'D'], ['sales_org_currency_external' => 750, 'sales_org_currency_internal' => 0]);
+    $timeSeries->records()->updateOrCreate(['period' => '2037-05-20', 'frequency' => 'D'], ['sales_org_currency_external' => 0, 'sales_org_currency_internal' => 250]);
+    $timeSeries->records()->updateOrCreate(['period' => '2038-05-03', 'frequency' => 'D'], ['sales_org_currency_external' => 300, 'sales_org_currency_internal' => 0]);
+    $timeSeries->records()->updateOrCreate(['period' => '2038-05-04', 'frequency' => 'D'], ['sales_org_currency_external' => 0, 'sales_org_currency_internal' => 200]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+    $byCategory = collect($block['categories'])->keyBy('invoice_category_id');
+
+    expect($block['sales_so_far'])->toBe(500.0)
+        ->and($block['last_year_total'])->toBe(1000.0)
+        ->and($block['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($block['target']['is_sum_of_categories'])->toBeTrue()
+        ->and($byCategory[$retail->id])->toMatchArray(['name' => $retail->name, 'sales' => 300.0, 'last_year' => 750.0, 'is_set' => false])
+        ->and($byCategory[$retail->id]['target'])->toEqualWithDelta(750 * (1 + $growth), 0.05)
+        ->and($byCategory[$partners->id]['target'])->toEqualWithDelta(250 * (1 + $growth), 0.05);
+
+    $organisationTarget = GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'];
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 500, 'month' => '2038-05', 'invoice_category_id' => $partners->id]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['amount'])->toEqualWithDelta(750 * (1 + $growth) + 500, 0.05)
+        ->and(collect($block['categories'])->firstWhere('invoice_category_id', $partners->id))->toMatchArray(['target' => 500.0, 'is_set' => true])
+        ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta($organisationTarget + 500 - 250 * (1 + $growth), 0.05);
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 2000, 'month' => '2038-05']);
+
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['categories'])->firstWhere('invoice_category_id', $retail->id)['target'])->toEqualWithDelta(1500, 0.05)
+        ->and(GetShopYearSalesTarget::run($shop, null, $today)['target']['months_set'])->toBe(1);
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
 });
 
 test('group warehouse overview derives its numbers from the hydrated stats', function () {
