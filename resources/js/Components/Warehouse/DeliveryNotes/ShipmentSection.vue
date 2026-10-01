@@ -182,7 +182,7 @@ const onPrintShipment = async (ship: (typeof props.shipments)[number]) => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", cost: null, })
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", cost: null, sender_name: "" })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
 const optionsCreateLabel = ref([])
@@ -221,7 +221,8 @@ const onSubmitShipment = () => {
 		.transform((data) => ({
 			shipper_id: data.shipping_id?.id,
 			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
-			cost: data.cost
+			cost: data.cost,
+			sender_name: isPacketaShipper(data.shipping_id) ? data.sender_name?.trim() || undefined : undefined,
 		}))
 		.post(
 			route(props.shipments_routes.submit_route.name, {
@@ -244,6 +245,7 @@ const onSubmitShipment = () => {
 					// }
 
 					apiShipmentError.value = null
+					packetaRejectedSenderShipper.value = null
 					emits("addSuccsess", null)
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
@@ -253,6 +255,10 @@ const onSubmitShipment = () => {
 				onError: (errors) => {
 					apiShipmentError.value = formTrackingNumber.shipping_id?.api_shipper
 						? [errors.message, errors.shipper, errors.address].filter(Boolean).join(" ")
+						: null
+
+					packetaRejectedSenderShipper.value = errors.sender && isPacketaShipper(formTrackingNumber.shipping_id)
+						? formTrackingNumber.shipping_id
 						: null
 
 					// TODO: Make condition if the error related to delivery address then set to true
@@ -500,6 +506,16 @@ const preferredShipper = computed(() => {
 // Section: Shipment Error
 const staffMessaging = useStaffMessaging()
 const apiShipmentError = ref<string | null>(null)
+
+const isPacketaShipper = (shipper: { api_shipper?: string | null } | null | undefined) => !!shipper?.api_shipper?.startsWith("packeta")
+const packetaRejectedSenderShipper = ref<{ id: number; api_shipper: string } | null>(null)
+
+const onRetryPacketaWithSender = () => {
+	if (!packetaRejectedSenderShipper.value || !formTrackingNumber.sender_name?.trim()) return
+
+	handleShipmentClick(packetaRejectedSenderShipper.value)
+}
+
 const isAskingCrm = ref(false)
 const deliveryNoteId = computed(() => props.shipments_routes?.submit_route?.parameters?.deliveryNote ?? null)
 
@@ -787,6 +803,27 @@ const onClickButtonShipmentPlatform = () => {
 			<div>
 				<div v-if="apiShipmentError && deliveryNoteId" class="mb-3 rounded-md bg-red-50 border border-red-200 p-3">
 					<div class="text-sm text-red-700">{{ apiShipmentError }}</div>
+
+					<div v-if="packetaRejectedSenderShipper" class="mt-3">
+						<label for="packeta-sender-name" class="block text-sm text-gray-700">
+							{{ ctrans("Sender name, exactly as its Indication in the Packeta portal") }}
+						</label>
+						<div class="mt-1 flex items-start gap-2">
+							<PureInput
+								v-model="formTrackingNumber.sender_name"
+								inputName="packeta-sender-name"
+								class="flex-1"
+								autofocus
+								@onEnter="() => onRetryPacketaWithSender()" />
+							<Button
+								type="save"
+								:label="ctrans('Create label with this sender')"
+								:loading="isLoadingButton == 'addTrackingNumber'"
+								:disabled="!formTrackingNumber.sender_name?.trim()"
+								@click="() => onRetryPacketaWithSender()" />
+						</div>
+					</div>
+
 					<Button
 						class="mt-2"
 						type="tertiary"

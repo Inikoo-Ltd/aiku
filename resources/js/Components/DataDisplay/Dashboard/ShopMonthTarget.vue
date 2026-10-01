@@ -207,12 +207,12 @@ const donutOptions = {
             </div>
         </template>
 
-        <div class="grid gap-6 lg:grid-cols-5">
-            <div class="h-56 lg:col-span-3">
+        <div class="grid gap-6 xl:grid-cols-5">
+            <div class="h-56 min-w-0 xl:col-span-3">
                 <Chart type="line" :data="chartData" :options="chartOptions" class="h-full" />
             </div>
 
-            <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
+            <div class="min-w-0 xl:col-span-2 xl:border-l xl:border-gray-100 xl:pl-6">
                 <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
                     <div>
                         <form v-if="isEditing" class="flex items-center gap-2" @submit.prevent="saveTarget">
@@ -245,7 +245,7 @@ const donutOptions = {
                     </div>
                 </div>
 
-                <div v-if="target" class="flex items-center gap-4">
+                <div v-if="target" class="flex flex-wrap items-center gap-4">
                     <div class="relative h-32 w-32 shrink-0">
                         <Chart type="doughnut" :data="donutData" :options="donutOptions" class="relative z-10 h-full" />
                         <div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
