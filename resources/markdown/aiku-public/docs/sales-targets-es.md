@@ -20,7 +20,9 @@ Todos los paneles se abren con el <b>objetivo del mes</b>. El grupo lo reparte p
 - **Previsto a fin de mes:** las ventas facturadas hasta ahora más una previsión de los días que quedan. La previsión se calcula cada noche a partir de las ventas diarias de la tienda de los últimos tres años. Una tienda dividida por categoría de factura reparte su previsión entre ellas según cómo funcionó cada categoría el año pasado. Una tienda que aún no tiene previsión (una tienda nueva, o la previsión de la noche no se ejecutó) usa en su lugar el resto del mismo mes del año pasado, ajustado según cómo va este mes frente a los mismos días del año pasado.
 - **Necesario por día** y **esta semana:** lo que aún hace falta, repartido entre los días que quedan.
 
-El gráfico compara este mes, día a día, con el mismo mes del año pasado. **Año hasta la fecha** muestra lo mismo para el año completo.
+El gráfico compara este mes, día a día, con el mismo mes del año pasado. A partir de hoy, una línea punteada de **Forecast** (previsión) continúa el mes hasta el total esperado, dentro de una zona sombreada de **Likely range** (rango probable): ocho de cada diez veces el mes termina dentro de ella. El rango es amplio al principio del mes y se estrecha a medida que se facturan los días. Apunta a un día para ver la previsión y su rango.
+
+**Año hasta la fecha** muestra lo mismo para el año completo, mes a mes. **Previsto a fin de año** son las ventas facturadas hasta ahora más la previsión del resto del año: día a día para este mes y semana a semana para los meses siguientes, lo que sigue mejor el pico de noviembre y diciembre.
 
 ## Botones de organización, tienda y categoría
 

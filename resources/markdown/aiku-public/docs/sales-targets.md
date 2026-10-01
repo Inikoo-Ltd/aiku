@@ -19,7 +19,9 @@ Every dashboard opens on the <b>month's target</b>. The group splits it by <b>or
 - **Expected by month end:** sales invoiced so far plus a forecast of the days left. The forecast is made each night from the last three years of the shop's daily sales. A shop split by invoice category shares its forecast between them by how each category ran last year. A shop with no forecast yet (a new shop, or the night's forecast did not run) uses the rest of last year's month instead, scaled by how this month is going against the same days last year.
 - **Needed per day** and **this week:** what is still needed, spread over the days left.
 
-The chart compares this month, day by day, with the same month last year. **Year to date** shows the same for the whole year.
+The chart compares this month, day by day, with the same month last year. From today on, a dotted **Forecast** line continues the month to the expected total, inside a shaded **Likely range**: eight times in ten the month ends inside it. The range is wide at the start of the month and narrows as the days are invoiced. Point at a day to see the forecast and its range.
+
+**Year to date** shows the same for the whole year, month by month. **Expected by year end** is the sales invoiced so far plus the forecast of the rest of the year: day by day for this month, and week by week for the months after, which follows the November and December peak better.
 
 ## Organisation, shop and category buttons
 

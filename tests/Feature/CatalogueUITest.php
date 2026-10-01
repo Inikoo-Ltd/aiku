@@ -16,7 +16,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
-use App\Actions\Catalogue\Shop\SalesTarget\ForecastShopMonthSales;
+use App\Actions\Catalogue\Shop\SalesTarget\ForecastShopSales;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
@@ -1381,7 +1381,7 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
     $secondShop->update(['state' => ShopStateEnum::CLOSED]);
 });
 
-test('expected month end adds the TimesFM forecast of the days left, and falls back to last year without one', function () {
+test('expected month and year end add the TimesFM forecast of the days left, drawn with its likely range, and fall back to last year without one', function () {
     $shop  = $this->shop;
     $today = Carbon::parse('2036-05-10', 'UTC');
 
@@ -1399,27 +1399,45 @@ test('expected month end adds the TimesFM forecast of the days left, and falls b
         'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], [-20, 40, 60, 80, 100, 120, 140, 160, 220])),
     ])]);
 
-    expect(ForecastShopMonthSales::run($today))->toBeGreaterThanOrEqual(1);
+    expect(ForecastShopSales::run($today))->toBeGreaterThanOrEqual(1);
 
     Http::assertSent(fn ($request) => $request['horizon'] === 22 && $request->hasHeader('Authorization', 'Bearer secret'));
+    Http::assertSent(fn ($request) => $request['horizon'] === 34);
 
+    $variance = round((220 / 2.563) ** 2, 2);
     $forecast = $shop->stats->fresh()->sales_forecast;
     expect($forecast['version'])->toBe('3')
         ->and($forecast['from'])->toBe('2036-05-10')
-        ->and(array_keys($forecast['org']))->toBe(range(10, 31))
-        ->and($forecast['org'][10])->toEqual(102.22);
+        ->and($forecast['org'])->toHaveCount(22 + 214)
+        ->and($forecast['org']['2036-05-10'])->toEqual([102.22, $variance])
+        ->and($forecast['org']['2036-06-01'])->toEqual([14.6, round($variance / 7, 2)])
+        ->and(array_key_last($forecast['org']))->toBe('2036-12-31');
 
     $salesSoFar = 300 + 8 * 50;
     $block      = GetShopMonthSalesTarget::run($shop, null, $today);
+    $line       = $block['chart']['forecast'];
     expect($block['sales_so_far'])->toEqual($salesSoFar)
-        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01);
+        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+        ->and($line['expected'][8])->toBeNull()
+        ->and($line['expected'][9])->toEqual($salesSoFar)
+        ->and($line['expected'][30])->toEqualWithDelta($block['expected'], 0.01)
+        ->and($line['low'][30])->toBeGreaterThan($salesSoFar)->toBeLessThan($line['expected'][30])
+        ->and($line['high'][30])->toEqualWithDelta($line['expected'][30] + 1.2816 * 1.5 * sqrt(21 * $variance), 0.05);
+
+    $year = GetShopYearSalesTarget::run($shop, null, $today);
+    expect($year['expected'])->toEqualWithDelta($year['sales_so_far'] + 21 * 102.22 + 214 * 14.6, 0.05)
+        ->and($year['chart']['forecast']['expected'][3])->toEqual(round($year['sales_so_far'] - $salesSoFar, 2))
+        ->and($year['chart']['forecast']['expected'][11])->toEqualWithDelta($year['expected'], 0.05)
+        ->and($year['chart']['forecast']['high'][11])->toBeGreaterThan($year['expected']);
 
     $shopChild = collect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['children'])->firstWhere('key', (string) $shop->id);
+    $nextMonth = GetShopMonthSalesTarget::run($shop, null, Carbon::parse('2036-06-02', 'UTC'));
     expect($shopChild['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
-        ->and(GetShopMonthSalesTarget::run($shop, null, Carbon::parse('2036-06-02', 'UTC'))['expected'])->toEqual(0);
+        ->and($nextMonth['expected'])->toEqual(0)
+        ->and($nextMonth['chart']['forecast'])->toBeNull();
 
     config(['services.timesfm.url' => null]);
-    expect(ForecastShopMonthSales::run($today))->toBe(0);
+    expect(ForecastShopSales::run($today))->toBe(0);
 
     $shop->stats->update(['sales_forecast' => null, 'sales_forecast_hydrated_at' => null]);
 });
@@ -1521,7 +1539,7 @@ test('a shop selling under several invoice categories targets their sum, partner
 
     expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
 
-    $shop->stats->update(['sales_forecast' => ['version' => '3', 'from' => '2038-05-10', 'org' => array_fill_keys(range(10, 31), 10.0), 'grp' => null]]);
+    $shop->stats->update(['sales_forecast' => ['version' => '3', 'from' => '2038-05-10', 'org' => collect(range(10, 31))->mapWithKeys(fn (int $day) => [sprintf('2038-05-%02d', $day) => [10.0, 4.0]])->all(), 'grp' => null]]);
     $block      = GetShopMonthSalesTarget::run($shop, null, $today);
     $byCategory = collect($block['children'])->keyBy('invoice_category_id');
 

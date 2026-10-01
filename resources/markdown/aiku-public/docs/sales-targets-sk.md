@@ -20,7 +20,9 @@ Každý dashboard sa otvára na <b>mesačnom cieli</b>. Skupina ho delí podľa 
 - **Očakávané do konca mesiaca:** doteraz fakturované predaje plus prognóza zostávajúcich dní. Prognóza sa robí každú noc z denných predajov obchodu za posledné tri roky. Obchod rozdelený podľa kategórií faktúr svoju prognózu medzi ne rozdelí podľa toho, ako sa jednotlivým kategóriám darilo vlani. Obchod, ktorý ešte nemá prognózu (nový obchod, alebo sa nočná prognóza nespustila), použije namiesto toho zvyšok minuloročného mesiaca, prepočítaný podľa toho, ako sa tento mesiac darí oproti rovnakým dňom vlani.
 - **Potrebné za deň** a **tento týždeň:** čo ešte chýba, rozložené na zostávajúce dni.
 
-Graf porovnáva tento mesiac deň po dni s rovnakým mesiacom vlani. **Od začiatku roka** ukazuje to isté za celý rok.
+Graf porovnáva tento mesiac deň po dni s rovnakým mesiacom vlani. Od dnešného dňa pokračuje bodkovaná čiara **Forecast** (prognóza) mesiac až po očakávaný súčet, vo vnútri zatienenej oblasti **Likely range** (pravdepodobné rozpätie): osemkrát z desiatich mesiac skončí v nej. Na začiatku mesiaca je rozpätie široké a s fakturáciou ďalších dní sa zužuje. Ukážte na deň a uvidíte prognózu a jej rozpätie.
+
+**Od začiatku roka** ukazuje to isté za celý rok, mesiac po mesiaci. **Očakávané do konca roka** sú doteraz fakturované predaje plus prognóza zvyšku roka: deň po dni pre tento mesiac a týždeň po týždni pre nasledujúce mesiace, čo lepšie sleduje novembrový a decembrový vrchol.
 
 ## Tlačidlá organizácie, obchodu a kategórie
 

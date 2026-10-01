@@ -1068,9 +1068,9 @@ class Kernel extends ConsoleKernel
 
             $this->logSchedule(
                 $schedule->command('hydrate:shop-sales-forecast')->dailyAt('00:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'ForecastShopMonthSales',
+                    monitorSlug: 'ForecastShopSales',
                 ),
-                name: 'ForecastShopMonthSales',
+                name: 'ForecastShopSales',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\SalesTarget;
 
 use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasOrdersPipeline;
+use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasSalesForecast;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
@@ -29,6 +30,7 @@ class GetShopYearSalesTarget
 {
     use AsObject;
     use HasOrdersPipeline;
+    use HasSalesForecast;
 
     public function handle(Shop|Organisation|Group $parent, ?User $user = null, ?Carbon $today = null): array
     {
@@ -69,6 +71,7 @@ class GetShopYearSalesTarget
         }
         $targetAmount = $targetAmount > 0 ? round($targetAmount, 2) : null;
 
+        $restOfYear    = $this->restOfYearByMonth($shopIds, $targetShopIds, $today, $salesExpression, $parent instanceof Group ? 'grp' : 'org');
         $lastSetTarget = $targets->sortByDesc('updated_at')->first();
         $pipeline      = $this->pipeline($parent);
         $remainingDays = $today->daysInYear - $today->dayOfYear;
@@ -84,7 +87,7 @@ class GetShopYearSalesTarget
             'sales_so_far'      => round($salesSoFar, 2),
             'last_year_so_far'  => round($lastYearSoFar, 2),
             'last_year_total'   => round($lastYearTotal, 2),
-            'expected'          => round($this->expected($salesSoFar, $lastYearSoFar, $lastYearTotal, $today), 2),
+            'expected'          => round($restOfYear !== null ? $salesSoFar + array_sum(array_column($restOfYear, 0)) : $this->expected($salesSoFar, $lastYearSoFar, $lastYearTotal, $today), 2),
             'pipeline'          => $pipeline,
             'target'            => [
                 'amount'      => $targetAmount,
@@ -102,11 +105,59 @@ class GetShopYearSalesTarget
                 'days'      => range(1, 12),
                 'this_year' => $this->cumulative($thisYearMonthly, $monthOfYear),
                 'last_year' => $this->cumulative($lastYearMonthly, 12),
+                'forecast'  => $restOfYear !== null ? $this->yearForecastLine($salesSoFar, $thisYearMonthly[$monthOfYear], $monthOfYear, $restOfYear) : null,
             ],
             'granularity'       => 'year',
             'can_edit'          => false,
             'update_route'      => null,
         ];
+    }
+
+    /**
+     * The forecast for the rest of the year by month, from the shops' nightly forecasts. A closed
+     * shop adds nothing and an open shop without a forecast yet adds its run rate this year. Null
+     * when no shop has a forecast, so the block keeps the last-year pattern.
+     *
+     * @return array<int, array{0: float, 1: float}>|null month of year => [expected, variance]
+     */
+    private function restOfYearByMonth(array $shopIds, array $openShopIds, Carbon $today, string $salesExpression, string $currency): ?array
+    {
+        $forecastByShop = $this->salesForecastByShop($shopIds, $today, $currency);
+        if (!$forecastByShop) {
+            return null;
+        }
+
+        $rest = array_fill_keys(range($today->month, 12), [0.0, 0.0]);
+        foreach ($forecastByShop as $days) {
+            foreach ($days as $date => [$expected, $variance]) {
+                $month        = (int) substr($date, 5, 2);
+                $rest[$month] = [$rest[$month][0] + $expected, $rest[$month][1] + $variance];
+            }
+        }
+
+        $withoutForecast = array_values(array_diff($openShopIds, array_keys($forecastByShop)));
+        if ($withoutForecast) {
+            $runRate = $this->dailySalesTotal($withoutForecast, $today->copy()->startOfYear(), $today, $salesExpression) / $today->dayOfYear;
+            for ($day = $today->copy()->addDay(); $day->year === $today->year; $day->addDay()) {
+                $rest[$day->month][0] += $runRate;
+            }
+        }
+
+        return $rest;
+    }
+
+    /**
+     * From last month's actual total: this month's sales so far plus the rest of it, then each month ahead.
+     *
+     * @param  array<int, array{0: float, 1: float}>  $restOfYear
+     *
+     * @return array{expected: list<float|null>, low: list<float|null>, high: list<float|null>}
+     */
+    private function yearForecastLine(float $salesSoFar, float $thisMonthSoFar, int $monthOfYear, array $restOfYear): array
+    {
+        $restOfYear[$monthOfYear][0] += $thisMonthSoFar;
+
+        return $this->forecastLine($salesSoFar - $thisMonthSoFar, $monthOfYear - 1, $restOfYear, 12, self::YEAR_BAND_FACTOR);
     }
 
     /**

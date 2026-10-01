@@ -16,7 +16,7 @@ library.add(faPencil, faBullseyeArrow, faChartPie, faChevronDown, faExternalLink
 
 const layout = inject("layout", layoutStructure)
 
-const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#9ca3af", target: "#1f845a" }
+const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", lastYear: "#9ca3af", target: "#1f845a", likelyRange: "rgba(156, 163, 175, 0.25)" }
 const thisYearColor = computed(() => layout.app?.theme?.[4] || "#4f46e5")
 
 interface PeriodTarget {
@@ -37,7 +37,7 @@ interface PeriodTarget {
     needed_this_week?: number | null
     tip?: string | null
     remaining_days: number
-    chart: { days: number[], this_year: number[], last_year: number[] }
+    chart: { days: number[], this_year: number[], last_year: number[], forecast?: { expected: (number | null)[], low: (number | null)[], high: (number | null)[] } | null }
     granularity?: "month" | "year"
     children?: ChildTarget[]
     children_label?: string
@@ -163,10 +163,17 @@ const dayLabel = (unit: number) => {
         : new Date(year, month - 1, unit).toLocaleDateString(undefined, { day: "numeric", month: "short" })
 }
 
+const forecast = computed(() => periodData.value.chart.forecast ?? null)
+
 const chartData = computed(() => ({
     labels: periodData.value.chart.days.map(dayLabel),
     datasets: [
         { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: thisYearColor.value, backgroundColor: thisYearColor.value, tension: 0, borderWidth: 1.5, pointRadius: 2 },
+        ...(forecast.value ? [
+            { key: "forecast", label: ctrans("Forecast"), data: forecast.value.expected, borderColor: thisYearColor.value, backgroundColor: thisYearColor.value, borderDash: [2, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+            { key: "band", label: ctrans("Likely range"), data: forecast.value.high, borderColor: "transparent", backgroundColor: COLORS.likelyRange, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0, isBand: true },
+            { key: "band_low", label: "", data: forecast.value.low, borderColor: "transparent", backgroundColor: COLORS.likelyRange, tension: 0, borderWidth: 0, pointRadius: 0, inLegend: false },
+        ] : []),
         { label: periodData.value.last_year_label, data: periodData.value.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
         ...(target.value ? [{ label: ctrans("Target"), data: periodData.value.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
     ],
@@ -178,7 +185,14 @@ const chartOptions = computed(() => ({
     interaction: { mode: "index", intersect: false },
     plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (item: any) => `${item.dataset.label}: ${money(item.raw)}` } },
+        tooltip: {
+            filter: (item: any) => item.raw !== null && !String(item.dataset.key ?? "").startsWith("band"),
+            callbacks: {
+                label: (item: any) => item.dataset.key === "forecast" && forecast.value
+                    ? ctrans(":label: :amount (likely :low to :high)", { label: item.dataset.label, amount: money(item.raw), low: money(forecast.value.low[item.dataIndex]), high: money(forecast.value.high[item.dataIndex]) })
+                    : `${item.dataset.label}: ${money(item.raw)}`,
+            },
+        },
     },
     scales: {
         x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
@@ -233,8 +247,9 @@ const donutOptions = {
                 <span class="text-gray-400">{{ ctrans(":days days left", { days: String(periodData.remaining_days) }) }}</span>
             </span>
             <span v-if="!collapsed" class="ml-6 hidden items-center gap-3 text-xs text-gray-500 xl:flex">
-                <span v-for="dataset in chartData.datasets" :key="dataset.label" class="flex items-center gap-1.5">
-                    <span class="w-4 border-t-2" :class="dataset.borderDash ? 'border-dashed' : ''" :style="{ borderColor: dataset.borderColor }" />
+                <span v-for="dataset in chartData.datasets.filter((dataset: any) => dataset.inLegend !== false)" :key="dataset.label" class="flex items-center gap-1.5">
+                    <span v-if="(dataset as any).isBand" class="h-2.5 w-4 rounded-sm" :style="{ backgroundColor: dataset.backgroundColor }" />
+                    <span v-else class="w-4 border-t-2" :class="(dataset as any).borderDash ? 'border-dashed' : ''" :style="{ borderColor: dataset.borderColor }" />
                     {{ dataset.label }}
                 </span>
             </span>
