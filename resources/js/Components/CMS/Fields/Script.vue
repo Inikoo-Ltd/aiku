@@ -18,7 +18,7 @@ const { Codemirror } = codemirrorPkg;
 
 const extensions = [javascript(), css(), html()]
 
-const hasBase64 = computed(() => /base64|\batob\s*\(/i.test(model.value ?? ""))
+const hasBase64Files = computed(() => (model.value ?? "").includes(";base64,"))
 
 // const view = shallowRef<EditorView>()
 
@@ -52,8 +52,8 @@ const applyCode = () => {
             @ready="handleReady"
         />
 
-        <p v-if="hasBase64" class="mt-2 text-xs text-red-600">
-            {{ ctrans("Scripts cannot contain base64 data. Upload images to the website and link to them instead.") }}
+        <p v-if="hasBase64Files" class="mt-2 text-xs text-slate-500">
+            {{ ctrans("This script has embedded base64 files. You can upload them to the website when you publish.") }}
         </p>
     </div>
 </template>

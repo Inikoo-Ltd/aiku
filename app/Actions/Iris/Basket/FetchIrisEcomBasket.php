@@ -150,6 +150,7 @@ class FetchIrisEcomBasket extends IrisAction
         ];
 
         $orderArr['order_summary'] = $orderSummary;
+        $orderArr['balance']       = $order->customer->balance;
 
         $productsData = DB::table('transactions')
             ->select(

@@ -3,7 +3,7 @@ import { inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
-import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote, faExclamationCircle } from "@fal"
+import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote, faExclamationCircle, faWallet } from "@fal"
 import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -37,6 +37,7 @@ library.add(faMinus, faArrowRight, faPlus, fasPlus, faCheck, faChevronRight, faC
 
 interface DataSideBasket {
     order_summary: any
+    balance: string | null
     order_data: {
         id: number
         reference: string
@@ -423,7 +424,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 
 <template>
     <div class="flex h-full flex-col overflow-hidden bg-white" ref="basketRef">
-        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6">
+        <div class="flex-1 min-h-0 flex flex-col px-4 pt-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
                     {{ ctrans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
@@ -446,6 +447,12 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
                         <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
                     </button>
                 </div> -->
+            </div>
+
+            <div v-if="Number(dataSideBasket?.balance) > 0"
+                class="self-start inline-flex items-center gap-x-1.5 mb-3 rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs text-green-700">
+                <FontAwesomeIcon :icon="faWallet" fixed-width aria-hidden="true" />
+                {{ ctrans("Credit balance available: :amount", { amount: locale.currencyFormat(layout.iris?.currency?.code, dataSideBasket?.balance) }) }}
             </div>
 
             <!-- Section: Bonus list (meter) -->
@@ -514,8 +521,8 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
             </div>
 
             <!-- Section: Products List -->
-            <div class="mt-1 flow-root">
-                <ul role="list" class="!mx-0 mt-6 mb-0">
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-4 px-4 pb-6 sm:-mx-6 sm:px-6 border-t border-gray-100">
+                <ul role="list" class="!mx-0 mt-3 mb-0">
                     <template v-if="!isLoadingProducts">
                         <li v-for="(product, idxProd) in get(layout, 'rightbasket.products', [])"
                             :key="product.transaction_id" class="flex py-1 relative basket-item">
