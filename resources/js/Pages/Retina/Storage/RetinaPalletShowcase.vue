@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import JsBarcode from 'jsbarcode'
 import { Link, useForm } from '@inertiajs/vue3'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import PureTimeline from '@/Components/Pure/PureTimeline.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
@@ -46,7 +46,6 @@ const props = defineProps<{
 }>()
 
 // Blueprint: data
-console.log(props)
 
 const form = useForm({
     customer_reference: props.data.data.customer_reference,
@@ -91,15 +90,15 @@ const sendEdit = () => {
         preserveScroll: true,
         onSuccess: () => {
             notify({
-                title: trans("Success"),
-                text: trans("Success to set Pallet"),
+                title: ctrans("Success"),
+                text: ctrans("Success to set Pallet"),
                 type: "success"
             })
         },
         onError: errors => {
             notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to set location"),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to set location"),
                 type: "error"
             })
         },
@@ -146,7 +145,7 @@ onMounted(() => {
                 <dt class="font-medium">{{ blueprint.note.label }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <PureTextarea :modelValue="blueprint.note.value" :rows="5"
-                        :placeholder="trans('No note from customer.')" disabled />
+                        :placeholder="ctrans('No note from customer.')" disabled />
                 </dd>
             </div>
 
@@ -167,7 +166,7 @@ onMounted(() => {
                         <Tag v-for="item of blueprint.items.value" :key="item.id" :label="item.reference"
                             :theme="item.id" />
                     </span>
-                    <span v-else class="text-gray-400 italic">{{ trans("No items in this pallet.") }}</span>
+                    <span v-else class="text-gray-400 italic">{{ ctrans("No items in this pallet.") }}</span>
                 </dd>
             </div>
             <!-- <div class="border-t border-gray-200 pt-4">
@@ -223,7 +222,7 @@ onMounted(() => {
                         </div>
                         <div v-else
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
-                            <div>{{ trans("No customer reference barcode") }}</div>
+                            <div>{{ ctrans("No customer reference barcode") }}</div>
                             <div>
                                 <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                             </div>
@@ -247,7 +246,7 @@ onMounted(() => {
                         </div>
                         <div v-else
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
-                            <div>{{ trans("No customer reference barcode available") }}</div>
+                            <div>{{ ctrans("No customer reference barcode available") }}</div>
                             <div>
                                 <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                             </div>

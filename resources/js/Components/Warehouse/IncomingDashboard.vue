@@ -65,7 +65,7 @@ interface DashboardData {
     dimension?: {
         key: string
         label: string
-        items: { key: string; label: string }[]
+        items: { key: string; label: string; short?: string }[]
     }
     metrics: Metric[]
     data: {
@@ -131,7 +131,7 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <div v-for="row in rows" :key="row.key"
                     class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0 px-1 md:px-2">
-                    <span class="md:hidden">{{ row.label?.charAt(0).toUpperCase() }}</span>
+                    <span class="md:hidden">{{ row.short ?? row.label?.charAt(0).toUpperCase() }}</span>
                     <span class="hidden md:inline text-center leading-tight">{{ row.label }}</span>
                 </div>
 

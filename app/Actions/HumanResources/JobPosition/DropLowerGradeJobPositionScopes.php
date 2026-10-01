@@ -19,6 +19,7 @@ class DropLowerGradeJobPositionScopes
      * Positions of one department, highest grade first. Positions sharing a grade can be held together.
      */
     private const array GRADES = [
+        [['agt-m'], ['agt-c']],
         [['hr-m'], ['hr-c']],
         [['acc-m'], ['acc-c']],
         [['shk-m'], ['shk-c']],

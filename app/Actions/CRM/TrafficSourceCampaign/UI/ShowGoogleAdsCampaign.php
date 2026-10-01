@@ -27,11 +27,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ShowGoogleAdsCampaign extends OrgAction
 {
+    use WithMarketingAuthorisation;
     use WithGoogleAdsInterval;
     use WithGoogleAdsCampaignJourney;
 

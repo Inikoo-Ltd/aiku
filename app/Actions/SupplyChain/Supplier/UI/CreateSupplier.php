@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\Supplier\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Helpers\Address;
@@ -30,10 +31,16 @@ class CreateSupplier extends OrgAction
 
     private ?Agent $agent = null;
 
+    private ?Organisation $scopeOrganisation = null;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($this->scopeOrganisation) {
+            return $request->user()->authTo("procurement.{$this->scopeOrganisation->id}.edit");
         }
 
         if ($this->agent && $request->user()->authTo("procurement.{$this->agent->organisation_id}.edit")) {
@@ -64,7 +71,7 @@ class CreateSupplier extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => str_replace('create', 'index', $routeName),
+                                'name'       => preg_replace('/create\w*$/', 'index', $routeName),
                                 'parameters' => $routeParameters,
                             ],
                         ],
@@ -96,12 +103,19 @@ class CreateSupplier extends OrgAction
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
-        $agent = Agent::where('organisation_id', $organisation->id)->firstOrFail();
+        $agent = Agent::where('organisation_id', $organisation->id)->first();
 
-        $this->agent = $agent;
-        $this->initialisationFromGroup($agent->group, $request);
+        if ($agent) {
+            $this->agent = $agent;
+            $this->initialisationFromGroup($agent->group, $request);
 
-        return $this->handle($agent, $request);
+            return $this->handle($agent, $request);
+        }
+
+        $this->scopeOrganisation = $organisation;
+        $this->initialisationFromGroup($organisation->group, $request);
+
+        return $this->handle($organisation->group, $request);
     }
 
     protected function getBlueprint(Group|Agent $parent): array
@@ -295,6 +309,13 @@ class CreateSupplier extends OrgAction
             ];
         }
 
+        if ($this->scopeOrganisation) {
+            return [
+                'name'       => 'grp.models.org.supplier.store',
+                'parameters' => [$this->scopeOrganisation->id],
+            ];
+        }
+
         return [
             'name' => 'grp.models.supplier.store',
         ];
@@ -302,6 +323,20 @@ class CreateSupplier extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        if (str_starts_with($routeName, 'grp.org.procurement.')) {
+            return array_merge(
+                IndexOrgSuppliers::make()->getBreadcrumbs('grp.org.procurement.org_suppliers.index', $routeParameters),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __('Creating Supplier'),
+                        ],
+                    ],
+                ]
+            );
+        }
+
         return array_merge(
             IndexSuppliers::make()->getBreadcrumbs($routeName, $routeParameters),
             [

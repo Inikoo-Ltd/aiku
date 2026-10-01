@@ -248,7 +248,6 @@ interface Modal {
 watch(
 	() => usePage().props?.flash?.modal,
 	(modal: Modal) => {
-		console.log("modal ret", modal)
 		if (!modal) return
 	}
 )
@@ -331,13 +330,6 @@ const tiktokUserId = ref<int | null>(null)
 const customerSalesChannelId = ref<int | null>(null)
 const ebayName = ref<string | null>(null)
 
-watch(
-	customerSalesChannelId,
-	(value) => {
-		console.log("customerSalesChannelId", value)
-	},
-	{ immediate: true }
-)
 
 const resetStepArray = (stepArray) => {
 	stepArray.forEach((step, index) => {

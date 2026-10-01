@@ -14,6 +14,12 @@ import { routeType } from "@/types/route"
 library.add(faTimes, faCheck)
 defineOptions({ inheritAttrs: false })
 
+interface DirectionalWarning {
+	title: string
+	text: string
+	confirmLabel?: string
+}
+
 const props = defineProps<{
 	form: any
 	fieldName: string
@@ -34,6 +40,8 @@ const props = defineProps<{
 		warnTitle?: string
 		confirmLabel?: string
 		warnOnEnableOnly?: boolean
+		warnOn?: DirectionalWarning   // Asked before turning on, instead of warnTitle/warningText
+		warnOff?: DirectionalWarning  // Asked before turning off
 		submitOnConfirm?: boolean
 		description?: string | string[]
 		single_description?: string
@@ -95,8 +103,15 @@ watch(value, (newValue) => {
 	props.form.errors[props.fieldName] = ""
 })
 
-const clearAndWarn = () => {
+// Taken when the modal opens, so the copy does not flip while it closes after confirming
+const pendingWarning = ref<DirectionalWarning | undefined>()
+
+const clearAndWarn = (newValue: boolean) => {
 	props.form.errors[props.fieldName] = null
+	if (props.fieldData?.warnOn || props.fieldData?.warnOff) {
+		pendingWarning.value = newValue ? props.fieldData.warnOn : props.fieldData.warnOff
+		return !!pendingWarning.value
+	}
 	if (
 		!props.fieldData?.warningText &&
 		!props.fieldData?.warningTextHtml &&
@@ -149,9 +164,9 @@ const getDescriptionSegments = (description: string) => {
 	<div>
 		<div class="flex items-center gap-3">
 			<ModalConfirmation
-				:title="fieldData?.warnTitle ?? ctrans('Are you sure you want to proceed?')"
+				:title="pendingWarning?.title ?? fieldData?.warnTitle ?? ctrans('Are you sure you want to proceed?')"
 				:description="
-					fieldData?.warningText ?? ctrans('Enabling this would have direct consequences')
+					pendingWarning?.text ?? fieldData?.warningText ?? ctrans('Enabling this would have direct consequences')
 				"
 				hideCancel>
 				<template v-if="fieldData?.warningTextHtml || fieldData?.warningBox" #description>
@@ -174,7 +189,7 @@ const getDescriptionSegments = (description: string) => {
 						v-model="value"
 						@update:modelValue="
 							() => {
-								if (clearAndWarn() && !(fieldData?.warnOnEnableOnly && !value)) {
+								if (clearAndWarn(value) && !(fieldData?.warnOnEnableOnly && !value)) {
 									value = !value
 									changeModel()
 									return
@@ -186,8 +201,8 @@ const getDescriptionSegments = (description: string) => {
 							}
 						"
 						class="pr-1 relative inline-flex h-6 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+						:style="{ backgroundColor: value ? 'var(--app-accent, #6366f1)' : 'color-mix(in srgb, var(--app-accent, #6366f1) 20%, white)' }"
 						:class="[
-							value ? 'bg-indigo-500' : 'bg-indigo-100',
 							form.errors[fieldName] ? 'errorShake' : '',
 							fieldData?.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
 						]"
@@ -216,7 +231,7 @@ const getDescriptionSegments = (description: string) => {
 				</template>
 				<template #btn-yes="{ closeModal }">
 					<Button
-						:label="fieldData?.confirmLabel ?? ctrans('Confirm')"
+						:label="pendingWarning?.confirmLabel ?? fieldData?.confirmLabel ?? ctrans('Confirm')"
 						@click="
 							() => {
 								value = !value

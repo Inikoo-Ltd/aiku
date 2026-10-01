@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\LinkShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
@@ -96,6 +97,10 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
                             $portfolio = $storedItem->portfolio;
                             if (!$portfolio) {
+                                if (LinkShopifyPortfolio::refusal($shopifyUser->customerSalesChannel, Arr::get($product, 'admin_graphql_api_id'), Arr::get($variant, 'admin_graphql_api_id'))) {
+                                    $numberFails++;
+                                    continue;
+                                }
 
                                 $portfolio = StorePortfolio::make()->action(
                                     $shopifyUser->customerSalesChannel,

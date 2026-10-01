@@ -77,7 +77,6 @@ const addValue = () => {
   // const newValue = toRaw(modelValue.value);
   // newValue.push(props.new_value_data);
   // modelValue.value = newValue;
-  console.log('vxzxxx', props.new_value_data)
   const newValueData = {
     ...props.new_value_data,
     ulid: ulid()

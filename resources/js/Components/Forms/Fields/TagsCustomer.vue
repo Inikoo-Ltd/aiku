@@ -8,7 +8,7 @@
 import MultiSelect from 'primevue/multiselect'
 import Dialog from 'primevue/dialog'
 import { onMounted, ref, computed, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -66,8 +66,8 @@ const onCreateNewTag = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success'),
-                    text: trans('Successfully created new tag') + ': ' + newTagName.value,
+                    title: ctrans('Success'),
+                    text: ctrans('Successfully created new tag') + ': ' + newTagName.value,
                     type: 'success',
                 })
                 isModalTag.value = false
@@ -79,7 +79,7 @@ const onCreateNewTag = () => {
             },
             onError: (error) => {
                 notify({
-                    title: trans('Something went wrong'),
+                    title: ctrans('Something went wrong'),
                     text: error.message,
                     type: 'error',
                 })
@@ -102,11 +102,10 @@ const fetchTags = async (url?: string) => {
         const res = await axios.get(urlToFetch)
 
         optionsList.value = res?.data?.data
-        console.log(res)
     } catch {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch tag list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch tag list'),
             type: 'error'
         })
     }
@@ -159,8 +158,8 @@ const onEditTag = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success!'),
-                    text: trans('Successfully updated tag.'),
+                    title: ctrans('Success!'),
+                    text: ctrans('Successfully updated tag.'),
                     type: 'success',
                 })
                 isModalUpdateTag.value = false
@@ -173,8 +172,8 @@ const onEditTag = () => {
             onError: (error) => {
                 console.error('Error editing tag:', error)
                 notify({
-                    title: trans('Something went wrong'),
-                    text: error.message || trans('Failed to update tag'),
+                    title: ctrans('Something went wrong'),
+                    text: error.message || ctrans('Failed to update tag'),
                     type: 'error',
                 })
             },
@@ -228,9 +227,9 @@ onMounted(() => {
                 <template #closeButton>
                     <ModalConfirmationDelete
                         :routeDelete="{ name: fieldData?.tag_routes?.detach_tag.name ?? '', parameters: { ...fieldData?.tag_routes?.detach_tag.parameters, tag: tagId } }"
-                        :title="trans('Are you sure you want to detach this tag?')"
-                        :description="trans('This tag will be removed from this item.')"
-                        :noLabel="trans('Detach')"
+                        :title="ctrans('Are you sure you want to detach this tag?')"
+                        :description="ctrans('This tag will be removed from this item.')"
+                        :noLabel="ctrans('Detach')"
                         noIcon="fal fa-trash-alt"
                     >
                         <template #default="{ changeModel }">
@@ -252,7 +251,7 @@ onMounted(() => {
                 optionLabel="name"
                 optionValue="id"
                 :optionDisabled="(option) => formSelectedTags.includes(option.id)"
-                :placeholder="trans('Select tags')"
+                :placeholder="ctrans('Select tags')"
                 :maxSelectedLabels="3"
                 filter
                 class="w-full md:w-80"
@@ -266,7 +265,7 @@ onMounted(() => {
                     <div class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
                         <Button
                             @click="() => (_multiselect_tags?.hide())"
-                            :label="formSelectedTags.isDirty ? trans('Save and close') : trans('Close')"
+                            :label="formSelectedTags.isDirty ? ctrans('Save and close') : ctrans('Close')"
                             xicon="fas fa-plus"
                             full
                             :key="`${formSelectedTags.isDirty}`"
@@ -275,7 +274,7 @@ onMounted(() => {
 
                         <Button
                             @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                            :label="trans('Create new tag')"
+                            :label="ctrans('Create new tag')"
                             icon="fas fa-plus"
                             full
                             type="dashed"
@@ -292,7 +291,7 @@ onMounted(() => {
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">
-                        {{ trans('Image') }}
+                        {{ ctrans('Image') }}
                     </label>
                     <div class="mt-1">
                         <PureImageCrop :aspectRatio="1" @cropped="(e) => newTagImg = e" />
@@ -301,7 +300,7 @@ onMounted(() => {
 
                 <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput v-model="newTagName" placeholder="1-64 characters" />
@@ -320,7 +319,7 @@ onMounted(() => {
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
               <!--   <div class="col-span-2">
-                    <label class="block text-sm font-medium leading-6">{{ trans('Image') }}</label>
+                    <label class="block text-sm font-medium leading-6">{{ ctrans('Image') }}</label>
                     <div class="mt-1">
                         <PureImageCrop :src_image="selectedUpdateTag?.image" :aspectRatio="1" @cropped="(e) => (selectedUpdateTag.image = e)" />
                     </div>
@@ -328,7 +327,7 @@ onMounted(() => {
 
                 <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Name') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput :modelValue="selectedUpdateTag?.name" @update:modelValue="(e) => set(selectedUpdateTag, ['name'], e)" placeholder="1-64 characters" />

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import type { Component } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity, faInfoCircle } from "@fal"
@@ -25,6 +26,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     order: {},
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData
     paymentMethods: []
     box_stats: {
         net_amount: string
@@ -111,13 +113,13 @@ const component = computed(() => {
         <ButtonWithLink
             :icon="faArrowLeft"
             type="tertiary"
-            :label="trans('Back to basket')"
+            :label="ctrans('Back to basket')"
             :routeTarget="routes.back_to_basket"
         />
     </div>
 
     <div v-if="!box_stats" class="text-center text-gray-500 text-2xl pt-6">
-        {{ trans("Your basket is empty") }}
+        {{ ctrans("Your basket is empty") }}
     </div>
 
     <div v-else class="w-full px-4 mt-8">
@@ -125,7 +127,7 @@ const component = computed(() => {
             <BasketStockIssues :stock_issues />
         </div>
         <div class="px-4 text-xl">
-            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
+            <span class="text-gray-500">{{ ctrans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
         <DropshippingSummaryCheckout
@@ -134,11 +136,17 @@ const component = computed(() => {
             :order="order"
         />
 
+        <div v-if="pre_orders?.has_pre_orders" class="mt-6 md:mx-10">
+            <BasketPreOrders :pre_orders :orderId="order.id" :currencyCode="currency_code" isInCheckout />
+        </div>
+
+        <div v-if="pre_orders?.has_pre_orders && !pre_orders.is_accepted" />
+
         <!-- If 'Total' is 0 or less -->
-        <div v-if="to_pay_data.total <= 0">
+        <div v-else-if="to_pay_data.total <= 0">
             <EmptyState
                 :data="{
-                    title: trans('No item to checkout')
+                    title: ctrans('No item to checkout')
                 }"
             />
         </div>
@@ -152,7 +160,7 @@ const component = computed(() => {
                 </div>
                 
                 <div class="text-gray-500 text-sm mt-1">
-                    {{ trans("Please paid the rest with your preferred method below:") }}
+                    {{ ctrans("Please paid the rest with your preferred method below:") }}
                 </div>
             </div>
 
@@ -202,7 +210,7 @@ const component = computed(() => {
             <div class="w-64">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="trans('Place order')"
+                    :label="ctrans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     full
                 >
@@ -212,7 +220,7 @@ const component = computed(() => {
             <div class="text-xs text-gray-500 xmt-2 italic text-center gap-x-1 w-80 justify-center">
                 <FontAwesomeIcon icon="fal fa-info-circle" xclass="mt-[4px]" fixed-width aria-hidden="true" />
                 <div class="leading-5 text-center inline">
-                    {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                 </div>
             </div>
         </div>
@@ -222,7 +230,7 @@ const component = computed(() => {
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
-                :label="trans('Back to basket')"
+                :label="ctrans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
         </div>

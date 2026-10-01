@@ -27,6 +27,7 @@ const props = defineProps<{
   fieldValue: {
     title: string
     published_date?: string
+    author?: { id: number, name: string } | null
     image?: {
       source?: string
       alt?: string
@@ -162,6 +163,9 @@ const screenType = inject("screenType", "desktop")
 
       <div class="text-sm text-gray-500 mb-6">
         {{ displayDate }}
+        <template v-if="fieldValue.author?.name">
+          · {{ ctrans("By :author", { author: fieldValue.author.name }) }}
+        </template>
       </div>
 
       <div v-if="fieldValue.image?.source"

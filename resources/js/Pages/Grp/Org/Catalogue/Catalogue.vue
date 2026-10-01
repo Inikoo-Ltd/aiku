@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type Component, computed, ref } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import CatalogueShowcase from '@/Components/Catalogue/CatalogueShowcase.vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -15,9 +15,9 @@ import { routeType } from '@/types/route'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
-import { faTrophy, faAlignLeft } from '@fal'
+import { faTrophy, faAlignLeft, faBooks, faBars, faFolder, faGem, faCube } from '@fal'
 
-library.add(faTrophy, faAlignLeft);
+library.add(faTrophy, faAlignLeft, faBooks, faBars, faFolder, faGem, faCube);
 
 type TabKey = 'showcase' | 'top_listed_families' | 'top_listed_products' | 'top_sold_products'
 
@@ -59,7 +59,7 @@ const component = computed<Component>(() => {
                 <Link
                     v-if="url_master"
                     :href="route(url_master.name, url_master.parameters)"
-                    v-tooltip="trans('Go to Master')"
+                    v-tooltip="ctrans('Go to Master')"
                     class="mr-1 opacity-70 hover:opacity-100"
                 >
                     <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />

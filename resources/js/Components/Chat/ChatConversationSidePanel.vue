@@ -18,10 +18,11 @@ import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock } from '@fal'
+import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { useWhatsappCall, WHATSAPP_OUTGOING_CALL_AVAILABLE } from '@/Composables/useWhatsappCall'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock, faPhone)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -420,11 +421,26 @@ const claimRefundAmount = computed(() => {
     return Math.round(net * claim.tax_ratio * 100) / 100
 })
 
+const pendingConfirmation = ref<{ text: string, answer: (confirmed: boolean) => void } | null>(null)
+const isConfirmationOpen = ref(false)
+
+const askConfirm = (text: string): Promise<boolean> => new Promise(resolve => {
+    pendingConfirmation.value?.answer(false)
+    pendingConfirmation.value = { text, answer: resolve }
+    isConfirmationOpen.value = true
+})
+
+const answerConfirmation = (confirmed: boolean) => {
+    if (!isConfirmationOpen.value) return
+    isConfirmationOpen.value = false
+    pendingConfirmation.value?.answer(confirmed)
+}
+
 const refundClaimToBalance = async () => {
     const claim = customerProfile.value.claim
     const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
     if (!claim?.refund || !items.length || isRefunding.value || !claimRefundAmount.value) return
-    if (!window.confirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
+    if (!await askConfirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
     isRefunding.value = true
     try {
         const res = await axios.post(route(claim.refund.name, claim.refund.parameters), {
@@ -444,7 +460,7 @@ const createReplacement = async () => {
     const claim = customerProfile.value.claim
     const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
     if (!claim || !items.length || isReplacing.value) return
-    if (!window.confirm(ctrans("Send :count lines again to the customer as a replacement of :order?", { count: String(items.length), order: claim.order.reference }))) return
+    if (!await askConfirm(ctrans("Send :count lines again to the customer as a replacement of :order?", { count: String(items.length), order: claim.order.reference }))) return
     isReplacing.value = true
     try {
         const res = await axios.post(route(claim.replacement.name, claim.replacement.parameters), {
@@ -495,7 +511,7 @@ const isUnsubscribing = ref(false)
 const unsubscribeFromMarketing = async () => {
     const unsubscribe = customerProfile.value.subscriptions?.unsubscribe
     if (!unsubscribe || isUnsubscribing.value) return
-    if (!window.confirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
+    if (!await askConfirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
     isUnsubscribing.value = true
     try {
         const res = await axios.post(route(unsubscribe.name, unsubscribe.parameters))
@@ -658,6 +674,11 @@ let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
 
+const { activeCall: whatsappCall, busy: isWhatsappCallBusy, dial: dialWhatsapp } = useWhatsappCall()
+const startWhatsappCall = () => {
+    dialWhatsapp(String((route().params as Record<string, any>)?.organisation ?? ''), props.session.ulid)
+}
+
 const canMatchCustomer = computed(() => {
     if (!props.session.is_guest) return false
     if (isWhatsapp.value) return !!(props.session.phone_number || props.session.guest_phone)
@@ -741,11 +762,12 @@ const searchCustomerCandidates = (query: string) => {
 
 const unlinkCustomer = async () => {
     if (isSyncing.value) return
-    if (!window.confirm(ctrans('Unlink this customer from the conversation?'))) return
+    const sessionUlid = props.session.ulid
+    if (!await askConfirm(ctrans('Unlink this customer from the conversation?'))) return
     isSyncing.value = true
     syncError.value = null
     try {
-        await axios.delete(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`, { withCredentials: true })
+        await axios.delete(`${baseUrl}/app/api/chats/sessions/${sessionUlid}/customer`, { withCredentials: true })
         emit('unlinked')
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? ctrans('Could not unlink this customer')
@@ -881,6 +903,18 @@ const copyChatId = async () => {
                     <div v-if="session.phone_number || session.guest_phone || customerProfile.phone" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Phone") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone || customerProfile.phone }}</div>
+                    </div>
+                    <div v-if="WHATSAPP_OUTGOING_CALL_AVAILABLE && isWhatsapp && session.phone_number" class="grid grid-cols-3 gap-2 items-start">
+                        <div></div>
+                        <div class="col-span-2">
+                            <button type="button" :disabled="!!whatsappCall || isWhatsappCallBusy"
+                                class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
+                                :style="{ color: themePrimary, borderColor: themePrimary }"
+                                @click="startWhatsappCall">
+                                <FontAwesomeIcon :icon="['fal', 'fa-phone']" class="text-[9px]" fixed-width />
+                                {{ ctrans("WhatsApp call") }}
+                            </button>
+                        </div>
                     </div>
                     <div v-if="customerProfile.location || customerProfile.address" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>
@@ -1338,5 +1372,16 @@ const copyChatId = async () => {
             </div>
         </div>
         <TicketQuickLook v-model:ticket="quickLookTicket" @closed="quickLookTicket = null" />
+        <Modal :isOpen="isConfirmationOpen" @onClose="answerConfirmation(false)" width="w-full max-w-md" :zIndex="40">
+            <p class="text-sm text-gray-700">{{ pendingConfirmation?.text }}</p>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50" @click="answerConfirmation(false)">
+                    {{ ctrans("Cancel") }}
+                </button>
+                <button type="button" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500" @click="answerConfirmation(true)">
+                    {{ ctrans("Confirm") }}
+                </button>
+            </div>
+        </Modal>
 </div>
 </template>

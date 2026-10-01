@@ -130,7 +130,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
             <Link
                 v-if="resolvedLogsUrl"
                 :href="resolvedLogsUrl"
-                class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+                class="text-xs text-[var(--theme-color-4)] hover:underline whitespace-nowrap"
             >
                 {{ logsLabel ?? ctrans("All searches & per-user stats") }}
                 <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
@@ -140,28 +140,28 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
         <template v-if="widget">
             <div class="flex gap-10 mb-4">
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.total_searches.toLocaleString() }}</p>
+                    <p class="text-4xl font-bold text-[var(--theme-color-4)]">{{ stats.total_searches.toLocaleString() }}</p>
                     <p class="text-sm text-gray-600 group-hover:underline">
                         {{ ctrans("Searches") }}
-                        <span v-if="liveWebsiteId" class="inline-block w-1.5 h-1.5 rounded-full align-middle" :class="justUpdated ? 'bg-indigo-500' : 'bg-green-400'" v-tooltip="ctrans('Updating live')" />
+                        <span v-if="liveWebsiteId" class="inline-block w-1.5 h-1.5 rounded-full align-middle" :class="justUpdated ? 'bg-[var(--theme-color-4)]' : 'bg-green-400'" v-tooltip="ctrans('Updating live')" />
                     </p>
                     <p v-if="stats.logged_in_searches !== undefined" class="text-xs text-gray-400">
                         {{ ctrans(":logged logged in · :guest guests", { logged: String(stats.logged_in_searches), guest: String(stats.guest_searches ?? 0) }) }}
                     </p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated ? 'text-indigo-600' : clickThroughColor">{{ stats.click_through }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated ? 'text-[var(--theme-color-4)]' : clickThroughColor">{{ stats.click_through }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Click-through") }}</p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated ? 'text-indigo-600' : zeroResultsColor">{{ stats.zero_results_rate }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated ? 'text-[var(--theme-color-4)]' : zeroResultsColor">{{ stats.zero_results_rate }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("No results") }}</p>
                 </component>
             </div>
 
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-indigo-400 mr-1" />{{ ctrans("Top searches") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-1)] mr-1" />{{ ctrans("Top searches") }}</p>
                     <div class="divide-y divide-gray-100">
                         <component
                             :is="queryUrl ? Link : 'div'"
@@ -175,15 +175,15 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                 <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}<span class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
-                            <MiniBar :value="q.searches" :max="maxTopQueries" color="bg-indigo-400" />
+                            <MiniBar :value="q.searches" :max="maxTopQueries" color="bg-[var(--theme-chart-1)]" />
                         </component>
                         <p v-if="!widget.top_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 font-medium mb-1">
-                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1" />{{ ctrans("Searches without results") }}
-                        <Link v-if="opportunitiesUrl" :href="opportunitiesUrl" class="text-indigo-600 hover:underline font-normal">
+                        <span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-2)] mr-1" />{{ ctrans("Searches without results") }}
+                        <Link v-if="opportunitiesUrl" :href="opportunitiesUrl" class="text-[var(--theme-color-4)] hover:underline font-normal">
                             · {{ ctrans("opportunities") }}
                         </Link>
                     </p>
@@ -212,13 +212,13 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                     {{ q.searches }}
                                 </span>
                             </div>
-                            <MiniBar :value="q.searches" :max="maxZeroQueries" color="bg-amber-400" />
+                            <MiniBar :value="q.searches" :max="maxZeroQueries" color="bg-[var(--theme-chart-2)]" />
                         </component>
                         <p v-if="!widget.top_zero_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.top_abandoned_queries">
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-orange-300 mr-1" />{{ ctrans("Searches not followed") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-2)] mr-1" />{{ ctrans("Searches not followed") }}</p>
                     <div class="divide-y divide-gray-100">
                         <component
                             :is="queryUrl ? Link : 'div'"
@@ -232,13 +232,13 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                 <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}</span>
                             </div>
-                            <MiniBar :value="q.searches" :max="maxAbandonedQueries" color="bg-orange-300" />
+                            <MiniBar :value="q.searches" :max="maxAbandonedQueries" color="bg-[var(--theme-chart-2)]" />
                         </component>
                         <p v-if="!widget.top_abandoned_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-indigo-400 mr-1" />{{ ctrans("Top searchers") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-3)] mr-1" />{{ ctrans("Top searchers") }}</p>
                     <div class="divide-y divide-gray-100">
                         <component
                             :is="searcherHref(searcher) ? Link : 'div'"
@@ -252,13 +252,13 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                 <span class="text-gray-600 truncate min-w-0" :class="searcherHref(searcher) ? 'hover:underline' : ''">{{ searcher.username }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
-                            <MiniBar :value="searcher.searches" :max="maxSearchers" color="bg-indigo-400" />
+                            <MiniBar :value="searcher.searches" :max="maxSearchers" color="bg-[var(--theme-chart-3)]" />
                         </component>
                         <p v-if="!widget.top_searchers?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.top_clicked_pages">
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />{{ ctrans("Top pages reached from search") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-1)] mr-1" />{{ ctrans("Top pages reached from search") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="page in widget.top_clicked_pages" :key="page.clicked_url" class="py-1">
                             <div class="flex justify-between gap-2">
@@ -266,13 +266,13 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                 <a v-else :href="page.clicked_url" target="_blank" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</a>
                                 <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' class="text-gray-400" /></span>
                             </div>
-                            <MiniBar :value="page.clicks" :max="maxClickedPages" color="bg-emerald-400" />
+                            <MiniBar :value="page.clicks" :max="maxClickedPages" color="bg-[var(--theme-chart-1)]" />
                         </div>
                         <p v-if="!widget.top_clicked_pages.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.sources">
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-indigo-400 mr-1" />{{ ctrans("Where searches start") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-2)] mr-1" />{{ ctrans("Where searches start") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="source in widget.sources" :key="source.source" class="py-1">
                             <div class="flex justify-between gap-2">
@@ -282,20 +282,20 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                     <span class="text-gray-400 font-normal">{{ source.searches }} / {{ source.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span>
                                 </span>
                             </div>
-                            <MiniBar :value="source.share" :max="100" color="bg-indigo-400" />
+                            <MiniBar :value="source.share" :max="100" color="bg-[var(--theme-chart-2)]" />
                         </div>
                         <p v-if="!widget.sources.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.devices">
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-sky-400 mr-1" />{{ ctrans("Devices") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-3)] mr-1" />{{ ctrans("Devices") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="device in widget.devices" :key="device.device" class="py-1">
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0 capitalize">{{ device.device }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ device.searches }}<span class="text-gray-400 font-normal"> / {{ device.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
-                            <MiniBar :value="device.searches" :max="maxDevices" color="bg-sky-400" />
+                            <MiniBar :value="device.searches" :max="maxDevices" color="bg-[var(--theme-chart-3)]" />
                         </div>
                         <p v-if="!widget.devices.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>

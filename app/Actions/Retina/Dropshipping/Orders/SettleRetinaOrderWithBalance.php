@@ -9,6 +9,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -46,8 +48,11 @@ class SettleRetinaOrderWithBalance extends RetinaAction
 
         /** Round to cents: raw float subtraction of the DB decimals yields values like
          * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects, rolling back
-         * the whole payment transaction */
-        $amountToPay = round($order->total_amount - $order->payment_amount, 2);
+         * the whole payment transaction. A basket with trade made-to-order items owes only
+         * their deposit now (HELP-3432). */
+        $amountToPay = $order->state == OrderStateEnum::CREATING
+            ? round(GetOrderAmountToPayNow::run($order) - $order->payment_amount, 2)
+            : round($order->total_amount - $order->payment_amount, 2);
 
         if ($customer->balance < $amountToPay) {
             $amount = round((float)$customer->balance, 2);

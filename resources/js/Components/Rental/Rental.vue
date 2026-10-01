@@ -19,7 +19,7 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { v4 as uuidv4 } from 'uuid'
 import Popover from '@/Components/Popover.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Currency from "@/Components/Pure/Currency.vue"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
@@ -96,7 +96,6 @@ const getRentals = async () => {
         const response = await axios.get(route(props.fieldData.indexRentalRoute.name, props.fieldData.indexRentalRoute.parameters))
         rentals.value = response.data.data
     } catch (error) {
-        console.log(error)
         notify({
             title: "Failed",
             text: "Error while fetching data",
@@ -245,7 +244,7 @@ onMounted(() => {
 
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
-                        <div class="text-xs my-2 font-medium">{{ trans('Discount (%)') }}: </div>
+                        <div class="text-xs my-2 font-medium">{{ ctrans('Discount (%)') }}: </div>
                         <PureInput v-model="bulkDiscInput" autofocus placeholder="1-100" type="number" :maxValue="99"
                             :suffix="true" :minValue="0" @onEnter="() => onBulkDiscount(closed)">
                             <template #suffix>
@@ -282,15 +281,15 @@ onMounted(() => {
                             </th>
                             
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold min-w-40 max-w-80">
-                                {{ trans('Rental') }}
+                                {{ ctrans('Rental') }}
                             </th>
                             
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold whitespace-nowrap min-w-40 max-w-64">
-                                {{ trans('Price') }}
+                                {{ ctrans('Price') }}
                             </th>
                             
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold whitespace-nowrap min-w-40 max-w-64">
-                                {{ trans('Discount (%)') }}
+                                {{ ctrans('Discount (%)') }}
                             </th>
 
                             <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold min-w-16">

@@ -9,6 +9,9 @@ import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TablePayments from '@/Components/Tables/Grp/Org/Accounting/TablePayments.vue';
 import { capitalize } from "@/Composables/capitalize"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCoins } from "@fal"
+library.add(faCoins)
 
 defineProps(['data', 'title', 'pageHead']);
 

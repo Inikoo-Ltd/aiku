@@ -11,7 +11,7 @@ namespace App\Actions\Billables\Packaging\UI;
 use App\Actions\Billables\Leaflet\UI\IndexLeaflets;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\UI\Catalogue\PackagingsTabsEnum;
 use App\Http\Resources\Catalogue\LeafletsResource;
 use App\Http\Resources\Catalogue\PackagingsResource;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPackagings extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {

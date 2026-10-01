@@ -189,25 +189,15 @@ class IndexClockings extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Clockings'),
                     'actions' => [
-                        $this->canEdit
-                        && (
-                            $request->route()->getName() == 'grp.org.hr.workplaces.show.clockings.index' || $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
-                        )
+                        $this->canEdit && $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
                             ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Clockings'),
-                            'route' =>
-                                match ($request->route()->getName()) {
-                                    'grp.org.hr.workplaces.show.clockings.index' => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clockings.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ],
-                                    default => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
-                                }
+                            'route' => [
+                                'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
                         ] : false
                     ]
                 ],

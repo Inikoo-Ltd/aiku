@@ -10,6 +10,10 @@
   import TableTrafficSources from '@/Components/Tables/Grp/Org/CRM/TableTrafficSources.vue'
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeadingTypes } from "@/types/PageHeading"
+  import { library } from "@fortawesome/fontawesome-svg-core"
+  import { faRoute } from "@fal"
+
+  library.add(faRoute)
   
   
   const props = defineProps<{

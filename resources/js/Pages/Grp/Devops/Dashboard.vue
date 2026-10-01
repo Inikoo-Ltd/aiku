@@ -8,14 +8,14 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase } from "@fal"
+import { faDatabase, faServer } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed } from "vue"
 
-library.add(faDatabase)
+library.add(faDatabase, faServer)
 
 const props = defineProps<{
     title: string
@@ -46,20 +46,20 @@ const sparklinePoints = computed(() => {
         <div class="w-64 rounded-lg border border-gray-200 p-4">
             <div class="flex items-baseline justify-between">
                 <span class="text-sm font-medium">aiku.io</span>
-                <span class="text-xs text-gray-500">{{ trans("Last 7 days") }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans("Last 7 days") }}</span>
             </div>
             <div class="mt-2 flex items-baseline gap-3">
-                <span class="text-sm">{{ publicSiteVisits.visitors }} {{ trans("visitors") }}</span>
-                <span class="text-xs text-gray-500">{{ publicSiteVisits.views }} {{ trans("views") }}</span>
+                <span class="text-sm">{{ publicSiteVisits.visitors }} {{ ctrans("visitors") }}</span>
+                <span class="text-xs text-gray-500">{{ publicSiteVisits.views }} {{ ctrans("views") }}</span>
             </div>
             <svg v-if="sparklinePoints" viewBox="0 0 100 28" class="mt-2 h-7 w-full" preserveAspectRatio="none">
                 <polyline :points="sparklinePoints" fill="none" stroke="currentColor" stroke-width="1.5" class="text-indigo-500" />
             </svg>
             <div v-if="publicSiteVisits.top_referrer" class="mt-2 truncate text-xs text-gray-500">
-                {{ trans("Top referrer") }}: {{ publicSiteVisits.top_referrer }}
+                {{ ctrans("Top referrer") }}: {{ publicSiteVisits.top_referrer }}
             </div>
             <Link :href="route('grp.devops.aiku-public-analytics')" class="mt-3 block text-xs text-indigo-600 hover:underline">
-                {{ trans("See more") }} →
+                {{ ctrans("See more") }} →
             </Link>
         </div>
     </div>

@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
+use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
@@ -35,12 +36,14 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\SysAdmin\User;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -196,7 +199,9 @@ class UpdateMasterAsset extends OrgAction
 
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
-        $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+        $changes = [];
+
+        $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits, &$changes) {
             $oldTradeUnitData = $masterAsset->tradeUnits;
 
             /** @var MasterAsset $masterAsset */
@@ -221,6 +226,7 @@ class UpdateMasterAsset extends OrgAction
             }
 
             $this->update($masterAsset, $modelData);
+            $changes = $masterAsset->getChanges();
             $masterAsset->refresh();
 
             if (Arr::has($modelData, 'master_prices')) {
@@ -235,6 +241,8 @@ class UpdateMasterAsset extends OrgAction
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
+        $wasChanged = fn (string|array $attributes): bool => (bool) array_intersect((array) $attributes, array_keys($changes));
+
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
 
         if ($oldMismatchDetected != $masterAsset->mismatch_detected) {
@@ -248,7 +256,7 @@ class UpdateMasterAsset extends OrgAction
             MasterShopHydrateNumberMismatches::run($masterAsset->masterShop);
         }
 
-        if ($masterAsset->wasChanged('unit')) {
+        if ($wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
 
             /**
@@ -269,19 +277,32 @@ class UpdateMasterAsset extends OrgAction
                     continue;
                 }
 
-                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                $followsMaster = data_get($shop->settings, 'catalog.product_follow_master');
+                $requester     = auth()->user();
+
+                if (!$masterAsset->unit || (!$followsMaster && !$requester instanceof User)) {
+                    continue;
+                }
+
+                $translatedUnit = Translate::run($masterAsset->unit, $english, $shop->language, 'catalogue');
+
+                if (!$followsMaster) {
+                    if ($product->unit !== $translatedUnit) {
+                        AskShopkeeperToUpdateProductUnit::run($product, $translatedUnit, $requester);
+                    }
+
                     continue;
                 }
 
                 UpdateProduct::run($product, [
-                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                    'unit' => $translatedUnit,
                 ]);
             }
         }
 
         $changedGpsrTexts = array_filter(
             array_keys(TranslateProductGpsrText::REVIEW_FLAGS),
-            fn (string $field) => $masterAsset->wasChanged($field)
+            $wasChanged
         );
 
         if ($changedGpsrTexts) {
@@ -293,7 +314,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('units')) {
+        if ($wasChanged('units')) {
             foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,
@@ -301,7 +322,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('is_for_sale')) {
+        if ($wasChanged('is_for_sale')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::run($product, [
                     'is_for_sale'              => $masterAsset->is_for_sale,
@@ -310,7 +331,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('master_family_id')) {
+        $changedPreOrderFields = array_intersect(Product::PRE_ORDER_FIELDS, array_keys($masterAsset->getChanges()));
+        if ($changedPreOrderFields) {
+            foreach ($masterAsset->products as $product) {
+                UpdateProduct::run($product, $masterAsset->only($changedPreOrderFields));
+            }
+        }
+
+        if ($wasChanged('master_family_id')) {
             if ($masterAsset->masterFamily) {
                 foreach ($masterAsset->products as $product) {
                     $family = $masterAsset->masterFamily->productCategories()->where('shop_id', $product->shop_id)->first();
@@ -327,14 +355,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
+        if ($wasChanged(['master_prices', 'master_rrps'])) {
             MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset);
         }
 
-        if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {
+        if ($wasChanged(['price', 'rrp', 'status'])) {
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
 
-            if ($masterAsset->wasChanged('status')) {
+            if ($wasChanged('status')) {
                 GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
                 if ($masterAsset->masterdepartment) {
                     MasterDepartmentHydrateMasterAssets::dispatch($masterAsset->masterDepartment)->delay($this->hydratorsDelay);
@@ -345,7 +373,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('tax_category')) {
+        if ($wasChanged('tax_category')) {
             foreach ($masterAsset->assets as $asset) {
                 UpdateAsset::run($asset, [
                     'tax_category' => $masterAsset->tax_category
@@ -415,7 +443,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('barcode')) {
+        if ($wasChanged('barcode')) {
             SyncBarcodeToMasterAsset::run($masterAsset);
 
             /** A child that has had its own barcode chosen keeps it, like every other override. */
@@ -426,7 +454,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged('is_golden_product')) {
+        if ($wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
                     'is_golden_product' => $masterAsset->is_golden_product,
@@ -434,14 +462,22 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        PropagateMasterContentToProducts::run($masterAsset, array_keys($masterAsset->getChanges()));
+        if ($wasChanged('is_indivisible')) {
+            foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
+                UpdateProduct::make()->action($product, [
+                    'is_indivisible' => $masterAsset->is_indivisible,
+                ]);
+            }
+        }
 
-        if ($masterAsset->wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
+        PropagateMasterContentToProducts::run($masterAsset, array_keys($changes));
+
+        if ($wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
             MasterAssetHydrateAssets::run($masterAsset->id);
         }
 
 
-        if ($masterAsset->wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
+        if ($wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
             CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
             foreach ($masterAsset->products as $product) {
                 CloneProductImagesFromTradeUnits::run($product);
@@ -496,6 +532,11 @@ class UpdateMasterAsset extends OrgAction
             'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
             'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
             'is_for_sale'                => ['sometimes', 'boolean'],
+            'is_back_order'                => ['sometimes', 'boolean'],
+            'is_made_to_order'             => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'pre_order_lead_time_days'     => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
+            'max_quantity_per_order'       => ['sometimes', 'nullable', 'integer', 'min:1'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array'],
@@ -509,6 +550,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
+            'is_indivisible'                => ['sometimes', 'boolean'],
             'barcode'                       => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 

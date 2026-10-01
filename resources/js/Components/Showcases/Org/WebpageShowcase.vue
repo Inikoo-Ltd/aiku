@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
-import SelectButton from 'primevue/selectbutton'
+import SegmentedToggle from '@/Components/Utils/SegmentedToggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faUser,
@@ -169,7 +169,7 @@ const visitRedirect = () => {
               {{ filterBlock ? ctrans('Logged In') : ctrans('Logged Out') }}
             </span>
           </div>
-          <!-- Screen Mode SelectButton -->
+          <!-- Screen Mode toggle -->
           <div class="flex items-center gap-2">
             <ModalConfirmationDelete
               v-if="data?.state == 'live'"
@@ -185,15 +185,7 @@ const visitRedirect = () => {
                 <Button v-tooltip="ctrans('Break cache')" @click="changeModel" type="tertiary" size="xs" :icon="faFragile" :aria-label="ctrans('Break cache')" />
               </template>
             </ModalConfirmationDelete>
-            <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
-              class="p-button-outlined">
-              <template #option="slotProps">
-                <div class="flex items-center gap-2">
-                  <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
-                  <span>{{ slotProps.option.label }}</span>
-                </div>
-              </template>
-            </SelectButton>
+            <SegmentedToggle v-model="screenMode" :options="screenModeOptions" :aria-label="ctrans('Screen size')" />
           </div>
         </div>
 

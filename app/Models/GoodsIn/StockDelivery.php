@@ -227,6 +227,15 @@ class StockDelivery extends Model implements HasMedia, Auditable
      * A partner delivery mirrors the seller's delivery note, and the seller owns it until the
      * buyer receives the goods.
      */
+    public function isInGoodsIn(): bool
+    {
+        return in_array($this->state, [
+            StockDeliveryStateEnum::RECEIVED,
+            StockDeliveryStateEnum::CHECKED,
+            StockDeliveryStateEnum::BOOKING_IN,
+        ], true);
+    }
+
     public function isManagedByPartner(): bool
     {
         return $this->delivery_note_id !== null && in_array($this->state, [

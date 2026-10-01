@@ -16,6 +16,7 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatAssignment;
 use App\Models\Chat\MetaChatSession;
 use Exception;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -140,6 +141,11 @@ class AssignMetaChatToAgent
                 $agent,
                 $actionType === 'take_over' ? 'Taken over by agent' : 'Assigned via assign-to-self'
             );
+        } catch (UniqueConstraintViolationException) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($metaChatSession),
+            ], 409);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

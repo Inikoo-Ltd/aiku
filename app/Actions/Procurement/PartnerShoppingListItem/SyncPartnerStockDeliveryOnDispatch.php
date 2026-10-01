@@ -26,6 +26,10 @@ class SyncPartnerStockDeliveryOnDispatch
             return null;
         }
 
+        if (!in_array($stockDelivery->state, [StockDeliveryStateEnum::CONFIRMED, StockDeliveryStateEnum::DISPATCHED], true)) {
+            return $stockDelivery;
+        }
+
         $order   = $deliveryNote->orders()->first();
         $invoice = $order?->invoices()->latest('id')->first();
 

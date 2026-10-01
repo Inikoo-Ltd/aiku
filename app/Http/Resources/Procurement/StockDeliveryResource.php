@@ -41,6 +41,8 @@ class StockDeliveryResource extends JsonResource
             'slug'               => $this->slug,
             'reference'          => $this->reference,
             'parent_name'        => $this->parent_name,
+            'parent_type'        => $this->parent_type,
+            'parent_route_key'   => $this->parent_route_key,
             'state'              => $this->state,
             'state_icon'         => $this->state->stateIcon()[$this->state->value],
             'state_label'        => StockDeliveryStateEnum::labels()[$this->state->value],

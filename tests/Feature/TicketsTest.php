@@ -26,6 +26,8 @@ use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
+use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
+use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use Illuminate\Database\Eloquent\Builder;
@@ -199,7 +201,7 @@ test('staff and customers comment on the same public thread', function (Ticket $
 
 test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', true)->has('queue')->has('stats.open'));
-    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count())->where('searchHelp', \App\Actions\Helpers\Ticket\ApplyTicketSearch::HELP));
     get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5)->where('me', $this->user->username)->has('formerAssignees')->has('assignees'));
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
@@ -731,6 +733,26 @@ test('assistant raises an engineer ticket with the INI prefix through MCP', func
     $ticket = Ticket::where('subject', 'Bump Shopify API version')->firstOrFail();
     expect($ticket->type)->toBe(TicketTypeEnum::ENGINEER)
         ->and($ticket->reference)->toStartWith('INI-');
+});
+
+test('assistant asks a QA user to check a ticket through MCP, with the comment as the note', function () {
+    Notification::fake();
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pay button missing', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+
+    $notQa = User::factory()->create(['group_id' => $this->group->id]);
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $notQa->username])->assertHasErrors();
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->comments()->where('body', 'like', '%Pay an order in warehouse')->count())->toBe(1);
+
+    UpdateTicket::make()->action($ticket, ['qa_status' => null]);
 });
 
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
@@ -1421,6 +1443,55 @@ test('QA has its own ticket list, filtered first by QA assignee, and the ticket 
         ->assertInertia(fn (AssertableInertia $page) => $page->where('listTip', null)->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->firstWhere('key', 'qa_status')['sortable'] === true));
 });
 
+test('the QA list shows at a glance how far QA is behind on the tickets done', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    actingAs($qa);
+
+    $summary = fn () => get(route('grp.tickets.qa_list'))->viewData('page')['props']['listSummary'];
+    $before  = $summary();
+
+    $references = [];
+    foreach ([
+        'not_checked'  => [TicketStatusEnum::RESOLVED, null],
+        'passed'       => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::PASSED],
+        'failed'       => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::FAILED],
+        'skipped'      => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::SKIPPED],
+        'requested'    => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::REQUESTED],
+        'checking'     => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::CHECKING],
+        'not_done_yet' => [TicketStatusEnum::IN_PROGRESS, TicketQaStatusEnum::CHECKING],
+    ] as $key => [$status, $qaStatus]) {
+        $ticket = StoreTicket::make()->action($this->group, ['subject' => 'QA summary '.$key]);
+        Ticket::whereKey($ticket->id)->update(['status' => $status, 'qa_status' => $qaStatus, 'qa_user_id' => $key === 'passed' ? $otherQa->id : null]);
+        $references[$key] = $ticket->reference;
+    }
+
+    $listedFor = fn (string $qaState) => collect(get(route('grp.tickets.qa_list', [
+        'filter'   => ['qa_state' => $qaState],
+        'elements' => ['qa_status' => '', 'qa_checker' => ''],
+        'perPage'  => 1000,
+    ]))->viewData('page')['props']['data']['data'])->pluck('reference')->intersect($references)->sort()->values()->all();
+
+    expect($listedFor('passed'))->toBe([$references['passed']])
+        ->and($listedFor('in_qa'))->toBe(collect([$references['requested'], $references['checking']])->sort()->values()->all())
+        ->and($listedFor('not_checked'))->toBe([$references['not_checked']]);
+
+    $after = $summary();
+
+    expect(collect($after)->map(fn (int $count, string $key) => $count - $before[$key])->all())->toBe([
+        'done'        => 6,
+        'passed'      => 1,
+        'failed'      => 1,
+        'skipped'     => 1,
+        'in_qa'       => 2,
+        'not_checked' => 1,
+    ]);
+
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->where('listSummary', null));
+});
+
 test('the dashboard shows QA details to QA, and the urgent check lands on requested tickets only', function () {
     $engineer = User::factory()->create(['group_id' => $this->group->id]);
     $qa       = User::factory()->create(['group_id' => $this->group->id]);
@@ -1492,7 +1563,7 @@ test('the dashboard shows QA details to QA, and the urgent check lands on reques
 
             $verdicts = collect(TicketQaStatusEnum::cases())->filter->isVerdict()->map->value->all();
 
-            expect($rows->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
+            expect($rows->where('qa_status', '!=', TicketQaStatusEnum::CHECKING->value)->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
                 ->and($rows->pluck('qa_status')->intersect($verdicts)->all())->toBe([])
                 ->and($rows->pluck('id'))->toContain($deploying->id)
                 ->and($rows->pluck('id'))->not->toContain($stillOpen->id);
@@ -3417,4 +3488,95 @@ test('an engineer writes an incident post-mortem on a ticket and customers canno
 
     expect(fn () => StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'mine', 'type' => 'post_mortem'], false))
         ->toThrow(Illuminate\Validation\ValidationException::class);
+});
+
+test('the QA list hides the status filter, keeps tickets being QA checked whatever their status, and the dashboard lists who is checking what', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $checkingOpen    = StoreTicket::make()->action($this->group, ['subject' => 'Checked while still in progress']);
+    $checkingByOther = StoreTicket::make()->action($this->group, ['subject' => 'Another checker has it']);
+    $openUnchecked   = StoreTicket::make()->action($this->group, ['subject' => 'Still in progress, not in QA']);
+    $done            = StoreTicket::make()->action($this->group, ['subject' => 'Done, waiting for QA']);
+    Ticket::whereKey($checkingOpen->id)->update(['status' => TicketStatusEnum::IN_PROGRESS, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($checkingByOther->id)->update(['status' => TicketStatusEnum::ASSIGNED, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $otherQa->id]);
+    Ticket::whereKey($openUnchecked->id)->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+    Ticket::whereKey($done->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+
+    actingAs($qa);
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) {
+        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+        expect($keys)->not->toContain('status')
+            ->and(array_slice($keys, 0, 2))->toBe(['qa_checker', 'qa_status']);
+    });
+    expect($qaListIds())->toContain($checkingOpen->id, $done->id)->not->toContain($openUnchecked->id, $checkingByOther->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($checkingByOther->id)
+        ->and($qaListIds(['elements' => ['status' => 'in_progress', 'qa_status' => '']]))->not->toContain($openUnchecked->id);
+
+    get(route('grp.tickets.list'))->assertInertia(function (AssertableInertia $page) {
+        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+        expect($keys[array_search('status', $keys) + 1])->toBe('qa_status');
+    });
+
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['qa_checking'])->pluck('id')->all())
+        ->toContain($checkingOpen->id, $checkingByOther->id)->not->toContain($done->id));
+});
+
+test('a pull request link is checked on GitHub before it is saved, and read from GitHub when the ticket opens', function () {
+    Cache::flush();
+    Http::fake([
+        'https://api.github.com/repos/acme/app/pulls/42/commits*' => Http::response([
+            [
+                'sha'      => 'abcdef1234567890',
+                'html_url' => 'https://github.com/acme/app/commit/abcdef1234567890',
+                'commit'   => ['message' => "Round each invoice line\n\nThe total now adds rounded lines", 'author' => ['name' => 'Louis', 'date' => '2026-09-30T10:00:00Z']],
+                'author'   => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis'],
+            ],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/42' => Http::response([
+            'number'   => 42,
+            'title'    => 'Fix invoice rounding',
+            'html_url' => 'https://github.com/acme/app/pull/42',
+            'state'    => 'closed',
+            'merged'   => true,
+            'draft'    => false,
+            'body'     => 'Rounds each line before adding them up',
+            'user'     => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis', 'html_url' => 'https://github.com/louis'],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/*' => Http::response(['message' => 'Not Found'], 404),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Invoice totals are off by a cent']);
+
+    expect(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://gitlab.com/acme/app/merge_requests/1']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://github.com/acme/app/pull/7']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($ticket->fresh()->pull_request_url)->toBeNull();
+
+    UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => ' https://github.com/acme/app/pull/42/files#diff ']);
+    expect($ticket->fresh()->pull_request_url)->toBe('https://github.com/acme/app/pull/42');
+
+    $read = GetTicketPullRequest::make()->handle($ticket->fresh());
+    expect($read['error'])->toBeNull()
+        ->and($read['commits'])->toBeNull()
+        ->and($read['pull_request']['title'])->toBe('Fix invoice rounding')
+        ->and($read['pull_request']['state'])->toBe('merged')
+        ->and($read['pull_request']['author']['login'])->toBe('louis');
+
+    $commits = GetTicketPullRequest::make()->handle($ticket->fresh(), true)['commits'];
+    expect($commits)->toHaveCount(1)
+        ->and($commits[0]['short_sha'])->toBe('abcdef1')
+        ->and($commits[0]['subject'])->toBe('Round each invoice line')
+        ->and($commits[0]['author'])->toBe('louis')
+        ->and($commits[0]['date'])->toBe('2026-09-30T10:00:00Z');
+
+    UpdateTicketPullRequest::make()->action($ticket->fresh(), ['pull_request_url' => null]);
+    expect($ticket->fresh()->pull_request_url)->toBeNull()
+        ->and(GetTicketPullRequest::make()->handle($ticket->fresh()))->toBe(['pull_request' => null, 'commits' => null, 'error' => null]);
 });

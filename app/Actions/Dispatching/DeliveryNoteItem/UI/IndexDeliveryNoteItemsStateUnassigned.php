@@ -46,6 +46,7 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
             ->select($this->getDeliveryNoteItemBaseSelect())
             ->addSelect([
                  'un_numbers' => $this->getUnNumbersSubquery(),
+                'indivisible_set' => $this->getIndivisibleSetSubquery(),
             ])
             ->allowedSorts($this->getDeliveryNoteItemBaseSorts())
             ->allowedFilters([$globalSearch])

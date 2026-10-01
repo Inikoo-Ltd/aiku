@@ -10,6 +10,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
@@ -32,6 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomersInOverview extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use WithCustomersSubNavigation;
 
     private Group|Shop|Organisation $parent;

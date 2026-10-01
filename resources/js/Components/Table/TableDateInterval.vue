@@ -31,8 +31,6 @@ watch(selectedPeriodType, (newValue) => {
     data: {
       dateInterval: newValue
     },
-    onStart: () => console.log('Reloading...'),
-    onFinish: () => console.log('Done.'),
     headers: {
       'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone
     }

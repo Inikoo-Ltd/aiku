@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage } from "@far"
 import { faBarcode, faStar } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -152,7 +152,6 @@ watch(
   { immediate: true }
 )
 
-console.log("MasterVariantShowcase props:", props)
 </script>
 
 <template>
@@ -168,7 +167,7 @@ console.log("MasterVariantShowcase props:", props)
 
             <div v-else class="flex flex-col items-center text-gray-400">
               <FontAwesomeIcon icon="image" class="text-2xl mb-1" fixed-width />
-              <span class="text-[11px]">{{ trans("No product image") }}</span>
+              <span class="text-[11px]">{{ ctrans("No product image") }}</span>
             </div>
 
             <span v-if="selectedProduct?.unit"
@@ -210,7 +209,7 @@ console.log("MasterVariantShowcase props:", props)
                 : 'border-gray-200 hover:border-gray-300'" @click="selectProduct(index)">
                 <!-- ⭐ LEADER BADGE -->
                 <span v-if="product.is_leader" class="absolute top-1 right-1">
-                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')" fixed-width/>
+                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="ctrans('Leader')" fixed-width/>
                 </span>
 
 
@@ -238,30 +237,30 @@ console.log("MasterVariantShowcase props:", props)
           <div class="text-lg font-semibold text-gray-800">
             <ProductUnitLabel v-if="selectedProduct?.units" :units="selectedProduct.units" :unit="selectedProduct.unit"class="mr-2" />
               {{ selectedProduct?.name }}
-             <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')" fixed-width />
+             <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="ctrans('Leader')" fixed-width />
           </div>
 
           <dl class="space-y-2 text-sm">
             <div class="flex justify-between">
-              <dt class="text-gray-500">{{ trans("Since") }}</dt>
+              <dt class="text-gray-500">{{ ctrans("Since") }}</dt>
               <dd class="font-medium">
                 {{ useFormatTime(selectedProduct?.created_at) }}
               </dd>
             </div>
 
             <div class="flex justify-between">
-              <dt class="text-gray-500">{{ trans("Weight") }}</dt>
+              <dt class="text-gray-500">{{ ctrans("Weight") }}</dt>
               <dd class="font-medium">{{ selectedProduct?.gross_weight }}</dd>
             </div>
 
             <div class="flex justify-between">
-              <dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
+              <dt class="text-gray-500">{{ ctrans("Dimensions") }}</dt>
               <dd class="font-medium">{{ selectedProduct?.marketing_dimensions }}</dd>
             </div>
 
             <div class="flex justify-between">
               <dt class="text-gray-500 flex items-center gap-1">
-                {{ trans("Barcode") }}
+                {{ ctrans("Barcode") }}
                 <FontAwesomeIcon :icon="faBarcode" fixed-width />
               </dt>
               <dd class="font-medium">{{ selectedProduct?.barcode }}</dd>

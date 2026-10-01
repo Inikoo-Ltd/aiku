@@ -35,6 +35,8 @@ class StockDeliveryUnderOverDeliveredItemResource extends JsonResource
             'difference_units'      => (float) $item->difference_units,
             'difference_skos'       => $item->difference_skos === null ? null : (float) $item->difference_skos,
             'difference_percentage' => $item->difference_percentage === null ? null : (float) $item->difference_percentage,
+            'difference_amount'     => $item->difference_amount === null ? null : (float) $item->difference_amount,
+            'currency_code'         => $item->currency_code,
         ];
     }
 }

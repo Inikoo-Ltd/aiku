@@ -10,7 +10,7 @@ namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\UI\Catalogue\ChargeTabsEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Models\Billables\Charge;
@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowCharge extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Charge $charge): Charge
     {

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 
+use Illuminate\Support\Arr;
 use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaApiAction;
@@ -55,7 +56,7 @@ class StoreApiOrderTransaction extends RetinaApiAction
             ], 409);
         }
 
-        $this->ensureProductIsPurchasableByCustomer($portfolio->item instanceof Product ? $portfolio->item : null, $order->customer);
+        $this->ensureProductIsPurchasableByCustomer($portfolio->item instanceof Product ? $portfolio->item : null, $order->customer, Arr::get($modelData, 'quantity_ordered'));
 
         return StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
 

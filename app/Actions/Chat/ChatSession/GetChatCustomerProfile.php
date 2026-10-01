@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -145,7 +146,7 @@ class GetChatCustomerProfile
      *
      * @return Collection<int, ChatSession|MetaChatSession>
      */
-    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession $current): Collection
+    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession|null $current = null): Collection
     {
         $columns = ['id', 'ulid', 'topic', 'status', 'metadata', 'created_at', 'closed_at', 'last_visitor_message_at', 'last_agent_message_at'];
 
@@ -220,6 +221,7 @@ class GetChatCustomerProfile
             $organisation->slug,
             $shop->slug,
             $customer->slug,
+            'tab' => CustomerTabsEnum::COMMUNICATIONS->value,
         ]);
     }
 

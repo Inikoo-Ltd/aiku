@@ -8,11 +8,11 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableGuests from "@/Components/Tables/Grp/SysAdmin/TableGuests.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { faUserSlash } from "@fal";
+import { faUserSlash, faUserCircle } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { PageHeadingTypes } from "@/types/PageHeading";
 
-library.add(faUserSlash);
+library.add(faUserSlash, faUserCircle);
 
 defineProps<{
   data: object

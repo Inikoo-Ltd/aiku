@@ -32,7 +32,7 @@ class GenerateJobOrderItemTasks
         }
 
         foreach ($artefact->manufactureTasks()->get() as $manufactureTask) {
-            $tasks[] = JobOrderItemTask::firstOrCreate(
+            $task = JobOrderItemTask::firstOrCreate(
                 [
                     'job_order_item_id'   => $jobOrderItem->id,
                     'manufacture_task_id' => $manufactureTask->id,
@@ -47,6 +47,12 @@ class GenerateJobOrderItemTasks
                     'quantity_required' => $jobOrderItem->quantity * $manufactureTask->pivot->units_per_artefact,
                 ]
             );
+
+            if ($task->state == JobOrderItemTaskStateEnum::TODO && $task->position != $manufactureTask->pivot->position) {
+                $task->update(['position' => $manufactureTask->pivot->position]);
+            }
+
+            $tasks[] = $task;
         }
 
         return $tasks;

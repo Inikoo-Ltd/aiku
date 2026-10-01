@@ -43,9 +43,11 @@ const props = withDefaults(defineProps<{
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
     showDescription?: boolean
+    showComments?: boolean
+    labelReporterOnMobile?: boolean
     canCommentInternally?: boolean
     translateRoutes?: { ticket: string; comment: string }
-}>(), { commentsNewestFirst: true, showDescription: true, canCommentInternally: false })
+}>(), { commentsNewestFirst: true, showDescription: true, showComments: true, canCommentInternally: false, labelReporterOnMobile: false })
 
 const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
@@ -131,7 +133,8 @@ const submit = () => {
 <template>
     <div class="space-y-4">
         <div v-if="showDescription" class="bg-white rounded-lg border-2 border-[--app-accent-muted] p-5 shadow-sm">
-            <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
+            <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex flex-wrap items-center gap-x-2 gap-y-1" :class="labelReporterOnMobile && 'max-lg:-mx-5 max-lg:px-5'">
+                <span v-if="labelReporterOnMobile" class="w-full text-[10px] font-medium uppercase tracking-wide text-gray-400 lg:hidden">{{ ctrans("Reporter") }}</span>
                 <TicketUserHoverCard
                     :name="ticket.reporter"
                     :avatar="ticket.reporter_avatar"
@@ -145,6 +148,7 @@ const submit = () => {
                 <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="ctrans('Raised from Slack')" :icon="faSlack" class="text-gray-500" fixed-width />
             </div>
+            <slot name="card-header-footer" />
             <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
             <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-[--app-accent-strong] hover:underline">{{ ticket.reference_url }}</a>
             <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
@@ -154,7 +158,9 @@ const submit = () => {
 
         <slot name="after-description" />
 
-        <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.type === 'post_mortem' ? 'border-red-300 bg-red-50' : form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
+        <slot name="before-comments" />
+
+        <form v-show="showComments" class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.type === 'post_mortem' ? 'border-red-300 bg-red-50' : form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
             <TicketComposer ref="composer" v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="ctrans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
@@ -171,20 +177,20 @@ const submit = () => {
             </div>
         </form>
 
-        <div v-if="comments.length > 1" class="ml-6 flex justify-end text-xs text-gray-500">
+        <div v-if="comments.length > 1" v-show="showComments" class="ml-6 flex justify-end text-xs text-gray-500">
             <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="ctrans('Sort comments')" @click="toggleCommentOrder">
                 {{ isNewestFirst ? "↓" : "↑" }} {{ isNewestFirst ? ctrans("Newest first") : ctrans("Oldest first") }}
             </button>
         </div>
 
-        <div class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
+        <div v-show="showComments" class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
             <div
                 v-for="comment in sortedComments"
                 :key="comment.id"
                 class="rounded-md border px-3 py-2 text-sm"
                 :class="comment.type === 'post_mortem' ? 'bg-red-50 border-red-200' : comment.has_qa_verdict ? 'bg-purple-50 border-purple-200' : comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
-                <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
+                <div class="text-xs text-gray-500 mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
                         <TicketUserHoverCard
                             :name="comment.author"

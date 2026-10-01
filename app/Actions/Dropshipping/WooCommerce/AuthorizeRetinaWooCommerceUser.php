@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceAuthorizationToken;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use Illuminate\Console\Command;
@@ -101,7 +102,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
                 ])
                 ->get($endpoint);
         } catch (\Throwable $e) {
-            $this->logStoreCheckFailure($endpoint, $this->connectionFailureReason($e), ['exception' => $e::class, 'error' => $e->getMessage()]);
+            $this->logStoreCheckFailure($endpoint, WooCommerceConnectionFailureEnum::fromThrowable($e)->value, ['exception' => $e::class, 'error' => $e->getMessage()]);
 
             $fail($this->connectionFailureMessage($e));
 
@@ -162,28 +163,14 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         $fail(__('Your store answered with :status but did not return the WooCommerce REST API, please check your store url points to the WordPress installation.', ['status' => $response->status()]));
     }
 
-    protected function connectionFailureReason(\Throwable $e): string
-    {
-        $message = strtolower($e->getMessage());
-
-        return match (true) {
-            str_contains($message, 'could not resolve host'), str_contains($message, 'name or service not known') => 'dns_failure',
-            str_contains($message, 'ssl certificate problem'), str_contains($message, 'certificate verify failed'), str_contains($message, 'ssl'), str_contains($message, 'tls') => 'ssl_failure',
-            str_contains($message, 'connection refused'), str_contains($message, "couldn't connect to server") => 'connection_refused',
-            str_contains($message, 'timed out'), str_contains($message, 'timeout') => 'timeout',
-            str_contains($message, 'too many redirects'), str_contains($message, 'redirect') => 'redirect_loop',
-            default => 'connection_failure',
-        };
-    }
-
     protected function connectionFailureMessage(\Throwable $e): string
     {
-        return match ($this->connectionFailureReason($e)) {
-            'dns_failure' => __('We could not resolve your store domain, please check the store url is spelled correctly and the domain is live.'),
-            'ssl_failure' => __('Your store SSL certificate could not be verified, it may be expired, self signed or incomplete, please renew it with your hosting provider.'),
-            'connection_refused' => __('Your store refused our connection because its hosting or firewall is blocking our servers. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
-            'timeout' => __('Your store did not answer within 2 minutes. This is usually a firewall blocking our servers or a very slow host. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
-            'redirect_loop' => __('Your store url redirects in a loop, please enter the final address of your store.'),
+        return match (WooCommerceConnectionFailureEnum::fromThrowable($e)) {
+            WooCommerceConnectionFailureEnum::DNS => __('We could not resolve your store domain, please check the store url is spelled correctly and the domain is live.'),
+            WooCommerceConnectionFailureEnum::TLS => __('Your store SSL certificate could not be verified, it may be expired, self signed or incomplete, please renew it with your hosting provider.'),
+            WooCommerceConnectionFailureEnum::REFUSED => __('Your store refused our connection because its hosting or firewall is blocking our servers. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
+            WooCommerceConnectionFailureEnum::TIMEOUT => __('Your store did not answer within 2 minutes. This is usually a firewall blocking our servers or a very slow host. Ask your hosting provider to allow our IP addresses: :ips', ['ips' => config('app.outgoing_ips')]),
+            WooCommerceConnectionFailureEnum::REDIRECTED => __('Your store url redirects in a loop, please enter the final address of your store.'),
             default => __('Unable to connect to the WooCommerce store, please check your store url.'),
         };
     }

@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Procurement;
 
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -82,11 +81,7 @@ class StockDeliveryItemResource extends JsonResource
         $unitsPerSko = $item->unitsPerSko();
 
         $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
-            && in_array($item->stockDelivery?->state, [
-                StockDeliveryStateEnum::RECEIVED,
-                StockDeliveryStateEnum::CHECKED,
-                StockDeliveryStateEnum::BOOKING_IN,
-            ], true);
+            && $item->stockDelivery?->isInGoodsIn();
 
         $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
         $canCheck = in_array($item->state, [

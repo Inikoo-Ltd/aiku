@@ -2,7 +2,7 @@
 import { routeType } from "@/types/route"
 import { onMounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import axios from "axios"
@@ -42,10 +42,9 @@ const fetchData = async (pageNumber = 1, pageSize = 10, showLoading = false) => 
 			meta.value = response.data.meta
 		}
 	} catch (error) {
-		console.log(error)
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to fetch data"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to fetch data"),
 			type: "error",
 		})
 	} finally {

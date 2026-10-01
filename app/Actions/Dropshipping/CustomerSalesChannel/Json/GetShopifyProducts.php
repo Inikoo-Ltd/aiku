@@ -45,6 +45,10 @@ class GetShopifyProducts extends OrgAction
     {
         $numberVariants = Arr::get($product, 'number_variants', 0);
 
+        if ($numberVariants === 1) {
+            return Arr::get($product, 'sku_list.0') ?: null;
+        }
+
         if ($numberVariants < 2 || $numberVariants >= GetShopifyListedProducts::VARIANTS_READ_PER_PRODUCT) {
             return null;
         }

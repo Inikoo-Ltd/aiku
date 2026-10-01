@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetImagesFromTradeUnits;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnitImages extends OrgAction
 {
+    use WithTradeUnitMediaEditAuthorisation;
     use WithActionUpdate;
     use WithImageUpdate;
 

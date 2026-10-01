@@ -229,6 +229,9 @@ class UpdateCustomer extends OrgAction
                 })
                 ->with(['organisation', 'billingAddress', 'deliveryAddress', 'shop.collectionAddress'])
                 ->each(function ($order) use ($customer) {
+                    if (!$order->canChangeTaxCategory()) {
+                        return;
+                    }
                     $order->update([
                         'tax_category_id' => GetTaxCategory::run(
                             country: $order->organisation->country,

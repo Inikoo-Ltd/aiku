@@ -142,7 +142,7 @@ const fetchProduct = async (transId?: string|number|null) => {
         })
 
     } catch (error: any) {
-        console.log('error', error)
+        console.error('error', error)
     }
 }
 
@@ -396,8 +396,7 @@ const showChartButton = computed(() => {
 })
 
 const canOrder = computed(() => {
-    if (props.product.stock > 0) return true
-    return false
+    return props.product.stock > 0 || !!props.product.pre_order
 })
 
 const hoveredButton = ref<string | null>(null)

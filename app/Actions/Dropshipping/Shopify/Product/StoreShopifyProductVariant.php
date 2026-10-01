@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
@@ -21,6 +22,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Sentry;
 
 class StoreShopifyProductVariant extends RetinaAction
@@ -86,6 +88,33 @@ class StoreShopifyProductVariant extends RetinaAction
             return [false, $errorMessage];
         }
 
+
+        $replacedVariantOwner = self::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $productID);
+
+        if ($replacedVariantOwner !== null) {
+            $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
+
+            $sharesItsVariantWithAnotherPortfolio = $portfolio->platform_product_variant_id && Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+                ->where('id', '!=', $portfolio->id)
+                ->where('platform_product_variant_id', $portfolio->platform_product_variant_id)
+                ->exists();
+
+            if ($sharesItsVariantWithAnotherPortfolio) {
+                $errorMessage = self::replacedVariantMessage($replacedVariantOwner, false);
+            }
+
+            UpdatePortfolio::run($portfolio, array_merge(
+                ['errors_response' => $this->portfolioErrorResponse($errorMessage)],
+                $replacedVariantOwner === false || $sharesItsVariantWithAnotherPortfolio ? [] : [
+                    'platform_product_id'         => null,
+                    'platform_product_variant_id' => null,
+                    'platform_status'             => false,
+                    'sku'                         => ($portfolio->item ? StorePortfolio::make()->getSKU($portfolio->item) : null) ?? $portfolio->sku,
+                ]
+            ));
+
+            return [false, $errorMessage];
+        }
 
         try {
             // GraphQL mutation to update product variants
@@ -196,12 +225,19 @@ class StoreShopifyProductVariant extends RetinaAction
 
             $variantId = Arr::get($body, 'data.productVariantsBulkCreate.productVariants.0.id');
             if ($variantId) {
-                UpdatePortfolio::run($portfolio, [
-                    'platform_product_variant_id' => $variantId,
-                    'last_stock_value'            => $quantityToSend,
-                    'stock_last_updated_at'       => now(),
-                    'errors_response'             => null
+                [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, null, $variantId, [
+                    'last_stock_value'      => $quantityToSend,
+                    'stock_last_updated_at' => now(),
+                    'errors_response'       => null
                 ]);
+
+                if (!$linked) {
+                    UpdatePortfolio::run($portfolio, [
+                        'errors_response' => $this->portfolioErrorResponse($refusal)
+                    ]);
+
+                    return [false, $refusal];
+                }
             }
 
             SaveShopifyProductData::run($portfolio);
@@ -238,5 +274,100 @@ class StoreShopifyProductVariant extends RetinaAction
             $command->info("\nProduct variant updated successfully");
             print_r($result);
         }
+    }
+
+    /**
+     * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product.
+     * When other active portfolios of the channel are linked to that product, the only variant is this
+     * portfolio's when it carries its product code, or when it is its stored variant or carries its sku and
+     * no other portfolio holds that variant or has that sku as its code. Otherwise it is another product's
+     * listing: adding this one would silently take it away, so the caller refuses and unlinks this portfolio
+     * from that product, giving it back its own sku so it can get a listing of its own. When this portfolio
+     * holds the same variant as another one it can not be told whose it is, so it is refused but left linked.
+     *
+     * @return string|false|null  the product code of the portfolio the variant belongs to, false when it could not be checked
+     */
+    public static function ownerOfStandaloneVariantThatWouldBeReplaced(Portfolio $portfolio, string $productId): string|false|null
+    {
+        $siblings = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->where('id', '!=', $portfolio->id)
+            ->where('status', true)
+            ->where('platform_product_id', $productId)
+            ->orderBy('id')
+            ->get(['id', 'item_code', 'sku', 'platform_product_variant_id']);
+
+        if ($siblings->isEmpty()) {
+            return null;
+        }
+
+        $client = $portfolio->customerSalesChannel?->user?->getShopifyClient(true);
+
+        if (!$client) {
+            return false;
+        }
+
+        $query = <<<'QUERY'
+        query productOnlyVariant($id: ID!) {
+          product(id: $id) {
+            variants(first: 2) {
+              edges {
+                node {
+                  id
+                  sku
+                }
+              }
+            }
+          }
+        }
+        QUERY;
+
+        try {
+            $response = $client->request($query, ['id' => $productId]);
+        } catch (Exception) {
+            return false;
+        }
+
+        if (!empty($response['errors']) || !isset($response['body'])) {
+            return false;
+        }
+
+        $body = $response['body']->toArray();
+
+        if (Arr::has($body, 'errors')) {
+            return false;
+        }
+
+        $variants = Arr::get($body, 'data.product.variants.edges', []);
+
+        if (count($variants) !== 1) {
+            return null;
+        }
+
+        $variantId  = (string)Arr::get($variants, '0.node.id');
+        $variantSku = Str::lower(trim((string)Arr::get($variants, '0.node.sku')));
+        $is         = fn (?string $value) => $variantSku !== '' && Str::lower(trim((string)$value)) === $variantSku;
+
+        $siblingOwner = $siblings->first(fn (Portfolio $sibling) => $sibling->platform_product_variant_id === $variantId)
+            ?? $siblings->first(fn (Portfolio $sibling) => $is($sibling->item_code));
+
+        if ($is($portfolio->item_code) || (!$siblingOwner && ($portfolio->platform_product_variant_id === $variantId || $is($portfolio->sku)))) {
+            return null;
+        }
+
+        $owner = $siblingOwner
+            ?? $siblings->first(fn (Portfolio $sibling) => $is($sibling->sku))
+            ?? $siblings->first();
+
+        return (string)$owner->item_code;
+    }
+
+    public static function replacedVariantMessage(string|false $replacedVariantOwner, bool $unlinked = true): string
+    {
+        if ($replacedVariantOwner === false) {
+            return 'Could not check the variants of this Shopify product, nothing was changed';
+        }
+
+        return 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, '
+            .($unlinked ? 'so this product was unlinked from it. Upload it to give it a listing of its own' : 'so nothing was changed. Upload this product to give it a listing of its own');
     }
 }

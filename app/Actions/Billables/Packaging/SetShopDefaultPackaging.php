@@ -8,6 +8,7 @@
 namespace App\Actions\Billables\Packaging;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class SetShopDefaultPackaging extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(Packaging $packaging): Shop
     {
         $shop = $packaging->shop;

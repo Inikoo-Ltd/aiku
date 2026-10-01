@@ -28,12 +28,12 @@ class BroadcastChatAiDraft implements ShouldBroadcastNow
     use InteractsWithSockets;
 
     public string $channelName;
-    public int $draftId;
+    public ?int $draftId;
 
-    public function __construct(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft)
+    public function __construct(ChatSession|MetaChatSession $chatSession, ?ChatAiDraft $draft)
     {
         $this->channelName = ($chatSession instanceof MetaChatSession ? 'meta-chat-session.' : 'chat-session.').$chatSession->ulid;
-        $this->draftId     = $draft->id;
+        $this->draftId     = $draft?->id;
     }
 
     public function broadcastOn(): array

@@ -223,6 +223,10 @@ Route::middleware(
         ->name("devops.")
         ->group(__DIR__."/devops.php");
 
+    Route::prefix("ai")
+        ->name("ai.")
+        ->group(__DIR__."/ai.php");
+
     Route::fallback(function () {
         $status = 404;
 

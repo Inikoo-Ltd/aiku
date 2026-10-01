@@ -1,4 +1,5 @@
-<x-mail::message :shop="$shop" :url="$shop_url">
+@php($shop ??= config('app.name'))
+<x-mail::message :shop="$shop" :url="$shop_url ?? config('app.url')">
 {{-- Greeting --}}
 @if (! empty($greeting))
 # {{ $greeting }}

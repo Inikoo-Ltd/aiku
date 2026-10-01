@@ -8,6 +8,8 @@
 
 use App\Broadcasting\ChatListChannel;
 use App\Broadcasting\MetaChatSessionChannel;
+use App\Broadcasting\WhatsappCallChannel;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
@@ -89,6 +91,10 @@ Broadcast::channel('grp.org.{organisationId}.production-queues', function (User 
             "productions_operations.$productionId.view",
             "productions_procurement.$productionId.view",
         ]));
+});
+
+Broadcast::channel('grp.shop.{shopId}.new-orders', function (User $user, int $shopId) {
+    return GetUserOrderAlerts::make()->canHear($user, $shopId);
 });
 
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
@@ -214,6 +220,8 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
 Broadcast::channel('meta-chat-session.{ulid}', MetaChatSessionChannel::class);
 
 Broadcast::channel('chat-list.{shopId}', ChatListChannel::class);
+
+Broadcast::channel('whatsapp-calls.{shopId}', WhatsappCallChannel::class);
 
 Broadcast::channel('website.{websiteId}.analytics', function (User $user, int|string $websiteId) {
     return Website::where('id', $websiteId)->value('group_id') === $user->group_id;

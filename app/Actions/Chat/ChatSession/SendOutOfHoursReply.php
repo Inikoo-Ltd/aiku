@@ -83,7 +83,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             || !$shop
             || $chatSession->is_spam
             || $chatSession->is_rubbish
-            || ($chatSession instanceof ChatSession && $chatSession->is_carrier)
+            || ($chatSession instanceof ChatSession && ($chatSession->is_carrier || $chatSession->is_colleague))
             || IsWithinWorkingHours::run($shop, now())
             || $this->lastAgentMessageAt($chatSession)?->gt(now()->subHour())) {
             return false;
@@ -112,12 +112,10 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $kind = $claimLines === null ? ChatAutomationKindEnum::OUT_OF_HOURS : ChatAutomationKindEnum::CLAIM_DETAILS;
         $text = $this->text($shop, !$replied, $claimLines, $this->hasSaidWhatTheyNeed($chatSession, $details['text']), $byEmail);
 
-        $chatSession->update([
-            'metadata' => array_merge($chatSession->metadata ?? [], array_filter([
-                self::SENT_KEY  => now()->toISOString(),
-                self::CLAIM_KEY => $claimLines === null ? null : now()->toISOString(),
-            ])),
-        ]);
+        SetChatSessionMetadata::run($chatSession, array_filter([
+            self::SENT_KEY  => now()->toISOString(),
+            self::CLAIM_KEY => $claimLines === null ? null : now()->toISOString(),
+        ]));
 
         if ($chatSession instanceof MetaChatSession) {
             return SendMetaChatGreeting::run($chatSession, $text, $claimLines === null ? self::SENT_KEY : self::CLAIM_KEY, false);
@@ -140,8 +138,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     /**
      * Null unless the customer is reporting a problem with goods: then the details the agent will
-     * need that they have not sent yet. Only the model decides whether it is a claim; what is
-     * missing is read from what they sent.
+     * need that they have not sent yet. Only Jev's cascade decides whether it is a claim (a chat
+     * model when Jev cannot be asked); what is missing is read from what they sent.
      *
      * ponytail: every out of hours message re-reads the wait until a claim is found; store how far
      * it read if the model calls ever show up on the bill.
@@ -166,6 +164,12 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     private function isClaim(ChatSession|MetaChatSession $chatSession, string $text): bool
     {
+        $turn = ClassifyChatTurn::forSession($chatSession);
+
+        if ($turn) {
+            return $turn['claim'];
+        }
+
         $definitions = ChatTopicEnum::definitions();
         $excerpt     = mb_substr($text, 0, 3000);
 

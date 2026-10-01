@@ -6,12 +6,6 @@
 
 <script setup lang="ts">
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faInventory, faConveyorBeltAlt,
-    faChevronDown, faPalletAlt, faAbacus,faCloudRainbow,faShoppingCart,faMountains, faTasksAlt, faTruck,
-    faFlaskPotion,faFillDrip,faBullhorn,faBadgePercent,faChargingStation, faBallot, faSlidersH, faChartLineDown,
-  faArrowFromLeft,faArrowToBottom, faWarehouse, faFax
-} from "@fal"
 import { generateNavigationName, generateCurrentString } from '@/Composables/useConvertString'
 import '@/Composables/Icon/ProductionsStateIcon'
 
@@ -21,12 +15,7 @@ import NavigationGroup from "@/Layouts/Grp/NavigationGroup.vue"
 import NavigationScope from "@/Layouts/Grp/NavigationScope.vue"
 import NavigationHorizontal from "@/Layouts/Grp/NavigationHorizontal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { trans } from "laravel-vue-i18n"
-
-library.add(faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt,
-faAbacus, faCloudRainbow,faShoppingCart,faMountains, faTasksAlt, faTruck, faFlaskPotion, faFillDrip, faBullhorn,faBadgePercent,faChargingStation,
-faBallot, faSlidersH, faChartLineDown,faArrowFromLeft,faArrowToBottom, faWarehouse, faFax
-)
+import { ctrans } from "@/Composables/useTrans"
 
 const layout = inject('layout', layoutStructure)
 
@@ -163,7 +152,7 @@ const iconList: { [key: string]: string } = {
                                 :key="itemKey"
                                 icon="fal fa-warehouse"
                                 :navs="orgNav[Object.keys(orgNav)[0]]"
-                                :scope="trans('Warehouse') + ` (${Object.keys(orgNav)[0]})`"
+                                :scope="ctrans('Warehouse') + ` (${Object.keys(orgNav)[0]})`"
                                 root="grp.org.warehouses.show"
                             />
 
@@ -188,7 +177,7 @@ const iconList: { [key: string]: string } = {
                             :key="itemKey"
                             icon="fal fa-fill-drip"
                             :navs="orgNav[Object.keys(orgNav)[0]]"
-                            :scope="trans('Production')"
+                            :scope="ctrans('Production')"
                             root="grp.org.productions.show."
                         />
                     </template>

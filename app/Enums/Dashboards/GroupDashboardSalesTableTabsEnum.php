@@ -8,6 +8,7 @@
 
 namespace App\Enums\Dashboards;
 
+use App\Actions\Helpers\Dashboard\AddDashboardBacklogColumns;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
@@ -58,6 +59,8 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice Categories'),
@@ -141,11 +144,26 @@ enum GroupDashboardSalesTableTabsEnum: string
             };
         }
 
-        return [
+        $rows = $bool
+            ? match ($this) {
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => $platformTimeSeriesStats,
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => $faireTimeSeriesStats,
+            }
+        : match ($this) {
+            GroupDashboardSalesTableTabsEnum::ORGANISATIONS       => $organisationTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::SHOPS               => $shopTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::BRANDS              => $brandTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES  => $invoiceCategoryTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => $salesChannelTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => $dropshippingShopTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT   => $fulfilmentShopTimeSeriesStats,
+        };
+
+        return AddDashboardBacklogColumns::run([
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ];
+        ], array_values($rows), true);
     }
 
     public static function tables(Group $group, array $timeSeriesData = [], ?bool $bool = false): array

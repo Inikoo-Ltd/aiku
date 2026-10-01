@@ -8,6 +8,8 @@
 
 namespace App\Console;
 
+use App\Actions\Ordering\PreOrder\AllocatePreOrderStock;
+use App\Actions\Ordering\PreOrder\ProcessPreOrders;
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
@@ -24,6 +26,7 @@ use App\Actions\Comms\Outbox\AbandonedCart\RunAbandonedCartReminderEmailBulkRuns
 use App\Actions\Comms\Outbox\AbandonedCheckout\RunAbandonedCheckoutEmailBulkRuns;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRuns;
+use App\Actions\Comms\Outbox\DueToReorder\RunDueToReorderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
@@ -41,6 +44,7 @@ use App\Actions\CRM\Customer\PruneRetinaApiRequests;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorAICredit;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
@@ -75,7 +79,6 @@ use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -100,17 +103,7 @@ class Kernel extends ConsoleKernel
            number wins and a missed night repairs itself. */
         $schedule->command('traffic-source:fetch-meta-costs --days=2')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
         $schedule->command('sync:customers-to-google-ads --all')->dailyAt('04:45')->timezone('UTC')->onOneServer()->withoutOverlapping(120);
-        /* Proposing is chained to the fetch rather than scheduled after it. The suggestions read the ad
-           groups, ads and keywords the fetch has just written, and two entries half an hour apart only
-           held while the fetch stayed under half an hour: it runs per shop, so it grows with every
-           account connected, and the day it overran the proposals would quietly be built on yesterday.
-
-           `then` and not `onSuccess`: the fetch reports failure if any single shop failed, and one
-           unreachable account should not cost every other shop its suggestions. The withoutOverlapping
-           lock is still held while this callback runs, so the pair cannot overlap with itself either. */
-        $schedule->command('google-ads:fetch-campaigns')
-            ->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()
-            ->then(fn () => Artisan::call('google-ads:propose'));
+        $schedule->command('google-ads:fetch-campaigns')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
         /* Three days rather than one: an account's own time zone can still be on the previous day at
            05:15 UTC, and Google keeps adjusting a day's cost after it closes. Re-fetching a day
            replaces its figure, and takes precedence over the same day posted by an account's script,
@@ -230,12 +223,39 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('shops:order_alert_sizes')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'CalculateShopOrderAlertSizes',
+                ),
+                name: 'CalculateShopOrderAlertSizes',
+                type: 'command',
+                scheduledAt: '02:45'
+            );
+
+            $this->logSchedule(
                 $schedule->job(RemindChannelOrdersOnHold::makeJob())->dailyAt('08:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RemindChannelOrdersOnHold',
                 ),
                 name: 'RemindChannelOrdersOnHold',
                 type: 'job',
                 scheduledAt: '08:00'
+            );
+
+            $this->logSchedule(
+                $schedule->job(ProcessPreOrders::makeJob())->dailyAt('08:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ProcessPreOrders',
+                ),
+                name: 'ProcessPreOrders',
+                type: 'job',
+                scheduledAt: '08:15'
+            );
+
+            $this->logSchedule(
+                $schedule->job(AllocatePreOrderStock::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'AllocatePreOrderStock',
+                ),
+                name: 'AllocatePreOrderStock',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
             );
 
             $this->logSchedule(
@@ -270,6 +290,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorNightowlIngest',
                 ),
                 name: 'MonitorNightowlIngest',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorAICredit::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorAICredit',
+                ),
+                name: 'MonitorAICredit',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -560,6 +589,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('woo:retry-timed-out-uploads --dispatch --days=3 --max-attempts=3')->dailyAt('01:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RetryTimedOutWooUploads',
+                ),
+                name: 'RetryTimedOutWooUploads',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('woo:update-inventory')->everyThreeHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateWooStockInventories',
                 ),
@@ -678,6 +716,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunGoldRewardReminderEmailBulkRuns',
                 ),
                 name: 'RunGoldRewardReminderEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunDueToReorderEmailBulkRuns::makeJob())->dailyAt('15:30')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunDueToReorderEmailBulkRuns',
+                ),
+                name: 'RunDueToReorderEmailBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -921,6 +968,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('ai:process_time_series --from='.now()->subDay()->toDateString())->dailyAt('22:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ProcessAiTimeSeriesRecords',
+                ),
+                name: 'ProcessAiTimeSeriesRecords',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'PruneCustomerWebActivities',
                 ),
@@ -1120,6 +1176,33 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'PruneStaleChatAgentPresence',
                 ),
                 name: 'PruneStaleChatAgentPresence',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:learn-knowledge --days=7')->dailyAt('04:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'LearnChatKnowledge',
+                ),
+                name: 'LearnChatKnowledge',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('masters:price-tips')->dailyAt('05:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'GenerateMasterAssetPriceTips',
+                ),
+                name: 'GenerateMasterAssetPriceTips',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:hydrate-knowledge')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateChatKnowledge',
+                ),
+                name: 'HydrateChatKnowledge',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

@@ -20,6 +20,12 @@ class ResetOrderTaxCategory
 
     public function handle(Order $order, ?Command $command = null): Order
     {
+        if (!$order->canChangeTaxCategory()) {
+            $command?->error("Order $order->slug is invoiced or closed, its tax category is not changed");
+
+            return $order;
+        }
+
         $customer = $order->customer;
         if ($customer) {
             $taxNumber = $customer->taxNumber;

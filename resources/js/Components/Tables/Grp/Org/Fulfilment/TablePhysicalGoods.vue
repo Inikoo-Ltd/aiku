@@ -20,7 +20,7 @@ library.add(faRobot)
 
 const props = defineProps<{
     data: {}
-    state: string
+    state?: string
     tab?: string
 }>()
 
@@ -30,7 +30,6 @@ const emits = defineEmits<{
 }>()
 
 function physicalGoodsRoute(product: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case 'grp.org.fulfilments.show.catalogue.physical_goods.index':
             return route(

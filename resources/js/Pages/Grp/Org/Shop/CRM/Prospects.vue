@@ -17,15 +17,15 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import ProspectsDashboard from '@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Component } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileInvoice, faSeedling, faDownload } from "@fal"
+import { faFileInvoice, faSeedling, faDownload, faUserPlus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
-library.add(faFileInvoice, faSeedling, faDownload)
+library.add(faFileInvoice, faSeedling, faDownload, faUserPlus)
 
 const props = defineProps<{
   title: string
@@ -34,16 +34,13 @@ const props = defineProps<{
           current: string
           navigation: {}
       }
-      history : {}
-      lists : {}
-      prospects : {}
-      opt_in : {}
-      opt_out : {}
-      contacted : {}
-      failed : {}
-      success : {}
-      tagsList : {}
-      tagRoute : {}
+      history?: {}
+      prospects?: {}
+      opt_in?: {}
+      opt_out?: {}
+      contacted?: {}
+      failed?: {}
+      success?: {}
       upload_spreadsheet?: {}
       download_route: {
         xlsx: routeType
@@ -51,7 +48,6 @@ const props = defineProps<{
       }
 }>()
 
-console.log(props)
 
 const isModalUploadOpen = ref(false)
 
@@ -102,7 +98,7 @@ const downloadUrl = (type: string) => {
           <Button
               v-if="upload_spreadsheet"
               @click="() => isModalUploadOpen = true"
-              :label="trans('Attach file')"
+              :label="ctrans('Attach file')"
               icon="fal fa-upload"
               type="secondary"
           />

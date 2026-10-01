@@ -14,7 +14,6 @@ library.add(faInboxOut, faEnvelope, faSeedling, faShare, faCheck)
 const props = defineProps<{
     data : Object
 }>()
-console.log('dfdf',props)
 </script>
 
 

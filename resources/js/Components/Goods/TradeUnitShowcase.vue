@@ -100,7 +100,6 @@ const validImages = computed(() =>
 	})
 )
 
-console.log
 </script>
 
 

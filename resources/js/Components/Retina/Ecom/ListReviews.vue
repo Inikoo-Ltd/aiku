@@ -32,7 +32,6 @@ const props = defineProps<{
 
 const layout = inject("layout", {})
 
-console.log("d", props)
 
 const scopeIcon = (scope: string) => {
 	switch (scope) {

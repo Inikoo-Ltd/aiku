@@ -60,6 +60,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $platform_status for shopify: variant has correct location
  * @property array<array-key, mixed>|null $platform_possible_matches
  * @property string|null $platform_product_variant_id
+ * @property string|null $platform_sku the sku of the adopted Shopify variant when it is not ours
  * @property int $number_platform_possible_matches
  * @property bool $mark_for_update_stock
  * @property \Illuminate\Support\Carbon|null $stock_last_updated_at

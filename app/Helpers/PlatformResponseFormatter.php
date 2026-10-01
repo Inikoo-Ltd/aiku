@@ -105,6 +105,8 @@ class PlatformResponseFormatter
         'calls per second'                   => 'The channel limited how fast we may talk to your store for a moment. Nothing is wrong with your product, try again in a few minutes.',
         'request timeout'                    => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
         'timeout was reached'                => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'curl error 28'                      => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'error in api response: true'        => 'The channel did not give a usable answer. Nothing is wrong with your product: try again in a few minutes, and if it keeps happening check that your store is open and our app is still installed.',
         'internal error'                     => 'The channel hit a problem on its own side. Nothing is wrong on your side, try again in a few minutes.',
     ];
 
@@ -200,7 +202,9 @@ class PlatformResponseFormatter
 
         if ($this->isHtml($value)) {
             return [[
-                'message' => __('The store answered with a web page instead of data, it may be down, in maintenance mode or blocking the connection.'),
+                'message' => $this->isGatewayTimeout($value)
+                    ? __('The store timed out before answering (gateway timeout), it may be busy or too slow. Try again in a few minutes.')
+                    : __('The store answered with a web page instead of data, it may be down, in maintenance mode or blocking the connection.'),
                 'code'    => null,
             ]];
         }
@@ -432,6 +436,15 @@ class PlatformResponseFormatter
     private function isHtml(string $value): bool
     {
         return (bool)preg_match('/^<(!doctype|html|\?xml|body|head)/i', trim($value));
+    }
+
+    /**
+     * The host's own gateway page (nginx 504, Cloudflare 524) when the store is too slow, so the
+     * upload may still be completing on the store side.
+     */
+    private function isGatewayTimeout(string $value): bool
+    {
+        return (bool)preg_match('/<title>[^<]*\b(504|524)\b|gateway time-?out|a timeout occurred/i', $value);
     }
 
     private function isEmpty(string $value): bool

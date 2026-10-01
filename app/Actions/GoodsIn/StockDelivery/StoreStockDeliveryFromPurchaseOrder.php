@@ -16,7 +16,9 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
+use App\Models\Catalogue\Shop;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +41,12 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     {
         if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
+        }
+
+        if ($this->partnerCreatesItsOwnDeliveries($purchaseOrder)) {
+            throw ValidationException::withMessages([
+                'purchase_order_transaction_ids' => __(':partner deliveries are created automatically when :partner dispatches the order, book the goods in on it in Procurement > Partners', ['partner' => $purchaseOrder->parent->partner->name]),
+            ]);
         }
 
         $openAuroraStockDelivery = $purchaseOrder->stockDeliveries()
@@ -167,6 +175,25 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     public function jsonResponse(StockDelivery $stockDelivery): StockDeliveryResource
     {
         return new StockDeliveryResource($stockDelivery);
+    }
+
+    private function partnerCreatesItsOwnDeliveries(PurchaseOrder $purchaseOrder): bool
+    {
+        if (!$purchaseOrder->parent instanceof OrgPartner) {
+            return false;
+        }
+
+        $sellerShopIds = array_keys(data_get($purchaseOrder->parent->data, 'intercompany_customers', []));
+        if (!$sellerShopIds) {
+            return false;
+        }
+
+        $shops = Shop::whereIn('id', $sellerShopIds)->get(['migrated_to_aiku_on']);
+        if ($shops->contains(fn (Shop $shop) => !$shop->migrated_to_aiku_on)) {
+            return false;
+        }
+
+        return $purchaseOrder->created_at->gte($shops->max('migrated_to_aiku_on'));
     }
 
     private function getExchanges(PurchaseOrder|PurchaseOrderTransaction $model): array

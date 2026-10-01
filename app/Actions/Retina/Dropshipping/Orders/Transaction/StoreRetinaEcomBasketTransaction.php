@@ -39,7 +39,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             );
         }
 
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
+        $this->ensureProductIsPurchasableByCustomer($product, $customer, data_get($modelData, 'quantity'));
 
         if (!$order) {
             $order = StoreEcomOrder::make()->action($customer);

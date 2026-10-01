@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Traits\HasBucketImages;
@@ -128,6 +129,7 @@ class WebBlockProductResource extends JsonResource
                 ? null
                 : GetProductIncomingStock::make()->earliestEta($product),
             'back_in_stock'     => $back_in_stock,
+            'pre_order'         => GetProductPreOrder::make()->forWebsite(GetProductPreOrder::make()->handle($product)),
 
 
             'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),

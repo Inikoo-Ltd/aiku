@@ -24,7 +24,6 @@ const props = withDefaults(
 		}),
 	}
 )
-console.log(props.widget, "xxxxxxxxx")
 
 const locale = inject("locale", aikuLocaleStructure)
 const layoutStore = inject("layout", layoutStructure)

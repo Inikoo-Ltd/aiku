@@ -12,12 +12,14 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,16 +40,40 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $remaining = ((float) $this->stockDeliveryItem->unit_quantity_checked - (float) $this->stockDeliveryItem->unit_quantity_placed) / $this->stockDeliveryItem->unitsPerSko();
+        if ($this->stockDeliveryItem->state === StockDeliveryItemStateEnum::CANCELLED || !$this->stockDeliveryItem->stockDelivery->isInGoodsIn()) {
+            $validator->errors()->add('quantity', __('Stock can only be placed while the delivery is being booked in'));
 
-        if ((float) $this->get('quantity') > round($remaining, 4)) {
+            return;
+        }
+
+        $remaining = $this->remainingSkos($this->stockDeliveryItem);
+
+        if ($this->exceedsRemaining((float) $this->get('quantity'), $remaining)) {
             $validator->errors()->add('quantity', __('You can not place more than the checked quantity (:remaining remaining)', ['remaining' => round($remaining, 4)]));
         }
+    }
+
+    private function remainingSkos(StockDeliveryItem $stockDeliveryItem): float
+    {
+        return ((float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed) / $stockDeliveryItem->unitsPerSko();
+    }
+
+    private function exceedsRemaining(float $quantity, float $remaining): bool
+    {
+        return $quantity - $remaining > 0.00005;
     }
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
         $stockDeliveryItem = DB::transaction(function () use ($modelData, $stockDeliveryItem) {
+            $stockDeliveryItem = StockDeliveryItem::lockForUpdate()->findOrFail($stockDeliveryItem->id);
+
+            if ($this->exceedsRemaining((float) $modelData['quantity'], $this->remainingSkos($stockDeliveryItem))) {
+                throw ValidationException::withMessages([
+                    'quantity' => __('You can not place more than the checked quantity (:remaining remaining)', ['remaining' => round($this->remainingSkos($stockDeliveryItem), 4)]),
+                ]);
+            }
+
             $user = auth()->user();
             data_set($modelData, 'sower_user_id', $user?->id);
 

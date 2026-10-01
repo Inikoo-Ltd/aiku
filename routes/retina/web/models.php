@@ -99,6 +99,7 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessage;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPackaging;
+use App\Actions\Retina\Dropshipping\Orders\AcceptRetinaOrderPreOrderTerms;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
@@ -311,6 +312,7 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('update-gift-message', UpdateRetinaOrderGiftMessage::class)->name('update_gift_message');
     Route::post('update-gift-message-pdf', UpdateRetinaOrderGiftMessagePdf::class)->name('update_gift_message_pdf');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+    Route::patch('accept-pre-order-terms', AcceptRetinaOrderPreOrderTerms::class)->name('accept_pre_order_terms');
     Route::patch('update-packaging', UpdateRetinaOrderPackaging::class)->name('update_packaging');
     Route::post('store-voucher', StoreRetinaOrderVoucher::class)->name('store_voucher');
     Route::post('remove-voucher', RemoveRetinaOrderVoucher::class)->name('remove_voucher');
@@ -424,8 +426,6 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/ebay-publish-drafts', PublishAllRetinaEbayDraftPortfolios::class)->name('ebay.publish_drafts')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
-    Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
-    Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', [StoreNewProductToCurrentEbay::class, 'inRetina'])->name('woo.single_upload')->withoutScopedBindings()->whereNumber(['wooCommerceUser', 'portfolio']);
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');

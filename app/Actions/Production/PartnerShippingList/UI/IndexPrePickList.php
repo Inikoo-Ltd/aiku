@@ -33,7 +33,7 @@ class IndexPrePickList extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo([
+        return $this->organisation->is_manufacturing_hub && $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",

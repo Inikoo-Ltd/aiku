@@ -6,6 +6,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { Checkbox } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { faCheck } from "@fortawesome/free-solid-svg-icons"
 import { routeType } from "@/types/route"
 
 const props = defineProps<{
@@ -52,60 +53,72 @@ const optIn = (value: boolean) => {
 </script>
 
 <template>
-    <div
-        v-if="hasOptedIn"
-        class="relative mx-8 md:mx-12 mb-4 text-sm rounded border border-green-300 bg-green-50 px-4 py-3 flex items-center gap-3 text-green-800">
-        <span>{{ trans("You are subscribed. We will send our offers to your WhatsApp.") }}</span>
-        <FontAwesomeIcon :icon="faWhatsapp" class="text-xl text-green-600" fixed-width aria-hidden="true" />
-    </div>
+    <Transition name="whatsapp-optin-swap" mode="out-in">
+        <div
+            v-if="hasOptedIn"
+            key="subscribed"
+            class="mx-8 md:mx-12 mb-4 flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+                <FontAwesomeIcon :icon="faCheck" class="text-[10px]" fixed-width aria-hidden="true" />
+            </span>
+            <span class="font-medium">{{ trans("You are subscribed. We will send our offers to your WhatsApp.") }}</span>
+        </div>
 
-    <div
-        v-else
-        class="whatsapp-optin relative mx-8 md:mx-12 mb-4 text-sm rounded border border-green-300 bg-green-50 px-4 py-3 flex items-start gap-3">
-        <Checkbox
-            v-model="isChecked"
-            @update:model-value="optIn"
-            :disabled="isLoading"
-            inputId="opt_in_whatsapp_newsletter_checkout"
-            name="opt_in_whatsapp_newsletter_checkout"
-            binary
-            class="mt-0.5" />
-
-        <label for="opt_in_whatsapp_newsletter_checkout" class="cursor-pointer text-green-900">
-            {{ label }}
+        <label
+            v-else
+            key="opt-in"
+            for="opt_in_whatsapp_newsletter_checkout"
+            class="whatsapp-optin mx-8 md:mx-12 mb-4 flex cursor-pointer items-center gap-2.5 rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-white px-3 py-2 text-xs text-gray-700 transition-colors hover:border-green-400"
+            :class="{ 'pointer-events-none opacity-60': isLoading }">
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+                <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" fixed-width aria-hidden="true" />
+            </span>
+            <span class="flex-1 leading-snug">{{ label }}</span>
+            <Checkbox
+                v-model="isChecked"
+                @update:model-value="optIn"
+                :disabled="isLoading"
+                inputId="opt_in_whatsapp_newsletter_checkout"
+                name="opt_in_whatsapp_newsletter_checkout"
+                binary
+                class="shrink-0" />
         </label>
-        <FontAwesomeIcon :icon="faWhatsapp" class="mt-0.5 text-xl text-green-600" fixed-width aria-hidden="true" />
-    </div>
+    </Transition>
 </template>
 
 <style scoped>
-.whatsapp-optin::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    z-index: -1;
-    box-shadow:
-        0 0 18px rgba(37, 211, 102, 0.55),
-        0 0 42px rgba(37, 211, 102, 0.35);
-    opacity: 0.6;
+.whatsapp-optin {
     animation: whatsapp-optin-glow 1.6s ease-in-out 3;
 }
 
 @keyframes whatsapp-optin-glow {
     0%, 100% {
-        opacity: 0.45;
-        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
     }
     50% {
-        opacity: 1;
-        transform: scale(1.03);
+        box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.25), 0 0 16px rgba(37, 211, 102, 0.35);
     }
 }
 
+.whatsapp-optin-swap-enter-active,
+.whatsapp-optin-swap-leave-active {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.whatsapp-optin-swap-enter-from,
+.whatsapp-optin-swap-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .whatsapp-optin::after {
+    .whatsapp-optin {
         animation: none;
+    }
+
+    .whatsapp-optin-swap-enter-active,
+    .whatsapp-optin-swap-leave-active {
+        transition: none;
     }
 }
 </style>

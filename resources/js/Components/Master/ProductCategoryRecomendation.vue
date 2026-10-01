@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
 import { notify } from "@kyvg/vue3-notification";
@@ -51,10 +51,6 @@ const SaveOrder = async () => {
 
     loadingOrder.value = true
 
-    console.log(
-        'Saving order with the following products:',
-        listProducts.value.data
-    )
 
     const payloadKey = props.data?.sync_payload_key || 'master_asset_ids'
     const payloadValues = listProducts.value.data.data.map((product: any) => product.id)
@@ -80,8 +76,8 @@ const SaveOrder = async () => {
         )
 
         notify({
-            title: trans("Success!"),
-            text: trans("Successfully reordered the products"),
+            title: ctrans("Success!"),
+            text: ctrans("Successfully reordered the products"),
             type: "success"
         })
 
@@ -89,10 +85,10 @@ const SaveOrder = async () => {
         console.error(error)
 
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text:
                 error?.response?.data?.message ||
-                trans("Failed to reorder products"),
+                ctrans("Failed to reorder products"),
             type: "error"
         })
 
@@ -152,11 +148,11 @@ const SaveOrder = async () => {
                         class="flex flex-col items-center justify-center text-center py-12 px-6 border border-dashed rounded-lg bg-gray-50">
 
                         <div class="text-sm font-semibold text-gray-700">
-                            {{ trans('No products found') }}
+                            {{ ctrans('No products found') }}
                         </div>
 
                         <div class="text-xs text-gray-500 mt-1 max-w-xs">
-                            {{ trans('Start by adding your first product to this list.') }}
+                            {{ ctrans('Start by adding your first product to this list.') }}
                         </div>
 
                         <Button v-if="props.data?.editable" class="mt-5" label="Add Product" type="create"

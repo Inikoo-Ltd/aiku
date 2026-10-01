@@ -8,6 +8,8 @@ import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps<{
     fieldData: {
         value: {

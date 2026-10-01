@@ -16,6 +16,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\UI\Mail\EmailTemplateTabsEnum;
@@ -32,6 +33,7 @@ use App\Models\Comms\EmailTemplate;
 
 class ShowProspectMailshotWorkshop extends OrgAction
 {
+    use WithCRMAuthorisation;
     use WithActionButtons;
     use WithMailshotJourney;
     use WithOutboxBuilder;

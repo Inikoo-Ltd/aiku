@@ -21,6 +21,7 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use Exception;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -330,6 +331,11 @@ class AssignChatToAgent
                     'action_type'         => 'self_assign',
                 ]
             ]);
+        } catch (UniqueConstraintViolationException) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+            ], 409);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

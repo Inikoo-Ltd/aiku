@@ -1,9 +1,8 @@
 # Production servers: surviving everything up to an extinction-level event
 
-Four servers run aiku production. Three share a rack with a dedicated switch (boro, litio, helio);
-neon sits in another rack in the same Helsinki data centre. This page describes the target layout
-agreed on 27 September 2026 and the playbook for every failure case, from one box down to losing
-Helsinki entirely.
+Three servers run aiku production, all in one rack with a dedicated switch in Helsinki: boro, litio
+and helio. This page describes the target layout agreed in late September 2026 and the playbook for
+every failure case, from one box down to losing Helsinki entirely.
 
 No passwords, tokens or IP addresses belong on this page: the repo is public.
 
@@ -11,13 +10,15 @@ No passwords, tokens or IP addresses belong on this page: the repo is public.
 
 | Server | Role |
 |---|---|
-| **boro** | Postgres primary. Queue Redis (own instance, never evicts). Database backups. A small fallback Horizon (one worker on each essential queue) and a second scheduler. |
-| **litio** | Web: HAProxy, Varnish, Octane, Inertia SSR. Cache and session Redis. Postgres replica (the failover target, also serving web reads). The light, customer-facing Horizon queues. Aurora, until it is retired. |
-| **helio** | The bulk Horizon queues. The scheduler. The CI runner, fenced off from production. A standby web node (HAProxy `backup`). |
-| **neon** | NightOwl, the archive database, staging, the WordPress sites. First copy of the backups. |
+| **boro** | Postgres primary. Queue Redis (own instance, never evicts). Database backups. The light, customer-facing Horizon queues, at low CPU priority so the database always comes first. The scheduler. The standby web node: HAProxy, Varnish, Octane and SSR stay installed and deployed, idling on a few workers. |
+| **litio** | Web: HAProxy, Varnish, Octane, Inertia SSR. Cache and session Redis. Postgres replica (the failover target, also serving web reads). The heavy Horizon queues, under a hard memory cap. The scheduler. Staging, with small caps, stopped whenever litio has to take over from boro. Aurora, until it is retired. |
+| **helio** | No production role. The CI runner, fenced off from everything else. NightOwl monitoring (its own Postgres, low disk priority). The WordPress sites. |
 
-litio and boro are the same server type, which is why litio is the failover for the database and
-not helio.
+litio and boro have the same processors and disks, which is why litio is the failover for the
+database. litio has less memory, so as the primary it runs slower until boro is back.
+
+boro is the standby for the web because it is the one server known to carry web and database
+together: it did both before this layout.
 
 ### Services by name
 
@@ -48,24 +49,24 @@ scheduler from `current`.
 
 | Server | Queues |
 |---|---|
-| litio | `urgent`, `default`, `price_change`, `stock-control`, `search`, `ses-send`, `cache-warming` |
-| helio | `hydrators-slave*`, `sales*`, `analytics`, `stock-history`, `low-priority`, `dropshipping*`, `long-*`, `aurora`, `ses`, `ses-analytics`, `shopify-slave`, `translate*` |
-| boro | one worker each on `urgent`, `default`, `sales`, `stock-control`, `price_change`, `ses-send`, `search` |
+| boro | `urgent`, `default`, `sales`, `stock-control`, `price_change`, `ses-send`, `search` |
+| litio | `long-*`, `analytics`, `*_historic`, `stock-history`, `hydrators-slave*`, `low-priority`, `dropshipping*`, `aurora`, `ses`, `ses-analytics`, `shopify-slave`, `translate*`, `cache-warming` |
 
 Worker counts are set per server with the `HORIZON_*_WORKERS` variables in that server's `.env`.
+Every job reads and writes the primary, never the replica, even when it runs on litio.
 Never put `long-*`, `aurora`, `analytics`, `*_historic`, `stock-history` or the bulk hydrators on
 boro, not even during an outage: the database box must not run out of memory.
 
-The scheduler runs on helio and boro at the same time. Almost every task is `onOneServer()`, so
+The scheduler runs on boro and litio at the same time. Almost every task is `onOneServer()`, so
 each one runs once; the few that are not are safe to run on both.
 
 ### Backups
 
 pgBackRest runs from boro: a full backup weekly, an incremental daily, and the write-ahead log
 archived continuously, so the database can be restored to any second, not just to last night.
-Two copies: one on neon (outside the rack, fast to restore from), one offsite in another region
-(survives losing Helsinki). The offsite copy keeps its own snapshots, which no server can delete,
-so a compromised server cannot wipe the backups with it. Media files are backed up to the same two places.
+The copy lives on a storage box in another region, outside the rack and outside Helsinki. It keeps
+its own snapshots, which no server can delete, so a compromised server cannot wipe the backups with
+it. Media files are backed up to the same place.
 
 Two further copies of the database sit completely outside our infrastructure and any cloud
 provider, as the last resort if everything above is lost at once:
@@ -77,7 +78,8 @@ provider, as the last resort if everything above is lost at once:
 Their whereabouts are known to the people who need to know and are deliberately not written down
 here.
 
-The weekly staging refresh on neon restores from these backups, so every week proves they work.
+The weekly staging refresh on litio restores from the storage box, so every week proves the
+backups work.
 
 ## When one server fails
 
@@ -88,49 +90,39 @@ The site is down for writes until litio is promoted. Target: back up in 15 minut
 1. Confirm boro is really gone: no ssh, and the Hetzner Robot panel shows it down or unreachable.
    A slow boro is not a dead boro. Never promote while boro may still accept writes, or the two
    databases split.
-2. Promote litio: `sudo -u postgres psql -c "SELECT pg_promote();"`
-3. On every server, point `db-primary` and `db-replica` at litio, and `redis-queue` at helio
-   (start helio's Redis if it is not running; queued jobs that were only in boro's Redis are lost,
-   the hydrators and scheduled tasks rebuild what matters).
-4. Move web to helio so litio can concentrate on being the database: raise helio's Octane workers,
-   make helio the primary HAProxy backend, stop litio's Horizon.
-5. Reload the app everywhere.
-6. When boro is back, it rejoins as the replica (`pg_basebackup` from litio). Switch back in a
-   quiet window, or leave the roles swapped: the two machines are the same.
+2. Stop staging on litio, and cut litio's heavy Horizon queues to a handful of workers: litio now
+   carries the web and the database together.
+3. Promote litio: `sudo -u postgres psql -c "SELECT pg_promote();"`
+4. On litio, start a queue Redis instance. On every server, point `db-primary` and `db-replica` at
+   litio, and `redis-queue` at litio. Queued jobs that were only in boro's Redis are lost; the
+   hydrators and scheduled tasks rebuild what matters.
+5. Run the light queues on litio.
+6. Reload the app everywhere.
+7. When boro is back, it rejoins as the replica (`pg_basebackup` from litio). Switch back in a
+   quiet window.
 
-### litio is down (web and replica)
+### litio is down (web, replica, heavy queues, staging)
 
-The site is down until traffic reaches helio. Target: back up in 10 minutes.
+The site is down until traffic reaches boro. Target: back up in 10 minutes.
 
 1. In Cloudflare, point the origin records for aiku.io, app.aiku.io and the customer domains at
-   helio. They are proxied, so the change is immediate.
-2. On helio and boro, point `db-replica` at boro (reads go to the primary) and `redis-cache` at
-   helio. Everyone gets logged out once: sessions lived in litio's Redis.
-3. Raise helio's Octane workers and the light queues on helio.
+   boro. They are proxied, so the change is immediate.
+2. On boro, start the standby cache Redis instance (capped, evicts old keys). Point `db-replica`
+   and `redis-cache` at boro. Everyone gets logged out once: sessions lived in litio's Redis.
+3. Raise boro's Octane and SSR workers to full size.
 4. Reload the app.
-5. Do not deploy while litio is out: litio is the deploy's main host. If the outage is long, make
-   helio the main host in `deploy/deploy.php` first.
-6. When litio is back, rebuild its replica from boro, then move the web back.
+5. The heavy queues wait in Redis until litio is back; nothing is lost. Staging is down.
+6. Do not deploy while litio is out: litio is the deploy's main host. If the outage is long, make
+   boro the main host in `deploy/deploy.php` first.
+7. When litio is back, rebuild its replica from boro, then move the web back.
 
-### helio is down (workers, scheduler, CI)
-
-The site stays up. The bulk queues pile up in Redis and wait; nothing is lost.
-
-1. Nothing urgent: boro's scheduler carries on, the essential queues keep running on litio and boro.
-2. If helio will be out for more than a few hours, run a few bulk workers on litio outside peak
-   hours. Watch litio's memory and cut them first if the site slows down.
-3. CI stops. Merge nothing that has not passed.
-
-### neon is down (monitoring, archive, staging)
+### helio is down (CI, monitoring, WordPress)
 
 The site stays up.
 
+- CI stops. Merge nothing that has not passed.
 - NightOwl telemetry buffers on each server for a while, then drops. Nothing in the app depends on it.
-- Archived emails and audits are not shown; pages fall back to live data and never error.
-- Staging and the WordPress sites are down.
-- The first backup copy is unreachable. Watch free disk on boro: if the write-ahead log stops
-  archiving it piles up there. If neon will be out for more than a day, switch the neon copy off
-  in the pgBackRest config so the offsite copy carries on alone.
+- The WordPress sites are down.
 
 ## When several fail together
 
@@ -140,42 +132,33 @@ safer than rebuilding.
 
 ### boro and litio together (both databases)
 
-1. Restore the database onto helio from the neon backup copy, to the latest moment archived.
-   Expect a few hours for a full restore.
-2. Point `db-primary`, `db-replica` and `redis-queue` at helio. helio runs the database, the web
-   and a reduced set of queues until boro or litio come back.
-3. When they return, rebuild them from helio and move the roles back one at a time.
+1. Stop CI on helio.
+2. Restore the database onto helio from the storage box, to the latest moment archived. Expect
+   several hours for a full restore.
+3. Point `db-primary`, `db-replica`, `redis-queue` and `redis-cache` at helio, and point Cloudflare
+   at helio. helio runs the database, the web and the light queues until boro or litio come back.
+4. When they return, rebuild them from helio and move the roles back one at a time.
 
-### The whole rack (boro, litio and helio)
+### The whole rack, or all of Helsinki
 
-Only neon is left, with the first backup copy.
+Only the storage box copy remains.
 
 1. Ask Hetzner for an estimate. If it is short, wait.
-2. If not, order a replacement server (same type as boro) and restore onto it from neon.
-   `devops/setup-server.sh` renders the server configs; `dep deploy` installs the app.
-3. As a stopgap while the new server is provisioned, neon can restore the database and serve a
-   slow site on its own: switch staging off first to free memory.
-4. Point Cloudflare at whichever box is serving.
-
-### Helsinki is gone (all four servers)
-
-Only the offsite backup copy remains.
-
-1. Order servers in another Hetzner location: one for the database, one for the web to begin
-   with. Ask for the same types.
-2. Run `devops/setup-server.sh`, restore the database and media from the offsite copy, deploy.
-3. Point Cloudflare at the new servers. DNS and Cloudflare live outside Hetzner, so nothing else
+2. If not, order servers, in another Hetzner location if Helsinki itself is out: one for the
+   database, one for the web to begin with. Ask for the same types.
+3. Run `devops/setup-server.sh`, restore the database and media from the storage box, deploy.
+4. Point Cloudflare at the new servers. DNS and Cloudflare live outside Hetzner, so nothing else
    has to move.
-4. Rebuild the search index (`php artisan search -r`). Queued jobs and caches are lost and
+5. Rebuild the search index (`php artisan search -r`). Queued jobs and caches are lost and
    rebuild themselves.
 
 Expect most of a day. Orders placed after the last archived write-ahead log (usually minutes
 before the loss) have to be re-entered from the payment providers and marketplaces.
 
-### The offsite copy is gone too
+### The storage box copy is gone too
 
 Restore from the copy in the secret location (at most 3 days old); if that is unavailable, from
-the one in the secret mobile location (at most 2 weeks old). Then follow the Helsinki steps above.
+the one in the secret mobile location (at most 2 weeks old). Then follow the steps above.
 Everything after the copy's date has to be rebuilt from outside records: payment providers,
 marketplaces, couriers, and suppliers' own order confirmations.
 

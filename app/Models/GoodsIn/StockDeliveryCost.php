@@ -53,6 +53,11 @@ class StockDeliveryCost extends Model
 
     public function amountInDeliveryCurrency(): float
     {
+        $orgExchange = (float) $this->stockDelivery->org_exchange;
+        if ($this->currency_id && $orgExchange > 0 && $this->currency_id == $this->stockDelivery->organisation->currency_id) {
+            return (float) $this->amount / $orgExchange;
+        }
+
         return (float) $this->amount * (float) ($this->exchange ?? 1);
     }
 }

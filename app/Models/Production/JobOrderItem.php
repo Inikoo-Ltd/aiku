@@ -110,6 +110,6 @@ class JobOrderItem extends Model
 
     public function tasks(): HasMany
     {
-        return $this->hasMany(JobOrderItemTask::class)->orderBy('position');
+        return $this->hasMany(JobOrderItemTask::class)->orderBy('position')->orderBy('id');
     }
 }

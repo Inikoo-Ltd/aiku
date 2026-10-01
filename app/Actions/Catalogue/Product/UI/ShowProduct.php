@@ -54,6 +54,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use Illuminate\Support\Arr;
+use App\Actions\Traits\WithIndivisibleSet;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -62,6 +63,7 @@ class ShowProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithIndivisibleSet;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -500,7 +502,15 @@ class ShowProduct extends OrgAction
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
                 'retirement_decision'       => $this->canEdit ? $this->getRetirementDecision($product) : null,
                 'is_single_trade_unit'      => $product->is_single_trade_unit,
-                'trade_unit_slug'           => $product->tradeUnits?->first->slug,
+                'indivisible_set'           => $this->getIndivisibleSet($product, $this->canEdit && $product->shop->type != ShopTypeEnum::EXTERNAL ? [
+                    'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'product'      => $product->slug,
+                    ]
+                ] : null),
+                'trade_unit_slug'           => $product->tradeUnits->first()?->slug,
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,

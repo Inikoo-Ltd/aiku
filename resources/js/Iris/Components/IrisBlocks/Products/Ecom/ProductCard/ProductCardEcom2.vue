@@ -188,7 +188,7 @@ defineExpose({
                         <span v-if="product.units != 1">
                             {{ product.units }}x
                         </span>
-                        {{ product.name }}
+                        {{ product.variant_title || product.name }}
                     </component>
 
                     <!-- CODE + RRP -->
@@ -284,14 +284,14 @@ defineExpose({
 
                     <div v-if="layout?.iris?.is_logged_in && product.variant">
                          <div class="hidden md:block mr-2">
-                            <Button :label="ctrans('Choose variants')" size="xs"
+                            <Button :label="product.variant_axis_label ? ctrans('Choose :axis', { axis: product.variant_axis_label }) : ctrans('Choose variants')" size="xs"
                                 @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
                         </div>
                     </div>
                 </div>
                 <div v-if="layout?.iris?.is_logged_in && product.variant">
                          <div class="md:hidden block mr-2">
-                            <Button :label="ctrans('Choose variants')" size="xs"
+                            <Button :label="product.variant_axis_label ? ctrans('Choose :axis', { axis: product.variant_axis_label }) : ctrans('Choose variants')" size="xs"
                                 @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
                         </div>
                 </div>

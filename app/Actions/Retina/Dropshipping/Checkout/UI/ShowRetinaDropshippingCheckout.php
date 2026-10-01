@@ -9,6 +9,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
@@ -147,7 +149,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
+            GetOrderAmountToPayNow::run($order),
             $this->customer->balance
         );
 
@@ -169,6 +171,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'pre_orders'     => GetBasketPreOrders::run($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
                 'total_amount'   => $order->total_amount,

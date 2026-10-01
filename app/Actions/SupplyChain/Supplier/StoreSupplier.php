@@ -20,6 +20,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -39,10 +40,16 @@ class StoreSupplier extends OrgAction
 
     private ?Agent $agent = null;
 
+    private ?Organisation $scopeOrganisation = null;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($this->scopeOrganisation) {
+            return $request->user()->authTo("procurement.{$this->scopeOrganisation->id}.edit");
         }
 
         if ($this->agent && $request->user()->authTo("procurement.{$this->agent->organisation_id}.edit")) {
@@ -159,7 +166,10 @@ class StoreSupplier extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$this->get('scope_type')) {
+        if ($this->scopeOrganisation) {
+            $this->set('scope_type', 'Organisation');
+            $this->set('scope_id', $this->scopeOrganisation->id);
+        } elseif (!$this->get('scope_type')) {
             $this->set('scope_type', 'Group');
             $this->set('scope_id', $this->group->id);
         }
@@ -205,8 +215,26 @@ class StoreSupplier extends OrgAction
         return $this->handle($agent, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): Supplier
+    {
+        $this->scopeOrganisation = $organisation;
+        $this->initialisationFromGroup($organisation->group, $request);
+
+        return $this->handle($organisation->group, $this->validatedData);
+    }
+
     public function htmlResponse(Supplier $supplier): RedirectResponse
     {
+        if ($this->scopeOrganisation) {
+            return Redirect::route('grp.org.procurement.org_suppliers.show', [
+                $this->scopeOrganisation->slug,
+                $supplier->orgSuppliers()->where('organisation_id', $this->scopeOrganisation->id)->value('slug'),
+            ]);
+        }
+
         if ($supplier->agent_id) {
             return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$supplier->agent->slug, $supplier->slug]);
         }

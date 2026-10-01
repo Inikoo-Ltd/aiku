@@ -3,7 +3,7 @@ import { ref, onMounted, inject, toRaw, isProxy, computed } from 'vue';
 import { faPresentation, faCube, faText, faImage, faImages, faPaperclip, faShoppingBasket, faStar, faHandHoldingBox, faBoxFull, faBars, faBorderAll, faLocationArrow } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
@@ -93,7 +93,6 @@ function mergeData(data1: {}, data2: {}) {
 
 const isLoadingSubmit = ref(false)
 const onSubmitTemplate = (template) => {
-    console.log('template', template.fields, isSelectFullTemplate.value, announcementData?.template_code)
 
     isLoadingSubmit.value = true
 
@@ -116,13 +115,11 @@ const onSubmitTemplate = (template) => {
 const isLoadingFetch = ref(false)
 const fetchAnnouncementList = async () => {
     isLoadingFetch.value = true
-    console.log('vvvvv', layout.currentParams)
     try {
         const response = await axios.get(
             route('grp.json.announcement_templates.index'),
         )
 
-        console.log('kelo', response)
         announcements_list.value = response.data.data
 
         // Set category announcement
@@ -131,14 +128,11 @@ const fetchAnnouncementList = async () => {
             //     acc.add(item.category)
             //     return acc
             // }, new Set()))
-        } else {
-            console.log('No data available');
         }
     } catch (error) {
-        console.log(error)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to fetch announcement templates."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Failed to fetch announcement templates."),
             type: "error"
         });
         // loadingState.value = false
@@ -158,7 +152,7 @@ onMounted(() => {
     <div class="h-full flex flex-col ">
         <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
             <div class="text-2xl font-medium">
-                {{ trans("Announcement Templates") }}
+                {{ ctrans("Announcement Templates") }}
             </div>
         </div>
 
@@ -219,9 +213,9 @@ onMounted(() => {
                                         class="h-3.5 w-3.5 accent-purple-600 cursor-pointer" @click.stop />
 
                                     <label for="selectFullTemplate" class="cursor-pointer select-none">
-                                        {{ trans('Full template') }}
+                                        {{ ctrans('Full template') }}
                                         <InformationIcon
-                                            :information="trans('If checked, the data is reset and follows the new full template structure.')" />
+                                            :information="ctrans('If checked, the data is reset and follows the new full template structure.')" />
                                     </label>
                                 </div>
 
@@ -232,7 +226,7 @@ onMounted(() => {
                                 class="z-30" />
                         </div>
                     </template>
-                    <div v-else>{{ trans("No template available") }}</div>
+                    <div v-else>{{ ctrans("No template available") }}</div>
                 </template>
 
                 <div v-else class="grid gap-y-8">
@@ -247,7 +241,7 @@ onMounted(() => {
         </div>
 
         <div class="w-full mt-6">
-            <Button @click="() => onSubmitTemplate(selectedTemplate)" :label="trans('Submit')"
+            <Button @click="() => onSubmitTemplate(selectedTemplate)" :label="ctrans('Submit')"
                 :loading="isLoadingSubmit" :disabled="!selectedTemplate" full />
         </div>
     </div>

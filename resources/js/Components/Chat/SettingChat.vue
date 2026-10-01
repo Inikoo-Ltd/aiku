@@ -99,6 +99,9 @@ const saveSettings = async () => {
             }
         )
         isEditMode.value = false
+        if (layout?.user && form.value.language_id) {
+            layout.user.chat_language_id = form.value.language_id
+        }
         await fetchAgentSetting()
     } catch (e) {
         console.error("Failed to fetch agent setting", e)

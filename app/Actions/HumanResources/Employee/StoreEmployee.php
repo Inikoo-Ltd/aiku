@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Employee;
 
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateWeekWorkingHours;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
@@ -40,6 +41,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreEmployee extends OrgAction
 {
+    use WithWithheldJobPositions;
     use WithHumanResourcesEditAuthorisation;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
@@ -76,6 +78,7 @@ class StoreEmployee extends OrgAction
         $positions = Arr::get($modelData, 'positions', []);
         data_forget($modelData, 'positions');
         $positions = $this->reorganisePositionsSlugsToIds($positions);
+        $positions = $this->keepWithheldJobPositionsAsTheyWere($positions, $parent instanceof Workplace ? $parent->organisation : $parent, $this->asAction ? null : request()->user());
 
         $employee = DB::transaction(function () use ($parent, $modelData, $positions, $credentials, $contactAddressData, $contractData) {
             /** @var Employee $employee */

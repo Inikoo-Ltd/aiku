@@ -1,4 +1,6 @@
 {
+    ":quantity on the shelf, made on demand": "सेल्फमा :quantity, अर्डरमा बनाइन्छ",
+    "Always available": "सधैं उपलब्ध",
     "Attempts that did not go through, and their share of all attempts. On cards that is usually declined cards, on wallets and redirects usually people giving up halfway.": "कोशीशहरू जुन सफल भएको छैन, र तिनीहरूको सबै कोशीशहरूको साझेदारी। कार्डहरूमा यो सामान्यतया अस्वीकृत गरिएका कार्डहरू हुन्छन्, वॉलेटहरू र पुनर्निर्देशनहरूमा सामान्यतया मानिसहरू आधा बाटै हार मान्छन्।",
     "Attendance": "उपस्थिति",
     "Attendance %": "उपस्थिति %",
@@ -2369,6 +2371,7 @@
     "Link existing leave balance": "मास्टर उत्पादन",
     "Link id": "मास्टर उत्पादनहरू",
     "Link label while open": "मास्टर उत्पादनहरूको सन्तान विवरण हराइरहेको छ",
+    "Made on demand": "अर्डरमा बनाइन्छ",
     "Minutes to wait when an agent has the chat open": "एजेन्टले च्याट खोलेको बेला पर्खने मिनेट",
     "Only a chat supervisor can change this.": "यो च्याट सुपरभाइजरले मात्र परिवर्तन गर्न सक्छ।",
     "Only works with a personal Google account — not a work or school account. No key needed.": "व्यक्तिगत गुगल खाता मात्र काम गर्दछ, व्यावसायिक वा विद्यालय खाता होइन। कुनै चाबी आवश्यक छैन।",

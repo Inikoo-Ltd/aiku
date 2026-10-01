@@ -37,7 +37,7 @@ class SummarizeLongEmail
             return null;
         }
 
-        $answer = AskToAi::run($this->prompt(mb_substr($text, 0, 8000)), config('chat.summary_model'));
+        $answer = AskToAi::run($this->prompt(mb_substr($text, 0, 8000)), config('chat.summary_writer_model'));
         if (!is_string($answer)) {
             return null;
         }

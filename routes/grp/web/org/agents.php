@@ -13,6 +13,7 @@ use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
 use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
 use App\Actions\Chat\ChatSession\ForwardChatSessionToColleague;
 use App\Actions\Chat\ChatSession\KeepChatOpenAfterThanks;
+use App\Actions\Chat\ChatSession\WaitForCustomerReply;
 use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
 use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
@@ -34,6 +35,10 @@ use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\Whatsapp\Calls\AnswerWhatsappCall;
+use App\Actions\Chat\Whatsapp\Calls\EndWhatsappCall;
+use App\Actions\Chat\Whatsapp\Calls\GetWhatsappCallOffer;
+use App\Actions\Chat\Whatsapp\Calls\StartWhatsappCall;
 use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
 use App\Actions\Chat\MetaChatSession\MarkMetaChatSessionAsSpam;
 use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
@@ -81,10 +86,20 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.sessions.highlight');
     Route::patch('/whatsapp/{metaChatSession:ulid}/keep-open', [KeepChatOpenAfterThanks::class, 'inWhatsapp'])
         ->name('whatsapp.sessions.keep_open');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/wait-for-customer', [WaitForCustomerReply::class, 'inWhatsapp'])
+        ->name('whatsapp.sessions.wait_for_customer');
     Route::delete('/whatsapp/{metaChatSession:ulid}/trash', TrashMetaChatSession::class)
         ->name('whatsapp.sessions.trash');
     Route::patch('/whatsapp/{metaChatSession:ulid}/restore', RestoreMetaChatSession::class)
         ->name('whatsapp.sessions.restore')->withTrashed();
+    Route::post('/whatsapp/{metaChatSession:ulid}/calls', StartWhatsappCall::class)
+        ->name('whatsapp.calls.start');
+    Route::get('/whatsapp/calls/{metaChatCall}/offer', GetWhatsappCallOffer::class)
+        ->name('whatsapp.calls.offer');
+    Route::post('/whatsapp/calls/{metaChatCall}/answer', AnswerWhatsappCall::class)
+        ->name('whatsapp.calls.answer');
+    Route::post('/whatsapp/calls/{metaChatCall}/end', EndWhatsappCall::class)
+        ->name('whatsapp.calls.end');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/redact', RedactChatMessage::class)->name('messages.redact');
     Route::post('/messages/{chatSession:ulid}/{chatMessage}/pending-attachments', ImportPendingGmailAttachments::class)->name('messages.pending_attachments');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/redact-attachment', [RedactChatMessage::class, 'inAttachment'])->name('messages.redact_attachment');
@@ -102,6 +117,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
     Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
     Route::patch('/sessions/{chatSession:ulid}/keep-open', KeepChatOpenAfterThanks::class)->name('sessions.keep_open');
+    Route::patch('/sessions/{chatSession:ulid}/wait-for-customer', WaitForCustomerReply::class)->name('sessions.wait_for_customer');
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
     Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
     Route::patch('/sessions/{chatSession:ulid}/release', ReleaseChatSession::class)->name('sessions.release');

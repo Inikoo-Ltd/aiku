@@ -862,6 +862,38 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(TestEmailRecipient::class);
     }
 
+    /**
+     * HELP-3432 pre-order terms, every one editable per shop in Settings › Pre-orders.
+     * Money thresholds are in the shop currency.
+     */
+    public const array PRE_ORDER_DEFAULTS = [
+        'enabled'                         => false,
+        'deposit_percentage'              => 30,
+        'full_payment_below'              => 500,
+        'default_lead_time_days'          => 60,
+        'dispatch_range_weeks'            => 2,
+        'balance_due_days'                => 7,
+        'balance_first_reminder_day'      => 3,
+        'balance_second_reminder_day'     => 6,
+        'balance_cancel_after_days'       => 14,
+        'free_cancellation_working_days'  => 2,
+        'late_cancellation_days'          => 30,
+        'pallet_weight_kg'                => null,
+        'pallet_longest_side_cm'          => null,
+        'pallet_quote_tolerance_percentage' => 20,
+        'pallet_rates'                    => [],
+    ];
+
+    public function preOrderSetting(string $key): mixed
+    {
+        return Arr::get($this->settings, "pre_orders.$key") ?? self::PRE_ORDER_DEFAULTS[$key];
+    }
+
+    public function hasPreOrders(): bool
+    {
+        return (bool) $this->preOrderSetting('enabled');
+    }
+
     public function hasPackagingAndInserts(): bool
     {
         return $this->type === ShopTypeEnum::DROPSHIPPING

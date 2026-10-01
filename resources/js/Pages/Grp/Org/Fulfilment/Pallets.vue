@@ -20,7 +20,6 @@ const props = defineProps<{
 }>()
 
 const form = useForm({ pallet : []})
-console.log(props)
 </script>
 
 <template>

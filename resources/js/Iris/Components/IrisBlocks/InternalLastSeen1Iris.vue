@@ -14,7 +14,7 @@ import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/Recom
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RecommendationProduct } from "@/types/RecommendationProduct"
 library.add(faChevronLeft, faChevronRight)
 
@@ -76,7 +76,6 @@ const fetchProductsLastSeen = async () => {
 
         listProducts.value = response.data.data
         
-        console.log(`LLS Internal (${response.data.data?.length}): `, response.data.data)
 
     } catch (error: any) {
         console.error('Error on fetching products last seen:', error)

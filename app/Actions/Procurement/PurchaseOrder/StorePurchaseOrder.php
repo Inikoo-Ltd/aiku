@@ -70,7 +70,7 @@ class StorePurchaseOrder extends OrgAction
             data_set($modelData, 'date', now());
         }
         if (!Arr::get($modelData, 'currency_id')) {
-            data_set($modelData, 'currency_id', $parent->organisation->currency_id);
+            data_set($modelData, 'currency_id', $parent instanceof OrgPartner ? $parent->partner->currency_id : $parent->organisation->currency_id);
         }
         if (!array_key_exists('buyer_id', $modelData) && auth()->user() instanceof User) {
             data_set($modelData, 'buyer_id', auth()->id());
@@ -152,6 +152,10 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if ($this->parent instanceof OrgPartner) {
+            if ($this->parent->partner->is_manufacturing_hub) {
+                $validator->errors()->add('purchase_order', __('Buy from :partner with the shopping list', ['partner' => $this->parent->partner->name]));
+            }
+
             return;
         }
 

@@ -9,7 +9,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { inject, onMounted, provide, ref, watch ,onBeforeUnmount} from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import AnnouncementTemplateList from "@/Components/Websites/Announcement/AnnouncementTemplateList.vue"
 import AnnouncementSettings from "@/Components/Websites/Announcement/AnnouncementSettings.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -128,10 +128,9 @@ const onSave = () => {
                     saveCancelToken.value = null
                 },
                 onError: (error) => {
-                    console.log("ewew", error)
                     notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to save Announcement data"),
+                        title: ctrans("Something went wrong"),
+                        text: ctrans("Failed to save Announcement data"),
                         type: "error"
                     })
                 },
@@ -167,14 +166,13 @@ const onPublish = (addData: { bodyToSend: {} }) => {
             onSuccess: () => {
                 notify({
                     title: "Success",
-                    text: trans("Announcement is published"),
+                    text: ctrans("Announcement is published"),
                     type: "success"
                 })
             },
             onError: (error) => {
-                console.log("error", error)
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 })
@@ -259,15 +257,15 @@ const onClickToggleActivate = async (newVal: string) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Gotcha!"),
-                    text: trans("Successfully set the status"),
+                    title: ctrans("Gotcha!"),
+                    text: ctrans("Successfully set the status"),
                     type: "success"
                 })
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update the status"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update the status"),
                     type: "error"
                 })
             }
@@ -299,7 +297,7 @@ const onSectionSetting = () => {
     <PageHeading :data="pageHead">
         <template v-if="announcementData.template_code" #other>
             <div class="flex gap-x-2 flex-wrap gap-y-1.5 justify-end">
-                <Button @click="onReset" label="Reset" v-tooltip="trans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'"
+                <Button @click="onReset" label="Reset" v-tooltip="ctrans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'"
                         :disabled="!is_announcement_dirty" icon="fal fa-undo-alt" />
                 <!-- <Button @click="() => false" label="Stop now" :loading="isLoadingSave" :style="'red'" icon="fas fa-square" /> -->
 
@@ -309,7 +307,7 @@ const onSectionSetting = () => {
                         <div @click="onClickToggleActivate('inactive')"
                              class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
                              :class="[is_announcement_active == 'inactive' ? 'bg-red-600 text-gray-100' : 'bg-gray-100/70 text-red-400 hover:bg-red-200/70']">
-                            {{ trans("Inactive") }}
+                            {{ ctrans("Inactive") }}
                             <LoadingIcon v-if="is_announcement_active !== 'inactive' && cancelTokenActivate" size="sm" />
                             <FontAwesomeIcon v-else-if="is_announcement_active == 'inactive'" icon="far fa-check-circle" size="sm" class="" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else="!cancelTokenActivate" icon="fal fa-circle" size="sm" class="" fixed-width aria-hidden="true" />
@@ -319,7 +317,7 @@ const onSectionSetting = () => {
                              @click="() => (selectedTab = 1, onSectionSetting())"
                              class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
                              :class="[is_announcement_active === 'active' ? 'bg-green-600 text-green-100' : 'bg-gray-100/70 text-gray-400 hover:bg-green-200/70']">
-                            {{ trans("Active") }}
+                            {{ ctrans("Active") }}
                             <LoadingIcon v-if="is_announcement_active !== 'active' && cancelTokenActivate" size="sm" />
                             <FontAwesomeIcon v-else-if="is_announcement_active === 'active'" icon="far fa-check-circle" size="sm" class="" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else="!cancelTokenActivate" icon="fal fa-circle" size="sm" class="" fixed-width aria-hidden="true" />
@@ -334,7 +332,7 @@ const onSectionSetting = () => {
                         :style="'secondary'"
                     >
                         <div>
-                            {{ trans("Publish & Setting") }}
+                            {{ ctrans("Publish & Setting") }}
                             <FontAwesomeIcon icon="fal fa-cog" class="" fixed-width aria-hidden="true" />
                         </div>
                     </Button>
@@ -369,7 +367,7 @@ const onSectionSetting = () => {
             </TabList>
         </TabGroup>
 
-        <div @click="() => false ? onSave() : false" v-tooltip="trans('Save status')" class="flex items-center px-2 text-3xl">
+        <div @click="() => false ? onSave() : false" v-tooltip="ctrans('Save status')" class="flex items-center px-2 text-3xl">
             <LoadingIcon v-if="isLoadingSave" />
             <FontAwesomeIcon v-else icon="fal fa-save" class="text-gray-300" fixed-width aria-hidden="true" />
         </div>
@@ -384,7 +382,7 @@ const onSectionSetting = () => {
         <div v-if="announcementData.template_code" class="w-[600px] py-2 px-3 ">
             <div class="w-full text-lg font-semibold flex items-center justify-between gap-3 border-b border-gray-300">
                 <div class="flex items-center gap-3">
-                    {{ trans("Announcement") }}
+                    {{ ctrans("Announcement") }}
                 </div>
 
                 <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"

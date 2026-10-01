@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Packaging\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
@@ -24,7 +24,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditPackaging extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Packaging $packaging, ActionRequest $request): Response
     {

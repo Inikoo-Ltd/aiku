@@ -34,12 +34,17 @@ class EditPurchaseOrder extends OrgAction
         return $this->handle($purchaseOrder);
     }
 
-    public function htmlResponse(PurchaseOrder $purchaseOrder): Response
+    public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response
     {
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('purchase order'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $purchaseOrder,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
                     'title'     => $purchaseOrder->reference,
                     'actions'   => [
@@ -115,6 +120,16 @@ class EditPurchaseOrder extends OrgAction
                     ]
                 ]
             ]
+        );
+    }
+
+    public function getBreadcrumbs(PurchaseOrder $purchaseOrder, string $routeName, array $routeParameters): array
+    {
+        return ShowPurchaseOrder::make()->getBreadcrumbs(
+            purchaseOrder: $purchaseOrder,
+            routeName: preg_replace('/edit$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '('.__('Editing').')'
         );
     }
 }

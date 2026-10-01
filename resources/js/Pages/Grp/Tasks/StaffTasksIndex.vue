@@ -12,6 +12,9 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faFlag } from "@fal"
+library.add(faFlag)
 
 defineProps<{
     pageHead: PageHeadingTypes

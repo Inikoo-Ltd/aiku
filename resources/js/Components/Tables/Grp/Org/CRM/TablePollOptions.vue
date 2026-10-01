@@ -2,7 +2,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 const props = defineProps<{
@@ -10,7 +10,6 @@ const props = defineProps<{
     tab?: string
 }>()
 
-console.log("Data:", props.data)
 </script>
 
 <template>

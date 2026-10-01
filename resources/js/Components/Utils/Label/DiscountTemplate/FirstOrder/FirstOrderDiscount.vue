@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import Popover from "primevue/popover"
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans';
 import { faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -24,7 +24,6 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('maxDiscountLabel', props.offer)
 
 </script>
 
@@ -45,8 +44,8 @@ console.log('maxDiscountLabel', props.offer)
 
             <Popover ref="_popoverInfoCircle" class="offer-popover">
                 <div class="offer-popover-text">
-                    <p>{{ trans("First order only. New customers eligible.") }}</p>
-                    <p>{{ trans("Cannot be combined with other offers.") }}</p>
+                    <p>{{ ctrans("First order only. New customers eligible.") }}</p>
+                    <p>{{ ctrans("Cannot be combined with other offers.") }}</p>
                 </div>
             </Popover>
         </div>

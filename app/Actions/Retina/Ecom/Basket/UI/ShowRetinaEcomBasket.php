@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\GetOrderShippingOptions;
 use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
@@ -270,6 +271,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'gr_gifts'           => $grGifts,
                 'missed_offers'      => $order ? $this->getMissedOffers($order) : [],
                 'stock_issues'       => $order ? $this->getBasketStockIssues($order) : ['low_stock' => [], 'out_of_stock' => []],
+                'pre_orders'         => $order ? GetBasketPreOrders::run($order) : null,
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()

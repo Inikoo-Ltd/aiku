@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Translations;
 
+use App\Actions\Helpers\AI\AskJev;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
@@ -32,32 +33,30 @@ class Translate extends OrgAction
                 return $text ?? '';
             }
 
-            $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $translationDriver ??= config('auto-translations.default_driver');
+            $cacheKey          = 'translate:'.$translationDriver.':'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
-                return $this->unescapeJsonEchoes($text, $cachedTranslation);
+                return $this->unescapeJsonEchoes($text, str_replace("\0", '', $cachedTranslation));
             }
 
             if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
             }
-            $translationEngineService   = new TranslationEngineService();
-            $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
+            $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver);
 
-            $texts = [
-                'text_to_translate' => $text,
-            ];
+            $qualityCheck = config("auto-translations.drivers.$translationDriver.quality_check");
+            if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
+                $retried    = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver']), $text);
+                $translated = $retried !== $text ? $retried : $translated;
+            }
 
-            $translationWorkflowService->setInMemoryTexts($texts);
+            if ($translated !== $text) {
+                $cacheTtlHours = mb_strlen($translated) < 32 ? 1440 : (mb_strlen($translated) < 256 ? 480 : 72);
+                Cache::put($cacheKey, $translated, now()->addHours($cacheTtlHours));
+            }
 
-            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver ?? config('auto-translations.default_driver'));
-
-            $text = $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text));
-
-            $cacheTtlHours = mb_strlen($text) < 32 ? 1440 : (mb_strlen($text) < 256 ? 480 : 72);
-            Cache::put($cacheKey, $text, now()->addHours($cacheTtlHours));
-
-            return $text;
+            return $translated;
         } catch (\Throwable $e) {
             Sentry::captureMessage($e->getMessage());
             if ($throwOnFailure) {
@@ -66,6 +65,45 @@ class Translate extends OrgAction
 
             return $text;
         }
+    }
+
+    public function translateWith(string $text, Language $languageFrom, Language $languageTo, string $translationDriver): string
+    {
+        $translationWorkflowService = new TranslationWorkflowService(new TranslationEngineService());
+        $translationWorkflowService->setInMemoryTexts(['text_to_translate' => $text]);
+
+        $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver);
+
+        return str_replace("\0", '', $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text)));
+    }
+
+    /**
+     * Jev grades the cheap model's translation for a fraction of a cent; the drivers that ask for
+     * it redo the weak ones with a stronger model. No verdict (no key, Jev down) keeps the translation.
+     */
+    public function isBelowQuality(string $source, string $translated, Language $languageFrom, Language $languageTo, float $minScore): bool
+    {
+        $verdict = Arr::get(AskJev::run(
+            [
+                'source_language' => $languageFrom->code,
+                'target_language' => $languageTo->code,
+                'source'          => $source,
+                'translation'     => $translated,
+            ],
+            ['quality' => [
+                'type'         => 'score',
+                'instructions' => 'How good is this translation for a native speaker of the target language, ready to publish on a web shop or send to a customer?',
+                'criteria'     => [
+                    'Unusable: wrong language, left untranslated, or meaning lost',
+                    'Serious errors: wrong meaning in parts, broken grammar, missing content or broken HTML',
+                    'Understandable but with errors a native speaker would fix',
+                    'Good: only minor slips',
+                    'Publishable as is: accurate and natural',
+                ],
+            ]]
+        ), 'quality');
+
+        return isset($verdict['score']) && $verdict['score'] < $minScore;
     }
 
     /**

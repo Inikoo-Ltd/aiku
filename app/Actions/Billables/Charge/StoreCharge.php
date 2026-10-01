@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCharges;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -34,6 +35,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCharge extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithNoStrictRules;
 
     /**

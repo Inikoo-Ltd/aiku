@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCube, faLink, faImage } from "@fas"
+import { faCube, faLink, faImage, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, onMounted, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -7,6 +7,7 @@ import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { getStyles } from "@/Composables/styles"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCube, faLink, faImage)
 
@@ -38,6 +39,11 @@ onMounted(() => {
   }
 })
 
+const clearAuthor = () => {
+  props.modelValue.author = null
+  emits('autoSave')
+}
+
 const displayDate = computed(() => {
   return props.modelValue.published_date ? props.modelValue.published_date : new Date();
 });
@@ -59,9 +65,21 @@ const displayDate = computed(() => {
           }" />
     </div>
 
-    <!-- Date -->
-    <div class="text-sm text-gray-500 mb-6">
-      {{ useFormatTime(displayDate) }}
+    <!-- Date and author -->
+    <div class="flex flex-wrap items-center gap-x-2 text-sm text-gray-500 mb-6">
+      <span>{{ useFormatTime(displayDate) }}</span>
+      <span>·</span>
+      <span v-if="modelValue?.author?.name" class="flex items-center gap-1">
+        {{ ctrans("By :author", { author: modelValue.author.name }) }}
+        <button
+          type="button"
+          @click="clearAuthor"
+          v-tooltip="ctrans('Remove author')"
+          class="text-gray-400 hover:text-red-500">
+          <FontAwesomeIcon :icon="faTimes" fixed-width />
+        </button>
+      </span>
+      <span v-else class="italic">{{ ctrans("No author") }}</span>
     </div>
 
     <!-- Hero Image or Placeholder -->

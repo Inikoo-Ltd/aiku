@@ -7,7 +7,7 @@ import BrandsTradeUnit from "@/Components/Forms/Fields/BrandsTradeUnit.vue"
 import TagsTradeUnits from "@/Components/Forms/Fields/TagsTradeUnits.vue"
 import Button from "./Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 
 library.add(faCheckCircle, faTimes)
@@ -39,10 +39,9 @@ const submit = async () => {
       form.data()
     )
 
-    console.log(response)
     notify({
-      title: trans("Success"),
-      text: trans("Data has been updated successfully"),
+      title: ctrans("Success"),
+      text: ctrans("Data has been updated successfully"),
       type: "success",
     })
 
@@ -56,10 +55,10 @@ const submit = async () => {
     const message =
       error.response?.data?.message ||
       Object.values(error.response?.data?.errors || {})[0] ||
-      trans("Please try again")
+      ctrans("Please try again")
 
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: message,
       type: "error",
     })

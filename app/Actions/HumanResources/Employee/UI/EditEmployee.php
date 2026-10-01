@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Employee\UI;
 
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
@@ -34,6 +35,7 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 
 class EditEmployee extends OrgAction
 {
+    use WithWithheldJobPositions;
     use WithEmployeeSubNavigation;
     use WithHumanResourcesEditAuthorisation;
 
@@ -211,7 +213,7 @@ class EditEmployee extends OrgAction
                         'label' => __('Job Positions (permissions)'),
                         'options' => [
                             $employee->organisation->slug => [
-                                'positions' => JobPositionResource::collection($this->organisation->jobPositions),
+                                'positions' => JobPositionResource::collection($this->assignableJobPositions($this->organisation, request()->user())),
                                 'shops' => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                 'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                                 'warehouses' => WarehouseResource::collection($this->organisation->warehouses),

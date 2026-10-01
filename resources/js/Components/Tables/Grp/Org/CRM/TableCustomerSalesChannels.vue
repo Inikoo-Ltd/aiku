@@ -10,7 +10,7 @@ import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
 import { faExclamationTriangle } from "@far"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUndoAlt, faTrashAlt } from "@fal"
@@ -129,10 +129,10 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesChannel) {
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans("Are you sure to delete this channel?"),
+        message: ctrans("Are you sure to delete this channel?"),
         icon: "pi pi-exclamation-triangle",
-        acceptLabel: trans("Delete"),
-        rejectLabel: trans("Cancel"),
+        acceptLabel: ctrans("Delete"),
+        rejectLabel: ctrans("Cancel"),
         acceptClass: "p-button-danger",
         rejectClass: "p-button-text",
         accept: () => {
@@ -186,15 +186,19 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(platform_status)="{ item }">
             <template v-if="item.status==='open'">
                 <template v-if="item.platform_code=='manual'">
-                    <FontAwesomeIcon v-tooltip="trans('Manual/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="ctrans('Manual/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                 </template>
                 <template v-else>
-                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="ctrans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Broken channel delete it and create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="ctrans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <template v-if="item.connection_failure">
+                        <FontAwesomeIcon v-tooltip="item.connection_failure" :icon="item.is_blocked ? 'fal fa-ban' : 'fal fa-unlink'" :class="item.is_blocked ? 'text-orange-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                        <span class="sr-only">{{ item.connection_failure }}</span>
+                    </template>
                 </template>
             </template>
             <template v-else>
@@ -268,7 +272,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </template>
                 </ModalConfirmationDelete>
 
-                <Button type="negative" :label="trans('Delete')" :icon="faTrashAlt" @click="(event) => confirmDelete(event, item)" />
+                <Button type="negative" :label="ctrans('Delete')" :icon="faTrashAlt" @click="(event) => confirmDelete(event, item)" />
             </div>
         </template>
     </Table>

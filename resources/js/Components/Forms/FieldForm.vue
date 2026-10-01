@@ -10,6 +10,7 @@ import { router, useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
+import { cloneDeep } from 'lodash-es'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
@@ -53,6 +54,8 @@ const props = defineProps<{
             whenValueIs?: any  // Confirm only for this value, leave out to confirm every save
             reasonField?: string  // Asks for a reason in the dialog and sends it under this name
             reasonLabel?: string
+            choiceField?: string  // Asks to pick one of the choices in the dialog and sends it under this name
+            choices?: { value: string, label: string, description?: string }[]
         }
     }
     args: {
@@ -77,6 +80,10 @@ const reasonField = props.fieldData.saveConfirmation?.reasonField
 if (reasonField) {
     formFields[reasonField] = ''
 }
+const choiceField = props.fieldData.saveConfirmation?.choiceField
+if (choiceField) {
+    formFields[choiceField] = null
+}
 
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
@@ -84,8 +91,8 @@ form['fieldType'] = 'edit'
 
 watch(() => props.fieldData.value, (serverValue) => {
     if (!form.isDirty) {
-        form[props.field] = serverValue
-        form.defaults(props.field, serverValue)
+        form[props.field] = cloneDeep(serverValue)
+        form.defaults(props.field, cloneDeep(serverValue))
     }
 })
 
@@ -107,9 +114,17 @@ const save = () => {
                 if (props.fieldData.revisit_after_save) {
                     router.reload()
                 }
+                if (choiceField) {
+                    form[choiceField] = null
+                    form.defaults(choiceField, null)
+                }
                 isModalConfirmation.value = false
             },
             onError: (errors) => {
+                const hiddenError = Object.entries(errors).find(([key]) => !(key in formFields) && !key.includes('.') && key !== 'error_in_models')
+                if (hiddenError && !errors[props.field]) {
+                    form.setError(props.field, hiddenError[1])
+                }
                 const modelError = errors.error_in_models
                 if (modelError && !errors[props.field]) {
                     form.setError(props.field, modelError.startsWith('500')
@@ -310,6 +325,21 @@ const needsSaveConfirmation = computed(() => {
                         <p v-if="form.errors[reasonField]" class="mt-1 text-sm text-red-600">{{ form.errors[reasonField] }}</p>
                     </div>
 
+                    <fieldset v-if="choiceField" class="mt-4 space-y-2">
+                        <label
+                            v-for="choice in fieldData.saveConfirmation?.choices"
+                            :key="choice.value"
+                            class="flex cursor-pointer gap-3 rounded-md border p-3 text-sm"
+                            :class="form[choiceField] === choice.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
+                            <input v-model="form[choiceField]" type="radio" :name="`${field}-${choiceField}`" :value="choice.value" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                            <span>
+                                <span class="block font-medium text-gray-900">{{ choice.label }}</span>
+                                <span v-if="choice.description" class="block text-gray-500">{{ choice.description }}</span>
+                            </span>
+                        </label>
+                        <p v-if="form.errors[choiceField]" class="text-sm text-red-600">{{ form.errors[choiceField] }}</p>
+                    </fieldset>
+
                     <div class="mt-5 flex xflex-row-reverse gap-2">
                         <Button
                             type="tertiary"
@@ -325,7 +355,7 @@ const needsSaveConfirmation = computed(() => {
                                 type="secondary"
                                 key="3"
                                 :loading="form.processing"
-                                :disabled="!!reasonField && !form[reasonField]?.trim()"
+                                :disabled="(!!reasonField && !form[reasonField]?.trim()) || (!!choiceField && !form[choiceField])"
                                 full
                             >
                                 <template #label>

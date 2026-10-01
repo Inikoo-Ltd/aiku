@@ -12,7 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { get } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from '@/types/route'
 import { Table } from '@/types/Table'
 import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
@@ -207,13 +207,12 @@ const onSubmitPallet = async (action: routeType) => {
         onError: (e) => {
             console.warn('Error on Submit', e)
             notify({
-                title: trans('Something went wrong.'),
+                title: ctrans('Something went wrong.'),
                 text: e?.message,
                 type: 'error',
             })
         },
         onSuccess: (e) => {
-            console.log('on success', e)
             changeTableKey()
         },
         onFinish: (e) => {
@@ -284,7 +283,6 @@ const onOpenModalAddPGood = async () => {
         )
         dataPGoodList.value = xxx.data.data
     } catch (error) {
-        console.log(error)
         notify({
             title: 'Something went wrong.',
             text: 'Failed to fetch Physical Goods list',
@@ -398,11 +396,11 @@ const isModalUploadStoredItemOpen = ref(false)
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
                         <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload goods") }}
+                            {{ ctrans("Upload goods") }}
                         </div>
                         <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload Customer's SKO") }}
+                            {{ ctrans("Upload Customer's SKO") }}
                         </div>
                     </MenuItems>
                 </transition>
@@ -447,14 +445,14 @@ const isModalUploadStoredItemOpen = ref(false)
                         :icon="action.icon"
                         :iconRight="action.iconRight"
                         :key="`ActionButton${action.label}${action.style}`"
-                        :tooltip="trans('Add multiple items')"
+                        :tooltip="ctrans('Add multiple items')"
                         class="rounded-none border-none"
                     />
                 </template>
 
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
-                        <span class="text-xs  my-2">{{ trans('Type') }}: </span>
+                        <span class="text-xs  my-2">{{ ctrans('Type') }}: </span>
                         <div class="flex items-center">
                             <div v-for="(typeData, typeIdx) in typePallet" :key="typeIdx" class="relative py-3 mr-4">
                                 <div>
@@ -508,13 +506,13 @@ const isModalUploadStoredItemOpen = ref(false)
                     <template #button>
                         <Button :style="action.style" :label="action.label" :icon="action.icon"
                             :key="`ActionButton${action.label}${action.style}`"
-                            :tooltip="trans('Add single item')"
+                            :tooltip="ctrans('Add single item')"
                             class="rounded-l-none rounded-r-none border-none " />
                     </template>
 
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Type') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Type') }}: </span>
                             <div class="flex items-center">
                                 <div v-for="(typeData, typeIdx) in typePallet" :key="typeIdx"
                                     class="relative py-3 mr-4">
@@ -531,7 +529,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                     </div>
                                 </div>
                             </div>
-                            <span class="text-xs px-1 my-2">{{ trans('Reference') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Reference') }}: </span>
                             <div>
                                 <PureInput v-model="formAddPallet.customer_reference" placeholder="Reference"
                                     autofocus />
@@ -542,7 +540,7 @@ const isModalUploadStoredItemOpen = ref(false)
                             </div>
 
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Notes') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Notes') }}: </span>
                                 <textarea v-model="formAddPallet.notes" placeholder="Notes"
                                     class="block w-full rounded-md border-gray-300 shadow-sm placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500 sm:text-sm" />
                                 <p v-if="get(formAddPallet, ['errors', 'notes'])" class="mt-2 text-sm text-red-600">
@@ -585,7 +583,7 @@ const isModalUploadStoredItemOpen = ref(false)
 
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Services') }}: </span>
                             <div class="">
                                 <PureMultiselect
                                     v-model="formAddService.service_id"
@@ -613,7 +611,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput v-model="formAddService.quantity" placeholder="Quantity" @keydown.enter="() => onSubmitAddService(action, closed)" />
                                 <p v-if="get(formAddService, ['errors', 'quantity'])" class="mt-2 text-sm text-red-600">
                                     {{ formAddService.errors.quantity }}
@@ -659,7 +657,7 @@ const isModalUploadStoredItemOpen = ref(false)
                     
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Physical Goods') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Physical Goods') }}: </span>
                             <div>
                                 <PureMultiselect
                                     v-model="formAddPhysicalGood.outer_id"
@@ -686,7 +684,7 @@ const isModalUploadStoredItemOpen = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddPhysicalGood.quantity"
                                     placeholder="Quantity"
@@ -739,7 +737,7 @@ const isModalUploadStoredItemOpen = ref(false)
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadFileOpen = true"
-                :label="trans('Attach file')"
+                :label="ctrans('Attach file')"
                 icon="fal fa-upload"
                 type="secondary"
             />
@@ -772,7 +770,7 @@ const isModalUploadStoredItemOpen = ref(false)
             />
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800">{{ trans('Attention needed') }}</h3>
+                    <h3 class="text-sm font-medium text-yellow-800">{{ ctrans('Attention needed') }}</h3>
                     <div class="mt-2 text-sm text-yellow-700">
                         <p>{{ pallet_limits?.message }}</p>
                     </div>
@@ -805,14 +803,14 @@ const isModalUploadStoredItemOpen = ref(false)
         :tab="currentTab"
         :tableKey="tableKey"
         :storedItemsRoute="storedItemsRoute"
-        @renderTableKey="() => (console.log('emit render', changeTableKey()))"
+        @renderTableKey="() => changeTableKey()"
         :detachRoute="attachmentRoutes.detachRoute"
     >
         <template #button-empty-state-attachments="{ action }">
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadFileOpen = true"
-                :label="trans('Attach file')"
+                :label="ctrans('Attach file')"
                 icon="fal fa-upload"
                 type="secondary"
             />

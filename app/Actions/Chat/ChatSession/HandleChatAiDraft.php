@@ -14,6 +14,8 @@ use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -34,6 +36,73 @@ class HandleChatAiDraft
     public function inMetaChatSession(MetaChatSession $metaChatSession): JsonResponse
     {
         return $this->show($metaChatSession);
+    }
+
+    public function suggestionUsed(ChatSession $chatSession, Request $request): JsonResponse
+    {
+        return $this->recordUse($chatSession, $request);
+    }
+
+    public function suggestionUsedInMetaChatSession(MetaChatSession $metaChatSession, Request $request): JsonResponse
+    {
+        return $this->recordUse($metaChatSession, $request);
+    }
+
+    private function recordUse(ChatSession|MetaChatSession $chatSession, Request $request): JsonResponse
+    {
+        if (!$this->getAuthorisedChatAgent($chatSession)) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $validated = $request->validate([
+            'kind'       => ['required', 'in:guide,close,closing_message,wait'],
+            'reading_id' => ['nullable', 'integer'],
+        ]);
+
+        ClassifyChatTurn::markUsed($chatSession, $validated['reading_id'] ?? null, $validated['kind']);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function goodbye(ChatSession $chatSession): JsonResponse
+    {
+        return $this->writeGoodbye($chatSession);
+    }
+
+    public function goodbyeInMetaChatSession(MetaChatSession $metaChatSession): JsonResponse
+    {
+        return $this->writeGoodbye($metaChatSession);
+    }
+
+    /**
+     * The goodbye is written only when an agent asks for it: most conversations that end with a
+     * thanks close on their own, and writing one for each cost three model calls for nothing.
+     */
+    private function writeGoodbye(ChatSession|MetaChatSession $chatSession): JsonResponse
+    {
+        if (!$this->getAuthorisedChatAgent($chatSession)) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $suggestions = ClassifyChatTurn::suggestions($chatSession);
+
+        if (($suggestions['next_step']['kind'] ?? null) !== 'close') {
+            return response()->json(['success' => false, 'message' => __('The customer is not ending the conversation')], 422);
+        }
+
+        $message = Cache::remember(
+            'chat-goodbye:'.class_basename($chatSession).':'.$chatSession->id.':'.data_get($chatSession->metadata, ClassifyChatTurn::KEY.'.at'),
+            now()->addDay(),
+            fn () => ClassifyChatTurn::closingMessage($chatSession, ClassifyChatTurn::customerWrote($chatSession), ClassifyChatTurn::weSaid($chatSession))
+        );
+
+        if (!$message) {
+            return response()->json(['success' => false, 'message' => __('No goodbye could be written, please write your own')], 422);
+        }
+
+        ClassifyChatTurn::markUsed($chatSession, $suggestions['reading_id'] ?? null, 'closing_message');
+
+        return response()->json(['success' => true, 'data' => ['message' => $message]]);
     }
 
     public function take(ChatAiDraft $chatAiDraft): JsonResponse
@@ -63,7 +132,7 @@ class HandleChatAiDraft
             'text'        => $draft->text,
             'topic'       => $draft->topic->value,
             'topic_label' => $draft->topic->label(),
-        ] : null]);
+        ] : null, 'suggestions' => ClassifyChatTurn::suggestions($chatSession)]);
     }
 
     private function decide(ChatAiDraft $chatAiDraft, callable $change): JsonResponse

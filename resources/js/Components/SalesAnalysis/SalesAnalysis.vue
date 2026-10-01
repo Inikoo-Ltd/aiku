@@ -4,11 +4,13 @@ import SalesAnalysisReport from "@/Components/SalesAnalysis/SalesAnalysisReport.
 defineProps<{
 	data?: InstanceType<typeof SalesAnalysisReport>["$props"]["data"]
 	breakdownRoute?: InstanceType<typeof SalesAnalysisReport>["$props"]["breakdownRoute"]
+	reloadWith?: InstanceType<typeof SalesAnalysisReport>["$props"]["reloadWith"]
+	compact?: boolean
 }>()
 </script>
 
 <template>
-	<SalesAnalysisReport v-if="data" :data="data" :breakdownRoute="breakdownRoute" />
+	<SalesAnalysisReport v-if="data" :data="data" :breakdownRoute="breakdownRoute" :reloadWith="reloadWith" :compact="compact" />
 	<div v-else class="space-y-4 px-4 py-4" aria-busy="true">
 		<div class="flex gap-2">
 			<div v-for="index in 3" :key="index" class="h-6 w-24 animate-pulse rounded-full bg-gray-100" />

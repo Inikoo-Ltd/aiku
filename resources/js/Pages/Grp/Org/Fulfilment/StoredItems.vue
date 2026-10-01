@@ -23,7 +23,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { routeType } from "@/types/route"
 import { UploadPallet } from "@/types/Pallet"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faNarwhal, faBallotCheck)
 
 interface UploadSection {
@@ -40,14 +40,14 @@ interface UploadSection {
 }
 
 const props = defineProps<{
-    data: {}
+    data?: {}
     title: string
     pageHead: PageHeadingTypes
     tabs: {
         current: string;
         navigation: object;
     }
-	bulk_edit_upload: UploadSection
+	bulk_edit_upload?: UploadSection
     stored_items? : {}
     pallet_stored_items? : {}
     stored_item_audits? : {}
@@ -71,8 +71,8 @@ const component = computed(() => {
 
 const onNoStructureUpload = () => {
 	notify({
-		title: trans("Something went wrong"),
-		text: trans("Upload structure is not provided. Please contact support."),
+		title: ctrans("Something went wrong"),
+		text: ctrans("Upload structure is not provided. Please contact support."),
 		type: "error",
 	})
 }

@@ -19,15 +19,6 @@ class DownloadIrisAttachment
 {
     use AsAction;
 
-    public const array PUBLIC_DOCUMENT_SCOPES = [
-        TradeAttachmentScopeEnum::IFRA->value,
-        TradeAttachmentScopeEnum::SDS->value,
-        TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS->value,
-        TradeAttachmentScopeEnum::DOC->value,
-        TradeAttachmentScopeEnum::CPSR->value,
-        TradeAttachmentScopeEnum::TEST_REPORTS->value,
-    ];
-
     public function handle(Media $media): BinaryFileResponse
     {
         $filename = $media->media_scope == 'labeling_guide' ? $media->name : $media->file_name;
@@ -51,7 +42,7 @@ class DownloadIrisAttachment
             ->where(function (Builder $query) {
                 $query->where(function (Builder $query) {
                     $query->whereIn('model_type', ['Product', 'TradeUnit', 'TradeUnitFamily'])
-                        ->whereIn('scope', self::PUBLIC_DOCUMENT_SCOPES);
+                        ->whereIn('scope', TradeAttachmentScopeEnum::publicScopes());
                 })->orWhere(function (Builder $query) {
                     $query->whereIn('model_type', ['ProductCategory', 'TradeUnitFamily'])
                         ->where('scope', 'labeling_guide');

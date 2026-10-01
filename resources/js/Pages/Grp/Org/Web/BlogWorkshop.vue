@@ -11,7 +11,7 @@ import { Head } from "@inertiajs/vue3";
 // Utils
 import { capitalize } from "@/Composables/capitalize";
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 
 // Components
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -70,15 +70,14 @@ const isPublishingBeefree = ref(false);
 const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
   if (!props.webpage.updateRoute?.name) {
     notify({
-      title: trans("Something went wrong"),
-      text: trans("No update route is configured for this page"),
+      title: ctrans("Something went wrong"),
+      text: ctrans("No update route is configured for this page"),
       type: "error"
     });
     return;
   }
 
   isSavingBlock.value = true;
-  console.log('sdfsdf')
   try {
     await axios[props.webpage.updateRoute.method ?? "patch"](
       route(props.webpage.updateRoute.name, props.webpage.updateRoute.parameters),
@@ -100,7 +99,7 @@ const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | nu
     );
   } catch (error) {
     notify({
-      title: trans("Failed to save"),
+      title: ctrans("Failed to save"),
       text: error?.response?.data?.message || error.message || "Unknown error occurred",
       type: "error"
     });
@@ -128,8 +127,8 @@ const onBeefreeSave = (payload: any) => {
 const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
   if (!props.webpage.publishRoute?.name) {
     notify({
-      title: trans("Something went wrong"),
-      text: trans("No publish route is configured for this page"),
+      title: ctrans("Something went wrong"),
+      text: ctrans("No publish route is configured for this page"),
       type: "error"
     });
     return;
@@ -158,7 +157,7 @@ const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: stri
     );
   } catch (error) {
     notify({
-      title: trans("Failed to save"),
+      title: ctrans("Failed to save"),
       text: error?.response?.data?.message || error.message || "Unknown error occurred",
       type: "error"
     });
@@ -185,15 +184,15 @@ const onPublish = async (action: routeType, popover) => {
     if (response.status === 200) {
       comment.value = "";
       notify({
-        title: trans("Published!"),
-        text: trans("Webpage data has been published successfully"),
+        title: ctrans("Published!"),
+        text: ctrans("Webpage data has been published successfully"),
         type: "success"
       });
     }
     popover.close();
   } catch (error) {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message || "Unknown error occurred",
       type: "error"
     });
@@ -215,7 +214,6 @@ const beforePublish = (route, popover) => {
 
 const openWebsite = () => window.open(props.url, '_blank');
 
-console.log('props',props)
 </script>
 
 <template>
@@ -226,13 +224,13 @@ console.log('props',props)
         @onPublish="(popover) => beforePublish(action.route, popover)" />
     </template>
     <template #afterTitle v-if="isSavingBlock">
-      <LoadingIcon v-tooltip="trans('Saving..')" />
+      <LoadingIcon v-tooltip="ctrans('Saving..')" />
     </template>
     <template #other>
       <button class="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:underline"
-        v-tooltip="trans('Go to website')" @click="openWebsite">
+        v-tooltip="ctrans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="lg" fixed-width />
-        <span>{{ trans('Open Site') }}</span>
+        <span>{{ ctrans('Open Site') }}</span>
       </button>
     </template>
   </PageHeading>

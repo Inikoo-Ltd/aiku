@@ -20,6 +20,6 @@ trait WithSupplyChainAuthorisation
 
         $this->canEdit = $request->user()->authTo("supply-chain.edit");
 
-        return $request->user()->authTo("supply-chain.view");
+        return $request->user()->authTo(["supply-chain.view", "compliance.view"]);
     }
 }

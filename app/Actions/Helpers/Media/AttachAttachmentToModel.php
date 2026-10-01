@@ -25,11 +25,26 @@ use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use App\Actions\Traits\Authorisations\WithAttachmentEditAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
+    use WithAttachmentEditAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $model = collect($request->route()?->parameters())->first(fn ($parameter) => $parameter instanceof Model);
+
+        return $model && $this->canChangeAttachments($request->user(), $model);
+    }
+
     public function handle(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
@@ -75,6 +90,7 @@ class AttachAttachmentToModel extends OrgAction
 
     public function action(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
+        $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 
         $this->handle($model, $this->validatedData);

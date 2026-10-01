@@ -48,6 +48,7 @@ import { faHatCowboy } from "@far"
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
+import IndivisibleSetIcon from "@/Components/Catalogue/IndivisibleSetIcon.vue"
 import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -113,7 +114,7 @@ const props = defineProps<{
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
     is_external_shop?: boolean
-    product_state?: boolean
+    product_state?: string
     is_dependent_trade_unit?: boolean
     variant?: {}
     is_variant_leader?: boolean
@@ -129,6 +130,10 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     salesData?: object
     is_single_trade_unit?: boolean
+    indivisible_set?: {
+        parts: { code: string, name: string, quantity: number }[]
+        route: routeType | null
+    } | null
     reminders?: {}
     trade_unit_slug?: string
     shop_data: {
@@ -320,6 +325,8 @@ const saveProductReview = async () => {
                     :class="'text-red-500'" fixed-width
                 />
             </FontAwesomeLayers>
+
+            <IndivisibleSetIcon v-if="indivisible_set" :set="indivisible_set" />
 
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="ctrans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />

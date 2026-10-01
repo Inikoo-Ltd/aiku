@@ -7,7 +7,7 @@
 <script setup lang="ts">
     import { inject } from "vue";
     import { faInfoCircle } from "@fal";
-    import { trans } from "laravel-vue-i18n";
+    import { ctrans } from "@/Composables/useTrans";
     import { useForm } from "@inertiajs/vue3";
     import PureInput from "@/Components/Pure/PureInput.vue";
     import { library } from "@fortawesome/fontawesome-svg-core";
@@ -23,19 +23,18 @@
     });
 
     const submitForm = async () => {
-        console.log(form.data());
         goNext();
     }
 </script>
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("Add eBay listing profile") }}</span>
+        <span class="text-lg font-semibold">{{ ctrans("Add eBay listing profile") }}</span>
         <hr class="w-full border-t" />
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex flex-col gap-2 w-full md:w-80">
-            <label class="font-semibold">{{ trans("Profile name") }}</label>
+            <label class="font-semibold">{{ ctrans("Profile name") }}</label>
             <PureInput
                 type="text"
                 v-model="form.profileName"
@@ -46,8 +45,8 @@
         <hr class="w-full border-t" />
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

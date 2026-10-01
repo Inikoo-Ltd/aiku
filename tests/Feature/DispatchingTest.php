@@ -10,6 +10,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
+use App\Models\Accounting\PaymentServiceProvider;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
@@ -79,7 +86,9 @@ use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dispatching\Trolley\UI\GetTrolleyShowcase;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Catalogue\Product\GetProductsNeedReviewBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -584,8 +593,8 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
     $transaction = $picking->deliveryNoteItem->transaction;
     $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
     expect($order->state)->toBe(OrderStateEnum::HANDLING)
-        ->and($notPicked['amount'])->toBe(round(10 * $transaction->net_amount / $transaction->quantity_ordered * (1 + $order->tax_amount / $order->net_amount), 2))
-        ->and($notPicked['expected_return'])->toBe(round(max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount'])), 2));
+        ->and($notPicked['amount'])->toBe(round($transaction->net_amount * $picking->deliveryNoteItem->quantity_not_picked / $picking->deliveryNoteItem->quantity_required * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBe(round(min($notPicked['amount'], max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount']))), 2));
 
     $picking->refresh();
 
@@ -1328,6 +1337,16 @@ test('shippers json and waiting badges', function () {
         ->and(GetCrmReturnedBadgeData::run($user))->toBeArray();
 });
 
+test('layout badge totals match the sum of their per shop breakdown', function () {
+    $user = $this->adminGuest->getUser();
+
+    $sumOf = fn (array $organisations, string $key) => collect($organisations)->flatMap(fn (array $organisation) => $organisation['shops'])->sum("$key.count");
+
+    expect(GetCrmReturnedBadgeData::make()->totalCount($user))->toBe($sumOf(GetCrmReturnedBadgeData::run($user), 'return_crm_items'))
+        ->and(GetMasterUpdatedBadgeData::make()->totalCount($user))->toBe($sumOf(GetMasterUpdatedBadgeData::run($user), 'master_updated_items'))
+        ->and(GetProductsNeedReviewBadgeData::make()->totalCount($user))->toBe($sumOf(GetProductsNeedReviewBadgeData::run($user), 'needs_review_items'));
+});
+
 test('UI dispatching item and courier index pages', function () {
     get(route('grp.org.warehouses.show.dispatching.waiting_items_still_picking', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
     get(route('grp.org.warehouses.show.dispatching.waiting_crm_items', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
@@ -1626,6 +1645,73 @@ test('a delivery note going to a box packing list destination is packed only onc
         ->and($skippedItem->refresh()->boxes)->toBeNull();
 
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
+});
+
+test('packing list counts the products the customer ordered, not SKOs, and has no prices', function () {
+    [$deliveryNote, $item] = finalisedDeliveryNote($this);
+    $transaction           = $item->transaction;
+    $action                = \App\Actions\Dispatching\DeliveryNote\PdfPackingList::make();
+
+    expect($action->handle($deliveryNote)->getStatusCode())->toBe(200)
+        ->and($action->lines($deliveryNote->refresh())->first())->toBe([
+            'sko_code'     => $item->orgStock->code,
+            'product_code' => $transaction->historicAsset->code,
+            'description'  => $transaction->historicAsset->name,
+            'quantity'     => (float) round((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus),
+            'components'   => [],
+        ]);
+
+    $item->quantity_required = 0.1;
+    $item->quantity_packed   = 0.05;
+    $transaction->quantity_ordered = 2;
+    $transaction->quantity_bonus   = 0;
+
+    expect($action->line($item, 0.05)['quantity'])->toBe(1.0);
+
+    $html = view('deliveryNote.templates.pdf.packing-list', [
+        'deliveryNote'    => $deliveryNote,
+        'order'           => $deliveryNote->orders()->first(),
+        'lines'           => $action->lines($deliveryNote),
+        'boxes'           => collect(),
+        'numberBoxes'     => 0,
+        'deliveryAddress' => null,
+    ])->render();
+
+    expect($html)->toContain('SKO Code')->toContain('Product Code')->not->toContain('Price');
+});
+
+test('packing list shows a product made of several SKOs once, with its SKOs listed under it', function () {
+    $transaction = new \App\Models\Ordering\Transaction(['quantity_ordered' => 2, 'quantity_bonus' => 0]);
+    $transaction->id = 1;
+    $transaction->setRelation('historicAsset', new \App\Models\Catalogue\HistoricAsset(['code' => 'SET-01', 'name' => 'Gift set']));
+
+    $part = function (string $skoCode, float $required, float $packed) use ($transaction) {
+        $item = new \App\Models\Dispatching\DeliveryNoteItem(['quantity_required' => $required, 'quantity_packed' => $packed]);
+        $item->transaction_id = $transaction->id;
+        $item->setRelation('transaction', $transaction);
+        $item->setRelation('orgStock', new \App\Models\Inventory\OrgStock(['code' => $skoCode, 'name' => $skoCode.' name']));
+
+        return $item;
+    };
+
+    $deliveryNote = new \App\Models\Dispatching\DeliveryNote();
+    $deliveryNote->setRelation('deliveryNoteItems', collect([
+        $part('SOAP', 4, 4),
+        $part('BOMB', 0.125, 0.126),
+        $part('BOX', 2, 1),
+    ]));
+
+    expect(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::make()->lines($deliveryNote)->all())->toBe([[
+        'sko_code'     => '',
+        'product_code' => 'SET-01',
+        'description'  => 'Gift set',
+        'quantity'     => 1.0,
+        'components'   => [
+            ['sko_code' => 'SOAP', 'description' => 'SOAP name', 'quantity' => 4.0],
+            ['sko_code' => 'BOMB', 'description' => 'BOMB name', 'quantity' => 2.0],
+            ['sko_code' => 'BOX', 'description' => 'BOX name', 'quantity' => 1.0],
+        ],
+    ]]);
 });
 
 test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {
@@ -2959,6 +3045,17 @@ test('a claim is refunded to the customer balance in one call, the claimed share
         'gross_amount'    => 60,
         'net_amount'      => 60,
     ]);
+    $invoice = CalculateInvoiceTotals::run($invoice->refresh());
+    $cashAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim cash account']
+    );
+    PayInvoice::make()->action($invoice, $cashAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
     $balanceBefore = (float) $customer->fresh()->balance;
 
     $claimed = (float) $item->quantity_required / 3;
@@ -3757,6 +3854,23 @@ test('waiting quantities never exceed what is still unpicked', function () {
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
+test('lines waiting for customer service show the order CRM note and the warehouse note', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+    $deliveryNote->update(['number_items_waiting_crm' => 1, 'private_warehouse_note' => 'shelf empty']);
+    $deliveryNote->orders()->first()->update(['internal_notes' => '30/9 emailed re oos']);
+
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['waiting_crm_items']['data'];
+
+    $row = collect($rows)->firstWhere('delivery_note_id', $deliveryNote->id);
+
+    expect($row['delivery_note_internal_notes'])->toBe('30/9 emailed re oos')
+        ->and($row['delivery_note_private_warehouse_note'])->toBe('shelf empty');
+});
+
 test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
@@ -3777,6 +3891,12 @@ test('lines waiting for customer service carry the product order line net and ta
         ->and((float) $line['net_amount_with_tax'])->toBe(round(10 * (1 + $rate), 2))
         ->and($line['product_code'])->toBe($transaction->historicAsset->code)
         ->and($line['number_skos_in_product'])->toBeGreaterThanOrEqual(1);
+
+    if ((int) $line['number_skos_in_product'] === 1) {
+        $waitingNet = round(10 / (float) $item->quantity_required, 2);
+        expect((float) $line['waiting_net_amount'])->toBe($waitingNet)
+            ->and((float) $line['waiting_net_amount_with_tax'])->toBe(round($waitingNet * (1 + $rate), 2));
+    }
 });
 
 test('a redefined pack does not change what an already sold box means', function () {
@@ -4892,6 +5012,29 @@ test('finishing a return only marks the still unhandled quantity as not returned
     expect((float) $returnItem->refresh()->total_item_not_returned)->toBe(2.0);
 });
 
+test('a return that needs no action can be finished without a refund or a replacement (HELP-3569)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+    $order = $deliveryNote->orders()->first();
+    \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, array_merge(\App\Models\Accounting\Invoice::factory()->definition(), [
+        'billing_address' => new Address(Address::factory()->definition()),
+    ]), strict: false);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    request()->setUserResolver(fn () => $this->user);
+    $finished = \App\Actions\GoodsIn\ReturnDeliveryNote\SetDoneReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh(), [
+        'createRefund'      => false,
+        'createReplacement' => false,
+    ]);
+
+    expect($finished->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE)
+        ->and($finished->refund_id)->toBeNull()
+        ->and($finished->replacement_id)->toBeNull();
+});
+
 test('a second return only covers what was not returned yet and waits for the first to finish (HELP-3194)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
@@ -5173,4 +5316,230 @@ test('a second worker reaching picked with a stale note leaves the already picke
     $this->travelBack();
 
     expect($deliveryNote->fresh()->picked_at->equalTo($pickedAt))->toBeTrue();
+});
+
+test('a product made of parts counts complete sets when indivisible and each part by its value otherwise (HELP-3548)', function () {
+    $parts = collect([
+        (object)['quantity_required' => 1, 'quantity_picked' => 0, 'sku_commercial_value' => 10.95],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 1.69],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 5.29],
+    ]);
+    $generateInvoiceFromOrder = \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make();
+
+    expect($generateInvoiceFromOrder->getPickedFraction($parts, true))->toBe(0.0)
+        ->and(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(6.98 / 17.93, 4));
+
+    $parts[1]->sku_commercial_value = null;
+    expect(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(2 / 3, 4));
+});
+
+function deliveryNoteWithOnePartNotFound($ctx): array
+{
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($ctx)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    $deliveryNote->deliveryNoteItems()
+        ->whereKeyNot($item->id)
+        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0]);
+
+    return [$deliveryNote->refresh(), $item];
+}
+
+test('parts of a divisible set go out when another part is not found (HELP-3548)', function () {
+    [$deliveryNote] = deliveryNoteWithOnePartNotFound($this);
+
+    expect(UpdateDeliveryNoteStateToPicked::run($deliveryNote)->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a set sold only complete waits until its other parts are put back, then refunds the whole product (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->incompleteSetItems()->pluck('id')->all())->toBe([$item->id]);
+
+    $partsToPutBack = \App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote::make()->getPutBackIncompleteSetsAction($deliveryNote)['parts'];
+    $pickedLocation = $item->pickings()->with('location')->first()->location;
+
+    expect($partsToPutBack)->toBe([[
+        'code'      => $item->orgStock->code,
+        'name'      => $item->orgStock->name,
+        'quantity'  => (float)$item->quantity_picked,
+        'locations' => [$pickedLocation->code],
+    ]]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    $item->refresh();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and((float)$item->quantity_picked)->toBe(0.0)
+        ->and($item->is_handled)->toBeTrue()
+        ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});
+
+test('a set sold only complete waiting on a part not found goes back to picking with that part to look for again (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $notFoundPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($this)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    StoreNotPickPicking::make()->action($notFoundPart, $this->user, []);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoWaitingDeliveryNote::make()->action($deliveryNote);
+    $notFoundPart->refresh();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and((float)$notFoundPart->quantity_not_picked)->toBe(0.0)
+        ->and($notFoundPart->is_handled)->toBeFalse()
+        ->and($deliveryNote->hasIncompleteSets())->toBeFalse()
+        ->and((float)$item->refresh()->quantity_picked)->toBe(10.0);
+});
+
+test('a picking session offers to put back the parts of a set sold only complete picked beyond its complete sets (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $groupedRow = (new \App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource((object)[
+        'delivery_note_id'                  => $deliveryNote->id,
+        'delivery_note_reference'           => $deliveryNote->reference,
+        'delivery_note_slug'                => $deliveryNote->slug,
+        'delivery_note_customer_notes'      => null,
+        'delivery_note_public_notes'        => null,
+        'delivery_note_internal_notes'      => null,
+        'delivery_note_shipping_notes'      => null,
+        'delivery_note_is_premium_dispatch' => false,
+        'delivery_note_has_extra_packing'   => false,
+    ]))->toArray(request());
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($groupedRow['put_back_incomplete_sets']['route']['name'])->toBe('grp.models.delivery_note.state.put_back_incomplete_sets')
+        ->and(collect($groupedRow['put_back_incomplete_sets']['parts'])->pluck('code')->all())->toBe([$item->orgStock->code]);
+});
+
+test('a picking session waiting on a set sold only complete shows the parts to put back and moves on once they are (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['is_handled' => true, 'quantity_picked' => 0]);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $incompleteSets = \App\Actions\Dispatching\PickingSession\UI\ShowPickingSession::make()->getIncompleteSets($pickingSession->refresh());
+    $itemizedRow    = collect(\App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
+        \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession)
+    )->resolve())->firstWhere('id', $item->id);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($incompleteSets)->toHaveCount(1)
+        ->and($incompleteSets[0]['delivery_note_reference'])->toBe($deliveryNote->reference)
+        ->and(collect($incompleteSets[0]['action']['parts'])->pluck('code')->all())->toBe([$item->orgStock->code])
+        ->and($itemizedRow['indivisible_set']['product']['code'])->toBe($item->transaction->model->code);
+
+    \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->not->toBe(PickingSessionStateEnum::HANDLING_BLOCKED)
+        ->and(\App\Actions\Dispatching\PickingSession\UI\ShowPickingSession::make()->getIncompleteSets($pickingSession))->toBe([]);
+});
+
+test('a picking session waiting on a set sold only complete goes back to picking to look for the part not found (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $notFoundPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($this)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    StoreNotPickPicking::make()->action($notFoundPart->refresh(), $this->user, []);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    \App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::make()->action($pickingSession->refresh());
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING)
+        ->and((float)$notFoundPart->refresh()->quantity_not_picked)->toBe(0.0)
+        ->and($notFoundPart->is_handled)->toBeFalse();
+});
+
+test('the picker of a waiting picking session may send it back to picking (HELP-3548)', function () {
+    $pickingSession = (new \App\Models\Inventory\PickingSession())->forceFill([
+        'user_id'         => $this->user->id,
+        'warehouse_id'    => $this->warehouse->id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+
+    expect(\App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::canStepBack($this->user, $pickingSession))->toBeTrue()
+        ->and(\App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession::canStepBack(null, $pickingSession))->toBeFalse();
+});
+
+test('a set sold only complete with a part not found counts the product once in what customer services sees as out of stock (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['quantity_not_picked' => 10]);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $order       = $deliveryNote->orders()->first()->refresh();
+    $transaction = $item->transaction->refresh();
+    $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
+
+    expect($notPicked['amount'])->toBe(round($transaction->net_amount * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBeLessThanOrEqual($notPicked['amount']);
+});
+
+test('the picking list shows which set sold only complete an item is a part of (HELP-3548)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $product = $item->transaction->model;
+    $product->update(['is_indivisible' => false]);
+
+    $indivisibleSetOnPickingList = fn () => DeliveryNoteItemsStateHandlingResource::collection(
+        IndexDeliveryNoteItemsStateHandling::run($deliveryNote, deliveryNoteItemId: $item->id)
+    )->resolve()[0]['indivisible_set'];
+
+    expect($indivisibleSetOnPickingList())->toBeNull();
+
+    $tradeUnit = \App\Models\Goods\TradeUnit::firstOrFail();
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 9]]);
+    $product->update(['is_indivisible' => true]);
+
+    $indivisibleSet = $indivisibleSetOnPickingList();
+    $part           = collect($indivisibleSet['parts'])->firstWhere('code', $tradeUnit->code);
+
+    $transaction = $item->transaction;
+
+    expect($indivisibleSet['product'])->toBe(['code' => $product->code, 'name' => $product->name])
+        ->and($indivisibleSet['transaction_id'])->toBe($transaction->id)
+        ->and($indivisibleSet['sets_ordered'])->toBe((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus)
+        ->and($indivisibleSet['route'])->toBeNull()
+        ->and($part)->toBe(['code' => $tradeUnit->code, 'name' => $tradeUnit->name, 'quantity' => 9.0]);
 });

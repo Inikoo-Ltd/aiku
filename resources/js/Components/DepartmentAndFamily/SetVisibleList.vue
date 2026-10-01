@@ -57,7 +57,6 @@ const SaveShowAndHide = (item) => {
                 item.loading = true;
             },
             onSuccess: (e) => {
-                console.log(e)
                 item.show_in_website = !item.show_in_website
             },
             onError: (errors) => {

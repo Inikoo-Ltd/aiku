@@ -50,7 +50,7 @@ const backToAuto = () => {
         >
             <FontAwesomeIcon icon="fal fa-robot" class="text-gray-400" fixed-width aria-hidden="true" />
             {{ trans("Units auto assigned") }}: {{ form[fieldName] }}
-            <span class="text-gray-400 group-hover:text-indigo-600 underline underline-offset-2">
+            <span class="text-gray-400 group-hover:text-[var(--app-accent)] underline underline-offset-2">
                 {{ trans("click to change") }}
             </span>
         </button>
@@ -74,7 +74,7 @@ const backToAuto = () => {
                 v-if="fieldData?.canToggle"
                 type="button"
                 @click="backToAuto"
-                class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2"
+                class="text-xs text-gray-400 hover:text-[var(--app-accent)] underline underline-offset-2"
             >
                 {{ trans("use the composition") }}
             </button>

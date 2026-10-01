@@ -13,7 +13,6 @@ import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { cloneDeep, debounce, get, set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject, computed, watch, proxyRefs, onUnmounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -78,7 +77,6 @@ function orgStockRoute(deliveryNoteItem: any) {
 const isMounted = ref(false)
 let socketChannel: any = null
 
-console.log(props.data.data);
 
 const initSocketListener = () => {
     const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
@@ -256,7 +254,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :useTopPagination="true">
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :useTopPagination="true" tableClass="max-lg:min-w-[max(100%,56rem)]" withScrollArrows>
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
                 <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
@@ -341,7 +339,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         <span v-else>
                             {{ sowing.location_code }}
                         </span>
-                        <div v-tooltip="trans('Total returned quantity in this location')" class="text-gray-500 whitespace-nowrap">
+                        <div v-tooltip="ctrans('Total returned quantity in this location')" class="text-gray-500 whitespace-nowrap">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
                                 aria-hidden="true" />
                             <FractionDisplay v-if="sowing.quantity_fractional"
@@ -352,7 +350,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </div>
                     </div>
                     <!-- If sowing not returned -->
-                    <div v-if="sowing.type === 'not-sow'" v-tooltip="trans('Quantity not returned')"
+                    <div v-if="sowing.type === 'not-sow'" v-tooltip="ctrans('Quantity not returned')"
                         class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon :icon="faGhost" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="sowing.quantity_fractional"
@@ -362,7 +360,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         </span>
                     </div>
                     <!-- If sowing damaged -->
-                    <div v-if="sowing.type === 'damaged'" v-tooltip="trans('Quantity damaged')"
+                    <div v-if="sowing.type === 'damaged'" v-tooltip="ctrans('Quantity damaged')"
                         class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon :icon="faFragile" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="sowing.quantity_fractional"
@@ -422,7 +420,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                vxtooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
+                                vxtooltip="ctrans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                                 icon="fal fa-fragile"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="negative"
@@ -497,7 +495,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                vxtooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
+                                vxtooltip="ctrans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                                 icon="far fa-ghost"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="negative"
@@ -572,7 +570,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.location_code || '-' })"
+                                v-tooltip="ctrans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.location_code || '-' })"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="positive"
@@ -628,7 +626,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
             <div class="flex flex-row fit-content gap-3">
                 <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
                     <span class="text-xs italic">
-                        {{ trans("Refundable") }}
+                        {{ ctrans("Refundable") }}
                     </span>
                     <InputNumber
                         :modelValue="proxyItem.to_refund.net_amount"
@@ -668,12 +666,12 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                             emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
                         }"
                         class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
+                        {{ ctrans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
                     </button>
                 </div>
                 <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
                     <span class="text-xs italic">
-                        {{ trans("Replacable") }}
+                        {{ ctrans("Replacable") }}
                     </span>
                     <InputNumber
                         :modelValue="proxyItem.to_refund.replaced_quantity"
@@ -715,7 +713,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                             emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
                         }"
                         class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                        {{ trans("Replacable") }}: {{ proxyItem.to_refund.max_replace_amount }}
+                        {{ ctrans("Replacable") }}: {{ proxyItem.to_refund.max_replace_amount }}
                     </button>
                 </div>
             </div>

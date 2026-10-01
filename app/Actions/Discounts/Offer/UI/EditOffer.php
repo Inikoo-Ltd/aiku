@@ -166,7 +166,7 @@ class EditOffer extends OrgAction
                     'iconRight' => $offer->state->stateIcon()[$offer->state->value],
                     'actions'   => array_filter(
                         [
-                            $offer->state == OfferStateEnum::ACTIVE ? [
+                            in_array($offer->state, [OfferStateEnum::ACTIVE, OfferStateEnum::SUSPENDED]) ? [
                                 'type'  => 'button',
                                 'label' => __('Finish Now'),
                                 'style' => 'red',

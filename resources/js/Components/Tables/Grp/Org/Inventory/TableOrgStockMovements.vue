@@ -11,7 +11,7 @@ import { Stock } from "@/types/stock";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faArrowDown, faArrowUp, faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faShippingFast, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
@@ -45,7 +45,6 @@ defineProps<{
 function stockRoute(stock: Stock) {
 
 
-  console.log(route().current());
   switch (route().current()) {
     case "grp.org.warehouses.show.inventory.org_stock_families.show":
       return route(
@@ -229,9 +228,9 @@ function noteColor(movement) {
     </template>
 
     <template #cell(flow)="{ item: orgStockMovement }">
-      <FontAwesomeIcon v-if="orgStockMovement.flow == 'in'" v-tooltip="trans('Stock Coming In')" :icon="faInboxIn" class="text-green-500" fixed-width/>
-      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'out'" v-tooltip="trans('Stock Coming Out')" :icon="faInboxOut" class="text-red-500" fixed-width/>
-      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="trans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500" fixed-width/>
+      <FontAwesomeIcon v-if="orgStockMovement.flow == 'in'" v-tooltip="ctrans('Stock Coming In')" :icon="faInboxIn" class="text-green-500" fixed-width/>
+      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'out'" v-tooltip="ctrans('Stock Coming Out')" :icon="faInboxOut" class="text-red-500" fixed-width/>
+      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="ctrans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500" fixed-width/>
     </template>
 
     <template #cell(running_value)="{ item: orgStockMovement }">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch, computed, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureDatePicker from '@/Components/Pure/PureDatePicker.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { get, set } from 'lodash-es'
@@ -36,7 +36,7 @@ const model = defineModel()
 <template>
     <div class="pb-2">
         <div class="px-3 flex flex-col mb-2">
-            <div class="text-xs">{{ trans('Select end date') }}</div>
+            <div class="text-xs">{{ ctrans('Select end date') }}</div>
             
             <!-- Date -->
             <div class="flex items-center gap-x-2 py-1 w-full" >
@@ -52,7 +52,7 @@ const model = defineModel()
         </div>
 
         <div class="px-3 flex flex-col mb-2">
-            <div class="text-xs">{{ trans('Enter text (when countdown expired)') }}</div>
+            <div class="text-xs">{{ ctrans('Enter text (when countdown expired)') }}</div>
 
             <!-- Text -->
             <div class="flex items-center gap-x-2 py-1 w-full" >
@@ -61,7 +61,7 @@ const model = defineModel()
                     @update:modelValue="(e) => set(model, 'expired_text', e)"
                     v-bind="$attrs"
                     class="w-full"
-                    :placeholder="trans('Enter text')"
+                    :placeholder="ctrans('Enter text')"
                 >
                     <template #editor-content="{ editor }">
                         <div class="bg-gray-200 editor-wrapper border-2 border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-400">
@@ -72,7 +72,7 @@ const model = defineModel()
 
                 <!-- <SideEditorInputHTML
                     :modelValue="get(model, 'expired_text', '')"
-                    @update:modelValue="(e) => (console.log(e), set(model, 'expired_text', e))"
+                    @update:modelValue="(e) => set(model, 'expired_text', e)"
                 /> -->
             </div>
         </div>

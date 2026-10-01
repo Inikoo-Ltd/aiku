@@ -180,6 +180,30 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
+        'agt-m'      => [
+            'code'               => 'agt-m',
+            'name'               => 'Agent manager',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_MANAGER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
+        'agt-c'      => [
+            'code'               => 'agt-c',
+            'name'               => 'Agent clerk',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_CLERK
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
         'hr-m'       => [
             'code'       => 'hr-m',
             'name'       => 'Human resources supervisor',
@@ -288,7 +312,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_SUPERVISOR
+                RolesEnum::MARKETING_SUPERVISOR,
+                RolesEnum::DISCOUNTS_SUPERVISOR
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -301,7 +326,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_CLERK
+                RolesEnum::MARKETING_CLERK,
+                RolesEnum::DISCOUNTS_CLERK
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

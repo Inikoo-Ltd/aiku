@@ -25,6 +25,7 @@ enum EmailOngoingRunCodeEnum: string
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case PRE_ORDER_UPDATE = 'pre_order_update';
     case PASSWORD_REMINDER = 'password_reminder';
 
     case REGISTRATION = 'registration';
@@ -49,6 +50,7 @@ enum EmailOngoingRunCodeEnum: string
     case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
     case GOLD_REWARD_REMINDER_2 = 'gold_reward_reminder_2';
     case GOLD_REWARD_REMINDER_3 = 'gold_reward_reminder_3';
+    case DUE_TO_REORDER = 'due_to_reorder';
     case OOS_NOTIFICATION = 'oos_notification';
     case REVIEW_REMINDER = 'review_reminder';
 

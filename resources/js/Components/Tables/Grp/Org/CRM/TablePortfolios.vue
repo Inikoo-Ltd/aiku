@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, onMounted, ref, computed, watch, nextTick } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -58,7 +58,6 @@ const props = defineProps<{
     routes: {}
     customerSalesChannel: {}
 }>()
-console.log('ddddd', props)
 const locale = useLocaleStore()
 const selectedPortfolio = ref(null)
 const isLoadingTable = ref<null | string>(null)
@@ -90,8 +89,8 @@ const onSubmitVariant = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully match the product"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully match the product"),
                     type: "success"
                 })
 
@@ -103,10 +102,9 @@ const onSubmitVariant = () => {
 
             },
             onError: errors => {
-                console.log(errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message ?? trans("Failed to match the product to platform"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message ?? ctrans("Failed to match the product to platform"),
                     type: "error"
                 })
             },
@@ -284,31 +282,31 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
         <template #cell(platform_status)="{ item }">
             <div class="whitespace-nowrap">
                 <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                    v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
+                    v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
                     fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
+                <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times"
                     class="text-red-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
+                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="ctrans('Exist in platform')"
                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
+                <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500"
                     fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
+                <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500"
                     fixed-width aria-hidden="true" />
             </div>
         </template>
 
         <template #cell(stock)="{ item }">
             <div v-if="item.item_type === 'Product'" class="whitespace-nowrap tabular-nums">
-                <span v-tooltip="trans('Current stock in AW')">{{ item.available_quantity ?? '-' }}</span>
+                <span v-tooltip="ctrans('Current stock in AW')">{{ item.available_quantity ?? '-' }}</span>
                 <span class="text-gray-400 mx-1">/</span>
-                <span v-tooltip="item.is_stock_in_sync === null ? trans('Never pushed to the platform') : trans('Last stock value pushed to the platform')"
+                <span v-tooltip="item.is_stock_in_sync === null ? ctrans('Never pushed to the platform') : ctrans('Last stock value pushed to the platform')"
                     :class="item.is_stock_in_sync === false ? 'text-red-500 font-medium' : 'text-gray-500'">
                     {{ item.last_stock_value ?? '-' }}
                 </span>
                 <FontAwesomeIcon v-if="item.is_stock_in_sync === false"
-                    v-tooltip="trans('Stock in AW differs from the last value pushed to the platform')"
+                    v-tooltip="ctrans('Stock in AW differs from the last value pushed to the platform')"
                     icon="fal fa-exclamation-triangle" class="text-amber-500 ml-1 text-xl" fixed-width aria-hidden="true" />
             </div>
         </template>
@@ -320,7 +318,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                 </span>
                 <span v-else class="text-gray-400">-</span>
                 <FontAwesomeIcon v-if="item.stock_last_fail_updated_at && (!item.stock_last_updated_at || item.stock_last_fail_updated_at > item.stock_last_updated_at)"
-                    v-tooltip="trans('Last stock push failed on :date', { date: useFormatTime(item.stock_last_fail_updated_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
+                    v-tooltip="ctrans('Last stock push failed on :date', { date: useFormatTime(item.stock_last_fail_updated_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
                     icon="fal fa-exclamation-circle" class="text-red-500 ml-1 text-xl" fixed-width aria-hidden="true" />
             </div>
         </template>
@@ -341,7 +339,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                         </div>
 
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
-                            v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
+                            v-tooltip="ctrans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
                                 name: props.routes.single_match.name,
                                 parameters: {
@@ -350,17 +348,17 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                                 }
                             }" :bindToLink="{
                                 preserveScroll: true,
-                            }" type="primary" :label="trans('Match with this product')" size="xxs"
+                            }" type="primary" :label="ctrans('Match with this product')" size="xxs"
                             icon="fal fa-hand-pointer" />
 
                     </div>
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
                         @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
-                        :label="trans('Choose another product from your shop')" size="xxs"
+                        :label="ctrans('Choose another product from your shop')" size="xxs"
                         type="tertiary" />
                     <Button v-else @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
-                        :label="trans('Match it with an existing product in your shop')" size="xxs" type="tertiary" />
+                        :label="ctrans('Match it with an existing product in your shop')" size="xxs" type="tertiary" />
                 </template>
 
                 <template v-else>
@@ -380,7 +378,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
 
 
                     <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                        :label="trans('Connect with other product')" :icon="faRecycle" size="xxs"
+                        :label="ctrans('Connect with other product')" :icon="faRecycle" size="xxs"
                         type="tertiary" />
 
                 </template>
@@ -392,18 +390,18 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
         <template #cell(actions)="{ item }">
             <div class="flex gap-2">
                 <div v-if="item.customer_sales_channel_platform_status && !item.platform_status" class="flex gap-x-2 items-center">
-                    <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
+                    <ButtonWithLink v-tooltip="ctrans('Will create new product')" :routeTarget="{
                         method: 'post',
                         name: props.routes.single_create_new.name,
                         parameters: {
                             portfolio: item.id
                         },
-                    }" isWithError :label="trans('Create new product')" size="xs" :icon="faPlus" type="tertiary" :bindToLink="{
+                    }" isWithError :label="ctrans('Create new product')" size="xs" :icon="faPlus" type="tertiary" :bindToLink="{
                     preserveScroll: true,
                 }" />
                 </div>
 
-                <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
+                <ButtonWithLink v-tooltip="ctrans('Unselect product')" type="negative" icon="fal fa-skull"
                     :routeTarget="item.routes.delete_route" :body="{
                         'status': false,
                     }" size="xs" :bindToLink="{
@@ -424,12 +422,12 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
 
             <div class="mb-2">
                 <strong> 
-                    {{ trans('List of Products under your :_storetype Store', {_storetype: customerSalesChannel.platform.name}) }}
+                    {{ ctrans('List of Products under your :_storetype Store', {_storetype: customerSalesChannel.platform.name}) }}
                 </strong>
             </div>
 
             <div class="mb-2 relative">
-                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()" :placeholder="trans('Search in :platform', { platform: customerSalesChannel.platform.name })" :disabled="isLoadingFetchPlatformProduct"/>
+                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()" :placeholder="ctrans('Search in :platform', { platform: customerSalesChannel.platform.name })" :disabled="isLoadingFetchPlatformProduct"/>
                 <div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
                     <LoadingIcon/>
                 </div>
@@ -438,14 +436,14 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
             <div class="xh-full xmd:h-[570px] text-base font-normal">
                 <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
-                        <!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
+                        <!-- <div class="font-semibold text-lg py-1">{{ ctrans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative" style="scrollbar-width: thin; scrollbar-gutter: stable;">
                         <!-- Products list -->
                         <div  class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
-                                <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: customerSalesChannel.platform.name }) }}
+                                <LoadingIcon class="ml-1"/> {{ ctrans("Fetching your :_storetype product list", {_storetype: customerSalesChannel.platform.name }) }}
                             </div>
                             <template ref="list" v-else-if="resultOfFetchPlatformProduct?.length > 0">
                                 <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
@@ -467,24 +465,24 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                                             :alt="item.name" />
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-tooltip="trans('Name')"
+                                                <div v-tooltip="ctrans('Name')"
                                                     class="w-fit font-semibold leading-none mb-1">
                                                     {{ item.name || 'no name' }}
                                                 </div>
-                                                <div v-if="!item.no_code" v-tooltip="trans('Code')"
+                                                <div v-if="!item.no_code" v-tooltip="ctrans('Code')"
                                                     class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.code || 'no code' }}
                                                 </div>
-                                                <div v-if="item.reference" v-tooltip="trans('Reference')"
+                                                <div v-if="item.reference" v-tooltip="ctrans('Reference')"
                                                     class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.reference || 'no reference' }}
                                                 </div>
-                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+                                                <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')"
                                                     class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
                                             </div>
                                             <div v-if="!item.no_price" xclick="() => selectProduct(item)"
-                                                v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
                                                 locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
                                                 }}
@@ -496,19 +494,19 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                                     <LoadingIcon v-if="hasMore" />
                                 </div>
                                 <div v-if="!hasMore && customerSalesChannel.platform.name == 'Ebay'" class="col-span-2 text-center">
-                                    {{ trans("You've reached the end of item list") }}
+                                    {{ ctrans("You've reached the end of item list") }}
                                 </div>
                             </template>
                             <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
+                                {{ ctrans("No products found") }}
                             </div>
                         </div>
                     </div>
                     <div class="mt-4">
                         <Button @click="() => onSubmitVariant()" 
                             :disabled="!selectedVariant?.id"
-                            v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
-                            :label="trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full xicon="fas fa-plus"
+                            v-tooltip="!selectedVariant?.id ? ctrans('Select at least one product on your platform') : ''"
+                            :label="ctrans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full xicon="fas fa-plus"
                             :loading="isLoadingSubmit"/>
                     </div>
                 </div>

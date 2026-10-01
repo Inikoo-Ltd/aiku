@@ -223,7 +223,6 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         }
 
     } catch (error) {
-        console.log(error);
         if (freshInStockProducts) {
             products.value = freshInStockProducts;
         }

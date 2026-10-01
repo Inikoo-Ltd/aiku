@@ -23,9 +23,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * The inbox is worked in the order customers wrote, except for a request to cancel an order
  * or change its delivery address: those go wrong for good once the order ships, so they go
- * to the front until an agent answers. Every new customer message is checked; when the model
- * cannot be asked, words that say it in the languages our customers write in decide instead,
- * so an outage flags too many rather than too few.
+ * to the front until an agent answers. Every new customer message, but not a courier's, is
+ * read by Jev's cascade (ClassifyChatTurn), which also says whether it only closes the
+ * conversation and, for a dropshipping customer, which queue it belongs to. Without Jev a chat
+ * model reads the request and nothing closes; without either, words that say it in the
+ * languages our customers write in decide, so an outage flags too many rather than too few.
  */
 class FlagUrgentChatRequest
 {
@@ -59,39 +61,44 @@ class FlagUrgentChatRequest
 
     public function handle(ChatSession|MetaChatSession $chatSession): ?string
     {
-        if ($chatSession->status === ChatSessionStatusEnum::CLOSED) {
+        WaitForCustomerReply::stop($chatSession);
+
+        if ($chatSession->status === ChatSessionStatusEnum::CLOSED || ($chatSession instanceof ChatSession && $chatSession->is_carrier)) {
             return null;
         }
 
-        $text = $this->unansweredText($chatSession);
+        $text = ClassifyChatTurn::customerWrote($chatSession);
         if ($text === '') {
             return null;
         }
 
         $weSaid     = $this->lastAgentMessage($chatSession);
         $isDropship = $chatSession->shop?->type === ShopTypeEnum::DROPSHIPPING;
-        $assessment = $this->assess($text, $weSaid, $isDropship);
+        $turn       = ClassifyChatTurn::forSession($chatSession);
+        $assessment = $turn
+            ? ['request' => $turn['urgent'], 'only_thanks' => $turn['closing'] >= 0.9, 'kind' => $turn['ds_kind']]
+            : ['only_thanks' => false] + $this->assess($text, $weSaid, $isDropship);
         $request    = $assessment['request'];
 
-        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid) && $this->assess($text, $weSaid)['only_thanks']) {
+        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid)) {
             CloseChatAfterThanks::closeNowOrLater($chatSession);
 
             return null;
         }
 
-        $metadata = $chatSession->metadata ?? [];
+        $changes = [];
 
-        if ($assessment['kind']) {
-            $metadata[self::KIND_KEY] = $assessment['kind'];
+        if ($assessment['kind'] && $assessment['kind'] !== data_get($chatSession->metadata, self::KIND_KEY)) {
+            $changes[self::KIND_KEY] = $assessment['kind'];
         }
 
         if ($request && !self::current($chatSession)) {
-            $metadata[self::KEY]    = $request;
-            $metadata[self::AT_KEY] = now()->toISOString();
+            $changes[self::KEY]    = $request;
+            $changes[self::AT_KEY] = now()->toISOString();
         }
 
-        if ($metadata !== ($chatSession->metadata ?? [])) {
-            $chatSession->update(['metadata' => $metadata]);
+        if ($changes) {
+            SetChatSessionMetadata::run($chatSession, $changes);
         }
 
         return $request;
@@ -103,9 +110,9 @@ class FlagUrgentChatRequest
      * heard yet. A reply of only emoji is not read as thanks, and on WhatsApp neither is a
      * sticker, voice note, location, contact or button tap, although those arrive as text.
      * A question mark, or our last message promising something or asking them to wait, keeps
-     * it open whatever the model says: on real WhatsApp replies it missed both now and then.
-     * A new message reopens the conversation. The model is asked twice and both must agree:
-     * on real replies one answer was not steady enough on the few that mattered.
+     * it open whatever Jev says: on real WhatsApp replies a model missed both now and then.
+     * A new message reopens the conversation. Only Jev closes, and only when sure (0.9) the
+     * customer is ending the conversation: a chat model read a refund request as thanks.
      */
     private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession, string $text, string $weSaid): bool
     {
@@ -203,18 +210,6 @@ class FlagUrgentChatRequest
         return trim((string) ($message?->message_text ?? '')) ?: '(nothing yet)';
     }
 
-    private function unansweredText(ChatSession|MetaChatSession $chatSession): string
-    {
-        return $chatSession->messages()
-            ->whereIn('sender_type', array_map(fn (ChatSenderTypeEnum $sender) => $sender->value, self::CUSTOMER_SENDERS))
-            ->when($chatSession->last_agent_message_at, fn ($query, $answeredAt) => $query->where('created_at', '>', $answeredAt))
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($message) => trim((string) ($message->original_text ?? $message->message_text ?? '')))
-            ->filter()
-            ->join("\n\n");
-    }
-
     private function prompt(string $text, string $weSaid, bool $isDropship = false): string
     {
         $kind = $isDropship ? <<<EOT
@@ -244,8 +239,10 @@ class FlagUrgentChatRequest
         what the customer is asking now.
 
         "request" is:
-        - "cancel_order" if the customer asks us to cancel an order, or part of one, that is
-          already placed, or asks us not to send it or to stop or hold it.
+        - "cancel_order" if the customer asks us to cancel an order that is already placed, or
+          to take items they chose off it, or asks us not to send it or to stop or hold it.
+          Accepting that items we said are out of stock are left out and refunded is "none":
+          the order still ships.
         - "change_address" if the customer asks us to change, correct or confirm the delivery
           address of an order already placed, to send it somewhere else, or to send it with a
           different courier or delivery method.

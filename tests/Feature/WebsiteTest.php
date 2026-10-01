@@ -123,6 +123,7 @@ use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageStats;
 use App\Models\Web\Website;
@@ -1276,6 +1277,9 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
     }
 
     expect($failures)->toBe([]);
+
+    get(route('grp.org.shops.show.web.redirect.edit', [$org, $shop, $w, $redirect->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel'));
 })->depends('launch website', 'create webpage', 'store redirect', 'UI store announcement');
 
 test('UI smoke fulfilment web GET routes', function (Website $website) {
@@ -3148,3 +3152,63 @@ test('last 24 hours website hydrators stay unique until their delayed run has fi
         expect($hydrator::makeJob(1)->uniqueFor)->toBeGreaterThan($dispatchDelay + $analyticsTimeout);
     }
 });
+
+
+/*
+ * Folded in from BlogAuthorTest, which restored the database in beforeEach after the app had booted,
+ * so it wrote to the shared test database and collided with other runs.
+ */
+describe('blog authors', function () {
+    beforeEach(function () {
+        $this->website = createWebsite($this->shop);
+    });
+
+    test('a blog created by a user has that user as its author', function () {
+        $this->user->update(['contact_name' => 'Jane Writer']);
+
+        actingAs($this->user)
+            ->post(route('grp.models.shop.blog_webpage.store', [$this->shop->id, $this->website->id]), [
+                'code'     => 'first-post',
+                'title'    => 'First post',
+                'url'      => 'first-post',
+                'sub_type' => WebpageSubTypeEnum::BLOG->value,
+            ])
+            ->assertRedirect();
+
+        $webpage = Webpage::where('website_id', $this->website->id)->where('code', 'first-post')->firstOrFail();
+
+        expect(blogWebpageAuthor($webpage))->toBe(['id' => $this->user->id, 'name' => 'Jane Writer']);
+    });
+
+    test('a blog author can be another user', function () {
+        $otherUser = User::where('group_id', $this->shop->group_id)->where('id', '!=', $this->user->id)->first() ?? $this->user;
+
+        $webpage = StoreWebpage::make()->action($this->website, array_merge(
+            Webpage::factory()->definition(),
+            [
+                'type'      => WebpageTypeEnum::BLOG->value,
+                'sub_type'  => WebpageSubTypeEnum::BLOG->value,
+                'author_id' => $otherUser->id,
+            ]
+        ));
+
+        expect(blogWebpageAuthor($webpage))->toBe([
+            'id'   => $otherUser->id,
+            'name' => $otherUser->contact_name ?: $otherUser->username,
+        ]);
+    });
+
+    test('blog authors lists the users of the group by name', function () {
+        $this->user->update(['contact_name' => 'Jane Writer']);
+
+        actingAs($this->user)
+            ->getJson(route('grp.json.shop.blog_authors', [$this->shop->slug, 'filter[global]' => 'Jane']))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $this->user->id, 'name' => 'Jane Writer']);
+    });
+});
+
+function blogWebpageAuthor(Webpage $webpage): ?array
+{
+    return json_decode(json_encode(data_get($webpage->webBlocks()->first()->layout, 'data.fieldValue.author')), true);
+}

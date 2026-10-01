@@ -8,24 +8,28 @@
 import {Head} from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
+import ProcurementOverviewPill from '@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue';
 import PaymentMethodsWidget from '@/Components/Accounting/PaymentMethodsWidget.vue';
 import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue';
 import { capitalize } from "@/Composables/capitalize"
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {
-  faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faCoins,
+  faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faCoins, faExclamationTriangle, faChartNetwork, faBars, faPiggyBank
 } from '@fal';
-defineProps(['title', 'pageHead', 'flatTreeMaps', 'payment_methods', 'intervals', 'settings']);
+defineProps(['title', 'pageHead', 'flatTreeMaps', 'payment_methods', 'intervals', 'settings', 'uncostedStockDeliveries']);
 
 
 
-library.add(faCoins, faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar);
+library.add(faCoins, faMoneyCheckAlt, faCashRegister, faFileInvoiceDollar, faExclamationTriangle, faChartNetwork, faBars, faPiggyBank);
 
 </script>
 
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"></PageHeading>
+    <div v-if="uncostedStockDeliveries" class="mx-4 mt-3">
+        <ProcurementOverviewPill :card="uncostedStockDeliveries" />
+    </div>
     <FlatTreeMap class="mx-4" v-for="(treeMap,idx) in flatTreeMaps" :key="idx" :nodes="treeMap"/>
     <template v-if="payment_methods">
         <div class="mx-4 mt-6">

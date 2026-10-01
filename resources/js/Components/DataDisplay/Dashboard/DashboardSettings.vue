@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import { readableTextOn } from "@/Composables/useAppAccent"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -258,27 +259,12 @@ const updateTopCustomersLimit = (value: number) => {
 </script>
 
 <template>
-    <div class="relative px-3 sm:px-6 md:mt-1">
+    <div class="relative px-3 sm:px-6 mt-3 md:mt-1">
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">
-                <!-- Left overflow indicator -->
-                <transition name="fade">
-                    <div v-if="hasOverflowLeft"
-                         @click="scrollLeft"
-                         class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
-                    </div>
-                </transition>
-
-                <!-- Right overflow indicator -->
-                <transition name="fade">
-                    <div v-if="hasOverflowRight"
-                         @click="scrollRight"
-                         class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
-                    </div>
-                </transition>
+                <ScrollFadeArrow direction="left" rounded :visible="hasOverflowLeft" @click="scrollLeft" />
+                <ScrollFadeArrow direction="right" rounded :visible="hasOverflowRight" @click="scrollRight" />
 
                 <nav
                     ref="navElement"
@@ -315,9 +301,9 @@ const updateTopCustomersLimit = (value: number) => {
             <div
                 v-tooltip="ctrans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
-                class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
+                class="cursor-pointer px-2 sm:p-2 rounded border flex items-center justify-center flex-shrink-0"
                 :class="isSectionVisible ? 'dashboard-accent-soft border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
-                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
+                <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-lg sm:text-2xl" />
             </div>
         </div>
 

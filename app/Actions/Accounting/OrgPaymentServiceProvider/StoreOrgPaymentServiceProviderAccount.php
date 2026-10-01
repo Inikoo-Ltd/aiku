@@ -81,7 +81,6 @@ class StoreOrgPaymentServiceProviderAccount extends OrgAction
 
     public function asController(Organisation $organisation, PaymentServiceProvider $paymentServiceProvider, ActionRequest $request): PaymentAccount
     {
-        $this->asAction = true;
         $this->initialisation($organisation, $request);
 
         return $this->handle($paymentServiceProvider, $organisation, $this->validatedData);

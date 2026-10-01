@@ -12,7 +12,7 @@ import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type PrePickItem = {
@@ -37,12 +37,23 @@ const props = defineProps<{
 }>()
 
 const selected = reactive<Record<number, number>>({})
+const quantities = reactive<Record<number, number>>({})
+
+const quantityFor = (item: PrePickItem) => quantities[item.id] ?? Number(item.can_pick)
+
+function setQuantity(item: PrePickItem, value: string) {
+	const quantity = Math.min(Math.max(Number(value) || 0, 0), Number(item.can_pick))
+	quantities[item.id] = quantity
+	if (item.id in selected) {
+		selected[item.id] = quantity
+	}
+}
 
 function toggle(item: PrePickItem) {
 	if (item.id in selected) {
 		delete selected[item.id]
 	} else {
-		selected[item.id] = Number(item.can_pick)
+		selected[item.id] = quantityFor(item)
 	}
 }
 
@@ -55,7 +66,7 @@ function toggleAll() {
 	if (allSelected.value) {
 		for (const k in selected) delete selected[k]
 	} else {
-		pickableRows.value.forEach((row) => (selected[row.id] = Number(row.can_pick)))
+		pickableRows.value.forEach((row) => (selected[row.id] = quantityFor(row)))
 	}
 }
 
@@ -121,6 +132,7 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			preserveScroll: true,
 			onSuccess: () => {
 				for (const k in selected) delete selected[k]
+				for (const k in quantities) delete quantities[k]
 			},
 		}
 	)
@@ -225,7 +237,7 @@ function prePick(lines: { id: number; quantity: number }[]) {
 				type="button"
 				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
 				:title="trans('Reserve it for this partner and send it to their bay')"
-				@click="prePick([{ id: item.id, quantity: Number(item.can_pick) }])">
+				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
 				{{ trans("Pre-pick") }}
 			</button>
 		</template>
@@ -242,20 +254,24 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			}}</span>
 		</template>
 		<template #cell(can_pick)="{ item }: { item: PrePickItem }">
-			<span
-				class="tabular-nums font-semibold"
+			<input
+				type="number"
+				min="0"
+				:max="Number(item.can_pick)"
+				step="any"
+				class="w-20 rounded border-gray-300 px-2 py-0.5 text-right text-sm tabular-nums font-semibold"
 				:class="
-					Number(item.can_pick) >= Number(item.quantity)
+					quantityFor(item) >= Number(item.quantity)
 						? 'text-emerald-600'
 						: 'text-amber-600'
 				"
 				:title="
-					Number(item.can_pick) >= Number(item.quantity)
-						? trans('Everything asked for')
-						: trans('Only part of what was asked for')
-				">
-				{{ useLocaleStore().number(Number(item.can_pick)) }}
-			</span>
+					trans('Up to :quantity can be sent; what is not sent stays on the list', {
+						quantity: useLocaleStore().number(Number(item.can_pick)),
+					})
+				"
+				:value="quantityFor(item)"
+				@change="setQuantity(item, ($event.target as HTMLInputElement).value)" />
 		</template>
 		<template #cell(priority)="{ item }: { item: PrePickItem }">
 			<span

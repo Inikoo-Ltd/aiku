@@ -8,6 +8,7 @@
 
 namespace App\Enums\Dashboards;
 
+use App\Actions\Helpers\Dashboard\AddDashboardBacklogColumns;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
@@ -45,6 +46,8 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice categories'),
@@ -85,11 +88,18 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS      => self::resourceToArray(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)),
         };
 
-        return [
+        $rows = match ($this) {
+            OrganisationDashboardSalesTableTabsEnum::SHOPS              => $shopTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::BRANDS             => $brandTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => $invoiceCategoryTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS       => $platformTimeSeriesStats,
+        };
+
+        return AddDashboardBacklogColumns::run([
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ];
+        ], array_values($rows), false);
     }
 
     public static function tables(Organisation $organisation, array $timeSeriesData = []): array

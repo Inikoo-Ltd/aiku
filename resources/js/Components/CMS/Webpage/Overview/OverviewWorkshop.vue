@@ -124,7 +124,6 @@ const onUpload = async (files: File[], clear: Function) => {
 		)
 		onChangeImage(response.data.data)
 	} catch (error) {
-		console.log(error)
 		notify({
 			title: "Failed",
 			text: "Error while uploading data",

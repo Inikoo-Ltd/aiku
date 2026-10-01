@@ -18,7 +18,6 @@ import {PaymentServiceProvider} from "@/types/payment-service-provider"
 
 
 function paymentServiceProviderRoute(paymentServiceAccount: PaymentServiceProvider) {
-  console.log(route().current())
   switch (route().current()) {
     case 'grp.org.accounting.org_payment_service_providers.index':
       return route(

@@ -197,7 +197,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     <span class="font-semibold uppercase tracking-wider text-sm">{{ ctrans("Scan to pack") }}</span>
                 </div>
 
-                <div class="relative flex-1 min-w-64">
+                <div class="relative flex-1 min-w-0 basis-full sm:basis-auto sm:min-w-64">
                     <input
                         ref="inputElement"
                         v-model="buffer"
@@ -206,7 +206,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
                         spellcheck="false"
                         :disabled="!isListening"
                         :placeholder="ctrans('Scan barcode or type the code then press Enter')"
-                        class="w-full rounded-md border-indigo-300 bg-white py-2 pl-3 pr-10 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
+                        class="w-full rounded-md border-indigo-300 bg-white py-2 pl-3 pr-10 font-mono text-base sm:text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
                         @keydown.enter.prevent="flushBuffer"
                         @keydown.esc.prevent="clearBuffer"
                         @input="registerKeystroke"

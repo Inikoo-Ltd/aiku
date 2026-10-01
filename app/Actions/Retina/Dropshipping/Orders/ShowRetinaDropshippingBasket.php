@@ -13,6 +13,7 @@ use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -213,6 +214,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
                 'balance'        => $order->customer?->balance,
                 'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
+                'pre_orders'     => $order->shop->hasPreOrders() ? GetBasketPreOrders::run($order) : null,
                 'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?

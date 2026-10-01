@@ -11,7 +11,7 @@ import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     data?: {}
@@ -20,7 +20,6 @@ const props = defineProps<{
     key:any 
     tableKey?: string
 }>()
-console.log('test')
 const isLoading = ref<string | boolean>(false)
 function storedItemRoute(storedItem) {
     switch (route().current()) {
@@ -97,7 +96,7 @@ function storedItemRoute(storedItem) {
                 </Tag>
             </div>
             <div v-else class="text-gray-400 text-xs italic">
-                {{ trans("This Customer's SKO have no pallet") }}
+                {{ ctrans("This Customer's SKO have no pallet") }}
             </div>
         </template>
     </Table>

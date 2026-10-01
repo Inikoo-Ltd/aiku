@@ -5,6 +5,7 @@
  * Copyright: 2025
 */
 
+import { getThemeChartColors } from '@/Composables/useStockList'
 
 export const setColorStyleRoot = (themeColors: string[]) => {
     if (!themeColors.length) {
@@ -12,13 +13,14 @@ export const setColorStyleRoot = (themeColors: string[]) => {
     }
 
     const root = document.documentElement
-    if (root) {        
+    if (root) {
         root.style.setProperty('--theme-color-0', themeColors?.[0])  // var(--theme-color-0)
         root.style.setProperty('--theme-color-1', themeColors?.[1])
         root.style.setProperty('--theme-color-2', themeColors?.[2])
         root.style.setProperty('--theme-color-3', themeColors?.[3])
         root.style.setProperty('--theme-color-4', themeColors?.[4])
         root.style.setProperty('--theme-color-5', themeColors?.[5])
+        getThemeChartColors(themeColors).forEach((color, index) => root.style.setProperty(`--theme-chart-${index + 1}`, color))
     }
 }
 
@@ -28,6 +30,7 @@ export const setColorStyleRootByEl = (
 ) => {
   if (!el || !themeColors.length) return
 
+
    if (el) {
         el.style.setProperty('--theme-color-0', themeColors?.[0])
         el.style.setProperty('--theme-color-1', themeColors?.[1])
@@ -35,5 +38,6 @@ export const setColorStyleRootByEl = (
         el.style.setProperty('--theme-color-3', themeColors?.[3])
         el.style.setProperty('--theme-color-4', themeColors?.[4])
         el.style.setProperty('--theme-color-5', themeColors?.[5])
+        getThemeChartColors(themeColors).forEach((color, index) => el.style.setProperty(`--theme-chart-${index + 1}`, color))
     }
 }

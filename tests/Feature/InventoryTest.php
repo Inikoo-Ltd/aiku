@@ -1227,6 +1227,26 @@ test('UI get section route infrastructure index', function () {
         ->and($sectionScope->model_slug)->toBe($warehouse->slug);
 });
 
+test('UI show incoming hub', function () {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+    $response = get(
+        route('grp.org.warehouses.show.incoming.backlog', [
+            $this->organisation->slug,
+            $warehouse->slug
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Incoming/IncomingHub')
+            ->has('dashboard.dimension.items', 5)
+            ->where('dashboard.dimension.items.1.key', 'partner_stock_deliveries')
+            ->where('dashboard.dimension.items.2.key', 'agent_stock_deliveries')
+            ->where('dashboard.metrics.0.key', 'arriving')
+            ->has('dashboard.data.agent_stock_deliveries.booked_in');
+    });
+});
+
 test('UI get section route incoming backlog', function () {
     $warehouse    = Warehouse::first();
     $sectionScope = GetSectionRoute::make()->handle("grp.org.warehouses.show.incoming.backlog", [
@@ -2204,11 +2224,6 @@ test('UI Show inventory dashboard', function () {
     get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
         ->assertStatus(200);
 })->depends('create warehouse');
-
-test('UI Index org stock movements (overview)', function () {
-    get(route('grp.overview.inventory.org-stock-movements.index'))
-        ->assertStatus(200);
-});
 
 test('UI Index and Show OrganisationStockHistory', function () {
     $warehouse = Warehouse::first();
@@ -3719,9 +3734,13 @@ test('merging a duplicate trade unit hands its stock to the twin so the product 
         ]);
     }
 
+    $tag = \App\Models\Helpers\Tag::create(['group_id' => $shop->group_id, 'name' => 'Made In '.uniqid(), 'scope' => \App\Enums\Helpers\Tag\TagScopeEnum::PRODUCT_PROPERTY]);
+    $tradeUnit->tags()->attach($tag->id);
+
     \App\Actions\Goods\TradeUnit\MergeDuplicateTradeUnit::make()->handle($duplicate, $tradeUnit);
 
     expect($duplicate->fresh()->trashed())->toBeTrue()
+        ->and($product->refresh()->tags->pluck('id'))->toContain($tag->id)
         ->and(DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->where('model_type', 'Stock')->where('model_id', $stock->id)->exists())->toBeTrue()
         ->and($product->refresh()->orgStocks()->where('org_stocks.id', $orgStock->id)->exists())->toBeTrue();
 });
@@ -4043,8 +4062,17 @@ describe('discontinue confirm', function () {
     test('product command control shows the stock in every organisation and a status set shows on the next load', function () {
         $orgStock = $this->orgStocks[1];
         $stock    = $orgStock->stock;
-        $row      = fn () => collect($this->get(route('grp.goods.dashboard', ['search' => $stock->code]))
-            ->assertOk()->viewData('page')['props']['rows'])->firstWhere('id', $stock->id);
+        $row      = function () use ($stock) {
+            $rows = [];
+            $this->get(route('grp.goods.dashboard', ['search' => $stock->code]))->assertOk()
+                ->assertInertia(function (AssertableInertia $page) use (&$rows) {
+                    $page->loadDeferredProps('dashboard', function (AssertableInertia $reload) use (&$rows) {
+                        $rows = $reload->toArray()['props']['rows'];
+                    });
+                });
+
+            return collect($rows)->firstWhere('id', $stock->id);
+        };
 
         $before = $row();
         expect($before['state'])->toBe('active')

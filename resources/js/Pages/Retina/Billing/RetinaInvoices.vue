@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faReceipt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Invoice } from "@/types/invoice"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faReceipt)
 
@@ -33,7 +33,6 @@ const isLoadingExport = ref(false);
 
 function invoiceRoute(invoice: Invoice) {
 
-    console.log(route().current())
 
     switch (route().current()) {
         case "retina.dropshipping.invoices.index":
@@ -111,7 +110,7 @@ const onExportPdf = () => {
             class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
         >
             <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width />
-            {{ trans("Export Pdf") }}
+            {{ ctrans("Export Pdf") }}
         </Button>
 
     </div>

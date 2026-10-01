@@ -9,9 +9,11 @@
 namespace App\Actions\UI\Profile;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\UI\Grp\BreakUserUiProps;
+use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
@@ -97,6 +99,29 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['alert_sounds'] = Arr::only(Arr::pull($modelData, 'alert_sounds'), self::ALERT_SOUND_KINDS);
         }
 
+        $orderAlertsWereSubmitted = Arr::exists($modelData, 'order_alerts');
+
+        if ($orderAlertsWereSubmitted) {
+            $orderAlerts = Arr::pull($modelData, 'order_alerts');
+            $settings    = $user->settings;
+            $settings['order_alerts'] = [
+                'shops' => GetUserOrderAlerts::make()->shopOptions($user)->pluck('id')
+                    ->intersect(array_map('intval', Arr::get($orderAlerts, 'shops', [])))
+                    ->values()->all(),
+                'types' => collect(OrderAlertTypeEnum::values())->mapWithKeys(fn (string $type) => [
+                    $type => [
+                        'enabled' => (bool) Arr::get($orderAlerts, "types.$type.enabled", false),
+                        'sound'   => Arr::get($orderAlerts, "types.$type.sound", OrderAlertTypeEnum::from($type)->defaultSound()),
+                        'muted'   => (bool) Arr::get($orderAlerts, "types.$type.muted", false),
+                    ],
+                ])->all(),
+                'popup' => [
+                    'show'    => (bool) Arr::get($orderAlerts, 'popup.show', GetUserOrderAlerts::POPUP_DEFAULTS['show']),
+                ],
+            ];
+            $user->update(['settings' => $settings]);
+        }
+
         if (Arr::exists($modelData, 'alert_preview_seconds')) {
             $modelData['settings']['alert_preview_seconds'] = (int) Arr::pull($modelData, 'alert_preview_seconds');
         }
@@ -149,7 +174,7 @@ class UpdateProfile extends OrgAction
          * The organisation colours travel in the first load only layout props, so without asking for
          * those props again the left navigation would keep the old colours until a full page load.
          */
-        if ($organisationColoursWereSubmitted) {
+        if ($organisationColoursWereSubmitted || $orderAlertsWereSubmitted) {
             Session::put('reloadLayout', '1');
         }
 
@@ -191,6 +216,14 @@ class UpdateProfile extends OrgAction
             'hide_logo'         => ['sometimes', 'boolean'],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_preview_seconds' => ['sometimes', 'integer', 'between:2,30'],
+            'order_alerts'                => ['sometimes', 'array'],
+            'order_alerts.shops'          => ['sometimes', 'array', 'max:200'],
+            'order_alerts.shops.*'        => ['integer'],
+            'order_alerts.types'          => ['sometimes', 'array'],
+            'order_alerts.types.*.enabled' => ['sometimes', 'boolean'],
+            'order_alerts.types.*.sound'  => ['sometimes', Rule::in(OrderAlertTypeEnum::SOUNDS)],
+            'order_alerts.types.*.muted'  => ['sometimes', 'boolean'],
+            'order_alerts.popup.show'     => ['sometimes', 'boolean'],
             'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'silent'])],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],

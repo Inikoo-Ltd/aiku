@@ -16,6 +16,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue"
 import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
+import CustomerCommunications from "@/Components/Showcases/Grp/CustomerCommunications.vue"
 import CustomerJourney from "@/Components/Showcases/Grp/CustomerJourney.vue"
 import CustomerRetinaDashboard from "@/Components/Showcases/Grp/CustomerRetinaDashboard.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
@@ -25,6 +26,7 @@ import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
 import RetinaTableApiRequests from "@/Components/Tables/Retina/RetinaTableApiRequests.vue"
 import TableCustomerFavourites from "@/Components/Tables/Grp/Org/CRM/TableCustomerFavourites.vue"
+import TableCustomerReorderProducts from "@/Components/Tables/Grp/Org/CRM/TableCustomerReorderProducts.vue"
 import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/TableCustomerBackInStockReminders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
@@ -78,11 +80,13 @@ const props = defineProps<{
     customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
+    communications?: {}
     api_requests?: {}
     web_users?: {}
     attachments?: {}
     attachmentRoutes?: {}
     favourites?: {}
+    reorders?: {}
     reminders?: {}
     timeline?: {}
     journey?: {}
@@ -155,6 +159,7 @@ const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
         timeline: CustomerTimeline,
+        communications: CustomerCommunications,
         journey: CustomerJourney,
         retina_dashboard: CustomerRetinaDashboard,
         products: TableProducts,
@@ -165,6 +170,7 @@ const component = computed(() => {
         api_requests: RetinaTableApiRequests,
         web_users: TableWebUsers,
         favourites: TableCustomerFavourites,
+        reorders: TableCustomerReorderProducts,
         reminders: TableCustomerBackInStockReminders,
         attachments: TableAttachments,
         credit_transactions: TableCreditTransactions,
@@ -243,7 +249,7 @@ const layout = inject('layout')
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
 
-    <Modal :show="isEmailModalOpen" @close="isEmailModalOpen = false" width="w-full max-w-2xl">
+    <Modal :isOpen="isEmailModalOpen" @onClose="isEmailModalOpen = false" width="w-full max-w-2xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="emailForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
@@ -271,7 +277,7 @@ const layout = inject('layout')
         </div>
     </Modal>
 
-    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false" width="w-full max-w-5xl">
+    <Modal :isOpen="isOrderModalOpen" @onClose="isOrderModalOpen = false" width="w-full max-w-5xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>

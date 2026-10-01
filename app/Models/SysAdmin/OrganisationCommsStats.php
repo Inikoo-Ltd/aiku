@@ -107,6 +107,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_gold_reward_reminder_1
  * @property int $number_outboxes_type_gold_reward_reminder_2
  * @property int $number_outboxes_type_gold_reward_reminder_3
+ * @property int $number_outboxes_type_due_to_reorder
  * @property int $number_outboxes_type_price_change
  * @property int $number_outboxes_type_prospect_convertion_1
  * @property int $number_outboxes_type_prospect_convertion_2

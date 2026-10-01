@@ -63,9 +63,11 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
         }
 
-        $paid = DB::transaction(function () use ($order, $toPayAmount, $paymentAccountShop, $canUseCredit) {
+        $paid = DB::transaction(function () use ($order, $paymentAccountShop, $canUseCredit) {
+            /** Re-read under the lock: a second click must see the first payment and pay nothing */
+            $lockedOrder = Order::lockForUpdate()->findOrFail($order->id);
             $customer    = Customer::lockForUpdate()->findOrFail($order->customer_id);
-            $toPayAmount = round(min($toPayAmount, $this->spendable($customer, $canUseCredit)), 2);
+            $toPayAmount = round(min((float) $lockedOrder->total_amount - (float) $lockedOrder->payment_amount, $this->spendable($customer, $canUseCredit)), 2);
             if ($toPayAmount <= 0) {
                 return false;
             }

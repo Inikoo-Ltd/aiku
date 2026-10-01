@@ -31,6 +31,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -303,7 +304,10 @@ class SendChatMessage
                 'required_without_all:image,file,attachments',
                 'nullable',
                 'string',
-                'max:5000'
+                'max:5000',
+                fn (string $attribute, mixed $value, \Closure $fail) => is_string($value) && preg_match(\App\Actions\Chat\ChatSession\DraftChatReply::GAP, $value)
+                    ? $fail(__('Fill in or delete the parts marked [[ ]] before sending.'))
+                    : null,
             ],
             'message_type'   => [
                 'required',
@@ -427,16 +431,12 @@ class SendChatMessage
      */
     private function claimUnheldChat(ChatSession $chatSession, User $user, ChatAgent $agent): ?array
     {
-        $heldByAnother = $chatSession->assignments()
+        $holderId = $chatSession->assignments()
             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-            ->exists();
+            ->value('chat_agent_id');
 
-        if ($heldByAnother) {
-            return [
-                'ok'      => false,
-                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
-                'code'    => 403,
-            ];
+        if ($holderId) {
+            return $this->refuseUnlessHeldBy($chatSession, $agent);
         }
 
         $shop = $chatSession->shop;
@@ -449,13 +449,17 @@ class SendChatMessage
             ];
         }
 
-        $chatSession->assignments()->create([
-            'chat_agent_id' => $agent->id,
-            'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
-            'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
-            'note'          => 'Claimed by replying',
-            'assigned_at'   => now(),
-        ]);
+        try {
+            $chatSession->assignments()->create([
+                'chat_agent_id' => $agent->id,
+                'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+                'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+                'note'          => 'Claimed by replying',
+                'assigned_at'   => now(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return $this->refuseUnlessHeldBy($chatSession, $agent);
+        }
 
         $chatSession->update([
             'status'    => ChatSessionStatusEnum::ACTIVE->value,
@@ -466,6 +470,30 @@ class SendChatMessage
         ChatAgentHydrateChats::run($agent);
 
         return null;
+    }
+
+    /**
+     * Two replies typed in quick succession both try to pick the chat up; the one that loses
+     * to its own sender's first reply goes through instead of being told to take it over.
+     *
+     * @return array{ok: bool, message: string, code: int}|null
+     */
+    private function refuseUnlessHeldBy(ChatSession $chatSession, ChatAgent $agent): ?array
+    {
+        $isHeldByAgent = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->where('chat_agent_id', $agent->id)
+            ->exists();
+
+        if ($isHeldByAgent) {
+            return null;
+        }
+
+        return [
+            'ok'      => false,
+            'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+            'code'    => 403,
+        ];
     }
 
     protected function determineSenderData(array $validated, ChatSession $chatSession): array

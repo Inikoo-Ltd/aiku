@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireSkippedBadgeData;
@@ -26,7 +27,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
-use Tighten\Ziggy\Ziggy;
 use Throwable;
 
 class GetFirstLoadProps
@@ -69,7 +69,6 @@ class GetFirstLoadProps
         data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'products_need_review_count', $user ? GetProductsNeedReviewBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'faire_skipped_count', $user ? GetFaireSkippedBadgeData::make()->totalCount($user) : 0);
-        data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
         data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);
         data_set($props, 'last_deployment_version', $lastDeployment?->semantic_version);
@@ -134,6 +133,7 @@ class GetFirstLoadProps
             'environment'      => app()->environment(),
             'help_portal_url'  => config('app.help_portal_url'),
             'avatar_thumbnail' => $image,
+            'order_alerts'     => $user ? GetUserOrderAlerts::run($user) : null,
         ];
     }
 

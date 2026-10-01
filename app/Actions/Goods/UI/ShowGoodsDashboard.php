@@ -74,6 +74,8 @@ class ShowGoodsDashboard extends OrgAction
 
     public const array SORTS = ['code', 'sales', 'trend', 'cover'];
 
+    public const array DEFERRED_PROPS = ['built_at', 'organisations', 'families', 'missing_rates', 'rates', 'kpis', 'rows', 'pagination', 'editable_organisations', 'can_change_group'];
+
     public static function cacheKey(int $groupId): string
     {
         return 'product-command-control:'.$groupId;
@@ -104,7 +106,7 @@ class ShowGoodsDashboard extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($this->validatedData);
+        return $this->validatedData;
     }
 
     public function forGroup(Group $group): static
@@ -148,17 +150,25 @@ class ShowGoodsDashboard extends OrgAction
                 'total'     => $total,
                 'per_page'  => self::PER_PAGE,
             ],
-            'filters'       => [
-                'organisation' => $organisation,
-                'family'       => Arr::get($filters, 'family'),
-                'condition'    => Arr::get($filters, 'condition'),
-                'state'        => Arr::get($filters, 'state'),
-                'search'       => Arr::get($filters, 'search'),
-                'sort'         => Arr::get($filters, 'sort') ?: '-sales',
-                'period'       => $period,
-            ],
+            'filters'       => $this->normalisedFilters($filters),
             'editable_organisations' => $editableOrganisations,
             'can_change_group'       => $canChangeGroup,
+        ];
+    }
+
+    /**
+     * @return array{organisation: ?string, family: ?string, condition: ?string, state: ?string, search: ?string, sort: string, period: string}
+     */
+    private function normalisedFilters(array $filters): array
+    {
+        return [
+            'organisation' => Arr::get($filters, 'organisation'),
+            'family'       => Arr::get($filters, 'family'),
+            'condition'    => Arr::get($filters, 'condition'),
+            'state'        => Arr::get($filters, 'state'),
+            'search'       => Arr::get($filters, 'search'),
+            'sort'         => Arr::get($filters, 'sort') ?: '-sales',
+            'period'       => Arr::get($filters, 'period') ?: self::DEFAULT_PERIOD,
         ];
     }
 
@@ -853,11 +863,26 @@ class ShowGoodsDashboard extends OrgAction
         return $kpis;
     }
 
-    public function htmlResponse(array $data, ActionRequest $request): Response
+    public function htmlResponse(array $filters, ActionRequest $request): Response
     {
+        $dashboard = null;
+        $deferred  = [];
+        foreach (self::DEFERRED_PROPS as $prop) {
+            $deferred[$prop] = Inertia::defer(function () use (&$dashboard, $filters, $prop) {
+                $dashboard ??= $this->handle($filters);
+
+                return $dashboard[$prop];
+            }, 'dashboard');
+        }
+
+        $normalisedFilters = $this->normalisedFilters($filters);
+
         return Inertia::render(
             'Goods/ProductCommandControl',
-            array_merge($data, [
+            array_merge($deferred, [
+                'period'      => $normalisedFilters['period'],
+                'periods'     => self::PERIODS,
+                'filters'     => $normalisedFilters,
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Product Command & Control'),
                 'pageHead'    => [

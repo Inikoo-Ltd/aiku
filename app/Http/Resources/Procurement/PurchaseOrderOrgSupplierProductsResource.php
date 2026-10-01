@@ -35,6 +35,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property float|null $org_net_amount
  * @property float|null $stock_in_locations
  * @property \Illuminate\Support\Collection|null $quarterly_usage
+ * @property \Illuminate\Support\Collection|null $other_open_purchase_orders
+ * @property array|null $stock_deliveries
+ * @property bool|null $is_partner_org_stock
  */
 class PurchaseOrderOrgSupplierProductsResource extends JsonResource
 {
@@ -49,14 +52,23 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ]
-            : [
-                'name'       => 'grp.models.purchase-order.transaction.store',
-                'parameters' => [
-                    'purchaseOrder'      => $this->purchase_order_id,
-                    'orgSupplierProduct' => $this->id,
-                ],
-                'method'     => 'post',
-            ];
+            : ($this->is_partner_org_stock
+                ? [
+                    'name'       => 'grp.models.purchase-order.transaction.store_org_stock',
+                    'parameters' => [
+                        'purchaseOrder' => $this->purchase_order_id,
+                        'orgStock'      => $this->id,
+                    ],
+                    'method'     => 'post',
+                ]
+                : [
+                    'name'       => 'grp.models.purchase-order.transaction.store',
+                    'parameters' => [
+                        'purchaseOrder'      => $this->purchase_order_id,
+                        'orgSupplierProduct' => $this->id,
+                    ],
+                    'method'     => 'post',
+                ]);
 
         return [
             'id'               => $this->id,
@@ -69,6 +81,8 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             'image_thumbnail'  => $this->image_sources,
             'stock_in_locations' => $this->stock_in_locations === null ? null : trimDecimalZeros($this->stock_in_locations),
             'quarterly_usage'  => $this->quarterly_usage ?? [],
+            'other_open_purchase_orders' => $this->other_open_purchase_orders ?? [],
+            'stock_deliveries' => $this->stock_deliveries,
 
             'unit_cost'        => $this->unit_cost,
             'units_per_pack'   => $this->units_per_pack,

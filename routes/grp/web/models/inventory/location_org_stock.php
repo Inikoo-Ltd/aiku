@@ -16,10 +16,12 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\SetOrgStockPreferredSupplierProduct;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreSupplierProductForOrgStock;
 use Illuminate\Support\Facades\Route;
 
 Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () {
     Route::post('location/{location:id}', StoreLocationOrgStock::class)->name('location.store')->withoutScopedBindings();
+    Route::post('supplier-product', StoreSupplierProductForOrgStock::class)->name('supplier_product.store');
     Route::post('supplier-product/{orgSupplierProduct:id}/attach', AttachOrgSupplierProductToOrgStock::class)->name('supplier_product.attach')->withoutScopedBindings();
     Route::patch('supplier-product/{orgSupplierProduct:id}/set-preferred', SetOrgStockPreferredSupplierProduct::class)->name('supplier_product.set_preferred')->withoutScopedBindings();
     Route::patch('bulk_audit', BulkAuditLocationOrgStock::class)->name('bulk_audit');

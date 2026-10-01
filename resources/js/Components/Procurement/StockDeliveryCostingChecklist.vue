@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
@@ -46,6 +46,7 @@ const props = defineProps<{
         currency_id: number | null
         currencies: { id: number, code: string }[]
         org_currency: string
+        org_currency_id: number
         org_exchange: number | string | null
         updateRoute: routeType
         checklist: CostRow[]
@@ -132,12 +133,14 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
     }
 }
 
+const deliveryPerOrg = computed(() => Number(props.costing.org_exchange) > 0 ? Number((1 / Number(props.costing.org_exchange)).toFixed(6)) : null)
+
 const saveOrgExchange = (value: string) => {
     if (!value || Number(value) <= 0) return
 
     router.patch(
         route(props.costing.updateRoute.name, props.costing.updateRoute.parameters),
-        { org_exchange: Number(value) },
+        { org_exchange: 1 / Number(value) },
         { preserveScroll: true, onError }
     )
 }
@@ -181,9 +184,9 @@ const removeExtra = (row: CostRow) => {
         <template v-if="!costing.is_partner">
             <label v-if="costing.org_currency !== costing.currency" class="mb-2 flex items-center gap-2 text-sm">
                 <span class="w-40 shrink-0">{{ ctrans("Invoice exchange rate") }}</span>
-                1 {{ costing.currency }} =
+                1 {{ costing.org_currency }} =
                 <input
-                    :value="costing.org_exchange"
+                    :value="deliveryPerOrg"
                     type="number"
                     min="0"
                     step="0.000001"
@@ -191,7 +194,7 @@ const removeExtra = (row: CostRow) => {
                     :disabled="!canEdit"
                     @change="saveOrgExchange(($event.target as HTMLInputElement).value)"
                 />
-                {{ costing.org_currency }}
+                {{ costing.currency }}
             </label>
 
             <div class="grid gap-1 text-sm">
@@ -233,7 +236,7 @@ const removeExtra = (row: CostRow) => {
                         </select>
                     </div>
 
-                    <label v-if="row.currency_id && row.currency_id !== costing.currency_id" class="flex items-center gap-1 text-xs text-gray-500">
+                    <label v-if="row.currency_id && row.currency_id !== costing.currency_id && row.currency_id !== costing.org_currency_id" class="flex items-center gap-1 text-xs text-gray-500">
                         {{ ctrans("Rate to :currency", { currency: costing.currency ?? "" }) }}
                         <input
                             :value="row.exchange"

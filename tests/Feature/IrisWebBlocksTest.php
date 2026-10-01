@@ -53,6 +53,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 const PRODUCT_WEBPAGE_BLOCKS = [
     'product',
@@ -743,6 +744,7 @@ test('cached family product list carries the same shop-wide offer prices as the 
         'is_coming_soon',
         'is_golden_product',
         'variant',
+        'variant_axis_label',
         'product_offers_data',
         'discounted_price',
         'discounted_price_per_unit',
@@ -856,6 +858,165 @@ test('iris variant products list leaves out the variant products that are not fo
     expect($productIds->all())->toBe([$forSaleProduct->id])
         ->and(collect($variantAndProducts['products'])->pluck('id')->all())->toBe([$forSaleProduct->id])
         ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
+});
+
+test('iris variant products list sends the offers and step discount each variant needs to price the selection', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id]);
+
+    \App\Actions\Discounts\Offer\StoreProductStepDiscount::make()->action($product, [
+        'steps'    => [
+            ['min_quantity' => 5, 'percentage_off' => 0.25],
+            ['min_quantity' => 1, 'percentage_off' => 0.15],
+        ],
+        'duration' => 'interval',
+        'start_at' => now(),
+        'end_at'   => now()->addDays(14)->toDateTimeString(),
+    ]);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($variantProduct)->toHaveKeys(['offers_data', 'family_id', 'is_golden_product'])
+        ->and($variantProduct['family_id'])->toBe($product->family_id)
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5])
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
+});
+
+test('iris product lists name the first variant axis so the choose button can read choose size', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => [
+            'variants' => [
+                ['label' => 'Size', 'options' => ['S', 'M']],
+                ['label' => 'Colour', 'options' => ['Red', 'Blue']],
+            ],
+            'products' => [$product->id => ['product' => ['id' => $product->id]]],
+        ],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($row)->not->toBeNull()
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_axis_label'])->toBe('Size')
+        ->and($variantProduct['variant_axis_label'])->toBe('Size')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe($product->name)
+        ->and($variantProduct['variant_title'])->toBe($product->name);
+});
+
+test('master variant label is dispatched to each shop variant translated and titles the product card', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterVariant\UpdateMasterVariant::make()->action($masterVariant, ['label' => 'Compass of Life T-shirt']);
+
+    expect($masterVariant->refresh()->label)->toBe('Compass of Life T-shirt');
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::assertPushed(1);
+
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tričko Kompas života');
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant, 'Compass of Life T-shirt');
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe('Tričko Kompas života')
+        ->and(\App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0]['variant_title'])->toBe('Tričko Kompas života');
+});
+
+test('shop can translate its variant label and the master label no longer overwrites it', function () {
+    [, $product] = createProduct($this->shop);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'label'    => 'Compass of Life T-shirt',
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, [
+        'label'             => 'Tričko Kompas života',
+        'is_label_reviewed' => true,
+    ]);
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant->refresh(), 'Compass of Life T-shirt v2');
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and($variant->is_label_reviewed)->toBeTrue()
+        ->and($product->refresh()->variant_id)->toBe($variant->id);
 });
 
 test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {

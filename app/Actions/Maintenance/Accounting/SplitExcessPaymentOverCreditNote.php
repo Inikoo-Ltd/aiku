@@ -39,6 +39,8 @@ class SplitExcessPaymentOverCreditNote
     public function handle(Payment $payment, Invoice $refund, float $refundedAmount): Payment
     {
         return DB::transaction(function () use ($payment, $refund, $refundedAmount) {
+            AttachPaymentToInvoice::lockRefundToPay($refund, -$refundedAmount);
+
             $excessAmount = round(abs($payment->amount) - $refundedAmount, 2);
             $ratio        = $excessAmount / abs($payment->amount);
 

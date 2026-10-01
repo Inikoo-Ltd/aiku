@@ -166,7 +166,7 @@ const lists = computed(() => props.data ? [
         <p class="text-xs text-gray-500">
             {{ ctrans(":one ordered once, :repeat ordered more than once", { one: count(data.base.one_order), repeat: count(data.base.repeat) }) }}
             ·
-            <Link :href="route(data.routes.customers.name, data.routes.customers.parameters)" class="text-indigo-600 hover:underline">{{ ctrans("All customers") }}</Link>
+            <Link :href="route(data.routes.customers.name, data.routes.customers.parameters)" class="text-[var(--theme-color-4)] hover:underline">{{ ctrans("All customers") }}</Link>
         </p>
 
         <div v-if="data.problems" class="rounded-lg border bg-white p-4 shadow-sm">
@@ -219,7 +219,7 @@ const lists = computed(() => props.data ? [
                 <ul v-else class="divide-y text-sm">
                     <li v-for="row in list.rows" :key="row.slug" class="flex items-center justify-between gap-3 py-1.5">
                         <div class="min-w-0">
-                            <Link :href="customerHref(row.slug)" class="block truncate font-medium text-gray-800 hover:text-indigo-600 hover:underline">{{ row.name }}</Link>
+                            <Link :href="customerHref(row.slug)" class="block truncate font-medium text-gray-800 hover:text-[var(--theme-color-4)] hover:underline">{{ row.name }}</Link>
                             <p class="text-xs text-gray-500">{{ list.detail(row) }}</p>
                         </div>
                         <div class="shrink-0 text-right">
@@ -251,7 +251,7 @@ const lists = computed(() => props.data ? [
                     <p class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Which shops") }}</p>
                     <ul class="space-y-1.5 text-sm">
                         <li v-for="shop in sister.shops.slice(0, 10)" :key="shop.code" class="relative">
-                            <div class="absolute inset-y-0 left-0 rounded bg-indigo-100/70" :style="{ width: Math.round((shop.customers / sister.shops[0].customers) * 100) + '%' }" />
+                            <div class="absolute inset-y-0 left-0 rounded bg-[color-mix(in_srgb,var(--theme-color-4)_15%,transparent)]" :style="{ width: Math.round((shop.customers / sister.shops[0].customers) * 100) + '%' }" />
                             <div class="relative flex items-center justify-between gap-2 px-1.5 py-0.5">
                                 <span class="truncate">{{ shop.name }} <span class="text-xs text-gray-400">{{ shop.code }}</span></span>
                                 <span class="shrink-0 text-xs text-gray-500">
@@ -267,7 +267,7 @@ const lists = computed(() => props.data ? [
                     <ul class="divide-y text-sm">
                         <li v-for="row in sister.top" :key="row.slug" class="flex items-center justify-between gap-3 py-1.5">
                             <div class="min-w-0">
-                                <Link :href="customerHref(row.slug)" class="block truncate font-medium text-gray-800 hover:text-indigo-600 hover:underline">{{ row.name }}</Link>
+                                <Link :href="customerHref(row.slug)" class="block truncate font-medium text-gray-800 hover:text-[var(--theme-color-4)] hover:underline">{{ row.name }}</Link>
                                 <p class="text-xs text-gray-500">{{ ctrans("Also in :shops", { shops: row.shops.join(", ") }) }}</p>
                             </div>
                             <div class="shrink-0 text-right text-xs text-gray-500">

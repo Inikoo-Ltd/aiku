@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Product;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,7 @@ class GetIrisProductEcomOrdering extends IrisAction
                 'offers_data'                       => $offersData,
                 'offer_net_amount_per_quantity'     => $offerNetAmountPerQuantity,
                 'offer_price_per_unit'              => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $product->units : null,
+                'pre_order'                         => GetProductPreOrder::make()->withPalletEstimateFor(GetProductPreOrder::make()->handle($product), $customer),
             ];
         }
 

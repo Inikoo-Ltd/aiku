@@ -47,6 +47,7 @@ const props = defineProps<{
     previewRoute: routeType
     discontinueRoute?: routeType | null
     initialState?: string
+    zIndex?: number
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void; (e: "onDone"): void }>()
@@ -165,7 +166,7 @@ const platformSummary = (byPlatform: Record<string, number>) =>
 </script>
 
 <template>
-    <Modal :isOpen="isOpen" @onClose="emits('onClose')" width="w-full max-w-5xl">
+    <Modal :isOpen="isOpen" :zIndex="zIndex" @onClose="emits('onClose')" width="w-full max-w-5xl">
         <div class="flex flex-col gap-4">
             <div>
                 <h3 class="text-lg font-semibold">{{ ctrans("Discontinue preview") }}</h3>

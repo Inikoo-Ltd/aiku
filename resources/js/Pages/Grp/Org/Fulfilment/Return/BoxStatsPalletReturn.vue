@@ -14,7 +14,7 @@ import { cloneDeep, set } from "lodash-es"
 import { Link, router, useForm } from "@inertiajs/vue3"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import DatePicker from '@vuepic/vue-datepicker'
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
@@ -93,7 +93,7 @@ onMounted(() => {
 })
 
 const deliveryListError = inject('deliveryListError', [])
-const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKOs") : trans('Return Whole pallets'))
+const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? ctrans("Return Customer's SKOs") : ctrans('Return Whole pallets'))
 const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
 const canUpdatePickingUsers = computed(() => Boolean(props.picker_packer_routes?.update?.name))
 const isWarehouseDispatchingPalletReturnPage = computed(() =>
@@ -109,12 +109,12 @@ const canChangePicker = computed(() => canUpdatePickingUsers.value && isPickingS
 const canChangePacker = computed(() => canUpdatePickingUsers.value && isPickedState.value && isStoredItemReturn.value)
 const changePickingUsersLabel = computed(() => {
 	if (canChangePicker.value) {
-		return trans('Change picker')
+		return ctrans('Change picker')
 	}
 	if (canChangePacker.value) {
-		return trans('Change packer')
+		return ctrans('Change packer')
 	}
-	return trans('Change picker / packer')
+	return ctrans('Change picker / packer')
 })
 const pickersListRoute = computed(() => props.picker_packer_routes?.pickers_list)
 const packersListRoute = computed(() => props.picker_packer_routes?.packers_list)
@@ -159,15 +159,15 @@ const onUpdatePickingUsers = () => {
 			onSuccess: () => {
 				isModalPickingUsers.value = false
 				notify({
-					title: trans("Success"),
-					text: canChangePicker.value ? trans("Picker updated successfully") : trans("Packer updated successfully"),
+					title: ctrans("Success"),
+					text: canChangePicker.value ? ctrans("Picker updated successfully") : ctrans("Packer updated successfully"),
 					type: "success",
 				})
 			},
 			onError: () => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to update picker and packer"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to update picker and packer"),
 					type: "error",
 				})
 			},
@@ -220,15 +220,15 @@ const computedEnabled = computed({
 					onFinish: () => {},
 					onSuccess: () => {
 						notify({
-							title: trans("Success"),
-							text: trans("Set the address to selected address."),
+							title: ctrans("Success"),
+							text: ctrans("Set the address to selected address."),
 							type: "success",
 						})
 					},
 					onError: () =>
 						notify({
-							title: trans("Something went wrong"),
-							text: trans("Failed to submit the address, try again"),
+							title: ctrans("Something went wrong"),
+							text: ctrans("Failed to submit the address, try again"),
 							type: "error",
 						}),
 				}
@@ -249,15 +249,15 @@ const computedEnabled = computed({
 					}
 				)
 				notify({
-					title: trans("Success"),
-					text: trans("Set the address to follow collection."),
+					title: ctrans("Success"),
+					text: ctrans("Set the address to follow collection."),
 					type: "success",
 				})
 			} catch (error) {
 				console.error("Error disabling collection:", error)
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to disable collection."),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to disable collection."),
 					type: "error",
 				})
 			}
@@ -285,15 +285,15 @@ function updateCollectionType() {
 			preserveScroll: true,
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
-					text: trans("Collection type updated successfully"),
+					title: ctrans("Success"),
+					text: ctrans("Collection type updated successfully"),
 					type: "success",
 				})
 			},
 			onError: () => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to update collection type"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to update collection type"),
 					type: "error",
 				})
 			},
@@ -309,15 +309,15 @@ function updateCollectionNotes() {
 			preserveScroll: true,
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
-					text: trans("Text updated successfully"),
+					title: ctrans("Success"),
+					text: ctrans("Text updated successfully"),
 					type: "success",
 				})
 			},
 			onError: () => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to update text"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to update text"),
 					type: "error",
 				})
 			},
@@ -352,7 +352,6 @@ const onChangeEstimateDate = async (close: Function) => {
 			}
 		)
 	} catch (error) {
-		console.log(error)
 		notify({
 			title: "Failed",
 			text: "Failed to update the Delivery date, try again.",
@@ -395,8 +394,8 @@ const onSubmitParcels = () => {
 			},
 			onError: (errors) => {
 				notify({
-					title: trans("Something went wrong."),
-					text: trans("Failed to add Shipment. Please try again or contact administrator."),
+					title: ctrans("Something went wrong."),
+					text: ctrans("Failed to add Shipment. Please try again or contact administrator."),
 					type: "error",
 				})
 			},
@@ -420,15 +419,15 @@ const onDeleteShipment = (idShipment: number) => {
 		},
 		onSuccess: () => {
 			notify({
-				title: trans("Success!"),
-				text: trans("Shipment has deleted."),
+				title: ctrans("Success!"),
+				text: ctrans("Shipment has deleted."),
 				type: "success",
 			})
 		},
 		onError: (errors) => {
 			notify({
-				title: trans("Something went wrong."),
-				text: trans("Failed to delete shipment. Please try again or contact administrator."),
+				title: ctrans("Something went wrong."),
+				text: ctrans("Failed to delete shipment. Please try again or contact administrator."),
 				type: "error",
 			})
 		},
@@ -526,7 +525,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 		]">
 			<!-- Field: Platform -->
 			<div v-if="boxStats?.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
-				<div v-tooltip="trans('Platform')" class="flex-none">
+				<div v-tooltip="ctrans('Platform')" class="flex-none">
 					<FontAwesomeIcon
 						icon="fal fa-parachute-box"
 						size="xs"
@@ -555,7 +554,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 					])
 				"
 				class="flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-				<dt v-tooltip="trans('Customer Reference')" class="flex-none">
+				<dt v-tooltip="ctrans('Customer Reference')" class="flex-none">
 					<span class="sr-only">Reference</span>
 					<FontAwesomeIcon
 						icon="fal fa-id-card-alt"
@@ -572,7 +571,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<div
 				v-if="boxStats.is_platform ? (boxStats.platform_customer?.first_name || boxStats.platform_customer?.last_name) : boxStats?.fulfilment_customer?.customer?.contact_name"
 				class="flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Contact name')" class="flex-none">
+				<dt v-tooltip="ctrans('Contact name')" class="flex-none">
 					<span class="sr-only">Contact name</span>
 					<FontAwesomeIcon
 						icon="fal fa-user"
@@ -589,7 +588,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<div
 				v-if="boxStats?.fulfilment_customer?.customer?.company_name && !boxStats.is_platform"
 				class="flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Company name')" class="flex-none">
+				<dt v-tooltip="ctrans('Company name')" class="flex-none">
 					<span class="sr-only">Company name</span>
 					<FontAwesomeIcon
 						icon="fal fa-building"
@@ -605,7 +604,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<div
 				v-if="(boxStats.is_platform ? boxStats.platform_customer?.email : boxStats?.fulfilment_customer?.customer.email) && !isWarehouseDispatchingPalletReturnPage"
 				class="flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Email')" class="flex-none">
+				<dt v-tooltip="ctrans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
 					<FontAwesomeIcon
 						icon="fal fa-envelope"
@@ -632,7 +631,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<div
 				v-if="(boxStats?.is_platform ? boxStats?.platform_customer?.phone : boxStats?.fulfilment_customer?.customer?.phone) && !isWarehouseDispatchingPalletReturnPage"
 				class="flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Phone')" class="flex-none">
+				<dt v-tooltip="ctrans('Phone')" class="flex-none">
 					<span class="sr-only">Phone</span>
 					<FontAwesomeIcon
 						icon="fal fa-phone"
@@ -647,7 +646,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Field: Estimated delivery date -->
 			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
-				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
+				<dt v-tooltip="ctrans('Estimated delivery date')" class="flex-none">
 					<span class="sr-only">{{ boxStats?.delivery_state?.tooltip }}</span>
 					<FontAwesomeIcon :icon="['fal', 'calendar-day']" class="text-gray-400" :class="boxStats?.delivery_status?.class" fixed-width aria-hidden="true" size="xs" />
 				</dt>
@@ -660,7 +659,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
 						</div>
 						<div v-else class=" hover:text-gray-600 underline">
-							{{ trans('Set estimated delivery') }}
+							{{ ctrans('Set estimated delivery') }}
 						</div>
 					</template>
 					<template #content="{ close }">
@@ -674,7 +673,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				</Popover>
 				<div v-else>
 					<dd :class="dataPalletReturn?.estimated_delivery_date ? '' : 'text-gray-400'">
-						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : trans('(Not Set)') }}
+						{{ dataPalletReturn?.estimated_delivery_date ? useFormatTime(dataPalletReturn?.estimated_delivery_date) : ctrans('(Not Set)') }}
 					</dd>
 				</div>
 			</div>
@@ -683,7 +682,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			<div class="flex flex-col w-full gap-y-2 mb-1">
 				<!-- Top Row: Icon dan Switch -->
 				<div v-if="!boxStats?.is_platform" class="flex items-center gap-x-2">
-					<dt v-tooltip="trans(`Pallet Return's address`)" class="flex-none">
+					<dt v-tooltip="ctrans(`Pallet Return's address`)" class="flex-none">
 						<span class="sr-only">Delivery address</span>
 						<FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
 					</dt>
@@ -698,17 +697,17 @@ const base64HtmlToPdf = async (base64: string, index) => {
 								class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
 						</Switch>
 						<SwitchLabel as="span" class="ml-3">
-							{{ trans("Collection") }}
+							{{ ctrans("Collection") }}
 						</SwitchLabel>
 					</SwitchGroup>
 					<div v-else class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-						{{ trans("For Collection") }}: {{ dataPalletReturn.is_collection ? trans("Yes") : trans("No") }}
+						{{ ctrans("For Collection") }}: {{ dataPalletReturn.is_collection ? ctrans("Yes") : ctrans("No") }}
 					</div>
 				</div>
 
 				<div v-if="dataPalletReturn.is_collection" class="w-full">
 					<div v-if="!isWarehouseDispatchingPalletReturnPage" class="flex flex-col gap-y-2">
-						<span>{{ trans("Collection by:") }}</span>
+						<span>{{ ctrans("Collection by:") }}</span>
 						<div class="flex gap-x-4">
 							<label class="inline-flex items-center">
 								<input
@@ -718,7 +717,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 									@change="updateCollectionType"
 									class="form-radio"
 								/>
-								<span class="ml-2">{{ trans("My Self") }}</span>
+								<span class="ml-2">{{ ctrans("My Self") }}</span>
 							</label>
 							<label class="inline-flex items-center">
 								<input
@@ -728,7 +727,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 									@change="updateCollectionType"
 									class="form-radio"
 								/>
-								<span class="ml-2">{{ trans("Third Party") }}</span>
+								<span class="ml-2">{{ ctrans("Third Party") }}</span>
 							</label>
 						</div>
 					</div>
@@ -759,7 +758,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							v-if="!isWarehouseDispatchingPalletReturnPage"
 							@click="() => (isDeliveryAddressManagementModal = true)"
 							class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-              <span>{{trans('Edit')}}</span>
+              <span>{{ctrans('Edit')}}</span>
 						</div>
 					</div>
 				</div>
@@ -778,19 +777,19 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Section: Parcels -->
 			<div v-if="dataPalletReturn?.state === 'picked' || dataPalletReturn?.state === 'dispatched'" class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
+				<FontAwesomeIcon v-tooltip="ctrans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
-						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+						<div>{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
 						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
 						<template v-if="(boxStats?.shipments?.length < 1) && dataPalletReturn?.state === 'picked'">
 							<div v-if="boxStats?.parcels?.length" @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])" class="cursor-pointer text-gray-400 hover:text-gray-600">
-								{{ trans("Edit") }}
+								{{ ctrans("Edit") }}
 								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
 							<div v-else @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5]}], onSubmitParcels())" class="cursor-pointer text-gray-400 hover:text-gray-600">
-								{{ trans("Add") }}
+								{{ ctrans("Add") }}
 								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width aria-hidden="true" />
 							</div>
 						</template>
@@ -812,10 +811,10 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 			<!-- Section: Shipments -->
 			<div v-if="!dataPalletReturn.is_collection && boxStats.shipments.length" class="flex gap-x-1 py-0.5" xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
+				<FontAwesomeIcon v-tooltip="ctrans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
-						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
+						<div>{{ ctrans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
 
 					</div>
 
@@ -825,7 +824,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 								<div v-if="sments.combined_label_url">
 									{{ sments.name }}
 
-									<a v-tooltip="trans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+									<a v-tooltip="ctrans('Click to open file')" target="_blank" :href="sments.combined_label_url" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
 										<span class="">Open barcode</span>
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</a>
@@ -840,7 +839,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										({{ useTruncate(sments.tracking, 14) }})
 									</span>
 
-									<div @click="base64ToPdf(sments.label)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+									<div @click="base64ToPdf(sments.label)" v-tooltip="ctrans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
 										<span class="">Open barcode</span>
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</div>
@@ -855,7 +854,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										({{ useTruncate(sments.tracking, 14) }})
 									</span>
 
-									<div @click="() => base64HtmlToPdf(sments.label, shipmentIdx)" v-tooltip="trans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
+									<div @click="() => base64HtmlToPdf(sments.label, shipmentIdx)" v-tooltip="ctrans('Click to download file')" class="w-fit cursor-pointer text-gray-400 hover:text-gray-600 hover:underline">
 										<span class="">Open barcode</span>
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</div>
@@ -880,7 +879,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 								<div v-if="isDeleteShipment === sments.id" class="px-1">
 									<LoadingIcon />
 								</div>
-								<div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
+								<div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="ctrans('Remove shipment')" class="cursor-pointer px-1">
 									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
 								</div>
 							</div>
@@ -897,10 +896,10 @@ const base64HtmlToPdf = async (base64: string, index) => {
 					:updateRoute="address_management.updateRoute"
 				/>
 				<div v-else>
-                    <FontAwesomeIcon v-tooltip="trans('Customer Reference')" :icon="faHashtag" class='text-gray-400'
+                    <FontAwesomeIcon v-tooltip="ctrans('Customer Reference')" :icon="faHashtag" class='text-gray-400'
                         fixed-width aria-hidden='true' />
 					<span :class="dataPalletReturn?.customer_reference ? '' : 'text-gray-400'">
-						{{ dataPalletReturn?.customer_reference || trans('No customer reference') }}
+						{{ dataPalletReturn?.customer_reference || ctrans('No customer reference') }}
 					</span>
 				</div>
 			</div>
@@ -918,10 +917,10 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<div class="text-sm font-semibold text-gray-600">{{ pickingTitle }}</div>
 				<div class="flex flex-wrap gap-2 text-sm">
 					<div v-if="showPickerInfo" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-						<span class="font-semibold text-gray-700">{{ trans('Picker') }}:</span> {{ dataPalletReturn?.picker_user?.contact_name || '-' }}
+						<span class="font-semibold text-gray-700">{{ ctrans('Picker') }}:</span> {{ dataPalletReturn?.picker_user?.contact_name || '-' }}
 					</div>
 					<div v-if="showPackerInfo" class=" border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn?.packer_user?.contact_name || '-' }}
+						<span class="font-semibold text-gray-700">{{ ctrans('Packer') }}:</span> {{ dataPalletReturn?.packer_user?.contact_name || '-' }}
 					</div>
 					<Button
 						v-if="(canChangePicker || canChangePacker) && isWarehouseDispatchingPalletReturnPage"
@@ -937,7 +936,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<div
 					class="flex items-center flex-none gap-x-2 w-fit"
 					:class="boxStats?.delivery_state.class"
-					v-tooltip="trans('Delivery status')">
+					v-tooltip="ctrans('Delivery status')">
 					<dt class="flex-none">
 						<span class="sr-only">{{ boxStats.delivery_state.tooltip }}</span>
 						<FontAwesomeIcon
@@ -1019,7 +1018,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 		<div class="flex flex-col gap-4">
 			<div class="text-center text-lg font-semibold">{{ pickingTitle }}</div>
 			<div v-if="canChangePicker" class="flex flex-col gap-2">
-				<div class="text-sm font-medium">{{ trans('Picker') }}</div>
+				<div class="text-sm font-medium">{{ ctrans('Picker') }}</div>
 				<PureMultiselectInfiniteScroll
 					v-if="pickersListRoute"
 					v-model="selectedPicker"
@@ -1041,10 +1040,10 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						</div>
 					</template>
 				</PureMultiselectInfiniteScroll>
-				<div v-else class="text-xs text-gray-500">{{ trans('Picker list route is not available') }}</div>
+				<div v-else class="text-xs text-gray-500">{{ ctrans('Picker list route is not available') }}</div>
 			</div>
 			<div v-if="canChangePacker" class="flex flex-col gap-2">
-				<div class="text-sm font-medium">{{ trans('Packer') }}</div>
+				<div class="text-sm font-medium">{{ ctrans('Packer') }}</div>
 				<PureMultiselectInfiniteScroll
 					v-if="packersListRoute"
 					v-model="selectedPacker"
@@ -1066,11 +1065,11 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						</div>
 					</template>
 				</PureMultiselectInfiniteScroll>
-				<div v-else class="text-xs text-gray-500">{{ trans('Packer list route is not available') }}</div>
+				<div v-else class="text-xs text-gray-500">{{ ctrans('Packer list route is not available') }}</div>
 			</div>
 			<Button
 				@click="onUpdatePickingUsers"
-				:label="trans('Save')"
+				:label="ctrans('Save')"
 				type="save"
 				full
 				:loading="isLoadingPickingUsers" />
@@ -1085,11 +1084,11 @@ const base64HtmlToPdf = async (base64: string, index) => {
 		width="w-full max-w-lg"
 	>
 		<div class="text-center font-bold mb-4">
-			{{ trans('Add shipment') }}
+			{{ ctrans('Add shipment') }}
 		</div>
 
 		<div>
-			<Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+			<Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
 				<!-- Header Row -->
 				<div class="grid grid-cols-12 items-center gap-x-6 mb-2">
 					<div class="flex justify-center">
@@ -1146,7 +1145,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						</div>
 					</TransitionGroup>
 					<div v-else class="text-center text-gray-400">
-						{{ trans('No parcels') }}
+						{{ ctrans('No parcels') }}
 					</div>
 				</div>
 
@@ -1155,7 +1154,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 					<div></div>
 					<div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
 						<FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-						{{ trans("Add another parcel") }}
+						{{ ctrans("Add another parcel") }}
 					</div>
 				</div>
 			</Fieldset>

@@ -16,12 +16,16 @@ use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -45,6 +49,11 @@ class GetRetinaB2BDashboardInsights
     use WithCustomerPurchasableProduct;
 
     private const int REGULAR_PRODUCTS = 20;
+
+    /**
+     * ponytail: the order again picker lists the top spend products only, 99% of customers bought fewer.
+     */
+    private const int PURCHASED_PRODUCTS = 300;
     private const int RECENT_ORDERS = 5;
     private const int FAVOURITES = 4;
 
@@ -94,19 +103,25 @@ class GetRetinaB2BDashboardInsights
         }
 
         [$recommendationsSource, $recommendations] = Cache::remember(
-            "retina_b2b_recommendations:$customer->id",
+            "retina_b2b_recommendations:v2:$customer->id",
             now()->addHours(self::RECOMMENDATIONS_CACHE_HOURS),
             fn () => $this->getRecommendations($customer, $productSales)
         );
+
+        $basketTransactions = $this->getBasketTransactions($customer);
 
         return [
             'currency_code'          => $customer->shop->currency->code,
             'kpis'                   => $this->getKpis($customer, $lastYearOrders, $orders, $today),
             'gold_reward'            => $this->getGoldReward($customer, $today),
-            'regulars'               => $this->getRegulars($customer, $productSales->take(self::REGULAR_PRODUCTS), $today),
-            'favourites'             => $this->getFavourites($customer),
+            'vouchers'               => $this->getVouchers($customer),
+            'regulars'               => $this->getRegulars($customer, $productSales->take(self::PURCHASED_PRODUCTS), $today, $basketTransactions),
+            'favourites'             => $this->getFavourites($customer, $basketTransactions),
             'recent_orders'          => $this->getRecentOrders($customer),
-            'recommendations'        => $recommendations,
+            'recommendations'        => array_map(
+                fn (array $product) => $product + ['quantity_in_basket' => $basketTransactions[$product['id']]['quantity_ordered'] ?? 0],
+                $recommendations
+            ),
             'recommendations_source' => $recommendationsSource,
         ];
     }
@@ -120,7 +135,7 @@ class GetRetinaB2BDashboardInsights
         $allTime = DB::table('orders')
             ->where('customer_id', $customer->id)
             ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
-            ->selectRaw('count(*) as orders, coalesce(sum(net_amount), 0) as spend')
+            ->selectRaw('count(*) as orders, coalesce(sum(net_amount), 0) as spend, max(date) as last_date')
             ->first();
 
         $totalOrders = (int) $allTime->orders;
@@ -136,7 +151,7 @@ class GetRetinaB2BDashboardInsights
             ? $lastOrderAt->copy()->addDays($orderEveryDays)
             : null;
 
-        $lastOrderAt ??= $this->getLastOrderDate($customer);
+        $lastOrderAt ??= $allTime->last_date ? Carbon::parse($allTime->last_date) : null;
         $daysSinceLast = $lastOrderAt ? (int) $lastOrderAt->copy()->startOfDay()->diffInDays($today) : null;
 
         return [
@@ -172,6 +187,52 @@ class GetRetinaB2BDashboardInsights
     }
 
     /**
+     * Vouchers staff chose to show on the dashboard, running now, and not yet used by this customer unless
+     * they can be used again. Codes sent only by email stay hidden, so their use still measures the email.
+     */
+    private function getVouchers(Customer $customer): array
+    {
+        $vouchers = Offer::query()
+            ->where('shop_id', $customer->shop_id)
+            ->whereNotNull('voucher')
+            ->whereNull('customer_id')
+            ->where('status', true)
+            ->where('settings->show_on_customer_dashboard', true)
+            ->where(fn ($query) => $query->whereNull('start_at')->orWhere('start_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('end_at')->orWhere('end_at', '>', now()))
+            ->with('offerAllowances')
+            ->orderBy('end_at')
+            ->get();
+
+        $usedVoucherIds = DB::table('orders')
+            ->where('customer_id', $customer->id)
+            ->whereIn('offer_voucher_id', $vouchers->pluck('id'))
+            ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
+            ->pluck('offer_voucher_id')
+            ->flip();
+
+        return $vouchers
+            ->reject(fn (Offer $voucher) => $usedVoucherIds->has($voucher->id) && !data_get($voucher->settings, 'can_customer_reuse', false))
+            ->map(function (Offer $voucher) {
+                $allowance = $voucher->offerAllowances->first();
+
+                return [
+                    'code'               => $voucher->code,
+                    'name'               => $voucher->name,
+                    'percentage_off'     => $allowance?->type == OfferAllowanceType::PERCENTAGE_OFF ? (float) data_get($allowance->data, 'percentage_off') : null,
+                    'amount_off'         => $allowance?->type == OfferAllowanceType::AMOUNT_OFF ? (float) data_get($allowance->data, 'amount_off') : null,
+                    'is_free_shipping'   => $allowance?->type == OfferAllowanceType::SHIPPING,
+                    'is_gift'            => $allowance?->type == OfferAllowanceType::GIFT,
+                    'is_whole_order'     => in_array($allowance?->target_type, [OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER, OfferAllowanceTargetTypeEnum::ORDER], true),
+                    'min_amount'         => (float) data_get($voucher->trigger_data, 'item_amount', 0) ?: null,
+                    'expires_at'         => $voucher->end_at?->copy()->subSecond()->toDateString(),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
      * Every product the customer bought since the given date (ever, when none), best spend first.
      */
     private function getProductSales(Customer $customer, ?Carbon $since = null): Collection
@@ -195,7 +256,7 @@ class GetRetinaB2BDashboardInsights
             ->get();
     }
 
-    private function getRegulars(Customer $customer, Collection $productSales, Carbon $today): array
+    private function getRegulars(Customer $customer, Collection $productSales, Carbon $today, array $basketTransactions): array
     {
         if ($productSales->isEmpty()) {
             return [];
@@ -204,22 +265,20 @@ class GetRetinaB2BDashboardInsights
         $products = Product::query()
             ->whereIn('products.id', $productSales->pluck('product_id'))
             ->visibleToCustomer($customer->id)
-            ->leftJoin('webpages', function ($join) {
-                $join->on('products.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'Product');
-            })
+            ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
             ->select('products.*', 'webpages.canonical_url')
             ->get()
             ->keyBy('id');
 
-        $basketTransactions = $this->getBasketTransactions($customer);
         $etas               = GetProductIncomingStock::make()->earliestEtaByProduct(
             $products->filter(fn (Product $product) => $product->available_quantity <= 0)->keys()->all()
         );
+        $remindedProductIds          = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $customerExclusiveProductIds = $this->getCustomerExclusiveProductIds($customer);
 
         return $productSales
             ->filter(fn ($sale) => $products->has($sale->product_id))
-            ->map(function ($sale) use ($products, $customer, $basketTransactions, $etas, $today) {
+            ->map(function ($sale) use ($products, $customer, $basketTransactions, $etas, $remindedProductIds, $customerExclusiveProductIds, $today) {
                 /** @var Product $product */
                 $product = $products->get($sale->product_id);
 
@@ -235,15 +294,17 @@ class GetRetinaB2BDashboardInsights
                     'id'                 => $product->id,
                     'code'               => $product->code,
                     'name'               => $product->name,
-                    'image'              => data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original'),
+                    'image'              => $this->slimImage(data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original')),
                     'url'                => $this->productUrl($product->canonical_url),
                     'price'              => (float) $product->price,
                     'unit'               => $product->unit,
                     'units'              => (float) $product->units,
                     'available_quantity' => (int) $product->available_quantity,
+                    'is_on_demand'       => (bool) $product->is_on_demand,
                     'stock_status'       => $this->stockStatus($product, $averageQuantity),
-                    'eta'                => $etas[$product->id] ?? null,
-                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer),
+                    'eta'                => isset($etas[$product->id]) ? Carbon::parse($etas[$product->id])->toDateString() : null,
+                    'has_reminder'       => $remindedProductIds->has($product->id),
+                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer, $customerExclusiveProductIds),
                     'orders'             => $orders,
                     'quantity'           => (float) $sale->quantity,
                     'spend'              => round((float) $sale->spend, 2),
@@ -281,7 +342,7 @@ class GetRetinaB2BDashboardInsights
         return in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON], true);
     }
 
-    private function getFavourites(Customer $customer): array
+    private function getFavourites(Customer $customer, array $basketTransactions): array
     {
         $favouriteProductIds = DB::table('favourites')
             ->where('customer_id', $customer->id)
@@ -297,24 +358,17 @@ class GetRetinaB2BDashboardInsights
         $products = Product::query()
             ->whereIn('products.id', $favouriteProductIds)
             ->visibleToCustomer($customer->id)
-            ->leftJoin('webpages', function ($join) {
-                $join->on('products.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'Product');
-            })
+            ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
             ->select('products.*', 'webpages.canonical_url')
             ->get()
             ->keyBy('id');
 
-        $basketTransactions = $this->getBasketTransactions($customer);
-        $remindedProductIds = DB::table('back_in_stock_reminders')
-            ->where('customer_id', $customer->id)
-            ->whereIn('product_id', $products->keys())
-            ->pluck('product_id')
-            ->flip();
+        $remindedProductIds          = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $customerExclusiveProductIds = $this->getCustomerExclusiveProductIds($customer);
 
         return $favouriteProductIds
             ->filter(fn ($productId) => $products->has($productId))
-            ->map(function ($productId) use ($products, $customer, $basketTransactions, $remindedProductIds) {
+            ->map(function ($productId) use ($products, $customer, $basketTransactions, $remindedProductIds, $customerExclusiveProductIds) {
                 /** @var Product $product */
                 $product = $products->get($productId);
 
@@ -322,17 +376,34 @@ class GetRetinaB2BDashboardInsights
                     'id'                 => $product->id,
                     'code'               => $product->code,
                     'name'               => $product->name,
-                    'image'              => data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original'),
+                    'image'              => $this->slimImage(data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original')),
                     'url'                => $this->productUrl($product->canonical_url),
                     'available_quantity' => (int) $product->available_quantity,
                     'stock_status'       => $this->stockStatus($product, 1),
-                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer),
+                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer, $customerExclusiveProductIds),
                     'has_reminder'       => $remindedProductIds->has($product->id),
                     'quantity_in_basket' => $basketTransactions[$product->id]['quantity_ordered'] ?? 0,
                 ];
             })
             ->values()
             ->all();
+    }
+
+    private function getCustomerExclusiveProductIds(Customer $customer): Collection
+    {
+        return DB::table('product_has_exclusive_customers')
+            ->where('customer_id', $customer->id)
+            ->pluck('product_id')
+            ->flip();
+    }
+
+    private function getRemindedProductIds(Customer $customer, array $productIds): Collection
+    {
+        return DB::table('back_in_stock_reminders')
+            ->where('customer_id', $customer->id)
+            ->whereIn('product_id', $productIds)
+            ->pluck('product_id')
+            ->flip();
     }
 
     private function getRecentOrders(Customer $customer): array
@@ -357,7 +428,7 @@ class GetRetinaB2BDashboardInsights
                 'id'          => $order->id,
                 'slug'        => $order->slug,
                 'reference'   => $order->reference,
-                'date'        => $order->date,
+                'date'        => Carbon::parse($order->date)->toDateString(),
                 'state'       => $order->state,
                 'state_label' => OrderStateEnum::labels()[$order->state] ?? $order->state,
                 'total'       => (float) $order->total_amount,
@@ -376,7 +447,7 @@ class GetRetinaB2BDashboardInsights
     private function getRecommendations(Customer $customer, Collection $productSales): array
     {
         if ($productSales->isEmpty()) {
-            return ['shop_best_sellers', IrisProductBasketRecommendationResource::collection($this->getShopBestSellers($customer))->resolve()];
+            return ['shop_best_sellers', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($this->getShopBestSellers($customer))->resolve())];
         }
 
         $products = GetRetinaProductBasketRecommendations::make()->handle(
@@ -385,10 +456,11 @@ class GetRetinaB2BDashboardInsights
             [
                 'prefer_cheaper'      => false,
                 'exclude_product_ids' => $productSales->pluck('product_id')->all(),
+                'customer_id'         => $customer->id,
             ]
         );
 
-        return ['bought_together', IrisProductBasketRecommendationResource::collection($products)->resolve()];
+        return ['bought_together', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($products)->resolve())];
     }
 
     /**
@@ -432,16 +504,6 @@ class GetRetinaB2BDashboardInsights
             ->values();
     }
 
-    private function getLastOrderDate(Customer $customer): ?Carbon
-    {
-        $lastOrderDate = DB::table('orders')
-            ->where('customer_id', $customer->id)
-            ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
-            ->max('date');
-
-        return $lastOrderDate ? Carbon::parse($lastOrderDate) : null;
-    }
-
     private function medianGapInDays(Collection $dates): ?int
     {
         $days = $dates->map(fn (Carbon $date) => $date->copy()->startOfDay())->unique(fn ($date) => $date->toDateString())->values();
@@ -453,6 +515,24 @@ class GetRetinaB2BDashboardInsights
         $gaps = $days->sliding(2)->map(fn ($pair) => $pair->first()->diffInDays($pair->last()));
 
         return max(1, (int) round($gaps->median()));
+    }
+
+    /**
+     * ponytail: a product image carries ten sizes and formats; the dashboard shows small thumbnails, one of each format is enough.
+     */
+    private function slimImage(?array $image): ?array
+    {
+        return $image ? Arr::only($image, ['avif', 'webp', 'original']) : null;
+    }
+
+    private function slimRecommendations(array $products): array
+    {
+        return array_map(function (array $product) {
+            $product['web_images'] = ['main' => ['gallery' => $this->slimImage(data_get($product, 'web_images.main.gallery') ?? data_get($product, 'web_images.main.thumbnail'))]];
+            unset($product['offers_data'], $product['product_offers_data']);
+
+            return $product;
+        }, $products);
     }
 
     private function productUrl(?string $canonicalUrl): ?string

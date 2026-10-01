@@ -197,6 +197,12 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $not_follow_master_media
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
+ * @property bool $is_back_order Offered for pre-order while out of stock, dispatched when the next delivery arrives
+ * @property bool $is_made_to_order Not stocked, ordered from the supplier when a customer buys it
+ * @property string|null $pre_order_deposit_percentage Deposit taken at checkout on made-to-order lines, null uses the shop default
+ * @property int|null $pre_order_lead_time_days Overrides the supplier's pre-order lead time
+ * @property int|null $max_quantity_per_order
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -289,6 +295,14 @@ class Product extends Model implements Auditable, HasMedia
         });
     }
 
+    public const array PRE_ORDER_FIELDS = [
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
+    ];
+
     protected $guarded = [];
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n', 'gpsr_warnings_i8n', 'gpsr_manual_i8n'];
@@ -329,6 +343,10 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media'       => 'boolean',
         'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
+        'is_indivisible'                => 'boolean',
+        'is_back_order'                 => 'boolean',
+        'is_made_to_order'              => 'boolean',
+        'pre_order_deposit_percentage'  => 'decimal:2',
     ];
 
     protected $attributes = [
@@ -408,10 +426,16 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media',
         'not_follow_master_trade_units',
         'is_golden_product',
+        'is_indivisible',
         'barcode',
         'independent_barcode',
         'is_for_sale',
         'exclusive_for_customer_id',
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
     ];
 
     public function getRouteKeyName(): string

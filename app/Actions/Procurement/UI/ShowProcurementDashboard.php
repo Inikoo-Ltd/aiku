@@ -8,10 +8,14 @@
 
 namespace App\Actions\Procurement\UI;
 
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
+use App\Models\Ordering\PreOrder;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
@@ -23,13 +27,11 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\Procurement\OrgPartner;
-use App\Models\Procurement\OrgSupplier;
-use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -68,19 +70,27 @@ class ShowProcurementDashboard extends OrgAction
         }
 
         return [
-            'suppliers'         => OrgSupplier::where('agent_id', $agent->id)->count(),
-            'supplier_products' => OrgSupplierProduct::whereIn(
-                'org_agent_id',
-                OrgAgent::where('agent_id', $agent->id)->select('id')
-            )->count(),
-            'purchase_orders'   => PurchaseOrder::where('agent_id', $agent->id)->count(),
-            'stock_deliveries'  => StockDelivery::where('agent_id', $agent->id)->count(),
+            'suppliers'                => Supplier::where('agent_id', $agent->id)->where('status', true)->count(),
+            'purchase_orders'          => PurchaseOrder::where('agent_id', $agent->id)->count(),
+            'supplier_purchase_orders' => AgentSupplierPurchaseOrder::join('suppliers', 'suppliers.id', 'agent_supplier_purchase_orders.supplier_id')
+                ->where('suppliers.agent_id', $agent->id)
+                ->count(),
+            'stock_deliveries'         => StockDelivery::where('agent_id', $agent->id)->count(),
         ];
     }
 
     private function getDashboardCards(array $numbers): array
     {
         $organisation = $this->organisation;
+
+        if ($organisation->type === OrganisationTypeEnum::AGENT) {
+            return [
+                $this->dashboardCard(__('Purchase Orders'), __('Received from our organisations'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
+                $this->dashboardCard(__('Supplier Purchase Orders'), __('Sent to suppliers'), 'fal fa-clipboard-list', $numbers['supplier_purchase_orders'], 'amber', 'grp.org.procurement.agent_supplier_purchase_orders.index'),
+                $this->dashboardCard(__('Stock Deliveries'), __('Shipped to our organisations'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
+                $this->dashboardCard(__('Suppliers'), __('Current suppliers'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
+            ];
+        }
 
         if ($organisation->type !== OrganisationTypeEnum::SHOP) {
             return [
@@ -171,83 +181,14 @@ class ShowProcurementDashboard extends OrgAction
                 ],
                 ['elements[state]' => 'in_process,confirmed,ready_to_ship,dispatched,received,checked,booking_in,booked_in']
             ),
-        ];
-    }
-
-    public function stockOutPeriodOptions(): array
-    {
-        return [
-            '1m'  => __('1 Month'),
-            '1q'  => __('1 Quarter'),
-            '6m'  => __('6 Months'),
-            '1y'  => __('1 Year'),
-            '3y'  => __('3 Years'),
-            'all' => __('All'),
-        ];
-    }
-
-    private function getStockOuts(string $period): array
-    {
-        $today = today();
-        $from  = match ($period) {
-            '1m'    => $today->copy()->subMonth(),
-            '1q'    => $today->copy()->subMonths(3),
-            '6m'    => $today->copy()->subMonths(6),
-            '1y'    => $today->copy()->subYear(),
-            '3y'    => $today->copy()->subYears(3),
-            default => null,
-        };
-
-        $rows = DB::table('organisation_stock_histories')
-            ->where('organisation_id', $this->organisation->id)
-            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
-            ->orderBy('date')
-            ->get(['date', 'number_out_of_stock_org_stocks', 'number_org_stocks', 'estimated_lost_revenue_org_currency']);
-
-        $latest = $rows->last() ?? DB::table('organisation_stock_histories')
-            ->where('organisation_id', $this->organisation->id)
-            ->orderByDesc('date')
-            ->first(['date', 'number_out_of_stock_org_stocks', 'number_org_stocks', 'estimated_lost_revenue_org_currency']);
-
-        $from ??= $rows->isNotEmpty() ? Carbon::parse($rows->first()->date) : $today;
-        $end  = $latest ? Carbon::parse($latest->date) : $today;
-        $unit = match (true) {
-            $from->diffInDays($end) <= 92  => 'day',
-            $from->diffInDays($end) <= 731 => 'week',
-            default                        => 'month',
-        };
-
-        $lostTotal = 0.0;
-        $series    = $rows->groupBy(fn ($row) => Carbon::parse($row->date)->startOf($unit)->toDateString())
-            ->map(function ($bucketRows, string $bucketStart) use ($unit, $from, $end, &$lostTotal) {
-                $skos        = $bucketRows->sum('number_org_stocks');
-                $lostRows    = $bucketRows->whereNotNull('estimated_lost_revenue_org_currency');
-                $lostPerDay  = $lostRows->isEmpty() ? null : round($lostRows->avg('estimated_lost_revenue_org_currency'), 2);
-                $bucketStart = Carbon::parse($bucketStart);
-                $daysCovered = (int)$bucketStart->copy()->max($from)->diffInDays($bucketStart->copy()->endOf($unit)->min($end)) + 1;
-                $lostTotal   += ($lostPerDay ?? 0) * $daysCovered;
-
-                return [
-                    'date'         => $bucketStart->toDateString(),
-                    'out_of_stock' => (int)round($bucketRows->avg('number_out_of_stock_org_stocks')),
-                    'percentage'   => $skos ? round($bucketRows->sum('number_out_of_stock_org_stocks') / $skos * 100, 1) : 0,
-                    'lost_per_day' => $lostPerDay,
-                ];
-            })->values()->all();
-
-        return [
-            'period'     => $period,
-            'periods'    => $this->stockOutPeriodOptions(),
-            'unit'       => $unit,
-            'currency'   => $this->organisation->currency->code,
-            'lost_total' => round($lostTotal),
-            'now'        => $latest ? [
-                'date'         => $latest->date,
-                'out_of_stock' => (int)$latest->number_out_of_stock_org_stocks,
-                'percentage'   => $latest->number_org_stocks ? round($latest->number_out_of_stock_org_stocks / $latest->number_org_stocks * 100, 1) : 0,
-                'lost_per_day' => $latest->estimated_lost_revenue_org_currency === null ? null : (float)$latest->estimated_lost_revenue_org_currency,
-            ] : null,
-            'series'     => $series,
+            $this->dashboardCard(
+                __('Pre-orders'),
+                __('Customer pre-orders waiting for goods, by supplier'),
+                'fal fa-hourglass-half',
+                PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count(),
+                'amber',
+                'grp.org.procurement.pre_orders.index'
+            ),
         ];
     }
 
@@ -268,7 +209,7 @@ class ShowProcurementDashboard extends OrgAction
         $withItems = [];
         $empty     = [];
 
-        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->get() as $orgPartner) {
+        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->whereRelation('partner', 'is_manufacturing_hub', true)->get() as $orgPartner) {
             $miniCart = GetPartnerMiniCart::run($orgPartner);
 
             if ($miniCart['count'] > 0) {
@@ -378,13 +319,6 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
-    private function stockOutPeriod(ActionRequest $request): string
-    {
-        $period = (string)$request->input('period');
-
-        return array_key_exists($period, $this->stockOutPeriodOptions()) ? $period : '1y';
-    }
-
     public function htmlResponse(ActionRequest $request): Response
     {
         $numbers = $this->getDashboardNumbers();
@@ -408,10 +342,10 @@ class ShowProcurementDashboard extends OrgAction
 
                 'shippers' => Shipper::query()->get(),
                 'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
-                'dashboardCards' => $this->getDashboardCards($numbers),
+                'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'shoppingLists' => $this->getShoppingLists(),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
-                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockOuts($this->stockOutPeriod($request)) : null,
+                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period'))) : null,
 
             ]
         );

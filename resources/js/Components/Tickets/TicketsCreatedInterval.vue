@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted } from "vue"
+import { onMounted, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 const props = withDefaults(
 	defineProps<{
@@ -15,12 +16,18 @@ const props = withDefaults(
 )
 
 const storageKey = props.storageKey
+const loadingInterval = ref<string | null>(null)
 
 const select = (interval: string) => {
 	try {
 		localStorage.setItem(storageKey, interval)
 	} catch {}
-	router.reload({ data: { [props.param]: interval, page: 1 }, preserveScroll: true })
+	router.reload({
+		data: { [props.param]: interval, page: 1 },
+		preserveScroll: true,
+		onStart: () => (loadingInterval.value = interval),
+		onFinish: () => (loadingInterval.value = null),
+	})
 }
 
 onMounted(() => {
@@ -50,13 +57,15 @@ onMounted(() => {
 			v-for="(optionLabel, interval) in options"
 			:key="interval"
 			type="button"
-			class="rounded-md px-3 py-1 transition"
+			class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 transition"
 			:class="
 				interval === selected
 					? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 					: 'text-gray-600 hover:bg-gray-100'
 			"
+			:disabled="loadingInterval !== null"
 			@click="select(interval)">
+			<LoadingIcon v-if="loadingInterval === interval" />
 			{{ optionLabel }}
 		</button>
 	</div>

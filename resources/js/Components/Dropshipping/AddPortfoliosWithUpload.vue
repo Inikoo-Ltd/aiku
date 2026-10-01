@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '../Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
@@ -55,7 +55,7 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
             notify({
-                title: trans("Something went wrong."),
+                title: ctrans("Something went wrong."),
                 text: error.products || undefined,
                 type: "error"
             })
@@ -65,8 +65,8 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
             emits('onDone')
 
             // notify({
-            //     title: trans("Success!"),
-            //     text: trans("Successfully added portfolios"),
+            //     title: ctrans("Success!"),
+            //     text: ctrans("Successfully added portfolios"),
             //     type: "success"
             // })
 			// props.step.current = 1
@@ -81,19 +81,19 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
 // Filter portfolios by type
 const filterList = [
     {
-        label: trans("Product"),
+        label: ctrans("Product"),
         value: "product",
     },
 	{
-		label: trans("Department"),
+		label: ctrans("Department"),
 		value: "department",
 	},
 	{
-		label: trans("Sub-department"),
+		label: ctrans("Sub-department"),
 		value: "sub_department",
 	},
 	{
-		label: trans("Family"),
+		label: ctrans("Family"),
 		value: "family",
 	}
 ]
@@ -149,7 +149,7 @@ const updateSelectedProducts = async (portfolio: { id: number }, modelData: {}, 
         recentlyUpdatedProduct.value = response.data
 		set(listState.value, [portfolio.id, section], 'success')
 	} catch (error) {
-        console.log('Error updating portfolio:', error)
+        console.error('Error updating portfolio:', error)
 		set(listState.value, [portfolio.id, section], 'error')
 	}
 
@@ -179,8 +179,8 @@ const bulkUpload = () => {
 				})
 				selectedPortfoliosToSync.value = []
 				// notify({
-				// 	title: trans("Success!"),
-				// 	text: trans("Successfully uploaded portfolios"),
+				// 	title: ctrans("Success!"),
+				// 	text: ctrans("Successfully uploaded portfolios"),
 				// 	type: "success",
 				// })
 			},
@@ -189,8 +189,8 @@ const bulkUpload = () => {
 			},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
-					text: error.message || trans("An error occurred while uploading portfolios"),
+					title: ctrans("Something went wrong"),
+					text: error.message || ctrans("An error occurred while uploading portfolios"),
 					type: "error",
 				})
 			}
@@ -218,8 +218,8 @@ const bulkDelete = () => {
 				)
 				selectedPortfoliosToSync.value = []
 				notify({
-					title: trans("Success!"),
-					text: trans("Deleted portfolios successfully"),
+					title: ctrans("Success!"),
+					text: ctrans("Deleted portfolios successfully"),
 					type: "success",
 				})
 			},
@@ -228,8 +228,8 @@ const bulkDelete = () => {
 			},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
-					text: error.message || trans("An error occurred while uploading portfolios"),
+					title: ctrans("Something went wrong"),
+					text: error.message || ctrans("An error occurred while uploading portfolios"),
 					type: "error",
 				})
 			}
@@ -251,14 +251,14 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Select products to be added to shop') }}
+                {{ ctrans('Select products to be added to shop') }}
             </div>
 <!--            <div class="relative text-right">-->
 <!--                <Button-->
 <!--                    v-if="step.current == 0"-->
 <!--                    @click="step.current = 1"-->
 <!--                    :disabled="isLoadingSubmit"-->
-<!--                    :label="trans('Skip to edit products')"-->
+<!--                    :label="ctrans('Skip to edit products')"-->
 <!--                    iconRight="fal fa-arrow-right"-->
 <!--                    type="tertiary"-->
 <!--                />-->
@@ -271,13 +271,13 @@ onMounted(() => {
                 <Button
                     v-if="step.current == 1"
                     @click="step.current = 0"
-                    :label="trans('Add products')"
+                    :label="ctrans('Add products')"
                     icon="fal fa-arrow-left"
                     type="tertiary"
                 />
             </div>
             <div class="text-center col-span-2">
-                <div class="font-bold text-2xl">{{ trans("Edit portfolios") }}</div>
+                <div class="font-bold text-2xl">{{ ctrans("Edit portfolios") }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
                     {{ `Edit the portfolios before syncing them to ${platform_data.name} if needed` }}
                 </div>
@@ -291,7 +291,7 @@ onMounted(() => {
             <div class="relative">
                 <Button
                     @click="step.current = 0"
-                    :label="trans('Back to add products')"
+                    :label="ctrans('Back to add products')"
                     icon="fal fa-arrow-left"
                     type="tertiary"
                 />
@@ -300,8 +300,8 @@ onMounted(() => {
             <div class="text-center col-span-2">
                 <div class="font-bold text-2xl">{{ `Sync to ${platform_data.name}` }}</div>
                 <div class="text-gray-500 text-sm italic tracking-wide">
-                    <!-- {{ trans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }} -->
-                    {{ trans("All you see is unsynced products. You can remove or sync it all in one click.") }}
+                    <!-- {{ ctrans("You can select them via checkbox to bulk syncing or sync 1 by 1.") }} -->
+                    {{ ctrans("All you see is unsynced products. You can remove or sync it all in one click.") }}
                 </div>
             </div>
 
@@ -310,7 +310,7 @@ onMounted(() => {
 <!--                <Button-->
 <!--                    v-if="portfoliosList?.length"-->
 <!--                    @click="() => bulkDelete()"-->
-<!--                    :label="trans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"-->
+<!--                    :label="ctrans('Remove all unsynced products') + ' (' + portfoliosList?.length + ')'"-->
 <!--                    type="delete"-->
 <!--                    size="s"-->
 <!--                    :loading="isLoadingBulkDeleteUpload"-->
@@ -323,7 +323,7 @@ onMounted(() => {
         <KeepAlive>
             <ProductsSelector
                 v-if="step.current === 0"
-                xheadLabel="trans('Add products to portfolios')"
+                xheadLabel="ctrans('Add products to portfolios')"
                 :route-fetch="{
                     name: props.routes.itemRoute.name,
                     parameters: {
@@ -374,7 +374,7 @@ onMounted(() => {
                     <EmptyState
                         v-else
                         :data="{
-                            title: trans('No portfolios selected'),
+                            title: ctrans('No portfolios selected'),
                         }"
                     />
                 </div>
@@ -382,7 +382,7 @@ onMounted(() => {
                     <Button
                         v-if="step.current == 1"
                         @click="step.current = 2"
-                        xlabel="trans('Next step (sync to Shopify)')"
+                        xlabel="ctrans('Next step (sync to Shopify)')"
                         :label="`Next step (sync to ${platform_data.name})`"
                         full
                         iconRight="fal fa-arrow-right"
@@ -405,7 +405,7 @@ onMounted(() => {
                             <div>
                                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
                                 <div class="inline items-center gap-x-2">
-                                    {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                                    {{ ctrans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
                                 </div>
                             </div>
 
@@ -414,7 +414,7 @@ onMounted(() => {
                                     v-if="customerSalesChannel?.reconnect_route?.name"
                                     @click="() => onClickReconnect(customerSalesChannel)"
                                     iconRight="fal fa-external-link"
-                                    :label="trans('Reconnect')"
+                                    :label="ctrans('Reconnect')"
                                     zsize="xxs"
                                     type="secondary"
                                     class="xml-2"
@@ -443,7 +443,7 @@ onMounted(() => {
                     <EmptyState
                         v-else
                         :data="{
-                            title: trans('No portfolios selected'),
+                            title: ctrans('No portfolios selected'),
                         }"
                     />
                 </div>
@@ -457,7 +457,7 @@ onMounted(() => {
                             :label="`Sync all to ${platform_data.name} (${portfoliosList?.length})`"
                             icon="fal fa-upload"
                             xsize="s"
-                            v-tooltip="is_platform_connected ? null : trans('Platform is not connected yet')"
+                            v-tooltip="is_platform_connected ? null : ctrans('Platform is not connected yet')"
                             :disabled="!is_platform_connected"
                             full
                             :type="is_platform_connected ? 'positive' : 'secondary'"
@@ -465,7 +465,7 @@ onMounted(() => {
                         />
                         <Button
                             @click="emits('onDone')"
-                            :label="trans('Close')"
+                            :label="ctrans('Close')"
                             full
                             xxiconRight="faArrowRight"
                             type="tertiary"

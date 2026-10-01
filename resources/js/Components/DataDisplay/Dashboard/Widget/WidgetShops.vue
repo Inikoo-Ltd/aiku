@@ -2,7 +2,7 @@
 // import { getComponentWidget } from "@/Composables/Listing/DashboardWidgetsList"
 import { Pie } from "vue-chartjs"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useStringToHex } from '@/Composables/useStringToHex'
 
 import { computed, ref } from "vue"
@@ -70,7 +70,6 @@ const dataSetsSplit = computed(() => {
         return xx
     }, 0);
 
-    console.log('summedOrgValue', othersShop.length)
 
     // Create the summed object
     const summedEntry = {
@@ -78,33 +77,33 @@ const dataSetsSplit = computed(() => {
             sales_org_currency_external: {
                 [props.intervals.value]: {
                     raw_value: summedOrgValue,
-                    formatted_value: trans('Others')
+                    formatted_value: ctrans('Others')
                 }
             },
             sales_org_currency_external_minified: {
                 [props.intervals.value]: {
                     raw_value: summedOrgValue,
-                    formatted_value: trans('Others')
+                    formatted_value: ctrans('Others')
                 }
             },
             sales_grp_currency: {
                 [props.intervals.value]: {
                     raw_value: summedGrpValue,
-                    formatted_value: trans('Others')
+                    formatted_value: ctrans('Others')
                 }
             },
             sales_grp_currency_minified: {
                 [props.intervals.value]: {
                     raw_value: summedGrpValue,
-                    formatted_value: trans('Others')
+                    formatted_value: ctrans('Others')
                 }
             },
             label: {
-                formatted_value: `${othersShop.length} ` + trans('Others'),
+                formatted_value: `${othersShop.length} ` + ctrans('Others'),
                 align: "left",
             },
             label_minified: {
-                formatted_value: `${othersShop.length} ` + trans('Others'),
+                formatted_value: `${othersShop.length} ` + ctrans('Others'),
                 align: "left",
             },
         }
@@ -120,8 +119,8 @@ const isLoadingVisit = ref<number | null>(null)
     <div class="flex justify-between gap-x-4 px-4 py-5 sm:p-6 rounded-lg bg-gray-50 border border-gray-200 tabular-nums">
         <dd class="flex flex-col gap-x-2">
             <div class="text-base mb-1 text-gray-400">
-                {{ trans('Shops sales') }}
-                <FontAwesomeIcon v-tooltip="trans('The graph of column sales. Only active shop is shown.')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" />
+                {{ ctrans('Shops sales') }}
+                <FontAwesomeIcon v-tooltip="ctrans('The graph of column sales. Only active shop is shown.')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
             <div
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">

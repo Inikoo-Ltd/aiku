@@ -261,18 +261,18 @@ defineExpose({
                     </template>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2 flex items-center gap-1.5">
-                    <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute left-2 right-2 bottom-2 flex items-center justify-end gap-1.5">
+                    <NewAddToCartButton v-if="((product.stock && !product.is_coming_soon) || product.pre_order) && basketButton" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
-                    <template v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
+                    <template v-else-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
                         <ChipExpectedBackInStock :product="product"
                             @toggle="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)" />
                         <button
                             @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            class="shrink-0 rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                             v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
                             <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
@@ -284,7 +284,7 @@ defineExpose({
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="ctrans('Choose variants')" size="xs"
+                        <Button :label="product.variant_axis_label ? ctrans('Choose :axis', { axis: product.variant_axis_label }) : ctrans('Choose variants')" size="xs"
                             @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
                     </div>
                 </div>
@@ -298,13 +298,17 @@ defineExpose({
                     <template #default>
                         <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
-                            {{ product.name }}
+                            {{ product.variant_title || product.name }}
                         </p>
                     </template>
                 </LinkIris>
 
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.variant_title || product.name }}
+                </div>
+
+                <div v-if="product.pre_order && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
+                    <span class="font-semibold">{{ product.pre_order.type_label }}</span> · {{ product.pre_order.dispatch_label }}
                 </div>
 
                 <!-- Product Code -->

@@ -10,6 +10,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TableOrganisations from "@/Components/Tables/Grp/SysAdmin/TableOrganisations.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBuilding } from "@fal"
+library.add(faBuilding)
 
 defineProps<{
     data: {}

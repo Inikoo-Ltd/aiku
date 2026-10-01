@@ -13,15 +13,15 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import Timeline from "@/Components/Utils/Timeline.vue"
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
+import PreOrderPanel from "@/Components/Ordering/PreOrderPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { UploadPallet } from "@/types/Pallet"
@@ -129,7 +129,10 @@ interface UploadSection {
 }
 
 const props = defineProps<{
+    pre_order?: any
+    split_pre_order?: { reference: string, slug: string } | null
     aurora_notice?: string | null
+    basket_customer_balance?: number | string | null
     title: string
     tabs: TSTabs
     products?: TableTS
@@ -922,7 +925,8 @@ const labelToBePaid = (toBePaidValue: string) => {
 }
 
 // Section: Order charges (priority dispatch, extra packing, insurance)
-const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || ''))
+const isPreOrderLocked = computed(() => !!props.pre_order?.lock?.is_locked_for_me)
+const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || '') && !isPreOrderLocked.value)
 
 const isOrderAmountsProvisional = computed(() => ['in_warehouse', 'handling', 'handling_blocked'].includes(props.data?.data?.state || ''))
 
@@ -1444,7 +1448,6 @@ const fetchChargesList = async (noLoading?: boolean) => {
         )
 
         chargesList.value = response.data.data
-        console.log('Response axios:', response.data)
     } catch (error: any) {
         notify({
             title: ctrans("Something went wrong"),
@@ -1522,7 +1525,6 @@ const submitNewCharge = async () => {
                 label: dataNewChargeToAdd.value.label,
             }
         )
-        console.log('Response axios:', response.data)
 
         fetchChargesList()
         dataNewChargeToAdd.value.label = ''
@@ -1851,7 +1853,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
         <div>
-            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-xl font-bold uppercase">{{ ctrans("Process in Aurora") }}</div>
             <div class="text-base">{{ aurora_notice }}</div>
         </div>
     </div>
@@ -1878,17 +1880,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </Transition>
     </div>
 
+    <PreOrderPanel v-if="pre_order" :pre_order />
+    <div v-if="split_pre_order" class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        {{ ctrans("The pre-order items of this order were split into order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
+    </div>
+
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
+        <TimelineResponsive v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
             formatTime="EEE, do MMM yy, HH:mm" />
     </div>
 
     <div v-if="currentTab != 'products'"
-        class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-b border-gray-200">
         <!-- start: Order Section -->
-        <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ ctrans("Order") }}
@@ -1985,7 +1992,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
                                 <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
                             </div>
-                            <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && billing_address_update_route"
+                            <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && billing_address_update_route && !isPreOrderLocked"
                                 @click="() => isModalBillingAddress = true"
                                 class="w-fit pr-4 cursor-pointer underline text-gray-500 hover:text-blue-700 whitespace-nowrap">
                                 <span>{{ ctrans("Edit") }}</span>
@@ -1994,11 +2001,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
+                    <div v-if="isChargeEditable && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
-                        <ToggleSwitch v-model="isCollection" @change="updateCollection" />
+                        <ToggleSwitch v-model="isCollection" @change="updateCollection" :disabled="isPreOrderLocked" />
                         <span class="text-sm text-gray-500">{{ ctrans("Collection") }}</span>
                     </div>
 
@@ -2008,7 +2015,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <span>
                                 {{ box_stats?.customer?.tax_number?.number }}
                             </span>
-                            <span v-if="route_recalculate_vat.showButton" class='text-xs hover:text-gray-700 cursor-pointer' @click="recalculateVat()">
+                            <span v-if="route_recalculate_vat.showButton && !isPreOrderLocked" class='text-xs hover:text-gray-700 cursor-pointer' @click="recalculateVat()">
                                 <span v-if="!isLoadingRecalculateVat">
                                     ({{ ctrans('Click here to re-calculate VAT Charge') }})
                                 </span>
@@ -2069,7 +2076,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
                                 </div>
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && !isPreOrderLocked"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ ctrans("Edit") }}</span>
@@ -2090,7 +2097,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" class="flex gap-x-3">
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && !isPreOrderLocked" class="flex gap-x-3">
                                     <div @click="() => isModalAddress = true"
                                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <span>{{ ctrans("Edit") }}</span>
@@ -2123,7 +2130,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
+        <BoxStatPallet class="min-w-0 py-2 px-3 border-t border-gray-300 max-md:order-2 md:border-t-0 md:border-l" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
                     <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
@@ -2169,7 +2176,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && (Number(box_stats.products.payment.total_amount) > 0 || Number(box_stats.products.excesses_payment?.amount) > 0)"
                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
-                            <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
+                            <div class="w-full rounded-md shadow pxb-2 isolate border max-md:rounded-none max-md:border-0 max-md:shadow-none" :class="[
                                 Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : isOrderAmountsProvisional ? 'border-gray-300' : 'border-red-500',
                             ]">
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
@@ -2225,8 +2232,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 </div>
 
 
-                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0 && !isOrderAmountsProvisional"
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
+                                    <div v-if="isOrderAmountsProvisional" class="mb-1.5 px-2.5 text-center text-xs text-yellow-700">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                                        {{ ctrans("Total can change if items go out of stock or are changed during picking") }}
+                                    </div>
                                     <div v-if="data?.data?.to_be_paid_by?.value"
                                         class="mx-auto w-fit flex items-center">
                                         <Button @click.prevent="() => onClickPayInvoice(data?.data?.to_be_paid_by?.id)"
@@ -2275,12 +2286,20 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 </div>
                             </div>
                         </div>
+
+                        <div v-else-if="basket_customer_balance !== null && basket_customer_balance !== undefined"
+                            class="w-full rounded-md border px-4 py-3 text-center"
+                            :class="Number(basket_customer_balance) > 0 ? 'border-green-400 bg-green-50 text-green-800' : 'border-gray-200 text-gray-600'">
+                            <div class="text-sm">{{ ctrans("Customer balance") }}</div>
+                            <div class="text-2xl font-bold tabular-nums">{{ locale.currencyFormat(currency.code, Number(basket_customer_balance)) }}</div>
+                            <div v-if="Number(basket_customer_balance) > 0" class="mt-1 text-xs">{{ ctrans("Used first when this order is paid, charge only the rest") }}</div>
+                        </div>
                     </dl>
 
 
                     <!-- Section: Delivery Notes -->
                     <div v-if="box_stats?.delivery_notes?.length"
-                        class="mt-4 border rounded-lg p-4 xpt-3 bg-white shadow-sm">
+                        class="mt-4 bg-white border-t border-gray-200 pt-4 md:border md:rounded-lg md:p-4 md:shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                             <div class="text-sm font-semibold text-gray-800">
@@ -2300,6 +2319,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     note?.reference
                                 }}
                                 </Link>
+                                <a :href="route('grp.pdfs.packing-lists', { deliveryNote: note?.slug })" target="_blank" rel="noopener noreferrer"
+                                    class="text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Packing list')">
+                                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                                </a>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                                     {{ ctrans(note?.state_icon?.tooltip) }}
                                     <Icon :data="note?.state_icon" />
@@ -2455,7 +2478,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
 
         <!-- Box: Order summary -->
-        <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
+        <BoxStatPallet class="min-w-0 pb-4 border-t border-gray-300 max-md:order-1 md:col-span-2 lg:col-span-1 lg:border-t-0 lg:border-l">
             <div class="text-xs md:text-sm">
                 <div class="pt-2 px-3 flex justify-between items-center">
                     <div class="font-semibold xmb-2 text-base">
@@ -2466,14 +2489,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <div v-if="props.box_stats?.voucher"
                             class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
                             <span class="font-medium uppercase">{{ ctrans("Voucher") }}: {{ props.box_stats.voucher.voucher_code }}</span>
-                            <button type="button" v-tooltip="ctrans('Remove voucher')"
+                            <button v-if="!isPreOrderLocked" type="button" v-tooltip="ctrans('Remove voucher')"
                                 :class="{ 'opacity-50 pointer-events-none': isLoadingRemoveVoucher }"
                                 class="text-indigo-400 hover:text-red-500" @click="submitRemoveVoucher">
                                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                             </button>
                         </div>
 
-                        <div v-if="isVoucherAllowed && !props.box_stats?.voucher">
+                        <div v-if="isVoucherAllowed && !props.box_stats?.voucher && !isPreOrderLocked">
                             <Button
                                 :label="ctrans('Add Voucher')"
                                 size="xs"
@@ -2516,7 +2539,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx')) && !is_shop_external">
+                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx')) && !is_shop_external && !isPreOrderLocked">
                                 <div class="text-right text-purple-600 w-full mr-1">{{ ctrans('Global discount') }}</div>
                                 <button
                                     class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
@@ -2624,19 +2647,24 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                     <span>{{ fieldSummary.label }}</span>
                                 </div>
-                                <span v-if="fieldSummary.margin" class="text-xs text-gray-400 flex items-center gap-1">
-                                    <span
-                                        :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
-                                        v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
-                                    <span>·</span>
-                                    <span v-tooltip="fieldSummary.margin.tooltip" class="flex items-center gap-0.5 cursor-help">
-                                        <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
-                                        {{ fieldSummary.margin.profit_label }}
-                                    </span>
-                                    <span v-if="fieldSummary.margin.below" class="text-red-600">— {{ fieldSummary.margin.below }}</span>
-                                    <span v-if="fieldSummary.margin.without_cost" class="text-yellow-600">— {{ fieldSummary.margin.without_cost }}</span>
-                                </span>
                             </dt>
+                            <dd v-if="fieldSummary.margin" class="order-last col-span-7 mt-0.5 mb-1 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-400">
+                                <span
+                                    class="whitespace-nowrap tabular-nums"
+                                    :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
+                                    v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
+                                <span aria-hidden="true">·</span>
+                                <span v-tooltip="fieldSummary.margin.tooltip" class="inline-flex cursor-help items-center gap-0.5 whitespace-nowrap tabular-nums">
+                                    <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
+                                    {{ fieldSummary.margin.profit_label }}
+                                </span>
+                                <span v-if="fieldSummary.margin.below" class="whitespace-nowrap rounded bg-red-50 px-2 py-0.5 text-red-600 ring-1 ring-inset ring-red-200">
+                                    {{ fieldSummary.margin.below }}
+                                </span>
+                                <span v-if="fieldSummary.margin.without_cost" class="whitespace-nowrap rounded bg-yellow-50 px-2 py-0.5 text-yellow-700 ring-1 ring-inset ring-yellow-200">
+                                    {{ fieldSummary.margin.without_cost }}
+                                </span>
+                            </dd>
                         </template>
 
                         <template #cell_charges_1="{ fieldSummary }">
@@ -2646,7 +2674,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external && !isPreOrderLocked"
                                         v-tooltip="ctrans('Edit charges')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
@@ -2680,7 +2708,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !isPreOrderLocked"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="ctrans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -2811,6 +2839,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+            scrollOnMobile
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
@@ -2818,6 +2847,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             :routesProductsListModification="routes.products_list_modification"
             :is_shop_external
             :allow_order_modification
+            :locked="isPreOrderLocked"
         />
     </div>
 

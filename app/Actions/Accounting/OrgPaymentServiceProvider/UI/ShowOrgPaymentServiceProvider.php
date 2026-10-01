@@ -163,15 +163,6 @@ class ShowOrgPaymentServiceProvider extends OrgAction
             ->table(
                 IndexPayments::make()->tableStructure(
                     parent: $orgPaymentServiceProvider,
-                    modelOperations: [
-                        'createLink' => $this->canEdit ? [
-                            'route' => [
-                                'name'       => 'grp.org.accounting.org_payment_service_providers.show.payments.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                            'label' => __('payment')
-                        ] : false,
-                    ],
                     prefix: OrgPaymentServiceProviderTabsEnum::PAYMENTS->value
                 )
             )

@@ -28,18 +28,20 @@ trait WithOrgPartnerSubNavigation
                 ],
                 "isAnchor" => true,
             ],
-            [
-                "label"    => __("Shopping"),
-                "route"    => [
-                    "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
-                    "parameters" => [$parent->organisation->slug, $parent->id],
+            ...($parent->partner->is_manufacturing_hub ? [
+                [
+                    "label"    => __("Shopping"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
+                        "parameters" => [$parent->organisation->slug, $parent->id],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-shopping-basket"],
+                        "tooltip" => __("Shopping"),
+                    ],
+                    "number"   => $parent->stats->number_open_shopping_list_items,
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-shopping-basket"],
-                    "tooltip" => __("Shopping"),
-                ],
-                "number"   => $parent->stats->number_open_shopping_list_items,
-            ],
+            ] : []),
             [
                 "align"    => "right",
                 "route"    => [

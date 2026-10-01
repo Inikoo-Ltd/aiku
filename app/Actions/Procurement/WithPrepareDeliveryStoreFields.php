@@ -26,7 +26,7 @@ trait WithPrepareDeliveryStoreFields
             data_set($modelData, 'agent_id', $parent->agent_id);
             data_set($modelData, 'parent_code', $parent->agent->code, false);
             data_set($modelData, 'parent_name', $parent->agent->name, false);
-            data_set($modelData, 'currency_id', $parent->agent->currency_id, false);
+            data_set($modelData, 'currency_id', $parent->agent->organisation->currency_id, false);
 
         } elseif (class_basename($parent) == 'OrgPartner') {
             data_set($modelData, 'partner_id', $parent->partner_id);

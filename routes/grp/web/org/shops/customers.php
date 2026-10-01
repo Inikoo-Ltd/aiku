@@ -73,7 +73,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
     Route::prefix('/invoices')->as('.invoices.')->group(function () {
         Route::get('/', [IndexInvoices::class, 'inCustomer'])->name('index');
-        Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
     });
 
     Route::prefix('upcoming-transactions')->name('.upcoming_transactions.')->group(function () {
@@ -124,10 +123,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.delivery-note.show');
                 });
 
-
-                Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
-                    Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');
-                });
             });
 
             Route::prefix('/orders')->as('.orders')->group(function () {

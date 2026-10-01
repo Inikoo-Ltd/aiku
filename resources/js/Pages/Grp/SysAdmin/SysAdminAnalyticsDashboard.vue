@@ -15,6 +15,9 @@ import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faUserSlash, faAnalytics } from "@fal"
+library.add(faUserSlash, faAnalytics)
 
 type DayCount = { date: string, count: number }
 type UserCount = { username: string, slug: string, requests: number }

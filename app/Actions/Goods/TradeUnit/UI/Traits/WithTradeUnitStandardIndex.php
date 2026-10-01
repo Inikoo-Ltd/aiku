@@ -38,10 +38,12 @@ trait WithTradeUnitStandardIndex
             'trade_unit_stats.number_current_stocks',
             'trade_unit_stats.number_current_products',
             'trade_units.id',
+            'trade_units.status',
+            'trade_units.image_id',
             'trade_units.health_rank',
         ];
 
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'health_rank'];
+        $allowedSorts = ['code', 'type', 'name', 'status', 'number_current_stocks', 'number_current_products', 'health_rank'];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
@@ -67,6 +69,7 @@ trait WithTradeUnitStandardIndex
         }
 
         $queryBuilder
+            ->with('image')
             ->defaultSort('trade_units.code')
             ->select($selects);
 
@@ -78,9 +81,9 @@ trait WithTradeUnitStandardIndex
         );
     }
 
-    public function standardTradeUnitTableStructure(Group $parent, ?array $modelOperations = null, $prefix = null, bool $sales = false): Closure
+    public function standardTradeUnitTableStructure(Group $parent, ?array $modelOperations = null, $prefix = null, bool $sales = false, bool $withAvatars = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $sales) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $sales, $withAvatars) {
             $emptyState = match (class_basename($parent)) {
                 'Group' => [
                     'title' => __("No Trade Units found"),
@@ -94,6 +97,11 @@ trait WithTradeUnitStandardIndex
                 prefix: $prefix,
                 emptyState: $emptyState
             );
+
+            if ($withAvatars) {
+                $this->addColumnStatusAvatar($table);
+                $this->addColumnImageAvatar($table);
+            }
 
             if ($sales) {
                 $table->betweenDates(['date']);

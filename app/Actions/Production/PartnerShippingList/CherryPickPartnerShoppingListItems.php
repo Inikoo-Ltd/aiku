@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
@@ -72,6 +73,11 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             $product = $this->resolveSellerProduct($seller, $item);
             if (!$product) {
                 $skipped[] = ['id' => $item->id, 'reason' => 'no active product for this stock in the partner organisation'];
+                continue;
+            }
+
+            if ($packedInMismatches = EnsurePartnerOrderPackedInMatches::make()->mismatches($item->orgPartner, $product->orgStocks()->pluck('stock_id')->push($item->stock_id)->unique()->all())) {
+                $skipped[] = ['id' => $item->id, 'reason' => $packedInMismatches[0]];
                 continue;
             }
 
@@ -177,7 +183,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         return $products->first();
     }
 
-    private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
+    public function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
         $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
         if ($customer) {
@@ -232,7 +238,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         ]);
     }
 
-    private function intercompanySalesChannel(int $groupId): SalesChannel
+    public function intercompanySalesChannel(int $groupId): SalesChannel
     {
         $channel = SalesChannel::where('group_id', $groupId)
             ->where('code', 'intercompany')

@@ -16,6 +16,7 @@ use App\Actions\Chat\ChatSession\TranslateChatMessage;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
+use App\Services\Gmail\ReleaseWhenGmailRateLimited;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,6 +26,14 @@ use Throwable;
 class SendChatMessageByGmail
 {
     use AsAction;
+
+    /**
+     * @return array<int, object>
+     */
+    public function getJobMiddleware(): array
+    {
+        return [new ReleaseWhenGmailRateLimited()];
+    }
 
     public function handle(ChatMessage $chatMessage): void
     {

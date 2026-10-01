@@ -46,6 +46,8 @@ const props = defineProps<{
     data?: object,
     tab?: string,
     historyScopeToggle?: boolean
+    /** Grp Order and Delivery Note pages only: below lg the table keeps a minimum width and scrolls sideways with arrows instead of squashing. Off by default so Retina history tabs keep their layout. */
+    scrollOnMobile?: boolean
 }>()
 
 const layout = useLayoutStore()
@@ -101,6 +103,10 @@ const formatValue = (value: any, key?: string) => {
     return value ? 'Active' : 'Inactive';
   }
 
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
   if (value === null || value === undefined || value === '') {
     return value;
   }
@@ -129,7 +135,7 @@ const formatValue = (value: any, key?: string) => {
 };
 
 const hasValue = (value: any): boolean => {
-  return value !== null && value !== undefined && value !== '';
+  return value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0);
 };
 
 const expandedRows = ref<String[]>([]);
@@ -196,7 +202,7 @@ const getTradeUnitHistory = (oldData, newData) => {
         </button>
     </div>
 
-    <Table v-if="data" :resource="data" class="mt-5" :name="tab">
+    <Table v-if="data" :resource="data" class="mt-5" :name="tab" :tableClass="scrollOnMobile ? 'max-md:min-w-[max(100%,40rem)]' : ''" :withScrollArrows="scrollOnMobile">
         <template #cell(record)="{ item: history }">
             <span class="whitespace-nowrap text-xs text-gray-600">{{ history.record }}</span>
         </template>
@@ -225,7 +231,7 @@ const getTradeUnitHistory = (oldData, newData) => {
              <div class="flex">
                 <div
                     v-if="history.event !== 'migration'"
-                    class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700"
+                    class="min-w-0 space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700"
                     :class="history.id && expandedRows.includes(history.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
                     style="scrollbar-width:none"
                 >
@@ -296,15 +302,17 @@ const getTradeUnitHistory = (oldData, newData) => {
                     </div>
                     <div
                         v-else
-                        class="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-0.5 items-baseline w-full"
+                        class="grid grid-cols-[minmax(9rem,max-content)_minmax(0,1fr)] gap-x-6 gap-y-0.5 items-baseline w-full"
                         :class="getChangedKeys(history.old_values, history.new_values).length > 1 ? 'text-xs' : 'text-sm'"
                     >
+                        <span class="pb-1 mb-0.5 border-b border-gray-200 text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Key") }}</span>
+                        <span class="pb-1 mb-0.5 border-b border-gray-200 text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Changed") }}</span>
                         <template
                             v-for="key in getChangedKeys(history.old_values, history.new_values)"
                             :key="key"
                         >
-                            <span class="text-xs text-gray-500 text-right whitespace-nowrap">{{ formatKey(key) }}:</span>
-                            <span class="text-gray-700">
+                            <span class="text-xs text-gray-500 text-left whitespace-nowrap">{{ formatKey(key) }}</span>
+                            <span class="text-gray-700 break-words">
                                 <template v-if="hasValue(history.old_values[key])">
                                     <span
                                         class="text-gray-400"
@@ -328,11 +336,10 @@ const getTradeUnitHistory = (oldData, newData) => {
                         : (getChangedKeys(history.old_values, history.new_values).length ?? 0) > 4
                     "
                     @click="clickExpand(history.id)"
-                    class="flex-initial w-[50px] my-auto cursor-pointer"
+                    class="flex flex-none w-[50px] my-auto cursor-pointer justify-center"
                 >
                     <span
-                        class="justify-self-end text-md p-2 rounded-full h-[30px] w-[30px] flex align-center hover:opacity-85"
-                        :class="history.id && expandedRows.includes(history.id) ? 'align-top' : 'align-center'"
+                        class="flex size-[30px] shrink-0 items-center justify-center rounded-full hover:opacity-85"
                         :style="{
                             background: layout?.app?.theme[0],
                             color: layout?.app?.theme[1],
@@ -340,7 +347,7 @@ const getTradeUnitHistory = (oldData, newData) => {
                     >
                         <FontAwesomeIcon
                             :icon="history.id && expandedRows.includes(history.id) ? faMinus : faPlus"
-                            class="h-fit transition-all ease-out duration-700" fixed-width
+                            class="transition-all ease-out duration-700" fixed-width
                         />
                     </span>
                 </div>

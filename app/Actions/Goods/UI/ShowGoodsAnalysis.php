@@ -48,6 +48,8 @@ class ShowGoodsAnalysis extends OrgAction
 
     public const string DEFAULT_GRANULARITY = 'month';
 
+    public const array DEFERRED_PROPS = ['built_at', 'organisations', 'families', 'product', 'summary', 'series', 'families_table', 'organisations_table', 'products_table', 'stock_trend', 'exceptions', 'urgent_actions', 'promotion_candidates', 'inbound', 'status_history'];
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo('goods.view');
@@ -67,7 +69,7 @@ class ShowGoodsAnalysis extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($this->validatedData);
+        return $this->validatedData;
     }
 
     public function forGroup(Group $group): static
@@ -79,7 +81,7 @@ class ShowGoodsAnalysis extends OrgAction
 
     public static function cacheKey(int $groupId, string $granularity): string
     {
-        return 'goods-analysis:'.$groupId.':'.$granularity;
+        return 'goods-analysis:v2:'.$groupId.':'.$granularity;
     }
 
     public function handle(array $filters): array
@@ -102,22 +104,30 @@ class ShowGoodsAnalysis extends OrgAction
             'granularities'        => self::GRANULARITIES,
             'organisations'        => $commandDataset['organisations'],
             'families'             => $commandDataset['families'],
-            'filters'              => [
-                'organisation' => $organisation,
-                'family'       => $family,
-                'search'       => Arr::get($filters, 'search'),
-                'granularity'  => $granularity,
-            ],
+            'filters'              => $this->normalisedFilters($filters),
             'product'              => $product,
             'summary'              => $this->summary($rows),
             'series'               => $this->seriesForChart($dataset['series'], $organisation, $family, $product, $granularity),
-            'families_table'       => $this->groupTable($rows, 'family_code'),
+            'families_table'       => $this->groupTable($rows, 'family_code', 'family_slug'),
             'organisations_table'  => $this->groupTable($rows, 'organisation_code'),
             'products_table'       => $this->productTable($rows),
             'stock_trend'          => $this->stockTrendForChart($dataset['stock_trend'], $organisation),
             ...$this->commandInsights($commandRows, $organisation),
             'status_history'       => $this->statusHistory($organisation, $family, $search),
             'currency_code'        => $this->group->currency->code,
+        ];
+    }
+
+    /**
+     * @return array{organisation: ?string, family: ?string, search: ?string, granularity: string}
+     */
+    private function normalisedFilters(array $filters): array
+    {
+        return [
+            'organisation' => Arr::get($filters, 'organisation'),
+            'family'       => Arr::get($filters, 'family'),
+            'search'       => Arr::get($filters, 'search'),
+            'granularity'  => Arr::get($filters, 'granularity') ?: self::DEFAULT_GRANULARITY,
         ];
     }
 
@@ -197,11 +207,13 @@ class ShowGoodsAnalysis extends OrgAction
             ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
             ->where('organisations.group_id', $this->group->id)
             ->whereNull('org_stocks.deleted_at')
-            ->groupBy('organisations.code', 'stock_families.code', 'stocks.id', 'stocks.code', 'stocks.name')
+            ->groupBy('organisations.code', 'stock_families.code', 'stock_families.slug', 'stocks.id', 'stocks.slug', 'stocks.code', 'stocks.name')
             ->select([
                 'organisations.code as organisation_code',
                 'stock_families.code as family_code',
+                'stock_families.slug as family_slug',
                 'stocks.id as stock_id',
+                'stocks.slug as stock_slug',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
             ])
@@ -332,7 +344,7 @@ class ShowGoodsAnalysis extends OrgAction
     /**
      * Top 20 families or organisations by current sales, with previous and last-year comparisons.
      */
-    private function groupTable(array $rows, string $key): array
+    private function groupTable(array $rows, string $key, ?string $slugKey = null): array
     {
         $groups = [];
         foreach ($rows as $row) {
@@ -340,6 +352,7 @@ class ShowGoodsAnalysis extends OrgAction
             if ($value === null) {
                 continue;
             }
+            $groups[$value]['slug']      = $slugKey ? $row[$slugKey] : null;
             $groups[$value]['current']   = ($groups[$value]['current'] ?? 0) + $row['current'];
             $groups[$value]['previous']  = ($groups[$value]['previous'] ?? 0) + $row['previous'];
             $groups[$value]['last_year'] = ($groups[$value]['last_year'] ?? 0) + $row['last_year'];
@@ -349,6 +362,7 @@ class ShowGoodsAnalysis extends OrgAction
         foreach ($groups as $value => $sums) {
             $table[] = [
                 'key'                 => $value,
+                'slug'                => $sums['slug'],
                 'current'             => round($sums['current'], 2),
                 'previous'            => round($sums['previous'], 2),
                 'last_year'           => round($sums['last_year'], 2),
@@ -371,6 +385,7 @@ class ShowGoodsAnalysis extends OrgAction
         $products = [];
         foreach ($rows as $row) {
             $id                        = $row['stock_id'];
+            $products[$id]['slug']     = $row['stock_slug'];
             $products[$id]['code']     = $row['stock_code'];
             $products[$id]['name']     = $row['stock_name'];
             $products[$id]['current']  = ($products[$id]['current'] ?? 0) + $row['current'];
@@ -384,6 +399,7 @@ class ShowGoodsAnalysis extends OrgAction
             }
             $list[] = [
                 'id'       => $id,
+                'slug'     => $product['slug'],
                 'code'     => $product['code'],
                 'name'     => $product['name'],
                 'current'  => round($product['current'], 2),
@@ -561,6 +577,7 @@ class ShowGoodsAnalysis extends OrgAction
             ->orderByDesc('audits.created_at')
             ->limit(50)
             ->select([
+                'stocks.slug as stock_slug',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'organisations.code as organisation_code',
@@ -575,6 +592,7 @@ class ShowGoodsAnalysis extends OrgAction
                 $oldValues = json_decode((string) $row->old_values, true) ?? [];
 
                 return [
+                    'slug'         => $row->stock_slug,
                     'code'         => $row->stock_code,
                     'name'         => $row->stock_name,
                     'organisation' => $row->organisation_code,
@@ -617,7 +635,7 @@ class ShowGoodsAnalysis extends OrgAction
                 }
                 $scoped = true;
 
-                $item = ['stock_id' => $row['id'], 'code' => $row['code'], 'name' => $row['name'], 'organisation' => $orgCode];
+                $item = ['stock_id' => $row['id'], 'slug' => $row['slug'], 'code' => $row['code'], 'name' => $row['name'], 'organisation' => $orgCode];
 
                 $exceptionBucket = match ($cell['condition']) {
                     'low'   => 'low',
@@ -675,6 +693,7 @@ class ShowGoodsAnalysis extends OrgAction
             if ($promotionReasons) {
                 $candidates[] = [
                     'stock_id'    => $row['id'],
+                    'slug'        => $row['slug'],
                     'code'        => $row['code'],
                     'name'        => $row['name'],
                     'reasons'     => array_keys($promotionReasons),
@@ -724,12 +743,28 @@ class ShowGoodsAnalysis extends OrgAction
         ];
     }
 
-    public function htmlResponse(array $data, ActionRequest $request): Response
+    public function htmlResponse(array $filters, ActionRequest $request): Response
     {
+        $analysis = null;
+        $deferred = [];
+        foreach (self::DEFERRED_PROPS as $prop) {
+            $deferred[$prop] = Inertia::defer(function () use (&$analysis, $filters, $prop) {
+                $analysis ??= $this->handle($filters);
+
+                return $analysis[$prop];
+            }, 'analysis');
+        }
+
+        $normalisedFilters = $this->normalisedFilters($filters);
+
         return Inertia::render(
             'Goods/ProductAnalysis',
-            array_merge($data, [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+            array_merge($deferred, [
+                'granularity'   => $normalisedFilters['granularity'],
+                'granularities' => self::GRANULARITIES,
+                'filters'       => $normalisedFilters,
+                'currency_code' => $this->group->currency->code,
+                'breadcrumbs'   => $this->getBreadcrumbs(),
                 'title'       => __('Product Analysis'),
                 'pageHead'    => [
                     'icon'  => [

@@ -22,6 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
@@ -30,6 +31,7 @@ use App\Http\Resources\Fulfilment\FulfilmentPickingSessionStoredItemsGroupedReso
 
 class ShowFulfilmentPickingSession extends OrgAction
 {
+    use WithFulfilmentWarehouseAuthorisation;
     public function handle(PickingSession $pickingSession): PickingSession
     {
         new AutoFinishPickingFulfilmentPickingSession()->action($pickingSession);

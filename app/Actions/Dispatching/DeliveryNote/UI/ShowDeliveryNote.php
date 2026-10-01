@@ -56,6 +56,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -76,6 +78,7 @@ class ShowDeliveryNote extends OrgAction
     use WithMarginData;
     use GetPlatformLogo;
     use WithBucketNavigation;
+    use WithDeliveryNotesChannel;
     use WithOrderForbiddenCountryCheck;
     use WithDeliveryNotePackaging;
     use WithDeliveryNoteLeaflets;
@@ -226,6 +229,10 @@ class ShowDeliveryNote extends OrgAction
      */
     public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
     {
+        if ($deliveryNote->hasIncompleteSets()) {
+            return [$this->getPutBackIncompleteSetsAction($deliveryNote)];
+        }
+
         if ($deliveryNote->hasBlockingItems()) {
             return [];
         }
@@ -248,6 +255,44 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    public function getPutBackIncompleteSetsAction(DeliveryNote $deliveryNote): array
+    {
+        $putBackIncompleteSetParts = PutBackIncompleteSetParts::make();
+
+        $parts = $deliveryNote->incompleteSetItems()->with(['orgStock', 'pickings.location'])->get()
+            ->map(fn (DeliveryNoteItem $deliveryNoteItem) => [
+                'code'      => $deliveryNoteItem->orgStock?->code,
+                'name'      => $deliveryNoteItem->orgStock?->name,
+                'quantity'  => $putBackIncompleteSetParts->getQuantityToPutBack($deliveryNoteItem),
+                'locations' => $deliveryNoteItem->pickings
+                    ->whereIn('type', [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK])
+                    ->where('quantity', '>', 0)
+                    ->pluck('location.code')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all(),
+            ])
+            ->filter(fn (array $part) => $part['quantity'] > 0.000001)
+            ->values();
+
+        return [
+            'type'    => 'button',
+            'style'   => 'save',
+            'label'   => __('Parts put back'),
+            'tooltip' => __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts->pluck('code')->filter()->implode(', ')]),
+            'parts'   => $parts->all(),
+            'key'     => 'put-back-incomplete-sets',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.put_back_incomplete_sets',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ]
+        ];
+    }
+
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         if (!$this->allowAction) {
@@ -257,6 +302,10 @@ class ShowDeliveryNote extends OrgAction
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
             ->where('is_handled', false)
             ->exists();
+
+        if ($deliveryNote->hasIncompleteSets()) {
+            return [$this->getPutBackIncompleteSetsAction($deliveryNote)];
+        }
 
         $actions = [];
         if (!$hasUnHandledItems) {
@@ -453,29 +502,40 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ];
 
-            if (request()->user()?->authTo([
-                "supervisor-dispatching.$deliveryNote->warehouse_id",
-                "org-admin.$deliveryNote->organisation_id",
-            ])) {
-                $actions[] = [
-                    'type'    => 'button',
-                    'style'   => 'tertiary',
-                    'icon'    => 'fal fa-undo-alt',
-                    'tooltip' => __('Give the items waiting for the warehouse back to the picker'),
-                    'label'   => __('Back to picking'),
-                    'key'     => 'undo-waiting',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.undo_waiting',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ];
+            if ($backToPickingAction = $this->getBackToPickingAction($deliveryNote)) {
+                $actions[] = $backToPickingAction;
             }
         }
 
         return $actions;
+    }
+
+    public function getBackToPickingAction(DeliveryNote $deliveryNote): ?array
+    {
+        if (!request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ])) {
+            return null;
+        }
+
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'icon'    => 'fal fa-undo-alt',
+            'tooltip' => $deliveryNote->hasIncompleteSets()
+                ? __('Give the parts of the set that were not found back to the picker to look for them again')
+                : __('Give the items waiting for the warehouse back to the picker'),
+            'label'   => __('Back to picking'),
+            'key'     => 'undo-waiting',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.undo_waiting',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
     }
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
@@ -1765,7 +1825,8 @@ class ShowDeliveryNote extends OrgAction
             ->whereRelation('shop', 'is_aiku', $deliveryNote->shop->is_aiku);
 
         if ($shopType = $request->input('bucket_shop_type')) {
-            $query->whereRelation('shop', 'type', $shopType);
+            $query->whereRelation('shop', 'type', $this->channelShopType($shopType));
+            $this->whereDeliveryNotesPartnership($query, $shopType);
         }
 
         $sort = $request->input('bucket_sort');

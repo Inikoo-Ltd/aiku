@@ -104,7 +104,7 @@ const getIntervalStateColor = (state?: string) => {
         </a>
 
         <component v-if="cell"
-            class="inline-flex gap-2 items-center tabular-nums text-xs md:text-base"
+            class="inline-flex gap-2 items-center tabular-nums text-xs md:text-sm 2xl:text-base"
             :class="[
                 cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
             ]"

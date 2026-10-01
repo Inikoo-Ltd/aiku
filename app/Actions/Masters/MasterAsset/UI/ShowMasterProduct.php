@@ -37,6 +37,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
+use App\Actions\Traits\WithIndivisibleSet;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,6 +48,7 @@ class ShowMasterProduct extends OrgAction
     use WithMastersAuthorisation;
     use WithMasterProductNavigation;
     use WithMasterProductSubNavigation;
+    use WithIndivisibleSet;
 
     private MasterShop|Group|MasterAsset|MasterProductCategory $parent;
 
@@ -263,7 +265,14 @@ class ShowMasterProduct extends OrgAction
                 'shopsData'            => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tradeUnits'           => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
                 'is_single_trade_unit' => $masterAsset->is_single_trade_unit,
-                'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
+                'indivisible_set'      => $this->getIndivisibleSet($masterAsset, $this->canEdit ? [
+                    'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                    'parameters' => [
+                        'masterShop'    => $masterAsset->masterShop->slug,
+                        'masterProduct' => $masterAsset->slug,
+                    ]
+                ] : null),
+                'trade_unit_slug'      => $masterAsset->tradeUnits->first()?->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
                     'navigation' => $navigation

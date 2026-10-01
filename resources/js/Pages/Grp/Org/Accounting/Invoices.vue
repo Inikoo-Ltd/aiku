@@ -14,16 +14,16 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import { computed, ref } from 'vue'
 import {
   faFileMinus,
-  faArrowCircleLeft
+  faArrowCircleLeft, faFileInvoiceDollar
 } from "@fal";
 import { useTabChange } from '@/Composables/tab-change'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue'
 import { Icon } from "@/types/Utils/Icon";
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faOmega } from '@fas'
+import { faOmega, faExclamationCircle } from '@fas'
 
-library.add(faFileMinus, faArrowCircleLeft, faOmega);
+library.add(faFileMinus, faArrowCircleLeft, faOmega, faFileInvoiceDollar, faExclamationCircle);
 
 const props = defineProps<{
   pageHead: PageHeadingTypes

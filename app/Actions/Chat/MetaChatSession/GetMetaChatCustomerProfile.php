@@ -2,6 +2,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Models\CRM\Customer;
@@ -68,6 +69,7 @@ class GetMetaChatCustomerProfile
             $organisation->slug,
             $shop->slug,
             $customer->slug,
+            'tab' => CustomerTabsEnum::COMMUNICATIONS->value,
         ]);
     }
 

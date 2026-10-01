@@ -293,10 +293,6 @@ Route::name("departments.")->prefix('departments')
                 Route::prefix('{family}')->group(function () {
                     Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
                     Route::get('', ShowFamily::class)->name('show');
-                    Route::prefix('variant')->as('variants.')->group(function () {
-                        Route::get('/{variant}', [ShowVariant::class,'inDepartment'])->name('show');
-                        Route::get('/{variant}/edit', [EditVariant::class,'inDepartment'])->name('edit');
-                    });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
                             Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInDepartment'])->name('index');

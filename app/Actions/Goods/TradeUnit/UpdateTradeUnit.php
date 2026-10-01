@@ -34,7 +34,7 @@ use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
-use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Goods\TradeUnitResource;
@@ -46,13 +46,14 @@ use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnit extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithGoodsEditAuthorisation;
+    use WithComplianceEditing;
     use HasDangerousGoodsFields;
     use HasProductInformation;
 
@@ -300,6 +301,23 @@ class UpdateTradeUnit extends OrgAction
         }
 
         return $tradeUnit;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $this->canEdit           = $request->user()->authTo('goods.edit');
+        $this->canEditCompliance = $request->user()->authTo('compliance.edit');
+
+        return $this->canEdit || $this->canEditCompliance;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $this->rejectNonComplianceFields($validator);
     }
 
     public function rules(): array

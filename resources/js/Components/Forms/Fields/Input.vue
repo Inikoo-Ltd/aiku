@@ -124,7 +124,7 @@ const updateFormValue = (newValue) => {
             <span v-if="pendingUnits" class="font-medium text-amber-600">
                 → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ trans('after save') }})
             </span>
-            <button type="button" class="text-indigo-600 hover:underline" @click="isEditing = true">
+            <button type="button" class="rounded text-[var(--app-accent)] underline-offset-2 transition-colors hover:text-[var(--app-accent-strong)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]" @click="isEditing = true">
                 {{ trans('Edit') }}
             </button>
         </div>

@@ -2,7 +2,7 @@
 title: Picking y packing de un albarán
 summary: Sigue un albarán desde que llega al almacén hasta el picking, el packing y la expedición, y descubre qué hace realmente cada botón del albarán.
 date: 2026-09-01
-source_date: 2026-09-01
+source_date: 2026-09-29
 tags: dispatch, picking, packing
 category: dispatch
 ---
@@ -36,6 +36,14 @@ Al pulsar **Start picking** en un albarán, este pasa a **Handling** y se regist
 
 Mientras se pickea un albarán, una línea puede resultar necesitar una decisión que el picker no puede tomar en el puesto — por ejemplo un reemplazo o una liberación desde el almacén. Cuando eso ocurre, todo el albarán pasa a **Waiting** en lugar de dejar que el picking continúe alrededor del problema. En cuanto ya no queda nada realmente pendiente, aparece un botón **Auto Finish Waiting**, y al pulsarlo se revisa el albarán y, si de verdad todas las líneas están resueltas, lo lleva a **Picked**.
 
+## Sets que se venden solo completos
+
+Algunos productos están formados por varias piezas que no sirven por separado, como una lámpara de sal con su bombilla y su cable. En la página **Composition** (composición) del producto maestro, estos productos tienen activado **Sold only as a complete set** (se vende solo como set completo). Un producto de tienda que no sigue las piezas de su maestro tiene el mismo interruptor en su propia página **Composition**, y el maestro lo muestra entre las tiendas que difieren.
+
+Si falta por pickear una pieza de un set así, las demás piezas de ese set no pueden salir solas. El albarán no pasará a **Picked**: pasa a **Waiting**, y aparece en él un botón **Parts put back** (piezas devueltas). Su tooltip indica qué piezas sacar del tote. Devuélvelas a su estantería y pulsa **Parts put back**. Sus picks se revierten, así que el stock vuelve a su ubicación, las piezas se marcan como no pickeadas, y el albarán sigue su curso hasta **Picked**. Al cliente se le reembolsa el producto completo.
+
+Cuando el interruptor está desactivado, las piezas que se encontraron se envían y al cliente solo se le reembolsa el valor de la pieza que falta.
+
 ## De picked a packing
 
 Una vez pickeadas todas las líneas de un albarán, este queda en **Picked** con un botón **Start packing**. En la mayoría de tiendas este es un paso aparte: al pulsarlo, el albarán pasa a **Packing**, se registra quién lo empaqueta, y se libera cualquier puesto de picking que lo estuviera reteniendo. Para tiendas de dropshipping se salta el packing — desde **Picked** el botón dice **Set as packed** en su lugar, y lleva el albarán directamente a **Packed** en un solo paso.
@@ -60,6 +68,7 @@ Un albarán puede cancelarse desde cualquier etapa antes de finalizarse o expedi
 <ul>
 <li><b>Ver albaranes por etapa:</b> tu almacén → <b>Dispatching → Delivery notes</b>, luego elige una pestaña de etapa — <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> o <b>All</b>.</li>
 <li><b>Trabajar sesiones de picking:</b> tu almacén → <b>Dispatching → Picking sessions</b> → pestañas de etapa <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>Falta una pieza de un set completo:</b> devuelve a su estantería las demás piezas indicadas en el tooltip, y pulsa <b>Parts put back</b> en el albarán.</li>
 <li><b>Avanzar un albarán:</b> abre el albarán y usa su botón de etapa — <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Los botones de deshacer (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) lo devuelven atrás.</li>
 </ul>
 </aside>

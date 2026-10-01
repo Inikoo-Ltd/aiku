@@ -106,6 +106,7 @@ class ShowTicket extends OrgAction
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
                     'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
+                    'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
                     default           => null,
                 };
                 if ($text) {
@@ -115,6 +116,7 @@ class ShowTicket extends OrgAction
                             'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
                             'collaborators' => 'fal fa-users',
+                            'pull_request_url' => 'fal fa-code-branch',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -272,6 +274,8 @@ class ShowTicket extends OrgAction
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
                 'deploy_comment' => ['name' => 'grp.models.ticket.deploy_comment.update', 'parameters' => ['ticket' => $ticket->id]],
+                'pull_request' => ['name' => 'grp.json.ticket.pull_request', 'parameters' => ['ticket' => $ticket->id]],
+                'pull_request_update' => ['name' => 'grp.models.ticket.pull_request.update', 'parameters' => ['ticket' => $ticket->id]],
                 'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                 'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],

@@ -9,6 +9,9 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableAgents from "@/Components/Tables/Grp/SupplyChain/TableAgents.vue"
 import { capitalize } from "@/Composables/capitalize"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPeopleArrows } from "@fal"
+library.add(faPeopleArrows)
 
 const props = defineProps<{
     pageHead: {}

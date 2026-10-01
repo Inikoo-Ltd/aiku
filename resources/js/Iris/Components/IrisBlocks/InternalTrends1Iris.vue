@@ -84,7 +84,6 @@ const fetchProductTrends = async () => {
             (product: RecommendationProduct) => product.id !== currentProductId
         )
 
-        console.log(`LTrends Internal (${response.data.data?.length}): `, response.data.data)
     } catch (error: any) {
         console.error('Error on fetching product trends:', error)
     } finally {

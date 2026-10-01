@@ -14,7 +14,7 @@ import { computed, ref } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
@@ -29,7 +29,7 @@ library.add(faTruck, faYinYang)
 const props = defineProps<{
 	data: TableTS
 	tab?: string
-	bucket: string
+	bucket?: string
 }>()
 
 
@@ -208,7 +208,7 @@ const onClickPick = () => {
 			onError: (errors) => {
 				isErrorPicker.value = errors.messages
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: isErrorPicker.value,
 					type: "error",
 				})
@@ -237,17 +237,17 @@ const hasDateColumnToggle = computed(() => !!props.bucket && props.bucket != 'al
 
 const bucketEvent = computed(() => {
 	const events: Record<string, { label: string; header: string }> = {
-		handling: { label: trans('Handling'), header: trans('Handling date') },
-		handling_blocked: { label: trans('Blocked'), header: trans('Blocked date') },
-		waiting: { label: trans('Blocked'), header: trans('Blocked date') },
-		picked: { label: trans('Picked'), header: trans('Picked date') },
-		packing: { label: trans('Packing'), header: trans('Packing date') },
-		packed: { label: trans('Packed'), header: trans('Packed date') },
-		finalised: { label: trans('Finalised'), header: trans('Finalised date') },
-		dispatched: { label: trans('Dispatched'), header: trans('Dispatched date') },
+		handling: { label: ctrans('Handling'), header: ctrans('Handling date') },
+		handling_blocked: { label: ctrans('Blocked'), header: ctrans('Blocked date') },
+		waiting: { label: ctrans('Blocked'), header: ctrans('Blocked date') },
+		picked: { label: ctrans('Picked'), header: ctrans('Picked date') },
+		packing: { label: ctrans('Packing'), header: ctrans('Packing date') },
+		packed: { label: ctrans('Packed'), header: ctrans('Packed date') },
+		finalised: { label: ctrans('Finalised'), header: ctrans('Finalised date') },
+		dispatched: { label: ctrans('Dispatched'), header: ctrans('Dispatched date') },
 	}
 
-	return events[props.bucket] ?? { label: trans('Last event'), header: trans('Last event date') }
+	return events[props.bucket] ?? { label: ctrans('Last event'), header: ctrans('Last event date') }
 })
 
 const dateColumnOptions = computed(() => [
@@ -255,15 +255,15 @@ const dateColumnOptions = computed(() => [
 		value: false,
 		icon: faHistory,
 		label: bucketEvent.value.label,
-		tooltip: trans('Show when the delivery note entered this stage (:event)', {
+		tooltip: ctrans('Show when the delivery note entered this stage (:event)', {
 			event: bucketEvent.value.header.toLowerCase(),
 		}),
 	},
 	{
 		value: true,
 		icon: faCalendarAlt,
-		label: trans('Submitted'),
-		tooltip: trans('Show when the delivery note was submitted by the customer'),
+		label: ctrans('Submitted'),
+		tooltip: ctrans('Show when the delivery note was submitted by the customer'),
 	},
 ])
 </script>
@@ -318,7 +318,7 @@ const dateColumnOptions = computed(() => [
 					</Link>
 					<span
 						v-if="deliveryNote.handled_in_aurora"
-						v-tooltip="trans('Submitted in Aurora: process it in Aurora, not here')"
+						v-tooltip="ctrans('Submitted in Aurora: process it in Aurora, not here')"
 						class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">
 						Aurora
 					</span>
@@ -331,28 +331,28 @@ const dateColumnOptions = computed(() => [
 						aria-hidden="true" />
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_premium_dispatch"
-						v-tooltip="trans('Priority dispatch')"
+						v-tooltip="ctrans('Priority dispatch')"
 						icon="fas fa-star"
 						class="text-yellow-500"
 						fixed-width
 						aria-hidden="true" />
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_customer_vip"
-						v-tooltip="trans('VIP Customer')"
+						v-tooltip="ctrans('VIP Customer')"
 						:icon="faCertificate"
 						color="#191970"
 						fixed-width
 					/>
 					<FontAwesomeIcon
 						v-if="deliveryNote.has_extra_packing"
-						v-tooltip="trans('Extra packing')"
+						v-tooltip="ctrans('Extra packing')"
 						icon="fas fa-box-heart"
 						class="text-yellow-500"
 						fixed-width
 						aria-hidden="true" />
 					<FontAwesomeIcon
 						v-if="Number(deliveryNote.number_items_composition_dirty) > 0"
-						v-tooltip="trans('The packing of :count item(s) changed after this note was worked — check the quantities before dispatching', { count: deliveryNote.number_items_composition_dirty })"
+						v-tooltip="ctrans('The packing of :count item(s) changed after this note was worked — check the quantities before dispatching', { count: deliveryNote.number_items_composition_dirty })"
 						icon="fas fa-triangle-exclamation"
 						class="text-red-600"
 						fixed-width
@@ -418,7 +418,7 @@ const dateColumnOptions = computed(() => [
 				v-if="!deliveryNote.handled_in_aurora"
 				@click="() => (isModalPick = deliveryNote)"
 				type="secondary"
-				:label="trans('Pick')"
+				:label="ctrans('Pick')"
 				size="xs" />
 		</template>
 
@@ -469,7 +469,7 @@ const dateColumnOptions = computed(() => [
 
 		  <template  #cell(sort_packer)="{ item: deliveryNote }">
             <div class="flex gap-x-4 items-center">
-                    <dl v-tooltip="trans('Packer name')"
+                    <dl v-tooltip="ctrans('Packer name')"
 					  	class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5"
                         xclass=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dd class="text-gray-500">
@@ -551,13 +551,13 @@ const dateColumnOptions = computed(() => [
 		<div class="sm:flex sm:items-start w-full">
 			<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
 				<DialogTitle as="h3" class="text-base font-semibold">
-					{{ trans("Are you sure to pick the delivery?") }}
+					{{ ctrans("Are you sure to pick the delivery?") }}
 				</DialogTitle>
 				<div class="mt-2">
 					<p class="text-sm text-gray-500">
-						{{ trans("This action will pick the delivery note") }}
-						<strong>{{ isModalPick?.reference }}</strong> {{ trans("with") }}
-						{{ isModalPick?.number_items }} {{ trans("items") }}
+						{{ ctrans("This action will pick the delivery note") }}
+						<strong>{{ isModalPick?.reference }}</strong> {{ ctrans("with") }}
+						{{ isModalPick?.number_items }} {{ ctrans("items") }}
 					</p>
 				</div>
 
@@ -565,13 +565,13 @@ const dateColumnOptions = computed(() => [
 					<Button
 						:loading="isLoadingPick"
 						@click="() => onClickPick()"
-						:label="trans('Yes')"
+						:label="ctrans('Yes')"
 						full />
 
 					<Button
 						type="tertiary"
 						icccon="far fa-arrow-left"
-						:label="trans('cancel')"
+						:label="ctrans('cancel')"
 						@click="() => (isModalPick = null)" />
 				</div>
 

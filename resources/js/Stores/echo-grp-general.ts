@@ -21,7 +21,6 @@ export const useEchoGrpGeneral = defineStore(
         actions: {
             subscribe(groupId: string) {
                 if (!groupId) {
-                    console.log("WS General Failed (Group id isn't provided)")
                     return 
                 }
                 let abcdef = window.Echo.private(`grp.${groupId}.general`).

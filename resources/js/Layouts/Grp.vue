@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
@@ -19,8 +19,6 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
 import ChatPane from "@/Layouts/Grp/ChatPane.vue"
-import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
-import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -29,7 +27,7 @@ import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { startWorkAlerts } from "@/Composables/useNotificationSound"
+import { startOrderAlerts, startWorkAlerts } from "@/Composables/useNotificationSound"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
@@ -49,6 +47,9 @@ provide("locale", useLocaleStore())
 provide("isMovePallet", true)
 
 initialiseApp()
+
+const MessagingDock = defineAsyncComponent(() => import("@/Components/Messaging/MessagingDock.vue"))
+const PhoneCallDock = defineAsyncComponent(() => import("@/Components/Chat/PhoneCallDock.vue"))
 
 
 const layout = useLayoutStore()
@@ -158,6 +159,7 @@ provide("isEmbedded", isEmbedded)
 onMounted(() => {
     if (!isEmbedded) {
         startWorkAlerts(useStaffMessaging())
+        startOrderAlerts()
     }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
@@ -239,8 +241,9 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
+				usePage().component === 'Tickets/Ticket' ? 'pb-0' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				'mr-4',
 				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
@@ -409,6 +412,30 @@ const safeTheme = computed(() => {
         :pauseOnHover="true">
         <template #body="props">
             <Notification :notification="props" />
+        </template>
+    </notifications>
+
+    <notifications
+        group="order-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="flex items-center justify-between gap-x-2 text-xs text-gray-500">
+                    <span>{{ item.title }}</span>
+                    <span v-if="item.data.is_unpaid" class="rounded bg-amber-100 px-1.5 text-amber-800">{{ ctrans("Unpaid") }}</span>
+                </div>
+                <div class="mt-1 truncate text-sm font-semibold text-gray-900">{{ item.data.reference }} · {{ item.data.customer }}</div>
+                <div class="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{{ item.data.money }}</div>
+                <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
+            </Link>
         </template>
     </notifications>
     </template>

@@ -33,6 +33,10 @@ class UpdateCustomerOrderTaxCategory extends RetinaAction
 
     public function handle(Order $order): Order
     {
+        if (!$order->canChangeTaxCategory()) {
+            return $order;
+        }
+
         $taxCategory = null;
         try {
             $taxNumber = $order->customer->taxNumber;

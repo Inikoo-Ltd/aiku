@@ -90,6 +90,9 @@ const props = defineProps < {
 		reference: string
 		state: string
 		state_icon: any
+		timeline: {
+			[key: string]: TSTimeline
+		}
 		route: routeType
 	}[]
     delivery_items: {
@@ -724,6 +727,27 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:state="props.data.data.state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
+		/>
+	</div>
+
+	<div
+		v-for="stockDelivery in stock_delivery_timelines"
+		:key="stockDelivery.reference"
+		class="flex items-center gap-x-4 pl-4 py-1 border-b border-gray-200"
+	>
+		<Link
+			:href="route(stockDelivery.route.name, stockDelivery.route.parameters)"
+			class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
+		>
+			<FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" />
+			{{ stockDelivery.reference }}
+		</Link>
+		<Timeline
+			class="flex-1 min-w-0"
+			:options="stockDelivery.timeline"
+			:state="stockDelivery.state"
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy'"
 		/>
 	</div>
 

@@ -69,7 +69,6 @@ library.add(
 
 provide("layout", useLayoutStore())
 const layout = useLayoutStore()
-console.log(layout.app.theme);
 
 const props = defineProps<{
 	currency: string,

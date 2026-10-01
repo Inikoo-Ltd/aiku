@@ -4,6 +4,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { followPointer } from "@/Composables/followPointer"
@@ -18,7 +19,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -221,6 +222,13 @@ const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
 const carrierView = ref(false)
 const carriersCount = ref(0)
+const colleagueView = ref(false)
+const colleaguesCount = ref(0)
+// Told while we were closed that we would answer when we open: every one still unanswered in
+// the shops picked, whoever holds it, so the morning starts with them and the number on the
+// capsule is the list.
+const promisedOnly = ref(false)
+const promisedCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -232,7 +240,7 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
     && selectedShopIds.value.length !== 1)
 
 // Folders read the shops picked above: somebody covering many shops clears their own backlog,
@@ -381,6 +389,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     claim: (s as any).claim ?? null,
     promise: (s as any).promise ?? null,
     urgent: (s as any).urgent ?? null,
+    waiting_until: (s as any).waiting_until ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -570,7 +579,7 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !unclaimedView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
@@ -578,6 +587,7 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
         rubbishView.value = false
         trashView.value = false
         carrierView.value = false
+        colleagueView.value = false
         highlightView.value = false
         unclaimedView.value = false
         setShop(shopId)
@@ -602,7 +612,28 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
 
 const isMultiChannel = computed(() => selectedChannels.value.length > 1)
 
-const buildParams = (page: number) => ({
+const promisedCapsuleShown = computed(() =>
+    !spamView.value && !trashView.value && !unclaimedView.value && !rubbishView.value && !highlightView.value
+    && !carrierView.value && !colleagueView.value && !agentView.value
+)
+
+const isPromisedList = computed(() => promisedOnly.value && promisedCapsuleShown.value)
+
+// The capsule only appears while there is a promise to keep, so the row is the usual three for
+// most of the day. Kept on screen while it is switched on, or there would be no way back.
+watch(promisedCount, (count) => {
+    if (!count && promisedOnly.value && !contacts.value.some((c) => c.promise)) {
+        promisedOnly.value = false
+    }
+})
+
+const buildParams = (page: number) => isPromisedList.value ? ({
+    promised: 1,
+    statuses: ["waiting", "active"],
+    page,
+    ...(selectedShopIds.value.length ? { shop_ids: selectedShopIds.value } : {}),
+    ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
+}) : ({
     ...(trashView.value
         ? { trashed: 1 }
         : rubbishView.value
@@ -615,7 +646,9 @@ const buildParams = (page: number) => ({
                         ? { highlighted: 1, statuses: selectedStatuses.value }
                         : carrierView.value
                             ? { carrier: 1, statuses: selectedStatuses.value }
-                            : { statuses: selectedStatuses.value }),
+                            : colleagueView.value
+                                ? { colleague: 1, statuses: selectedStatuses.value }
+                                : { statuses: selectedStatuses.value }),
     ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
@@ -632,7 +665,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || unclaimedView.value || agentView.value
+    isPromisedList.value || spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -840,6 +873,7 @@ const revealViewFor = (contact: Contact): void => {
 }
 
 const matchesCurrentView = (c: Contact) =>
+    (!isPromisedList.value || (!!c.promise && ["waiting", "active"].includes(c.status as string))) &&
     (spamView.value || trashView.value || unclaimedView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
     (agentView.value || !selectedShopIds.value.length
         || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
@@ -850,7 +884,9 @@ const filteredContacts = computed(() => {
     const list = contacts.value.filter(matchesCurrentView)
     const linked = linkedContact.value
 
-    if (linked && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
+    const linkedChannelShown = isMergedView.value || !selectedChannels.value.length || isChannelOn(linked?.channel as string)
+
+    if (linked && linkedChannelShown && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
         return [linked, ...list]
     }
 
@@ -863,7 +899,7 @@ const selectedInbox = computed(() =>
 
 const showDsKinds = computed(() =>
     selectedShopId.value !== null && selectedInbox.value?.type === "dropshipping"
-    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !unclaimedView.value
+    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
 )
 
 // Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
@@ -1062,6 +1098,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     rubbishView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     setShop(shopId)
@@ -1093,6 +1130,7 @@ const selectRubbish = () => {
     spamView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1109,6 +1147,7 @@ const selectSpam = () => {
     rubbishView.value = false
     trashView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1125,6 +1164,7 @@ const selectTrash = () => {
     rubbishView.value = false
     spamView.value = false
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1141,6 +1181,7 @@ const selectUnclaimed = () => {
     if (unclaimedView.value) return
     unclaimedView.value = true
     carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1156,6 +1197,24 @@ const selectUnclaimed = () => {
 const selectCarriers = () => {
     if (carrierView.value) return
     carrierView.value = true
+    colleagueView.value = false
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectColleagues = () => {
+    if (colleagueView.value) return
+    colleagueView.value = true
+    carrierView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1173,6 +1232,7 @@ const selectHighlight = () => {
     if (highlightView.value) return
     highlightView.value = true
     carrierView.value = false
+    colleagueView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
@@ -1393,7 +1453,7 @@ const openPendingSession = async () => {
         // Cleared before the reload below, because that reload calls back into here.
         pendingSessionUlid.value = null
 
-        if (mapped.shop?.id && mapped.shop.id !== selectedShopId.value) {
+        if (mapped.shop?.id && (mapped.shop.id !== selectedShopId.value || !isChannelOn(mapped.channel as string))) {
             revealInbox(mapped.shop.id, mapped.channel)
         }
 
@@ -1441,6 +1501,8 @@ const fetchAgentNotifications = async () => {
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
         carriersCount.value = data?.data?.carriers ?? 0
+        colleaguesCount.value = data?.data?.colleagues ?? 0
+        promisedCount.value = data?.data?.promised ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -1638,6 +1700,8 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
     onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
+    const sessionUlid = selectedSession.value.ulid
+    const claimsChat = selectedSession.value.status === "waiting"
     try {
         const formData = new FormData()
         formData.append("message_text", text ?? "")
@@ -1653,10 +1717,14 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
         }
 
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [props.organisation.slug, selectedSession.value.ulid]),
+            route("grp.org.chat.agents.messages.send", [props.organisation.slug, sessionUlid]),
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
+
+        if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
+            await onAssignSelfSuccess()
+        }
     } catch (error) {
         console.error("Error sending message:", error)
 
@@ -1693,7 +1761,7 @@ const onTransferAgentSuccess = async () => {
 }
 
 
-watch([selectedStatuses, viewMode], async () => {
+watch([selectedStatuses, viewMode, promisedOnly], async () => {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
@@ -1807,7 +1875,7 @@ onMounted(async () => {
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        revealInbox(init.shop.id, urlChannel)
+        revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
     if (init) {
@@ -2173,6 +2241,21 @@ onUnmounted(() => {
                         {{ carriersCount }}
                     </span>
                 </button>
+                <button type="button" @click="selectColleagues"
+                    v-tooltip="ctrans('Emails colleagues wrote to this mailbox; their circulars, newsletters and notifications stay out')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        colleagueView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="colleagueView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faUsers" class="text-sm shrink-0" :class="colleagueView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Colleagues") }}</span>
+                    <span v-if="!railCollapsed && colleaguesCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ colleaguesCount }}
+                    </span>
+                </button>
             </div>
 
             <!-- Spam -->
@@ -2251,7 +2334,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : colleagueView ? ctrans("Colleagues") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
@@ -2259,7 +2342,7 @@ onUnmounted(() => {
                     <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
                         {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
                     </div>
-                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView" class="text-[11px] text-gray-500 truncate">
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView || colleagueView" class="text-[11px] text-gray-500 truncate">
                         {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
@@ -2362,7 +2445,7 @@ onUnmounted(() => {
             <!-- Status capsules: any combination, never none -->
             <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-2 border-b">
                 <div class="flex items-center gap-1.5 text-xs">
-                    <button v-for="capsule in statusCapsules" :key="capsule.key" type="button"
+                    <button v-for="capsule in statusCapsules" v-show="!isPromisedList" :key="capsule.key" type="button"
                         v-tooltip="ctrans('Show or hide these, at least one stays on')"
                         class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
                         :class="isStatusOn(capsule.key)
@@ -2376,11 +2459,23 @@ onUnmounted(() => {
                             :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
                             :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
                     </button>
+                    <button v-if="promisedCapsuleShown && (promisedCount || promisedOnly)" type="button"
+                        v-tooltip="ctrans('Only the chats told while we were closed that we would reply when we open, not answered yet, in every channel and whoever holds them')"
+                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        :class="promisedOnly
+                            ? 'bg-amber-50 shadow-sm font-semibold border-amber-400 text-amber-700'
+                            : 'border-gray-200 text-gray-500 hover:text-gray-700'"
+                        @click="promisedOnly = !promisedOnly">
+                        {{ ctrans("Promised") }}
+                        <span v-if="promisedCount"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
+                            :class="promisedOnly ? 'text-white bg-amber-500' : 'text-amber-700 bg-amber-100'">{{ promisedCount }}</span>
+                    </button>
                 </div>
 
                 <!-- How far back the closed list reaches. Only on when closed is being looked
                      at: waiting and active are open work and have no period. -->
-                <div v-if="isStatusOn('closed')" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                <div v-if="isStatusOn('closed') && !isPromisedList" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
                     <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Closed") }}</span>
                     <button v-for="period in closedPeriods" :key="period.key" type="button"
                         class="px-1.5 py-0.5 rounded transition-colors"
@@ -2489,6 +2584,10 @@ onUnmounted(() => {
                                     <span v-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                                         class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">
                                         {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                                    </span>
+                                    <span v-if="c.waiting_until" v-tooltip="ctrans('Waiting for the customer to write back. Closes by itself if they write nothing.')"
+                                        class="shrink-0 truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        ⏳ {{ waitingLeft(c.waiting_until) }}
                                     </span>
                                     <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
                                         class="shrink-0 truncate rounded px-1 font-medium"

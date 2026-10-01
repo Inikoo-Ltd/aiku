@@ -15,7 +15,6 @@ const props = withDefaults(defineProps<{
     isMaster: false,
 });
 
-console.log(props)
 </script>
 
 <template>

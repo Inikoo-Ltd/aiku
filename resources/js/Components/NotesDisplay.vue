@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStickyNote } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useBasicColor } from '@/Composables/useColors'
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -24,6 +24,7 @@ const props = defineProps<{
         customer?: string
         internal?: string
         public?: string
+        warehouse?: string
         credit_transaction_note?: string
     }
     referenceField?: string // Field name for the reference/identifier
@@ -204,7 +205,7 @@ const closeNotesModal = () => {
             <div class="flex items-center justify-between mb-4">
                 <DialogTitle as="h3" class="text-lg font-semibold text-gray-900">
                     <FontAwesomeIcon :icon="faStickyNote" class="mr-2 text-gray-600" fixed-width />
-                    {{ trans('Note Details') }}
+                    {{ ctrans('Note Details') }}
                 </DialogTitle>
                 <div class="text-sm text-gray-500">
                     {{ getItemReference }}
@@ -220,7 +221,7 @@ const closeNotesModal = () => {
                         <FontAwesomeIcon :icon="faStickyNote" class="mr-2"
                             :style="{ color: getCurrentNoteContent.textColor }" fixed-width />
                         <h4 class="font-medium text-gray-900">
-                            {{ trans(getCurrentNoteContent.title) }}
+                            {{ ctrans(getCurrentNoteContent.title) }}
                         </h4>
                     </div>
                     <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
@@ -230,7 +231,7 @@ const closeNotesModal = () => {
             </div>
 
             <div class="mt-6 flex justify-end">
-                <Button type="secondary" :label="trans('Close')" @click="closeNotesModal" />
+                <Button type="secondary" :label="ctrans('Close')" @click="closeNotesModal" />
             </div>
         </div>
     </Modal>

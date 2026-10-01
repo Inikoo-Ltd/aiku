@@ -6,6 +6,19 @@
 */
 import { Image as ImageTS } from '@/types/Image'
 
+export interface PreOrder {
+	type: 'back_order' | 'made_to_order'
+	type_label: string
+	dispatch_from_weeks: number
+	dispatch_to_weeks: number
+	dispatch_label: string
+	max_quantity: number | null
+	deposit_percentage: number
+	is_pallet_delivery: boolean
+	pallet_estimate_label?: string | null
+	terms: string[]
+}
+
 export interface ProductResource {
 	id: number
 	name: string
@@ -18,6 +31,7 @@ export interface ProductResource {
 	rrp?: number
 	unit: string
 	stock: number
+	is_on_demand?: boolean
 	rating: number
 	price: number
 	url: string | null
@@ -26,6 +40,7 @@ export interface ProductResource {
 	is_favourite?: boolean
 	is_back_in_stock?: boolean
 	expected_back_in_stock_at?: string | null
+	pre_order?: PreOrder | null
 	is_golden_product?: boolean
 	is_variant?: boolean
 	top_seller: number | null
@@ -46,4 +61,19 @@ export interface ProductResource {
 	quantity_ordered: number
 	quantity_ordered_new: number
 	transaction_id: number | null
+	family_id?: number | null
+	price_per_unit?: number
+	currency_code?: string
+	offers_data?: any
+	step_discount?: {
+		label?: string | null
+		steps: {
+			min_quantity: number
+			percentage_off: number
+			percentage_off_label: string
+			price: number
+			price_per_unit: number
+			is_popular?: boolean
+		}[]
+	} | null
 }

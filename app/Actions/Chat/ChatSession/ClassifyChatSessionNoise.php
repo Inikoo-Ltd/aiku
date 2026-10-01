@@ -164,6 +164,10 @@ class ClassifyChatSessionNoise
             return false;
         }
 
+        if ($chatSession instanceof ChatSession && $chatSession->is_colleague) {
+            return false;
+        }
+
         return !$chatSession->last_agent_message_at
             && (self::isProvisional($chatSession) || (!$chatSession->noise_checked_at && !$chatSession->is_spam && !$chatSession->is_rubbish));
     }
@@ -404,7 +408,8 @@ class ClassifyChatSessionNoise
      */
     private function askModel(ChatSession|MetaChatSession $chatSession, string $text): ?array
     {
-        $response = AskToAi::run($this->prompt($chatSession, mb_substr($text, 0, 6000)), config('chat.summary_model'));
+        $model    = config('chat.noise_model');
+        $response = AskToAi::run($this->prompt($chatSession, mb_substr($text, 0, 6000)), $model);
 
         if (!is_string($response)) {
             return null;
@@ -415,6 +420,8 @@ class ClassifyChatSessionNoise
         if (!is_array($data)) {
             return null;
         }
+
+        SetChatSessionMetadata::run($chatSession, ['noise_model' => $model]);
 
         return [
             'verdict'    => ChatNoiseVerdictEnum::tryFrom((string) Arr::get($data, 'verdict')) ?? ChatNoiseVerdictEnum::GENUINE,

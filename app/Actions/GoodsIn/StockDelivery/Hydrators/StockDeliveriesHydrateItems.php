@@ -65,7 +65,7 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
 
         $checkedItemsCount = (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CHECKED->value, 0);
 
-        if (($checkedItemsCount === $items) && ($items > 0)) {
+        if ($stockDelivery->state === StockDeliveryStateEnum::RECEIVED && $checkedItemsCount === $items && $items > 0) {
             $stats['state']      = StockDeliveryStateEnum::CHECKED;
             $stats['checked_at'] = now();
         }

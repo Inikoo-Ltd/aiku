@@ -385,6 +385,19 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->permissionsHolder()->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::DIGITAL_AGENCY)->withTimestamps();
     }
 
+    /**
+     * Staff of an agent (china, indo…) only work inside their agent organisation: they never see the group
+     * or any organisation other than their own.
+     */
+    public function worksOnlyForAgents(): bool
+    {
+        $holder = $this->permissionsHolder();
+
+        return $holder->authorisedAgentsOrganisations()->exists()
+            && $holder->authorisedOrganisations()->where('organisations.type', '!=', OrganisationTypeEnum::AGENT)->doesntExist()
+            && !$holder->hasAnyPermission(['group-overview', 'sysadmin.view', 'goods.view', 'masters.view', 'supply-chain.view', 'organisations.view']);
+    }
+
     public function hasGroupAccess(): bool
     {
         return $this->authorisedShopOrganisations()->count() > 1
@@ -402,7 +415,7 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 
         return Cache::tags('auth-user:'.$holder->id)->remember('can-view-sales', 3600, function () use ($holder) {
             $holder->bindPermissionsTeam();
-            $worksOnlyForAgents = $holder->authorisedAgentsOrganisations()->exists() && $holder->authorisedShopOrganisations()->doesntExist();
+            $worksOnlyForAgents = $this->worksOnlyForAgents();
 
             return $holder->getAllPermissions()->contains(
                 fn ($permission) => preg_match(

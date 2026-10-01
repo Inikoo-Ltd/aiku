@@ -27,7 +27,6 @@ const data = computed({
     return props.modelValue || {}
   },
   set(v) {
-    console.log('set nav data', v)
     emit('update:modelValue', v)
   }
 })

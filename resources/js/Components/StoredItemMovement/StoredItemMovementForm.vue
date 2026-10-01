@@ -8,7 +8,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import { get } from 'lodash-es'
 import { routeType } from "@/types/route"
@@ -37,7 +37,6 @@ const layout = useLayoutStore()
 const onSubmit = () => {
     const data = props.form.data()
     const finalData = data.type != 'location' ? { pallet_id: data.pallet_id, quantity: data.quantity, from_pallet_id: props.pallet.id } : { location_id: data.location_id, quantity: data.quantity, from_pallet_id: props.pallet.id }
-    console.log('data', finalData)
     emits('onSave', finalData)
 }
 
@@ -46,7 +45,7 @@ const onSubmit = () => {
 
 <template>
     <div>
-        <label class="block text-sm font-medium text-gray-700">{{ trans("Type") }}</label>
+        <label class="block text-sm font-medium text-gray-700">{{ ctrans("Type") }}</label>
         <div class="flex flex-auto justify-evenly border rounded-md w-full dark:border-gray-600/60 dark:text-white mt-1">
             <button class="border-none px-2 py-1 rounded-md w-full"
                 :class="form.type == 'pallet' ? 'bg-color-theme text-white' : null">
@@ -72,7 +71,7 @@ const onSubmit = () => {
     </div>
 
     <div v-if="form.type == 'pallet'">
-        <label class="block text-sm font-medium text-gray-700">{{ trans("Move to Pallet:") }}</label>
+        <label class="block text-sm font-medium text-gray-700">{{ ctrans("Move to Pallet:") }}</label>
         <div class="mt-1">
             <SelectQuery :urlRoute="route(palletRoute.index.name, palletRoute.index.parameters)" :value="form"
                 :placeholder="'Select Pallet'" :required="true" :trackBy="'reference'" :label="'reference'"
@@ -82,7 +81,7 @@ const onSubmit = () => {
     </div>
 
     <div v-else-if="form.type == 'location'">
-        <label class="block text-sm font-medium text-gray-700">{{ trans("Move to Location") }}</label>
+        <label class="block text-sm font-medium text-gray-700">{{ ctrans("Move to Location") }}</label>
         <div class="mt-1">
             <SelectQuery
                 :urlRoute="route(locationRoute.index.name, { ...locationRoute.index.parameters, pallet: pallet.id })"
@@ -94,7 +93,7 @@ const onSubmit = () => {
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-gray-700">{{ trans("Quantity") }}</label>
+        <label class="block text-sm font-medium text-gray-700">{{ ctrans("Quantity") }}</label>
         <div class="mt-1">
             <input v-model="form.quantity" id="quantity" name="quantity" :autofocus="true" type="number"
                 autocomplete="quantity" :required="true" :min="1"

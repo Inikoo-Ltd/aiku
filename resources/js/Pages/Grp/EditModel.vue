@@ -85,7 +85,9 @@ import {
     faStamp,
     faChevronDown,
     faGem,
-    faHashtag
+    faHashtag,
+    faPrint,
+    faVolumeUp, faComments, faBooks, faCoins, faSignOut
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -96,6 +98,8 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faPrint,
+    faVolumeUp,
     faWhatsapp,
     faHashtag,
     faChevronDown,
@@ -175,7 +179,7 @@ library.add(
     faCameraRetro,
     faBalanceScale,
     faCamera,
-    faStamp
+    faStamp, faComments, faBooks, faCoins, faSignOut
 )
 
 const props = defineProps<{

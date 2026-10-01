@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
@@ -34,10 +35,9 @@ class ShowOrgSupplier extends OrgAction
 {
     use WithAgentOrganisation;
     use WithOrgSupplierSubNavigation;
+    use WithProcurementAuthorisation;
 
     private OrgAgent|Organisation $parent;
-
-    //todo: authorisation
 
     public function handle(OrgSupplier $orgSupplier): OrgSupplier
     {
@@ -90,14 +90,6 @@ class ShowOrgSupplier extends OrgAction
                             'label' => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.remove',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,

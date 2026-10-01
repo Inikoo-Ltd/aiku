@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\ShippingZone\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Http\Resources\Catalogue\ShippingZonesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\ShippingZone;
@@ -22,7 +22,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShippingZones extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
 
     public function handle(ShippingZoneSchema $parent, $prefix = null): LengthAwarePaginator

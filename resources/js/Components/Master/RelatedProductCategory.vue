@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SelectorProductCategory from "@/Components/SelectorProductCategory.vue"
 import Image from "@common/Components/Image.vue";
@@ -45,10 +45,6 @@ const SaveOrder = async () => {
 
     loadingOrder.value = true
 
-    console.log(
-        'Saving order with the following products:',
-        listProducts.value.data
-    )
 
     const payloadKey = props.data?.sync_payload_key || 'product_category_ids'
     const payloadValues = listProducts.value.data.data.map((product: any) => product.id)
@@ -74,8 +70,8 @@ const SaveOrder = async () => {
         )
 
         notify({
-            title: trans("Success!"),
-            text: trans("Successfully reordered the products"),
+            title: ctrans("Success!"),
+            text: ctrans("Successfully reordered the products"),
             type: "success"
         })
 
@@ -83,10 +79,10 @@ const SaveOrder = async () => {
         console.error(error)
 
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text:
                 error?.response?.data?.message ||
-                trans("Failed to reorder products"),
+                ctrans("Failed to reorder products"),
             type: "error"
         })
 
@@ -103,7 +99,7 @@ const SaveOrder = async () => {
         <!-- HEADER ACTION -->
         <div class="flex justify-between items-center">
             <div class="text-xl font-semibold text-gray-700">
-                {{ trans('Related Product Category') }}
+                {{ ctrans('Related Product Category') }}
             </div>
 
             <Button v-if="props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
@@ -141,11 +137,11 @@ const SaveOrder = async () => {
                         class="flex flex-col items-center justify-center text-center py-12 px-6 border border-dashed rounded-lg bg-gray-50">
 
                         <div class="text-sm font-semibold text-gray-700">
-                            {{ trans('No products category found') }}
+                            {{ ctrans('No products category found') }}
                         </div>
 
                         <div class="text-xs text-gray-500 mt-1 max-w-xs">
-                            {{ trans('Start by adding your first product category to this list.') }}
+                            {{ ctrans('Start by adding your first product category to this list.') }}
                         </div>
 
                         <Button v-if="props.data?.editable" class="mt-5" label="Add Product Category" type="create"

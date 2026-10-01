@@ -8,6 +8,7 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Ordering\Order\GetOrderBacklog;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
@@ -79,8 +80,10 @@ class GetGroupDashboardTimeSeriesData
 
     protected function fetchData(Group $group, $fromDate, $toDate, bool $includePartners): array
     {
-        $allShops = GetShopTimeSeriesStats::run($group, $fromDate, $toDate, null, $includePartners);
-        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners);
+        $backlog = GetOrderBacklog::run($group, $includePartners);
+
+        $allShops = GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($group, $fromDate, $toDate, null, $includePartners), $backlog['shops']);
+        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']);
 
         $shopsByType = [
             'all' => $allShops,
@@ -109,13 +112,13 @@ class GetGroupDashboardTimeSeriesData
             ->all();
 
         return [
-            'organisations' => GetOrganisationTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners),
+            'organisations' => GetOrderBacklog::addTo(GetOrganisationTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['organisations']),
             'shops' => $shopsByType,
             'invoiceCategories' => $allInvoiceCategories,
             'faire' => $faireInvoiceCategories,
-            'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners),
-            'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners),
-            'brands' => GetBrandTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners),
+            'platforms' => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['platforms']),
+            'salesChannels' => GetOrderBacklog::addTo(GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['salesChannels']),
+            'brands' => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['brands']),
         ];
     }
 

@@ -59,7 +59,7 @@ interface MasterProductPricing {
     sold: number
     customers: number
     sales_ly: string | number | null
-    price_tip: { change: number, reason: string } | null
+    price_tip: { id: number, change: number, confidence: number, reason: string } | null
 }
 
 interface SalesFigures {
@@ -156,8 +156,11 @@ const openEdit = (masterProduct: MasterProductPricing, field: 'master_prices' | 
     subscribeCascade(masterProduct.id)
 }
 
+const applyingTipId = ref<number | null>(null)
+
 const applyPriceTip = (masterProduct: MasterProductPricing) => {
     openEdit(masterProduct, 'master_prices')
+    applyingTipId.value = masterProduct.price_tip!.id
     const factor = 1 + masterProduct.price_tip!.change / 100
     for (const entry of Object.values(editForm.value.master_prices as Record<string, CurrencyValue>)) {
         if (entry?.value != null) {
@@ -258,7 +261,26 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     })
 }
 
+const dismissingTip = ref<MasterProductPricing | null>(null)
+const dismissForm = useForm({ dismissed_reason: '' })
+
+const openDismiss = (masterProduct: MasterProductPricing) => {
+    dismissForm.reset()
+    dismissingTip.value = masterProduct
+}
+
+const submitDismiss = () => {
+    dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: dismissingTip.value!.price_tip!.id }), {
+        preserveScroll: true,
+        onSuccess: () => {
+            dismissingTip.value = null
+            router.reload({ only: ['pricing'] })
+        },
+    })
+}
+
 const closeEdit = () => {
+    applyingTipId.value = null
     editingProduct.value = null
     editForm.value = null
     bulkMode.value = false
@@ -289,10 +311,13 @@ const submitEdit = () => {
     }
 
     editForm.value.patch(
-        route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }),
+        applyingTipId.value
+            ? route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: applyingTipId.value })
+            : route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }),
         {
             preserveScroll: true,
             onSuccess: () => {
+                applyingTipId.value = null
                 router.reload({ only: ['pricing'] })
             },
         }
@@ -597,15 +622,22 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 </template>
             </div>
             <span v-else class="tabular-nums">{{ formatMoney(masterProduct.price, masterProduct.currency_code) }}</span>
-            <div v-if="masterProduct.price_tip" class="mt-1 text-right">
+        </template>
+
+        <template #cell(price_tip)="{ item: masterProduct }">
+            <div v-if="masterProduct.price_tip" class="flex flex-col items-end gap-1">
                 <button
                     type="button"
                     class="rounded border px-1.5 py-px text-xs font-medium tabular-nums"
                     :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
-                    v-tooltip="`${masterProduct.price_tip.reason}. ${ctrans('Click to review the suggested prices')}`"
+                    v-tooltip="`${masterProduct.price_tip.reason}. ${ctrans('Click to review the suggested prices and apply them')}`"
                     @click="applyPriceTip(masterProduct)"
                 >
-                    {{ ctrans('Price tip') }} {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
+                    {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
+                </button>
+                <span class="text-xs tabular-nums text-gray-400" v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
+                <button type="button" class="text-xs text-gray-400 underline hover:text-gray-600" @click="openDismiss(masterProduct)">
+                    {{ ctrans('Dismiss') }}
                 </button>
             </div>
         </template>
@@ -695,5 +727,20 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 :costs="costsFor(bulkMode ? bulkEffectiveCost : editingProduct?.effective_cost ?? null)"
             />
         </div>
+    </Modal>
+
+    <Modal :isOpen="!!dismissingTip" @onClose="dismissingTip = null" width="w-full max-w-md">
+        <form v-if="dismissingTip" @submit.prevent="submitDismiss">
+            <div class="mb-2 text-sm font-medium text-gray-700">
+                {{ ctrans('Dismiss price tip') }} — {{ dismissingTip.code }}
+            </div>
+            <p class="mb-3 text-xs text-gray-500">{{ dismissingTip.price_tip?.reason }}</p>
+            <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is this tip wrong?') }}</label>
+            <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="3" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" />
+            <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
+            <div class="mt-3 flex justify-end">
+                <button type="submit" :disabled="dismissForm.processing" class="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white disabled:opacity-50">{{ ctrans('Dismiss') }}</button>
+            </div>
+        </form>
     </Modal>
 </template>

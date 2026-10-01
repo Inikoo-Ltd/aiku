@@ -12,6 +12,9 @@ import McpAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/McpAn
 import StaffChatAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/StaffChatAnalyticsDisplay.vue';
 import UsersInsightsDisplay from '@/Components/DataDisplay/Dashboard/Widget/UsersInsightsDisplay.vue';
 import { capitalize } from "@/Composables/capitalize"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCog } from "@fal"
+library.add(faCog)
 
 defineProps(['title', 'pageHead', 'users_insights', 'search_insights', 'ai_insights', 'staff_chat_insights']);
 </script>

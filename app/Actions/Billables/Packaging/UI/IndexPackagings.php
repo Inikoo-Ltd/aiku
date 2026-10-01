@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Packaging\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Http\Resources\Catalogue\PackagingsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\Packaging;
@@ -24,7 +24,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPackagings extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {

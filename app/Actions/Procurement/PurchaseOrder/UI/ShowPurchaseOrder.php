@@ -38,6 +38,7 @@ use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -128,6 +129,15 @@ class ShowPurchaseOrder extends OrgAction
                 'name'       => 'grp.json.org-agent.org-supplier-products',
                 'parameters' => [
                     'orgAgent' => $purchaseOrder->parent->slug,
+                    'purchaseOrder' => $purchaseOrder->slug,
+                ],
+            ];
+        } elseif ($purchaseOrder->parent instanceof OrgPartner) {
+            $productListRoute = [
+                'method'     => 'get',
+                'name'       => 'grp.json.org-partner.purchase-order-org-stocks',
+                'parameters' => [
+                    'orgPartner'    => $purchaseOrder->parent->id,
                     'purchaseOrder' => $purchaseOrder->slug,
                 ],
             ];
@@ -411,7 +421,7 @@ class ShowPurchaseOrder extends OrgAction
     {
         return match ($purchaseOrder->state) {
             PurchaseOrderStateEnum::IN_PROCESS => [
-                $showProductsTab ? [
+                $showProductsTab || $purchaseOrder->parent instanceof OrgPartner ? [
                     'label'   => __('Add Product'),
                     'tooltip' => __('Add Product'),
                     'type'    => 'button',
@@ -695,10 +705,12 @@ class ShowPurchaseOrder extends OrgAction
     {
         return $purchaseOrder->stockDeliveries()
             ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+            ->orderBy('stock_deliveries.id')
             ->get()->map(fn (StockDelivery $stockDelivery) => [
             'reference'  => $stockDelivery->reference,
             'state'      => $stockDelivery->state->value,
             'state_icon' => StockDeliveryStateEnum::stateIcon()[$stockDelivery->state->value],
+            'timeline'   => ShowStockDelivery::make()->getTimeline($stockDelivery, withPurchaseOrderStates: false),
             'route'      => [
                 'name'       => 'grp.org.procurement.stock_deliveries.show',
                 'parameters' => [

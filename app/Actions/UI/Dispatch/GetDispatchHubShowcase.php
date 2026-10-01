@@ -9,6 +9,8 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -16,17 +18,20 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetDispatchHubShowcase
 {
     use AsObject;
+    use WithDeliveryNotesChannel;
 
     public function handle(Warehouse $warehouse): array
     {
         $organisation = $warehouse->organisation;
         $stats        = $organisation->stats;
+        $hasB2CShops  = $organisation->shops()->where('type', ShopTypeEnum::B2C)->exists();
 
         return [
             ...($stats->has_fulfilment ? GetDispatchHubFulfilmentWidget::run($warehouse) : []),
             GetDispatchHubB2BWidget::run($warehouse),
             ...($stats->has_marketplace ? [GetDispatchHubExternalWidget::run($warehouse)] : []),
-            GetDispatchHubB2CWidget::run($warehouse),
+            ...($this->hasPartnerCustomers($organisation) ? [GetDispatchHubPartnersWidget::run($warehouse)] : []),
+            ...($hasB2CShops ? [GetDispatchHubB2CWidget::run($warehouse)] : []),
             ...($stats->has_dropshipping ? [GetDispatchHubDropshippingWidget::run($warehouse)] : []),
             'waiting_items_still_picking' => [
                 'count' => $warehouse->deliveryNotes()

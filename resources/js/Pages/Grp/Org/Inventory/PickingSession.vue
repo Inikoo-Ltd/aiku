@@ -14,10 +14,10 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue"
 import TablePalletReturnInPickingSessions from "@/Components/Warehouse/PickingSessions/TablePalletReturnInPickingSessions.vue"
 import TableFulfilmentPickingSessionStoredItems from "@/Components/Warehouse/PickingSessions/TableFulfilmentPickingSessionStoredItems.vue"
-import Timeline from "@/Components/Utils/Timeline.vue"
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import SelectDeliveryNotesModal from "@/Components/Warehouse/PickingSessions/SelectDeliveryNotesModal.vue"
 import SelectPalletReturnsModal from "@/Components/Warehouse/PickingSessions/SelectPalletReturnsModal.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -28,6 +28,7 @@ import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDelivery
 import { routeType } from "@/types/route"
 import { debounce } from "lodash-es"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
+import ButtonBackToPicking from "@/Components/DeliveryNote/ButtonBackToPicking.vue"
 
 
 const props = defineProps<{
@@ -46,6 +47,7 @@ const props = defineProps<{
     scan_to_pack?: {
         scan_route: routeType
     }
+    incomplete_sets?: { delivery_note_reference: string, action: any }[]
     routes?: {
         update: { name: string, parameters: object }
         pickers_list: { name: string, parameters: object }
@@ -58,7 +60,6 @@ const props = defineProps<{
         navigation: object;
     }
 }>()
-console.log("props", props)
 
 const layout = inject("layout", layoutStructure)
 
@@ -74,7 +75,7 @@ const takeSessionMyself = () => {
 
 const onUpdateSessionPicker = () => {
     if (!selectedPicker.value?.id || !props.routes?.update) {
-        notify({ title: trans("Something went wrong"), text: trans("Picker is not selected"), type: "error" })
+        notify({ title: ctrans("Something went wrong"), text: ctrans("Picker is not selected"), type: "error" })
         return
     }
 
@@ -86,8 +87,8 @@ const onUpdateSessionPicker = () => {
             onFinish: () => (isSavingPicker.value = false),
             onSuccess: () => (isModalChangePicker.value = false),
             onError: (error) => notify({
-                title: trans("Something went wrong"),
-                text: error?.message ?? trans("Unknown error"),
+                title: ctrans("Something went wrong"),
+                text: error?.message ?? ctrans("Unknown error"),
                 type: "error",
             }),
         })
@@ -223,18 +224,25 @@ const handleModalSuccess = () => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #button-undo-waiting="{ action }">
+            <ButtonBackToPicking
+                :action="action"
+                :title="ctrans('Send this picking session back to picking?')"
+                :description="ctrans('Items waiting for the warehouse and parts of a set sold only complete that were not found go back to the picker. Items waiting for customer services stay with them.')" />
+        </template>
+
         <template #otherBefore>
             <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
             <div v-if="routes?.update && !isFulfilmentSession" class="flex items-center gap-x-2 mr-2">
                 <div v-if="picker?.contact_name" class="text-sm text-gray-500">
-                    {{ trans('Picker') }}: <span class="text-gray-700">{{ picker.contact_name }}</span>
+                    {{ ctrans('Picker') }}: <span class="text-gray-700">{{ picker.contact_name }}</span>
                 </div>
                 <Button
                     @click="isModalChangePicker = true"
-                    :label="trans('Change Picker')"
+                    :label="ctrans('Change Picker')"
                     type="tertiary"
                     size="xs"
-                    v-tooltip="trans('Everything in this picking session is picked by this person. Changing it here moves the whole session at once.')"
+                    v-tooltip="ctrans('Everything in this picking session is picked by this person. Changing it here moves the whole session at once.')"
                 />
             </div>
             <div v-if="data.data.state === 'in_process'" class="flex gap-2">
@@ -245,7 +253,7 @@ const handleModalSuccess = () => {
                 >
                     {{
                         isFulfilmentSession
-                            ? trans('Add/remove Pallet Returns')
+                            ? ctrans('Add/remove Pallet Returns')
                             : ctrans('Add Delivery Notes')
                     }}
                 </Button>
@@ -264,7 +272,7 @@ const handleModalSuccess = () => {
         </template>
     </PageHeading>
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-        <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
+        <TimelineResponsive :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
     <!-- Section: Scan a barcode to pack the matching item of the delivery note it belongs to -->
     <ScanToPackDeliveryNote
@@ -284,6 +292,7 @@ const handleModalSuccess = () => {
             :dispatchableReturns="dispatchableReturns"
             :allowWaiting="allow_waiting"
             :allowPickerSetNotPicked="allow_picker_set_not_picked"
+            :incompleteSets="incomplete_sets"
             :key="`${currentTab}${props.data.state}`"
         />
     </div>
@@ -328,9 +337,9 @@ const handleModalSuccess = () => {
 
     <Modal :isOpen="isModalChangePicker" @close="isModalChangePicker = false" width="w-full max-w-lg">
         <div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
-            <div class="mx-auto font-semibold text-lg">{{ trans("Select picker") }}</div>
+            <div class="mx-auto font-semibold text-lg">{{ ctrans("Select picker") }}</div>
             <div class="text-sm text-gray-500 mt-2">
-                {{ trans('Everything in this picking session will be picked by the person you choose.') }}
+                {{ ctrans('Everything in this picking session will be picked by the person you choose.') }}
             </div>
             <div class="w-full flex justify-end mt-2">
                 <Button
@@ -338,7 +347,7 @@ const handleModalSuccess = () => {
                     @click="takeSessionMyself"
                     :loading="isSavingPicker"
                     :disabled="isSavingPicker"
-                    :label="trans('I will do the picking myself')"
+                    :label="ctrans('I will do the picking myself')"
                     type="tertiary"
                     size="xs" />
             </div>
@@ -347,7 +356,7 @@ const handleModalSuccess = () => {
                     v-model="selectedPicker"
                     required
                     :fetchRoute="routes.pickers_list"
-                    :placeholder="trans('Select picker')"
+                    :placeholder="ctrans('Select picker')"
                     labelProp="contact_name"
                     valueProp="id"
                     object
@@ -370,7 +379,7 @@ const handleModalSuccess = () => {
                     @click="onUpdateSessionPicker"
                     :loading="isSavingPicker"
                     :disabled="isSavingPicker"
-                    :label="trans('Change Picker')"
+                    :label="ctrans('Change Picker')"
                     type="save" />
             </div>
         </div>

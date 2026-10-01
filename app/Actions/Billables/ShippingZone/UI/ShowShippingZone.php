@@ -11,7 +11,7 @@ namespace App\Actions\Billables\ShippingZone\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\UI\Catalogue\ShippingZoneTabsEnum;
 use App\Http\Resources\Catalogue\ShippingZoneResource;
 use App\Http\Resources\History\HistoryResource;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShippingZone extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(ShippingZone $shippingZone): ShippingZone
     {

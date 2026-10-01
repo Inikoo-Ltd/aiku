@@ -1849,6 +1849,308 @@ test('delete mailshot also removes second wave', function (Shop $shop) {
     $this->assertSoftDeleted($secondWave);
 })->depends('outbox seeded when shop created');
 
+function createMarketingMailshotWithSecondWave(Shop $shop): Mailshot
+{
+    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => MailshotTypeEnum::MARKETING, 'subject' => 'Autumn offers', 'recipients_recipe' => ['all_customers' => ['value' => true]]]
+    ));
+    $mailshot = createMailshotWithPublishedEmail($shop, $mailshot);
+    $mailshot = SetMailshotSecondWaveStatus::make()->handle($mailshot, ['status' => true]);
+    $mailshot->secondWave->update(['state' => MailshotStateEnum::READY, 'send_delay_hours' => 1]);
+
+    return $mailshot->refresh();
+}
+
+function markParentMailshotSent(Mailshot $mailshot): Mailshot
+{
+    $mailshot->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()->subHours(2)]);
+
+    return $mailshot->refresh();
+}
+
+test('second wave subject follows the parent unless a person edited it', function (Shop $shop) {
+    $parent = createMarketingMailshotWithSecondWave($shop);
+
+    UpdateMailshot::make()->action($parent, ['subject' => 'Autumn offers renamed']);
+
+    $secondWave = $parent->secondWave->refresh();
+    expect($secondWave->subject)->toBe('Autumn offers renamed (2nd)')
+        ->and($secondWave->email->subject)->toBe('Autumn offers renamed (2nd)');
+
+    UpdateMailshotSecondWave::make()->handle($parent->refresh(), ['subject' => 'Last chance', 'send_delay_hours' => 4]);
+    UpdateMailshot::make()->action($parent->refresh(), ['subject' => 'Autumn offers renamed again']);
+
+    $secondWave = $parent->secondWave->refresh();
+    expect($secondWave->subject)->toBe('Last chance')
+        ->and($secondWave->email->subject)->toBe('Last chance')
+        ->and($secondWave->data['subject_edited_by_user'])->toBeTrue();
+})->depends('outbox seeded when shop created');
+
+test('editing only the delay of the second wave keeps the subject following the parent', function (Shop $shop) {
+    $parent = createMarketingMailshotWithSecondWave($shop);
+
+    UpdateMailshotSecondWave::make()->handle($parent, ['subject' => $parent->secondWave->subject, 'send_delay_hours' => 6]);
+    UpdateMailshot::make()->action($parent->refresh(), ['subject' => 'Winter offers']);
+
+    expect($parent->secondWave->refresh()->subject)->toBe('Winter offers (2nd)')
+        ->and($parent->secondWave->send_delay_hours)->toBe(6);
+})->depends('outbox seeded when shop created');
+
+test('second wave cannot be edited once it started sending', function (Shop $shop) {
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    $parent->secondWave->update(['state' => MailshotStateEnum::SENDING, 'start_sending_at' => now()]);
+
+    expect(fn () => UpdateMailshotSecondWave::make()->handle($parent->refresh(), ['subject' => 'Too late', 'send_delay_hours' => 4]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+})->depends('outbox seeded when shop created');
+
+test('second wave with a placeholder subject is not sent and stays ready', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    $parent->update(['subject' => 'Mailshot '.$parent->created_at->format('j M Y')]);
+    markParentMailshotSent($parent)->update(['is_second_wave_enabled' => true]);
+
+    RunMailshotSecondWave::run();
+
+    $secondWave = $parent->secondWave->refresh();
+    expect($secondWave->state)->toBe(MailshotStateEnum::READY)
+        ->and($secondWave->start_sending_at)->toBeNull();
+    Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotSecondWaveRecipients::class);
+
+    $parent->update(['subject' => 'Autumn offers']);
+    RunMailshotSecondWave::run();
+
+    $secondWave->refresh();
+    expect($secondWave->state)->toBe(MailshotStateEnum::SENDING)
+        ->and($secondWave->subject)->toBe('Autumn offers (2nd)');
+    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotSecondWaveRecipients::class);
+})->depends('outbox seeded when shop created');
+
+test('run mailshot second wave twice prepares recipients once', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    markParentMailshotSent($parent)->update(['is_second_wave_enabled' => true]);
+
+    RunMailshotSecondWave::run();
+    RunMailshotSecondWave::run();
+
+    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotSecondWaveRecipients::class && $job->getParameters()[0]->is($parent->secondWave));
+    expect(Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotSecondWaveRecipients::class)->count())->toBe(1);
+})->depends('outbox seeded when shop created');
+
+test('switching the second wave off after the parent is sent stops it, and switching on is refused', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = markParentMailshotSent(createMarketingMailshotWithSecondWave($shop));
+    $parent->update(['is_second_wave_enabled' => true]);
+
+    $parent = SetMailshotSecondWaveStatus::make()->handle($parent, ['status' => false]);
+
+    expect($parent->is_second_wave_enabled)->toBeFalse()
+        ->and($parent->secondWave)->toBeNull();
+    $this->assertSoftDeleted(Mailshot::withTrashed()->where('parent_mailshot_id', $parent->id)->first());
+
+    RunMailshotSecondWave::run();
+    Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotSecondWaveRecipients::class);
+
+    expect(fn () => SetMailshotSecondWaveStatus::make()->handle($parent, ['status' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+})->depends('outbox seeded when shop created');
+
+test('second wave cannot be switched off once it started sending', function (Shop $shop) {
+    $parent = markParentMailshotSent(createMarketingMailshotWithSecondWave($shop));
+    $parent->update(['is_second_wave_enabled' => true]);
+    $parent->secondWave->update(['state' => MailshotStateEnum::SENDING, 'start_sending_at' => now()]);
+
+    expect(fn () => SetMailshotSecondWaveStatus::make()->handle($parent->refresh(), ['status' => false]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($parent->refresh()->is_second_wave_enabled)->toBeTrue();
+})->depends('outbox seeded when shop created');
+
+test('switching the second wave on or off is recorded in the audit log', function (Shop $shop) {
+    Mailshot::enableAuditing();
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    $parent->audits()->update(['created_at' => now()->subMinute()]);
+
+    SetMailshotSecondWaveStatus::make()->handle($parent, ['status' => false]);
+
+    $audit = $parent->audits()->where('event', 'updated')->latest('id')->first();
+    expect($audit->old_values['is_second_wave_enabled'])->toBeTrue()
+        ->and($audit->new_values['is_second_wave_enabled'])->toBeFalse();
+})->depends('outbox seeded when shop created');
+
+test('second wave recipients exclude real opens and clicks even when the state was reset, keep scanner clicks', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    $parent->update(['recipients_recipe' => ['all_customers' => ['value' => true]]]);
+
+    $customers = collect(['untouched', 'opened', 'clicked', 'scanner'])->mapWithKeys(function (string $behaviour) use ($shop, $parent) {
+        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => "wave-{$behaviour}@example.com"]));
+        $customer->comms()->update(['is_subscribed_to_marketing' => true]);
+
+        $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $parent,
+            $customer,
+            ['email_address' => "wave-{$behaviour}@example.com"]
+        );
+        $dispatchedEmail->update(['state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::DELIVERED, 'sent_at' => now()->subHours(3)]);
+        $parent->recipients()->create([
+            'dispatched_email_id' => $dispatchedEmail->id,
+            'recipient_type'      => 'Customer',
+            'recipient_id'        => $customer->id,
+            'recipient_name'      => $customer->name,
+            'channel'             => 1,
+        ]);
+
+        $eventType = match ($behaviour) {
+            'opened' => EmailTrackingEventTypeEnum::OPENED,
+            'clicked', 'scanner' => EmailTrackingEventTypeEnum::CLICKED,
+            default => null,
+        };
+        if ($eventType) {
+            $dispatchedEmail->emailTrackingEvents()->create([
+                'type'       => $eventType,
+                'data'       => [],
+                'is_scanner' => $behaviour === 'scanner',
+                'created_at' => now()->subHours(2),
+            ]);
+        }
+
+        return [$behaviour => $customer->id];
+    });
+
+    markParentMailshotSent($parent)->update(['is_second_wave_enabled' => true]);
+
+    PrepareMailshotSecondWaveRecipients::make()->handle($parent->secondWave->refresh());
+
+    $customerIds = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessSendMailshot::class)
+        ->flatMap(fn ($job) => $job->getParameters()[1])
+        ->all();
+
+    expect($customerIds)->toContain($customers['untouched'], $customers['scanner'])
+        ->and($customerIds)->not->toContain($customers['opened'])
+        ->and($customerIds)->not->toContain($customers['clicked']);
+})->depends('outbox seeded when shop created');
+
+test('process send mailshot run twice for the same chunk stores one recipient and sends once', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = createMarketingMailshotWithSecondWave($shop);
+
+    ProcessSendMailshot::make()->handle($parent->id, [$this->customer->id]);
+    ProcessSendMailshot::make()->handle($parent->id, [$this->customer->id]);
+
+    $recipientsPerChannel = $parent->channels()->get()
+        ->map(fn ($channel) => $parent->recipients()->where('channel', $channel->id)->count())
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($parent->recipients()->count())->toBe(1)
+        ->and($parent->dispatchedEmails()->count())->toBe(1)
+        ->and($recipientsPerChannel)->toBe([0, 1]);
+})->depends('outbox seeded when shop created');
+
+test('process send mailshot drops the dispatched email when the recipient row already exists', function (Shop $shop) {
+    Queue::fake();
+
+    $parent = createMarketingMailshotWithSecondWave($shop);
+
+    \App\Actions\Comms\Mailshot\StoreMailshotRecipient::mock()
+        ->shouldReceive('handle')
+        ->andThrow(new \Illuminate\Database\UniqueConstraintViolationException('pgsql', 'insert', [], new \Exception('duplicate')));
+
+    ProcessSendMailshot::make()->handle($parent->id, [$this->customer->id]);
+
+    expect($parent->dispatchedEmails()->count())->toBe(0)
+        ->and($parent->recipients()->count())->toBe(0);
+})->depends('outbox seeded when shop created');
+
+test('second wave routes need mailshot permission and the mailshot of the route shop', function (Shop $shop) {
+    $parent    = createMarketingMailshotWithSecondWave($shop);
+    $otherShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $post      = fn (Shop $routeShop) => route('grp.models.shop.mailshot.second-wave', [$routeShop->id, $parent->id]);
+    $patch     = fn (Shop $routeShop) => route('grp.models.shop.mailshot.second-wave.update', [$routeShop->id, $parent->id]);
+
+    $this->post($post($otherShop), ['status' => false])->assertNotFound();
+    $this->patch($patch($otherShop), ['subject' => 'Hijack', 'send_delay_hours' => 2])->assertNotFound();
+
+    actingAs(\App\Models\SysAdmin\User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
+
+    $this->post($post($shop), ['status' => false])->assertForbidden();
+    $this->patch($patch($shop), ['subject' => 'Hijack', 'send_delay_hours' => 2])->assertForbidden();
+
+    expect($parent->refresh()->is_second_wave_enabled)->toBeTrue()
+        ->and($parent->secondWave->subject)->toBe('Autumn offers (2nd)');
+
+    actingAs($this->user);
+    $this->patch($patch($shop), ['subject' => 'Allowed', 'send_delay_hours' => 2])->assertRedirect();
+    expect($parent->secondWave->refresh()->subject)->toBe('Allowed');
+})->depends('outbox seeded when shop created');
+
+test('preparing second wave recipients sends nothing for a trashed wave or when the parent switched it off', function (Shop $shop) {
+    Queue::fake();
+
+    $parent   = createMarketingMailshotWithSecondWave($shop);
+    $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'wave-bail@example.com']));
+    $customer->comms()->update(['is_subscribed_to_marketing' => true]);
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle($parent, $customer, ['email_address' => 'wave-bail@example.com']);
+    $dispatchedEmail->update(['state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::DELIVERED, 'sent_at' => now()->subHours(3)]);
+    $parent->recipients()->create([
+        'dispatched_email_id' => $dispatchedEmail->id,
+        'recipient_type'      => 'Customer',
+        'recipient_id'        => $customer->id,
+        'recipient_name'      => $customer->name,
+        'channel'             => 1,
+    ]);
+    markParentMailshotSent($parent);
+
+    $parent->update(['is_second_wave_enabled' => false]);
+    PrepareMailshotSecondWaveRecipients::make()->handle($parent->secondWave->refresh());
+
+    $parent->update(['is_second_wave_enabled' => true]);
+    $parent->secondWave->delete();
+    PrepareMailshotSecondWaveRecipients::make()->handle(Mailshot::withTrashed()->where('parent_mailshot_id', $parent->id)->first());
+
+    Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessSendMailshot::class);
+})->depends('outbox seeded when shop created');
+
+test('a long parent subject is cut so the second wave subject fits', function (Shop $shop) {
+    $parent = createMarketingMailshotWithSecondWave($shop);
+
+    UpdateMailshot::make()->action($parent, ['subject' => str_repeat('a', 255)]);
+
+    $secondWave = $parent->secondWave->refresh();
+    expect(strlen($secondWave->subject))->toBe(255)
+        ->and($secondWave->subject)->toEndWith(' (2nd)')
+        ->and($secondWave->email->subject)->toBe($secondWave->subject);
+})->depends('outbox seeded when shop created');
+
+test('the database refuses a second recipient row for the same mailshot and customer', function (Shop $shop) {
+    $parent = createMarketingMailshotWithSecondWave($shop);
+    $rows   = [];
+
+    foreach ([1, 2] as $number) {
+        $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle($parent, $this->customer, ['email_address' => "duplicate-{$number}@example.com"]);
+        $rows[]          = [
+            'mailshot_id'         => $parent->id,
+            'dispatched_email_id' => $dispatchedEmail->id,
+            'recipient_type'      => 'Customer',
+            'recipient_id'        => $this->customer->id,
+            'channel'             => 1,
+        ];
+    }
+
+    DB::table('mailshot_recipients')->insert($rows[0]);
+
+    expect(fn () => DB::table('mailshot_recipients')->insert($rows[1]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+})->depends('outbox seeded when shop created')->skip('Needs the test database dumps regenerated with the mailshot_recipients unique index');
+
 test('store mailshot template uses default template data', function (Shop $shop) {
     $defaultTemplate = $shop->group->emailTemplates()
         ->where('builder', EmailTemplateBuilderEnum::BEEFREE->value)
@@ -2058,9 +2360,10 @@ test('UI show mailshot', function (Mailshot $mailshot) {
 })->depends('create mailshot with recipe for filters');
 
 test('index mailshot recipients', function (Mailshot $mailshot) {
+    $recipient       = StoreCustomer::make()->action($mailshot->shop, Customer::factory()->definition());
     $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
         $mailshot,
-        $this->customer,
+        $recipient,
         ['email_address' => 'index-recipient@example.com']
     );
     $channel = \App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel::run($mailshot, [
@@ -2070,8 +2373,8 @@ test('index mailshot recipients', function (Mailshot $mailshot) {
     StoreMailshotRecipient::make()->handle($mailshot, [
         'dispatched_email_id' => $dispatchedEmail->id,
         'recipient_type'      => 'Customer',
-        'recipient_id'        => $this->customer->id,
-        'recipient_name'      => $this->customer->name,
+        'recipient_id'        => $recipient->id,
+        'recipient_name'      => $recipient->name,
         'channel'             => $channel->id,
     ]);
 
@@ -3415,6 +3718,27 @@ test('a spam complaint flags the email and takes the customer off newsletters an
     expect($dispatchedEmail->refresh()->mask_as_spam)->toBeTrue()
         ->and($comms->is_subscribed_to_newsletter)->toBeFalse()
         ->and($comms->is_subscribed_to_marketing)->toBeFalse();
+});
+
+test('a click after a spam complaint keeps the spam mark', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'complainer-clicker@example.com']
+    );
+    $dispatchedEmail->update(['ses_id' => $sesId = 'ses-click-after-spam-'.uniqid(), 'state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SPAM]);
+
+    $sesNotification = \App\Models\Comms\SesNotification::create([
+        'message_id' => $sesId,
+        'data'       => ['eventType' => 'Click', 'click' => ['timestamp' => now()->toIso8601String(), 'link' => 'https://example.com', 'ipAddress' => '203.0.113.9', 'userAgent' => 'test']],
+    ]);
+
+    ProcessSesNotification::run($sesNotification);
+
+    expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SPAM)
+        ->and($dispatchedEmail->emailTrackingEvents()->where('type', 'clicked')->count())->toBe(1);
 });
 
 test('process ses notification deletes itself when no matching dispatched email', function () {

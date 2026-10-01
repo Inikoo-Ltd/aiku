@@ -15,7 +15,7 @@ library.add(faCheck, faExclamation, faInfo, faPlay)
 // Props for dynamic behavior
 const props = withDefaults(
 	defineProps<{
-		showRedBorder: boolean
+		showRedBorder?: boolean
 		widget: {
 			value: string
 			description: string

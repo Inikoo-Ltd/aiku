@@ -8,7 +8,9 @@
 
 namespace App\Actions\Retina;
 
+use Illuminate\Database\Eloquent\Collection;
 use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
@@ -26,14 +28,8 @@ class GetRetinaPaymentMethods
 
         $paymentMethodsData = [];
 
-        $paymentAccountShops = $order->shop->paymentAccountShops()
-            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
-            ->where('show_in_checkout', true)
-            ->orderby('checkout_display_position')
-            ->get();
-
         /** @var PaymentAccountShop $paymentAccountShop */
-        foreach ($paymentAccountShops as $paymentAccountShop) {
+        foreach ($this->checkoutPaymentAccountShops($order) as $paymentAccountShop) {
             $paymentAccountShopData = GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop, $orderPaymentApiPoint);
 
 
@@ -53,5 +49,34 @@ class GetRetinaPaymentMethods
         ]);
 
         return $paymentMethods;
+    }
+
+    /**
+     * The ways this basket can be paid. Pastpay reserves and cash on delivery collects the whole
+     * invoice when the goods are sent, which cannot take a deposit now and a balance later; a bank
+     * transfer arrives after the order is placed, so it cannot be the made-to-order deposit taken at
+     * checkout. A basket with pre-order lines offers nothing until the terms are accepted (HELP-3432).
+     *
+     * @return Collection<int, PaymentAccountShop>
+     */
+    public function checkoutPaymentAccountShops(Order $order): Collection
+    {
+        $basketPreOrders  = $order->shop->hasPreOrders() && !$order->preOrder ? GetBasketPreOrders::run($order) : null;
+        if ($basketPreOrders && $basketPreOrders['has_pre_orders'] && !$basketPreOrders['is_accepted']) {
+            return new Collection();
+        }
+
+        $hasPreOrders     = $order->preOrder || ($basketPreOrders['has_pre_orders'] ?? false);
+        $excludedPayments = $hasPreOrders ? [PaymentAccountTypeEnum::PASTPAY, PaymentAccountTypeEnum::CASH_ON_DELIVERY] : [];
+        if ($order->preOrder || ($basketPreOrders['deferred_amount'] ?? 0) > 0) {
+            $excludedPayments[] = PaymentAccountTypeEnum::BANK;
+        }
+
+        return $order->shop->paymentAccountShops()
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->where('show_in_checkout', true)
+            ->when($excludedPayments, fn ($query) => $query->whereNotIn('type', $excludedPayments))
+            ->orderby('checkout_display_position')
+            ->get();
     }
 }

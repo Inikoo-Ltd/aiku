@@ -16,10 +16,10 @@ import axios from "axios"
 import { set } from "lodash-es"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
-import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
+import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
@@ -68,6 +68,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 	<Head :title="trans('Dashboard')" />
 	<div>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
+		<ShopMonthTarget
+			v-if="props.dashboard?.super_blocks?.[0]?.month_target"
+			:month-target="props.dashboard.super_blocks[0].month_target"
+			:year-target="props.dashboard.super_blocks[0].year_target"
+		/>
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>
@@ -88,13 +93,6 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
-		/>
-
-		<DashboardWidget
-			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="mt-12"
-			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
-			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>
 	</div>
 </template>

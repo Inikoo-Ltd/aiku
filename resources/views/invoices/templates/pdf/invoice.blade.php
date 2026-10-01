@@ -304,7 +304,7 @@
 
 @php($hidePriceQtyColumns = $isRefund && $transactions->every(fn ($t) => $t->is_refund && !($t->net_amount == 0 && $t->tax_amount != 0) && refundQuantityLabel($t->quantity, soldPackUnits($t->historicAsset?->units, $t->model?->units)) === null))
 @php($isTaxOnlyRefund = $isRefund && $invoice->is_tax_only)
-@php($showDiscountColumn = !empty($show_discounts) && !$hidePriceQtyColumns && !$isTaxOnlyRefund)
+@php($showDiscountColumn = !empty($show_discounts) && !$isRefund)
 @php($exportByTariffCode = !empty($export_by_tariff_code) && $tariffExportRows->isNotEmpty())
 @php($totalsFillerColspan = $exportByTariffCode ? 3 : ($hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4)))
 @php($totalsLabelColspan = $showDiscountColumn || $exportByTariffCode ? 2 : 1)
@@ -391,6 +391,10 @@
                             @if(!empty($show_batch_code) && !empty($transaction->batch_codes))
                                 <br>
                                 {{ __('Batch Codes') }}: {{ $transaction->batch_codes }}
+                            @endif
+                            @if($invoice->order?->preOrder && $preOrderNote = \App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote(data_get($transaction->transaction?->data, 'pre_order')))
+                                <br>
+                                {{ __('Pre-order') }}: {{ $preOrderNote }}
                             @endif
                             @if($rrp && $transaction->model?->rrp)
                                 <br>
@@ -798,6 +802,17 @@
 @endif
 <br>
 <br>
+
+@if($invoice->order?->preOrder?->terms)
+    <div style="font-size: 8pt;">
+        <strong>{{ __('Pre-order terms') }}</strong>
+        <ul>
+            @foreach($invoice->order->preOrder->terms as $term)
+                <li>{{ $term }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 
 @if($invoice->footer)
     <div>

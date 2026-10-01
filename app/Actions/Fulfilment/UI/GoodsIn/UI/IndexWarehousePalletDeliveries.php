@@ -97,12 +97,23 @@ class IndexWarehousePalletDeliveries extends OrgAction
         $queryBuilder = QueryBuilder::for(PalletDelivery::class);
         $queryBuilder->leftJoin('pallet_delivery_stats', 'pallet_deliveries.id', '=', 'pallet_delivery_stats.pallet_delivery_id');
         $queryBuilder->where('pallet_deliveries.warehouse_id', $warehouse->id);
-        $queryBuilder->whereNotIn('pallet_deliveries.state', [
-            PalletDeliveryStateEnum::IN_PROCESS,
-            PalletDeliveryStateEnum::SUBMITTED,
-            PalletDeliveryStateEnum::BOOKED_IN,
-            PalletDeliveryStateEnum::NOT_RECEIVED
-        ]);
+        if (request()->has(($prefix ? $prefix.'_' : '').'elements.state')) {
+            foreach ($this->getElementGroups($warehouse) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
+        } else {
+            $queryBuilder->whereNotIn('pallet_deliveries.state', [
+                PalletDeliveryStateEnum::IN_PROCESS,
+                PalletDeliveryStateEnum::SUBMITTED,
+                PalletDeliveryStateEnum::BOOKED_IN,
+                PalletDeliveryStateEnum::NOT_RECEIVED
+            ]);
+        }
 
 
         if ($this->restriction) {
@@ -141,6 +152,7 @@ class IndexWarehousePalletDeliveries extends OrgAction
             ->defaultSort('reference')
             ->allowedSorts(['reference'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
+            ->withBetweenDates(['booked_in_at'], $prefix)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

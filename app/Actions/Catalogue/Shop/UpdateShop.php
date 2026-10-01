@@ -226,6 +226,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
         }
 
+        foreach (array_keys(Shop::PRE_ORDER_DEFAULTS) as $preOrderSetting) {
+            if (Arr::has($modelData, "pre_order_$preOrderSetting")) {
+                data_set($modelData, "settings.pre_orders.$preOrderSetting", Arr::pull($modelData, "pre_order_$preOrderSetting"));
+            }
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -266,6 +272,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'related_product_follow_master')) {
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'shopkeeper_in_charge_id')) {
+            data_set($modelData, 'settings.catalog.shopkeeper_in_charge_id', Arr::pull($modelData, 'shopkeeper_in_charge_id'));
         }
 
         if (Arr::has($modelData, 'related_product_categories_follow_master')) {
@@ -405,6 +415,24 @@ class UpdateShop extends OrgAction
                 $channels = array_values(array_filter((array)Arr::pull($modelData, 'chat_slack_channels')));
                 data_set($settings, 'chat.slack_channels', $channels);
             }
+
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
+
+        if (Arr::exists($modelData, 'gmail_showroom_senders')) {
+            $senders = array_values(array_filter(array_map(
+                'strtolower',
+                (array) Arr::pull($modelData, 'gmail_showroom_senders')
+            )));
+
+            $settings = $shop->settings ?? [];
+            $labeledSenders = Arr::get($settings, 'gmail.labeled_senders', []);
+            $labeledSenders = array_filter($labeledSenders, fn ($label) => $label !== 'aiku/showroom');
+            foreach ($senders as $sender) {
+                $labeledSenders[$sender] = 'aiku/showroom';
+            }
+            data_set($settings, 'gmail.labeled_senders', $labeledSenders);
 
             $shop->settings = $settings;
             $shop->saveQuietly();
@@ -951,6 +979,18 @@ class UpdateShop extends OrgAction
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'gmail_showroom_senders'                                  => [
+                'sometimes',
+                'nullable',
+                'array',
+                function (string $attribute, mixed $senders, Closure $fail) {
+                    foreach ((array) $senders as $sender) {
+                        if (! is_string($sender) || ! preg_match('/^[^@\s]*@[^@\s]+\.[^@\s]+$/', $sender)) {
+                            $fail(__('":sender" is not an email address or @domain', ['sender' => is_string($sender) ? $sender : '']));
+                        }
+                    }
+                },
+            ],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
@@ -985,6 +1025,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
+            'shopkeeper_in_charge_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
@@ -1016,6 +1057,23 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
+            'pre_order_enabled'                                       => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_full_payment_below'                            => ['sometimes', 'numeric', 'min:0'],
+            'pre_order_default_lead_time_days'                        => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'pre_order_dispatch_range_weeks'                          => ['sometimes', 'integer', 'min:0', 'max:52'],
+            'pre_order_balance_due_days'                              => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_first_reminder_day'                    => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_second_reminder_day'                   => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_cancel_after_days'                     => ['sometimes', 'integer', 'min:1', 'max:180'],
+            'pre_order_free_cancellation_working_days'                => ['sometimes', 'integer', 'min:0', 'max:30'],
+            'pre_order_late_cancellation_days'                        => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'pre_order_pallet_weight_kg'                              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_longest_side_cm'                        => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_quote_tolerance_percentage'             => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_pallet_rates'                                  => ['sometimes', 'array'],
+            'pre_order_pallet_rates.*.country_code'                   => ['required', 'string', 'size:2'],
+            'pre_order_pallet_rates.*.amount'                         => ['required', 'numeric', 'min:0'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],

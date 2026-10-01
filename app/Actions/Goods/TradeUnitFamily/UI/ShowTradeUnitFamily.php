@@ -12,6 +12,7 @@ use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitEditSections;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
@@ -29,6 +30,7 @@ class ShowTradeUnitFamily extends OrgAction
 {
     use WithGoodsAuthorisation;
     use HasBucketAttachment;
+    use WithTradeUnitEditSections;
 
     public function handle(TradeUnitFamily $tradeUnitFamily): TradeUnitFamily
     {
@@ -105,6 +107,7 @@ class ShowTradeUnitFamily extends OrgAction
                     'navigation' => TradeUnitFamilyTabsEnum::navigation()
 
                 ],
+                'bulk_edit' => $this->canEdit ? $this->getTradeUnitsBulkEdit() : null,
 
                 TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
                 fn () => $this->getShowcase($tradeUnitFamily)

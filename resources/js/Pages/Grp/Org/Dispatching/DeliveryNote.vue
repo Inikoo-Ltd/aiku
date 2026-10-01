@@ -35,7 +35,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
-import Timeline from "@/Components/Utils/Timeline.vue";
+import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
 import { computed, provide, ref, watch, onMounted, onUnmounted, inject } from "vue";
 import type { Component } from "vue";
@@ -67,6 +67,7 @@ import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
+import ButtonPutBackIncompleteSets from "@/Components/DeliveryNote/ButtonPutBackIncompleteSets.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
@@ -888,7 +889,6 @@ const stopSocketListener = () => {
 					method: 'patch'
 				}"
 				@error="(e) => {
-					console.log('eeee', e)
 					notify({
 						title: ctrans('Failed to set return'),
 						text: e.message || ctrans('Please try again later or contact administrator'),
@@ -934,21 +934,13 @@ const stopSocketListener = () => {
 					</ToggleSwitch>
 				</div>
 			</div>
-			<!-- Button: Download PDF -->
-			<!-- <div class="relative" v-if="route().params.deliveryNote">
-				<a	v-if="route().params.deliveryNote"
-					:href="
-						route('grp.pdfs.delivery-notes', {
-							deliveryNote: route().params.deliveryNote,
-						})
-					"
-					as="a"
-					target="_blank"
-					class="flex items-center"
-					v-tooltip="ctrans('Download PDF of this Delivery Note')">
-					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-				</a>
-			</div> -->
+			<a v-if="route().params.deliveryNote"
+				:href="route('grp.pdfs.packing-lists', { deliveryNote: route().params.deliveryNote })"
+				target="_blank"
+				rel="noopener noreferrer"
+				v-tooltip="ctrans('Download the packing list')">
+				<Button :label="ctrans('Packing list')" icon="fal fa-file-pdf" type="tertiary" />
+			</a>
 		</template>
 
 		<template #other>
@@ -1042,6 +1034,10 @@ const stopSocketListener = () => {
 						class="whitespace-nowrap" />
 				</template>
 			</ModalConfirmation>
+		</template>
+
+		<template #button-put-back-incomplete-sets="{ action }">
+			<ButtonPutBackIncompleteSets :action="action" />
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
@@ -1153,7 +1149,7 @@ const stopSocketListener = () => {
 
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-		<Timeline
+		<TimelineResponsive
 			:options="timelines"
 			:state="delivery_note.state"
 			:slidesPerView="6"
@@ -1236,6 +1232,7 @@ const stopSocketListener = () => {
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
+			scrollOnMobile
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes

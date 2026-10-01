@@ -27,6 +27,7 @@ import {
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
+import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -44,6 +45,8 @@ import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
+import { useWhatsappCall } from "@/Composables/useWhatsappCall"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -103,6 +106,8 @@ const emit = defineEmits(["back", "messages-read", "assign-self-success", "close
 
 const isSpamMarking = ref(false)
 
+const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
+
 const markSpam = async () => {
     if (!props.session?.ulid || isSpamMarking.value) return
 
@@ -150,6 +155,24 @@ const chatSession = computed(() => props.session)
 const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
 )
+const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
+)
+const onSuggestedAction = async (action: "close" | "wait") => {
+    if (action === "wait") {
+        setWaiting(72)
+        return
+    }
+    if (!chatSession.value?.ulid) return
+    await axios.patch(route("grp.org.chat.agents.whatsapp.sessions.close", [(chatSession.value as any)?.organisation?.id, chatSession.value.ulid]))
+    emit("close-session")
+}
+const onWaitPicked = (event: Event) => {
+    const select = event.target as HTMLSelectElement
+    const hours = Number(select.value)
+    select.value = ""
+    if (hours) setWaiting(hours)
+}
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
@@ -177,7 +200,6 @@ const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.valu
 
 const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
-const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
 const isReopening = ref(false)
 
@@ -206,14 +228,6 @@ const claimChat = async (
         flag.value = false
     }
 }
-
-const assignSelf = () =>
-    claimChat(
-        "grp.org.chat.agents.whatsapp.assign.self",
-        "post",
-        isAssigningSelf,
-        ctrans("Failed to assign chat")
-    )
 
 const takeoverChat = () =>
     claimChat(
@@ -362,7 +376,6 @@ let dragDepth = 0
 const canAttach = computed(
     () => !props.readOnly
         && !isClosed.value
-        && !isWaiting.value
         && isMyChat.value
         && !hasTemplate.value
         && !templateOnly.value
@@ -568,6 +581,7 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
     messagesLocal.value.push(optimisticMessage)
     scrollBottom()
     isSending.value = true
+    const claimsChat = isWaiting.value
 
     try {
         const { data } = await axios.post(
@@ -582,6 +596,10 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
         const index = messagesLocal.value.findIndex((m) => m._tempId === optimisticMessage._tempId)
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
+        }
+
+        if (claimsChat) {
+            emit("assign-self-success")
         }
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
@@ -598,6 +616,11 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 
 const sendMessage = async () => {
     if (isSending.value) return
+
+    if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
+        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        return
+    }
 
     if (hasTemplate.value) {
         await sendTemplateMessage()
@@ -823,6 +846,7 @@ let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
 let onClosing: ((payload: any) => void) | null = null
+let onCall: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -830,9 +854,11 @@ const stopSocket = () => {
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
     if (onClosing) chatChannel?.stopListening(".closing", onClosing)
     onClosing = null
+    if (onCall) chatChannel?.stopListening(".call", onCall)
     onMessage = null
     onReaction = null
     onStatus = null
+    onCall = null
     chatChannel = null
 }
 
@@ -868,6 +894,7 @@ const initSocket = () => {
         }
 
         closingAt.value = null
+        onCustomerWaitMessage(message)
 
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
         messagesLocal.value = messagesLocal.value.filter(
@@ -923,11 +950,19 @@ const initSocket = () => {
         }
     }
 
+    onCall = (payload: any) => {
+        if (!payload?.id) return
+        const isCustomerService = (layout.user?.customer_service_shops ?? []).includes(chatSession.value?.shop?.id)
+        if (payload.direction === "user_initiated" && !isCustomerService) return
+        applyCallBroadcast(payload, props.organisationSlug)
+    }
+
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
     onClosing = onClosingEvent
     chatChannel.listen(".closing", onClosing)
+    chatChannel.listen(".call", onCall)
 }
 
 watch(
@@ -1007,6 +1042,18 @@ onUnmounted(() => {
                         👍 {{ closingIn }}
                         <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
+                    <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
+                        v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
+                        ⏳ {{ ctrans("Waiting for customer, closes in :time", { time: waitingIn }) }}
+                        <button v-if="isMyChat && !isClosed && !readOnly" type="button" class="ml-1 underline hover:text-amber-800" @click="setWaiting(null)">{{ ctrans("Stop waiting") }}</button>
+                    </span>
+                    <select v-else-if="isMyChat && !isClosed && !readOnly" value=""
+                        class="shrink-0 cursor-pointer border-0 bg-transparent py-0 pl-0 pr-6 text-[11px] text-gray-400 hover:text-gray-600 focus:ring-0"
+                        v-tooltip="ctrans('Keep it open while the customer gets back to us: it shows here as waiting and closes by itself if they write nothing.')"
+                        @change="onWaitPicked">
+                        <option value="" disabled>⏳ {{ ctrans("Wait for reply") }}</option>
+                        <option v-for="option in waitingOptions" :key="option.hours" :value="option.hours">{{ option.label() }}</option>
+                    </select>
                 </div>
             </div>
 
@@ -1048,6 +1095,10 @@ onUnmounted(() => {
                 </template>
             </ModalConfirmationDelete>
         </header>
+
+        <div v-if="!readOnly" class="px-3 pt-2 empty:hidden">
+            <WhatsappCallBar :organisation="props.organisationSlug" />
+        </div>
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
@@ -1115,6 +1166,7 @@ onUnmounted(() => {
 
         <!-- Footer: closed banner -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1133,23 +1185,6 @@ onUnmounted(() => {
                     size="xs"
                     :label="ctrans('Reopen')"
                     :icon="faRotateRight"
-                />
-            </div>
-        </footer>
-
-        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
-        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
-                <div class="text-xs text-gray-600">
-                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
-                </div>
-                <Button
-                    @click="assignSelf"
-                    :loading="isAssigningSelf"
-                    style="primary"
-                    size="xs"
-                    :label="ctrans('Assign to me')"
-                    :icon="faUser"
                 />
             </div>
         </footer>
@@ -1209,7 +1244,7 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" @action="onSuggestedAction" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"

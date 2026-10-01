@@ -18,7 +18,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from '@kyvg/vue3-notification'
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
@@ -142,8 +142,8 @@ const onSubmitAttach = async ({
         onSuccess: () => {
             closeModal()
             notify({
-                title: trans('Success'),
-                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                title: ctrans('Success'),
+                text: ctrans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -151,8 +151,8 @@ const onSubmitAttach = async ({
         onError: (errors: any) => {
             errorMessage.value = errors
             notify({
-                title: trans('Something went wrong.'),
-                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                title: ctrans('Something went wrong.'),
+                text: ctrans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -191,20 +191,19 @@ const SaveOrder = () => {
 
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully reordered the products"),
+                    title: ctrans("Success!"),
+                    text: ctrans("Successfully reordered the products"),
                     type: "success"
                 })
             },
 
             onError: (errors: any) => {
-                console.log(errors)
 
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text:
                         errors?.message ||
-                        trans("Failed to reorder products"),
+                        ctrans("Failed to reorder products"),
                     type: "error"
                 })
             },
@@ -261,7 +260,7 @@ watch(() => currentTab.value, (tab) => {
             <template v-if="currentTab === 'pricing'">
                 <Button
                     @click="() => pricingBulkField = 'master_prices'"
-                    :label="trans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
+                    :label="ctrans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
                     :disabled="!compSelectedProductsId.length"
                     type="primary"
                     icon="fal fa-pencil"
@@ -269,7 +268,7 @@ watch(() => currentTab.value, (tab) => {
                 />
                 <Button
                     @click="() => pricingBulkField = 'master_rrps'"
-                    :label="trans('Bulk edit RRPs') + ` (${compSelectedProductsId?.length})`"
+                    :label="ctrans('Bulk edit RRPs') + ` (${compSelectedProductsId?.length})`"
                     :disabled="!compSelectedProductsId.length"
                     type="primary"
                     icon="fal fa-pencil"
@@ -279,7 +278,7 @@ watch(() => currentTab.value, (tab) => {
             <template v-if="currentTab === 'bulk_edit'">
                 <Button
                     @click="() => bulkEditSaveSignal++"
-                    :label="trans('Save changes') + ` (${bulkEditState.dirty})`"
+                    :label="ctrans('Save changes') + ` (${bulkEditState.dirty})`"
                     :disabled="!bulkEditState.dirty || bulkEditState.saving"
                     :loading="bulkEditState.saving"
                     type="save"
@@ -287,7 +286,7 @@ watch(() => currentTab.value, (tab) => {
                 />
                 <Button
                     @click="() => taxBulkSignal++"
-                    :label="trans('Set tax for selected') + ` (${compSelectedProductsId?.length})`"
+                    :label="ctrans('Set tax for selected') + ` (${compSelectedProductsId?.length})`"
                     :disabled="!compSelectedProductsId.length"
                     type="primary"
                     icon="fal fa-pencil"
@@ -300,7 +299,7 @@ watch(() => currentTab.value, (tab) => {
                     label="Attach Products"
                     icon="fal fa-plus"
                     @click="isModalOpen.products.value = true"
-                    :tooltip="trans('Attach products to this collections')"
+                    :tooltip="ctrans('Attach products to this collections')"
                 />
                 <!-- Modal: Product -->
                 <Modal
@@ -309,7 +308,7 @@ watch(() => currentTab.value, (tab) => {
                     width="w-full max-w-6xl"
                 >
                     <ListSelector
-                        :headLabel="`${trans('Add products to collection')}`"
+                        :headLabel="`${ctrans('Add products to collection')}`"
                         :routeFetch="routes.dataList"
                         :isLoadingSubmit="isLoading"
                         @submit="(ids) =>
@@ -362,7 +361,7 @@ watch(() => currentTab.value, (tab) => {
         :is_dropship="route().params['masterShop'] == 'ds'"
     />
 
-    <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
+    <Dialog :header="ctrans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
         :closable="true" :style="{ width: '500px' }">
         <div class="px-2 space-y-4">
             <!-- Form fields -->

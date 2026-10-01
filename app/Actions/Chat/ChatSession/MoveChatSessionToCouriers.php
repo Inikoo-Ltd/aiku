@@ -100,6 +100,7 @@ class MoveChatSessionToCouriers
         return $chatSession->channel === ChatChannelEnum::EMAIL
             && !$chatSession->web_user_id
             && !$chatSession->is_carrier
+            && !$chatSession->is_colleague
             && $domain !== ''
             && !in_array($domain, SuggestChatSessionCustomer::FREE_MAIL_DOMAINS, true);
     }

@@ -82,6 +82,9 @@ export default ({ mode }) => {
                 : "assets/[name]-[hash][extname]";
             },
             manualChunks(id) {
+              if (id.includes("/private/fa/")) {
+                return "fontawesome-pro";
+              }
               if (id.includes("node_modules") &&
                 !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
                 return id.toString().

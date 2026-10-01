@@ -19,16 +19,7 @@ class DetectLanguage extends OrgAction
 
     public function handle($text, ?Language $languageHint = null): ?Language
     {
-        if ($text == '' || is_numeric($text)) {
-            return null;
-        }
-
-        $guess = GuessLanguage::run($text, null, 0.8);
-        if ($guess) {
-            return $guess;
-        }
-
-        return DetectLanguageWithAI::run($text, $languageHint);
+        return DetectLanguageWithJev::run($text, [$languageHint]);
     }
 
 

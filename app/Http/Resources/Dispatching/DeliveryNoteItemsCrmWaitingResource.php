@@ -76,6 +76,11 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
 
         $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
 
+        $waitingNetAmount = null;
+        if ($this->net_amount !== null && (int) $this->number_skos_in_product === 1 && $this->quantity_required > 0) {
+            $waitingNetAmount = round($this->net_amount * ($this->quantity_waiting_crm ?? 0) / $this->quantity_required, 2);
+        }
+
         return [
             'id'                             => $this->id,
             'is_picked'                      => $isPicked,
@@ -106,6 +111,8 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             'currency_code'                  => $this->currency_code,
             'net_amount'                     => $this->net_amount,
             'net_amount_with_tax'            => $this->net_amount === null ? null : round($this->net_amount * (1 + (float) $this->tax_rate), 2),
+            'waiting_net_amount'             => $waitingNetAmount,
+            'waiting_net_amount_with_tax'    => $waitingNetAmount === null ? null : round($waitingNetAmount * (1 + (float) $this->tax_rate), 2),
         ];
     }
 }

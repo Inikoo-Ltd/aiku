@@ -80,8 +80,11 @@ export const layoutStructure = {
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
-    isShopPage: false as boolean,
-    isFulfilmentPage: false as boolean,
+    order_alerts: null as {
+        shops: Record<number, string[]>
+        sounds: Record<string, string>
+        popup: { show: boolean }
+    } | null,
 
     ticket_badges: null as TicketBadges | null,
     dispatching_waiting_count: 0 as number,

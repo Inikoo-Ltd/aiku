@@ -27,6 +27,9 @@ import Tag from '@/Components/Tag.vue'
 import { Message } from "primevue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import BulkEditSectionsModal from "@/Components/Forms/BulkEditSectionsModal.vue"
+import { TradeUnit } from "@/types/trade-unit"
+import { faPencil, faAtom } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -56,11 +59,20 @@ const props = defineProps<{
   trade_units?: Object
   attachments?:any
   history?: Object
+  bulk_edit?: {
+    sections: Record<string, any>
+  } | null
 }>()
-console.log(props)
+
+const _tableTradeUnits = ref<InstanceType<typeof TableTradeUnits> | null>(null)
+const selectedTradeUnits = ref<TradeUnit[]>([])
+const isBulkEditVisible = ref(false)
 const currentTab = ref(props.tabs.current)
 const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
+const handleTabUpdate = (tabSlug: string) => {
+  selectedTradeUnits.value = []
+  useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
+}
 
 const breakdownRoute = (row: { slug: string | null }) => {
   return row.slug ? route("grp.trade_units.units.show", [row.slug]) : null
@@ -176,13 +188,42 @@ const handleMassAssign = () => {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #otherBefore>
+      <Button
+        v-if="bulk_edit && currentTab === 'trade_units'"
+        v-tooltip="selectedTradeUnits.length ? '' : ctrans('Select trade units in the table first')"
+        :icon="faPencil"
+        :label="selectedTradeUnits.length ? `${ctrans('Bulk Edit')} (${selectedTradeUnits.length})` : ctrans('Bulk Edit')"
+        type="secondary"
+        :disabled="!selectedTradeUnits.length"
+        @click="isBulkEditVisible = true"
+      />
       <Button @click="isModalOpenMassAssign = true" :icon="faHandHoldingMagic" label="Edit Brand/Tag" :style="'secondary'"/>
       <Button @click="isModalOpen = true" :icon="faPlus" label="Trade Unit"/>
     </template>
   </PageHeading>
 
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" />
+  <component
+    :is="component"
+    ref="_tableTradeUnits"
+    :data="props[currentTab]"
+    :tab="currentTab"
+    :isCheckBox="!!bulk_edit && currentTab === 'trade_units'"
+    :salesAnalysisTeaser="sales_analysis_teaser"
+    :breakdownRoute="breakdownRoute"
+    @onSelectTradeUnits="(tradeUnits: TradeUnit[]) => selectedTradeUnits = tradeUnits"
+  />
+
+  <BulkEditSectionsModal
+    v-if="bulk_edit"
+    v-model:visible="isBulkEditVisible"
+    :sections="bulk_edit.sections"
+    :items="selectedTradeUnits"
+    itemsKey="trade_units"
+    :itemsLabel="ctrans('trade units')"
+    :itemsIcon="faAtom"
+    @removeItem="(tradeUnitId: number) => _tableTradeUnits?.deselectTradeUnit(tradeUnitId)"
+  />
   
   <!-- PrimeVue Dialog -->
   <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :contentClass="'w-[40vw] lg:w-[35vw]'"

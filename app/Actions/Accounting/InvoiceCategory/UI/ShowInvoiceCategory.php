@@ -9,10 +9,10 @@
 
 namespace App\Actions\Accounting\InvoiceCategory\UI;
 
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
 use App\Actions\Accounting\InvoiceCategory\WithInvoiceCategorySubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
-use App\Enums\UI\Accounting\InvoiceCategoryTabsEnum;
 use App\Http\Resources\Accounting\InvoiceCategoryResource;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
@@ -46,7 +46,7 @@ class ShowInvoiceCategory extends OrgAction
     public function asController(Organisation $organisation, InvoiceCategory $invoiceCategory, ActionRequest $request): InvoiceCategory
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(InvoiceCategoryTabsEnum::values());
+        $this->initialisation($organisation, $request);
         return $this->handle($invoiceCategory);
     }
 
@@ -85,10 +85,7 @@ class ShowInvoiceCategory extends OrgAction
                         ]
                     ]
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => InvoiceCategoryTabsEnum::navigation()
-                ],
+                'overview'    => GetInvoiceCategoryOverview::run($invoiceCategory),
             ]
         );
     }

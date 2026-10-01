@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ trait WithBasketStockIssues
 {
     /**
      * Lines ordering more than the warehouse shows in stock. Orders are never blocked on stock.
+     * Lines of products offered for pre-order are not an issue, they are sent when goods arrive.
      * A short line is sent as far as possible and the rest credited; an out of stock line has
      * been zeroed by SyncBasketLinesWithProductStock and carries the quantity it will get back.
      *
@@ -24,6 +26,8 @@ trait WithBasketStockIssues
      */
     protected function getBasketStockIssues(Order $order): array
     {
+        $preOrderTransactionIds = array_keys(GetBasketPreOrders::run($order)['lines']);
+
         $lines = DB::table('transactions')
             ->join('assets', 'transactions.asset_id', '=', 'assets.id')
             ->join('products', 'assets.model_id', '=', 'products.id')
@@ -32,6 +36,7 @@ trait WithBasketStockIssues
             ->where('assets.model_type', 'Product')
             ->where('products.is_on_demand', false)
             ->whereNull('transactions.deleted_at')
+            ->whereNotIn('transactions.id', $preOrderTransactionIds)
             ->where(function ($query) {
                 $query->whereColumn('products.available_quantity', '<', 'transactions.quantity_ordered')
                     ->orWhereNotNull('transactions.data->'.SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY);

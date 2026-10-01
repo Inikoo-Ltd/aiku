@@ -178,7 +178,10 @@ class ProcessSesNotification
                 $type = EmailTrackingEventTypeEnum::CLICKED;
 
                 $dispatchedEmailState = DispatchedEmailStateEnum::CLICKED;
-                $notFromStates        = [DispatchedEmailStateEnum::UNSUBSCRIBED];
+                $notFromStates        = [
+                    DispatchedEmailStateEnum::UNSUBSCRIBED,
+                    DispatchedEmailStateEnum::SPAM,
+                ];
 
                 $data = [
                     'v'         => 1,

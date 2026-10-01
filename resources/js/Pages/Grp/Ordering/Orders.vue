@@ -16,7 +16,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle } from "@fal"
+import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle, faFileInvoiceDollar, faBars } from "@fal"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import TableLastOrders from "@/Components/Tables/Grp/Org/Ordering/TableLastOrders.vue"
@@ -29,11 +29,11 @@ import Icon from "@/Components/Icon.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 
-library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle)
+library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle, faFileInvoiceDollar, faBars)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -74,8 +74,8 @@ const orderForm = useForm({
 })
 const canSubmitOrder = computed(() => !!selectedCustomerId.value && !!orderForm.sales_channel_id)
 const createOrderLabel = computed(() => selectedCustomerName.value
-    ? trans('Create Order for :customer', { customer: selectedCustomerName.value })
-    : trans('Create Order'))
+    ? ctrans('Create Order for :customer', { customer: selectedCustomerName.value })
+    : ctrans('Create Order'))
 const closeOrderModal = () => {
     isOrderModalOpen.value = false
     orderForm.reset()
@@ -119,25 +119,25 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="can_add_order" @click="isOrderModalOpen = true" :label="trans('Add Order')" style="create"
+            <Button v-if="can_add_order" @click="isOrderModalOpen = true" :label="ctrans('Add Order')" style="create"
                 icon="plus" />
         </template>
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
-    <Modal :show="isOrderModalOpen" @close="closeOrderModal">
+    <Modal :isOpen="isOrderModalOpen" @onClose="closeOrderModal">
         <h2 class="text-2xl font-bold text-center text-gray-900">{{ ctrans('Create Order') }}</h2>
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
 
             <template v-if="customersRoute">
-                <h2 class="text-lg font-medium text-gray-900">{{ trans('Select Customer') }} <span class="text-red-500">*</span></h2>
-                <p class="mt-1 text-sm text-gray-600">{{ trans('Select the customer this order is created for.') }}</p>
+                <h2 class="text-lg font-medium text-gray-900">{{ ctrans('Select Customer') }} <span class="text-red-500">*</span></h2>
+                <p class="mt-1 text-sm text-gray-600">{{ ctrans('Select the customer this order is created for.') }}</p>
                 <div class="mt-4">
                     <PureMultiselectInfiniteScroll v-model="selectedCustomerId" :fetchRoute="customersRoute"
                         valueProp="id" labelProp="name" labelAdditionalProp="reference"
-                        :placeholder="trans('Select customer')"
+                        :placeholder="ctrans('Select customer')"
                         @selectedObject="(customer: any) => selectedCustomerName = customer?.name ?? null">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4 leading-4 truncate mr-2">

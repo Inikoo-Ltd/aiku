@@ -8,6 +8,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
+use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\Catalogue\Shop;
@@ -18,20 +19,23 @@ class GetShopDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Shop $shop, $fromDate = null, $toDate = null, ?bool $useCache = null, bool $includePartners = false): array
+    /**
+     * Each table is built and cached on its own, so a page only pays for the tables it shows.
+     *
+     * @param  array<int, string>  $keys  shops, brands, departments, sub_departments, platforms
+     */
+    public function handle(Shop $shop, array $keys, $fromDate = null, $toDate = null, ?bool $useCache = null, bool $includePartners = false): array
     {
         $useCache = $useCache ?? true;
-
-        if (!$useCache) {
-            return $this->fetchData($shop, $fromDate, $toDate, $includePartners);
-        }
-
         $cacheKey = $this->getCacheKey($shop, $fromDate, $toDate, $includePartners);
 
-        return Cache::tags(["dashboard-shop-{$shop->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $fromDate, $toDate, $includePartners) {
-                return $this->fetchData($shop, $fromDate, $toDate, $includePartners);
-            });
+        return collect($keys)
+            ->mapWithKeys(fn (string $key) => [
+                $key => $useCache
+                    ? Cache::tags(["dashboard-shop-{$shop->id}"])->remember("$cacheKey:$key", now()->addSeconds(300), fn () => $this->fetchData($key, $shop, $fromDate, $toDate, $includePartners))
+                    : $this->fetchData($key, $shop, $fromDate, $toDate, $includePartners),
+            ])
+            ->all();
     }
 
     protected function getCacheKey(Shop $shop, $fromDate, $toDate, bool $includePartners): string
@@ -45,19 +49,15 @@ class GetShopDashboardTimeSeriesData
         );
     }
 
-    protected function fetchData(Shop $shop, $fromDate, $toDate, bool $includePartners): array
+    protected function fetchData(string $key, Shop $shop, $fromDate, $toDate, bool $includePartners): array
     {
-        $data = [
-            'shops'        => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
-            'brands'       => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
-            'departments'  => GetDepartmentTimeSeriesStats::run($shop, $fromDate, $toDate),
-        ];
-
-        if ($shop->type->value === 'dropshipping') {
-            $data['platforms'] = GetPlatformTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners);
-        }
-
-        return $data;
+        return match ($key) {
+            'shops'           => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
+            'brands'          => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
+            'departments'     => GetDepartmentTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'sub_departments' => GetSubDepartmentTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'platforms'       => $shop->type->value === 'dropshipping' ? GetPlatformTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners) : [],
+        };
     }
 
     public static function clearCache(Shop $shop): void

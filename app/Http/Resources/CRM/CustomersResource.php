@@ -25,6 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $email
  * @property mixed $created_at
  * @property mixed $last_invoiced_at
+ * @property mixed $expected_date_of_next_order
  * @property mixed $sales_all
  * @property mixed $sales_org_currency_all
  * @property mixed $sales_grp_currency_all
@@ -75,6 +76,7 @@ class CustomersResource extends JsonResource
             'number_current_portfolios'       => $this->number_current_portfolios,
             'number_customer_sales_channels'  => $this->number_customer_sales_channels,
             'last_invoiced_at'                => $this->last_invoiced_at,
+            'expected_date_of_next_order'     => $this->expected_date_of_next_order,
             'number_invoices_type_invoice'    => $this->number_invoices_type_invoice,
             /* Only present when the listing is scoped to a traffic source, which joins it in. */
             'attribution_share'               => $this->attribution_share ?? null,

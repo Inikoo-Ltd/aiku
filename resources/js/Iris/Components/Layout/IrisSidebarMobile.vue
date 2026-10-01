@@ -89,7 +89,7 @@ const layout = inject('layout', retinaLayoutStructure)
 const screenType: string = inject('screenType', 'desktop')
 const loadingItemIndex = ref<number | null>(null)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-const onLogout = inject('onLogout', () => console.log('Logout function not injected'))
+const onLogout = inject('onLogout', () => console.warn('Logout function not injected'))
 
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 const closeSidebar = () => {
@@ -112,7 +112,6 @@ const loadingCustomTopIndex = ref<number | null>(null)
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
     isLoadingProductCategory.value = true
-    console.log('url', url)
     router.visit(url, {
         onFinish: () => {
             isLoadingProductCategory.value = false

@@ -83,7 +83,8 @@ trait WithSupplierEditFields
                         'value'       => $supplier->currency_id,
                         'searchable'  => true,
                         'required'    => true,
-                        'mode'        => 'single'
+                        'mode'        => 'single',
+                        'saveConfirmation' => $this->supplierCurrencyChangeConfirmation($supplier),
                     ],
                     'default_product_country_origin' => [
                         'type'        => 'select',
@@ -132,6 +133,36 @@ trait WithSupplierEditFields
                         'label'   => __('Cooling period between orders (days)'),
                         'value'   => Arr::get($supplier->settings, 'cooling_period'),
                         'options' => ['inputType' => 'number']
+                    ],
+                ]
+            ],
+            [
+                'label'  => __('Pre-orders'),
+                'title'  => __('Pre-orders'),
+                'icon'   => 'fal fa-hourglass-half',
+                'fields' => [
+                    'pre_order_lead_time' => [
+                        'type'        => 'input',
+                        'label'       => __('Pre-order lead time'),
+                        'information' => __('From the customer ordering to us dispatching, shown on the website as an estimated dispatch range. Products can set their own.'),
+                        'value'       => Arr::get($supplier->settings, 'pre_order_lead_time'),
+                        'options'     => ['inputType' => 'number']
+                    ],
+                    'pre_order_lead_time_unit' => [
+                        'type'    => 'select',
+                        'label'   => __('Lead time in'),
+                        'options' => [
+                            ['value' => 'days', 'label' => __('Days')],
+                            ['value' => 'weeks', 'label' => __('Weeks')],
+                        ],
+                        'value'   => Arr::get($supplier->settings, 'pre_order_lead_time_unit', 'days'),
+                        'mode'    => 'single'
+                    ],
+                    'pre_order_order_by_date' => [
+                        'type'        => 'date',
+                        'label'       => __('Order by date'),
+                        'information' => __('The date the buying team must place the supplier order for the open pre-orders. If the minimum order is not reached by then, decide whether to order anyway or cancel the pre-orders with a full refund.'),
+                        'value'       => Arr::get($supplier->settings, 'pre_order_order_by_date'),
                     ],
                 ]
             ],
@@ -201,6 +232,35 @@ trait WithSupplierEditFields
                     ],
                 ] : []),
             ]
+        ];
+    }
+
+    protected function supplierCurrencyChangeConfirmation(Supplier $supplier): ?array
+    {
+        $numberProducts = $supplier->supplierProducts()->count();
+        if ($numberProducts === 0) {
+            return null;
+        }
+
+        $currencyCode = $supplier->currency->code;
+
+        return [
+            'title'       => __('This supplier has :count products', ['count' => $numberProducts]),
+            'description' => __('Their costs are saved in :currency. What should happen to them in the new currency?', ['currency' => $currencyCode]),
+            'yesLabel'    => __('Change currency'),
+            'choiceField' => 'products_currency',
+            'choices'     => [
+                [
+                    'value'       => 'relabel',
+                    'label'       => __('Keep the numbers, they were already in the new currency'),
+                    'description' => __('Use this when :currency was a mistake: a cost of 100 stays 100, only the currency changes.', ['currency' => $currencyCode]),
+                ],
+                [
+                    'value'       => 'convert',
+                    'label'       => __("Convert the costs at today's exchange rate"),
+                    'description' => __('Use this when the supplier really changed currency: every cost is recalculated from :currency.', ['currency' => $currencyCode]),
+                ],
+            ],
         ];
     }
 }

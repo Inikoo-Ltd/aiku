@@ -8,7 +8,7 @@ import { onMounted, ref } from "vue"
 import { PageProps as InertiaPageProps } from "@inertiajs/core"
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { loadCheckoutWebComponents } from "@checkout.com/checkout-web-components"
 import { faSpinner } from "@fal"
 import axios from "axios"
@@ -32,7 +32,6 @@ interface PagePropsWithFlash extends InertiaPageProps {
 
 const isLoading = ref(true)
 const page = usePage<PagePropsWithFlash>()
-console.log(props)
 
 
 
@@ -53,12 +52,10 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
             }
         )
 
-        console.log("hitWebhookAfterSuccess:", response)
 
         const { status, msg } = response.data
 
         if (status === "success") {
-            console.log("Payment successful:", response)
             retryCount.value = 0
             if (response.data.credit_transaction_id) {
                 router.post(route("retina.redirect_success_paid_top_up", {
@@ -72,8 +69,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
             console.warn("Payment error:", msg)
             // ✅ Show modal with a specific error message
             notify({
-                title: trans("Something went wrong"),
-                text: response.data.msg ? response.data.msg : trans("Failed to communicate with the payment service."),
+                title: ctrans("Something went wrong"),
+                text: response.data.msg ? response.data.msg : ctrans("Failed to communicate with the payment service."),
                 type: "error"
             })
 
@@ -82,7 +79,6 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
             }
 
         } else {
-            console.log("Payment still processing:", status)
 
             if (retryCount.value < MAX_RETRIES) {
                 retryCount.value++
@@ -91,8 +87,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
             } else {
                 retryCount.value = 0
                 notify({
-                    title: trans("Payment still processing"),
-                    text: trans("Your balance will be topped up automatically once the payment is confirmed."),
+                    title: ctrans("Payment still processing"),
+                    text: ctrans("Your balance will be topped up automatically once the payment is confirmed."),
                     type: "warn",
                     duration: 10000,
                 })
@@ -102,8 +98,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
         console.error("Checkout webhook failed:", error)
         retryCount.value = 0
         notify({
-            title: trans("Something went wrong"),
-            text: error?.data?.message || error?.message || trans("Failed to communicate with the payment service."),
+            title: ctrans("Something went wrong"),
+            text: error?.data?.message || error?.message || ctrans("Failed to communicate with the payment service."),
             type: "error"
         })
     }
@@ -126,20 +122,17 @@ onMounted(async () => {
         environment: props.checkout_com_data.environment,
         locale: props.checkout_com_data.locale,
         onReady: () => {
-            console.log("onReady")
         },
 
         onPaymentCompleted: (_component, paymentResponse) => {
-            console.log("Create Payment with PaymentId: ", paymentResponse.id)
             paymentDone.value = true
             hitWebhookAfterSuccess(paymentResponse.id)
         },
 
         onChange: (component) => {
-            console.log(`onChange() -> isValid: "${component.isValid()}" for "${component.type}"`)
         },
         onError: (component, error) => {
-            console.log("onError", error, "Component", component.type)
+            console.error("onError", error, "Component", component.type)
         },
         appearance: {
             colorAction: "rgb(15, 22, 38)"
@@ -174,14 +167,14 @@ onMounted(async () => {
 
             <div v-else class="h-64 flex flex-col items-center justify-center gap-y-2 bg-gray-100 border border-gray-300 rounded">
                 <FontAwesomeIcon :icon="faSpinner" class="text-3xl animate-spin text-gray-500" fixed-width aria-hidden="true" />
-                <div>{{ trans("Payment done. Waiting for confirmation...") }}</div>
+                <div>{{ ctrans("Payment done. Waiting for confirmation...") }}</div>
             </div>
 
             <Transition name="fade">
                 <div v-if="retryCount > 0"
                     class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
                     <FontAwesomeIcon :icon="faSpinner" class="animate-spin" fixed-width />
-                    {{ trans("Retrying payment... Attempt :retryCount of :max_retries", { retryCount: retryCount, max_retries: MAX_RETRIES }) }}
+                    {{ ctrans("Retrying payment... Attempt :retryCount of :max_retries", { retryCount: retryCount, max_retries: MAX_RETRIES }) }}
                 </div>
             </Transition>
 

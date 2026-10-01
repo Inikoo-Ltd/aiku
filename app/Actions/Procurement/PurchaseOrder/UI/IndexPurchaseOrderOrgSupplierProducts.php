@@ -11,12 +11,17 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
+use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -67,7 +72,8 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
 
         if (class_basename($parent) == 'OrgAgent') {
-            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
+            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id)
+                ->orderBy('suppliers.name');
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } else {
@@ -106,10 +112,11 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
 
         $this->attachOrgStockData($paginator);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
 
         return $paginator;
     }
@@ -149,6 +156,75 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return $this->handle($orgSupplier, $purchaseOrder);
     }
 
+    public function inOrgPartner(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($orgPartner->organisation, $request);
+
+        return $this->partnerOrgStocks($orgPartner, $purchaseOrder);
+    }
+
+    /**
+     * Our SKOs the partner sells too, priced at what the partner sells one SKO for.
+     */
+    public function partnerOrgStocks(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('org_stocks.code', $value)
+                    ->orWhereAnyWordStartWith('org_stocks.name', $value);
+            });
+        });
+
+        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id');
+
+        $paginator = QueryBuilder::for(OrgStock::class)
+            ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {
+                $join->on('seller_org_stocks.stock_id', 'org_stocks.stock_id')
+                    ->where('seller_org_stocks.organisation_id', $orgPartner->partner_id)
+                    ->where('seller_org_stocks.state', OrgStockStateEnum::ACTIVE->value);
+            })
+            ->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder) {
+                $join->on('purchase_order_transactions.org_stock_id', 'org_stocks.id')
+                    ->where('purchase_order_transactions.purchase_order_id', $purchaseOrder->id)
+                    ->whereNull('purchase_order_transactions.deleted_at');
+            })
+            ->where('org_stocks.organisation_id', $purchaseOrder->organisation_id)
+            ->where(function ($query) use ($pricePerSko) {
+                $query->whereNotNull('purchase_order_transactions.id')
+                    ->orWhere(fn ($query) => $query->whereIn('org_stocks.state', [OrgStockStateEnum::ACTIVE->value])->whereRaw("$pricePerSko is not null"));
+            })
+            ->defaultSort('org_stocks.code')
+            ->select([
+                'org_stocks.id',
+                'org_stocks.code',
+                'org_stocks.name',
+                'org_stocks.id as org_stock_id',
+                'org_stocks.packed_in as units_per_pack',
+                'purchase_order_transactions.quantity_ordered',
+                'purchase_order_transactions.net_amount',
+                'purchase_order_transactions.org_net_amount',
+                'purchase_order_transactions.org_exchange',
+                'purchase_order_transactions.id as purchase_order_transaction_id',
+            ])
+            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $pricePerSko / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
+            ->selectRaw('null as units_per_carton')
+            ->selectRaw('true as is_partner_org_stock')
+            ->selectRaw('? as supplier_name', [$orgPartner->partner->name])
+            ->selectRaw('? as net_currency', [$purchaseOrder->currency->code])
+            ->selectRaw('? as org_currency', [$purchaseOrder->organisation->currency->code])
+            ->selectRaw("{$purchaseOrder->id} as purchase_order_id")
+            ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
+            ->allowedSorts(['code', 'name'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator(null, tableName: request()->route()?->getName())
+            ->withQueryString();
+
+        $this->attachOrgStockData($paginator);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
+
+        return $paginator;
+    }
+
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
     {
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
@@ -164,15 +240,70 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage) {
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage, $stockDeliveries) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
             $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
 
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
+            $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);
+
+            return $row;
+        });
+    }
+
+    private function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    {
+        $rows               = $paginator->getCollection();
+        $supplierProductIds = $rows->pluck('supplier_product_id')->filter()->unique()->values();
+        $orgStockIds        = $rows->pluck('org_stock_id')->filter()->unique()->values();
+
+        if ($supplierProductIds->isEmpty() && $orgStockIds->isEmpty()) {
+            return;
+        }
+
+        $openPurchaseOrderLines = DB::table('purchase_order_transactions')
+            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
+            ->where(function ($query) use ($supplierProductIds, $orgStockIds) {
+                $query->whereIn('purchase_order_transactions.supplier_product_id', $supplierProductIds)
+                    ->orWhereIn('purchase_order_transactions.org_stock_id', $orgStockIds);
+            })
+            ->where('purchase_orders.organisation_id', $purchaseOrder->organisation_id)
+            ->where('purchase_orders.id', '!=', $purchaseOrder->id)
+            ->whereIn('purchase_orders.state', [
+                PurchaseOrderStateEnum::IN_PROCESS->value,
+                PurchaseOrderStateEnum::SUBMITTED->value,
+                PurchaseOrderStateEnum::CONFIRMED->value,
+            ])
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNull('purchase_order_transactions.deleted_at')
+            ->orderBy('purchase_orders.id')
+            ->select([
+                'purchase_order_transactions.supplier_product_id',
+                'purchase_order_transactions.org_stock_id',
+                'purchase_orders.slug',
+                'purchase_orders.reference',
+                'purchase_orders.state',
+                'purchase_order_transactions.quantity_ordered',
+            ])
+            ->get();
+
+        $rows->transform(function ($row) use ($openPurchaseOrderLines) {
+            $row->other_open_purchase_orders = $openPurchaseOrderLines
+                ->filter(fn ($line) => $line->supplier_product_id == $row->supplier_product_id
+                    || ($row->org_stock_id && $line->org_stock_id == $row->org_stock_id))
+                ->groupBy('slug')
+                ->map(fn ($lines) => [
+                    'slug'             => $lines->first()->slug,
+                    'reference'        => $lines->first()->reference,
+                    'state'            => $lines->first()->state,
+                    'quantity_ordered' => (float) $lines->sum('quantity_ordered'),
+                ])
+                ->values();
 
             return $row;
         });

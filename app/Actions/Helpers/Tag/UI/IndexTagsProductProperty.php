@@ -19,6 +19,11 @@ use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 
 class IndexTagsProductProperty extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(['goods.view', 'masters.view']);
+    }
+
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

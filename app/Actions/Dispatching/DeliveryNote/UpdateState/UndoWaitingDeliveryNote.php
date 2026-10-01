@@ -9,7 +9,10 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Models\Dispatching\Picking;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
@@ -34,7 +37,9 @@ class UndoWaitingDeliveryNote extends OrgAction
      * Steps a waiting note back to picking by handing its items waiting for the warehouse back to
      * the picker. Items waiting for customer services stay with them: they are released from the
      * waiting page, so a note left with nothing but those to pick is refused rather than sent to a
-     * picker with nothing to do.
+     * picker with nothing to do. A note waiting on a set sold only complete also gets the parts of
+     * that set marked as not picked back, so the picker can look for them again instead of the
+     * rest of the set having to go back on the shelf.
      *
      * @throws \Throwable
      */
@@ -48,6 +53,8 @@ class UndoWaitingDeliveryNote extends OrgAction
                     'message' => __('This delivery note is not waiting any more'),
                 ]);
             }
+
+            $this->reopenNotPickedPartsOfIncompleteSets($deliveryNote);
 
             $deliveryNoteItems = $deliveryNote->deliveryNoteItems()
                 ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
@@ -97,6 +104,32 @@ class UndoWaitingDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
 
         return $deliveryNote;
+    }
+
+    private function reopenNotPickedPartsOfIncompleteSets(DeliveryNote $deliveryNote): void
+    {
+        $partsBeyondCompleteSets = $deliveryNote->incompleteSetItems()->get(['delivery_note_items.id', 'delivery_note_items.transaction_id']);
+
+        if ($partsBeyondCompleteSets->isEmpty()) {
+            return;
+        }
+
+        $notPickedParts = $deliveryNote->deliveryNoteItems()
+            ->whereIn('transaction_id', $partsBeyondCompleteSets->pluck('transaction_id')->unique())
+            ->whereNotIn('id', $partsBeyondCompleteSets->pluck('id'))
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->where('quantity_not_picked', '>', 0)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($notPickedParts as $notPickedPart) {
+            $notPickedPart->pickings()
+                ->where('type', PickingTypeEnum::NOT_PICK)
+                ->get()
+                ->each(fn (Picking $notPick) => $notPick->delete());
+
+            CalculateDeliveryNoteItemTotalPicked::make()->action($notPickedPart->refresh());
+        }
     }
 
     private function quantityToPickOnceBackInPicking(DeliveryNoteItem $deliveryNoteItem): float

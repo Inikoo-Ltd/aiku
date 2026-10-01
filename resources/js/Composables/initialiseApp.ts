@@ -116,14 +116,6 @@ export const initialiseApp = () => {
                 }
             }
 
-            if (usePage().props?.environment === 'local') {
-                console.log(
-                    '%cusePage().props',
-                    'background: yellow; color: black; font-size: 16px; font-weight: bold; padding: 3px 2px;',
-                    usePage().props
-                )
-            }
-
             const dataActiveUser = {
                 ...usePage().props.auth.user,
                 last_active: new Date(),
@@ -269,6 +261,10 @@ export const initialiseApp = () => {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
 
+        if (usePage().props.order_alerts !== undefined) {
+            layout.order_alerts = usePage().props.order_alerts as any
+        }
+
         if (usePage().props.ticket_badges !== undefined) {
             layout.ticket_badges = usePage().props.ticket_badges as any
         }
@@ -283,6 +279,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_return_count !== undefined) {
             layout.crm_return_count = usePage().props.crm_return_count as number
+        }
+
+        if (usePage().props.products_need_review_count !== undefined) {
+            layout.products_need_review_count = usePage().props.products_need_review_count as number
         }
 
         if (usePage().props.master_updated_count !== undefined) {

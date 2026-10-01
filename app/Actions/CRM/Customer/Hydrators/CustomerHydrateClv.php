@@ -73,7 +73,9 @@ class CustomerHydrateClv implements ShouldBeUnique
             SUM(org_net_amount) as total_org_net_amount,
             SUM(grp_net_amount) as total_grp_net_amount,
             MIN(created_at) as first_order_date,
-            MAX(created_at) as last_order_date
+            MAX(created_at) as last_order_date,
+            COUNT(DISTINCT DATE(created_at)) FILTER (WHERE type = \'invoice\') as order_days,
+            MAX(created_at) FILTER (WHERE type = \'invoice\') as last_invoice_date
             '
             )
             ->first();
@@ -143,11 +145,14 @@ class CustomerHydrateClv implements ShouldBeUnique
         }
 
         // --- Currency-independent stats ---
-        $averageTimeBetweenOrders = $totalOrders > 1
-            ? ceil($daysBetween / ($totalOrders - 1))
+        $orderDays       = (int)$invoiceStats->order_days;
+        $lastInvoiceDate = $invoiceStats->last_invoice_date ? Carbon::parse($invoiceStats->last_invoice_date) : $lastOrderDate;
+
+        $averageTimeBetweenOrders = $orderDays > 1
+            ? ceil(max($firstOrderDate->copy()->startOfDay()->diffInDays($lastInvoiceDate->copy()->startOfDay()), 1) / ($orderDays - 1))
             : null;
 
-        $daysSinceLastOrder = $lastOrderDate->diffInDays(now());
+        $daysSinceLastOrder = $lastInvoiceDate->diffInDays(now());
 
         // Churn interval and risk prediction
         if ($averageTimeBetweenOrders && $averageTimeBetweenOrders > 0) {
@@ -160,7 +165,7 @@ class CustomerHydrateClv implements ShouldBeUnique
 
         // Predict next order date
         $expectedNextOrder = $averageTimeBetweenOrders
-            ? $lastOrderDate->copy()->addDays($averageTimeBetweenOrders)
+            ? $lastInvoiceDate->copy()->addDays($averageTimeBetweenOrders)
             : null;
 
         // Calculate timeline positions

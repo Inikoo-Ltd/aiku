@@ -509,7 +509,6 @@ watch(
 					allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
 					referrerpolicy="strict-origin-when-cross-origin"
 					allowfullscreen
-					@load="console.log('iframe loaded')"
 					class="w-full h-full" />
 			</div>
 		</div>

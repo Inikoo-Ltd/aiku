@@ -22,10 +22,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowCustomerSalesChannelInFulfilment extends OrgAction
 {
+    use WithFulfilmentShopAuthorisation;
     use WithFulfilmentCustomerPlatformSubNavigation;
 
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel

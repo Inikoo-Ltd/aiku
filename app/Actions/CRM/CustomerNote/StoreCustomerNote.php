@@ -143,7 +143,6 @@ class StoreCustomerNote extends OrgAction
 
     public function asController(Customer $customer, ActionRequest $request): CustomerNote
     {
-        $this->asAction = true;
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);

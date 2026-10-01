@@ -14,7 +14,6 @@ use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\Payment\CancelPayment;
-use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
@@ -78,8 +77,6 @@ use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
-use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsAd;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsKeyword;
@@ -379,6 +376,8 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
+use App\Actions\Masters\MasterAsset\DismissMasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
@@ -460,6 +459,7 @@ use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
+use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
@@ -590,6 +590,7 @@ use App\Actions\Helpers\Ticket\TranslateTicketText;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
+use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -607,6 +608,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/pull-request', UpdateTicketPullRequest::class)->name('pull_request.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::patch('comment/{ticketComment:id}', UpdateTicketComment::class)->name('comment.update')->whereNumber('ticketComment');
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
@@ -785,6 +787,8 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
+Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/apply', ApplyMasterAssetPriceTip::class)->name('master_asset_price_tip.apply');
+Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 
@@ -852,6 +856,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('working-place', StoreWorkplace::class)->name('workplace.store');
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
 
+    Route::post('supplier', [StoreSupplier::class, 'inOrganisation'])->name('supplier.store');
     Route::post('org-supplier/from-supplier/{supplier:id}', [StoreOrgSupplier::class, 'inOrganisation'])->name('org_supplier.store')->withoutScopedBindings();
 
     Route::post('shop', StoreShop::class)->name('shop.store');
@@ -874,10 +879,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         ->name('shop.google_ads.campaign.pause')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/resume', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\ResumeGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.resume')->withoutScopedBindings();
-    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
-        ->name('shop.ad_proposal.apply')->withoutScopedBindings();
-    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
-        ->name('shop.ad_proposal.dismiss')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/keyword', StoreGoogleAdsKeyword::class)
         ->name('shop.google_ads.campaign.keyword.store')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/ad', StoreGoogleAdsAd::class)
@@ -922,7 +923,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/shop/{shop:id}/customer', StoreCustomer::class)->name('shop.customer.store');
 
     Route::post('/shop/{shop:id}/product/', [StoreProduct::class, 'inShop'])->name('show.product.store');
-    Route::delete('/shop/{shop:id}/product/{product:id}', [DeleteProduct::class, 'inShop'])->name('shop.product.delete');
 
     Route::post('product/{product:id}/images/attach', AttachImagesToProduct::class)->name('product.images.attach')->withoutScopedBindings();
     Route::delete('product/{product:id}/images/{media:id}/media', DeleteImagesFromProduct::class)->name('product.images.delete')->withoutScopedBindings();
@@ -933,7 +933,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
 
-    Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings(); // todo to be deleted
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 });
@@ -1404,6 +1403,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefacts/batch-size', SetArtefactsBatchSize::class)->name('artefacts.set_batch_size');
     Route::post('artefacts/shelf-life', SetArtefactsShelfLife::class)->name('artefacts.set_shelf_life');
+    Route::post('artefacts/recipe', SetArtefactsRecipe::class)->name('artefacts.set_recipe');
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
@@ -1532,6 +1532,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
     Route::post('transactions/upload', ImportPurchaseOrderTransactions::class)->name('transaction.upload');
     Route::post('transactions/{orgSupplierProduct:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
+    Route::post('transactions/org-stock/{orgStock:id}/store', [StorePurchaseOrderTransaction::class, 'inPartnerPurchaseOrder'])->name('transaction.store_org_stock')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();

@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\Packaging;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Models\Billables\Packaging;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeletePackaging extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(Packaging $packaging): Packaging
     {
         if ($packaging->shop->defaultPackaging()?->id === $packaging->id) {
@@ -28,15 +30,6 @@ class DeletePackaging extends OrgAction
         $packaging->delete();
 
         return $packaging;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function action(Packaging $packaging): Packaging

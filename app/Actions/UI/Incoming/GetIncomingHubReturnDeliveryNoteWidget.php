@@ -25,7 +25,7 @@ class GetIncomingHubReturnDeliveryNoteWidget
             'received' => [
                 'state' => ReturnDeliveryNoteStateEnum::RECEIVED->value,
                 'icon'  => ['fal', 'fa-chair'],
-                'label' => __('To do'),
+                'label' => __('Received'),
                 'route' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
             ],
             'booking_in' => [

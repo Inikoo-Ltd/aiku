@@ -19,6 +19,22 @@ function amountFormat(amount: number) {
     return Number(amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const parentRouteNames: Record<string, string> = {
+    OrgSupplier: 'grp.org.procurement.org_suppliers.show',
+    OrgAgent: 'grp.org.procurement.org_agents.show',
+    OrgPartner: 'grp.org.procurement.org_partners.show',
+}
+
+function parentRoute(stockDelivery: { parent_type?: string, parent_route_key?: string | null, organisation_slug?: string }) {
+    const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
+    const routeName = parentRouteNames[stockDelivery.parent_type ?? '']
+    if (!organisation || !routeName || !stockDelivery.parent_route_key) {
+        return null
+    }
+
+    return route(routeName, [organisation, stockDelivery.parent_route_key])
+}
+
 function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: string }) {
     const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
     if (!organisation) {
@@ -45,6 +61,13 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
                 {{ stockDelivery['reference'] }}
             </Link>
             <span v-else>{{ stockDelivery['reference'] }}</span>
+        </template>
+
+        <template #cell(parent_name)="{ item: stockDelivery }">
+            <Link v-if="parentRoute(stockDelivery)" :href="parentRoute(stockDelivery)!" class="primaryLink">
+                {{ stockDelivery['parent_name'] }}
+            </Link>
+            <span v-else>{{ stockDelivery['parent_name'] }}</span>
         </template>
 
         <template #cell(date)="{ item }">

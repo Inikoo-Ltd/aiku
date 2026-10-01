@@ -6,7 +6,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from "@common/Components/Image.vue";
@@ -102,7 +102,6 @@ const getPortfoliosList = async (url?: string) => {
   try {
     const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
     const currentTab = props.tabs?.[activeTab.value]
-    console.log('sdsd', props.routeFetch)
     const params: Record<string, any> = { ...tabRoute.parameters }
 
     // ✅ Only append search if tab has "search: true"
@@ -119,8 +118,8 @@ const getPortfoliosList = async (url?: string) => {
   } catch (e) {
     console.error('Error', e)
     notify({
-      title: trans("Something went wrong."),
-      text: trans("Error while getting the portfolios list."),
+      title: ctrans("Something went wrong."),
+      text: ctrans("Error while getting the portfolios list."),
       type: "error"
     })
   } finally {
@@ -198,17 +197,14 @@ const deleteFormCommited = (item) => {
 }
 
 const updateProduct = (updated: Portfolio) => {
-  console.log('sss', updated, committedProducts.value)
   committedProducts.value = committedProducts.value.map(p => {
     if (p.id === updated.id) {
-      console.log("✅ Match found:", p);
 
       const merged = {
         ...p,
         ...updated
       };
 
-      console.log("🔹 After merge:", merged);
 
       return merged;
     }
@@ -216,10 +212,8 @@ const updateProduct = (updated: Portfolio) => {
     return p;
   });
 
-  console.log("🔹 After update (committedProducts):", committedProducts.value);
 
   emits("update:modelValue", [...committedProducts.value]);
-  console.log("📤 Emitted updated modelValue:", [...committedProducts.value]);
 };
 
 
@@ -240,7 +234,7 @@ defineExpose({
     <div class="">
       <div class="flex justify-between">
         <div>
-          <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
+          <h3 class="font-semibold mb-2">{{ ctrans(props.head_label) }}</h3>
         </div>
         <div>
           <Button v-if="committedProducts.length" @click="openDialog" :label="'select'" size="xs" type="dashed"
@@ -313,7 +307,7 @@ defineExpose({
             class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2" :class="activeTab === index
               ? 'text-indigo-600 border-indigo-600'
               : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
-            {{ trans(tab.label) }}
+            {{ ctrans(tab.label) }}
           </div>
         </div>
 
@@ -322,7 +316,7 @@ defineExpose({
           <!-- search -->
           <div v-if="(tabs?.length && tabs[activeTab]?.search) || enable_search" class="mb-2">
             <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
-              :placeholder="trans('Input to search')" />
+              :placeholder="ctrans('Input to search')" />
           </div>
 
         </div>
@@ -334,16 +328,16 @@ defineExpose({
             <!-- header -->
             <div class="flex justify-between items-center">
               <div class="font-semibold text-lg py-1">
-                {{ props.label_result ?? trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
+                {{ props.label_result ?? ctrans("Result") }} ({{ locale?.number(meta?.total || 0) }})
               </div>
               <div class="flex gap-2">
                 <div @click="selectAllProducts"
                   :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                  {{ trans("Select :number products in this page", { number: list.length }) }}
+                  {{ ctrans("Select :number products in this page", { number: list.length }) }}
                 </div>
                 <div v-if="compSelectedProduct.length" @click="clearAll"
                   class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                  {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                  {{ ctrans('Clear :number selections', { number: compSelectedProduct.length }) }}
                   <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                 </div>
               </div>
@@ -401,7 +395,7 @@ defineExpose({
                     </div>
                   </template>
                   <div v-else class="text-center text-gray-500 col-span-3">
-                    {{ trans("No Results found") }}
+                    {{ ctrans("No Results found") }}
                   </div>
                 </template>
                 <div v-else v-for="(item, index) in 6" :key="index"

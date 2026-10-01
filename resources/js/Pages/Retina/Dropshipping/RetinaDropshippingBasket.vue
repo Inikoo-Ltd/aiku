@@ -50,6 +50,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import GiftMessagePanel from '@/Components/Order/GiftMessagePanel.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
@@ -132,6 +133,7 @@ const props = defineProps<{
     upload_spreadsheet: UploadPallet
     balance: string
     total_to_pay: number
+    pre_orders?: BasketPreOrdersData | null
     address_management: AddressManagement
     total_products: number
     charges: {
@@ -309,7 +311,6 @@ const onNoStructureUpload = () => {
     })
 }
 
-console.log('basket ds', props)
 
 const isLoadingPriorityDispatch = ref(false)
 const onChangePriorityDispatch = async (val: boolean) => {
@@ -443,6 +444,7 @@ const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
 const isGiftMessageMissing = computed(() =>
     !!props.data.data?.has_gift_message && !!giftMessagePanel.value?.isMissing
 )
+const isPreOrderTermsPending = computed(() => !!props.pre_orders?.has_pre_orders && !props.pre_orders.is_accepted)
 
 // Section: Insurance
 const isLoadingInsurance = ref(false)
@@ -726,6 +728,10 @@ const onChangeInsurance = async (val: boolean) => {
         </div>
 
 
+        <div v-if="pre_orders?.has_pre_orders" class="pt-5">
+            <BasketPreOrders :pre_orders :orderId="data.data.id" :currencyCode="currency?.code" />
+        </div>
+
         <!-- Button: Continue to checkout, Place Order -->
         <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-full md:w-72 pt-5">
             <!-- Place Order -->
@@ -737,10 +743,17 @@ const onChangeInsurance = async (val: boolean) => {
                     class="w-full"
                     full
                     :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
-                        || isGiftMessageMissing"
+                        || isGiftMessageMissing
+                        || isPreOrderTermsPending"
                 >
                 </ButtonWithLink>
 
+                <div v-if="isPreOrderTermsPending" class="text-xs text-amber-700 mt-2 flex items-start gap-x-1">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
+                    <div class="leading-5">
+                        {{ ctrans("Accept the pre-order terms above to place your order.") }}
+                    </div>
+                </div>
                 <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
                     <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
                     <div class="leading-5">
@@ -763,7 +776,7 @@ const onChangeInsurance = async (val: boolean) => {
                 class="w-full"
                 full
                 :tooltip="insertsWithoutArtwork.length
-                    ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
+                    ? ctrans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
                     : (isGiftMessageMissing ? ctrans('Write a gift message or upload a PDF before checking out.') : undefined)"
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
                     || insertsWithoutArtwork.length > 0
@@ -774,7 +787,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
                 <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
                 <div class="leading-5">
-                    {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                    {{ ctrans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
                 </div>
             </div>
 

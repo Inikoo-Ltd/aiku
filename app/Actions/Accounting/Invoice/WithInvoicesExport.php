@@ -109,10 +109,13 @@ trait WithInvoicesExport
      *
      * Covers the short shipped lines too: a line that was ordered 12 and supplied 8.5 is missing 3.5
      * even though it is dispatched, priced and stays in the main table.
+     *
+     * The invoiced quantity is read at 3 decimals, so the ordered one is too: a third of a product
+     * (0.333333) invoiced in full would otherwise leave 0.000333 "not supplied" (HELP-3574).
      */
     public function undeliveredQuantity(object $transaction): float
     {
-        $ordered = (float)($transaction->transaction?->quantity_ordered ?? 0);
+        $ordered = round((float)($transaction->transaction?->quantity_ordered ?? 0), 3);
 
         return max(0.0, $ordered - (float)$transaction->quantity);
     }

@@ -14,7 +14,7 @@ import { ref } from 'vue'
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import CopyButton from '@/Components/Utils/CopyButton.vue'
@@ -106,7 +106,6 @@ const product = ref({
 //     selectedImage.value = index
 // }
 
-console.log(props)
 
 const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/data-feed.csv`
 
@@ -121,7 +120,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                 <FontAwesomeIcon icon="fal fa-link" class="" fixed-width aria-hidden="true" />
                 API Url (no need password)
                 <InformationIcon
-                    :information="trans('Download all products in this Family. Can be used to integrate with 3rd party app')"
+                    :information="ctrans('Download all products in this Family. Can be used to integrate with 3rd party app')"
                 />
                 :
             </div>
@@ -130,7 +129,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                 <div class="py-2 px-2 w-full italic">
                     {{ routeAPI }}
                 </div>
-                <div v-tooltip="trans('Copy url')" class="flex items-center relative">
+                <div v-tooltip="ctrans('Copy url')" class="flex items-center relative">
                     <CopyButton
                         :text="routeAPI"
                         class="text-3xl px-2 py-1.5"
@@ -157,15 +156,15 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                 class="col-span-2 xborder xborder-gray-200 rounded-lg px-4 py-6 sm:p-4 lg:mt-0 lg:p-5">
                 <dl class="mt-2 space-y-6">
                     <div class="flex flex-col">
-                        <dt class="text-sm text-gray-500">{{ trans("Name") }}</dt>
+                        <dt class="text-sm text-gray-500">{{ ctrans("Name") }}</dt>
                         <dd class="font-bold text-xl">{{ data?.product?.data?.name ?? '-' }}</dd>
                     </div>
                     <!-- <div class="flex flex-col">
-                        <dt class="text-sm text-gray-500">{{ trans("Added date") }}</dt>
+                        <dt class="text-sm text-gray-500">{{ ctrans("Added date") }}</dt>
                         <dd class="text-sm font-medium">{{ useFormatTime(data?.product?.data?.created_at) }}</dd>
                     </div> -->
                     <div class="flex flex-col">
-                        <dt class="text-sm text-gray-500">{{ trans("Price") }}</dt>
+                        <dt class="text-sm text-gray-500">{{ ctrans("Price") }}</dt>
                         <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code,
                             data?.product?.data?.price) }}</dd>
                     </div>
@@ -173,7 +172,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     :routeToAllPortfolios="{ name: 'retina.models.portfolio.store_to_all_channels', parameters: null }"
                     :routeToSpecificChannel="{ name: 'retina.models.portfolio.store_to_multi_channels', parameters: null }" /> -->
                     <div class="flex flex-col">
-                        <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
+                        <dt class="text-sm text-gray-500">{{ ctrans("Description") }}</dt>
                         <!-- <dd v-if="data?.product?.data?.description_title"
                             class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
                             v-html="data?.product?.data?.description_title"></dd> -->

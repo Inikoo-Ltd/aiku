@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\RetinaAction;
@@ -32,8 +33,13 @@ class SubmitRetinaOrder extends RetinaAction
         return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order): Order
     {
+        GetBasketPreOrders::make()->ensureTermsAccepted($order);
+
         $order = SubmitOrder::run($order);
 
 

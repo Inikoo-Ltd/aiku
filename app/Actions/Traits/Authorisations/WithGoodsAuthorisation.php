@@ -18,7 +18,9 @@ trait WithGoodsAuthorisation
             return true;
         }
 
-        $this->canEdit = $request->user()->authTo("goods.edit");
-        return $request->user()->authTo("goods.view");
+        $this->canEdit           = $request->user()->authTo("goods.edit");
+        $this->canEditCompliance = $request->user()->authTo("compliance.edit");
+
+        return $request->user()->authTo(["goods.view", "compliance.view"]);
     }
 }

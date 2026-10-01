@@ -201,7 +201,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             'Procurement/PartnerShoppingList',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($this->orgPartner, $request->route()->originalParameters()),
-                'title'       => __('Shopping list'),
+                'title'       => '(' . $this->orgPartner->partner->code . ') ' . __('Shopping list'),
                 'pageHead'    => [
                     'icon'          => [
                         'icon'  => ['fal', 'fa-shopping-basket'],

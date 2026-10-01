@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -67,7 +67,6 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -115,10 +114,10 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
             <div class="flex items-center gap-2">
                 <ModalConfirmationDelete
                     :routeDelete="customerSalesChannel.delete_route"
-                    :title="trans('Are you sure you want to close this channel?')"
+                    :title="ctrans('Are you sure you want to close this channel?')"
                     :description="customerSalesChannel.delete_msg"
                     isFullLoading
-                    :noLabel="trans('Close')"
+                    :noLabel="ctrans('Close')"
                     :noIcon="'fal fa-store-alt-slash'"
                 >
                     <template #beforeTitle>
@@ -129,7 +128,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
 
                     <template #default="{ isOpenModal, changeModel }">
                         <Button
-                            v-tooltip="trans('Close channel')"
+                            v-tooltip="ctrans('Close channel')"
                             @click="() => changeModel()"
                             type="negative"
                             icon="fal fa-store-alt-slash"
@@ -141,7 +140,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
 
                 <Button
                     v-if="customerSalesChannel.platform_code === 'woocommerce'"
-                    v-tooltip="trans('Check WooCommerce Website status')"
+                    v-tooltip="ctrans('Check WooCommerce Website status')"
                     @click="checkCustomerSalesChannel(customerSalesChannel)"
                     type="secondary"
                     size="s"
@@ -151,7 +150,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
                     <FontAwesomeIcon icon="sync-alt" fixed-width />
                 </Button>
 
-                <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="trans('The selected WooCommerce Website is down')">
+                <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="ctrans('The selected WooCommerce Website is down')">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width />
                 </span>
             </div>

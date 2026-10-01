@@ -15,7 +15,7 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import { faEdit } from "@fal";
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 
 import Family1Render from "@/Iris/Components/Families1Render.vue"
 
@@ -44,11 +44,9 @@ const isModalGallery = ref(false)
 const departmentEdit = ref(false)
 
 const goToPrev = () => {
-    console.log('Previous clicked')
 }
 
 const goToNext = () => {
-    console.log('Next clicked')
 }
 
 const componentsDepartment: Record<string, Component> = {
@@ -116,10 +114,6 @@ const onUpload = async (files: File[], clear) => {
         formData.append('image', file);
     });
 
-    for (const [key, value] of formData.entries()) {
-        console.log(key, value);
-    }
-
     router.post(
         route(props.upload_image_route.name, props.upload_image_route.parameters),
         formData,
@@ -171,22 +165,22 @@ const onUpload = async (files: File[], clear) => {
             <div v-if="departmentEdit" class="border-t pt-4 space-y-4">
                 <slot name="form" :form="form">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Label')}}</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ctrans('Label')}}</label>
                         <PureInput v-model="form.name" type="text" placeholder="Enter name" />
                         <p class="text-red-500 text-xs">{{ form.errors?.name }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Description')}}</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ctrans('Description')}}</label>
                         <PureTextarea v-model="form.description" type="text" :rows="4" placeholder="Enter name" />
                         <p class="text-red-500 text-xs">{{ form.errors?.description }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Show in website')}}</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ctrans('Show in website')}}</label>
                         <ToggleSwitch v-model="form.show_in_website" />
                         <p class="text-red-500 text-xs">{{ form.errors?.show_in_website }}</p>
                     </div>
                     <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{trans('Image')}}</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ctrans('Image')}}</label>
                     <Button label="Upload Image" :type="'tertiary'" :icon="faImage" @click="isModalGallery = true" />
                 </div>
                     <slot name="another-form" :form="form"></slot>

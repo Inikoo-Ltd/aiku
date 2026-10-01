@@ -15,10 +15,12 @@ use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditProspect extends OrgAction
 {
+    use WithCRMAuthorisation;
     public function handle(Prospect $prospect): Prospect
     {
         return $prospect;

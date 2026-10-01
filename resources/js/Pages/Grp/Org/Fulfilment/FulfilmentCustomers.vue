@@ -10,9 +10,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableFulfilmentCustomers from '@/Components/Tables/Grp/Org/Fulfilment/TableFulfilmentCustomers.vue';
 import { capitalize } from "@/Composables/capitalize"
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faUserClock, faUserTimes } from '@fal';
+import { faUserClock, faUserTimes, faUserCircle, faNarwhal } from '@fal';
 
-library.add(faUserClock, faUserTimes)
+library.add(faUserClock, faUserTimes, faUserCircle, faNarwhal)
 
 const props = defineProps<{
     data: object

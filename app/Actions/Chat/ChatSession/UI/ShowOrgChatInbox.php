@@ -428,6 +428,7 @@ class ShowOrgChatInbox extends OrgAction
             // email the rail promised was an ignored one the list rightly would not show.
             ->where('is_rubbish', false)
             ->where('is_carrier', false)
+            ->where('is_colleague', false)
             ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',

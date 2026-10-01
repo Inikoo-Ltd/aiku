@@ -132,7 +132,7 @@ class ReconcileShopifyPortfolioConnections
     {
         return array_values(array_unique(array_map(
             fn (string $sku) => Str::lower($sku),
-            array_filter([$portfolio->sku, $portfolio->item_code])
+            array_filter([$portfolio->item_code, $portfolio->sku])
         )));
     }
 
@@ -189,40 +189,62 @@ class ReconcileShopifyPortfolioConnections
             return ['repair' => 'none', ...$noRepair];
         }
 
+        $fallback = null;
+
         foreach ($candidateSkus as $candidateSku) {
-            $isActiveByProductId = $snapshot['product_ids_by_sku'][$candidateSku] ?? [];
-            $activeProductIds    = array_keys(array_filter($isActiveByProductId));
+            $repair = $this->repairForSku($candidateSku, $snapshot, $noRepair);
 
-            if (count($activeProductIds) > 1 || (count($activeProductIds) === 0 && count($isActiveByProductId) > 1)) {
-                return ['repair' => 'ambiguous', ...$noRepair];
+            if ($repair === null) {
+                continue;
             }
 
-            if (count($isActiveByProductId) > 0) {
-                $productId = $activeProductIds[0] ?? array_key_first($isActiveByProductId);
-
-                $variantsCarryingSku = array_values(array_filter(
-                    $snapshot['products'][$productId]['variants'] ?? [],
-                    fn (array $variant) => $variant['sku'] && Str::lower($variant['sku']) === $candidateSku
-                ));
-
-                if (count($variantsCarryingSku) !== 1) {
-                    return ['repair' => 'ambiguous', ...$noRepair];
-                }
-
-                /* A draft or archived product carrying the SKU is still a real match to re-link to,
-                   it just has to be published first, so it is not the same dead end as a SKU the
-                   shop has never heard of. */
-                return [
-                    'repair'             => $isActiveByProductId[$productId] ? 'repairable' : 'match_not_active',
-                    'repair_product_id'  => $productId,
-                    'repair_sku'         => $candidateSku,
-                    'repair_variant_id'  => $variantsCarryingSku[0]['id'],
-                    'repair_at_location' => $variantsCarryingSku[0]['at_location']
-                ];
+            if ($repair['repair'] === 'repairable') {
+                return $repair;
             }
+
+            $fallback ??= $repair;
         }
 
-        return ['repair' => 'unresolved', ...$noRepair];
+        return $fallback ?? ['repair' => 'unresolved', ...$noRepair];
+    }
+
+    /**
+     * @return array{repair: string, repair_product_id: string|null, repair_sku: string|null, repair_variant_id: string|null, repair_at_location: bool}|null
+     */
+    private function repairForSku(string $candidateSku, array $snapshot, array $noRepair): ?array
+    {
+        $isActiveByProductId = $snapshot['product_ids_by_sku'][$candidateSku] ?? [];
+        $activeProductIds    = array_keys(array_filter($isActiveByProductId));
+
+        if (count($isActiveByProductId) === 0) {
+            return null;
+        }
+
+        if (count($activeProductIds) > 1 || (count($activeProductIds) === 0 && count($isActiveByProductId) > 1)) {
+            return ['repair' => 'ambiguous', ...$noRepair];
+        }
+
+        $productId = $activeProductIds[0] ?? array_key_first($isActiveByProductId);
+
+        $variantsCarryingSku = array_values(array_filter(
+            $snapshot['products'][$productId]['variants'] ?? [],
+            fn (array $variant) => $variant['sku'] && Str::lower($variant['sku']) === $candidateSku
+        ));
+
+        if (count($variantsCarryingSku) !== 1) {
+            return ['repair' => 'ambiguous', ...$noRepair];
+        }
+
+        /* A draft or archived product carrying the SKU is still a real match to re-link to,
+           it just has to be published first, so it is not the same dead end as a SKU the
+           shop has never heard of. */
+        return [
+            'repair'             => $isActiveByProductId[$productId] ? 'repairable' : 'match_not_active',
+            'repair_product_id'  => $productId,
+            'repair_sku'         => $candidateSku,
+            'repair_variant_id'  => $variantsCarryingSku[0]['id'],
+            'repair_at_location' => $variantsCarryingSku[0]['at_location']
+        ];
     }
 
     /**

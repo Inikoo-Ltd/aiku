@@ -16,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class StorePartnerShoppingListItems extends OrgAction
@@ -54,6 +55,11 @@ class StorePartnerShoppingListItems extends OrgAction
                 $skipped[] = [
                     'org_stock_id' => $orgStock->id,
                     'reason'       => $exception->getMessage(),
+                ];
+            } catch (ValidationException $exception) {
+                $skipped[] = [
+                    'org_stock_id' => $orgStock->id,
+                    'reason'       => collect($exception->errors())->flatten()->first(),
                 ];
             }
         }

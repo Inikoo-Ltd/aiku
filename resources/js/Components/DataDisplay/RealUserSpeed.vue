@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import Chart from "primevue/chart"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -70,6 +71,8 @@ watch(
 const current = computed(() => props.report?.[source.value] ?? null)
 const availableFormFactors = computed(() => formFactors.filter((option) => (current.value?.history?.[option.key] ?? []).length > 0))
 const formFactor = ref<FormFactor>("desktop")
+const sourceOptions = sources.map((option) => ({ label: option.label, value: option.key }))
+const formFactorOptions = computed(() => availableFormFactors.value.map((option) => ({ label: option.label, value: option.key, icon: option.icon })))
 
 watch(
 	availableFormFactors,
@@ -150,6 +153,7 @@ const chartData = computed(() => ({
 			pointBackgroundColor: "#fff",
 			pointBorderColor: markerColors,
 			spanGaps: true,
+			clip: false,
 		}
 	}),
 }))
@@ -188,7 +192,7 @@ const ratingBands = {
 const chartOptions = computed(() => ({
 	responsive: true,
 	maintainAspectRatio: false,
-	layout: { padding: { left: 30 } },
+	layout: { padding: { left: 30, top: 8, right: 8 } },
 	interaction: { mode: "index", intersect: false },
 	plugins: {
 		legend: {
@@ -244,32 +248,9 @@ const chartOptions = computed(() => ({
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
 			<span class="text-sm font-semibold">{{ ctrans("Real user speed") }}</span>
 
-			<div class="flex rounded-md bg-gray-100 p-0.5">
-				<button
-					v-for="option in sources"
-					:key="option.key"
-					type="button"
-					:aria-pressed="source === option.key"
-					class="rounded px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-					:class="source === option.key ? 'bg-white font-semibold text-gray-800 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-					@click="source = option.key">
-					{{ option.label }}
-				</button>
-			</div>
+			<SegmentedToggle v-model="source" :options="sourceOptions" :aria-label="ctrans('Data source')" />
 
-			<div v-if="availableFormFactors.length > 1" class="flex rounded-md bg-gray-100 p-0.5">
-				<button
-					v-for="option in availableFormFactors"
-					:key="option.key"
-					type="button"
-					:aria-pressed="formFactor === option.key"
-					class="flex items-center gap-1.5 rounded px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-					:class="formFactor === option.key ? 'bg-white font-semibold text-gray-800 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-					@click="formFactor = option.key">
-					<FontAwesomeIcon :icon="option.icon" fixed-width aria-hidden="true" />
-					{{ option.label }}
-				</button>
-			</div>
+			<SegmentedToggle v-if="availableFormFactors.length > 1" v-model="formFactor" :options="formFactorOptions" :aria-label="ctrans('Device')" />
 
 			<span v-if="latest && source === 'crux'" class="text-xs text-gray-600">
 				{{ ctrans("Chrome visits :from – :to", { from: useFormatTime(latest.period_start, { formatTime: "PP" }), to: useFormatTime(latest.period_end, { formatTime: "PP" }) }) }}

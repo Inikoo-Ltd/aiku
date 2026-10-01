@@ -8,7 +8,7 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faChartLine } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faChartLine, faBox } from '@fal'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from 'vue'
@@ -23,13 +23,13 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-library.add(faInventory, faWarehouse, faMapSigns, faChartLine)
+library.add(faInventory, faWarehouse, faMapSigns, faChartLine, faBox)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase?: {}
-    tagsList: {
+    tagsList?: {
         data: {}[]
     }
     title: string

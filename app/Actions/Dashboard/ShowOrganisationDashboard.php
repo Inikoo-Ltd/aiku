@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dashboard;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
@@ -83,6 +85,8 @@ class ShowOrganisationDashboard extends OrgAction
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
+                    'month_target' => GetShopMonthSalesTarget::run($organisation, $request->user()),
+                    'year_target'  => GetShopYearSalesTarget::run($organisation, $request->user()),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',

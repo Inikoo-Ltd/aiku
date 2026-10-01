@@ -90,9 +90,16 @@ const nextBand = computed(() => {
 })
 
 const askOutcome = ref(false)
+const confirming = ref(false)
 const isShort = computed(() => quantityMade.value !== null && quantityMade.value < remaining.value)
 
 function onDone() {
+    if (quantityMade.value === null) return
+    confirming.value = true
+}
+
+function confirmDone() {
+    confirming.value = false
     if (isShort.value) {
         askOutcome.value = true
         return
@@ -153,7 +160,26 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
 
         <div v-if="closeError" class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-lg text-red-700">{{ closeError }}</div>
 
-        <div v-if="!askOutcome" class="mt-6 flex items-end gap-4">
+        <div v-if="confirming" class="mt-6 rounded-lg border border-green-300 bg-green-50 p-4">
+            <div class="text-2xl font-semibold">{{ ctrans('Are you sure you want to finish :step?', { step: session.task.task_name }) }}</div>
+            <div class="mt-2 flex flex-wrap gap-x-6 text-lg text-gray-700">
+                <span>{{ ctrans('Step') }}: <b>{{ session.task.task_name }}</b></span>
+                <span>{{ ctrans('Time logged') }}: <b class="tabular-nums">{{ elapsed }}</b></span>
+                <span>{{ ctrans('Quantity made') }}: <b class="tabular-nums">{{ quantityMade }}</b></span>
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4"
+                    @click="confirming = false">
+                    {{ ctrans('Cancel / Go back') }}
+                </button>
+                <button type="button" class="rounded-lg bg-green-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
+                    :disabled="processing" @click="confirmDone">
+                    {{ ctrans('Confirm & finish') }}
+                </button>
+            </div>
+        </div>
+
+        <div v-else-if="!askOutcome" class="mt-6 flex items-end gap-4">
             <div>
                 <label class="block text-lg text-gray-600 mb-1">{{ ctrans('Quantity made') }}</label>
                 <input

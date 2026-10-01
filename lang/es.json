@@ -29,6 +29,7 @@
     ":mailshotSubject is still in process": ":mailshotSubject aún está en proceso",
     ":product has been added to favorites": ":product ha sido añadido a favoritos",
     ":qtyPicked items are picked from magic place": ":qtyPicked artículos se recogen del lugar mágico",
+    ":quantity on the shelf, made on demand": ":quantity en la estantería, se fabrica bajo pedido",
     ":stockAvailable stock available on location :stockLocation": ":stockAvailable stock disponible en ubicación :stockLocation",
     ":success products cloned successfully, :fails failed.": ":success productos clonados exitosamente, :fails falló.",
     ":timeCountdown left before link expires": ":timeCountdown restante antes de que caduque el enlace",
@@ -244,6 +245,7 @@
     "Allowed": "Permitido",
     "Already have an account?": "¿Ya tienes una cuenta?",
     "Also save as the default delivery address": "Guardar también como dirección de entrega predeterminada",
+    "Always available": "Siempre disponible",
     "Amount": "Cantidad",
     "Amount Unpaid Invoices": "Importe de facturas impagas",
     "Amount cannot be empty": "El importe no puede estar vacío",
@@ -2175,6 +2177,7 @@
     "M. Sub-department": "Subdepartamento M.",
     "M. Sub-departments": "M. Subdepartamentos",
     "M. Vol/GR": "M. Vol./GR",
+    "Made on demand": "Se fabrica bajo pedido",
     "Made with": "Hecho con",
     "Magento store detail": "Detalle de la tienda Magento",
     "Magic Pick": "Selección mágica",
@@ -5703,5 +5706,8 @@
     "workplace": "lugar de trabajo",
     "workshop": "taller",
     "your order number": "tu número de pedido",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.": "Gmail puso este correo en su carpeta de spam. Aiku lo ha traído porque parece de un cliente real, pero sus archivos adjuntos se quedan en Gmail por tu seguridad: los archivos en spam pueden llevar virus o facturas falsas. Ábrelos solo si los esperabas.",
+    ":count attachment(s) kept in Gmail for safety": ":count archivo(s) guardado(s) en Gmail por seguridad",
+    "Possible scam": "Posible estafa"
 }

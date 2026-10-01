@@ -55,6 +55,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property ChatPriorityEnum $priority
  * @property string $subject
  * @property string|null $description
+ * @property string|null $pull_request_url
  * @property string|null $reporter_type
  * @property int|null $reporter_id
  * @property int|null $assignee_id
@@ -108,6 +109,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'blocks_source',
         'closes_source',
         'qa_status',
+        'pull_request_url',
     ];
 
     protected function casts(): array

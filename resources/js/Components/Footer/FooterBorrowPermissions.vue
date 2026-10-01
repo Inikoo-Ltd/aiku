@@ -61,16 +61,19 @@ const stopBorrowing = () => {
 
 <template>
     <Popover v-if="loggedUser?.can_borrow_permissions" v-slot="{ open }" class="relative h-full">
-        <PopoverButton
-            @click="!open && fetchLenders()"
-            :class="[borrowedFrom ? 'bg-amber-500 text-black' : open ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-200']"
-            class="inline-flex items-center gap-x-1 px-3 h-full outline-none focus:outline-none focus:ring-0"
-            v-tooltip="ctrans('Use the system with another user\'s permissions')">
-            <FontAwesomeIcon v-if="switchingTo" icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else icon="fal fa-user-shield" class="text-xs" fixed-width aria-hidden="true" />
-            <span class="text-xs leading-none" :class="borrowedFrom ? 'font-semibold' : 'font-extralight'">
-                {{ borrowedFrom ? (borrowedFrom.contact_name || borrowedFrom.username) : ctrans("Impersonate") }}
-            </span>
+        <PopoverButton as="template">
+            <button
+                type="button"
+                @click="!open && fetchLenders()"
+                :class="[borrowedFrom ? 'bg-amber-500 text-black' : open ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-200']"
+                class="inline-flex items-center gap-x-1 px-3 h-full outline-none focus:outline-none focus:ring-0"
+                v-tooltip="ctrans('Use the system with another user\'s permissions')">
+                <FontAwesomeIcon v-if="switchingTo" icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fal fa-user-shield" class="text-xs" fixed-width aria-hidden="true" />
+                <span class="text-xs leading-none" :class="borrowedFrom ? 'font-semibold' : 'font-extralight'">
+                    {{ borrowedFrom ? (borrowedFrom.contact_name || borrowedFrom.username) : ctrans("Impersonate") }}
+                </span>
+            </button>
         </PopoverButton>
 
         <transition name="headlessui">

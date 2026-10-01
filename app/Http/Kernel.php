@@ -23,6 +23,8 @@ use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\ApplyBorrowedPermissions;
+use App\Http\Middleware\EnsureOrganisationIsAuthorised;
+use App\Http\Middleware\KeepAgentStaffInTheirOrganisation;
 use App\Http\Middleware\BindGroupInstance;
 use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
 use App\Http\Middleware\CheckWebsiteState;
@@ -152,6 +154,8 @@ class Kernel extends HttpKernel
             BindGroupInstance::class,
             ApplyBorrowedPermissions::class,
             SubstituteBindings::class,
+            EnsureOrganisationIsAuthorised::class,
+            KeepAgentStaffInTheirOrganisation::class,
             SetLocale::class,
             LogUserRequestMiddleware::class,
             HandleInertiaGrpRequests::class,

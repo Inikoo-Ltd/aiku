@@ -8,11 +8,11 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { ref, watch, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella } from "@fal";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella, faCalendar, faCalendarAlt } from "@fal";
 
-library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella)
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella, faCalendar, faCalendarAlt)
 
 
 const props = defineProps<{
@@ -240,7 +240,7 @@ watch(
                             class="mt-0.5 block w-28 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                         >
                             <option value="">
-                                {{ trans('All years') }}
+                                {{ ctrans('All years') }}
                             </option>
                             <option
                                 v-for="year in yearOptions"
@@ -258,33 +258,33 @@ watch(
                             class="mt-0.5 block w-32 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                         >
                             <option value="">
-                                {{ trans('All months') }}
+                                {{ ctrans('All months') }}
                             </option>
-                            <option value="1">{{ trans('January') }}</option>
-                            <option value="2">{{ trans('February') }}</option>
-                            <option value="3">{{ trans('March') }}</option>
-                            <option value="4">{{ trans('April') }}</option>
-                            <option value="5">{{ trans('May') }}</option>
-                            <option value="6">{{ trans('June') }}</option>
-                            <option value="7">{{ trans('July') }}</option>
-                            <option value="8">{{ trans('August') }}</option>
-                            <option value="9">{{ trans('September') }}</option>
-                            <option value="10">{{ trans('October') }}</option>
-                            <option value="11">{{ trans('November') }}</option>
-                            <option value="12">{{ trans('December') }}</option>
+                            <option value="1">{{ ctrans('January') }}</option>
+                            <option value="2">{{ ctrans('February') }}</option>
+                            <option value="3">{{ ctrans('March') }}</option>
+                            <option value="4">{{ ctrans('April') }}</option>
+                            <option value="5">{{ ctrans('May') }}</option>
+                            <option value="6">{{ ctrans('June') }}</option>
+                            <option value="7">{{ ctrans('July') }}</option>
+                            <option value="8">{{ ctrans('August') }}</option>
+                            <option value="9">{{ ctrans('September') }}</option>
+                            <option value="10">{{ ctrans('October') }}</option>
+                            <option value="11">{{ ctrans('November') }}</option>
+                            <option value="12">{{ ctrans('December') }}</option>
                         </select>
                     </div>
                     <div class="flex gap-2">
                         <Button
                             type="secondary"
                             size="xs"
-                            :label="trans('Filter')"
+                            :label="ctrans('Filter')"
                             @click="applyFilters"
                         />
                         <Button
                             type="tertiary"
                             size="xs"
-                            :label="trans('Reset')"
+                            :label="ctrans('Reset')"
                             @click="resetFilters"
                         />
                     </div>
@@ -300,7 +300,7 @@ watch(
                     type="secondary"
                     size="xs"
                     icon="fal fa-umbrella"
-                    :label="trans('Generate next year')"
+                    :label="ctrans('Generate next year')"
                     @click="openGenerateModal"
                 />
             </div>
@@ -311,14 +311,14 @@ watch(
         <form class="space-y-4" @submit.prevent="submitCreate">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Type') }}
+                    {{ ctrans('Type') }}
                 </label>
                 <select
                     v-model="form.type"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option value="">
-                        {{ trans('Select type') }}
+                        {{ ctrans('Select type') }}
                     </option>
                     <option
                         v-for="option in typeOptions"
@@ -335,7 +335,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Name') }}
+                    {{ ctrans('Name') }}
                 </label>
                 <input
                     v-model="form.label"
@@ -349,7 +349,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('From') }}
+                    {{ ctrans('From') }}
                 </label>
                 <input
                     v-model="form.from"
@@ -363,7 +363,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('To') }}
+                    {{ ctrans('To') }}
                 </label>
                 <input
                     v-model="form.to"
@@ -384,7 +384,7 @@ watch(
                     class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="is_recurring" class="text-sm text-gray-700">
-                    {{ trans('Repeats every year (fixed holiday)') }}
+                    {{ ctrans('Repeats every year (fixed holiday)') }}
                 </label>
             </div>
 
@@ -392,13 +392,13 @@ watch(
                 <Button
                     type="secondary"
                     size="sm"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click.prevent="closeCreateModal"
                 />
                 <Button
                     type="create"
                     size="sm"
-                    :label="trans('Save')"
+                    :label="ctrans('Save')"
                     nativeType="submit"
                     :disabled="form.processing"
                 />
@@ -409,7 +409,7 @@ watch(
         <form class="space-y-4" @submit.prevent="submitGenerate">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Target year') }}
+                    {{ ctrans('Target year') }}
                 </label>
                 <input
                     v-model="generateForm.year"
@@ -424,20 +424,20 @@ watch(
             </div>
 
             <p class="text-sm text-gray-600">
-                {{ trans('This will create holidays for the target year based on recurring holidays from the previous year.') }}
+                {{ ctrans('This will create holidays for the target year based on recurring holidays from the previous year.') }}
             </p>
 
             <div class="mt-6 flex justify-end gap-3">
                 <Button
                     type="secondary"
                     size="sm"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click.prevent="closeGenerateModal"
                 />
                 <Button
                     type="create"
                     size="sm"
-                    :label="trans('Generate')"
+                    :label="ctrans('Generate')"
                     nativeType="submit"
                     :disabled="generateForm.processing"
                 />
@@ -448,14 +448,14 @@ watch(
         <form class="space-y-4" @submit.prevent="submitEdit">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Type') }}
+                    {{ ctrans('Type') }}
                 </label>
                 <select
                     v-model="editForm.type"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option value="">
-                        {{ trans('Select type') }}
+                        {{ ctrans('Select type') }}
                     </option>
                     <option
                         v-for="option in typeOptions"
@@ -472,7 +472,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Name') }}
+                    {{ ctrans('Name') }}
                 </label>
                 <input
                     v-model="editForm.label"
@@ -486,7 +486,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('From') }}
+                    {{ ctrans('From') }}
                 </label>
                 <input
                     v-model="editForm.from"
@@ -500,7 +500,7 @@ watch(
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('To') }}
+                    {{ ctrans('To') }}
                 </label>
                 <input
                     v-model="editForm.to"
@@ -521,7 +521,7 @@ watch(
                     class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="edit_is_recurring" class="text-sm text-gray-700">
-                    {{ trans('Repeats every year (fixed holiday)') }}
+                    {{ ctrans('Repeats every year (fixed holiday)') }}
                 </label>
             </div>
 
@@ -529,13 +529,13 @@ watch(
                 <Button
                     type="secondary"
                     size="sm"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click.prevent="closeEditModal"
                 />
                 <Button
                     type="create"
                     size="sm"
-                    :label="trans('Save changes')"
+                    :label="ctrans('Save changes')"
                     nativeType="submit"
                     :disabled="editForm.processing"
                 />
@@ -566,7 +566,7 @@ watch(
                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
                 :class="item.is_recurring ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
             >
-                {{ item.is_recurring ? trans('Fixed') : trans('One-off') }}
+                {{ item.is_recurring ? ctrans('Fixed') : ctrans('One-off') }}
             </span>
         </template>
 
@@ -594,7 +594,7 @@ watch(
                     type="secondary"
                     size="xs"
                     icon="fal fa-pencil"
-                    :label="trans('Edit')"
+                    :label="ctrans('Edit')"
                     @click="openEditModal(item)"
                 />
                 <ModalConfirmationDelete
@@ -605,7 +605,7 @@ watch(
                             holiday: item.id,
                         },
                     }"
-                    :title="trans('Are you sure you want to delete this holiday?')"
+                    :title="ctrans('Are you sure you want to delete this holiday?')"
                     isFullLoading
                 >
                     <template #default="{ changeModel }">
@@ -613,7 +613,7 @@ watch(
                             type="negative"
                             size="xs"
                             icon="fal fa-trash-alt"
-                            :label="trans('Delete')"
+                            :label="ctrans('Delete')"
                             @click="changeModel"
                         />
                     </template>

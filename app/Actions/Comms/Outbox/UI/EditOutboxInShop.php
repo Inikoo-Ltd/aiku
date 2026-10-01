@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Outbox\UI;
 
+use App\Actions\Comms\Mailshot\Filters\FilterDueToReorder;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
@@ -91,6 +92,21 @@ class EditOutboxInShop extends OrgAction
                             'placeholder' => __('Days after last order dispatched'),
                             'information' => __('Number of days to wait after the last dispatched order before sending this reminder.'),
                             'required' => true,
+                            'value' => $outbox->days_after,
+                        ],
+                    ]
+                ];
+                break;
+            case OutboxCodeEnum::DUE_TO_REORDER:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'input_number',
+                            'label' => __('Days before the expected next order'),
+                            'placeholder' => (string) FilterDueToReorder::DAYS_AHEAD,
+                            'information' => __('Send the reminder this many days before the date the customer usually orders again. Empty sends it :days days before.', ['days' => FilterDueToReorder::DAYS_AHEAD]),
+                            'required' => false,
                             'value' => $outbox->days_after,
                         ],
                     ]

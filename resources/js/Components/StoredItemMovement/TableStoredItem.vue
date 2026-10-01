@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 import { debounce } from 'lodash-es'
 import Tag from '@/Components/Tag.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import TagPallet from '@/Components/TagPallet.vue'
 
 library.add(faSpinnerThird, faSearch)
@@ -55,7 +55,6 @@ const getData = debounce(async () => {
         let finaldata = response.data.data
         if (props.onFilterDatalist) finaldata = props.onFilterDatalist(finaldata)
         dataList.value = finaldata
-        console.log('dd', dataList.value)
         loading.value = false
     } catch (error) {
         loading.value = false
@@ -118,12 +117,12 @@ defineExpose({
 
 <template>
     <div class="mb-4 text-center text-xl font-medium">
-        {{ trans('Select pallet') }}
+        {{ ctrans('Select pallet') }}
     </div>
 
     <div class="flex items-center justify-between gap-x-6 mb-4">
         <div class="w-full md:w-1/4">
-            <PureInput v-model="tableFilter.search" :placeholder="trans('Search')" :loading="loading" :copy-button="true"
+            <PureInput v-model="tableFilter.search" :placeholder="ctrans('Search')" :loading="loading" :copy-button="true"
                 @update:modelValue="() => getData()">
                 <template #copyButton>
                     <div

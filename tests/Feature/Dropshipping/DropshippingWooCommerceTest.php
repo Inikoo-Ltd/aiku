@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
@@ -37,8 +38,10 @@ use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooComm
 use App\Actions\Dropshipping\WooCommerce\Product\RetryTimedOutWooUploads;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
+use App\Helpers\PlatformResponseFormatter;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
@@ -47,6 +50,7 @@ use Illuminate\Http\Client\ConnectionException;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
 use App\Actions\Maintenance\Dropshipping\RepairWooParkedButLiveChannels;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -56,8 +60,10 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -424,9 +430,11 @@ test('checking a channel marks it not ready while the store is down and authenti
     $channel = CheckWooChannel::run($wooCommerceUser);
 
     expect($channel->platform_status)->toBeFalse()
-        ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY);
+        ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY)
+        ->and($channel->connection_failure)->toBe(WooCommerceConnectionFailureEnum::STORE_ERROR)
+        ->and($channel->is_blocked)->toBeFalse();
 
-    $channel->update(['ban_stock_update_util' => now()->addMinute()]);
+    $channel->update(['ban_stock_update_util' => now()->addMinute(), 'settings' => ['pricing' => ['type' => 'percent']]]);
 
     wooFake();
     $channel = CheckWooChannel::run($wooCommerceUser->refresh());
@@ -434,7 +442,70 @@ test('checking a channel marks it not ready while the store is down and authenti
     expect($channel->platform_status)->toBeTrue()
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and($channel->ban_stock_update_util)->toBeNull()
+        ->and($channel->connection_failure)->toBeNull()
+        ->and($channel->is_blocked)->toBeFalse()
+        ->and(Arr::get($channel->fresh()->settings, 'woocommerce.not_ready_reason'))->toBeNull()
+        ->and(Arr::get($channel->fresh()->settings, 'pricing.type'))->toBe('percent')
         ->and(wooSent('POST', 'webhooks'))->toHaveCount(0);
+});
+
+test('checking a channel records why its store cannot be reached and only counts a refusal or a firewall as blocked', function ($reply, WooCommerceConnectionFailureEnum $failure, bool $isBlocked) {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+
+    wooFake(['GET settings' => $reply, 'GET orders' => $reply]);
+    $channel = CheckWooChannel::run($wooCommerceUser)->fresh();
+
+    expect($channel->platform_status)->toBeFalse()
+        ->and($channel->connection_failure)->toBe($failure)
+        ->and($channel->is_blocked)->toBe($isBlocked)
+        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toBe($failure->customerMessage());
+})->with([
+    'connection refused'        => [fn () => Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server"), WooCommerceConnectionFailureEnum::REFUSED, true],
+    'cloudflare challenge'      => [fn () => Http::response('<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="cf-chl-widget"></div></body></html>', 403, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'under attack interstitial' => [fn () => Http::response('<html><head><title>Checking your browser before accessing the store</title></head><body>DDoS protection by Cloudflare</body></html>', 503, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'store 404 page wording'    => [fn () => Http::response('<html><head><title>Page not found</title></head><body>Access denied to members area? Log in.</body></html>', 404, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'rate limited'              => [fn () => Http::response('Too Many Requests', 429), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'rest api disabled'         => [fn () => Http::response(['code' => 'rest_cannot_access', 'message' => 'Only authenticated users can access the REST API.', 'data' => ['status' => 401]], 401), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'timeout'                   => [fn () => Http::failedConnection('cURL error 28: Operation timed out after 30001 milliseconds with 0 bytes received'), WooCommerceConnectionFailureEnum::TIMEOUT, false],
+    'domain gone'               => [fn () => Http::failedConnection('cURL error 6: Could not resolve host: shop.example.test'), WooCommerceConnectionFailureEnum::DNS, false],
+    'expired certificate'       => [fn () => Http::failedConnection('cURL error 60: SSL certificate problem: certificate has expired'), WooCommerceConnectionFailureEnum::TLS, false],
+    'key cannot read'           => [fn () => wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401), WooCommerceConnectionFailureEnum::CREDENTIALS, false],
+    'key invalid'               => [fn () => wooError('woocommerce_rest_authentication_error', 'Consumer key is invalid.', 401), WooCommerceConnectionFailureEnum::CREDENTIALS, false],
+    'woocommerce removed'       => [fn () => Http::response(['code' => 'rest_no_route', 'message' => 'No route was found matching the URL and request method.', 'data' => ['status' => 404]], 404), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'moved to another platform' => [fn () => Http::response('Bad Request', 400, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'site page instead of api'  => [fn () => Http::response('<!DOCTYPE html><html><head><title>My shop</title></head><body>Welcome</body></html>', 200, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'redirected to www'         => [fn () => fn (Request $request) => str_contains($request->url(), '://www.')
+        ? wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)
+        : Http::response('', 301, ['Location' => str_replace('://', '://www.', $request->url())]), WooCommerceConnectionFailureEnum::REDIRECTED, false],
+    'gateway timeout page'      => [fn () => Http::response("<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body><center><h1>504 Gateway Time-out</h1></center><hr><center>nginx</center></body>\r\n</html>", 504, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::STORE_ERROR, false],
+]);
+
+test('a parked channel records why its store still fails on the first run of the day without being revived', function () {
+    $parked = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
+
+    wooFakeForPing(wooDown(Http::response('<html><head><title>Just a moment...</title></head></html>', 403, ['Content-Type' => 'text/html'])));
+
+    Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
+    Artisan::call('woo:ping_active_channel');
+    Carbon::setTestNow();
+
+    $parked->refresh();
+    expect($parked->connection_failure)->toBe(WooCommerceConnectionFailureEnum::FIREWALL)
+        ->and($parked->is_blocked)->toBeTrue()
+        ->and(Arr::get($parked->settings, 'woocommerce.not_ready_reason'))->toBe(WooCommerceConnectionFailureEnum::FIREWALL->customerMessage())
+        ->and($parked->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($parked->platform_status)->toBeFalse()
+        ->and($parked->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY);
+});
+
+test('the test connection button explains why the store failed', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+
+    wooFake(wooDown(wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)));
+
+    expect(fn () => TestConnectionWooCommerceUser::make()->handle($wooCommerceUser->customerSalesChannel))
+        ->toThrow(ValidationException::class, WooCommerceConnectionFailureEnum::CREDENTIALS->customerMessage());
 });
 
 test('connecting the same store again reuses the channel and, after a close, brings it back with its portfolio', function () {
@@ -800,6 +871,26 @@ test('an upload the store refuses leaves the error on the portfolio and an empty
         ->and(PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->first()->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
 });
 
+test('an upload the store gateway times out on is saved as a timeout and picked up by the timed out retry', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $channel->update(['can_connect_to_platform' => true]);
+    $portfolio = wooPortfolio($channel, $this->product, null, 'aw-gateway-timeout');
+
+    wooFake([
+        'POST products' => Http::response("<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n", 504, ['Content-Type' => 'text/html']),
+        'GET products'  => Http::response([]),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->errors_response['message'])->toContain('timed out')
+        ->and(RetryTimedOutWooUploads::run($channel)->pluck('id')->all())->toContain($portfolio->id)
+        ->and(PlatformResponseFormatter::make()->message(['<!DOCTYPE html><html><head><title>Maintenance</title></head><body>Back soon</body></html>']))->toContain('web page');
+});
+
 test('an upload that collides with a listed sku adopts the listed product', function () {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
     $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'dup-sku');
@@ -1077,6 +1168,38 @@ test('timed out uploads are reported and, with dispatch, queued again only on op
     $this->artisan('woo:retry-timed-out-uploads', ['customerSalesChannel' => $live->id, '--dispatch' => true])->assertSuccessful();
     StoreNewProductToCurrentWooCommerce::assertPushed(1);
     StoreNewProductToCurrentWooCommerce::assertPushed(fn ($job, array $arguments) => $arguments[1]->id === $timedOut->id);
+});
+
+test('the nightly retry only takes uploads tried in the last days and gives up after a few attempts', function () {
+    Queue::fake();
+    $timedOut   = ['message' => 'The store timed out before answering (gateway timeout), it may be busy or too slow. Try again in a few minutes.'];
+    $portfolios = [];
+
+    foreach (['recent' => [1, 1], 'old' => [1, 10], 'tried_often' => [3, 1]] as $name => [$attempts, $daysAgo]) {
+        $channel = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+        $channel->update(['can_connect_to_platform' => true]);
+        $portfolio = wooPortfolio($channel, $this->product, null, 'nightly-'.$name);
+        $portfolio->update(['errors_response' => $timedOut]);
+
+        for ($attempt = 0; $attempt < $attempts; $attempt++) {
+            StorePlatformPortfolioLog::run($portfolio, ['type' => PlatformPortfolioLogsTypeEnum::UPLOAD, 'status' => PlatformPortfolioLogsStatusEnum::FAIL])
+                ->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
+        }
+        StorePlatformPortfolioLog::run($portfolio, ['type' => PlatformPortfolioLogsTypeEnum::UPDATE_STOCK]);
+
+        $portfolios[$name] = $portfolio;
+    }
+
+    expect(RetryTimedOutWooUploads::run(withinDays: 3, maxAttempts: 3)->pluck('id'))
+        ->toContain($portfolios['recent']->id)
+        ->not->toContain($portfolios['old']->id)
+        ->not->toContain($portfolios['tried_often']->id)
+        ->and(RetryTimedOutWooUploads::run()->pluck('id'))->toContain($portfolios['old']->id, $portfolios['tried_often']->id);
+
+    $this->artisan('woo:retry-timed-out-uploads', ['--dispatch' => true, '--days' => 3, '--max-attempts' => 3])->assertSuccessful();
+
+    StoreNewProductToCurrentWooCommerce::assertPushed(fn ($job, array $arguments) => $arguments[1]->id === $portfolios['recent']->id);
+    StoreNewProductToCurrentWooCommerce::assertNotPushed(fn ($job, array $arguments) => in_array($arguments[1]->id, [$portfolios['old']->id, $portfolios['tried_often']->id], true));
 });
 
 test('quantity to send follows the channel threshold and cap', function () {
@@ -1381,6 +1504,23 @@ test('a bulk upload shares one progress counter across its chunks and a killed p
     Event::assertDispatched(UploadProductToSalesChannelProgressEvent::class, fn ($event) => $event->statistics === ['total' => 1, 'success' => 0, 'fail' => 1]);
 });
 
+test('a bulk upload spaces its product creates by slot round so waiting jobs are not popped over and over', function () {
+    Queue::fake();
+    wooFake();
+
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $portfolio       = wooPortfolio($channel, $this->product, null, 'aw-bulk-stagger');
+
+    StoreBulkDispatchProductToCurrentWooCommerce::run($channel, $channel->portfolios()->whereKey($portfolio->id)->get(), ['cache_key' => 'stagger', 'total' => 9], 9);
+
+    $expectedDelay = intdiv(9, StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE) * StoreNewProductToCurrentWooCommerce::STAGGER_SECONDS_PER_SLOT_ROUND;
+
+    Queue::assertPushed(BoundedUniqueJobDecorator::class, fn (BoundedUniqueJobDecorator $job) => $job->getAction() instanceof StoreNewProductToCurrentWooCommerce
+        && abs(now()->diffInSeconds($job->delay) - $expectedDelay) <= 1
+        && $job->uniqueFor === (StoreNewProductToCurrentWooCommerce::RETRY_FOR_HOURS + 1) * 3600);
+});
+
 test('a created product is trusted from the create reply so a slow store is not asked again', function () {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
     $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-created-slow');
@@ -1408,7 +1548,7 @@ test('a product upload waits for a free slot when the store already has its maxi
     wooFake();
 
     $job = Mockery::mock(JobDecorator::class);
-    $job->shouldReceive('release')->once()->with(StoreNewProductToCurrentWooCommerce::WAIT_FOR_SLOT_SECONDS);
+    $job->shouldReceive('release')->once()->with(Mockery::on(fn (int $seconds) => $seconds >= StoreNewProductToCurrentWooCommerce::MIN_WAIT_FOR_SLOT_SECONDS && $seconds <= StoreNewProductToCurrentWooCommerce::MAX_WAIT_FOR_SLOT_SECONDS));
 
     $holdSlots = function (int $left) use (&$holdSlots, $funnel, $job, $wooCommerceUser, $portfolio) {
         if ($left === 0) {

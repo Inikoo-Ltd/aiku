@@ -97,7 +97,7 @@ class IndexStockDeliveries extends OrgAction
             ];
         }
 
-        return [
+        $elementGroups = [
             'state' => [
                 'label'    => __('State'),
                 'elements' => $elements,
@@ -106,6 +106,48 @@ class IndexStockDeliveries extends OrgAction
                 },
             ],
         ];
+
+        if (isset($this->parent) && ($this->parent instanceof Warehouse || $this->parent instanceof Organisation)) {
+            $sourceCounts = $this->applyParentFilter(StockDelivery::query())
+                ->selectRaw('stock_deliveries.parent_type, count(*) as total')
+                ->groupBy('stock_deliveries.parent_type')
+                ->pluck('total', 'parent_type')
+                ->all();
+
+            $elementGroups['source'] = [
+                'label'    => __('Source'),
+                'elements' => [
+                    'OrgSupplier' => [__('Suppliers'), $sourceCounts['OrgSupplier'] ?? 0],
+                    'Production'  => [__('Production'), $sourceCounts['Production'] ?? 0],
+                    'OrgPartner'  => [__('Partners'), $sourceCounts['OrgPartner'] ?? 0],
+                    'OrgAgent'    => [__('Agents'), $sourceCounts['OrgAgent'] ?? 0],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('stock_deliveries.parent_type', $elements);
+                },
+            ];
+        }
+
+        if (isset($this->parent) && $this->parent instanceof Organisation) {
+            $costedCounts = $this->applyParentFilter(StockDelivery::query())
+                ->selectRaw('stock_deliveries.is_costed, count(*) as total')
+                ->groupBy('stock_deliveries.is_costed')
+                ->pluck('total', 'is_costed')
+                ->all();
+
+            $elementGroups['costing'] = [
+                'label'    => __('Costing'),
+                'elements' => [
+                    'costed'     => [__('Costed'), $costedCounts[1] ?? 0],
+                    'not_costed' => [__('Not costed'), $costedCounts[0] ?? 0],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->where('stock_deliveries.is_costed', in_array('costed', $elements));
+                },
+            ];
+        }
+
+        return $elementGroups;
     }
 
     private function isAgentContext(): bool
@@ -174,9 +216,15 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.slug',
             'stock_deliveries.reference',
             'stock_deliveries.parent_name',
+            'stock_deliveries.parent_type',
             'stock_deliveries.state',
             'stock_deliveries.date',
-        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date");
+        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date")
+            ->selectRaw("case stock_deliveries.parent_type
+                when 'OrgSupplier' then (select org_suppliers.slug from org_suppliers where org_suppliers.id = stock_deliveries.parent_id)
+                when 'OrgAgent' then (select org_agents.slug from org_agents where org_agents.id = stock_deliveries.parent_id)
+                when 'OrgPartner' then stock_deliveries.parent_id::text
+            end as parent_route_key");
 
         if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
@@ -209,7 +257,7 @@ class IndexStockDeliveries extends OrgAction
             ->defaultSort('-stock_deliveries.date')
             ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'])
+            ->withBetweenDates(['date', 'booked_in_at', 'placed_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -223,7 +271,7 @@ class IndexStockDeliveries extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            $table->betweenDates(['date']);
+            $table->betweenDates(['date', 'booked_in_at', 'placed_at']);
 
             $table
                 ->withModelOperations($modelOperations)

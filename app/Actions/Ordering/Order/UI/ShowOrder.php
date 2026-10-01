@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
+use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -280,7 +282,8 @@ class ShowOrder extends OrgAction
         $orderBanStatus = $this->isForbiddenDetailed($order);
 
         $lockedInAurora = $order->isLockedInAurora();
-        $canEdit        = $this->canEdit && !$lockedInAurora;
+        $preOrderLocked = $order->preOrder && !$order->preOrder->canBeEditedBy($request->user());
+        $canEdit        = $this->canEdit && !$lockedInAurora && !$preOrderLocked;
 
         $actions = match (true) {
             $lockedInAurora => [],
@@ -290,6 +293,7 @@ class ShowOrder extends OrgAction
 
         if (!$canEdit
             && !$lockedInAurora
+            && !$preOrderLocked
             && $order->state == OrderStateEnum::SUBMITTED
             && $order->pay_status != OrderPayStatusEnum::PAID
             && $order->transactions()->exists()
@@ -315,7 +319,7 @@ class ShowOrder extends OrgAction
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora) {
+        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora && !$preOrderLocked) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -422,6 +426,7 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'basket_customer_balance' => $order->state == OrderStateEnum::CREATING ? $order->customer->balance : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [
@@ -538,6 +543,23 @@ class ShowOrder extends OrgAction
                     'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
                 ],
                 'data'                        => OrderResource::make($order),
+                'pre_order'                   => $order->preOrder ? array_merge(GetPreOrderShowcase::run($order->preOrder), [
+                    'update_route'         => [
+                        'name'       => 'grp.models.order.pre_order.update',
+                        'parameters' => ['order' => $order->id],
+                        'method'     => 'patch',
+                    ],
+                    'cancellation_reasons' => PreOrderCancellationReasonEnum::valuesWithLabels(),
+                    'lock'                 => [
+                        'is_locked'        => $order->preOrder->isLocked(),
+                        'is_locked_for_me' => $preOrderLocked,
+                        'unlocked_until'   => $order->preOrder->isUnlockedFor($request->user()) ? $order->preOrder->unlockedUntil()?->toIso8601String() : null,
+                    ],
+                ]) : null,
+                'split_pre_order'             => $order->splitPreOrder ? [
+                    'reference' => $order->splitPreOrder->order->reference,
+                    'slug'      => $order->splitPreOrder->order->slug,
+                ] : null,
                 'delivery_note'               => $deliveryNoteResource,
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
@@ -802,14 +824,15 @@ class ShowOrder extends OrgAction
             return $boxStats;
         }
 
-        $symbol = $order->currency->symbol ?? $order->currency->code;
+        $symbol      = $order->currency->symbol ?? $order->currency->code;
+        $profitLabel = ($summary['profit_amount'] < 0 ? '-' : '').$symbol.number_format(abs($summary['profit_amount']), 2);
 
         $marginRow = [
             'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
-            'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
-            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]),
+            'profit_label'  => $profitLabel,
+            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $profitLabel]),
             'below'         => $summary['is_below_break_even'] ? __('below :pct% break-even', ['pct' => $summary['break_even_pct']]) : null,
             'without_cost'  => $summary['lines_without_cost'] > 0 ? __(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]) : null,
         ];

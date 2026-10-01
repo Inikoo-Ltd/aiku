@@ -8,7 +8,7 @@ import { ref, computed, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faTimes, faPencil } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { notify } from '@kyvg/vue3-notification'
@@ -74,7 +74,6 @@ const toggleSwitchValue = computed({
     set: (value: boolean) => {
         localIsSuspended.value = !value
         // Here you can add API call to update the server
-        console.log('Email subscription suspended status changed to:', localIsSuspended.value)
     }
 })
 
@@ -96,8 +95,8 @@ const toggleSubscription = (subscriptionKey: string, value: boolean) => {
     const subscription = props.emailSubscriptions?.subscriptions[subscriptionKey]
     if (!subscription || !props.emailSubscriptions?.update_route) {
         notify({
-            title: trans('Error'),
-            text: trans('Subscription configuration not found'),
+            title: ctrans('Error'),
+            text: ctrans('Subscription configuration not found'),
             type: 'error'
         })
         return
@@ -122,10 +121,10 @@ const toggleSubscription = (subscriptionKey: string, value: boolean) => {
             onSuccess: () => {
                 isUpdateSuccessful = true
                 notify({
-                    title: trans('Success'),
+                    title: ctrans('Success'),
                     text: value
-                        ? trans('Successfully subscribed to :subscription', { subscription: subscription.label })
-                        : trans('Successfully unsubscribed from :subscription', { subscription: subscription.label }),
+                        ? ctrans('Successfully subscribed to :subscription', { subscription: subscription.label })
+                        : ctrans('Successfully unsubscribed from :subscription', { subscription: subscription.label }),
                     type: 'success'
                 })
             },
@@ -134,8 +133,8 @@ const toggleSubscription = (subscriptionKey: string, value: boolean) => {
                 if (!isUpdateSuccessful) {
                     localSubscriptions.value[subscriptionKey] = previousValue
                     notify({
-                        title: trans('Error'),
-                        text: trans('Failed to update email subscription. Please try again.'),
+                        title: ctrans('Error'),
+                        text: ctrans('Failed to update email subscription. Please try again.'),
                         type: 'error'
                     })
                 }
@@ -157,7 +156,7 @@ defineExpose({
     <!-- Email Subscriptions Section -->
     <div v-if="emailSubscriptions" :class="containerClass">
         <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-medium text-gray-900">{{ trans("Subscriptions") }}</h3>
+            <h3 class="text-sm font-medium text-gray-900">{{ ctrans("Subscriptions") }}</h3>
             
             <!-- Edit Button -->
             <button 
@@ -165,7 +164,7 @@ defineExpose({
                 @click="toggleEditEmailSubscriptions"
                 :style="{ color: layout?.app?.theme?.[0] || '#6366f1' }"
                 class="p-1 rounded transition-colors duration-200 hover:bg-gray-100"
-                v-tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
+                v-tooltip="isEditingEmailSubscriptions ? ctrans('Cancel Edit') : ctrans('Edit Email Subscriptions')"
             >
                 <FontAwesomeIcon 
                     :icon="isEditingEmailSubscriptions ? faTimes : faPencil" 
@@ -199,7 +198,7 @@ defineExpose({
                             'toggle-switch-active': localSubscriptions[key],
                             'toggle-switch-inactive': !localSubscriptions[key]
                         }"
-                        v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')"
+                        v-tooltip="localSubscriptions[key] ? ctrans('Subscribed') : ctrans('Unsubscribed')"
                     /> -->
                     <Toggle
                         size="md"
@@ -207,7 +206,7 @@ defineExpose({
                         :loading="loadingSubscriptions[key]"
                         :disabled="loadingSubscriptions[key]"
                         @update:modelValue="(value) => toggleSubscription(key, value)"
-                        v-tooltip="loadingSubscriptions[key] ? trans('Saving...') : localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')"
+                        v-tooltip="loadingSubscriptions[key] ? ctrans('Saving...') : localSubscriptions[key] ? ctrans('Subscribed') : ctrans('Unsubscribed')"
                     />
                 </div>
 
@@ -222,7 +221,7 @@ defineExpose({
                         class="ml-1 text-xs"
                         :class="subscription.is_subscribed ? 'text-green-600' : 'text-red-600'"
                     >
-                        {{ subscription.is_subscribed ? trans('Subscribed') : trans('Unsubscribed') }}
+                        {{ subscription.is_subscribed ? ctrans('Subscribed') : ctrans('Unsubscribed') }}
                     </span>
                 </div>
             </div>
@@ -230,7 +229,7 @@ defineExpose({
 
         <!-- Message when suspended -->
         <div v-if="localIsSuspended" class="mt-3 p-2 bg-red-50 rounded text-center">
-            <span class="text-xs text-red-600">{{ trans('All email communications are suspended') }}</span>
+            <span class="text-xs text-red-600">{{ ctrans('All email communications are suspended') }}</span>
         </div>
     </div>
 </template>

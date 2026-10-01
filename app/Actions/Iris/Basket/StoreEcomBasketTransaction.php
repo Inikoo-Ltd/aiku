@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreEcomBasketTransaction extends IrisAction
@@ -30,6 +31,18 @@ class StoreEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
+        return Cache::lock("ecom-basket:customer:{$customer->id}", 10)->block(
+            5,
+            fn () => $this->addProductToBasket($customer->refresh(), $product, $modelData)
+        );
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
+     */
+    private function addProductToBasket(Customer $customer, Product $product, array $modelData): Transaction
+    {
         $order = $this->getOrderInBasket($customer);
 
         $existingTransaction = $order ? $this->findCustomerLine($order, $product) : null;
@@ -42,7 +55,7 @@ class StoreEcomBasketTransaction extends IrisAction
             );
         }
 
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
+        $this->ensureProductIsPurchasableByCustomer($product, $customer, Arr::get($modelData, 'quantity'));
 
         if (!$order) {
             $order = StoreEcomOrder::make()->action($customer);

@@ -134,6 +134,15 @@ class EditProductComposition extends OrgAction
                         'value' => $this->getTradeUnitsWithPackingData($product),
                     ] : null,
                     'units' => $this->getUnitsField($product, $this->getUnitsChangeConfirmation($product)),
+                    'is_indivisible' => $canEditTradeUnits && $product->tradeUnits->unique('id')->count() > 1 ? [
+                        'type'            => 'toggle',
+                        'label'           => __('Sold only as a complete set'),
+                        'value'           => $product->is_indivisible,
+                        'information'     => __('Turn on when a part is useless without the others, like a lamp with its bulb and cable. If one part can not be picked, the warehouse puts the other parts back and the customer is refunded the whole product. When off, the parts found are sent and the customer is refunded only the value of the missing ones.'),
+                        'noSaveButton'    => true,
+                        'submitOnConfirm' => true,
+                        ...$this->getIndivisibleToggleConfirmations($product),
+                    ] : null,
                 ]),
             ],
         ];

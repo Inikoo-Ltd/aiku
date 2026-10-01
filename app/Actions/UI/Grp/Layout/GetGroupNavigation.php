@@ -224,6 +224,19 @@ class GetGroupNavigation
             ],
         ];
 
+        $groupNavigation['ai'] = [
+            'label'   => __('AI'),
+            'tooltip' => __('AI spend and usage'),
+            'icon'    => ['fal', 'fa-robot'],
+            'root'    => 'grp.ai.',
+            'route'   => [
+                'name' => 'grp.ai.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [],
+            ],
+        ];
+
         $groupNavigation['devops'] = [
             'label'   => __('Devops'),
             'tooltip' => __('Application Performance Monitoring'),
@@ -409,24 +422,24 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-box-usd'],
             'root'    => 'grp.supply-chain.',
             'route'   => [
-                'name' => 'grp.supply-chain.dashboard'
+                'name' => 'grp.supply-chain.overview'
             ],
             'topMenu' => [
                 'subSections' => [
-                    [
-                        'label' => __('PO journey'),
-                        'icon'  => ['fal', 'fa-route'],
-                        'root'  => 'grp.supply-chain.dashboard',
-                        'route' => [
-                            'name' => 'grp.supply-chain.dashboard',
-                        ]
-                    ],
                     [
                         'label' => __('Overview'),
                         'icon'  => ['fal', 'fa-chart-network'],
                         'root'  => 'grp.supply-chain.overview',
                         'route' => [
                             'name' => 'grp.supply-chain.overview',
+                        ]
+                    ],
+                    [
+                        'label' => __('PO journey'),
+                        'icon'  => ['fal', 'fa-route'],
+                        'root'  => 'grp.supply-chain.dashboard',
+                        'route' => [
+                            'name' => 'grp.supply-chain.dashboard',
                         ]
                     ],
                     [

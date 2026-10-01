@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -49,6 +50,13 @@ class StoreProductStepDiscount extends OrgAction
             return null;
         }
 
+        Offer::where('offer_campaign_id', $offerCampaign->id)
+            ->where('trigger_type', 'Product')
+            ->where('trigger_id', $product->id)
+            ->where('state', OfferStateEnum::SUSPENDED)
+            ->get()
+            ->each(fn (Offer $suspendedOffer) => FinishOffer::run($suspendedOffer, notifySubscribers: false));
+
         data_set($modelData, 'type', OfferTypeEnum::PRODUCT_QUANTITY_ORDERED->value);
 
         $code = Str::lower($offerCampaign->code.'-'.$product->code);
@@ -58,7 +66,7 @@ class StoreProductStepDiscount extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Step Discount', $english, $product->shop->language, 'gpt-5-nano').' '.$product->code,
+            Translate::run('Step Discount', $english, $product->shop->language, 'catalogue').' '.$product->code,
             false
         );
 

@@ -138,7 +138,6 @@ const onApplyVoucher = () => {
                     // isModalVoucherNotFound.value = true
                     // // return
                 }
-                console.log('errrorr', errors.voucher)
                 notify({
                     title: ctrans("Something went wrong"),
                     text: ctrans("Failed to add the voucher, try again."),

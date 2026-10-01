@@ -15,7 +15,9 @@ use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
@@ -26,7 +28,10 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Dashboards\GetGroupWarehouseDashboardData;
 use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Actions\Catalogue\Shop\UI\GetCatalogueShowcase;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -48,11 +53,19 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\Catalogue\ShopTimeSeries;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 
@@ -1156,13 +1169,28 @@ test('sales are visible to webmasters but not to staff unrelated to sales', func
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')->has('dashboard.super_blocks', 1));
 });
 
+test('shop links on the dashboards open the shop dashboard on the target tab, whatever tab the user looked at last', function () {
+    $originalSettings = $this->user->settings;
+    $this->user->update(['settings' => array_merge($originalSettings ?? [], ['shop_dashboard_section' => ShopDashboardSectionsEnum::SALES->value])]);
+
+    $targetUrl = route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => ShopDashboardSectionsEnum::TARGET->value]);
+
+    get(route('grp.majordomo.redirect_shops_from_dashboard', $this->shop->id))->assertRedirect($targetUrl);
+
+    get($targetUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks.0.sections.current', 'target'));
+
+    $this->user->update(['settings' => $originalSettings]);
+});
+
 test('shop dashboard sales table shows departments, with brands as an icon on the right', function () {
     $response = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Catalogue/Shop')
             ->where('dashboard.super_blocks.0.blocks.0.tabs.departments.title', 'Departments')
+            ->where('dashboard.super_blocks.0.blocks.0.tabs.sub_departments.title', 'Sub-departments')
             ->has('dashboard.super_blocks.0.month_target.target')
+            ->has('dashboard.super_blocks.0.year_target.target')
             ->where('dashboard.super_blocks.0.sections.current', 'target')
             ->where('dashboard.super_blocks.0.sections.navigation', fn ($navigation) => array_keys($navigation->all()) === array_map(
                 fn (ShopDashboardSectionsEnum $section) => $section->value,
@@ -1178,6 +1206,54 @@ test('shop dashboard sales table shows departments, with brands as an icon on th
     expect($departmentsTable['header']['columns']['label']['formatted_value'])->toBe('Department')
         ->and($departmentsTable)->toHaveKeys(['body', 'totals'])
         ->and(ShopDashboardSalesTableTabsEnum::BRANDS->blueprint())->toMatchArray(['type' => 'icon', 'align' => 'right']);
+
+    $subDepartmentsTable = ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS->table(
+        $this->shop,
+        ['sub_departments' => GetSubDepartmentTimeSeriesStats::run($this->shop)]
+    );
+
+    expect($subDepartmentsTable['header']['columns']['label']['formatted_value'])->toBe('Sub-department')
+        ->and($subDepartmentsTable)->toHaveKeys(['body', 'totals']);
+});
+
+test('catalogue top of the month links to the department, family and product with their counts', function () {
+    $this->shop->stats->update([
+        'top_1m_department_id' => $this->department->id,
+        'top_1m_family_id'     => $this->family->id,
+        'top_1m_product_id'    => $this->product->id,
+    ]);
+
+    $topSelling = GetCatalogueShowcase::run($this->shop->fresh())['top_selling'];
+    $shopParameters = ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug];
+
+    expect($topSelling['department']['route'])->toBe([
+        'name'       => 'grp.org.shops.show.catalogue.departments.show',
+        'parameters' => [...$shopParameters, 'department' => $this->department->slug],
+    ])
+        ->and($topSelling['department']['counts'])->toBe([
+            'families' => $this->department->stats->number_current_families,
+            'products' => $this->department->stats->number_current_products,
+        ])
+        ->and($topSelling['family']['route']['parameters']['family'])->toBe($this->family->slug)
+        ->and($topSelling['family']['counts'])->toBe(['products' => $this->family->stats->number_current_products])
+        ->and($topSelling['product']['route']['name'])->toBe('grp.org.shops.show.catalogue.products.all_products.show')
+        ->and($topSelling['product']['route']['parameters']['product'])->toBe($this->product->slug);
+
+    get(route($topSelling['department']['route']['name'], $topSelling['department']['route']['parameters']))->assertOk();
+    get(route($topSelling['family']['route']['name'], $topSelling['family']['route']['parameters']))->assertOk();
+    get(route($topSelling['product']['route']['name'], $topSelling['product']['route']['parameters']))->assertOk();
+});
+
+test('shop top menu links to the target section of the shop dashboard', function () {
+    $target = collect(GetShopNavigation::run($this->shop, $this->user)['dashboard']['topMenu']['subSections'])->filter()->first();
+
+    expect($target['root'])->toBe('grp.org.shops.show.dashboard.show')
+        ->and($target['route']['name'])->toBe('grp.org.shops.show.dashboard.show')
+        ->and($target['route']['parameters']['section'])->toBe(ShopDashboardSectionsEnum::TARGET->value);
+
+    get(route($target['route']['name'], $target['route']['parameters']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks.0.sections.current', ShopDashboardSectionsEnum::TARGET->value));
 });
 
 test('shop month sales target defaults to last year plus growth until management sets it', function () {
@@ -1199,6 +1275,188 @@ test('shop month sales target defaults to last year plus growth until management
     expect($block['target']['is_default'])->toBeFalse()
         ->and($block['target']['amount'])->toBe(123456.78)
         ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
+});
+
+test('shop year sales target compares the same days last year, January included, and sums monthly targets', function () {
+    $shop  = $this->shop;
+    $today = Carbon::parse('2031-03-10', 'UTC');
+
+    $seed = function (TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) use ($shop) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales]
+            );
+        }
+    };
+
+    $seed(TimeSeriesFrequencyEnum::MONTHLY, ['2030-01' => 1000, '2030-02' => 2000, '2030-03' => 3000, '2030-12' => 4000, '2031-01' => 1100, '2031-02' => 2100, '2031-03' => 9999]);
+    $seed(TimeSeriesFrequencyEnum::DAILY, ['2030-03-05' => 500, '2030-03-20' => 900, '2031-03-02' => 600, '2031-03-15' => 700]);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $block  = GetShopYearSalesTarget::run($shop, null, $today);
+
+    expect($block['sales_so_far'])->toBe(3800.0)
+        ->and($block['last_year_so_far'])->toBe(3500.0)
+        ->and($block['last_year_total'])->toBe(10000.0)
+        ->and($block['remaining_days'])->toBe(296)
+        ->and($block['chart']['this_year'])->toBe([1100.0, 3200.0, 3800.0])
+        ->and($block['expected'])->toBe(round(3800 + 6500 * (3800 / 3500), 2))
+        ->and($block['target']['amount'])->toEqualWithDelta(10000 * (1 + $growth), 0.05)
+        ->and($block['target']['is_default'])->toBeTrue()
+        ->and($block['can_edit'])->toBeFalse();
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 5000, 'month' => '2031-02']);
+
+    $block = GetShopYearSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['amount'])->toEqualWithDelta(8000 * (1 + $growth) + 5000, 0.05)
+        ->and($block['target']['is_default'])->toBeFalse()
+        ->and($block['target']['months_set'])->toBe(1);
+});
+
+test('organisation target adds up its shops, leaving closed shops out of the target', function () {
+    $secondShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $closedShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $closedShop->update(['state' => ShopStateEnum::CLOSED]);
+    $today = Carbon::parse('2034-06-10', 'UTC');
+
+    $seed = function (Shop $shop, TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales]
+            );
+        }
+    };
+
+    $seed($this->shop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 1000]);
+    $seed($this->shop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 400, '2034-06-03' => 300]);
+    $seed($secondShop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 2000]);
+    $seed($secondShop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 600, '2034-06-03' => 700]);
+    $seed($closedShop, TimeSeriesFrequencyEnum::MONTHLY, ['2033-06' => 5000]);
+    $seed($closedShop, TimeSeriesFrequencyEnum::DAILY, ['2033-06-05' => 100]);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $month  = GetShopMonthSalesTarget::run($this->organisation, $this->user, $today);
+
+    expect($month['sales_so_far'])->toBe(1000.0)
+        ->and($month['last_year_so_far'])->toBe(1100.0)
+        ->and($month['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['can_edit'])->toBeFalse()
+        ->and($month['update_route'])->toBeNull()
+        ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(3000 * (1 + $growth), 0.05);
+
+    UpdateShopSalesTarget::make()->action($secondShop, ['target_org_currency' => 5000, 'month' => '2034-06']);
+
+    expect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target'])->toMatchArray(['is_default' => false])
+        ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(400 * (1 + $growth) + 5000, 0.05)
+        ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth) + 5000, 0.05);
+
+    get(route('grp.org.dashboard.show', $this->organisation->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+
+    $secondShop->update(['state' => ShopStateEnum::CLOSED]);
+});
+
+test('group target adds up every organisation in the group currency', function () {
+    $today = Carbon::parse('2036-03-10', 'UTC');
+
+    $seed = function (Shop $shop, TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales * 10, 'sales_grp_currency_external' => $sales]
+            );
+        }
+    };
+
+    $seed($this->shop, TimeSeriesFrequencyEnum::MONTHLY, ['2035-03' => 2000]);
+    $seed($this->shop, TimeSeriesFrequencyEnum::DAILY, ['2035-03-05' => 800, '2036-03-03' => 900]);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $month  = GetShopMonthSalesTarget::run($this->group, $this->user, $today);
+
+    expect($month['sales_so_far'])->toBe(900.0)
+        ->and($month['last_year_so_far'])->toBe(800.0)
+        ->and($month['currency_code'])->toBe($this->group->currency->code)
+        ->and($month['target']['amount'])->toEqualWithDelta(800 * (1 + $growth), 0.05)
+        ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['can_edit'])->toBeFalse()
+        ->and(GetShopYearSalesTarget::run($this->group, null, $today)['target']['amount'])->toEqualWithDelta(2000 * (1 + $growth), 0.05);
+
+    get(route('grp.dashboard.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+});
+
+test('group warehouse overview derives its numbers from the hydrated stats', function () {
+    $orderingStats = [
+        'number_delivery_notes_state_unassigned'       => 2,
+        'number_delivery_notes_state_queued'            => 3,
+        'number_delivery_notes_state_handling'         => 4,
+        'number_delivery_notes_state_handling_blocked' => 1,
+        'number_delivery_notes_state_picked'           => 5,
+        'number_delivery_notes_state_packing'          => 6,
+        'number_delivery_notes_state_packed'           => 7,
+        'number_delivery_notes_state_finalised'        => 8,
+    ];
+    $procurementStats = [
+        'number_stock_deliveries_state_confirmed'      => 1,
+        'number_stock_deliveries_state_ready_to_ship'  => 2,
+        'number_stock_deliveries_state_dispatched'     => 3,
+        'number_stock_deliveries_state_received'       => 4,
+        'number_stock_deliveries_state_checked'        => 5,
+        'number_stock_deliveries_state_booking_in'     => 6,
+        'number_open_purchase_orders'                  => 7,
+    ];
+    foreach ([$this->group, $this->organisation] as $owner) {
+        $owner->orderHandlingStats()->update($orderingStats);
+        $owner->procurementStats()->update($procurementStats);
+    }
+
+    Cache::forget("group-warehouse-stock-health:{$this->group->id}");
+    $currentOrgStocks = DB::table('org_stocks')
+        ->where('group_id', $this->group->id)
+        ->whereIn('state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])
+        ->where('quantity_status', OrgStockQuantityStatusEnum::OUT_OF_STOCK->value)
+        ->count();
+
+    $overview = GetGroupWarehouseDashboardData::run($this->group->refresh());
+
+    expect($overview['totals']['work'])->toBe([
+        'waiting'           => 5,
+        'picking'           => 4,
+        'blocked'           => 1,
+        'packing'           => 11,
+        'ready_to_ship'     => 15,
+    ])
+        ->and($overview['totals']['goods_in'])->toBe([
+            'confirmed'            => 1,
+            'on_the_way'           => 5,
+            'to_book_in'           => 9,
+            'booking_in'           => 6,
+            'open_purchase_orders' => 7,
+        ])
+        ->and($overview['totals']['stock_health'])->toHaveKeys(['out_of_stock', 'critical', 'low', 'ideal', 'excess', 'error'])
+        ->and($overview['totals']['stock_health']['out_of_stock'])->toBe($currentOrgStocks);
+
+    $organisationRow = collect($overview['organisations'])->firstWhere('slug', $this->organisation->slug);
+    expect($organisationRow['work']['waiting'])->toBe(5)
+        ->and($organisationRow['routes']['goods_in']['name'])->toBe('grp.org.procurement.stock_deliveries.index');
+
+    get(route('grp.dashboard.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('warehouseOverview.totals.work')->has('warehouseOverview.organisations'));
+});
+
+test('shop dashboard tab data serves the sub-departments table', function () {
+    getJson(route('grp.org.shops.show.dashboard.tab-data', [$this->organisation->slug, $this->shop->slug, 'tab' => 'sub_departments']))
+        ->assertOk()
+        ->assertJsonPath('tab', 'sub_departments')
+        ->assertJsonPath('table.header.columns.label.formatted_value', 'Sub-department');
 });
 
 test('only organisation or group admins can change the shop sales target', function () {
@@ -1279,4 +1537,127 @@ test('shop dashboard widgets compute only the widgets a tab asks for', function 
 
     expect($response->json())->toHaveKeys(['top_products', 'top_families', 'department_movers.growing', 'department_movers.falling', 'family_movers.period', 'out_of_stock.products', 'out_of_stock.estimated_lost', 'out_of_stock.rows', 'out_of_stock_month.estimated_lost', 'customer_actions.at_risk', 'customer_actions.overdue', 'routes'])
         ->not->toHaveKeys(['marketing', 'email', 'channels']);
+});
+
+test('a compliance editor sees supply chain, goods and products, and edits only compliance information', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn () => StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    $tradeUnit  = $this->product->tradeUnits()->first();
+    $compliance = $newUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    get(route('grp.supply-chain.supplier_products.index'))->assertOk();
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))->assertOk();
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->collapse()->keys()->doesntContain('name')
+                && collect($blueprint)->pluck('fields')->collapse()->has('gpsr_warnings')));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'Keep away from children'])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['name' => 'Renamed by compliance'])->assertSessionHasErrors('name');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_manual' => 'Read first', 'name' => 'Renamed by compliance'])->assertSessionHasErrors('name');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['label_info_approved' => true])->assertSessionHasErrors('label_info_approved');
+    patch(route('grp.models.product.update', $this->product->id), ['marketing_weight' => 321])->assertSessionHasNoErrors();
+    patch(route('grp.models.product.update', $this->product->id), ['price' => 1])->assertSessionHasErrors('price');
+
+    expect($tradeUnit->refresh()->gpsr_warnings)->toBe('Keep away from children')
+        ->and($tradeUnit->name)->not->toBe('Renamed by compliance')
+        ->and((int) $this->product->refresh()->marketing_weight)->toBe(321);
+
+    expect($tradeUnit->refresh()->gpsr_manual)->not->toBe('Read first');
+
+    $compliance->givePermissionTo('compliance.publish');
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['label_info_approved' => true])->assertSessionHasNoErrors();
+
+    $viewer = $newUser();
+    $viewer->givePermissionTo('compliance.view');
+    actingAs($viewer);
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))->assertOk();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
+
+    $unrelated = $newUser();
+    $unrelated->givePermissionTo('human-resources.'.$this->organisation->id.'.view');
+    actingAs($unrelated);
+
+    patch(route('grp.models.product.update', $this->product->id), ['price' => 1])->assertForbidden();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['gpsr_warnings' => 'x'])->assertForbidden();
+});
+
+test('only goods, masters or media editors change trade unit media, and attachments follow the edit permission of their model', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn (array $permissions) => tap(
+        StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $pdf       = fn () => ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('terms.pdf', 10, 'application/pdf')], 'scope' => 'Other'];
+
+    actingAs($newUser(["crm.{$this->shop->id}.edit"]));
+    $this->post(route('grp.models.customer.attachment.attach', ['customer' => $this->customer->id]), $pdf())->assertSessionHasNoErrors();
+    $attachment = $this->customer->attachments()->first();
+    expect($attachment)->not->toBeNull();
+
+    $mediaRoutes = [
+        ['post', route('grp.models.trade-unit.upload_images', $tradeUnit->id)],
+        ['post', route('grp.models.trade-unit.attach_images', $tradeUnit->id)],
+        ['post', route('grp.models.trade-unit.upload_audio', $tradeUnit->id)],
+        ['patch', route('grp.models.trade-unit.update_images', $tradeUnit->id)],
+        ['patch', route('grp.models.trade-unit.update_image_alt', [$tradeUnit->id, $attachment->id])],
+        ['delete', route('grp.models.trade-unit.detach_image', [$tradeUnit->id, $attachment->id])],
+    ];
+
+    actingAs($newUser(['goods.view', 'masters.view', "crm.{$this->shop->id}.view"]));
+    foreach ($mediaRoutes as [$method, $url]) {
+        $this->{$method}($url)->assertForbidden();
+    }
+    $this->post(route('grp.models.customer.attachment.attach', ['customer' => $this->customer->id]), $pdf())->assertForbidden();
+    $this->delete(route('grp.models.customer.attachment.detach', [$this->customer->id, $attachment->id]))->assertForbidden();
+    expect($this->customer->attachments()->count())->toBe(1);
+
+    foreach (['goods.edit', 'masters.edit', 'group-webmaster.media-edit'] as $permission) {
+        actingAs($newUser([$permission]));
+        $this->post(route('grp.models.trade-unit.upload_images', $tradeUnit->id))->assertSessionHasErrors('images');
+        $this->post(route('grp.models.trade-unit.upload_audio', $tradeUnit->id))->assertSessionHasErrors('audio');
+    }
+
+    actingAs($newUser(["crm.{$this->shop->id}.edit"]));
+    $this->delete(route('grp.models.customer.attachment.detach', [$this->customer->id, $attachment->id]))->assertSuccessful();
+    expect($this->customer->attachments()->count())->toBe(0);
+});
+
+test('accounts can edit billables, staff without product or accounting edit cannot', function () {
+    setPermissionsTeamId($this->group->id);
+    $newUser = function (array $permissions) {
+        $user = StoreGuest::make()->action(
+            $this->group,
+            array_merge(Guest::factory()->definition(), ['positions' => []])
+        )->getUser();
+        $user->givePermissionTo($permissions);
+
+        return $user->refresh();
+    };
+
+    actingAs($newUser(["accounting.{$this->organisation->id}.view"]));
+    get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0', false));
+    patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Viewer rename'])->assertForbidden();
+    patch(route('grp.models.charge.update', $this->charge->id), ['name' => 'Viewer rename'])->assertForbidden();
+
+    actingAs($newUser(["accounting.{$this->organisation->id}.view", "accounting.{$this->organisation->id}.edit"]));
+    get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.style', 'edit'));
+    get(route('grp.org.shops.show.billables.services.edit', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))->assertOk();
+    patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Accounts rename'])->assertSessionHasNoErrors();
+    patch(route('grp.models.charge.update', $this->charge->id), ['name' => 'Accounts rename'])->assertSessionHasNoErrors();
+
+    expect($this->service->refresh()->name)->toBe('Accounts rename')
+        ->and($this->charge->refresh()->name)->toBe('Accounts rename');
 });

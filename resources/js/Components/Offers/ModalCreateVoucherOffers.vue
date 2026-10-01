@@ -5,7 +5,7 @@ import { ref, computed, watch, inject } from "vue"
 import { DatePicker, InputNumber, RadioButton } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
@@ -83,6 +83,7 @@ const endDate = ref<Date | null>(
 	props.shop_data.default_dates?.end ? new Date(props.shop_data.default_dates.end) : null
 )
 const reuseCustomer = ref(false)
+const showOnCustomerDashboard = ref(false)
 
 const isCheckingVoucher = ref(false)
 const voucherExists = ref<boolean | null>(null)
@@ -235,6 +236,7 @@ const submitVoucherOffer = () => {
 		start_at: formatDate(startDate.value),
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
+		show_on_customer_dashboard: showOnCustomerDashboard.value,
 		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
 		amount_off: isAmountOff.value ? amountOff.value : null,
 		gift_product_id: isFreeGift.value ? productId.value : null,
@@ -254,8 +256,8 @@ const submitVoucherOffer = () => {
 		)
 		.then((response) => {
 			notify({
-				title: trans("Success"),
-				text: trans("Successfully submit the data"),
+				title: ctrans("Success"),
+				text: ctrans("Successfully submit the data"),
 				type: "success",
 			})
 			closeModal()
@@ -273,9 +275,9 @@ const submitVoucherOffer = () => {
 			const errors = error.response?.data?.errors || {}
 			const errMsg =
 				Object.values(errors).flat().join(". ") ||
-				trans("Failed to submit the data, please try again")
+				ctrans("Failed to submit the data, please try again")
 			notify({
-				title: trans("Something went wrong"),
+				title: ctrans("Something went wrong"),
 				text: errMsg,
 				type: "error",
 			})
@@ -302,6 +304,7 @@ function resetForm() {
 	discountPercentage.value = null
 	amountOff.value = null
 	reuseCustomer.value = false
+	showOnCustomerDashboard.value = false
 	productId.value = null
 	quantity.value = 1
 	offerAmount.value = 0
@@ -349,12 +352,12 @@ const isFormInvalid = computed(() => {
 
 <template>
 	<div>
-		<Button :label="trans('Create Voucher')" @click="openModal" icon="fas fa-badge-percent" />
+		<Button :label="ctrans('Create Voucher')" @click="openModal" icon="fas fa-badge-percent" />
 
 		<Modal :isOpen="isOpenModal" width="w-full max-w-3xl" @close="closeModal">
 			<div class="p-1 space-y-6">
 				<h2 class="text-2xl font-bold mb-4 text-center">
-					{{ trans("Create Voucher") }}
+					{{ ctrans("Create Voucher") }}
 				</h2>
 
 				<!-- Section: Voucher code -->
@@ -365,13 +368,13 @@ const isFormInvalid = computed(() => {
 							icon="fas fa-asterisk"
 							class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-						{{ trans("Voucher code") }}:
+						{{ ctrans("Voucher code") }}:
 					</label>
 
 					<PureInput
 						v-model="offerVoucher"
 						:maxLength="60"
-						:placeholder="trans('Enter Voucher code')" />
+						:placeholder="ctrans('Enter Voucher code')" />
 
 					<p
 						v-if="hasVoucherWhitespace"
@@ -405,7 +408,7 @@ const isFormInvalid = computed(() => {
 							icon="fas fa-asterisk"
 							class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-						{{ trans("Offer name") }}
+						{{ ctrans("Offer name") }}
 						<InformationIcon
 							:information="ctrans('This will be shown to customers to describe the voucher, e.g. “10% off for orders above $100”')"
 						/>
@@ -421,7 +424,7 @@ const isFormInvalid = computed(() => {
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
 							class="font-light text-xs text-red-400 align-middle" fixed-width />
-						{{ trans("Minimum purchase amount") }}:
+						{{ ctrans("Minimum purchase amount") }}:
 					</label>
 
 					<InputNumber
@@ -431,17 +434,17 @@ const isFormInvalid = computed(() => {
 						mode="currency"
 						:currency="props.shop_data.currency_code"
 						locale="en-US"
-						:placeholder="trans('Enter minimum amount')" />
+						:placeholder="ctrans('Enter minimum amount')" />
 				</div>
 
 				<!-- Start date - end date -->
 				<div class="grid grid-cols-2 gap-x-6">
 					<div>
 						<label class="font-medium mb-2 flex items-center gap-x-1">
-							{{ trans("Start date") }}
+							{{ ctrans("Start date") }}
 							<InformationIcon
 								:information="
-									trans('If start date is empty, will start immediately')
+									ctrans('If start date is empty, will start immediately')
 								" />:
 						</label>
 
@@ -450,15 +453,15 @@ const isFormInvalid = computed(() => {
 							:minDate="today"
 							showButtonBar
 							showIcon
-							:placeholder="trans('Select start date')" />
+							:placeholder="ctrans('Select start date')" />
 					</div>
 
 					<div>
 						<label class="font-medium mb-2 flex items-center gap-x-1">
-							{{ trans("End date") }}
+							{{ ctrans("End date") }}
 							<InformationIcon
 								:information="
-									trans('If end date is empty, will treat as permanent')
+									ctrans('If end date is empty, will treat as permanent')
 								" />:
 						</label>
 
@@ -467,7 +470,7 @@ const isFormInvalid = computed(() => {
 							showButtonBar
 							showIcon
 							:minDate="startDate"
-							:placeholder="trans('Select end date')" />
+							:placeholder="ctrans('Select end date')" />
 					</div>
 				</div>
 
@@ -475,13 +478,13 @@ const isFormInvalid = computed(() => {
 				<div class="space-y-2">
 					<div class="space-y-3 mb-2">
 						<h3 class="text-sm text-gray-500">
-							{{ trans("Choose where this voucher will apply") }}
+							{{ ctrans("Choose where this voucher will apply") }}
 						</h3>
 						<label class="font-semibold">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
 								class="font-light text-xs text-red-400 align-middle" fixed-width />
-							{{ trans("Target") }}
+							{{ ctrans("Target") }}
 						</label>
 
 						<div class="flex flex-nowrap gap-2">
@@ -499,14 +502,14 @@ const isFormInvalid = computed(() => {
 									v-model="target"
 									:value="opt.value"
 									:inputId="`target-${opt.value}`" />
-								<span>{{ trans(opt.label) }}</span>
+								<span>{{ ctrans(opt.label) }}</span>
 							</label>
 						</div>
 					</div>
 
 					<div v-if="activeCategoryRoute" class="space-y-2 !mt-3">
 						<label class="font-medium">
-							{{ trans("Select Item") }}
+							{{ ctrans("Select Item") }}
 						</label>
 						<PureMultiselectInfiniteScroll
 							:key="target ?? 'none'"
@@ -518,7 +521,7 @@ const isFormInvalid = computed(() => {
 
 					<div v-if="target === 'collection' && collectionRoute" class="space-y-2">
 						<label class="font-medium">
-							{{ trans("Select Item") }}
+							{{ ctrans("Select Item") }}
 						</label>
 						<PureMultiselectInfiniteScroll
 							v-model="collectionFilters"
@@ -529,7 +532,7 @@ const isFormInvalid = computed(() => {
 
 					<div v-if="target === 'product'" class="space-y-2">
 						<label class="font-medium">
-							{{ trans("Select Item") }}
+							{{ ctrans("Select Item") }}
 						</label>
 
 						<PureMultiselectInfiniteScroll
@@ -548,7 +551,7 @@ const isFormInvalid = computed(() => {
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
 							class="font-light text-xs text-red-400 align-middle" fixed-width />
-						{{ trans("Voucher type") }}
+						{{ ctrans("Voucher type") }}
 					</label>
 
 					<div class="flex flex-nowrap gap-2">
@@ -566,7 +569,7 @@ const isFormInvalid = computed(() => {
 								v-model="offerType"
 								:value="opt.value"
 								:inputId="`offer-type-${opt.value}`" />
-							<span>{{ trans(opt.label) }}</span>
+							<span>{{ ctrans(opt.label) }}</span>
 						</label>
 					</div>
 					
@@ -577,7 +580,7 @@ const isFormInvalid = computed(() => {
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
 								class="font-light text-xs text-red-400 align-middle" fixed-width />
-							{{ trans("Discount") }}:
+							{{ ctrans("Discount") }}:
 						</div>
 
 						<InputNumber
@@ -596,9 +599,9 @@ const isFormInvalid = computed(() => {
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
 								class="font-light text-xs text-red-400 align-middle" fixed-width />
-							{{ trans("Amount off") }}:
+							{{ ctrans("Amount off") }}:
 							<InformationIcon
-								:information="trans('Fixed amount deducted from the order (before tax). Requires a minimum purchase amount.')" />
+								:information="ctrans('Fixed amount deducted from the order (before tax). Requires a minimum purchase amount.')" />
 						</div>
 
 						<InputNumber
@@ -610,19 +613,19 @@ const isFormInvalid = computed(() => {
 							:min="0"
 							:max="maxAmountOff || undefined"
 							:disabled="!offerAmount || offerAmount <= 0"
-							:placeholder="trans('Enter amount off')"
+							:placeholder="ctrans('Enter amount off')"
 							class="w-full"
 							inputClass="w-full" />
 
 						<p v-if="!offerAmount || offerAmount <= 0" class="text-xs text-amber-600">
-							{{ trans("Set a minimum purchase amount first: amount off vouchers require one.") }}
+							{{ ctrans("Set a minimum purchase amount first: amount off vouchers require one.") }}
 						</p>
 						<p v-else class="text-xs text-gray-500">
-							{{ trans("Maximum 30% of the minimum purchase amount") }}:
+							{{ ctrans("Maximum 30% of the minimum purchase amount") }}:
 							<span class="font-medium text-gray-700">{{ maxAmountOff }} {{ props.shop_data.currency_code }}</span>
 						</p>
 						<p v-if="amountOff && amountOff > maxAmountOff" class="text-xs text-red-500">
-							{{ trans("The amount off cannot exceed 30% of the minimum purchase amount") }}
+							{{ ctrans("The amount off cannot exceed 30% of the minimum purchase amount") }}
 						</p>
 					</div>
 
@@ -632,17 +635,17 @@ const isFormInvalid = computed(() => {
 							<div class="font-medium mb-2 flex items-center gap-x-1">
 								<FontAwesomeIcon icon="fas fa-asterisk"
 									class="font-light text-xs text-red-400 align-middle" fixed-width />
-								{{ trans('Quantity product') }}:
+								{{ ctrans('Quantity product') }}:
 							</div>
 
 							<InputNumber v-model="quantity" inputId="offer_discount"
-								:placeholder="trans('Enter quantity')" :min="1" class="w-full" />
+								:placeholder="ctrans('Enter quantity')" :min="1" class="w-full" />
 						</div>
 						<div class="space-y-2">
 							<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-								{{ trans('Select product') }}:
+								{{ ctrans('Select product') }}:
 							</label>
 							<PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
 								labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single"
@@ -651,7 +654,7 @@ const isFormInvalid = computed(() => {
 									<div class="w-full text-left pl-4 leading-4 truncate mr-2">
 										{{ value.code }}
 										<span class="text-sm text-gray-400">({{ value.name }})</span>
-										<span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
+										<span class="text-sm text-gray-400"> · {{ ctrans('Stock') }}: {{ value.stock ?? 0 }}</span>
 									</div>
 								</template>
 
@@ -664,7 +667,7 @@ const isFormInvalid = computed(() => {
 										</div>
 										<span class="text-sm whitespace-nowrap"
 											:class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
-											{{ trans('Stock') }}: {{ option.stock ?? 0 }}
+											{{ ctrans('Stock') }}: {{ option.stock ?? 0 }}
 										</span>
 									</div>
 								</template>
@@ -681,10 +684,18 @@ const isFormInvalid = computed(() => {
 
 				<div class="space-y-2">
 					<label class="font-medium flex items-center gap-x-1">
-						{{ trans("Can customers reuse the voucher") }}?
+						{{ ctrans("Can customers reuse the voucher") }}?
 					</label>
 
 					<Toggle v-model="reuseCustomer" />
+				</div>
+
+				<div class="space-y-2">
+					<label class="font-medium flex items-center gap-x-1">
+						{{ ctrans("Show on customer dashboard") }}?
+					</label>
+					<p class="text-xs text-gray-500">{{ ctrans("Leave off for codes sent only by email, so their use still measures the email.") }}</p>
+					<Toggle v-model="showOnCustomerDashboard" />
 				</div>
                 
 				<div class="mt-8 flex justify-end gap-x-4">
@@ -692,7 +703,7 @@ const isFormInvalid = computed(() => {
 					<Button
 						full
 						icon="fad fa-save"
-						:label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+						:label="isLoadingSubmit ? ctrans('Loading') : ctrans('Save')"
 						@click="submitVoucherOffer"
 						:loading="isLoadingSubmit"
 						:disabled="isFormInvalid || isLoadingSubmit" />

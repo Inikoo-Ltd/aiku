@@ -17,9 +17,25 @@ return [
 
     ],
 
-    'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
+    'summary_model' => env('CHAT_SUMMARY_MODEL', 'openai/gpt-5.6-luna'),
+    // Chat and long-email summaries: on 30 real chats it matched Sonnet's topic 29 times to gpt-4o's 27, and says what we answered too.
+    'summary_writer_model' => env('CHAT_SUMMARY_WRITER_MODEL', 'deepseek/deepseek-v4.1-flash'),
+    // On 71 real emails it put aside 25 of 34 staff-marked spam to gpt-4o's 20, and one real customer to gpt-4o's two.
+    'noise_model' => env('CHAT_NOISE_MODEL', 'openai/gpt-5.6-luna'),
+    'page_answer_model' => env('CHAT_PAGE_ANSWER_MODEL'),
+    // Suggested replies are written by one of these, half the conversations each, so staff choices show which writes better.
+    // CHAT_SUGGESTION_MODEL set to one of them ends the comparison.
+    'suggestion_model' => env('CHAT_SUGGESTION_MODEL'),
+    'suggestion_models' => ['openai/gpt-5.6-luna', 'deepseek/deepseek-v4.1-flash'],
+    'learning_model' => env('CHAT_LEARNING_MODEL', 'gpt-4o-mini'),
 
-    'urgent_model' => env('CHAT_URGENT_MODEL', 'gpt-4o'),
+    // Hiding a real customer is worse than showing a junk mail, so the bar is low.
+    'spam_rescue_min_probability' => (float) env('CHAT_SPAM_RESCUE_MIN_PROBABILITY', 0.3),
+
+    // An email from Gmail spam that came in anyway is tagged a possible scam only when a scam is probable.
+    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.5),
+
+    'urgent_model' => env('CHAT_URGENT_MODEL', 'openai/gpt-5.6-luna'),
 
     'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),
 
@@ -28,10 +44,13 @@ return [
     // With an agent in the chat, a thanks is closed only after this long with nobody writing.
     'close_after_thanks_minutes' => (int) env('CHAT_CLOSE_AFTER_THANKS_MINUTES', 2),
 
+    // An email that only thanks us waits this long for the customer before it closes.
+    'wait_for_customer_hours' => (int) env('CHAT_WAIT_FOR_CUSTOMER_HOURS', 72),
+
     'carrier_domains' => [
         'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
         'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
-        'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com',
+        'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com', 'correosexpress.com', 'packeta.sk', 'packeta.com',
     ],
 
     'marketplace_notice_domains' => ['info.faire.com', 'orderchamp.com'],

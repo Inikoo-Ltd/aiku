@@ -19,7 +19,9 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\ArtefactLabel;
@@ -495,6 +497,59 @@ class IndexPartnerShippingList extends OrgAction
         return $item->run_expiry_date ? Carbon::parse($item->run_expiry_date)->format('Y-m-d') : null;
     }
 
+    /**
+     * What the Create job order form offers: every product this factory makes, with what the
+     * planner should see before adding it (stock on hand, lines already on the board). Only
+     * loaded when the form opens, the list runs to thousands.
+     *
+     * @return array{reasons: array<int, string>, artefacts: array<int, array<string, mixed>>}
+     */
+    public function getManualJobOrderOptions(): array
+    {
+        $onBoard = DB::table('partner_shopping_list_items')
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->where('partner_organisation_id', $this->organisation->id)
+                    ->orWhere(function ($query) {
+                        $query->whereNull('partner_organisation_id')->where('organisation_id', $this->organisation->id);
+                    });
+            })
+            ->groupBy('stock_id')
+            ->select('stock_id', DB::raw('count(*) as lines'));
+
+        return [
+            'reasons'   => StoreManualJobOrder::REASONS,
+            'artefacts' => DB::table('artefacts')
+                ->join('org_stocks', 'org_stocks.id', 'artefacts.org_stock_id')
+                ->join('stocks', 'stocks.id', 'org_stocks.stock_id')
+                ->leftJoinSub($onBoard, 'on_board', 'on_board.stock_id', 'org_stocks.stock_id')
+                ->where('artefacts.production_id', $this->production->id)
+                ->whereNull('artefacts.deleted_at')
+                ->where('artefacts.state', '!=', ArtefactStateEnum::DORMANT->value)
+                ->orderBy('artefacts.code')
+                ->get([
+                    'artefacts.id',
+                    'artefacts.code',
+                    'artefacts.name',
+                    'org_stocks.packed_in',
+                    'org_stocks.quantity_available as stock_available',
+                    'stocks.gross_weight',
+                    DB::raw('coalesce(on_board.lines, 0) as on_board'),
+                ])
+                ->map(fn ($artefact) => [
+                    'id'              => $artefact->id,
+                    'code'            => $artefact->code,
+                    'name'            => $artefact->name,
+                    'packed_in'       => $artefact->packed_in ? (float) $artefact->packed_in : null,
+                    'stock_available' => $artefact->stock_available !== null ? (float) $artefact->stock_available : null,
+                    'gross_weight'    => $artefact->gross_weight ? (int) $artefact->gross_weight : null,
+                    'on_board'        => (int) $artefact->on_board,
+                ])
+                ->all(),
+        ];
+    }
+
     /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
     public function getArtisanWorkload(): array
     {
@@ -573,6 +628,11 @@ class IndexPartnerShippingList extends OrgAction
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
+                'manualJobOrder' => Inertia::optional(fn () => $this->getManualJobOrderOptions()),
+                'canCreateJobOrder' => $request->user()->authTo([
+                    'org-supervisor.'.$this->organisation->id,
+                    "productions_operations.{$this->production->id}.orchestrate",
+                ]),
             ]
         )->table($this->tableStructure());
     }

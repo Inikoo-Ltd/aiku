@@ -23,11 +23,9 @@ use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
 use App\Actions\Reports\DownloadPackagingReport;
 use App\Actions\Reports\ExportUkManufacturingSurvey;
-use App\Actions\Reports\PostRoomRoutes;
 use App\Actions\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
 use App\Actions\UI\Reports\IndexReports;
-use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', IndexReports::class)->name('index');
@@ -58,24 +56,3 @@ Route::get('/uk-manufacturing-survey/export', ExportUkManufacturingSurvey::class
 
 Route::get('/customer-credit', IndexCustomerCredit::class)->name('customer-credit');
 Route::get('/customer-credit/export', ExportCustomerCredit::class)->name('customer-credit.export');
-
-Route::name("sent_emails.")->prefix('sent-emails')
-    ->group(function () {
-        $postRoomRoutes = new PostRoomRoutes();
-        $postRoomRoutes('organisation');
-        //  Route::get('shops', IndexDummies::class)->name('shops.index');
-        Route::name("shops.")->prefix('shops')
-            ->group(function () {
-                Route::get('', IndexDummies::class)->name('index');
-
-                Route::get('{shop}', IndexDummies::class)->name('shop');
-
-                Route::name("show.")->prefix('{shop}')
-                    ->group(
-                        function () {
-                            $postRoomRoutes = new PostRoomRoutes();
-                            $postRoomRoutes('shop');
-                        }
-                    );
-            });
-    });

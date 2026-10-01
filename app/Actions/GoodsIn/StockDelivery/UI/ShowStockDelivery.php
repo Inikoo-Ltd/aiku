@@ -588,11 +588,13 @@ class ShowStockDelivery extends OrgAction
 
     private function getItems(StockDelivery $stockDelivery): AnonymousResourceCollection
     {
-        $items = IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value);
+        if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
+            return StockDeliveryItemCostResource::collection(
+                IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value, numberOfRecords: config('ui.table.max_records_per_page'))
+            );
+        }
 
-        return $stockDelivery->state === StockDeliveryStateEnum::PLACED
-            ? StockDeliveryItemCostResource::collection($items)
-            : StockDeliveryItemResource::collection($items);
+        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value));
     }
 
     private function getCosting(StockDelivery $stockDelivery): array
@@ -622,6 +624,7 @@ class ShowStockDelivery extends OrgAction
             'currency'                   => $stockDelivery->currency?->code,
             'currency_id'                => $stockDelivery->currency_id,
             'org_currency'               => $stockDelivery->organisation->currency->code,
+            'org_currency_id'            => $stockDelivery->organisation->currency_id,
             'org_exchange'               => $stockDelivery->org_exchange,
             'updateRoute'                => [
                 'name'       => 'grp.models.stock-delivery.update',
