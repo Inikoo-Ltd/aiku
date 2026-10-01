@@ -11,7 +11,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Helpers\Media;
@@ -30,7 +30,7 @@ use Throwable;
  */
 class ReadStockDeliveryInvoice extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
     use WithAICreditErrorHandler;
     use WithAIGateway;
 

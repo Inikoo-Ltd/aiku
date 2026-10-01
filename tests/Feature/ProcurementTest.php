@@ -3953,7 +3953,7 @@ describe('supplier deposits', function () {
             ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
     });
 
-    test('accounting clerk gets view-only procurement access, and edit access only on supplier/agent payments (HELP-3437)', function () {
+    test('accounting clerk gets view-only procurement access, and edit access only on supplier/agent payments and stock delivery costing (HELP-3437)', function () {
         $deposit = \App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit::make()->action($this->depositAspo, ['amount' => 300]);
         \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
 
@@ -4004,8 +4004,13 @@ describe('supplier deposits', function () {
         $this->withoutVite();
         $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $delivery->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('costing.can_edit', false)
+                ->where('costing.can_edit', true)
                 ->where('costing.can_edit_payments', true));
+
+        $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['org_exchange' => 0.75])->assertRedirect();
+        expect((float) $delivery->refresh()->org_exchange)->toBe(0.75);
+
+        $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['org_exchange' => 0.8, 'incoterm' => 'FOB'])->assertForbidden();
 
         actingAs($this->adminGuest->getUser());
     });

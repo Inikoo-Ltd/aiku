@@ -28,6 +28,7 @@ trait WithStockDeliveryCostingEditAuthorisation
 
         return $request->user()->authTo([
             "procurement.{$this->organisation->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
             $accountingManager,
         ]);
     }

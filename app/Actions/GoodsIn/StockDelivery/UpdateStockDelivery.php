@@ -8,7 +8,6 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
@@ -25,7 +24,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictProcurementOrderRules;
     use WithNoStrictRules;
@@ -131,6 +129,26 @@ class UpdateStockDelivery extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * Accounts cost stock deliveries, so they may change the invoice rate, and nothing else of the delivery.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+            return true;
+        }
+
+        return array_keys($request->except(['_method', '_token'])) === ['org_exchange']
+            && $request->user()->authTo([
+                "accounting.{$this->organisation->id}.edit",
+                "org-supervisor.{$this->organisation->id}.accounting",
+            ]);
     }
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
