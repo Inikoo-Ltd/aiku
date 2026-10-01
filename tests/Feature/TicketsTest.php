@@ -374,6 +374,30 @@ test('staff reporter is told of the question by email and slack as their profile
         ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
 });
 
+test('a reporter mutes their own ticket and hears nothing more about it, but nobody else can mute it for them', function () {
+    Notification::fake();
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Mute me', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    $other = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    actingAs($other);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertForbidden();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeTrue();
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    Notification::assertNotSentTo($reporter, TicketNotification::class);
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => false])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
+});
+
 test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
     Notification::fake();
     Config::set('services.webpush.public_key', 'public');

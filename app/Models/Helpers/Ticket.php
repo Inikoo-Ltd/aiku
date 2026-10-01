@@ -50,6 +50,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property bool $is_confidential
  * @property bool $blocks_source
  * @property bool $closes_source
+ * @property bool $reporter_muted
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -109,6 +110,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'is_confidential',
         'blocks_source',
         'closes_source',
+        'reporter_muted',
         'qa_status',
         'pull_request_url',
     ];
@@ -127,6 +129,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'is_confidential' => 'boolean',
             'blocks_source' => 'boolean',
             'closes_source' => 'boolean',
+            'reporter_muted' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
             'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',

@@ -171,7 +171,7 @@ export const ALERT_SOUNDS = ["chime", "bells", "dingdong", "pop", "marimba", "su
 export type AlertSound = typeof ALERT_SOUNDS[number]
 export type AlertSoundKind = "chat" | "whatsapp" | "email" | "colleague" | "waiting" | "ticket"
 
-const DEFAULT_ALERT_SOUNDS: Record<Exclude<AlertSoundKind, "waiting">, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba", ticket: "triumph" }
+const DEFAULT_ALERT_SOUNDS: Record<Exclude<AlertSoundKind, "waiting">, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba", ticket: "genie" }
 
 export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	chime: ctrans("Chime"),
