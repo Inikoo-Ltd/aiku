@@ -65,6 +65,8 @@ class ArchiveShopMailbox
 
     private const int LONG_PAUSE = 1800;
 
+    private const int STAND_DOWN_PAUSE = 900;
+
     private const int TOP_MONTHS = 24;
 
     private const int TOP_MIN_INVOICES = 12;
@@ -155,6 +157,10 @@ class ArchiveShopMailbox
             $result['stopped'] = true;
 
             return $result;
+        }
+
+        if (FetchShopMailboxMessages::wasRecentlyRefused($shop)) {
+            return ['rate_limited' => true, 'pause' => self::STAND_DOWN_PAUSE] + $result;
         }
 
         $cursorKey = self::cursorKey($shop, $months, $top);

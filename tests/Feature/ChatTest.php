@@ -7846,6 +7846,34 @@ test('the mailbox history is archived as text for the customer it was with, leav
     \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
 });
 
+test('when gmail refuses the live fetch for its quota, the archive of that mailbox stands down so customer mail comes first', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '100'];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::flush();
+
+    $quota = ['error' => ['code' => 403, 'message' => "Quota exceeded for quota metric 'Total Query Cost'", 'status' => 'RESOURCE_EXHAUSTED']];
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/*'    => \Illuminate\Support\Facades\Http::response($quota, 403),
+    ]);
+
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse()
+        ->and(fn () => \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop))->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeTrue();
+
+    $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
+    $page           = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archivePage($this->shop, 12);
+
+    expect($page['rate_limited'])->toBeTrue()
+        ->and($page['pause'])->toBe(900)
+        ->and(count(\Illuminate\Support\Facades\Http::recorded()))->toBe($requestsBefore);
+
+    $this->travel(16)->minutes();
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse();
+});
+
 test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again, after a long pause when it keeps refusing', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];

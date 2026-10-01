@@ -13,6 +13,7 @@ use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailHistoryExpiredException;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -26,7 +27,36 @@ class FetchShopMailboxMessages
 
     public string $commandSignature = 'mailbox:fetch {shop? : shop slug}';
 
+    private const int ARCHIVE_STANDS_DOWN_MINUTES = 15;
+
     public function handle(Shop $shop): int
+    {
+        try {
+            return $this->fetch($shop);
+        } catch (RequestException $exception) {
+            if (GmailClient::isRateLimited($exception->response)) {
+                Cache::put(self::refusedKey($shop), true, now()->addMinutes(self::ARCHIVE_STANDS_DOWN_MINUTES));
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Gmail's allowance is per mailbox and shared with the archive. When the live fetch is refused,
+     * the archive of that mailbox stands down so the customers' mail gets the allowance back first.
+     */
+    public static function wasRecentlyRefused(Shop $shop): bool
+    {
+        return Cache::has(self::refusedKey($shop));
+    }
+
+    private static function refusedKey(Shop $shop): string
+    {
+        return "gmail-live-fetch-refused:{$shop->id}";
+    }
+
+    private function fetch(Shop $shop): int
     {
         $client = GmailClient::forShop($shop);
 
