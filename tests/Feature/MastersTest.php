@@ -4339,14 +4339,14 @@ describe('price tips from Jev, HELP-2331', function () {
 
     test('a markdown is not tipped when the website is the problem, and the reason says how the website is doing', function () {
         $answers = ['change' => ['choice' => 'down_10', 'probabilities' => ['down_10' => 0.9]], 'temporary_drop' => ['noul' => 0.1]];
-        $healthy = ['shops' => 20, 'online' => 20, 'online_without_images' => 0, 'visitors' => 900, 'visitors_change_pct' => 5, 'add_to_basket_pct' => 2.1, 'family_add_to_basket_pct' => 3.4];
+        $healthy = ['shops' => 20, 'online' => 20, 'online_without_images' => 0, 'family_visitors' => 900, 'family_visitors_change_pct' => 5];
 
         expect(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => $healthy], $answers))->toMatchArray(['change' => -10])
             ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online' => 14]], $answers))->toBeNull()
             ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online_without_images' => 2]], $answers))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'visitors_change_pct' => -40]], $answers))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::websiteReason($healthy))->toBe('website OK: online in 20 of 20 shops, visitors +5%, add to basket 2.1% vs 3.4% in the family')
-            ->and(GenerateMasterAssetPriceTips::websiteReason([...$healthy, 'online' => 14, 'visitors_change_pct' => -40]))->toBe('website problem: offline in 6 of 20 shops, visitors -40%')
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'family_visitors_change_pct' => -40]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::websiteReason($healthy))->toBe('website OK: online in 20 of 20 shops, family page visitors +5%')
+            ->and(GenerateMasterAssetPriceTips::websiteReason([...$healthy, 'online' => 14, 'family_visitors_change_pct' => -40]))->toBe('website problem: offline in 6 of 20 shops, family page visitors -40%')
             ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'offers' => ['Autumn 10% off', 'Older offer']], ['change' => -10, 'capped' => false]))->toContain('2 offers running, latest: Autumn 10% off')
             ->and(GenerateMasterAssetPriceTips::make()->websiteHealth([0]))->toBe([]);
     });

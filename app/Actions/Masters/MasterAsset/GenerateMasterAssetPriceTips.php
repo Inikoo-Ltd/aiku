@@ -74,6 +74,8 @@ class GenerateMasterAssetPriceTips
 
     public const int WEBSITE_MIN_VISITORS = 50;
 
+    public const int WEBSITE_MIN_TRAFFIC_DAYS = 80;
+
     public const int MEASURE_AFTER_DAYS = 56;
 
     private const int CHUNK = 100;
@@ -238,7 +240,7 @@ class GenerateMasterAssetPriceTips
         return AskJev::make()->handle($signals, [
             'change'         => [
                 'type'         => 'choice',
-                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price). website says whether the product pages are online with images in every shop, how visitors moved (last 90 days against the 90 before) and how often visitors add it to the basket against its family: when the pages are fine and visitors steady but few add it to the basket, the price is the likely cause; when pages are offline or visitors fall, the website is the cause, not the price. family puts the product among its family over the last 12 months: its rank and share of family sales, and family sales against last year next to the product\'s own trend. Sales are supply and demand inside the family: a product falling behind a family that holds up is losing to its siblings and a cut can win it back; a product carrying the family, or growing faster than it, can take a higher price. staff_feedback lists earlier tips on this product or its family that staff rejected and why; do not repeat a change for a reason they gave.',
+                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price). website says whether the product pages are online with images in every shop and, when known, how visitors to its family pages moved (last 90 days against the 90 before): when the pages are fine and family visitors hold up but this product sells less, the price is the likely cause; when pages are offline or family visitors fall, the website is the cause, not the price. family puts the product among its family over the last 12 months: its rank and share of family sales, and family sales against last year next to the product\'s own trend. Sales are supply and demand inside the family: a product falling behind a family that holds up is losing to its siblings and a cut can win it back; a product carrying the family, or growing faster than it, can take a higher price. staff_feedback lists earlier tips on this product or its family that staff rejected and why; do not repeat a change for a reason they gave.',
                 'criteria'     => [
                     'down_15' => 'Cut the price 15%: far too much stock, demand fell and is not coming back',
                     'down_10' => 'Cut the price 10%: too much stock and falling demand',
@@ -519,7 +521,7 @@ class GenerateMasterAssetPriceTips
 
         return $website['online'] >= self::WEBSITE_MIN_ONLINE_SHARE * $website['shops']
             && $website['online_without_images'] === 0
-            && ($website['visitors_change_pct'] === null || $website['visitors_change_pct'] > self::WEBSITE_VISITORS_DROP_PCT);
+            && ($website['family_visitors_change_pct'] === null || $website['family_visitors_change_pct'] > self::WEBSITE_VISITORS_DROP_PCT);
     }
 
     public static function websiteReason(array $website): string
@@ -532,29 +534,26 @@ class GenerateMasterAssetPriceTips
             if ($website['online_without_images']) {
                 $problems[] = __('no images in :n shops', ['n' => $website['online_without_images']]);
             }
-            if ($website['visitors_change_pct'] !== null && $website['visitors_change_pct'] <= self::WEBSITE_VISITORS_DROP_PCT) {
-                $problems[] = __('visitors :pct%', ['pct' => $website['visitors_change_pct']]);
+            if ($website['family_visitors_change_pct'] !== null && $website['family_visitors_change_pct'] <= self::WEBSITE_VISITORS_DROP_PCT) {
+                $problems[] = __('family page visitors :pct%', ['pct' => $website['family_visitors_change_pct']]);
             }
 
             return __('website problem: :problems', ['problems' => implode(', ', $problems)]);
         }
 
         $parts = [__('online in :online of :shops shops', ['online' => $website['online'], 'shops' => $website['shops']])];
-        if ($website['visitors_change_pct'] !== null) {
-            $parts[] = __('visitors :pct%', ['pct' => ($website['visitors_change_pct'] > 0 ? '+' : '').$website['visitors_change_pct']]);
-        }
-        if ($website['add_to_basket_pct'] !== null) {
-            $parts[] = $website['family_add_to_basket_pct'] !== null
-                ? __('add to basket :pct% vs :family% in the family', ['pct' => $website['add_to_basket_pct'], 'family' => $website['family_add_to_basket_pct']])
-                : __('add to basket :pct%', ['pct' => $website['add_to_basket_pct']]);
+        if ($website['family_visitors_change_pct'] !== null) {
+            $parts[] = __('family page visitors :pct%', ['pct' => ($website['family_visitors_change_pct'] > 0 ? '+' : '').$website['family_visitors_change_pct']]);
         }
 
         return __('website OK: :details', ['details' => implode(', ', $parts)]);
     }
 
     /**
-     * Product pages of each master asset in open shops: how many are online and with images, visitors in the
-     * last 90 days against the 90 before (up to the newest day recorded) and add to basket rate against its family.
+     * Product pages of each master asset in open shops (how many are online, and with images) and visitors to its
+     * family pages in the last 90 days against the 90 before. The family page is where trade customers browse and
+     * add to basket; product pages get few direct visits. Visitors are left out when the daily traffic records do
+     * not cover most days of both windows.
      *
      * @param  array<int, int>  $masterAssetIds
      * @return array<int, array<string, mixed>>
@@ -563,16 +562,15 @@ class GenerateMasterAssetPriceTips
     {
         $products = DB::table('products')
             ->join('shops', 'shops.id', '=', 'products.shop_id')
-            ->join('master_assets', 'master_assets.id', '=', 'products.master_product_id')
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
+            ->leftJoin('product_categories as families', 'families.id', '=', 'products.family_id')
             ->whereIn('products.master_product_id', $masterAssetIds)
             ->whereNull('products.deleted_at')
             ->where('shops.state', 'open')
             ->whereIn('products.state', ['active', 'discontinuing'])
             ->get([
                 'products.master_product_id',
-                'products.webpage_id',
-                'master_assets.master_family_id',
+                'families.webpage_id as family_webpage_id',
                 DB::raw("webpages.state = 'live' as online"),
                 DB::raw("products.web_images is null or products.web_images::text in ('{}', '[]', 'null') as without_images"),
             ]);
@@ -581,62 +579,72 @@ class GenerateMasterAssetPriceTips
             return [];
         }
 
-        $familyIds   = $products->pluck('master_family_id')->filter()->unique()->values()->all();
-        $familyPages = $familyIds ? DB::table('products')
-            ->join('master_assets', 'master_assets.id', '=', 'products.master_product_id')
-            ->whereIn('master_assets.master_family_id', $familyIds)
-            ->whereNotNull('products.webpage_id')
-            ->whereNull('products.deleted_at')
-            ->pluck('master_assets.master_family_id', 'products.webpage_id') : collect();
-
-        $webpageIds = $products->pluck('webpage_id')->filter()->merge($familyPages->keys())->unique()->values()->all();
-        $latestDay  = $webpageIds ? DB::table('webpage_time_series_records')->where('frequency', 'D')->max('from') : null;
+        $familyWebpageIds = $products->pluck('family_webpage_id')->filter()->unique()->values()->all();
+        $windows          = $familyWebpageIds ? $this->trafficWindows() : null;
 
         $traffic = collect();
-        if ($latestDay) {
-            $end   = Carbon::parse($latestDay)->addDay();
-            $split = $end->copy()->subDays(90);
-            $start = $end->copy()->subDays(180);
-
+        if ($windows) {
             $traffic = DB::table('webpage_time_series_records as records')
                 ->join('webpage_time_series as series', 'series.id', '=', 'records.webpage_time_series_id')
-                ->whereIn('series.webpage_id', $webpageIds)
+                ->whereIn('series.webpage_id', $familyWebpageIds)
                 ->where('series.frequency', 'daily')
                 ->where('records.frequency', 'D')
-                ->where('records.from', '>=', $start)
-                ->where('records.from', '<', $end)
+                ->where('records.from', '>=', $windows['start'])
+                ->where('records.from', '<', $windows['end'])
                 ->groupBy('series.webpage_id')
                 ->selectRaw('series.webpage_id')
-                ->selectRaw('coalesce(sum(records.visitors) filter (where records.from >= ?), 0) as visitors', [$split])
-                ->selectRaw('coalesce(sum(records.visitors) filter (where records.from < ?), 0) as visitors_before', [$split])
-                ->selectRaw('coalesce(sum(records.add_to_baskets) filter (where records.from >= ?), 0) as add_to_baskets', [$split])
+                ->selectRaw('coalesce(sum(records.visitors) filter (where records.from >= ?), 0) as visitors', [$windows['split']])
+                ->selectRaw('coalesce(sum(records.visitors) filter (where records.from < ?), 0) as visitors_before', [$windows['split']])
                 ->get()
                 ->keyBy('webpage_id');
         }
 
-        $rate = fn (float $addToBaskets, float $visitors) => $visitors > 0 ? round(100 * $addToBaskets / $visitors, 1) : null;
-
-        $familyRates = $familyPages->groupBy(fn ($familyId) => $familyId, true)->map(function ($pages) use ($traffic, $rate) {
-            $rows = $traffic->only($pages->keys()->all());
-
-            return $rate((float) $rows->sum('add_to_baskets'), (float) $rows->sum('visitors'));
-        });
-
-        return $products->groupBy('master_product_id')->map(function ($pages) use ($traffic, $familyRates, $rate) {
-            $rows           = $traffic->only($pages->pluck('webpage_id')->filter()->all());
+        return $products->groupBy('master_product_id')->map(function ($pages) use ($traffic, $windows) {
+            $rows           = $traffic->only($pages->pluck('family_webpage_id')->filter()->unique()->all());
             $visitors       = (float) $rows->sum('visitors');
             $visitorsBefore = (float) $rows->sum('visitors_before');
 
             return [
-                'shops'                    => $pages->count(),
-                'online'                   => $pages->where('online', true)->count(),
-                'online_without_images'    => $pages->where('online', true)->where('without_images', true)->count(),
-                'visitors'                 => (int) $visitors,
-                'visitors_change_pct'      => $visitorsBefore >= self::WEBSITE_MIN_VISITORS ? (int) round(100 * ($visitors / $visitorsBefore - 1)) : null,
-                'add_to_basket_pct'        => $visitors >= self::WEBSITE_MIN_VISITORS ? $rate((float) $rows->sum('add_to_baskets'), $visitors) : null,
-                'family_add_to_basket_pct' => $familyRates->get($pages->first()->master_family_id),
+                'shops'                      => $pages->count(),
+                'online'                     => $pages->where('online', true)->count(),
+                'online_without_images'      => $pages->where('online', true)->where('without_images', true)->count(),
+                'family_visitors'            => $windows ? (int) $visitors : null,
+                'family_visitors_change_pct' => $windows && $visitorsBefore >= self::WEBSITE_MIN_VISITORS ? (int) round(100 * ($visitors / $visitorsBefore - 1)) : null,
             ];
         })->all();
+    }
+
+    /**
+     * The last 90 days against the 90 before, ending on the newest day with recorded traffic, or null when the daily
+     * traffic records miss too many days in either window to compare them.
+     *
+     * @return array{start: Carbon, split: Carbon, end: Carbon}|null
+     */
+    public function trafficWindows(): ?array
+    {
+        $latestDay = DB::table('webpage_time_series_records')->where('frequency', 'D')->where('visitors', '>', 0)->max('from');
+        if (!$latestDay) {
+            return null;
+        }
+
+        $end   = Carbon::parse($latestDay)->startOfDay()->addDay();
+        $split = $end->copy()->subDays(90);
+        $start = $end->copy()->subDays(180);
+
+        $coverage = DB::table('webpage_time_series_records')
+            ->where('frequency', 'D')
+            ->where('visitors', '>', 0)
+            ->where('from', '>=', $start)
+            ->where('from', '<', $end)
+            ->selectRaw('count(distinct "from"::date) filter (where "from" >= ?) as recent_days', [$split])
+            ->selectRaw('count(distinct "from"::date) filter (where "from" < ?) as earlier_days', [$split])
+            ->first();
+
+        if ($coverage->recent_days < self::WEBSITE_MIN_TRAFFIC_DAYS || $coverage->earlier_days < self::WEBSITE_MIN_TRAFFIC_DAYS) {
+            return null;
+        }
+
+        return ['start' => $start, 'split' => $split, 'end' => $end];
     }
 
     /**
