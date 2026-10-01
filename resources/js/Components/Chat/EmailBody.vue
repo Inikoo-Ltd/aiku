@@ -26,17 +26,33 @@ const document = computed(() => `<!doctype html><html><head><meta charset="utf-8
   table{max-width:100%;}
 </style></head><body>${props.html}</body></html>`)
 
-const measure = () => {
-    const page = frame.value?.contentDocument
-    const body = page?.body
+let zoomedBlocks: HTMLElement[] = []
 
-    if (!page || !body) {
+const fitWideBlocks = (parent: Element) => {
+    const available = parent.clientWidth
+
+    for (const child of Array.from(parent.children) as HTMLElement[]) {
+        const width = child.getBoundingClientRect().width
+
+        if (width > available) {
+            child.style.zoom = String(available / width)
+            zoomedBlocks.push(child)
+        } else if (child.scrollWidth > available) {
+            fitWideBlocks(child)
+        }
+    }
+}
+
+const measure = () => {
+    const body = frame.value?.contentDocument?.body
+
+    if (!body) {
         return
     }
 
-    body.style.zoom = "1"
-    const fitToWidth = Math.min(1, page.documentElement.clientWidth / Math.max(body.scrollWidth, 1))
-    body.style.zoom = String(fitToWidth)
+    zoomedBlocks.forEach((block) => block.style.zoom = "")
+    zoomedBlocks = []
+    fitWideBlocks(body)
 
     height.value = Math.min(Math.max(Math.ceil(body.getBoundingClientRect().height) + 8, 60), 1600)
 }
