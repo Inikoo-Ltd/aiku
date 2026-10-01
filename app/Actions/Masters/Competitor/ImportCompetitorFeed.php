@@ -43,6 +43,16 @@ class ImportCompetitorFeed
         'discontinued'  => '/^discontinued$/i',
     ];
 
+    public const array DETAILS = [
+        'description' => '/^(description|long ?description|product ?description)$/i',
+        'material'    => '/^(material|materials)$/i',
+        'height'      => '/^height$/i',
+        'width'       => '/^width$/i',
+        'depth'       => '/^(depth|length)$/i',
+        'weight'      => '/^(individual ?weight|net ?weight|weight)$/i',
+        'tariff_code' => '/^(commodity ?code|tariff ?code|hs ?code)$/i',
+    ];
+
     public function handle(Competitor $competitor): int
     {
         $startedAt = now();
@@ -70,7 +80,7 @@ class ImportCompetitorFeed
                     'updated_at'    => $startedAt,
                 ], $chunk),
                 ['competitor_id', 'code'],
-                ['url', 'image_url', 'name', 'barcode', 'price', 'rrp', 'minimum_order', 'fetched_at', 'updated_at']
+                ['url', 'image_url', 'name', 'barcode', 'price', 'rrp', 'minimum_order', 'data', 'fetched_at', 'updated_at']
             );
         }
 
@@ -89,7 +99,7 @@ class ImportCompetitorFeed
     /**
      * Products with no code, name or price and discontinued ones are left out.
      *
-     * @return array<int, array{code: string, name: string, price: float, rrp: float|null, barcode: string|null, minimum_order: int|null, image_url: string|null, url: string|null}>
+     * @return array<int, array{code: string, name: string, price: float, rrp: float|null, barcode: string|null, minimum_order: int|null, image_url: string|null, url: string|null, data: string}>
      */
     public static function parse(string $content): array
     {
@@ -102,7 +112,7 @@ class ImportCompetitorFeed
         $header    = array_map('trim', str_getcsv(array_shift($lines), $delimiter, '"', ''));
 
         $positions = [];
-        foreach (self::COLUMNS as $field => $pattern) {
+        foreach (self::COLUMNS + self::DETAILS as $field => $pattern) {
             $position = collect($header)->search(fn ($title) => preg_match($pattern, $title));
             if ($position !== false) {
                 $positions[$field] = $position;
@@ -132,6 +142,13 @@ class ImportCompetitorFeed
                 'minimum_order' => (int) $cell('minimum_order') ?: null,
                 'image_url'     => str_starts_with($cell('image_url'), 'http') ? $cell('image_url') : null,
                 'url'           => str_starts_with($cell('url'), 'http') ? $cell('url') : null,
+                'data'          => json_encode(array_filter([
+                    'description' => mb_substr(strip_tags($cell('description')), 0, 400),
+                    'material'    => $cell('material'),
+                    'size_cm'     => implode(' x ', array_filter([$cell('height'), $cell('width'), $cell('depth')], fn ($value) => (float) $value > 0)),
+                    'weight_g'    => (float) $cell('weight') ?: null,
+                    'tariff_code' => $cell('tariff_code'),
+                ])),
             ];
         }
 

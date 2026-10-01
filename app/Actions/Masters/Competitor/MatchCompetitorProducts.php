@@ -43,6 +43,8 @@ class MatchCompetitorProducts
 
     private const array KEYS = ['a', 'b', 'c', 'd'];
 
+    public const string INSTRUCTIONS = 'We sell our_product to retailers. A competitor sells the products listed. Pick the one that is the same item as ours (same kind, design, brand, size and material; the pack size may differ) or, failing that, one a retailer could stock instead of ours, or none. A different brand, size or scent is not the same item. weight_vs_ours close to 1 suggests the same size; far from 1 a different size, unless one of them is weighed as a whole set.';
+
     /**
      * @param  array<int, int>  $masterAssetIds
      */
@@ -56,15 +58,7 @@ class MatchCompetitorProducts
                 continue;
             }
 
-            $answer = AskJev::make()->choice(
-                [
-                    'our_product' => $masterAsset->name,
-                    'our_units'   => (float) $masterAsset->units,
-                    'competitor'  => $candidates->map(fn (CompetitorProduct $candidate, int $index) => ['option' => self::KEYS[$index], 'name' => $candidate->name])->all(),
-                ],
-                'We sell our_product to retailers. A competitor sells the products listed. Pick the one that is the same item as ours (same design, size and material, maybe in a different pack size) or, failing that, one a retailer could stock instead of ours, or none.',
-                static::options($candidates)
-            );
+            $answer = AskJev::make()->choice(static::state($masterAsset, $candidates), self::INSTRUCTIONS, static::options($candidates));
 
             if (!$answer) {
                 continue;
@@ -95,6 +89,43 @@ class MatchCompetitorProducts
         }
 
         return $matches;
+    }
+
+    /**
+     * What Jev sees: both sides' name, category hints (our family, tariff code, material), size,
+     * weight and the start of the description, so brand, size and set-or-single can be told apart.
+     *
+     * @param  Collection<int, CompetitorProduct>  $candidates
+     */
+    public static function state(MasterAsset $masterAsset, Collection $candidates, bool $detailed = true): array
+    {
+        $dimensions = $masterAsset->marketing_dimensions ?? [];
+
+        $ours = ['name' => $masterAsset->name, 'units_in_our_pack' => (float) $masterAsset->units];
+        if ($detailed) {
+            $ours += array_filter([
+                'family'      => $masterAsset->masterFamily?->name,
+                'size'        => implode(' x ', array_filter([$dimensions['l'] ?? null, $dimensions['w'] ?? null, $dimensions['h'] ?? null])).($dimensions ? ' '.($dimensions['units'] ?? '') : ''),
+                'weight_g'    => $masterAsset->marketing_weight,
+                'tariff_code' => $masterAsset->tariff_code,
+                'description' => mb_substr(trim(strip_tags((string) $masterAsset->description)), 0, 400),
+            ]);
+        }
+
+        return [
+            'our_product' => $ours,
+            'competitor'  => $candidates->values()->map(fn (CompetitorProduct $candidate, int $index) => ['option' => self::KEYS[$index], 'name' => $candidate->name] + ($detailed ? array_filter([
+                'weight_vs_ours' => static::weightRatio($candidate->data['weight_g'] ?? null, $masterAsset->marketing_weight),
+            ]) + $candidate->data : []))->all(),
+        ];
+    }
+
+    /**
+     * Their weight over ours, e.g. 0.98: close to 1 points to the same size, unless one side weighs a whole set.
+     */
+    public static function weightRatio(mixed $theirs, mixed $ours): ?float
+    {
+        return (float) $theirs > 0 && (float) $ours > 0 ? round((float) $theirs / (float) $ours, 2) : null;
     }
 
     /**

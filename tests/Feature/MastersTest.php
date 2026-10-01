@@ -4485,11 +4485,11 @@ describe('competitor prices, HELP-3605', function () {
     });
     test('a product feed is read and Jev picks the same item from the closest names', function () {
         $feed = implode("\r\n", [
-            "Item No\tStock Level\tItem Name\tPrice\tBarcode\tMin Order Qty\tRRP\tDiscontinued\tURL Links",
-            "SB-12\t10\tSet of 12 Brass Singing Bowls 10cm\t96.00\t111\t1\t15.99\tFalse\thttps://rival.example.com/i/sb-12.jpg",
-            "SB-RED\t4\tRed Brass Singing Bowl 10cm Stand\t5.00\t222\t1\t\tFalse\t",
-            "OLD-1\t0\tBrass Singing Bowl 10cm Old\t3.00\t333\t1\t\tTrue\t",
-            "MUG-1\t9\tWhite Mug\t2.00\t444\t6\t5.99\tFalse\t",
+            "Item No\tStock Level\tItem Name\tPrice\tBarcode\tMin Order Qty\tRRP\tDiscontinued\tURL Links\tMaterial\tHeight\tWidth\tDepth\tCommodity Code\tDescription",
+            "SB-12\t10\tSet of 12 Brass Singing Bowls 10cm\t96.00\t111\t1\t15.99\tFalse\thttps://rival.example.com/i/sb-12.jpg\tBrass\t5\t10\t10\t8306290000\t<p>Hand hammered bowls</p>",
+            "SB-RED\t4\tRed Brass Singing Bowl 10cm Stand\t5.00\t222\t1\t\tFalse\t\t\t\t\t\t\t",
+            "OLD-1\t0\tBrass Singing Bowl 10cm Old\t3.00\t333\t1\t\tTrue\t\t\t\t\t\t\t",
+            "MUG-1\t9\tWhite Mug\t2.00\t444\t6\t5.99\tFalse\t\t\t\t\t\t\t",
         ]);
 
         $this->competitor->update(['feed_url' => 'https://feeds.example.com/stock.txt']);
@@ -4508,6 +4508,8 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
 
         $matches = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->get()->keyBy('competitorProduct.code');
+        expect($matches['SB-12']->competitorProduct->data)->toEqual(['description' => 'Hand hammered bowls', 'material' => 'Brass', 'size_cm' => '5 x 10 x 10', 'tariff_code' => '8306290000']);
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'decisions') && ($request['state']['competitor'][0]['material'] ?? $request['state']['competitor'][1]['material'] ?? null) === 'Brass');
         expect($matches->keys()->sort()->values()->all())->toBe(['SB-12', 'SB-RED'])
             ->and($matches['SB-12']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
             ->and($matches['SB-12']->is_same_item)->toBeTrue()

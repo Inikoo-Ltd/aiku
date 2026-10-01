@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $rrp
  * @property string $units units in the pack
  * @property int|null $minimum_order
+ * @property array $data description, material, size_cm, weight_g and tariff_code when the feed has them
  * @property \Illuminate\Support\Carbon $fetched_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -34,10 +35,15 @@ class CompetitorProduct extends Model
 {
     protected $guarded = [];
 
+    protected $attributes = [
+        'data' => '{}',
+    ];
+
     protected function casts(): array
     {
         return [
             'fetched_at' => 'datetime',
+            'data'       => 'array',
         ];
     }
 
