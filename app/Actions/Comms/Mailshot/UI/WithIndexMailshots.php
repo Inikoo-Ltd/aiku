@@ -52,25 +52,16 @@ trait WithIndexMailshots
             })
             ->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
 
-        $queryBuilder->where(function ($query) {
-            $query->where('mailshots.is_second_wave', false)
-                ->orWhereNotIn('mailshots.state', [MailshotStateEnum::READY->value, MailshotStateEnum::IN_PROCESS->value, MailshotStateEnum::SCHEDULED->value]);
-        });
+        $this->scopeMailshots($queryBuilder, $outboxCode, $parent);
 
-        if ($outboxCode !== null) {
-            $queryBuilder->where('mailshots.type', $outboxCode->value);
-        }
-        if ($parent instanceof Group) {
-            $queryBuilder->where('mailshots.group_id', $parent->id);
-        } elseif ($parent instanceof Organisation) {
-            $queryBuilder->where('mailshots.organisation_id', $parent->id);
-        } elseif ($parent instanceof Shop) {
-            $queryBuilder->where('mailshots.shop_id', $parent->id);
-        } elseif ($parent instanceof Outbox) {
-            $queryBuilder->where('mailshots.outbox_id', $parent->id);
-        } elseif ($parent instanceof PostRoom) {
-            $queryBuilder->where('outboxes.post_room_id', $parent->id);
-        }
+        $queryBuilder->whereElementGroup(
+            key: 'state',
+            allowedElements: MailshotStateEnum::values(),
+            engine: function ($query, $elements) {
+                $query->whereIn('mailshots.state', $elements);
+            },
+            prefix: $prefix
+        );
 
 
         return $queryBuilder
@@ -109,8 +100,50 @@ trait WithIndexMailshots
             ])
             ->allowedSorts(['state', 'subject', 'name', 'date', 'number_try_send_success', 'hard_bounce', 'soft_bounce', 'number_deliveries_success', 'opened', 'clicked', 'spam', 'unsubscribed'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'], $prefix)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public function scopeMailshots($query, ?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|OrgPostRoom|Organisation|Shop $parent): void
+    {
+        $query->where(function ($query) {
+            $query->where('mailshots.is_second_wave', false)
+                ->orWhereNotIn('mailshots.state', [MailshotStateEnum::READY->value, MailshotStateEnum::IN_PROCESS->value, MailshotStateEnum::SCHEDULED->value]);
+        });
+
+        if ($outboxCode !== null) {
+            $query->where('mailshots.type', $outboxCode->value);
+        }
+        if ($parent instanceof Group) {
+            $query->where('mailshots.group_id', $parent->id);
+        } elseif ($parent instanceof Organisation) {
+            $query->where('mailshots.organisation_id', $parent->id);
+        } elseif ($parent instanceof Shop) {
+            $query->where('mailshots.shop_id', $parent->id);
+        } elseif ($parent instanceof Outbox) {
+            $query->where('mailshots.outbox_id', $parent->id);
+        } elseif ($parent instanceof PostRoom) {
+            $query->where('outboxes.post_room_id', $parent->id);
+        }
+    }
+
+    public function getMailshotStateElements(?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|OrgPostRoom|Organisation|Shop $parent): array
+    {
+        $query = Mailshot::query()->leftJoin('outboxes', 'mailshots.outbox_id', 'outboxes.id');
+        $this->scopeMailshots($query, $outboxCode, $parent);
+
+        $stateCounts = $query
+            ->selectRaw('mailshots.state, count(*) as total')
+            ->groupBy('mailshots.state')
+            ->pluck('total', 'state');
+
+        $elements = [];
+        foreach (MailshotStateEnum::labels() as $state => $label) {
+            $elements[$state] = [$label, $stateCounts->get($state, 0)];
+        }
+
+        return $elements;
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
