@@ -1569,6 +1569,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             :canEdit="isMyChat && !isClosed && !isWaiting"
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
+                            flagChannel="chat"
                             @retract-message="handleRetractMessage"
                             @redact-message="handleRedactMessage"
                             @redact-attachment="handleRedactAttachment"

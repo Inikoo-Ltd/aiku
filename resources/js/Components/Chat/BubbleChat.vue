@@ -17,6 +17,7 @@ import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
 import { useCopyText } from "@/Composables/useCopyText"
+import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 
 type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -137,6 +138,7 @@ const props = defineProps<{
     translateUrlBase?: string
     disableSlackForward?: boolean
     disableImageVerification?: boolean
+    flagChannel?: "chat" | "whatsapp"
 }>()
 
 const emit = defineEmits<{
@@ -319,6 +321,17 @@ const senderLabel = computed(() => {
 // A status notice is a timeline marker, not something anyone replies to or reacts to,
 // so it renders as the same chip the event stream uses.
 const isSystemNotice = computed(() => props.message.sender_type === "system")
+
+const AUTOMATED_METADATA_KEYS = ["automated", "ai_answered_at", "claim_details_asked_at", "out_of_hours_replied_at", "asked_if_customer", "greeted_at", "greeting"]
+
+const flagUrl = computed(() => {
+    const metadata = props.message.metadata ?? {}
+    if (!props.flagChannel || props.viewerType !== "agent" || !props.message.id || !AUTOMATED_METADATA_KEYS.some((key) => metadata[key])) {
+        return null
+    }
+
+    return route("grp.chat.ai.sent.flag", [props.flagChannel, props.message.id])
+})
 
 // To an agent a promotion is a footnote in the conversation, not part of it: it starts folded
 // to one line so the customer's own messages stand out, and opens on click.
@@ -873,7 +886,10 @@ watch(selectedLanguage, async (val) => {
 
 <template>
     <div v-if="isSystemNotice" class="w-full flex justify-center">
-        <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+        <div class="flex flex-col items-center gap-1">
+            <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+            <FlagWrongButton v-if="flagUrl" :url="flagUrl" :flagged="!!message.metadata?.flagged_wrong_at" />
+        </div>
     </div>
 
     <div v-else-if="isPromotionFolded" class="w-full flex justify-end">

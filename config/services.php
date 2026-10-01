@@ -163,5 +163,9 @@ return [
     'indexnow' => [
         'key' => env('INDEXNOW_KEY'),
     ],
+    'timesfm' => [
+        'url'   => env('TIMESFM_URL'),
+        'token' => env('TIMESFM_TOKEN'),
+    ],
 
 ];

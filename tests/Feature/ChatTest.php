@@ -7525,10 +7525,20 @@ test('a draft goes to the customer without staff only out of hours, only once ea
     $inHours = $askAt('2026-09-28 11:00', 'And when will it be dispatched?');
     expect($inHours->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING);
 
-    // Staff flag the automatic answer as wrong: the gate closes again.
+    // Staff flag the automatic answer as wrong from the inbox, saying why: the gate closes again.
     actingAs($this->user);
-    $this->post(route('grp.chat.ai.drafts.flag', [$sent->id]))->assertRedirect();
+    $this->post(route('grp.chat.ai.drafts.flag', [$sent->id]))->assertSessionHasErrors('reason');
+    expect($sent->refresh()->flagged_wrong_at)->toBeNull();
+
+    $this->postJson(route('grp.chat.ai.sent.flag', ['chat', $answer->id]), ['reason' => 'The order was already dispatched'])
+        ->assertOk()->assertJson(['success' => true]);
     expect($sent->refresh()->flagged_wrong_at)->not->toBeNull()
+        ->and($sent->flagged_reason)->toBe('The order was already dispatched')
+        ->and($sent->flagged_by_user_id)->toBe($this->user->id)
+        ->and(Arr::get($answer->refresh()->metadata, 'flagged_wrong_at'))->not->toBeNull();
+
+    $this->postJson(route('grp.chat.ai.sent.flag', ['chat', $answer->id]), ['reason' => 'A second opinion'])->assertStatus(422);
+    expect($sent->refresh()->flagged_reason)->toBe('The order was already dispatched')
         ->and(\App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, \App\Enums\CRM\Livechat\ChatTopicEnum::ORDER_STATUS)['earned'])->toBeFalse();
 
     $afterFlag = $askAt('2026-09-28 20:00', 'Any news on my order?');
@@ -10597,16 +10607,22 @@ test('staff can flag a closed-now reply as wrong, but not an ordinary message', 
 
     actingAs($this->user);
 
-    $this->post(route('grp.chat.ai.sent.flag', ['chat', $agentMessage->id]))->assertNotFound();
+    $this->post(route('grp.chat.ai.sent.flag', ['chat', $agentMessage->id]), ['reason' => 'Wrong'])->assertNotFound();
 
-    $this->post(route('grp.chat.ai.sent.flag', ['chat', $automated->id]))->assertRedirect();
+    $this->post(route('grp.chat.ai.sent.flag', ['chat', $automated->id]))->assertSessionHasErrors('reason');
+    expect(Arr::get($automated->refresh()->metadata, 'flagged_wrong_at'))->toBeNull();
+
+    $this->post(route('grp.chat.ai.sent.flag', ['chat', $automated->id]), ['reason' => 'Customer already told us the products'])->assertRedirect();
 
     expect(Arr::get($automated->refresh()->metadata, 'flagged_wrong_at'))->not->toBeNull()
-        ->and(Arr::get($automated->metadata, 'flagged_by_user_id'))->toBe($this->user->id);
+        ->and(Arr::get($automated->metadata, 'flagged_by_user_id'))->toBe($this->user->id)
+        ->and(Arr::get($automated->metadata, 'flagged_reason'))->toBe('Customer already told us the products')
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($automated)->resolve()['metadata'])->not->toHaveKey('flagged_reason');
 
     $sentRow = collect(get(route('grp.chat.ai.sent'))->assertOk()->viewData('page')['props']['data']['data'])
         ->firstWhere('message_id', $automated->id);
-    expect($sentRow)->not->toBeNull()->and($sentRow['reversed'])->toBeTrue();
+    expect($sentRow)->not->toBeNull()->and($sentRow['reversed'])->toBeTrue()
+        ->and($sentRow['flagged_reason'])->toBe('Customer already told us the products');
 
     $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
     expect(collect($dashboard['by_kind'])->firstWhere('kind', 'out_of_hours')['wrong'])->toBeGreaterThanOrEqual(1);

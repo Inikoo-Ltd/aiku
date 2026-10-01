@@ -201,6 +201,7 @@ class StoreEmployee extends OrgAction
             'email'                                   => ['sometimes', 'nullable', 'email'],
             'username'                                => [
                 $this->asAction ? 'nullable' : 'required',
+                'lowercase',
                 new AlphaDashDot(),
                 new IUnique(
                     table: 'users',

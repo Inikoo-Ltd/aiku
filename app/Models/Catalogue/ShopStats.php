@@ -117,6 +117,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_dynamic_queries is_static=false
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property array<array-key, mixed>|null $sales_forecast
+ * @property \Illuminate\Support\Carbon|null $sales_forecast_hydrated_at
  * @property int $number_current_product_variants state: active+discontinuing
  * @property int $number_product_variants_state_in_process
  * @property int $number_product_variants_state_active
@@ -221,6 +223,11 @@ class ShopStats extends Model
     protected $table = 'shop_stats';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'sales_forecast'             => 'array',
+        'sales_forecast_hydrated_at' => 'datetime',
+    ];
 
     public function shop(): BelongsTo
     {

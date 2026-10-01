@@ -17,7 +17,7 @@ Todos los paneles se abren con el <b>objetivo del mes</b>. El grupo lo reparte p
 - **Facturado:** ventas facturadas hasta ahora este mes.
 - **En curso en el almacén:** pedidos ya enviados y aún sin facturar.
 - **Aún necesario:** el objetivo menos lo facturado y lo que está en curso en el almacén.
-- **Previsto a fin de mes:** el resto del mismo mes del año pasado, ajustado según cómo va este mes frente a los mismos días del año pasado.
+- **Previsto a fin de mes:** las ventas facturadas hasta ahora más una previsión de los días que quedan. La previsión se calcula cada noche a partir de las ventas diarias de la tienda de los últimos tres años. Una tienda dividida por categoría de factura reparte su previsión entre ellas según cómo funcionó cada categoría el año pasado. Una tienda que aún no tiene previsión (una tienda nueva, o la previsión de la noche no se ejecutó) usa en su lugar el resto del mismo mes del año pasado, ajustado según cómo va este mes frente a los mismos días del año pasado.
 - **Necesario por día** y **esta semana:** lo que aún hace falta, repartido entre los días que quedan.
 
 El gráfico compara este mes, día a día, con el mismo mes del año pasado. **Año hasta la fecha** muestra lo mismo para el año completo.

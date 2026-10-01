@@ -16,7 +16,7 @@ Every dashboard opens on the <b>month's target</b>. The group splits it by <b>or
 - **Invoiced:** sales invoiced so far this month.
 - **In the warehouse pipeline:** orders already submitted and not yet invoiced.
 - **Still needed:** the target minus what is invoiced and in the pipeline.
-- **Expected by month end:** the rest of last year's month, scaled by how this month is going against the same days last year.
+- **Expected by month end:** sales invoiced so far plus a forecast of the days left. The forecast is made each night from the last three years of the shop's daily sales. A shop split by invoice category shares its forecast between them by how each category ran last year. A shop with no forecast yet (a new shop, or the night's forecast did not run) uses the rest of last year's month instead, scaled by how this month is going against the same days last year.
 - **Needed per day** and **this week:** what is still needed, spread over the days left.
 
 The chart compares this month, day by day, with the same month last year. **Year to date** shows the same for the whole year.
