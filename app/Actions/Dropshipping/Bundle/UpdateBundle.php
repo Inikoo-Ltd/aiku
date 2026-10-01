@@ -62,25 +62,13 @@ class UpdateBundle extends OrgAction
 
             $portfolioData = $this->getPortfolioPresentationData($modelData);
 
-            /** @var array $mainMedia */
-            $mainMedia = collect(Arr::get($modelData, 'images'))->where('is_main', true)->first();
-            $images = collect(Arr::get($modelData, 'images'))->pluck('id');
-
             $selectedProducts = [];
             if (Arr::get($modelData, 'products')) {
                 $selectedProducts = $this->processDelete($bundle, Arr::get($modelData, 'products'));
             }
 
-            foreach ($images as $imageId) {
-                $existingMedia = Media::find($imageId);
-                $this->attachMediaToModel($product, $existingMedia, 'image');
-            }
-            $mainMediaId = Arr::get($mainMedia, 'id');
-
-            if (($product->image_id === null) && $mainMediaId) {
-                UpdateProductImages::run($product, [
-                    'image_id' => Arr::get($mainMedia, 'id'),
-                ]);
+            if (Arr::exists($modelData, 'images')) {
+                $this->syncBundleImages($product, Arr::get($modelData, 'images'));
             }
 
             if ($bundle->customerSalesChannel->platform->type === PlatformTypeEnum::MANUAL) {
@@ -191,6 +179,26 @@ class UpdateBundle extends OrgAction
         ])->all();
 
         return $this->getBundleTradeUnits($componentProducts, $componentQuantities);
+    }
+
+    /**
+     * @param array<int, array{id: int, is_main?: bool}> $images
+     */
+    private function syncBundleImages(Product $product, array $images): void
+    {
+        $imageIds = collect($images)->pluck('id')->unique()->values();
+
+        $product->images()->wherePivot('scope', 'image')->detach();
+
+        foreach (Media::whereIn('id', $imageIds)->get() as $media) {
+            $this->attachMediaToModel($product, $media, 'image');
+        }
+
+        $mainImageId = Arr::get(collect($images)->firstWhere('is_main', true), 'id') ?? $imageIds->first();
+
+        UpdateProductImages::run($product, [
+            'image_id' => $mainImageId,
+        ]);
     }
 
     private function getPortfolioPresentationData(array $modelData): array
