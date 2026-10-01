@@ -24,7 +24,7 @@ library.add(
 const layoutStore = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     tabs_box: {
         label: string
         show_total?: boolean
@@ -76,7 +76,10 @@ const props = defineProps<{
         }[]
     }[]
     current?: string | number
-}>()
+    gutterClass?: string
+}>(), {
+    gutterClass: "px-3 sm:px-6",
+})
 
 const isAllExpanded = ref(false)
 
@@ -228,7 +231,7 @@ const clickVisitRoute = (visitRoute: {
     <div>
         <!-- TabsBoxDisplay Desktop -->
         <div class="hidden md:block mt-4 mb-4">
-        <div class="relative px-3 sm:px-6">
+        <div class="relative isolate" :class="gutterClass">
             <ScrollFadeArrow direction="left" rounded :visible="hasOverflowLeft" @click="scrollBoxesLeft" />
             <ScrollFadeArrow direction="right" rounded :visible="hasOverflowRight" @click="scrollBoxesRight" />
 
@@ -371,7 +374,7 @@ const clickVisitRoute = (visitRoute: {
 
         <!-- Mobile -->
         <div class="md:hidden mt-2 mb-4">
-        <div class="relative px-3 sm:px-6">
+        <div class="relative isolate" :class="gutterClass">
             <ScrollFadeArrow direction="left" rounded :visible="hasMobileOverflowLeft" @click="scrollMobileBoxesLeft" />
             <ScrollFadeArrow direction="right" rounded :visible="hasMobileOverflowRight" @click="scrollMobileBoxesRight" />
 

@@ -88,7 +88,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 
 <template>
     <div>
-        <div class="relative mx-3 my-2 md:mx-6">
+        <div class="relative isolate mx-3 my-2 md:mx-6">
         <div ref="boxesScroller" class="flex gap-x-3 md:gap-x-6 overflow-x-auto pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div v-for="box in tabs_box" class="rounded-md px-3 relative border flex flex-col py-2 xtransition-all z-10"
                 xclass="box.tabs.some(tab => tab.tab_slug === currentTab)

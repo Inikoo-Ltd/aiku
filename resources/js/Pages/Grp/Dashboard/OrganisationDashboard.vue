@@ -74,7 +74,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:year-target="props.dashboard.super_blocks[0].year_target"
 		/>
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
-			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
+			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
 		</KeepAlive>
 
 		<DashboardSettings
