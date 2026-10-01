@@ -3,7 +3,7 @@ import { ref, computed, onMounted, inject } from 'vue'
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical, faIdCard } from "@fas"
-import { faMedal } from "@fal"
+import { faMedal, faPencil } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
@@ -12,7 +12,7 @@ import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsi
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
-library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
+library.add(faUser, faMedal, faPencil, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
 
 const props = defineProps<{
     data: {}
@@ -35,26 +35,19 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
 </script>
 
 <template>
-    <div class="p-4 sm:p-8">
-        <Deferred data="insights">
-            <template #fallback>
-                <div class="mb-8 space-y-6 animate-pulse" aria-hidden="true">
-                    <div class="h-8 w-1/3 rounded bg-gray-100" />
-                    <div class="h-10 rounded bg-gray-100" />
-                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        <div class="h-72 rounded bg-gray-100 lg:col-span-2" />
-                        <div class="h-72 rounded bg-gray-100" />
-                    </div>
-                </div>
-            </template>
-            <B2BDashboardInsights v-if="insights" :insights="insights" class="mb-8" />
-        </Deferred>
+    <div class="px-6 pb-12 pt-10 lg:px-14">
+        <div v-if="welcome_message" class="mb-4" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
 
-        <!-- Customer Contact Information -->
-        <div v-if="data?.customer" class="relative mb-8 p-4  rounded-lg border "
+        <div v-if="data?.customer" class="relative mb-8 p-4 rounded-lg border"
             :class="layout.offer_data?.type === 'gr' ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
         >
-            <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ ctrans("Customer Information") }}</h2>
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">{{ ctrans("Customer Information") }}</h2>
+                <Link :href="route('retina.sysadmin.settings.edit')" class="text-xs text-gray-500 underline hover:text-gray-700">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
+                    {{ ctrans("Edit information") }}
+                </Link>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Left Column: Customer Information -->
@@ -147,7 +140,19 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                 {{ ctrans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
             </p>
         </div> -->
-        <div v-if="welcome_message" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+        <Deferred data="insights">
+            <template #fallback>
+                <div class="space-y-6 animate-pulse" aria-hidden="true">
+                    <div class="h-8 w-1/3 rounded bg-gray-100" />
+                    <div class="h-10 rounded-lg bg-gray-100" />
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        <div class="h-72 rounded-lg bg-gray-100 lg:col-span-2" />
+                        <div class="h-72 rounded-lg bg-gray-100" />
+                    </div>
+                </div>
+            </template>
+            <B2BDashboardInsights v-if="insights" :insights="insights" />
+        </Deferred>
     </div>
 
     <div v-if="showBanner" class="absolute inset-x-0 bottom-0">

@@ -18,7 +18,7 @@ interface ProcurementCard {
 	icon: string | string[]
 	value: number | null
 	tone: "violet" | "emerald" | "amber" | "indigo" | "sky"
-	route: routeType
+	route: routeType | null
 	metrics: ProcurementMetric[]
 }
 
@@ -42,27 +42,37 @@ const tone = toneClasses[props.card.tone]
 
 <template>
 	<div
-		class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
-		<Link
-			v-tooltip="card.label + (card.description ? ' — ' + card.description : '')"
-			:href="route(card.route.name, card.route.parameters)"
-			class="flex items-center gap-1.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-			@start="loadingTarget = 'card'"
-			@finish="loadingTarget = null">
-			<LoadingIcon v-if="loadingTarget === 'card'" class="text-xs" />
-			<FontAwesomeIcon v-else :icon="card.icon" :class="tone.icon" fixed-width aria-hidden="true" />
-			<span v-if="card.value !== null" class="font-semibold text-gray-700">{{ locale.number(card.value) }}</span>
-		</Link>
+		class="inline-flex items-center bg-white rounded-lg shadow-sm text-sm tabular-nums">
+		<span class="rounded-l-lg border border-indigo-400 px-3 last:rounded-r-lg bg-indigo-50/50">
+			<Link
+				v-if="card.route"
+				v-tooltip="card.label + (card.description ? ' — ' + card.description : '')"
+				:href="route(card.route.name, card.route.parameters)"
+				class="flex items-center gap-1.5 rounded-l py-2  focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+				@start="loadingTarget = 'card'"
+				@finish="loadingTarget = null">
+				<LoadingIcon v-if="loadingTarget === 'card'" class="text-xs" />
+				<FontAwesomeIcon v-else :icon="card.icon" :class="tone.icon" fixed-width aria-hidden="true" />
+				<span v-if="card.value !== null" class="font-semibold text-gray-700">{{ locale.number(card.value) }}</span>
+			</Link>
+			<span
+				v-else
+				v-tooltip="card.label + (card.description ? ' — ' + card.description : '')"
+				class="flex items-center gap-1.5 py-2 ">
+				<FontAwesomeIcon :icon="card.icon" :class="tone.icon" fixed-width aria-hidden="true" />
+				<span v-if="card.value !== null" class="font-semibold text-gray-700">{{ locale.number(card.value) }}</span>
+			</span>
+		</span>
 
 		<template v-for="(metric, metricIndex) in card.metrics" :key="metric.label">
 			<Link
 				v-tooltip="metric.label"
 				:href="route(metric.route.name, metric.route.parameters)"
-				class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3 rounded text-gray-500 hover:text-gray-700"
+				class="flex items-center gap-1.5 py-2 pl-3 text-gray-500 hover:text-gray-700 border-y border-r border-gray-300 px-3 last:rounded-r-lg"
 				@start="loadingTarget = metric.label"
 				@finish="loadingTarget = null">
 				<span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="tone.dots[metricIndex % tone.dots.length]" />
-				<LoadingIcon v-if="loadingTarget === metric.label" class="text-xs" />
+				<LoadingIcon v-if="loadingTarget === metric.label" class="text-xs py-1" />
 				<span v-else class="font-semibold text-gray-700">{{ locale.number(metric.value) }}</span>
 			</Link>
 		</template>

@@ -35,6 +35,11 @@ class IndexMarketingMailshots extends OrgAction
         return $this->handleMailshot(OutboxCodeEnum::MARKETING, $parent, $prefix);
     }
 
+    public function filterableOutboxCode(): OutboxCodeEnum
+    {
+        return OutboxCodeEnum::MARKETING;
+    }
+
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
 

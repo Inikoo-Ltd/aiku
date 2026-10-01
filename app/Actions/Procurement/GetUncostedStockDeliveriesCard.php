@@ -62,7 +62,11 @@ class GetUncostedStockDeliveriesCard
             'icon'        => 'fal fa-exclamation-triangle',
             'value'       => $stale->total + $agentNotCosted,
             'tone'        => 'amber',
-            'route'       => $stale->total ? $staleRoute : $agentRoute,
+            'route'       => match (true) {
+                $stale->total && $agentNotCosted => null,
+                (bool) $stale->total             => $staleRoute,
+                default                          => $agentRoute,
+            },
             'metrics'     => [
                 [
                     'label' => __('Booked in more than :days days ago', ['days' => self::BOOKED_IN_GRACE_DAYS]),
