@@ -277,14 +277,16 @@ class GetShopMonthSalesTarget
             $categories[] = ['invoice_category_id' => $categoryKey ?: null, 'daily' => [], 'last_year_daily' => [], 'sales' => 0.0, 'last_year' => 0.0, 'target' => 0.0, 'is_set' => false];
         }
 
-        $names         = InvoiceCategory::whereIn('id', array_filter(array_column($categories, 'invoice_category_id')))->pluck('name', 'id');
-        $emptyPipeline = ['amount' => 0.0, 'orders' => 0, 'submitted_amount' => 0.0, 'in_warehouse_amount' => 0.0];
-        $canEdit       = $user !== null && UpdateShopSalesTarget::canEdit($user, $shop);
+        $invoiceCategories = InvoiceCategory::whereIn('id', array_filter(array_column($categories, 'invoice_category_id')))->get(['id', 'name', 'settings']);
+        $names             = $invoiceCategories->pluck('name', 'id');
+        $ofOtherShopIds    = $invoiceCategories->filter(fn (InvoiceCategory $invoiceCategory) => !empty($invoiceCategory->settings['shop_ids']) && !in_array($shop->id, $invoiceCategory->settings['shop_ids']))->pluck('id')->all();
+        $emptyPipeline     = ['amount' => 0.0, 'orders' => 0, 'submitted_amount' => 0.0, 'in_warehouse_amount' => 0.0];
+        $canEdit           = $user !== null && UpdateShopSalesTarget::canEdit($user, $shop);
 
         usort($categories, fn (array $a, array $b) => [$b['target'], $b['sales']] <=> [$a['target'], $a['sales']]);
         $restByCategory = $this->shareForecastAcrossCategories($categories, $shopRestOfMonth, $today);
 
-        return array_map(function (array $category, int $position) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth, $restByCategory) {
+        $blocks = array_map(function (array $category, int $position) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth, $restByCategory) {
             $categoryId = $category['invoice_category_id'];
             $setTarget  = $categoryId ? $targets->firstWhere('invoice_category_id', $categoryId) : null;
 
@@ -306,6 +308,8 @@ class GetShopMonthSalesTarget
                 'update_route'        => $this->updateRoute($shop),
             ];
         }, $categories, array_keys($categories));
+
+        return array_values(array_filter($blocks, fn (array $block) => !in_array($block['invoice_category_id'], $ofOtherShopIds)));
     }
 
     /**

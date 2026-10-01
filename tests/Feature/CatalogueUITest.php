@@ -1609,6 +1609,13 @@ test('a shop selling under several invoice categories targets their sum, partner
 
     expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
 
+    $movedToOwnShop = $category('Faire '.uniqid());
+    DB::table('invoice_categories')->where('id', $movedToOwnShop->id)->update(['settings' => json_encode(['shop_ids' => [$shop->id + 1000]])]);
+    $invoice('2037-05-15', $movedToOwnShop->id, 400);
+    Cache::tags(["dashboard-shop-$shop->id"])->flush();
+
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['children'])->pluck('invoice_category_id'))->not->toContain($movedToOwnShop->id);
+
     $shop->stats->update(['sales_forecast' => ['version' => '3', 'from' => '2038-05-10', 'org' => collect(range(10, 31))->mapWithKeys(fn (int $day) => [sprintf('2038-05-%02d', $day) => [10.0, 4.0]])->all(), 'grp' => null]]);
     $block      = GetShopMonthSalesTarget::run($shop, null, $today);
     $byCategory = collect($block['children'])->keyBy('invoice_category_id');
