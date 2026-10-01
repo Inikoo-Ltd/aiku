@@ -436,3 +436,11 @@ test('a person saving a family text marks it reviewed and translate all leaves i
         ->and($family->description_title)->toBe('SK Our soaps')
         ->and($family->is_description_title_reviewed)->toBeFalse();
 });
+
+test('the layout tells the page editor which language each shop writes in, for the font pickers', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'pl')->first()->id]);
+
+    $shops = App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout::make()->getShops($this->adminGuest->getUser(), $this->shop->organisation);
+
+    expect(collect($shops)->firstWhere('id', $this->shop->id)['language'])->toBe('pl');
+});

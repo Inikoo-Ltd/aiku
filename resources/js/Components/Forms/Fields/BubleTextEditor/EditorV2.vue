@@ -2,7 +2,8 @@
 import { onBeforeUnmount, onMounted, ref, nextTick, watch, computed } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
 import Select from 'primevue/select'
-import { useFontFamilyList } from '@/Composables/useFont'
+import { fontsForCurrentShop } from '@/Composables/useFont'
+import FontNotFor from "@/Components/Workshop/Properties/FontNotFor.vue"
 
 import TiptapToolbarButton from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarButton.vue"
 import TiptapToolbarGroup from "@/Components/Forms/Fields/BubleTextEditor/TiptapToolbarGroup.vue"
@@ -85,6 +86,8 @@ import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
 import { uniqueId } from "lodash-es"
 import { ulid } from "ulid"
+
+const fontFamilies = fontsForCurrentShop()
 
 
 const props = withDefaults(defineProps<{
@@ -743,14 +746,17 @@ onMounted(async () => {
                                             @click="editorInstance?.chain().focus().unsetFontFamily().run(); close()">
                                             {{ ctrans('Clear font') }}
                                         </button>
-                                        <button v-for="font in useFontFamilyList" :key="font.value" type="button"
+                                        <button v-for="font in fontFamilies" :key="font.value" type="button"
                                             class="flex w-full items-center px-3 py-1.5 text-left text-sm transition-colors"
                                             :class="editorInstance?.getAttributes('textStyle').fontFamily === font.value
                                                 ? 'bg-blue-50 text-blue-800'
                                                 : 'text-gray-700 hover:bg-gray-100'"
                                             :style="{ fontFamily: font.value }"
                                             @click="editorInstance?.chain().focus().setFontFamily(font.value).run(); close()">
-                                            {{ font.label }}
+                                            <span>
+                                                {{ font.label }}
+                                                <FontNotFor :languages="font.notFor" />
+                                            </span>
                                         </button>
                                     </div>
                                 </template>
