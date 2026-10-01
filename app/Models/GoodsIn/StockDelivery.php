@@ -179,8 +179,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'state',
         'cost_total',
         'cost_items',
+        'cost_extra',
         'cost_shipping',
         'cost_duties',
+        'is_costed',
     ];
 
     public function searchIndexShouldBeUpdated(): bool

@@ -650,6 +650,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('shopify:sweep-missed-orders')->hourlyAt(10)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepShopifyMissedOrders',
+                ),
+                name: 'SweepShopifyMissedOrders',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('shopify:add-location-to-shipping')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(),
                 name: 'AddShopifyLocationsToShippingProfiles',
                 type: 'job',

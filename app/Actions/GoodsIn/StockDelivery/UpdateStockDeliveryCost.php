@@ -9,16 +9,19 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\GoodsIn\StockDeliveryCost;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
     use WithActionUpdate;
+
+    private StockDeliveryCost $stockDeliveryCost;
 
     public function rules(): array
     {
@@ -32,6 +35,13 @@ class UpdateStockDeliveryCost extends OrgAction
         ];
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        if (!$this->asAction && $this->stockDeliveryCost->stockDelivery->is_costed) {
+            $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
+        }
+    }
+
     public function handle(StockDeliveryCost $stockDeliveryCost, array $modelData): StockDeliveryCost
     {
         $stockDeliveryCost = $this->update($stockDeliveryCost, StoreStockDeliveryCost::withExchange($stockDeliveryCost->stockDelivery, $modelData));
@@ -43,6 +53,7 @@ class UpdateStockDeliveryCost extends OrgAction
 
     public function asController(StockDeliveryCost $stockDeliveryCost, ActionRequest $request): StockDeliveryCost
     {
+        $this->stockDeliveryCost = $stockDeliveryCost;
         $this->initialisation($stockDeliveryCost->organisation, $request);
 
         return $this->handle($stockDeliveryCost, $this->validatedData);
@@ -50,7 +61,8 @@ class UpdateStockDeliveryCost extends OrgAction
 
     public function action(StockDeliveryCost $stockDeliveryCost, array $modelData): StockDeliveryCost
     {
-        $this->asAction = true;
+        $this->asAction          = true;
+        $this->stockDeliveryCost = $stockDeliveryCost;
         $this->initialisation($stockDeliveryCost->organisation, $modelData);
 
         return $this->handle($stockDeliveryCost, $this->validatedData);
