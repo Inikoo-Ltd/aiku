@@ -7,21 +7,21 @@ category: shop
 ---
 
 <aside class="tldr">
-Every night aiku looks at master products that have <b>too much stock in every warehouse</b>, or are <b>running out in every warehouse</b>, and may suggest a price change. A tip is only a suggestion: <b>no price changes until someone applies it and saves</b>. You see the tips on the <b>Pricing</b> tab, the most certain first.
+Every night aiku looks at master products that have <b>too much stock</b> or are <b>running out</b>, new lines included, and may suggest a price change. A tip is only a suggestion: <b>no price changes until someone applies it and saves</b>. You see the tips on the <b>Pricing</b> tab, the most certain first.
 </aside>
 
 ## Which products get a tip
 
-The price of a master product is the same in every shop that sells it, so a tip is only given when every organisation agrees:
+The price of a master product is the same in every shop that sells it, so aiku looks at the days of stock of each organisation and averages them by **how much each organisation sold in the last year**. An organisation that sells most of the product counts most; one that sells little of it hardly counts.
 
-- **Markdown (lower price):** the product has stock for **120 days or more** in every organisation that stocks it.
-- **Markup (higher price):** the product will **run out within 45 days** in every organisation.
+- **Markdown (lower price):** that average is **120 days of stock or more**.
+- **Markup (higher price):** that average is **under 45 days**.
 
-If one warehouse is full and another is running out, no tip is given.
+**New lines** (no sales in the same months a year ago) get a tip once they have been on sale for **60 days**. With no last year to compare with, the AI judges them on their sales since launch against the rest of the family, and on their price against the family's usual price and competitors.
 
 Some products never get a tip:
 
-- products that sold nothing in the same months a year ago, so new lines are never marked down;
+- products that sold nothing in the last two years;
 - the Aroma master shop.
 
 ## How the tip is worked out
@@ -42,10 +42,10 @@ aiku then applies fixed rules before showing anything:
 
 - the change must go the right way: a markdown only when there is too much stock, a markup only when stock is running out;
 - the AI must be at least 50% sure of its pick;
-- no markdown when the fall in sales looks temporary;
+- no markdown when the fall in sales looks temporary (not checked for new lines, which have no last year);
 - a markdown never takes the price below **cost + 25%**. If it would, the cut is made smaller, and the reason says so.
 
-When the AI's answer is "keep the price", no tip is shown.
+When no tip is given, the **Price tip** column says why in grey, for example *No tip: stock for 80 days, no change needed*, *No tip: the AI keeps the price (71% sure)*, *No tip: the fall in sales looks temporary (65% likely)* or *No tip yet: new, on sale for 30 days*.
 
 ## What a tip shows
 
@@ -55,7 +55,7 @@ On the **Pricing** tab, the **Price tip** column shows:
 - how sure the AI is, for example **72% sure**;
 - a **Dismiss** link.
 
-Hover over the change to read the reason, for example: *Stock for 400 days in every organisation, sales down 20% on last year, 20 more on the way, 80% margin, price −10% on 2025-03-10 moved sales +25%*. The reason is built from the figures above, so you can check each one.
+Hover over the change to read the reason, for example: *Stock for 400 days, averaged by what each organisation sells, sales down 20% on last year, 20 more on the way, 80% margin, price −10% on 2025-03-10 moved sales +25%*. The reason is built from the figures above, so you can check each one.
 
 Products with a tip are listed first, the most certain at the top. Click the column header to sort differently.
 

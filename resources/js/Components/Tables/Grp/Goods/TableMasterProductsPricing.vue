@@ -64,6 +64,7 @@ interface MasterProductPricing {
     customers: number
     sales_ly: string | number | null
     price_tip: { id: number, change: number, confidence: number, reason: string } | null
+    price_tip_note: string | null
 }
 
 interface SalesFigures {
@@ -686,6 +687,9 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                         {{ masterProduct.master_prices?.[code]?.value != null ? formatMoney(Math.round(Number(masterProduct.master_prices[code].value) * (1 + masterProduct.price_tip.change / 100) * 100) / 100, code) : '' }}
                     </span>
                 </template>
+            </div>
+            <div v-else-if="masterProduct.price_tip_note" class="ml-auto max-w-56 text-right text-xs text-gray-400">
+                {{ masterProduct.price_tip_note }}
             </div>
         </template>
 

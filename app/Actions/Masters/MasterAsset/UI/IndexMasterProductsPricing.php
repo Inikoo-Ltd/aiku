@@ -119,6 +119,7 @@ class IndexMasterProductsPricing extends OrgAction
                 'master_asset_price_tips.change as price_tip_change',
                 'master_asset_price_tips.confidence as price_tip_confidence',
                 'master_asset_price_tips.reason as price_tip_reason',
+                'master_asset_stats.price_tip_check',
                 'master_families.code as master_family_code',
                 'master_families.slug as master_family_slug',
                 'master_departments.slug as master_department_slug',
@@ -194,6 +195,7 @@ class IndexMasterProductsPricing extends OrgAction
                 'confidence' => (int) round(100 * $masterAsset->price_tip_confidence),
                 'reason'     => $masterAsset->price_tip_reason,
             ] : null;
+            $masterAsset->price_tip_note = $masterAsset->price_tip_id ? null : data_get(json_decode($masterAsset->price_tip_check ?? 'null', true), 'text');
             $masterAsset->is_dropship   = $isDropship;
             $masterAsset->price_outlier = GetMasterAssetPriceOutlier::run($masterAsset->price, $masterAsset->units, $masterAsset->family_unit_price_median);
         });
