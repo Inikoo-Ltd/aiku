@@ -1436,9 +1436,12 @@ test('a shop selling under several invoice categories targets their sum, partner
         ->and($block['last_year_total'])->toBe(1000.0)
         ->and($block['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
         ->and($block['target']['is_sum_of_categories'])->toBeTrue()
-        ->and($byCategory[$retail->id])->toMatchArray(['name' => $retail->name, 'sales' => 300.0, 'last_year' => 750.0, 'is_set' => false])
-        ->and($byCategory[$retail->id]['target'])->toEqualWithDelta(750 * (1 + $growth), 0.05)
-        ->and($byCategory[$partners->id]['target'])->toEqualWithDelta(250 * (1 + $growth), 0.05);
+        ->and($block['selected_category'])->toBe('all')
+        ->and($byCategory[$retail->id])->toMatchArray(['key' => (string) $retail->id, 'name' => $retail->name, 'sales_so_far' => 300.0, 'last_year_total' => 750.0, 'can_edit' => true])
+        ->and($byCategory[$retail->id]['target']['is_share'])->toBeTrue()
+        ->and($byCategory[$retail->id]['chart']['this_year'])->toHaveCount(10)
+        ->and($byCategory[$retail->id]['target']['amount'])->toEqualWithDelta(750 * (1 + $growth), 0.05)
+        ->and($byCategory[$partners->id]['target']['amount'])->toEqualWithDelta(250 * (1 + $growth), 0.05);
 
     $organisationTarget = GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'];
 
@@ -1447,13 +1450,17 @@ test('a shop selling under several invoice categories targets their sum, partner
     $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
 
     expect($block['target']['amount'])->toEqualWithDelta(750 * (1 + $growth) + 500, 0.05)
-        ->and(collect($block['categories'])->firstWhere('invoice_category_id', $partners->id))->toMatchArray(['target' => 500.0, 'is_set' => true])
+        ->and(collect($block['categories'])->firstWhere('invoice_category_id', $partners->id)['target'])->toMatchArray(['amount' => 500.0, 'is_share' => false])
         ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta($organisationTarget + 500 - 250 * (1 + $growth), 0.05);
 
     UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 2000, 'month' => '2038-05']);
 
-    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['categories'])->firstWhere('invoice_category_id', $retail->id)['target'])->toEqualWithDelta(1500, 0.05)
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['categories'])->firstWhere('invoice_category_id', $retail->id)['target']['amount'])->toEqualWithDelta(1500, 0.05)
         ->and(GetShopYearSalesTarget::run($shop, null, $today)['target']['months_set'])->toBe(1);
+
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['shop_target_category_'.$shop->id => (string) $partners->id]])->assertSuccessful();
+
+    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_category'])->toBe((string) $partners->id);
 
     $shop->update(['state' => ShopStateEnum::CLOSED]);
 });
