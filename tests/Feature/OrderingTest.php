@@ -5007,6 +5007,41 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
         ->and($lostInsights['recommendations_source'])->toBe('bought_together');
 });
 
+test('b2b dashboard recommendations carry the customer favourites and basket so they render like any product card', function () {
+    $customer      = freshCustomerLike($this->shop, $this->customer);
+    $otherCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $seed]      = createProduct($this->shop);
+    $suggested     = StoreProduct::make()->action($seed->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seed->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+    ));
+
+    foreach ([$seed, $suggested] as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+    }
+
+    $customerOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($customerOrder, $seed->currentHistoricProduct, Transaction::factory()->definition());
+    $customerOrder->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(5), 'net_amount' => 10]);
+
+    $otherOrder = StoreOrder::make()->action($otherCustomer, Order::factory()->definition());
+    foreach ([$seed, $suggested] as $product) {
+        StoreTransaction::make()->action($otherOrder, $product->currentHistoricProduct, Transaction::factory()->definition());
+    }
+
+    \App\Actions\CRM\Favourite\StoreFavourite::make()->action($customer, $suggested, []);
+
+    $recommendation = collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['recommendations'])
+        ->firstWhere('id', $suggested->id);
+
+    expect($recommendation)->not->toBeNull()
+        ->and($recommendation['is_favourite'])->toBeTrue()
+        ->and($recommendation['is_back_in_stock'])->toBeFalse()
+        ->and($recommendation['transaction_id'])->toBeNull()
+        ->and($recommendation['quantity_ordered'])->toBe(0)
+        ->and($recommendation)->toHaveKeys(['stock', 'price', 'price_per_unit', 'product_offers_data']);
+});
+
 test('basket recommendations never suggest a product sold exclusively to another customer', function () {
     $customer      = freshCustomerLike($this->shop, $this->customer);
     $otherCustomer = freshCustomerLike($this->shop, $this->customer);
