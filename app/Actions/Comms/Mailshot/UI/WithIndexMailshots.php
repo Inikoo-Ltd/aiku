@@ -100,9 +100,14 @@ trait WithIndexMailshots
             ])
             ->allowedSorts(['state', 'subject', 'name', 'date', 'number_try_send_success', 'hard_bounce', 'soft_bounce', 'number_deliveries_success', 'opened', 'clicked', 'spam', 'unsubscribed'])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'], $prefix)
+            ->withBetweenDates(['date', 'sent_at'], $prefix)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public function filterableOutboxCode(): ?OutboxCodeEnum
+    {
+        return null;
     }
 
     public function scopeMailshots($query, ?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|OrgPostRoom|Organisation|Shop $parent): void
@@ -153,6 +158,17 @@ trait WithIndexMailshots
                 $table
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
+            }
+
+            $filterableOutboxCode = $this->filterableOutboxCode();
+            if ($filterableOutboxCode !== null) {
+                $table
+                    ->betweenDates(['date', 'sent_at'])
+                    ->elementGroup(
+                        key: 'state',
+                        label: __('State'),
+                        elements: $this->getMailshotStateElements($filterableOutboxCode, $parent)
+                    );
             }
 
             $table

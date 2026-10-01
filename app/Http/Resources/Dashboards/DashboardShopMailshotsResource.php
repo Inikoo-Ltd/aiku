@@ -11,6 +11,7 @@ namespace App\Http\Resources\Dashboards;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardShopMailshotsResource extends JsonResource
@@ -26,6 +27,11 @@ class DashboardShopMailshotsResource extends JsonResource
             'shop'         => $data['slug'],
         ];
 
+        $sentMailshotsParameters = [
+            ...$shopParameters,
+            'elements[state]' => MailshotStateEnum::SENT->value,
+        ];
+
         $shopRouteTarget = [
             'route_target' => [
                 'name'       => 'grp.majordomo.redirect_shops_from_dashboard',
@@ -35,15 +41,17 @@ class DashboardShopMailshotsResource extends JsonResource
 
         $newslettersRouteTarget = [
             'route_target' => [
-                'name'       => 'grp.org.shops.show.marketing.newsletters.index',
-                'parameters' => $shopParameters,
+                'name'            => 'grp.org.shops.show.marketing.newsletters.index',
+                'parameters'      => $sentMailshotsParameters,
+                'key_date_filter' => 'between[sent_at]',
             ],
         ];
 
         $marketingMailshotsRouteTarget = [
             'route_target' => [
-                'name'       => 'grp.org.shops.show.marketing.mailshots.index',
-                'parameters' => $shopParameters,
+                'name'            => 'grp.org.shops.show.marketing.mailshots.index',
+                'parameters'      => $sentMailshotsParameters,
+                'key_date_filter' => 'between[sent_at]',
             ],
         ];
 
