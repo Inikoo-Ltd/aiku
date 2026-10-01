@@ -21,7 +21,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * which OrgStockHydrateOutOfStockForecast then uses for days of cover, the stock-out date and the
  * quantity to reorder. TimesFM reads demand per SKO better than the old smoothing but runs short
  * when demand turns, so each night it also forecasts the last six weeks from six weeks ago and
- * every organisation's forecasts are scaled by what was really dispatched against that. Backtested
+ * every organisation's forecasts are scaled by what was really dispatched against that. One-off
+ * orders are cut down before forecasting and no forecast may exceed the item's busiest six weeks:
+ * without these, a single 500-unit order or a long silence after a few sales made the forecast run
+ * away on thin sellers (1 Oct 2026, rolled back). Backtested
  * on production dispatches (20 Aug to 30 Sep 2026, 3,000 SKOs): 0.52 of demand off per SKO and
  * 2% short overall, against 0.74 and 6% over for the old method. Each week it also keeps what it
  * and the old method expected for the next 42 days, to check against what was then dispatched.
@@ -70,8 +73,9 @@ class ForecastOrgStockDemand
             if (!$histories) {
                 return true;
             }
-            $calibrationHistories = $this->calibrationHistories($histories);
-            $result               = ForecastWithTimesFm::run($histories, self::WEEKS_AHEAD);
+            $cleaned              = array_map(fn (array $weeks) => $this->withoutOneOffs($weeks), $histories);
+            $calibrationHistories = $this->calibrationHistories($cleaned);
+            $result               = ForecastWithTimesFm::run($cleaned, self::WEEKS_AHEAD);
             $earlier              = $calibrationHistories ? ForecastWithTimesFm::run($calibrationHistories, self::CALIBRATION_WEEKS) : ['deciles' => []];
             if ($result === null || $earlier === null) {
                 return $completed = false;
@@ -96,6 +100,7 @@ class ForecastOrgStockDemand
                     'from'               => $today->toDateString(),
                     'weeks'              => $weeks,
                     'quantity_available' => (float) $orgStock->quantity_available,
+                    'ceiling'            => $this->busiestSixWeeks($cleaned[$orgStockId]),
                     'live_daily_usage'   => $orgStock->predicted_daily_usage,
                     'record'             => json_decode($orgStock->record ?? '[]', true) ?: [],
                 ];
@@ -127,16 +132,62 @@ class ForecastOrgStockDemand
      */
     private function demandForecast(array $row, float $correction, Carbon $today): array
     {
-        $weeks = array_map(fn (array $week) => [round($week[0] * $correction, 3), round($week[1] * $correction ** 2, 3)], $row['weeks']);
+        $sixWeeks = array_sum(array_column(array_slice($row['weeks'], 0, self::CALIBRATION_WEEKS), 0)) * $correction;
+        $scale    = $sixWeeks > $row['ceiling'] && $sixWeeks > 0 ? $correction * $row['ceiling'] / $sixWeeks : $correction;
+        $weeks    = array_map(fn (array $week) => [round($week[0] * $scale, 3), round($week[1] * $scale ** 2, 3)], $row['weeks']);
 
         return [
             'version'       => $row['version'],
             'from'          => $row['from'],
             'correction'    => $correction,
+            'capped'        => $scale < $correction,
             'weeks'         => $weeks,
             'days_of_cover' => $this->daysOfCover($row['quantity_available'], $weeks),
             'record'        => $this->record($row['record'], $weeks, $row['live_daily_usage'], $today),
         ];
+    }
+
+    /**
+     * A week far above the item's normal one is a one-off order (a customer clearing a pallet, a
+     * partner restocking): it is cut down to three times the median selling week before forecasting,
+     * so one order does not read as a new level of demand.
+     *
+     * @param  list<float>  $weeks
+     *
+     * @return list<float>
+     */
+    private function withoutOneOffs(array $weeks): array
+    {
+        $selling = array_values(array_filter($weeks, fn (float $units) => $units > 0));
+        if (count($selling) < 3) {
+            return $weeks;
+        }
+        sort($selling);
+        $middle = intdiv(count($selling), 2);
+        $median = count($selling) % 2 ? $selling[$middle] : ($selling[$middle - 1] + $selling[$middle]) / 2;
+
+        return array_map(fn (float $units) => min($units, 3 * $median), $weeks);
+    }
+
+    /**
+     * The most the item has sold in any six weeks running: the forecast of the next six weeks is
+     * never allowed above it.
+     *
+     * @param  list<float>  $weeks
+     */
+    private function busiestSixWeeks(array $weeks): float
+    {
+        if (count($weeks) <= self::CALIBRATION_WEEKS) {
+            return array_sum($weeks);
+        }
+
+        $busiest = $running = array_sum(array_slice($weeks, 0, self::CALIBRATION_WEEKS));
+        for ($week = self::CALIBRATION_WEEKS; $week < count($weeks); $week++) {
+            $running += $weeks[$week] - $weeks[$week - self::CALIBRATION_WEEKS];
+            $busiest  = max($busiest, $running);
+        }
+
+        return $busiest;
     }
 
     /**

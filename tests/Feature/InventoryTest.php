@@ -4306,7 +4306,7 @@ describe('out of stock forecast', function () {
             ->and($stats->recommended_order_quantity)->toBeNull();
     });
 
-    test('a fresh TimesFM demand forecast, scaled to what the organisation dispatched, drives days of cover', function () {
+    test('a fresh TimesFM demand forecast, without one-off orders and never above the busiest six weeks, drives days of cover', function () {
         [, $deliveryNoteItem] = packedDeliveryNote($this);
         $orgStock             = $deliveryNoteItem->orgStock;
         $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 100]);
@@ -4317,8 +4317,8 @@ describe('out of stock forecast', function () {
                 'shop_id'             => $deliveryNoteItem->shop_id,
                 'delivery_note_id'    => $deliveryNoteItem->delivery_note_id,
                 'org_stock_id'        => $orgStock->id,
-                'quantity_required'   => 7,
-                'quantity_dispatched' => 7,
+                'quantity_required'   => $weeksAgo === 3 ? 500 : 7,
+                'quantity_dispatched' => $weeksAgo === 3 ? 500 : 7,
                 'data'                => '{}',
                 'created_at'          => now()->subWeeks($weeksAgo)->startOfDay()->addHours(10),
                 'updated_at'          => now(),
@@ -4328,25 +4328,26 @@ describe('out of stock forecast', function () {
         config(['services.timesfm.url' => 'http://timesfm.test', 'services.timesfm.token' => 'secret']);
         Http::fake(['timesfm.test/forecast' => fn ($request) => Http::response([
             'version' => '3',
-            'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], array_fill(0, 9, 10))),
+            'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], array_fill(0, 9, 100))),
         ])]);
 
         expect(ForecastOrgStockDemand::run())->toBeGreaterThanOrEqual(1);
         Http::assertSent(fn ($request) => $request['horizon'] === 8);
         Http::assertSent(fn ($request) => $request['horizon'] === 6);
 
-        $forecast   = $orgStock->stats->refresh()->demand_forecast;
-        $correction = $forecast['correction'];
-        expect($correction)->toBeGreaterThanOrEqual(0.75)->toBeLessThanOrEqual(1.5)
+        $busiestSixWeeks = 5 * 7 + 3 * 7;
+        $forecast        = $orgStock->stats->refresh()->demand_forecast;
+        expect($forecast['correction'])->toBeGreaterThanOrEqual(0.75)->toBeLessThanOrEqual(1.5)
+            ->and($forecast['capped'])->toBeTrue()
             ->and($forecast['weeks'])->toHaveCount(8)
-            ->and($forecast['weeks'][0][0])->toEqual(round(10 * $correction, 3))
+            ->and(array_sum(array_column(array_slice($forecast['weeks'], 0, 6), 0)))->toEqualWithDelta($busiestSixWeeks, 0.01)
             ->and($forecast['record'])->toHaveCount(1);
 
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
         $stats = $orgStock->stats->refresh();
         expect($stats->forecast_source)->toBe('timesfm')
-            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta(round(10 * $correction, 3) / 7, 0.0001)
-            ->and((float) $stats->days_of_cover)->toEqualWithDelta(round(min(100 / round(round(10 * $correction, 3) / 7, 4), 730), 1), 0.2);
+            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta($busiestSixWeeks / 42, 0.0001)
+            ->and((float) $stats->days_of_cover)->toEqualWithDelta(100 / ($busiestSixWeeks / 42), 0.2);
 
         ForecastOrgStockDemand::run();
         expect($orgStock->stats->refresh()->demand_forecast['record'])->toHaveCount(1);
