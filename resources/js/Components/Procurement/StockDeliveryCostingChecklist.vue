@@ -42,6 +42,8 @@ const props = defineProps<{
     costing: {
         is_costed: boolean
         is_partner: boolean
+        reopened: { at: string, by: string | null, reason: string } | null
+        unbalanced: Record<string, { allocated: number, amount: number }>
         currency: string | null
         currency_id: number | null
         currencies: { id: number, code: string }[]
@@ -174,11 +176,20 @@ const removeExtra = (row: CostRow) => {
             />
             <span class="font-medium">{{ ctrans("Costing") }}</span>
             <span v-if="costing.is_costed" class="text-sm text-green-600">{{ ctrans("Done") }}</span>
+            <span v-else-if="costing.reopened" class="flex items-center gap-1 text-sm text-orange-600">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                {{ ctrans("Costing being updated by :name: :reason", { name: costing.reopened.by ?? "", reason: costing.reopened.reason }) }}
+            </span>
             <span v-else-if="!costing.is_partner && costing.agent_invoice_missing" class="flex items-center gap-1 text-sm text-orange-500">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
                 {{ ctrans("Agent invoice not received") }}
             </span>
             <span v-if="costing.is_partner" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
+        </div>
+
+        <div v-for="(totals, field) in costing.unbalanced" :key="field" class="mb-2 flex items-center gap-1 text-sm text-red-600">
+            <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+            {{ ctrans("The lines add up to :allocated of :field, the cost is :amount. Change the lines until they match.", { allocated: String(totals.allocated), field: String(field).replace("cost_", ""), amount: String(totals.amount) }) }}
         </div>
 
         <template v-if="!costing.is_partner">

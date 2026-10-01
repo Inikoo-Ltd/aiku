@@ -15,6 +15,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
+use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -25,10 +26,13 @@ class RepriceStockDeliveryOrgStockMovements
 {
     use AsAction;
 
-    public function handle(StockDelivery $stockDelivery): void
+    /**
+     * @return array<int, string> first repriced movement date per org stock id
+     */
+    public function handle(StockDelivery $stockDelivery): array
     {
-        $grpExchange = GetCurrencyExchange::run($stockDelivery->organisation->currency, $stockDelivery->group->currency);
-        $orgStockIds = [];
+        $grpExchange    = GetCurrencyExchange::run($stockDelivery->organisation->currency, $stockDelivery->group->currency);
+        $firstChangedOn = [];
 
         foreach ($stockDelivery->items()->with('orgStock')->get() as $item) {
             $cost = $item->orgStockMovementCost();
@@ -48,14 +52,17 @@ class RepriceStockDeliveryOrgStockMovements
                 ]);
 
                 if ($movement->wasChanged()) {
-                    $orgStockIds[$movement->org_stock_id] = $movement->org_stock_id;
+                    $date = Carbon::parse($movement->date)->toDateString();
+                    $firstChangedOn[$movement->org_stock_id] = min($firstChangedOn[$movement->org_stock_id] ?? $date, $date);
                 }
             }
         }
 
-        foreach ($orgStockIds as $orgStockId) {
+        foreach (array_keys($firstChangedOn) as $orgStockId) {
             OrgStockHydrateSkuValue::dispatch(OrgStock::find($orgStockId));
             CalculateOrgStockMovementRunningValues::dispatch($orgStockId);
         }
+
+        return $firstChangedOn;
     }
 }

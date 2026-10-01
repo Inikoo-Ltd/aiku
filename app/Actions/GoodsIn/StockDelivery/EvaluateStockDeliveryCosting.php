@@ -12,16 +12,26 @@ use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Actions\Inventory\OrgStock\Stock\RebuildOrgStockHistoriesSince;
 use App\Models\GoodsIn\StockDeliveryCost;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class EvaluateStockDeliveryCosting
 {
     use AsAction;
 
-    public function handle(StockDelivery $stockDelivery): StockDelivery
+    /**
+     * A reopened costing only closes from FinishStockDeliveryCosting ($finishing), never from a checklist or deposit save.
+     */
+    public function handle(StockDelivery $stockDelivery, bool $finishing = false): StockDelivery
     {
+        $stockDelivery->refresh();
+
         $stockDelivery->items()
             ->whereNull('cost_items')
             ->update([
@@ -29,33 +39,120 @@ class EvaluateStockDeliveryCosting
                 'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
             ]);
 
-        $costs = $stockDelivery->costs()->get();
+        $costs        = $stockDelivery->costs()->get();
+        $amounts      = self::splitAmounts($costs);
+        $handSplit    = Arr::get($stockDelivery->data, 'costing_hand_split', []);
+        $keptHandSplit = [];
 
-        foreach ([StockDeliveryCostTypeEnum::SHIPPING, StockDeliveryCostTypeEnum::DUTY] as $type) {
-            $row    = $costs->firstWhere('type', $type);
-            $amount = $row && !$row->is_na ? $row->amountInDeliveryCurrency() : 0;
-            DistributeStockDeliveryExtraCost::distribute($stockDelivery, $type->itemCostField(), $amount);
+        foreach ($amounts as $field => $amount) {
+            if (array_key_exists($field, $handSplit) && $handSplit[$field] === self::cents($amount)) {
+                $keptHandSplit[$field] = $handSplit[$field];
+                continue;
+            }
+            DistributeStockDeliveryExtraCost::distribute($stockDelivery, $field, $amount);
         }
 
-        $extraAmount = $costs
-            ->where('type', StockDeliveryCostTypeEnum::EXTRA)
-            ->filter(fn (StockDeliveryCost $cost) => !$cost->is_na)
-            ->sum(fn (StockDeliveryCost $cost) => $cost->amountInDeliveryCurrency());
-        DistributeStockDeliveryExtraCost::distribute($stockDelivery, 'cost_extra', $extraAmount);
+        if ($keptHandSplit !== $handSplit) {
+            $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['costing_hand_split' => $keptHandSplit])]);
+        }
 
-        $stockDelivery->update(['is_costed' => $stockDelivery->parent_type === 'OrgPartner' || $this->isCosted($costs)]);
+        $isReopened = Arr::has($stockDelivery->data, 'costing_reopened');
+        $isCosted   = $stockDelivery->parent_type === 'OrgPartner'
+            || ($this->isCosted($costs) && self::unbalancedHandSplits($stockDelivery, $amounts) === [] && (!$isReopened || $finishing));
 
+        $stockDelivery->update(['is_costed' => $isCosted]);
+
+        $repricedSince = [];
         if ($stockDelivery->is_costed) {
             $stockDelivery->items()
                 ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
                 ->update(['is_costed' => true]);
 
-            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+            $repricedSince = RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
         }
 
         StockDeliveriesHydrateCosts::run($stockDelivery);
 
-        return $stockDelivery->refresh();
+        $stockDelivery->refresh();
+
+        if ($stockDelivery->is_costed && Arr::has($stockDelivery->data, 'costing_reopened')) {
+            $this->closeReopenedCosting($stockDelivery, $repricedSince);
+        }
+
+        return $stockDelivery;
+    }
+
+    /**
+     * @return array<string, float> each split cost's total in the delivery currency, by line field
+     */
+    public static function splitAmounts(Collection $costs): array
+    {
+        $amounts = [];
+        foreach ([StockDeliveryCostTypeEnum::SHIPPING, StockDeliveryCostTypeEnum::DUTY] as $type) {
+            $row                            = $costs->firstWhere('type', $type);
+            $amounts[$type->itemCostField()] = $row && !$row->is_na ? $row->amountInDeliveryCurrency() : 0;
+        }
+
+        $amounts['cost_extra'] = $costs
+            ->where('type', StockDeliveryCostTypeEnum::EXTRA)
+            ->filter(fn (StockDeliveryCost $cost) => !$cost->is_na)
+            ->sum(fn (StockDeliveryCost $cost) => $cost->amountInDeliveryCurrency());
+
+        return $amounts;
+    }
+
+    /**
+     * Costs split by hand whose lines do not add up to the cost: the costing can not be finished until they do.
+     *
+     * @return array<string, array{allocated: float, amount: float}>
+     */
+    public static function unbalancedHandSplits(StockDelivery $stockDelivery, ?array $amounts = null): array
+    {
+        $handSplit = Arr::get($stockDelivery->data, 'costing_hand_split', []);
+        if (!$handSplit) {
+            return [];
+        }
+
+        $amounts ??= self::splitAmounts($stockDelivery->costs()->get());
+        $unbalanced = [];
+        foreach (array_keys($handSplit) as $field) {
+            $allocated = (float) $stockDelivery->items()
+                ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+                ->sum($field);
+
+            if (self::cents($allocated) !== self::cents($amounts[$field] ?? 0)) {
+                $unbalanced[$field] = ['allocated' => round($allocated, 2), 'amount' => round($amounts[$field] ?? 0, 2)];
+            }
+        }
+
+        return $unbalanced;
+    }
+
+    public static function cents(float $amount): int
+    {
+        return (int) round($amount * 100);
+    }
+
+    /**
+     * @param array<int, string> $repricedSince
+     */
+    private function closeReopenedCosting(StockDelivery $stockDelivery, array $repricedSince): void
+    {
+        $reopened = Arr::get($stockDelivery->data, 'costing_reopened');
+
+        $stockDelivery->auditEvent     = 'costing_updated';
+        $stockDelivery->isCustomEvent  = true;
+        $stockDelivery->auditCustomOld = Arr::get($reopened, 'costs', []);
+        $stockDelivery->auditCustomNew = ReopenStockDeliveryCosting::costsSnapshot($stockDelivery);
+        Event::dispatch(new AuditCustom($stockDelivery));
+        $stockDelivery->isCustomEvent  = false;
+        $stockDelivery->auditCustomOld = $stockDelivery->auditCustomNew = [];
+
+        $stockDelivery->update(['data' => Arr::except($stockDelivery->data, 'costing_reopened')]);
+
+        foreach ($repricedSince as $orgStockId => $fromDate) {
+            RebuildOrgStockHistoriesSince::dispatch($orgStockId, $fromDate)->delay(60)->afterCommit();
+        }
     }
 
     private function isCosted($costs): bool

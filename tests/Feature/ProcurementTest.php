@@ -50,6 +50,12 @@ use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use Illuminate\Support\Facades\Queue;
+use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
+use App\Actions\Inventory\OrgStock\Stock\RebuildOrgStockHistoriesSince;
+use App\Models\Helpers\Audit;
+use App\Models\Inventory\OrganisationStockHistory;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
@@ -6737,6 +6743,179 @@ test('stock put away from a delivery is valued at the line price, then at the la
         ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+function placedStockDeliveryWithTwoLines($test, string $code): StockDelivery
+{
+    $stockDelivery = createStockDeliveryWithItems($test, $code, [10, 20]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    foreach ($stockDelivery->items()->orderBy('id')->get() as $index => $item) {
+        $item = UpdateStockDeliveryItem::make()->action($item, ['net_amount' => $index === 0 ? 100 : 300], strict: false);
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $item->unit_quantity]);
+        SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($test, $item)->id]);
+    }
+
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'amount' => 400, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'label' => 'Polymer surcharge', 'amount' => 80, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'is_na' => true]);
+
+    return $stockDelivery->fresh();
+}
+
+function userWithJobPosition($test, string $jobPositionCode, string $username): User
+{
+    setPermissionsTeamId($test->group->id);
+
+    $jobPosition = JobPosition::where('organisation_id', $test->organisation->id)->where('code', $jobPositionCode)->firstOrFail();
+    $employee    = StoreEmployee::make()->action($test->organisation, [
+        'worker_number'   => $username,
+        'alias'           => $username,
+        'contact_name'    => $username,
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $jobPosition->slug, 'scopes' => []]],
+    ]);
+
+    return StoreUser::make()->action($employee, [
+        'username'       => $username,
+        'password'       => Str::random(32),
+        'status'         => true,
+        'reset_password' => false,
+    ]);
+}
+
+test('extra costs split by hand line by line survive finishing the costing (HELP-3566)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'COST-BY-HAND');
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    expect((float) $first->cost_extra)->toBe(20.0)
+        ->and((float) $second->cost_extra)->toBe(60.0);
+
+    UpdateStockDeliveryItemCost::make()->action($first, ['cost_extra' => 0]);
+    UpdateStockDeliveryItemCost::make()->action($second, ['cost_extra' => 80]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue()
+        ->and((float) $first->fresh()->cost_extra)->toBe(0.0)
+        ->and((float) $second->fresh()->cost_extra)->toBe(80.0)
+        ->and((float) $second->fresh()->cost_total)->toBe(380.0);
+});
+
+test('a hand split that does not add up keeps the costing open, and a new cost total splits by value again (HELP-3566)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'COST-UNBALANCED');
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    UpdateStockDeliveryItemCost::make()->action($first, ['cost_extra' => 0]);
+    UpdateStockDeliveryItemCost::make()->action($second, ['cost_extra' => 70]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    expect($stockDelivery->fresh()->is_costed)->toBeFalse()
+        ->and(EvaluateStockDeliveryCosting::unbalancedHandSplits($stockDelivery->fresh()))->toBe(['cost_extra' => ['allocated' => 70.0, 'amount' => 80.0]]);
+
+    $extraCost = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->first();
+    UpdateStockDeliveryCost::make()->action($extraCost, ['amount' => 120]);
+
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue()
+        ->and((float) $first->fresh()->cost_extra)->toBe(30.0)
+        ->and((float) $second->fresh()->cost_extra)->toBe(90.0);
+});
+
+test('costs not split by hand follow the goods costs when they change (HELP-3566)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'COST-REWEIGHT');
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    UpdateStockDeliveryItemCost::make()->action($first, ['cost_items' => 300]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    expect((float) $first->fresh()->cost_extra)->toBe(40.0)
+        ->and((float) $second->fresh()->cost_extra)->toBe(40.0);
+});
+
+test('only an accounting manager can update a costed delivery, every change is audited and the stock is revalued (HELP-3566)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'COST-UPDATE');
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+    $stockDelivery = $stockDelivery->fresh();
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    $suffix            = StockDelivery::count();
+    $buyer             = userWithJobPosition($this, 'buy', 'cost-buyer-'.$suffix);
+    $accountingManager = userWithJobPosition($this, 'acc-m', 'cost-acc-m-'.$suffix);
+    $extraCost         = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->first();
+
+    actingAs($buyer);
+    $this->patch(route('grp.models.stock-delivery-cost.update', $extraCost->id), ['amount' => 90])
+        ->assertSessionHasErrors('state');
+    $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), ['reason' => 'Wrong split'])
+        ->assertForbidden();
+
+    actingAs($accountingManager);
+    $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), [])
+        ->assertSessionHasErrors('reason');
+    $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), ['reason' => 'Surcharge is only on the second line'])
+        ->assertSessionHasNoErrors();
+
+    $stockDelivery = $stockDelivery->fresh();
+    $reopenedAudit = Audit::where('auditable_type', 'StockDelivery')->where('auditable_id', $stockDelivery->id)->where('event', 'costing_reopened')->first();
+
+    expect($stockDelivery->is_costed)->toBeFalse()
+        ->and($first->fresh()->is_costed)->toBeFalse()
+        ->and($reopenedAudit->user_id)->toBe($accountingManager->id)
+        ->and($reopenedAudit->new_values['reason'])->toBe('Surcharge is only on the second line');
+
+    actingAs($buyer);
+    $this->patchJson(route('grp.models.stock-delivery-item.update-cost', $first->id), ['cost_extra' => 0])->assertForbidden();
+    $this->patch(route('grp.models.stock-delivery-cost.update', $extraCost->id), ['amount' => 80])->assertForbidden();
+    expect($stockDelivery->fresh()->is_costed)->toBeFalse();
+
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'label' => 'Na row', 'is_na' => true]);
+    expect($stockDelivery->fresh()->is_costed)->toBeFalse();
+
+    actingAs($accountingManager);
+    $this->patchJson(route('grp.models.stock-delivery-item.update-cost', $first->id), ['cost_extra' => 0])->assertOk();
+    $this->patchJson(route('grp.models.stock-delivery-item.update-cost', $second->id), ['cost_extra' => 80])->assertOk();
+
+    $lineAudit = Audit::where('auditable_type', 'StockDeliveryItem')->where('auditable_id', $second->id)->where('user_id', $accountingManager->id)->first();
+    expect((float) Arr::get($lineAudit->old_values, 'cost_extra'))->toBe(60.0)
+        ->and((float) Arr::get($lineAudit->new_values, 'cost_extra'))->toBe(80.0);
+
+    Queue::fake();
+    $this->patch(route('grp.models.stock-delivery.finish-costing', $stockDelivery->id))
+        ->assertSessionHasNoErrors();
+
+    $stockDelivery = $stockDelivery->fresh();
+    $second        = $second->fresh();
+    $movement      = OrgStockMovement::whereIn('id', $second->sowings()->select('org_stock_movement_id'))->first();
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and(Arr::has($stockDelivery->data, 'costing_reopened'))->toBeFalse()
+        ->and((float) $second->cost_extra)->toBe(80.0)
+        ->and((float) $movement->org_amount)->toEqualWithDelta(380 * ($second->org_exchange ?? 1), 0.01)
+        ->and(Audit::where('auditable_type', 'StockDelivery')->where('auditable_id', $stockDelivery->id)->where('event', 'costing_updated')->value('user_id'))->toBe($accountingManager->id);
+
+    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->getAction() instanceof RebuildOrgStockHistoriesSince
+        && $job->getParameters() === [$movement->org_stock_id, Carbon::parse($movement->date)->toDateString()]);
+
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug, 'tab' => 'history']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('history.data.0.event', 'costing_updated')
+            ->where('costing.can_edit', false)
+            ->where('pageHead.actions.0.key', 'reopen_stock_delivery_costing'));
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('rebuilding stock histories since a day writes each past day and today', function () {
+    $orgStock = OrgStock::where('organisation_id', $this->organisation->id)->first();
+
+    RebuildOrgStockHistoriesSince::run($orgStock->id, now()->subDay()->toDateString());
+
+    expect(OrganisationStockHistory::where('organisation_id', $this->organisation->id)->where('date', now()->subDay()->toDateString())->exists())->toBeTrue();
 });
 
 test('undoing a put away from a delivery takes the stock out at the value it went in at', function () {

@@ -80,7 +80,9 @@ class UpdateStockDelivery extends OrgAction
             EvaluateStockDeliveryCosting::run($stockDelivery);
         }
 
-        RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+        if (!Arr::has($stockDelivery->data, 'costing_reopened')) {
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+        }
     }
 
     public function rules(): array
@@ -135,6 +137,15 @@ class UpdateStockDelivery extends OrgAction
     {
         if ($stockDelivery->isManagedByPartner()) {
             throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
+        if ($request->has('org_exchange')) {
+            if ($stockDelivery->is_costed) {
+                throw ValidationException::withMessages(['org_exchange' => __('This stock delivery is costed, an accounting manager can change it with Update costing')]);
+            }
+            if (Arr::has($stockDelivery->data, 'costing_reopened') && !$request->user()->authTo("org-supervisor.{$stockDelivery->organisation_id}.accounting")) {
+                throw ValidationException::withMessages(['org_exchange' => __('Only an accounting manager can change the costing while it is being updated')]);
+            }
         }
 
         $this->stockDelivery = $stockDelivery;

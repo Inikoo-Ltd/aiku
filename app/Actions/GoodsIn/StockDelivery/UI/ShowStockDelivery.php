@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
 use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
@@ -42,6 +43,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -54,11 +56,13 @@ class ShowStockDelivery extends OrgAction
     use WithAgentOrganisation;
 
     private bool $canEditPayments = false;
+    private bool $canUpdateCosting = false;
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit         = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canEditPayments = $this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+        $this->canEdit          = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->canEditPayments  = $this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+        $this->canUpdateCosting = $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting");
 
         return true;
     }
@@ -85,8 +89,9 @@ class ShowStockDelivery extends OrgAction
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
         $this->authorizeProcurementRecord($stockDelivery);
-        $this->canEdit         = false;
-        $this->canEditPayments = false;
+        $this->canEdit          = false;
+        $this->canEditPayments  = false;
+        $this->canUpdateCosting = false;
 
         return $this->handle($stockDelivery);
     }
@@ -117,7 +122,7 @@ class ShowStockDelivery extends OrgAction
                             'parameters' => array_values($request->route()->originalParameters()),
                         ],
                     ] : false,
-                    'actions'    => $this->canEdit ? $this->getActions($stockDelivery) : [],
+                    'actions'    => array_merge($this->getUpdateCostingActions($stockDelivery), $this->canEdit ? $this->getActions($stockDelivery) : []),
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
@@ -180,8 +185,8 @@ class ShowStockDelivery extends OrgAction
                 ],
 
                 StockDeliveryTabsEnum::HISTORY->value => $this->tab == StockDeliveryTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))),
+                    fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($stockDelivery)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($stockDelivery)))),
             ]
         )->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value))
             ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PENDING_ITEMS->value))
@@ -242,6 +247,69 @@ class ShowStockDelivery extends OrgAction
         }
 
         return $timeline;
+    }
+
+    private function getUpdateCostingActions(StockDelivery $stockDelivery): array
+    {
+        if (!$this->canUpdateCosting || $stockDelivery->state !== StockDeliveryStateEnum::PLACED || $stockDelivery->parent_type === 'OrgPartner') {
+            return [];
+        }
+
+        if ($stockDelivery->is_costed) {
+            return [
+                [
+                    'label'   => __('Update costing'),
+                    'tooltip' => __('Correct the costs of this delivery, it changes the value of the stock put away'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-edit',
+                    'key'     => 'reopen_stock_delivery_costing',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.reopen-costing',
+                        'parameters' => ['stockDelivery' => $stockDelivery->id],
+                    ],
+                ],
+            ];
+        }
+
+        if (Arr::has($stockDelivery->data, 'costing_reopened')) {
+            return [
+                [
+                    'label'   => __('Finish costing'),
+                    'tooltip' => __('Revalue the stock put away and rebuild its stock history'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check',
+                    'key'     => 'finish_stock_delivery_costing',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.finish-costing',
+                        'parameters' => ['stockDelivery' => $stockDelivery->id],
+                    ],
+                ],
+            ];
+        }
+
+        return [];
+    }
+
+    private function historyAuditScope(StockDelivery $stockDelivery): array
+    {
+        return [
+            [
+                'type'   => $stockDelivery->getMorphClass(),
+                'labels' => [$stockDelivery->id => $stockDelivery->reference],
+                'shops'  => null,
+            ],
+            [
+                'type'   => 'StockDeliveryItem',
+                'labels' => $stockDelivery->items()->with('orgStock:id,code')->get()
+                    ->mapWithKeys(fn ($item) => [$item->id => $item->orgStock?->code ?? '#'.$item->id])
+                    ->all(),
+                'shops'  => null,
+            ],
+        ];
     }
 
     public function getActions(StockDelivery $stockDelivery): array
@@ -619,7 +687,9 @@ class ShowStockDelivery extends OrgAction
         return [
             'is_costed'                  => $stockDelivery->is_costed,
             'is_partner'                 => $stockDelivery->parent_type === 'OrgPartner',
-            'can_edit'                   => $this->canEdit,
+            'can_edit'                   => !$stockDelivery->is_costed && (Arr::has($stockDelivery->data, 'costing_reopened') ? $this->canUpdateCosting : ($this->canEdit || $this->canUpdateCosting)),
+            'reopened'                   => $this->getCostingReopened($stockDelivery),
+            'unbalanced'                 => $stockDelivery->state === StockDeliveryStateEnum::PLACED && !$stockDelivery->is_costed ? EvaluateStockDeliveryCosting::unbalancedHandSplits($stockDelivery) : [],
             'can_edit_payments'          => $this->canEditPayments,
             'currency'                   => $stockDelivery->currency?->code,
             'currency_id'                => $stockDelivery->currency_id,
@@ -645,6 +715,20 @@ class ShowStockDelivery extends OrgAction
                 'method'     => 'patch',
             ] : null,
             'deposits'                    => $this->getDepositSettlement($stockDelivery, $applications, $agentInvoiceAmount, $depositsTotal),
+        ];
+    }
+
+    private function getCostingReopened(StockDelivery $stockDelivery): ?array
+    {
+        $reopened = Arr::get($stockDelivery->data, 'costing_reopened');
+        if (!$reopened) {
+            return null;
+        }
+
+        return [
+            'at'     => Arr::get($reopened, 'at'),
+            'by'     => User::find(Arr::get($reopened, 'user_id'))?->contact_name,
+            'reason' => Arr::get($reopened, 'reason'),
         ];
     }
 

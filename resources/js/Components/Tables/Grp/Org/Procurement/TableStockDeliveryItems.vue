@@ -34,6 +34,7 @@ const props = defineProps<{
     tab?: string,
     costing?: {
         is_costed: boolean
+        can_edit: boolean
         currency: string | null
         distributeExtraCostRoute: routeType | null
     }
@@ -210,7 +211,7 @@ watch(() => props.data?.data, (items) => {
     }
 
     for (const item of items ?? []) {
-        if (!item.updateCostRoute) {
+        if (!item.updateCostRoute || props.costing?.can_edit === false) {
             continue
         }
 
@@ -320,7 +321,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #before-table>
-            <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
+            <div v-if="costing?.distributeExtraCostRoute && costing.can_edit" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <label for="extra-cost-to-distribute" class="text-sm text-gray-600">
                     {{ ctrans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
                 </label>
@@ -469,7 +470,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         <template #cell(actions)="{ item }">
             <div class="flex justify-end items-center gap-2">
                 <Button
-                    v-if="item.updateCostRoute"
+                    v-if="item.updateCostRoute && costDraft[item.id]"
                     :label="ctrans('Save')"
                     :tooltip="ctrans('Save the costs of this item')"
                     icon="fal fa-save"
