@@ -7840,7 +7840,7 @@ test('the mailbox history is archived as text for the customer it was with, leav
     \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
 });
 
-test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again', function () {
+test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again, after a long pause when it keeps refusing', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
@@ -7902,8 +7902,8 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     $reset();
     $refuse = true;
     $pages  = collect(range(1, 10))->map(fn () => $action->archivePage($this->shop, 12));
-    expect($pages->take(9)->pluck('stopped')->unique()->all())->toBe([false])
-        ->and($pages->last())->toMatchArray(['rate_limited' => true, 'stopped' => true]);
+    expect($pages->take(9)->pluck('pause')->unique()->all())->toBe([60])
+        ->and($pages->last())->toMatchArray(['rate_limited' => true, 'stopped' => false, 'pause' => 1800]);
 
     $reset();
     $refuse = false;

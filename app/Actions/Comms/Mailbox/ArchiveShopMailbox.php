@@ -40,7 +40,8 @@ use Throwable;
  * remembered, so a run that stops is continued by running it again. With --queue each mailbox is
  * read one page per job on the long-low-priority queue, three mailboxes at a time, a few mails
  * at a time, well inside Gmail's limit per mailbox; a page Gmail refuses is read again a minute
- * later, giving up after MAX_RATE_LIMITED refusals in a row. Starting the command again replaces
+ * later, and after MAX_RATE_LIMITED refusals in a row LONG_PAUSE later, so Gmail holding a
+ * mailbox back for a while never ends the run. Starting the command again replaces
  * the chain of jobs a mailbox already has, so two never read the same mailbox.
  *
  * With --top only the shop's best customers are read, all their mail however old: VIPs and those
@@ -61,6 +62,8 @@ class ArchiveShopMailbox
     private const int RATE_LIMIT_PAUSE = 60;
 
     private const int MAX_RATE_LIMITED = 10;
+
+    private const int LONG_PAUSE = 1800;
 
     private const int TOP_MONTHS = 24;
 
@@ -104,8 +107,8 @@ class ArchiveShopMailbox
             }
             $total['done'] = $page['done'];
 
-            if ($page['rate_limited'] && !$page['stopped']) {
-                Sleep::for(self::RATE_LIMIT_PAUSE)->seconds();
+            if ($page['rate_limited']) {
+                Sleep::for($page['pause'])->seconds();
             }
         } while (!$page['done'] && !$page['stopped'] && (!$limit || $total['read'] < $limit));
 
@@ -130,7 +133,7 @@ class ArchiveShopMailbox
         }
 
         $page['rate_limited']
-            ? static::dispatch($shop, $months, $run, $top)->delay(now()->addSeconds(self::RATE_LIMIT_PAUSE))
+            ? static::dispatch($shop, $months, $run, $top)->delay(now()->addSeconds($page['pause']))
             : static::dispatch($shop, $months, $run, $top);
     }
 
@@ -140,11 +143,11 @@ class ArchiveShopMailbox
      *
      * Gmail still refusing after a pause leaves the page where it was, to be read again later.
      *
-     * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool}
+     * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool, pause: int}
      */
     public function archivePage(Shop $shop, int $months, bool $top = false): array
     {
-        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false];
+        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false, 'pause' => 0];
         $client  = GmailClient::forShop($shop);
         $mailbox = mb_strtolower((string) Arr::get($shop->settings, 'gmail.email'));
 
@@ -175,7 +178,7 @@ class ArchiveShopMailbox
             $headers = $this->fetch($client, $ids, self::HEADERS);
 
             if ($headers === null) {
-                return ['rate_limited' => true, 'stopped' => $this->refusedTooOften($shop)] + $result;
+                return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
             }
 
             foreach ($headers as $id => $raw) {
@@ -195,7 +198,7 @@ class ArchiveShopMailbox
             $messages = $this->fetch($client, $ids);
 
             if ($messages === null) {
-                return ['rate_limited' => true, 'stopped' => $this->refusedTooOften($shop)] + $result;
+                return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
             }
 
             foreach ($messages as $raw) {
@@ -286,18 +289,18 @@ class ArchiveShopMailbox
         return "mailbox-archive-rate-limited:{$shop->id}";
     }
 
-    private function refusedTooOften(Shop $shop): bool
+    private function pauseAfterRefusal(Shop $shop): int
     {
         $refusals = Cache::increment(self::rateLimitedKey($shop));
 
         if ($refusals < self::MAX_RATE_LIMITED) {
-            return false;
+            return self::RATE_LIMIT_PAUSE;
         }
 
         Cache::forget(self::rateLimitedKey($shop));
-        Log::warning("mailbox:archive {$shop->slug}: Gmail refused ".self::MAX_RATE_LIMITED.' times in a row, stopped; run it again to continue');
+        Log::warning("mailbox:archive {$shop->slug}: Gmail refused ".self::MAX_RATE_LIMITED.' times in a row, trying again in '.(self::LONG_PAUSE / 60).' minutes');
 
-        return true;
+        return self::LONG_PAUSE;
     }
 
     /**
