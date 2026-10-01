@@ -53,9 +53,13 @@ class RepairScriptWebBlocksBase64Images
             return 0;
         }
 
-        $remainingDataUris = substr_count(strtr($code, array_fill_keys(array_keys($images), '')), ';base64,');
+        preg_match_all('~data:([a-z0-9.+/-]+);base64,~i', strtr($code, array_fill_keys(array_keys($images), '')), $untouchedDataUris);
+        $untouchedTypes = collect($untouchedDataUris[1])->countBy()->map(fn (int $count, string $type) => "$type x$count")->implode(', ');
 
-        $command?->line("Web block: $webBlock->id || Base64 images: ".count($images)." || Left untouched: $remainingDataUris || Webpages: ".$webBlock->webpages->pluck('code')->implode(', '));
+        $command?->line("Web block: $webBlock->id || Base64 images: ".count($images)." || Left untouched: ".($untouchedTypes ?: 'none'));
+        foreach ($webBlock->webpages as $webpage) {
+            $command?->line("  Shop: {$webpage->shop->slug} || Website: {$webpage->website->domain} || Webpage: $webpage->code || ".$webpage->getUrl(true));
+        }
 
         if (!$apply || !$images) {
             return count($images);
@@ -150,7 +154,7 @@ class RepairScriptWebBlocksBase64Images
 
         WebBlock::query()
             ->whereHas('webBlockType', fn ($query) => $query->where('code', 'script'))
-            ->whereRaw("layout::text ilike '%data:image/%;base64,%'")
+            ->whereRaw("layout::text ilike '%;base64,%'")
             ->when($website, fn ($query) => $query->whereHas('webpages', fn ($webpages) => $webpages->where('webpages.website_id', $website->id)))
             ->select('id')
             ->chunkById(10, function (Collection $webBlockIds) use ($command, $apply, &$total) {
