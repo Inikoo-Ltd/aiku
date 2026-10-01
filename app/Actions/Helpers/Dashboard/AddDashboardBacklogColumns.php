@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Dashboard;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
+use Closure;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,8 +24,9 @@ class AddDashboardBacklogColumns
     /**
      * @param array{header: array, body: array, totals: array} $table
      * @param array<int, array> $rows the rows the table body was built from, in the same order
+     * @param Closure(array): array|null $rowRouteTarget builds the route a row's Backlog cells link to
      */
-    public function handle(array $table, array $rows, bool $inGroup): array
+    public function handle(array $table, array $rows, bool $inGroup, ?Closure $rowRouteTarget = null): array
     {
         if (!Arr::has($table, ['header.columns', 'body', 'totals'])) {
             return $table;
@@ -52,7 +54,10 @@ class AddDashboardBacklogColumns
         }
 
         foreach ($table['body'] as $index => $bodyRow) {
-            $table['body'][$index]['columns'] = array_merge($bodyRow['columns'] ?? [], $this->getDashboardColumnsFromArray($rows[$index] ?? [], $keys));
+            $row     = $rows[$index] ?? [];
+            $columns = $rowRouteTarget ? array_fill_keys($keys, ['route_target' => $rowRouteTarget($row)]) : $keys;
+
+            $table['body'][$index]['columns'] = array_merge($bodyRow['columns'] ?? [], $this->getDashboardColumnsFromArray($row, $columns));
         }
 
         $table['totals']['columns'] = array_merge($table['totals']['columns'] ?? [], $this->getDashboardColumnsFromArray($this->totalsData($rows, $inGroup), $keys));

@@ -43,6 +43,7 @@ use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Ordering\Order\UI\IndexOrdersBacklogInInvoiceCategory;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
@@ -121,6 +122,7 @@ Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::cla
 Route::get('/invoice-categories/{invoiceCategory}/invoices/omega', [OmegaManyInvoice::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index.omega');
 
 Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class, 'inInvoiceCategory'])->name('invoice-categories.show.refunds.index');
+Route::get('/invoice-categories/{invoiceCategory}/backlog', IndexOrdersBacklogInInvoiceCategory::class)->name('invoice-categories.show.backlog.index');
 
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
 
