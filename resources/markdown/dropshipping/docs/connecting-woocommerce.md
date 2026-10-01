@@ -8,6 +8,7 @@ series: woocommerce
 order: 1
 help_routes: retina.dropshipping.customer_sales_channels.index, retina.dropshipping.customer_sales_channels.create, retina.dropshipping.customer_sales_channels.show
 shops: awd, dssk, dse
+videos: 1126171109
 ---
 
 <aside class="tldr">
