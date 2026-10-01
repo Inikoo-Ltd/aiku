@@ -26,7 +26,7 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo, ?string $translationDriver = null, bool $throwOnFailure = false): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, ?string $translationDriver = null, bool $throwOnFailure = false, ?string $brief = null): string
     {
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
@@ -34,7 +34,13 @@ class Translate extends OrgAction
             }
 
             $translationDriver ??= config('auto-translations.default_driver');
-            $cacheKey          = 'translate:'.$translationDriver.':'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            if ($brief === null && $translationDriver === 'catalogue') {
+                $brief = GetCatalogueTranslationBrief::run($languageTo);
+            }
+            if ($brief !== null && config('auto-translations.terms_in_brief')) {
+                $brief .= GetCatalogueTranslationBrief::make()->termsFor($languageTo, $text);
+            }
+            $cacheKey          = 'translate:'.$translationDriver.':'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text.($brief === null ? '' : '|'.$brief));
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
                 return $this->unescapeJsonEchoes($text, str_replace("\0", '', $cachedTranslation));
@@ -43,11 +49,11 @@ class Translate extends OrgAction
             if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
             }
-            $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver);
+            $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver, $brief);
 
             $qualityCheck = config("auto-translations.drivers.$translationDriver.quality_check");
             if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
-                $retried    = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver']), $text);
+                $retried    = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver'], $brief), $text);
                 $translated = $retried !== $text ? $retried : $translated;
             }
 
@@ -67,12 +73,24 @@ class Translate extends OrgAction
         }
     }
 
-    public function translateWith(string $text, Language $languageFrom, Language $languageTo, string $translationDriver): string
+    /**
+     * The package builds the driver itself, so the brief reaches it through the container, bound
+     * only for this one call so the next translation in the same worker starts without it.
+     */
+    public function translateWith(string $text, Language $languageFrom, Language $languageTo, string $translationDriver, ?string $brief = null): string
     {
         $translationWorkflowService = new TranslationWorkflowService(new TranslationEngineService());
         $translationWorkflowService->setInMemoryTexts(['text_to_translate' => $text]);
 
-        $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver);
+        if ($brief !== null) {
+            app()->instance(ChatGPT5Driver::BRIEF, $brief);
+        }
+
+        try {
+            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver);
+        } finally {
+            app()->forgetInstance(ChatGPT5Driver::BRIEF);
+        }
 
         return str_replace("\0", '', $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text)));
     }
@@ -181,7 +199,8 @@ class Translate extends OrgAction
     public function rules(): array
     {
         return [
-            'text' => ['required', 'string']
+            'text'      => ['required', 'string'],
+            'catalogue' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -196,9 +215,9 @@ class Translate extends OrgAction
         $languageFrom = Language::where('code', $languageFrom)->first();
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
+        $brief        = Arr::get($this->validatedData, 'catalogue') ? GetCatalogueTranslationBrief::run($languageTo) : null;
 
-
-        return $this->handle($text, $languageFrom, $languageTo, throwOnFailure: true);
+        return $this->handle($text, $languageFrom, $languageTo, throwOnFailure: true, brief: $brief);
     }
 
     /**

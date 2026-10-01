@@ -16,6 +16,7 @@ use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
+use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -554,6 +555,7 @@ class UpdateProductCategory extends OrgAction
         $this->user = $request->user();
 
         $this->initialisationFromShop($productCategory->shop, $request);
+        RecordTranslationReview::make()->fromEdit($productCategory, $this->validatedData, $request->user());
 
         return $this->handle($productCategory, $this->validatedData);
     }

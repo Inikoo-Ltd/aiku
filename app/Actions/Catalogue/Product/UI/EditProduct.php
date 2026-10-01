@@ -412,6 +412,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->name,
                     'reviewed'      => $product->is_name_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
                 ]
                 : [
@@ -434,6 +435,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This show in product webpage'),
                     'routeGetInternalLink' => [
                         'name' => 'grp.org.shops.show.web.webpages.index',
@@ -516,6 +518,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This above product specification in product webpage'),
                     'routeGetInternalLink' => [
                         'name' => 'grp.org.shops.show.web.webpages.index',

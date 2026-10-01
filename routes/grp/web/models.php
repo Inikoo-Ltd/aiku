@@ -327,6 +327,7 @@ use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
+use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
@@ -818,6 +819,7 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::post('translation-review', [RecordTranslationReview::class, 'inProductCategory'])->name('translation_review.store');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
     Route::patch('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
     Route::post('upload-images', UploadImagesToProductCategory::class)->name('upload_images');
@@ -966,6 +968,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/retire-into-replacement', RetireProductIntoReplacement::class)->name('retire_into_replacement');
     Route::patch('/{product:id}/keep-as-separate', KeepRetiredProductAsSeparate::class)->name('keep_as_separate');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
+    Route::post('/{product:id}/translation-review', [RecordTranslationReview::class, 'inProduct'])->name('translation_review.store');
     Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');

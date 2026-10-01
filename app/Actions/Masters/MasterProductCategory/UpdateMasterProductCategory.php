@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Discounts\Offer\VolGr\FinishVolumeGrOfferFromMaster;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
+use App\Actions\Helpers\Translations\GetCatalogueTranslationBrief;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateTradeUnitFamilyToChildFamily;
@@ -197,41 +198,42 @@ class UpdateMasterProductCategory extends OrgAction
                 $followMaster = data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master");
 
                 $shopLanguage = $shop->language;
+                $brief = GetCatalogueTranslationBrief::run($shopLanguage, $productCategory);
                 $dataToBeUpdated = [];
 
                 // Updates the affected field name using translation if follow_master_{field} is true
                 // Regardless, update is_x_reviewed to false when master is updated, to make it easier to track changes
                 if (Arr::has($changed, 'name')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'catalogue');
+                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'catalogue', brief: $brief);
                     }
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_title')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'catalogue');
+                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'catalogue', brief: $brief);
                     }
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'catalogue');
+                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'catalogue', brief: $brief);
                     }
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_extra')) {
                     if ($followMaster) {
-                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'catalogue');
+                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'catalogue', brief: $brief);
                     }
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'category_comparison')) {
                     if ($followMaster) {
-                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'catalogue');
+                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'catalogue', brief: $brief);
                         if (is_string($translatedCategoryComparison)) {
                             $translatedCategoryComparison = json_decode($translatedCategoryComparison, true);
                         }
