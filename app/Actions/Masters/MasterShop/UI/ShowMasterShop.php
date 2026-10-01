@@ -12,10 +12,14 @@ use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Masters\Competitor\UI\IndexCompetitors;
+use App\Actions\Masters\Competitor\UI\IndexMasterAssetCompetitorProducts;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Masters\CompetitorsResource;
+use App\Http\Resources\Masters\MasterAssetCompetitorProductsResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
@@ -102,12 +106,24 @@ class ShowMasterShop extends OrgAction
                     fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
                     : Inertia::optional(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
 
+                MasterShopTabsEnum::COMPETITORS->value => $this->tab == MasterShopTabsEnum::COMPETITORS->value
+                    ? fn () => CompetitorsResource::collection(IndexCompetitors::run($masterShop, MasterShopTabsEnum::COMPETITORS->value))
+                    : Inertia::optional(fn () => CompetitorsResource::collection(IndexCompetitors::run($masterShop, MasterShopTabsEnum::COMPETITORS->value))),
+
+                MasterShopTabsEnum::COMPETITOR_PRICES->value => $this->tab == MasterShopTabsEnum::COMPETITOR_PRICES->value
+                    ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterShop, MasterShopTabsEnum::COMPETITOR_PRICES->value))
+                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterShop, MasterShopTabsEnum::COMPETITOR_PRICES->value))),
+
+                'can_edit' => $this->canEdit,
+
                 MasterShopTabsEnum::HISTORY->value => $this->tab == MasterShopTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))),
 
             ]
         )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value))
+            ->table(IndexCompetitors::make()->tableStructure(MasterShopTabsEnum::COMPETITORS->value))
+            ->table(IndexMasterAssetCompetitorProducts::make()->tableStructure(MasterShopTabsEnum::COMPETITOR_PRICES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterShopTabsEnum::HISTORY->value));
     }
 

@@ -187,4 +187,9 @@ class MasterShop extends Model implements Auditable
     }
 
 
+
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(Competitor::class);
+    }
 }

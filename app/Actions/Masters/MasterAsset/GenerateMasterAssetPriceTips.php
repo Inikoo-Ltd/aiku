@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Helpers\AI\AskJev;
+use App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
@@ -226,7 +227,7 @@ class GenerateMasterAssetPriceTips
         return AskJev::make()->handle($signals, [
             'change'         => [
                 'type'         => 'choice',
-                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, and how sales reacted to past price changes.',
+                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price).',
                 'criteria'     => [
                     'down_15' => 'Cut the price 15%: far too much stock, demand fell and is not coming back',
                     'down_10' => 'Cut the price 10%: too much stock and falling demand',
@@ -297,6 +298,13 @@ class GenerateMasterAssetPriceTips
             ]);
         }
 
+        $cheapestCompetitor = collect($signals['competitors'] ?? [])->sortBy('difference_pct')->first();
+        if ($cheapestCompetitor) {
+            $parts[] = $cheapestCompetitor['difference_pct'] < 0
+                ? __(':competitor :pct% cheaper per unit', ['competitor' => $cheapestCompetitor['competitor'], 'pct' => -$cheapestCompetitor['difference_pct']])
+                : __('competitors :pct% dearer per unit or more', ['pct' => $cheapestCompetitor['difference_pct']]);
+        }
+
         if ($decision['capped']) {
             $parts[] = __('limited by the cost floor');
         }
@@ -352,6 +360,7 @@ class GenerateMasterAssetPriceTips
 
         $offers       = $this->offers($masterAssetIds);
         $priceChanges = $this->priceChanges($masterAssetIds);
+        $competitors  = GetConfirmedCompetitorPrices::run($masterAssetIds, $masterShop->group->currency);
 
         $signals = [];
         foreach ($masterAssets as $masterAsset) {
@@ -397,6 +406,7 @@ class GenerateMasterAssetPriceTips
                 'organisations'       => $organisations,
                 'offers'              => $offers->get($masterAsset->id, collect())->values()->all(),
                 'price_changes'       => static::withSalesResponse($priceChanges->get($masterAsset->id, []), $sales),
+                'competitors'         => $competitors->get($masterAsset->id, []),
             ];
         }
 

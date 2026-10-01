@@ -511,4 +511,14 @@ class MasterAsset extends Model implements Auditable, HasMedia
         ];
     }
 
+
+    public function priceTips(): HasMany
+    {
+        return $this->hasMany(MasterAssetPriceTip::class);
+    }
+
+    public function competitorProducts(): HasMany
+    {
+        return $this->hasMany(MasterAssetCompetitorProduct::class);
+    }
 }
