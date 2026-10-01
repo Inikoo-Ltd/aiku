@@ -2,6 +2,14 @@ import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
+import Header2Iris from "@/Iris/Components/IrisBlocks/Header2Iris.vue"
+import Header1Iris from "@/Iris/Components/IrisBlocks/Header1Iris.vue"
+import Topbar1FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"
+import Topbar2FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"
+import Topbar1Iris from "@/Iris/Components/IrisBlocks/Topbar1Iris.vue"
+import Topbar2Iris from "@/Iris/Components/IrisBlocks/Topbar2Iris.vue"
+import Menu1Workshop from "@/Iris/Components/IrisBlocks/Menu1Iris.vue"
+import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
@@ -52,14 +60,6 @@ const ProductIris3Ecom = async(() => import("@/Iris/Components/IrisBlocks/Produc
 const ProductIris4Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris4Ecom.vue"))
 const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
 const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
-const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
-const Header1Iris = async(() => import("@/Iris/Components/IrisBlocks/Header1Iris.vue"))
-const Topbar1FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"))
-const Topbar2FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"))
-const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris.vue"))
-const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
-const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
-const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
 const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
 const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))
 const family2Iris = async(() => import("@/Iris/Components/IrisBlocks/family2Iris.vue"))
