@@ -24,6 +24,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -79,6 +80,16 @@ class UpdateProductCategory extends OrgAction
 
         $originalImageId = $productCategory->image_id;
         $oldState        = $productCategory->state;
+
+        $webpageData = [];
+        foreach (['webpage_title' => 'title', 'webpage_description' => 'description', 'webpage_url' => 'url'] as $field => $webpageField) {
+            if (Arr::has($modelData, $field)) {
+                $webpageData[$webpageField] = Arr::pull($modelData, $field) ?? '';
+            }
+        }
+        if ($productCategory->webpage && $webpageData) {
+            UpdateWebpage::make()->action($productCategory->webpage, $webpageData);
+        }
 
         if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
             Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
@@ -350,6 +361,9 @@ class UpdateProductCategory extends OrgAction
             ],
             'webpage_id'                    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
+            'webpage_title'                 => ['sometimes', 'string'],
+            'webpage_description'           => ['sometimes', 'nullable', 'string'],
+            'webpage_url'                   => ['sometimes', 'string'],
             'images'                        => ['sometimes', 'array'],
             'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'name_i8n'                      => ['sometimes', 'array'],

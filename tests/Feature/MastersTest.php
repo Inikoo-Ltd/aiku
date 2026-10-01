@@ -4556,3 +4556,31 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0);
     });
 });
+
+test('the seo title, meta description and url typed on a family edit page reach its webpage', function () {
+    createProduct($this->shop);
+    createWebsite($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $url     = 'seo-family-'.strtolower(substr(uniqid(), -6));
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), [
+        'webpage_title'       => 'Velas de cera de soja',
+        'webpage_description' => 'Velas aromáticas al por mayor',
+        'webpage_url'         => $url,
+    ])->assertRedirect();
+
+    $webpage->refresh();
+    expect($webpage->title)->toBe('Velas de cera de soja')
+        ->and($webpage->description)->toBe('Velas aromáticas al por mayor')
+        ->and($webpage->url)->toBe($url);
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), ['webpage_description' => ''])
+        ->assertRedirect();
+
+    expect($webpage->refresh()->description)->toBe('');
+});
