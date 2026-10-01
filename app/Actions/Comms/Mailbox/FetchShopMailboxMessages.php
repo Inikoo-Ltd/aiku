@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Nightwatch\Facades\Nightwatch;
+use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class FetchShopMailboxMessages
@@ -158,7 +159,11 @@ class FetchShopMailboxMessages
 
         $total = 0;
         foreach ($shops as $shop) {
-            $total += $this->handle($shop);
+            try {
+                $total += $this->handle($shop);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         $command->info("Dispatched {$total} inbound email(s) across {$shops->count()} shop(s)");

@@ -11357,3 +11357,37 @@ test('a gmail quota 403 releases the job to try again, while a permissions 403 s
         ->toThrow(\Illuminate\Http\Client\RequestException::class)
         ->and($job->releasedFor)->toBeNull();
 });
+
+test('a mailbox whose Gmail access was revoked does not stop the other shops being fetched', function () {
+    Bus::fake();
+
+    $otherShop = \App\Models\Catalogue\Shop::where('id', '!=', $this->shop->id)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+
+    foreach ([$this->shop, $otherShop] as $shop) {
+        $settings          = $shop->settings ?? [];
+        $settings['gmail'] = [
+            'email'         => "care{$shop->id}@shop.test",
+            'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString($shop->is($this->shop) ? 'revoked' : 'rt'),
+            'history_id'    => '1',
+        ];
+        $shop->update(['settings' => $settings]);
+    }
+
+    \Illuminate\Support\Facades\Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        if (str_contains($request->url(), 'oauth2.googleapis.com/token')) {
+            return $request['refresh_token'] === 'revoked'
+                ? \Illuminate\Support\Facades\Http::response(['error' => 'invalid_grant'], 400)
+                : \Illuminate\Support\Facades\Http::response(['access_token' => 'at']);
+        }
+
+        return str_contains($request->url(), 'users/me/history')
+            ? \Illuminate\Support\Facades\Http::response(['history' => [], 'historyId' => '2'])
+            : \Illuminate\Support\Facades\Http::response([]);
+    });
+
+    $this->artisan('mailbox:fetch')->assertSuccessful();
+
+    expect(Arr::get($otherShop->fresh()->settings, 'gmail.history_id'))->toBe('2')
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail.history_id'))->toBe('1');
+});
