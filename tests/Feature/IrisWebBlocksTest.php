@@ -1035,3 +1035,17 @@ test('iris basket endpoints send the quantity ordered as a number so the basket 
         ->and($productData['quantity_ordered'])->toBe(1.0)
         ->and($productData['quantity_ordered_new'])->toBe(1.0);
 });
+
+test('iris side basket sends the customer credit balance', function () {
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+    $customer->updateQuietly(['balance' => 25.50]);
+
+    $fetchBasket = \App\Actions\Iris\Basket\FetchIrisEcomBasket::make();
+    (fn () => $this->shop = $order->shop)->call($fetchBasket);
+
+    expect((float) $fetchBasket->jsonResponse($order->refresh())['balance'])->toBe(25.5);
+});

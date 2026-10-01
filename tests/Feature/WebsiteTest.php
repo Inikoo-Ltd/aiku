@@ -453,35 +453,21 @@ test('update model has web block', function (ModelHasWebBlocks $modelHasWebBlock
     expect($modelHasWebBlock)->toBeInstanceOf(ModelHasWebBlocks::class);
 })->depends('create model has web block');
 
-test('script web block rejects base64 data', function (Website $website) {
-    $webpage          = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-    $scriptBlockType  = $webpage->group->webBlockTypes()->where('code', 'script')->first();
-    $scriptLayout     = fn (string $code) => ['data' => ['fieldValue' => ['value' => $code]]];
-
-    expect(fn () => StoreModelHasWebBlock::make()->action($webpage, [
-        'web_block_type_id' => $scriptBlockType->id,
-        'layout'            => $scriptLayout('<img src="data:image/png;base64,iVBORw0KGgo=">'),
-    ]))->toThrow(ValidationException::class);
+test('script web block accepts base64 data so it can be repaired before publishing', function (Website $website) {
+    $webpage         = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $scriptBlockType = $webpage->group->webBlockTypes()->where('code', 'script')->first();
+    $scriptLayout    = fn (string $code) => ['data' => ['fieldValue' => ['value' => $code]]];
 
     $scriptBlock = StoreModelHasWebBlock::make()->action($webpage, [
         'web_block_type_id' => $scriptBlockType->id,
-        'layout'            => $scriptLayout('<script>console.log("hello")</script>'),
-    ]);
-
-    expect(fn () => UpdateModelHasWebBlocks::make()->action($scriptBlock, [
-        'layout' => $scriptLayout('<script>eval(atob("YWxlcnQoMSk="))</script>'),
-    ]))->toThrow(ValidationException::class)
-        ->and(fn () => UpdateModelHasWebBlocks::make()->action($scriptBlock, [
-            'layout' => $scriptLayout('<img src="data:image/webp;BASE64,UklGRg==">'),
-        ]))->toThrow(ValidationException::class);
-
-    $textBlockType = $webpage->group->webBlockTypes()->where('code', 'text')->first();
-    $textBlock     = StoreModelHasWebBlock::make()->action($webpage, [
-        'web_block_type_id' => $textBlockType->id,
         'layout'            => $scriptLayout('<img src="data:image/png;base64,iVBORw0KGgo=">'),
     ]);
 
-    expect($textBlock)->toBeInstanceOf(ModelHasWebBlocks::class);
+    $scriptBlock = UpdateModelHasWebBlocks::make()->action($scriptBlock, [
+        'layout' => $scriptLayout('<script>eval(atob("YWxlcnQoMSk="))</script><img src="data:image/webp;base64,UklGRg==">'),
+    ]);
+
+    expect(data_get($scriptBlock->webBlock->layout, 'data.fieldValue.value'))->toContain('data:image/webp;base64,');
 })->depends('create b2b website');
 
 test('repair moves base64 files in script web blocks to uploaded images and webpage attachments', function (Website $website) {
@@ -519,6 +505,41 @@ test('repair moves base64 files in script web blocks to uploaded images and webp
         ->and(DownloadIrisAttachment::isPublic($pdf))->toBeTrue()
         ->and(data_get($webpage->refresh()->unpublishedSnapshot->layout, 'web_blocks'))->not->toBeEmpty()
         ->and(RepairScriptWebBlocksBase64Files::run($webBlock))->toBe(0);
+})->depends('create b2b website');
+
+test('workshop repair uploads one base64 file of a script block and leaves publishing to the editor', function (Website $website) {
+    $webpage         = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $scriptBlockType = $webpage->group->webBlockTypes()->where('code', 'script')->first();
+    $scriptBlock     = StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $scriptBlockType->id,
+        'layout'            => ['data' => ['fieldValue' => ['value' => '<p>pending</p>']]],
+    ]);
+    $webpage = PublishWebpage::make()->action($webpage->refresh(), ['comment' => 'first publish']);
+
+    $pngDataUri = 'data:image/png;base64,'.base64_encode(UploadedFile::fake()->image('banner.png', 4, 4)->getContent());
+    $svgDataUri = 'data:image/svg+xml;base64,PHN2Zy8+';
+    $scriptBlock->webBlock->update(['layout' => ['data' => ['fieldValue' => ['value' =>
+        "<img src=\"$pngDataUri\"><div style=\"background:url($pngDataUri)\"></div><img src=\"$svgDataUri\">",
+    ]]]]);
+    $liveSnapshotId = $webpage->live_snapshot_id;
+    $repairRoute    = route('grp.models.webpage.web_block.repair_base64_file', ['webpage' => $webpage->id, 'modelHasWebBlock' => $scriptBlock->id]);
+
+    $url = post($repairRoute, ['data_uri' => $pngDataUri])->assertOk()->json('url');
+
+    post($repairRoute, ['data_uri' => $svgDataUri])->assertSessionHasErrors('data_uri');
+
+    $repairedCode = data_get($scriptBlock->webBlock->refresh()->layout, 'data.fieldValue.value');
+    $webpage->refresh();
+
+    expect(substr_count($repairedCode, $url))->toBe(2)
+        ->and($repairedCode)->not->toContain('image/png;base64')
+        ->and($repairedCode)->toContain($svgDataUri)
+        ->and($webpage->live_snapshot_id)->toBe($liveSnapshotId)
+        ->and($webpage->is_dirty)->toBeTrue();
+
+    $otherWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    post(route('grp.models.webpage.web_block.repair_base64_file', ['webpage' => $otherWebpage->id, 'modelHasWebBlock' => $scriptBlock->id]), ['data_uri' => $svgDataUri])
+        ->assertNotFound();
 })->depends('create b2b website');
 
 test('delete model has web block', function (ModelHasWebBlocks $modelHasWebBlock) {
