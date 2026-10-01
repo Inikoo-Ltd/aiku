@@ -17,6 +17,8 @@ Produkt alebo rodina vytvorená z masteru príde s názvom, nadpisom popisu, pop
 
 Na stránke úprav produktu alebo rodiny každé z týchto polí ukazuje anglický text z masteru nad textom tvojho obchodu. Ikona osoby vedľa textu znamená, že ho už niekto skontroloval. Ikona jazyka vpravo, **Get translation from AI** (Získať preklad od AI), si vypýta nový preklad textu z masteru do políčka; nič sa neuloží, kým neuložíš formulár.
 
+Ak chceš prerobiť celú stránku naraz, klikni hore na stránke úprav na **Translate all from master** (Preložiť všetko z masteru). Znova z masteru preloží všetky názvy a popisy na stránke, ktoré ešte nikto neskontroloval, a hneď ich uloží, stále ako neskontrolované, takže pod každým sa objavia hviezdičky, aby si ich prečítal, ohodnotil a opravil. Texty s ikonou osoby a texty rodiny, ktoré niekto niekedy uložil, zostanú presne také, aké sú. Tlačidlo sa ukáže len v obchodoch, ktoré nie sú v angličtine, pri produktoch a rodinách, ktoré pochádzajú z masteru.
+
 ## Čo sa prekladaču povie
 
 Pred každým textom produktu dostane prekladač krátke zadanie:

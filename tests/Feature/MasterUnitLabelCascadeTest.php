@@ -15,6 +15,7 @@ use App\Actions\Helpers\Translations\ChatGPT5Driver;
 use App\Actions\Helpers\Translations\GetCatalogueTranslationBrief;
 use App\Actions\Helpers\Translations\MineTranslationTerms;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\TranslateFromMaster;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -32,6 +33,7 @@ use App\Models\Helpers\TranslationTerm;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -380,4 +382,57 @@ test('a mined term is kept only when the webmasters really use it', function () 
     $terms = GetCatalogueTranslationBrief::make()->termsFor($slovak, '<p>Backflow <b>incense cones</b> with holder</p>');
     expect($terms)->toContain('- incense cones => vonné kužele')
         ->and(GetCatalogueTranslationBrief::make()->termsFor($slovak, 'Lavender soap'))->toBe('');
+});
+
+test('translate all from master redoes only the product texts nobody reviewed', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $this->masterAsset->updateQuietly(['description' => 'Lavender soap description']);
+    $this->product->updateQuietly(['name' => 'starý strojový názov', 'is_name_reviewed' => false, 'description' => 'ľudský popis', 'is_description_reviewed' => true]);
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => 'SK '.$text);
+
+    post(route('grp.models.product.translate_from_master', $this->product->id))->assertRedirect();
+
+    expect($this->product->refresh()->name)->toBe('SK unit label asset')
+        ->and($this->product->is_name_reviewed)->toBeFalse()
+        ->and($this->product->description)->toBe('ľudský popis');
+});
+
+test('a person saving a family text marks it reviewed and translate all leaves it alone', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $family = $this->product->family;
+    $this->masterFamily->updateQuietly(['description' => 'Soaps of every scent', 'description_title' => 'Our soaps']);
+    $family->updateQuietly([
+        'master_product_category_id'    => $this->masterFamily->id,
+        'is_description_reviewed'       => false,
+        'is_description_title_reviewed' => false,
+        'is_name_reviewed'              => false,
+    ]);
+
+    patch(route('grp.models.product_category.update', $family->id), ['description' => 'Mydlá každej vône'])->assertRedirect();
+    expect($family->refresh()->is_description_reviewed)->toBeTrue();
+
+    $family->updateQuietly(['is_description_reviewed' => false]);
+    DB::table('audits')->where('auditable_type', 'ProductCategory')->where('auditable_id', $family->id)->delete();
+    DB::table('audits')->insert([
+        'group_id'       => $family->group_id,
+        'user_type'      => 'User',
+        'user_id'        => $this->adminGuest->getUser()->id,
+        'auditable_type' => 'ProductCategory',
+        'auditable_id'   => $family->id,
+        'event'          => 'updated',
+        'tags'           => '[]',
+        'old_values'     => '{}',
+        'new_values'     => json_encode(['description' => 'Mydlá každej vône']),
+        'url'            => 'https://app.aiku.test/models/product_category/'.$family->id.'/update',
+        'created_at'     => now(),
+        'updated_at'     => now(),
+    ]);
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => 'SK '.$text);
+
+    $translated = TranslateFromMaster::run($family->refresh());
+
+    expect($translated)->toBe(['name', 'description_title'])
+        ->and($family->refresh()->description)->toBe('Mydlá každej vône')
+        ->and($family->description_title)->toBe('SK Our soaps')
+        ->and($family->is_description_title_reviewed)->toBeFalse();
 });

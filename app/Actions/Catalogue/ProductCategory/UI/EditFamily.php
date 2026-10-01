@@ -164,7 +164,20 @@ class EditFamily extends OrgAction
                     'title'   => __('Edit'),
                     'icon'     => 'fal fa-folder',
                     'model'     => __('Family :codeFamily', ['codeFamily' => $family->code]),
-                    'actions' => [
+                    'actions' => array_values(array_filter([
+                        $family->shop->language->code !== 'en' && $family->masterProductCategory ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => ['fal', 'fa-language'],
+                            'label'   => __('Translate all from master'),
+                            'tooltip' => __('Translate again every text here that nobody has reviewed yet'),
+                            'key'     => 'translate_from_master',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.product_category.translate_from_master',
+                                'parameters' => ['productCategory' => $family->id],
+                            ],
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -173,7 +186,7 @@ class EditFamily extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ],
+                    ])),
                     'iconLinks' => $iconLinks
                 ],
                 'formData' => [

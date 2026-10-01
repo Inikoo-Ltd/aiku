@@ -17,6 +17,8 @@ Un producto o una familia creados a partir del master llegan con su nombre, tít
 
 En la página de edición de un producto o una familia, cada uno de estos campos muestra el texto en inglés del master encima del texto de tu tienda. Un icono de persona junto al texto significa que alguien ya lo ha revisado. El icono de idioma de la derecha, **Get translation from AI** (Obtener traducción de la IA), pide una traducción nueva del texto del master y la pone en el cuadro; no se guarda nada hasta que guardes el formulario.
 
+Para rehacer toda la página de una vez, haz clic en **Translate all from master** (Traducir todo desde el master) arriba de la página de edición. Vuelve a traducir desde el master todos los nombres y descripciones de la página que nadie ha revisado y los guarda en el momento, todavía sin revisar, así que aparecen las estrellas debajo de cada uno para que los leas, los valores y los corrijas. Los textos con el icono de persona, y los textos de familia que alguna persona haya guardado, se quedan exactamente como están. El botón solo aparece en tiendas que no están en inglés, en productos y familias que vienen de un master.
+
 ## Qué se le indica al traductor
 
 Antes de cada texto de producto, el traductor recibe un breve briefing:

@@ -176,7 +176,20 @@ class EditProduct extends OrgAction
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Goods')
                     ],
-                    'actions'   => [
+                    'actions'   => array_values(array_filter([
+                        $product->shop->language->code !== 'en' && $product->masterProduct ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => ['fal', 'fa-language'],
+                            'label'   => __('Translate all from master'),
+                            'tooltip' => __('Translate again every text here that nobody has reviewed yet'),
+                            'key'     => 'translate_from_master',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.product.translate_from_master',
+                                'parameters' => ['product' => $product->id],
+                            ],
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -185,7 +198,7 @@ class EditProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ],
+                    ])),
                     'iconLinks' => $iconLinks
                 ],
 

@@ -17,6 +17,7 @@ use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Translations\RecordTranslationReview;
+use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -183,8 +184,6 @@ class UpdateProductCategory extends OrgAction
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')],
                 ]
             ]);
-
-            data_set($modelData, 'is_name_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_title')) {
@@ -193,7 +192,6 @@ class UpdateProductCategory extends OrgAction
                     'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
                 ]
             ]);
-            data_set($modelData, 'is_description_title_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description')) {
@@ -202,7 +200,6 @@ class UpdateProductCategory extends OrgAction
                     'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
-            data_set($modelData, 'is_description_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_extra')) {
@@ -211,7 +208,6 @@ class UpdateProductCategory extends OrgAction
                     'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
-            data_set($modelData, 'is_description_extra_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'not_follow_master_prices') && !$productCategory->not_follow_master_prices) {
@@ -571,7 +567,26 @@ class UpdateProductCategory extends OrgAction
         $this->initialisationFromShop($productCategory->shop, $request);
         RecordTranslationReview::make()->fromEdit($productCategory, $this->validatedData, $request->user());
 
-        return $this->handle($productCategory, $this->validatedData);
+        return $this->handle($productCategory, $this->markWrittenTextAsReviewed($this->validatedData));
+    }
+
+    /**
+     * A person writing the text is what counts as reviewing it. Only here, on the controller: the
+     * master cascade and TranslateModel call handle() with machine text that still needs a person.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markWrittenTextAsReviewed(array $modelData): array
+    {
+        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, $reviewFlag, true, false);
+            }
+        }
+
+        return $modelData;
     }
 
 

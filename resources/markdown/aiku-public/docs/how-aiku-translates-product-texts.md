@@ -17,6 +17,8 @@ A product or family made from the master arrives with its name, description titl
 
 On the edit page of a product or family, each of these fields shows the master's English text above your shop's text. A person icon next to the text means someone has already reviewed it. The language icon on the right, **Get translation from AI**, asks for a fresh translation of the master text into the box; nothing is saved until you save the form.
 
+To redo the whole page at once, click **Translate all from master** at the top of the edit page. It translates again, from the master, every name and description on the page that nobody has reviewed, and saves them straight away, still unreviewed, so the stars appear under each one for you to read, rate and fix. Texts with the person icon, and family texts a person has ever saved, are left exactly as they are. The button only appears in shops that are not in English, on products and families that come from a master.
+
 ## What the translator is told
 
 Before every product text, the translator receives a short brief:
