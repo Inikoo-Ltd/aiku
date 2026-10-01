@@ -56,6 +56,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Actions\Dropshipping\Shopify\Order\SweepShopifyMissedOrders;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
@@ -1177,4 +1179,80 @@ test('shopify webhooks record unverified callers while enforcement is off and re
     $this->postJson($url, [])->assertStatus(401);
     $signed('someone-else.myshopify.com')->assertStatus(401);
     expect($signed($shopifyUser->name)->status())->not->toBe(401);
+});
+
+test('the hourly sweep re-fetches only accepted fulfilment requests from every connected open shopify store, page by page', function () {
+    Queue::fake();
+    $connected = shopifyOrderChannel($this, 'sweep-connected');
+    $connected->customerSalesChannel->update(['platform_status' => true, 'status' => CustomerSalesChannelStatusEnum::OPEN]);
+    $closed = shopifyOrderChannel($this, 'sweep-closed');
+    $closed->customerSalesChannel->update(['platform_status' => true, 'status' => CustomerSalesChannelStatusEnum::CLOSED]);
+    $disconnected = shopifyOrderChannel($this, 'sweep-disconnected');
+    $disconnected->customerSalesChannel->update(['platform_status' => false, 'status' => CustomerSalesChannelStatusEnum::OPEN]);
+
+    SweepShopifyMissedOrders::run();
+
+    $sweepJobs = collect(Queue::pushed(JobDecorator::class))
+        ->filter(fn (JobDecorator $job) => $job->getAction() instanceof FetchShopifyOrdersFromApi);
+    $sweptUserIds = $sweepJobs->map(fn (JobDecorator $job) => $job->getParameters()[0]->id);
+    $connectedJob = $sweepJobs->first(fn (JobDecorator $job) => $job->getParameters()[0]->id === $connected->id);
+
+    expect($sweptUserIds)->toContain($connected->id)
+        ->not->toContain($closed->id)
+        ->not->toContain($disconnected->id)
+        ->and($connectedJob->getParameters()[1])->toBe(7)
+        ->and($connectedJob->getParameters()[2])->toBeTrue();
+
+    shopifyPortfolioFor($this, $connected);
+    $orderNode = fn (string $orderGid, string $fulfilmentOrderGid, string $requestStatus) => [
+        'id'                => $orderGid,
+        'name'              => '#1001',
+        'createdAt'         => '2026-09-18T14:25:00Z',
+        'processedAt'       => '2026-09-18T14:25:00Z',
+        'customer'          => ['id' => 'gid://shopify/Customer/4001', 'email' => 'ada@example.com', 'firstName' => 'Ada', 'lastName' => 'Lovelace', 'phone' => null],
+        'fulfillmentOrders' => ['edges' => [['node' => array_merge(shopifyFulfilmentOrder([[]]), [
+            'id'            => $fulfilmentOrderGid,
+            'status'        => $requestStatus === 'ACCEPTED' ? 'IN_PROGRESS' : 'OPEN',
+            'requestStatus' => $requestStatus,
+        ])]]],
+    ];
+
+    ShopifyFake::fake([
+        'getUnfulfilledOrders' => fn (array $variables) => ShopifyFake::graphql(['orders' => Arr::get($variables, 'after') === null
+            ? ['edges' => [['node' => $orderNode('gid://shopify/Order/5101', 'gid://shopify/FulfillmentOrder/6101', 'SUBMITTED')]], 'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'page-2']]
+            : ['edges' => [['node' => $orderNode('gid://shopify/Order/5102', 'gid://shopify/FulfillmentOrder/6102', 'ACCEPTED')]], 'pageInfo' => ['hasNextPage' => false, 'endCursor' => null]],
+        ]),
+    ]);
+
+    FetchShopifyOrdersFromApi::run($connected, 7, true);
+
+    expect(ShopifyFake::calls('getUnfulfilledOrders'))->toHaveCount(2)
+        ->and(ShopifyFake::calls('getUnfulfilledOrders')[1]['variables']['after'])->toBe('page-2')
+        ->and(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6102')->exists())->toBeTrue()
+        ->and(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6101')->exists())->toBeFalse();
+
+    Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6102')->first()->delete();
+    FetchShopifyOrdersFromApi::run($connected, 7, true);
+
+    expect(Order::withTrashed()->where('platform_order_id', 'gid://shopify/FulfillmentOrder/6102')->count())->toBe(1);
+});
+
+test('a shopify order reuses the end customer whose name differs only in capitals instead of failing on the reference', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'client-case');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([[]], [
+        'id'          => 'gid://shopify/FulfillmentOrder/6201',
+        'destination' => ['firstName' => 'Cindy', 'lastName' => 'Nisol'],
+    ]));
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([[]], [
+        'id'          => 'gid://shopify/FulfillmentOrder/6202',
+        'destination' => ['firstName' => 'cindy', 'lastName' => 'NISOL'],
+    ]));
+
+    $first  = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6201')->firstOrFail();
+    $second = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6202')->firstOrFail();
+
+    expect($second->customer_client_id)->toBe($first->customer_client_id);
 });
