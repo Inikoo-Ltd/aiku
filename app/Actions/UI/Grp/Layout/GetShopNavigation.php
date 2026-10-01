@@ -36,7 +36,11 @@ class GetShopNavigation
 
             'route' => [
                 'name'       => 'grp.org.shops.show.dashboard.show',
-                'parameters' => [$shop->organisation->slug, $shop->slug]
+                'parameters' => [
+                    'organisation' => $shop->organisation->slug,
+                    'shop'         => $shop->slug,
+                    'section'      => ShopDashboardSectionsEnum::TARGET->value,
+                ]
             ],
 
             'topMenu' => [

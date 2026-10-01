@@ -21,6 +21,8 @@ enum MasterShopTabsEnum: string
     case SALES_ANALYSIS = 'sales_analysis';
     case SHOPS = 'shops';
     case SALES = 'sales';
+    case COMPETITOR_PRICES = 'competitor_prices';
+    case COMPETITORS = 'competitors';
     case HISTORY = 'history';
 
     public function blueprint(): array
@@ -43,6 +45,14 @@ enum MasterShopTabsEnum: string
             MasterShopTabsEnum::SHOPS => [
                 'title' => __('Shops in Master Shop'),
                 'icon'  => 'fal fa-store-alt',
+            ],
+            MasterShopTabsEnum::COMPETITOR_PRICES => [
+                'title' => __('Competitor prices'),
+                'icon'  => 'fal fa-balance-scale',
+            ],
+            MasterShopTabsEnum::COMPETITORS => [
+                'title' => __('Competitors'),
+                'icon'  => 'fal fa-binoculars',
             ],
             MasterShopTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),

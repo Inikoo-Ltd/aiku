@@ -4314,4 +4314,223 @@ describe('price tips from Jev, HELP-2331', function () {
             ->and($tip->dismissed_by_user_id)->toBe($this->adminGuest->getUser()->id)
             ->and($tip->audits()->where('new_values->status', 'dismissed')->exists())->toBeTrue();
     });
+
+    test('the master shop lists every open price tip in one place', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        $masterShop = $this->tipMasterAsset->masterShop;
+
+        get(route('grp.masters.master_shops.show.master_products.index', [$masterShop->slug, 'tab' => 'pricing']))
+            ->assertOk()
+            ->assertInertia(
+                fn (AssertableInertia $page) => $page
+                    ->where('tabs.navigation.pricing.title', 'Price tips')
+                    ->where('tabs.navigation.pricing.number', 1)
+                    ->has('pricing.data', 1)
+                    ->where('pricing.data.0.code', $this->tipMasterAsset->code)
+                    ->where('pricing.data.0.price_tip.change', -10)
+                    ->where('pricing.data.0.master_family_code', $this->tipMasterAsset->masterFamily->code)
+                    ->etc()
+            );
+
+        \Pest\Laravel\post(route('grp.json.master_shop.pricing_sales', $masterShop->slug), ['interval' => 'quarter', 'ids' => [$this->tipMasterAsset->id]])
+            ->assertOk();
+    });
+
+    test('why staff said a tip was wrong goes back to the AI for that product and its family', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => 'Christmas stock, sells in December'])
+            ->assertRedirect();
+
+        $feedback = GenerateMasterAssetPriceTips::make()->staffFeedback([], [$this->tipMasterAsset->master_family_id]);
+
+        expect($feedback)->toHaveCount(1)
+            ->and($feedback->first()->dismissed_reason)->toBe('Christmas stock, sells in December')
+            ->and((int) $feedback->first()->change)->toBe(-10)
+            ->and(GenerateMasterAssetPriceTips::make()->staffFeedback([], [0]))->toBeEmpty();
+    });
+});
+
+describe('competitor prices, HELP-3605', function () {
+    beforeEach(function () {
+        Config::set('services.openrouter.api_key', 'test-key');
+        Config::set('services.discord.webhook_url');
+
+        $this->competitorMasterShop = createFreshMasterShop();
+        $masterDepartment           = StoreMasterDepartment::make()->action($this->competitorMasterShop, [
+            'code' => 'CPD-'.uniqid(),
+            'name' => 'Competitor department',
+        ]);
+        $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+            'code' => 'CPF-'.uniqid(),
+            'name' => 'Competitor family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+        $this->competitorMasterAsset = StoreMasterAsset::make()->action($masterFamily, [
+            'code'    => 'CP-'.uniqid(),
+            'name'    => 'Brass singing bowl 10cm',
+            'is_main' => true,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 10,
+            'stocks'  => [],
+        ]);
+
+        $this->competitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name'        => 'Rival',
+            'website'     => 'https://rival.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://rival.example.com/search?q={query}',
+        ]);
+    });
+
+    $fakeBrowserAndAi = function (array $browser, array $aiProducts) {
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode($browser))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['products' => $aiProducts])]]]]),
+        ]);
+    };
+
+    test('staff add a competitor whose trade login is kept encrypted and never shown back', function () {
+        get(route('grp.masters.master_shops.show.competitors.create', $this->competitorMasterShop->slug))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel')->etc());
+
+        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+            'name'        => 'Trade rival',
+            'website'     => 'https://trade.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://trade.example.com/search?q={query}',
+            'login_url'   => 'https://trade.example.com/login',
+            'username'    => 'buyer@example.com',
+            'password'    => 'trade-secret',
+        ])->assertRedirect();
+
+        $competitor = $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->firstOrFail();
+        expect($competitor->password)->toBe('trade-secret')
+            ->and(DB::table('competitors')->where('id', $competitor->id)->value('password'))->not->toContain('trade-secret');
+
+        $competitor->update(['cookies' => [['name' => 'session', 'value' => 'x']]]);
+        \Pest\Laravel\patch(route('grp.models.competitor.update', $competitor->id), ['username' => 'buyer@example.com', 'password' => ''])->assertSessionHasNoErrors();
+        $competitor->refresh();
+        expect($competitor->password)->toBe('trade-secret')
+            ->and($competitor->cookies)->toBeNull();
+
+        get(route('grp.masters.master_shops.show.competitors.edit', [$this->competitorMasterShop->slug, $competitor->id]))
+            ->assertOk()
+            ->assertDontSee('trade-secret');
+
+        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+            'name'        => 'No query',
+            'website'     => 'https://x.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://x.example.com/search',
+        ])->assertSessionHasErrors('search_url');
+    });
+
+    test('a search keeps only links that were on the page and staff confirm the match', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [[
+                'url'     => 'https://rival.example.com/search?q=Brass',
+                'status'  => 200,
+                'blocked' => false,
+                'text'    => 'Brass bowl 10cm pack of 2 £16.00',
+                'links'   => [['href' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'text' => 'Brass bowl 10cm']],
+            ]],
+        ], [
+            ['url' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'name' => 'Brass bowl 10cm', 'price' => 16, 'units' => 2, 'minimum_order' => null, 'same_item' => true],
+            ['url' => 'https://rival.example.com/p/made-up', 'name' => 'Made up', 'price' => 1, 'units' => 1, 'same_item' => true],
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(1);
+
+        $this->competitor->refresh();
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->sole();
+        expect($this->competitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK)
+            ->and($this->competitor->number_products)->toBe(1)
+            ->and($match->competitorProduct->url)->toBe('https://rival.example.com/p/brass-bowl')
+            ->and($match->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::SUGGESTED);
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('competitor_prices.data', 1)
+                ->where('competitor_prices.data.0.competitor_unit_price', 8)
+                ->where('competitor_prices.data.0.difference', -20)
+                ->etc());
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitors']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('competitors.data.0.name', 'Rival')->missing('competitors.data.0.password')->etc());
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
+        expect($match->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id))
+            ->toBe([['competitor' => 'Rival', 'sells_to' => 'wholesale', 'same_item' => true, 'difference_pct' => -20]]);
+    });
+
+    test('a failed login marks the competitor and reads nothing', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi(['login_error' => 'wrong login', 'cookies' => [], 'pages' => []], []);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(0)
+            ->and($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::LOGIN_FAILED)
+            ->and($this->competitor->last_error)->toBe('wrong login');
+    });
+    test('a product feed is read and Jev picks the same item from the closest names', function () {
+        $feed = implode("\r\n", [
+            "Item No\tStock Level\tItem Name\tPrice\tBarcode\tMin Order Qty\tRRP\tDiscontinued\tURL Links\tMaterial\tHeight\tWidth\tDepth\tCommodity Code\tDescription",
+            "SB-12\t10\tSet of 12 Brass Singing Bowls 10cm\t96.00\t111\t1\t15.99\tFalse\thttps://rival.example.com/i/sb-12.jpg\tBrass\t5\t10\t10\t8306290000\t<p>Hand hammered bowls</p>",
+            "SB-RED\t4\tRed Brass Singing Bowl 10cm Stand\t5.00\t222\t1\t\tFalse\t\t\t\t\t\t\t",
+            "OLD-1\t0\tBrass Singing Bowl 10cm Old\t3.00\t333\t1\t\tTrue\t\t\t\t\t\t\t",
+            "MUG-1\t9\tWhite Mug\t2.00\t444\t6\t5.99\tFalse\t\t\t\t\t\t\t",
+        ]);
+
+        $this->competitor->update(['feed_url' => 'https://feeds.example.com/stock.txt']);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'feeds.example.com/*'        => \Illuminate\Support\Facades\Http::response($feed),
+            'openrouter.ai/api/alpha/*'  => function (\Illuminate\Http\Client\Request $request) {
+                $choice = array_search('Set of 12 Brass Singing Bowls 10cm: the same item', $request['questions']['answer']['criteria'], true);
+
+                return \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => $choice, 'probabilities' => [$choice => 0.9, 'none' => 0.1]]]]);
+            },
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::make()->handle($this->competitor))->toBe(3)
+            ->and($this->competitor->refresh()->number_products)->toBe(3)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+
+        $matches = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->get()->keyBy('competitorProduct.code');
+        expect($matches['SB-12']->competitorProduct->data)->toEqual(['description' => 'Hand hammered bowls', 'material' => 'Brass', 'size_cm' => '5 x 10 x 10', 'tariff_code' => '8306290000']);
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'decisions') && ($request['state']['competitor'][0]['material'] ?? $request['state']['competitor'][1]['material'] ?? null) === 'Brass');
+        expect($matches->keys()->sort()->values()->all())->toBe(['SB-12', 'SB-RED'])
+            ->and($matches['SB-12']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($matches['SB-12']->is_same_item)->toBeTrue()
+            ->and((float) $matches['SB-12']->competitorProduct->units)->toBe(12.0)
+            ->and($matches['SB-RED']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(0)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(-20);
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('competitor_prices.data', 1)
+                ->where('competitor_prices.data.0.is_auto_confirmed', true)
+                ->where('competitor_prices.data.0.confidence', 90)
+                ->etc());
+    });
+
+    test('pack sizes are read from the name unless ours is a set too', function () {
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set Of 4 Skull Coasters', 'Set of 4 Square Coasters'))->toBe(1.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0);
+    });
 });

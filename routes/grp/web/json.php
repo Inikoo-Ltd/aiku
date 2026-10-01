@@ -388,6 +388,7 @@ Route::get('master-assets/open-orders-affected-by-units-change', GetMasterAssets
 
 Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
+Route::post('master-shop/{masterShop}/pricing-sales', [GetMasterProductsPricingSales::class, 'inMasterShop'])->name('master_shop.pricing_sales')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 

@@ -15,6 +15,7 @@ use App\Models\Masters\MasterAssetPriceTip;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * Staff turn a price tip down, saying why. The product gets no new tip for a while.
@@ -59,5 +60,10 @@ class DismissMasterAssetPriceTip extends OrgAction
         $this->initialisationFromGroup($masterAssetPriceTip->masterAsset->group, $modelData);
 
         return $this->handle($masterAssetPriceTip, $this->validatedData, $user);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

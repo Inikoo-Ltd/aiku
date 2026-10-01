@@ -116,6 +116,15 @@ watch(() => props.tableData.current_tab, (newVal) => {
  * reorders parents only and children ride along; every other table keeps PrimeVue's own
  * sorting untouched.
  */
+const orderedTabs = computed(() => {
+	const tabs = Object.entries(props.tableData?.tabs ?? {}).map(([tabSlug, tab]) => ({ tabSlug, tab }))
+
+	return [
+		...tabs.filter(({ tab }) => tab.align !== "right"),
+		...tabs.filter(({ tab }) => tab.align === "right"),
+	]
+})
+
 const hasGroupedRows = computed(() => {
 	const body = props.tableData.tables?.[localCurrentTab.value]?.body
 	return !!body?.some((row: any) => row.parent_slug)
@@ -222,7 +231,7 @@ const updateTab = (value: string) => {
 			<!-- Section: Tabs -->
 			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
-					<template v-for="(tab, tabSlug) in tableData.tabs" :key="tabSlug">
+					<template v-for="{ tabSlug, tab } in orderedTabs" :key="tabSlug">
 						<Tab
 							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"

@@ -16,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShopSalesTarget extends OrgAction
@@ -30,7 +31,7 @@ class UpdateShopSalesTarget extends OrgAction
         $month = Carbon::parse(Arr::get($modelData, 'month', now('UTC')))->startOfMonth()->toDateString();
 
         return ShopSalesTarget::updateOrCreate(
-            ['shop_id' => $shop->id, 'month' => $month],
+            ['shop_id' => $shop->id, 'month' => $month, 'invoice_category_id' => Arr::get($modelData, 'invoice_category_id')],
             [
                 'group_id'            => $shop->group_id,
                 'organisation_id'     => $shop->organisation_id,
@@ -54,6 +55,7 @@ class UpdateShopSalesTarget extends OrgAction
         return [
             'target_org_currency' => ['required', 'numeric', 'min:0', 'max:99999999999999'],
             'month'               => ['sometimes', 'date_format:Y-m'],
+            'invoice_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->shop->organisation_id)],
         ];
     }
 

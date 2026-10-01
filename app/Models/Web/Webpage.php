@@ -21,6 +21,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InWebsite;
@@ -152,6 +153,8 @@ class Webpage extends Model implements Auditable, HasMedia
     use InWebsite;
     use HasHistory;
     use HasImage;
+    use HasAttachments;
+
     protected static function booted(): void
     {
         static::saved(function (Webpage $webpage) {
