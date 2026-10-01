@@ -126,7 +126,7 @@ const onUpdateHandler = () => {
             onError: (error) => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: error.message,
+                    text: error.message ?? error.error_in_models,
                     type: "error"
                 });
             },
@@ -257,7 +257,7 @@ const setAsReturned = (routeData: any) => {
 			onError: (error) => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: error.message,
+					text: error.message ?? error.error_in_models,
 					type: "error",
 				})
 			},
@@ -289,7 +289,7 @@ const confirmAndSubmitRefund = () => {
 			onError: (error) => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: error.message,
+					text: error.message ?? error.error_in_models,
 					type: "error",
 				})
 			},

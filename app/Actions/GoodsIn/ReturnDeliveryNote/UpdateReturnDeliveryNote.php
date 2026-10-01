@@ -72,6 +72,7 @@ class UpdateReturnDeliveryNote extends OrgAction
 
     public function action(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
+        $this->asAction = true;
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $modelData);
 
         return $this->handle($returnDeliveryNote, $this->validatedData);

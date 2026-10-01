@@ -186,6 +186,25 @@ class SetDoneReturnDeliveryNote extends OrgAction
     }
 
     /**
+     * Finishing a return decides the refund or replacement, which customer services do from the
+     * order's shop, so editing that shop's orders is enough besides the warehouse returns permissions.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $returnDeliveryNote = $request->route('returnDeliveryNote');
+
+        return $request->user()->authTo([
+            "incoming.{$this->warehouse->id}.edit",
+            "returns.{$this->warehouse->id}",
+            "orders.{$returnDeliveryNote->order->shop_id}.edit",
+        ]);
+    }
+
+    /**
      * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */

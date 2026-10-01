@@ -5035,6 +5035,46 @@ test('a return that needs no action can be finished without a refund or a replac
         ->and($finished->replacement_id)->toBeNull();
 });
 
+test('customer services finish a return from the order shop without warehouse returns permissions (HELP-3569)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+    $order = $deliveryNote->orders()->first();
+    \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, array_merge(\App\Models\Accounting\Invoice::factory()->definition(), [
+        'billing_address' => new Address(Address::factory()->definition()),
+    ]), strict: false);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $finishReturn  = function () use ($user, $returnDeliveryNote) {
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+
+        return $this->patch(route('grp.models.return_delivery_note.state.done', $returnDeliveryNote->id), [
+            'createRefund'      => false,
+            'createReplacement' => false,
+        ]);
+    };
+
+    $user->syncRoles([]);
+    $finishReturn()->assertForbidden();
+    expect($returnDeliveryNote->refresh()->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED);
+
+    $user->syncRoles([RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $order->shop)]);
+    $finishReturn()->assertSessionHasNoErrors();
+    expect($returnDeliveryNote->refresh()->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    actingAs($user->refresh());
+});
+
 test('a second return only covers what was not returned yet and waits for the first to finish (HELP-3194)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
