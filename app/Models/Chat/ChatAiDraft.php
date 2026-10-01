@@ -38,6 +38,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $flagged_wrong_at
  * @property int|null $flagged_by_user_id
  * @property string|null $flagged_reason
+ * @property int|null $rating
+ * @property string|null $rating_reason
+ * @property int|null $rated_by_user_id
+ * @property \Illuminate\Support\Carbon|null $rated_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read ChatSession|null $chatSession
@@ -56,6 +60,7 @@ class ChatAiDraft extends Model
         'taken_at'   => 'datetime',
         'decided_at' => 'datetime',
         'flagged_wrong_at' => 'datetime',
+        'rated_at'   => 'datetime',
     ];
 
     protected $attributes = [

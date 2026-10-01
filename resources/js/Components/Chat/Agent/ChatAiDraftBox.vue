@@ -7,8 +7,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
+import { onClickOutside } from "@vueuse/core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRobot, faBookOpen, faBug, faDatabase, faCommentCheck } from "@fal"
+import { faRobot, faBookOpen, faBug, faDatabase, faCommentCheck, faStar as faStarEmpty } from "@fal"
+import { faStar } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -24,6 +26,8 @@ interface Draft {
     id: number
     text: string
     topic_label: string
+    rating: number | null
+    reason: string | null
 }
 
 interface Guide {
@@ -183,6 +187,25 @@ const decide = async (action: "take" | "discard") => {
     }
 }
 
+const ratingReasons = computed(() => [
+    { key: "missing_info", label: ctrans("Missing info we know") },
+    { key: "wrong_fact", label: ctrans("Wrong fact") },
+    { key: "too_long", label: ctrans("Too long / wrong tone") },
+    { key: "no_reply_needed", label: ctrans("No reply needed") },
+])
+
+const askingWhy = ref(false)
+const whyPanel = ref<HTMLElement | null>(null)
+onClickOutside(whyPanel, () => askingWhy.value = false)
+
+const rate = (rating: number, reason: string | null = null) => {
+    if (!draft.value) return
+    draft.value.rating = rating
+    draft.value.reason = reason
+    askingWhy.value = rating <= 3 && !reason
+    axios.post(route("grp.api.chats.ai_drafts.rate", [draft.value.id]), { rating, reason }).catch(() => null)
+}
+
 const listen = () => {
     if (!props.sessionUlid || !(window as any).Echo) return
 
@@ -236,6 +259,19 @@ onBeforeUnmount(stopListening)
                     class="rounded-md px-2.5 py-0.5 text-[11px] text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-white disabled:opacity-50">
                     {{ ctrans("Discard") }}
                 </button>
+                <span class="relative ml-auto flex items-center" :title="ctrans('How good is this draft?')">
+                    <button v-for="star in 5" :key="star" type="button" class="px-0.5 text-amber-500 hover:scale-110" :aria-label="ctrans(':count stars', { count: star })" @click="rate(star)">
+                        <FontAwesomeIcon :icon="(draft.rating ?? 0) >= star ? faStar : faStarEmpty" fixed-width />
+                    </button>
+                    <div v-if="askingWhy && draft.rating" ref="whyPanel"
+                        class="absolute right-0 top-full z-20 mt-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
+                        <p class="px-2 py-1 text-gray-500">{{ ctrans("What was wrong?") }}</p>
+                        <button v-for="reason in ratingReasons" :key="reason.key" type="button" @click="rate(draft.rating, reason.key)"
+                            class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-indigo-50">
+                            {{ reason.label }}
+                        </button>
+                    </div>
+                </span>
             </div>
         </div>
 

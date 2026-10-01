@@ -7332,6 +7332,12 @@ test('a question about an order gets a draft written from that customer\'s order
 
     $this->postJson(route('grp.api.chats.ai_drafts.take', [$draft->id]))->assertOk()->assertJsonPath('data.text', $draft->text);
 
+    $this->postJson(route('grp.api.chats.ai_drafts.rate', [$draft->id]), ['rating' => 2, 'reason' => 'wrong_fact'])->assertOk();
+    expect($draft->refresh()->only(['rating', 'rating_reason', 'rated_by_user_id']))->toBe(['rating' => 2, 'rating_reason' => 'wrong_fact', 'rated_by_user_id' => $this->user->id]);
+    $this->postJson(route('grp.api.chats.ai_drafts.rate', [$draft->id]), ['rating' => 5, 'reason' => 'wrong_fact'])->assertOk();
+    expect($draft->refresh()->only(['rating', 'rating_reason']))->toBe(['rating' => 5, 'rating_reason' => null]);
+    $this->postJson(route('grp.api.chats.ai_drafts.rate', [$draft->id]), ['rating' => 6])->assertUnprocessable();
+
     $agent = ChatAgent::where('user_id', $this->user->id)->firstOrFail();
     $reply = $ask($session, "  Hi, your order $reference was dispatched on 22 September. ", ChatSenderTypeEnum::AGENT);
     $reply->update(['sender_id' => $agent->id]);
@@ -11312,6 +11318,108 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $reply = 'Hello, your order GB123456 will be replaced. [[agent: confirm]]';
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Also one candle holder is chipped.']);
+
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
+
+    $session->forceDelete();
+});
+
+test('agent replies become examples embedded by what the customer meant, found by meaning, never from after the cut-off', function () {
+    config(['services.openrouter.api_key' => 'or-key']);
+    $vectorFor = fn (string $text) => array_pad(str_contains(mb_strtolower($text), 'broken') || str_contains(mb_strtolower($text), 'smashed') ? [1.0, 0.0] : [0.0, 1.0], 1024, 0.0);
+    \App\Actions\Helpers\AI\EmbedTexts::mock()->shouldReceive('handle')->andReturnUsing(fn (array $texts) => array_map($vectorFor, $texts));
+
+    $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::ACTIVE, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
+    $say     = fn (string $text, ChatSenderTypeEnum $sender) => ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => $sender, 'message_text' => $text]);
+    $say('Two mugs arrived broken', ChatSenderTypeEnum::GUEST);
+    $say("Sorry! Send us a photo please.\n\nOn Tue, 1 Sep 2026 at 10:00, Ann wrote:\n> Two mugs arrived broken", ChatSenderTypeEnum::AGENT);
+    $say('Do you ship to Spain?', ChatSenderTypeEnum::GUEST);
+    $say('Yes, every day.', ChatSenderTypeEnum::AGENT);
+
+    $result = \App\Actions\Chat\ChatSession\HydrateChatReplyExamples::run();
+    $mine   = \App\Models\Chat\ChatReplyExample::where('shop_id', $this->shop->id)->where('source', 'chat')->whereIn('customer_wrote', ['Two mugs arrived broken', 'Do you ship to Spain?']);
+
+    expect($result['collected'])->toBeGreaterThanOrEqual(2)
+        ->and((clone $mine)->where('customer_wrote', 'Two mugs arrived broken')->value('reply'))->toBe('Sorry! Send us a photo please.')
+        ->and((clone $mine)->whereNull('embedding')->count())->toBe(0)
+        ->and(\App\Actions\Chat\ChatSession\HydrateChatReplyExamples::run()['collected'])->toBe(0);
+
+    \App\Models\Chat\ChatReplyExample::where('organisation_id', $this->shop->organisation_id)->whereNotIn('id', (clone $mine)->pluck('id'))->delete();
+    $examples = \App\Actions\Chat\ChatSession\JudgeChatSuggestion::staffExamples($this->shop, 'The vase came smashed', 1);
+    expect($examples[0]['reply'])->toBe('Sorry! Send us a photo please.')
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::staffExamples($this->shop, 'The vase came smashed', 1, now()->subDay()))->toBe([]);
+
+    $session->forceDelete();
+});
+
+test('a weak suggestion is rewritten by the rewrite model from the critic notes, the best version kept, and a gap nobody needs dropped with its sentence', function () {
+    config(['chat.ai_drafts' => true, 'services.openrouter.api_key' => 'or-key', 'chat.suggestion_model' => 'openai/gpt-5.6-luna']);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeDraftLanguageDetection();
+
+    $noul       = fn (float $p) => ['type' => 'noul', 'noul' => $p];
+    $needsReply = 0.9;
+    $covered    = 2;
+    $reviews    = 0;
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) use ($noul, &$needsReply, &$covered, &$reviews) {
+        return match (true) {
+            isset($questions['wants_something']) => [
+                'wants_something' => $noul(0.9), 'problem' => $noul(0.97), 'about_existing_order' => $noul(0.95), 'one_question' => $noul(0.2),
+                'act'             => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
+                'problem_kind'    => ['type' => 'choice', 'choice' => 'damaged', 'probabilities' => ['damaged' => 0.95]],
+            ],
+            isset($questions['needs_reply']) => [
+                'needs_reply' => $noul($needsReply), 'decision' => $noul(0.2), 'covered' => ['type' => 'score', 'score' => $covered],
+                'shape'       => ['type' => 'choice', 'choice' => 'short', 'probabilities' => ['short' => 0.8]],
+            ],
+            isset($questions['send_as_is']) => ++$reviews < 3
+                ? ['answers' => ['type' => 'score', 'score' => 1], 'invents' => $noul(0.1), 'staff_like' => ['type' => 'score', 'score' => 1], 'send_as_is' => $noul(0.2)]
+                : ['answers' => ['type' => 'score', 'score' => 3], 'invents' => $noul(0.05), 'staff_like' => ['type' => 'score', 'score' => 3], 'send_as_is' => $noul(0.9)],
+            isset($questions['gap0']) => ['gap0' => $noul(0.1)],
+            default => null,
+        };
+    });
+
+    $prompts = [];
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt, string $model) use (&$prompts) {
+        $prompts[] = [$model, $prompt];
+
+        return match ($model) {
+            'deepseek/deepseek-v4.1-flash' => json_encode(['changes' => ['Say sorry in one line and ask for the photos.']]),
+            'anthropic/claude-sonnet-5.5'  => json_encode(['topic' => 'missing_or_damaged', 'reply' => 'Sorry about the broken mugs! Could you send a photo of each one and of the box? [[check stock levels]]']),
+            default                        => json_encode(['topic' => 'missing_or_damaged', 'reply' => 'Dear customer, we are very sorry to hear about this unfortunate situation with your order and the mugs.']),
+        };
+    });
+
+    $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::ACTIVE, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id, 'last_visitor_message_at' => now()]);
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Two of the mugs arrived broken, what can you do?']);
+
+    $draft    = \App\Actions\Chat\ChatSession\DraftChatReply::run($session);
+    $rewrite  = collect($prompts)->firstWhere(0, 'anthropic/claude-sonnet-5.5')[1];
+
+    expect($draft?->text)->toBe('Sorry about the broken mugs! Could you send a photo of each one and of the box?')
+        ->and(data_get($draft->facts, 'model'))->toBe('anthropic/claude-sonnet-5.5')
+        ->and(collect(data_get($draft->facts, 'judge.versions'))->pluck('model')->all())->toBe(['openai/gpt-5.6-luna', 'openai/gpt-5.6-luna', 'anthropic/claude-sonnet-5.5'])
+        ->and(collect($prompts)->where(0, 'deepseek/deepseek-v4.1-flash')->count())->toBe(2)
+        ->and(data_get($draft->facts, 'judge.gaps'))->toBe(['[[check stock levels]]' => 0.1])
+        ->and($rewrite)->toContain('Say sorry in one line and ask for the photos.')
+        ->and($rewrite)->toContain('Dear customer, we are very sorry')
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence("Hi Ann,\nIt is in stock. [[new order?]] Thanks!", '[[new order?]]'))->toBe("Hi Ann,\nIt is in stock. Thanks!")
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence('We will [[replace or credit?]] your items.', '[[replace or credit?]]'))->toBe('We will [[replace or credit?]] your items.')
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence('Sorry about it. Once we have this, [[outcome]]', '[[outcome]]'))->toBe('Sorry about it.')
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence("Hi Anna, [[x]]\nThanks", '[[x]]'))->toBe("Hi Anna,\nThanks");
+
+    $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    [$covered, $reviews, $prompts] = [1, -10, []];
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
+    $cheapOnly = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
+
+    expect(data_get($cheapOnly?->facts, 'model'))->toBe('openai/gpt-5.6-luna')
+        ->and(collect($prompts)->where(0, 'anthropic/claude-sonnet-5.5'))->toBeEmpty();
+
+    $cheapOnly->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    $needsReply = 0.1;
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Chat session has been closed by agent']);
 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
 

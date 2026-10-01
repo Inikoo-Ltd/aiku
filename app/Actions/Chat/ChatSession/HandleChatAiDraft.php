@@ -19,14 +19,16 @@ use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * What the inbox does with a draft: read the one waiting, take it into the composer, or throw
- * it away. Staff agents on the conversation only: the draft carries a customer's order details
+ * What the inbox does with a draft: read the one waiting, take it into the composer, throw it
+ * away, or give it stars. Staff agents on the conversation only: the draft carries a customer's order details
  * and must never reach the widget, which reads the same session endpoints without logging in.
  */
 class HandleChatAiDraft
 {
     use AsAction;
     use WithChatAgentAuthorisation;
+
+    public const array RATING_REASONS = ['missing_info', 'wrong_fact', 'too_long', 'no_reply_needed'];
 
     public function asController(ChatSession $chatSession): JsonResponse
     {
@@ -119,6 +121,34 @@ class HandleChatAiDraft
         ]));
     }
 
+    /**
+     * One click from the agent, 1 to 5 stars, at any time while the draft is on screen; a
+     * second click changes it. A low rating may say why, which tells us what to fix next.
+     */
+    public function rate(ChatAiDraft $chatAiDraft, Request $request): JsonResponse
+    {
+        $session = $chatAiDraft->session();
+        $agent   = $session ? $this->getAuthorisedChatAgent($session) : null;
+
+        if (!$agent) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $validated = $request->validate([
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'reason' => ['nullable', 'in:'.implode(',', self::RATING_REASONS)],
+        ]);
+
+        $chatAiDraft->update([
+            'rating'           => $validated['rating'],
+            'rating_reason'    => $validated['rating'] <= 3 ? ($validated['reason'] ?? null) : null,
+            'rated_by_user_id' => $agent->user_id,
+            'rated_at'         => now(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     private function show(ChatSession|MetaChatSession $chatSession): JsonResponse
     {
         if (!$this->getAuthorisedChatAgent($chatSession)) {
@@ -132,6 +162,8 @@ class HandleChatAiDraft
             'text'        => $draft->text,
             'topic'       => $draft->topic->value,
             'topic_label' => $draft->topic->label(),
+            'rating'      => $draft->rating,
+            'reason'      => $draft->rating_reason,
         ] : null, 'suggestions' => ClassifyChatTurn::suggestions($chatSession)]);
     }
 

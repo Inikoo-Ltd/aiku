@@ -186,22 +186,104 @@ class DraftChatReply implements ShouldBeUnique
         ]);
 
         $language = self::replyLanguage($chatSession, $trigger, $text);
-        $model    = self::suggestionModel($chatSession);
-        $answer   = $language ? $this->writeSuggestion($text, $weSaid, $facts, $language->name, $model) : null;
-        $wording  = $answer ? trim((string) preg_replace(self::GAP, ' ', $answer['reply'])) : '';
 
-        if (!$answer
-            || !self::usesOnlyKnownNumbers($wording, $text.' '.$weSaid.' '.json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
-            || DetectLanguageWithJev::run($wording, [$language])?->id !== $language->id) {
+        if (!$language) {
             return null;
         }
 
-        return $this->storeDraft($chatSession, $trigger, $answer['topic'], ['mode' => self::SUGGESTION, 'model' => $model] + $facts, $answer['reply']);
+        $suggestion = $this->composeSuggestion($text, $weSaid, $facts, $language, self::suggestionModel($chatSession), JudgeChatSuggestion::staffExamples($shop, $text));
+
+        if (!$suggestion) {
+            return null;
+        }
+
+        return $this->storeDraft($chatSession, $trigger, $suggestion['topic'], [
+            'mode'  => self::SUGGESTION,
+            'model' => $suggestion['model'],
+            'judge' => $suggestion['judge'],
+        ] + $facts, $suggestion['reply']);
+    }
+
+    /**
+     * Jev's passes around the writers: whether to reply and how long, the first version by the
+     * conversation's writer, a critic's notes and a rewrite while Jev finds it weak, the strong
+     * model only for the last try and only when the facts cover the question, then the gaps
+     * nobody needs are dropped. Also replayed on past chats to compare with what staff sent.
+     *
+     * @param  array<string, mixed>  $facts
+     * @param  array<int, array{customer: string, reply: string}>  $examples
+     * @return array{topic: ChatTopicEnum, reply: string, model: string, judge: array<string, mixed>}|null
+     */
+    public function composeSuggestion(string $text, string $weSaid, array $facts, Language $language, string $model, array $examples): ?array
+    {
+        $known  = $text.' '.$weSaid.' '.json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $judge  = JudgeChatSuggestion::make();
+        $before = $judge->before($text, $weSaid, $facts, $examples);
+
+        if ($before && $before['needs_reply'] < 0.5) {
+            return null;
+        }
+
+        $best     = null;
+        $versions = [];
+        $previous = null;
+        $passes   = (int) config('chat.suggestion_rewrites');
+
+        foreach (range(0, $passes) as $pass) {
+            $strong = $pass > 0 && $pass === $passes;
+
+            if ($strong && ($before['covered'] ?? 0) < 0.66) {
+                break;
+            }
+
+            $writer = $strong ? config('chat.suggestion_strong_model') : $model;
+            $answer = $this->writeSuggestion($text, $weSaid, $facts, $language->name, $writer, $examples, $before, $previous);
+
+            if (!$answer || !self::isSendableWording($answer['reply'], $known, $language)) {
+                continue;
+            }
+
+            $scores     = $judge->review($text, $weSaid, $facts, $examples, $answer['reply']);
+            $versions[] = ['model' => $writer, 'scores' => $scores];
+            $candidate  = $answer + ['model' => $writer, 'scores' => $scores];
+
+            if (!$best || ($scores && (!$best['scores'] || JudgeChatSuggestion::rank($scores) > JudgeChatSuggestion::rank($best['scores'])))) {
+                $best = $candidate;
+            }
+
+            if (!$scores || JudgeChatSuggestion::isGoodEnough($scores)) {
+                break;
+            }
+
+            $problems = JudgeChatSuggestion::whatToFix($scores);
+            $previous = ['reply' => $answer['reply'], 'fix' => $judge->critique($text, $weSaid, $facts, $examples, $answer['reply'], $problems) ?: $problems];
+        }
+
+        if (!$best || ($best['scores']['invents'] ?? 0) >= 0.5) {
+            return null;
+        }
+
+        $trimmed = $judge->trimGaps($text, $weSaid, $facts, $best['reply']);
+
+        return [
+            'topic' => $best['topic'],
+            'reply' => $trimmed['reply'] ?: $best['reply'],
+            'model' => $best['model'],
+            'judge' => ['before' => $before, 'versions' => $versions, 'gaps' => $trimmed['gaps']],
+        ];
+    }
+
+    private static function isSendableWording(string $reply, string $known, Language $language): bool
+    {
+        $wording = trim((string) preg_replace(self::GAP, ' ', $reply));
+
+        return self::usesOnlyKnownNumbers($wording, $known)
+            && DetectLanguageWithJev::run($wording, [$language])?->id === $language->id;
     }
 
     /**
      * The writer of this conversation's suggestions: the same one for the whole conversation,
-     * half the conversations each, so what staff do with them compares the writers.
+     * an equal share of the conversations each, so what staff do with them compares the writers.
      */
     public static function suggestionModel(ChatSession|MetaChatSession $chatSession): string
     {
@@ -243,13 +325,28 @@ class DraftChatReply implements ShouldBeUnique
 
     /**
      * @param  array<string, mixed>  $facts
+     * @param  array<int, array{customer: string, reply: string}>  $examples
+     * @param  array{needs_reply: float, shape: string, decision: float, covered: float}|null  $before
+     * @param  array{reply: string, fix: array<int, string>}|null  $previous
      * @return array{topic: ChatTopicEnum, reply: string}|null
      */
-    private function writeSuggestion(string $text, string $weSaid, array $facts, string $language, string $model): ?array
+    private function writeSuggestion(string $text, string $weSaid, array $facts, string $language, string $model, array $examples = [], ?array $before = null, ?array $previous = null): ?array
     {
         $excerpt   = mb_substr($text, 0, 4000);
         $factsJson = $facts ? json_encode($facts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '(none)';
         $topics    = implode(', ', array_keys(ChatTopicEnum::definitions()));
+        $staff     = $examples ? collect($examples)->map(fn (array $example) => "Customer: {$example['customer']}\nAgent: {$example['reply']}")->implode("\n---\n") : '(none)';
+        $length    = match ($before['shape'] ?? null) {
+            'one_line' => 'one sentence, or only the link they need',
+            'full'     => 'at most 120 words',
+            default    => 'two or three sentences, at most 60 words',
+        };
+        $gapRule   = ($before['decision'] ?? 1) >= 0.5
+            ? 'This reply needs a decision only the agent can make: leave exactly one gap for it, [[like this: replacement or credit?]], and write everything else in full.'
+            : 'This reply needs no decision from the agent: write it with no gap at all.';
+        $redo      = $previous
+            ? "\n\nYour previous version was reviewed. Write a better one.\nPrevious version:\n{$previous['reply']}\nWhat to fix:\n- ".implode("\n- ", $previous['fix'])
+            : '';
 
         $prompt = <<<EOT
         You draft a reply for a customer service agent of a wholesale giftware supplier. The agent
@@ -261,12 +358,13 @@ class DraftChatReply implements ShouldBeUnique
           said. Emails can quote older messages below the new one: answer only the new one.
         - State only what the facts show. Copy order numbers, product codes, quantities, dates,
           tracking numbers and links exactly as they are in the facts.
-        - Wherever the reply needs something the facts do not show, or a decision only the agent
-          can make, write a gap for the agent: two square brackets around a short note in English,
-          [[like this: replacement or credit?]]. Never guess, and never decide what we will do, a
-          replacement, a refund, a credit, a new order, a collection, a date or an exception,
-          unless what we last said already offered or agreed it: leave a gap. Outside the gaps
-          the reply speaks to the customer as us: never mention the agent, a draft or the facts.
+        - {$gapRule} A gap is only ever a decision, never "add details" or "provide details",
+          never something the facts show, and never a question we already ask the customer.
+          Never decide what we will do, a replacement, a refund, a credit, a new order, a
+          collection, a date or an exception, unless what we last said already offered or agreed
+          it. When we need something from the customer, ask them in the reply. When the facts do
+          not cover a part, leave that part out rather than guess. Outside a gap the reply speaks
+          to the customer as us: never mention the agent, a draft or the facts.
         - Missing, damaged, faulty or wrong items: say sorry once, name the items from "claim" or
           "order_facts" that match what they describe, ask for a photo of each item and of the
           box if they have not sent photos, and leave the outcome as a gap. Follow the returns
@@ -274,7 +372,8 @@ class DraftChatReply implements ShouldBeUnique
         - When they answer something we asked or offered, confirm what happens next as we said
           it, or leave a gap if we did not say it.
         - A "guide" or a "shop_notes" entry that answers them may be named with its link.
-        - Write in {$language}, friendly, short and plain: at most 120 words. Greet them by the
+        - Write like our agents in "How our agents answer": their length, tone and directness.
+        - Write in {$language}, friendly and plain: {$length}. Greet them by the
           name they sign their message with; only when they do not sign, by "customer_name",
           which is the account holder and may be somebody else; with neither, greet without a
           name. No signature.
@@ -288,6 +387,9 @@ class DraftChatReply implements ShouldBeUnique
 
         Facts:
         {$factsJson}
+
+        How our agents answer (real replies in this shop):
+        {$staff}{$redo}
 
         Output JSON only, no code fence:
         {"topic": "missing_or_damaged", "reply": "the reply"}
