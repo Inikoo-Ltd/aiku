@@ -97,7 +97,7 @@ class RouteServiceProvider extends ServiceProvider
             ->name('image_short_url');
 
         Route::get('i/{id}/{signature}/{optionsAndExtension?}', ServeWebsiteShortImage::class)
-            ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}(\.[a-z0-9]{2,4})?', 'optionsAndExtension' => 'rs:[0-9a-z:]*(\.[a-z0-9]{2,4})?'])
+            ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}(\.[a-z0-9]{2,4})?', 'optionsAndExtension' => '(rs:[0-9a-z:]*|[0-9]*x[0-9]*)(\.[a-z0-9]{2,4})?'])
             ->name('website_short_image');
 
         Route::middleware('analytics')

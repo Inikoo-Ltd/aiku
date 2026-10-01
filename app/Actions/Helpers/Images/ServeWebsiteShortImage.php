@@ -31,7 +31,7 @@ class ServeWebsiteShortImage
         }
 
         $extension = Str::contains($optionsAndExtension, '.') ? Str::afterLast($optionsAndExtension, '.') : '';
-        $options   = $extension !== '' ? Str::beforeLast($optionsAndExtension, '.') : $optionsAndExtension;
+        $options   = ShortenWebsiteImageUrls::expandOptions($extension !== '' ? Str::beforeLast($optionsAndExtension, '.') : $optionsAndExtension);
 
         if (!hash_equals(ShortenWebsiteImageUrls::signature($id, $options, $extension), $signature)) {
             if (!hash_equals(ShortenWebsiteImageUrls::signature($id, $options, ''), $signature)) {

@@ -15,7 +15,7 @@ use Tuupola\Base32;
 
 /**
  * Rewrites the imgproxy URLs of a storefront page (about 150 characters each, a third of a family
- * page's bytes) into links on the website's own domain, /i/{media}/{signature}/{options}.{ext},
+ * page's bytes) into links on the website's own domain, /i/{media}/{signature}/{width}x{height}.{ext},
  * served by ServeWebsiteShortImage. Nothing is stored: the link carries the media id, the
  * imgproxy options and an HMAC, and the image route rebuilds the imgproxy URL from them. An
  * original-format link takes its file's extension, unsigned, so Cloudflare caches it.
@@ -65,7 +65,7 @@ class ShortenWebsiteImageUrls
         $urlExtension = $extension !== '' ? $extension : strtolower(pathinfo($source, PATHINFO_EXTENSION));
 
         return $baseUrl.'/i/'.$id.'/'.self::signature($id, $options, $extension)
-            .($options !== '' ? '/'.$options : '')
+            .($options !== '' ? '/'.self::compactOptions($options) : '')
             .(preg_match('/^[a-z0-9]{2,4}$/', $urlExtension) ? '.'.$urlExtension : '');
     }
 
@@ -87,6 +87,19 @@ class ShortenWebsiteImageUrls
         $decoded = new Base32(['characters' => Base32::CROCKFORD, 'padding' => false, 'crockford' => true])->decode($encodedId);
 
         return ctype_digit($decoded) ? (int) $decoded : null;
+    }
+
+    /**
+     * rs::1440:1440:: is written 1440x1440; a resize with a type, enlarge or extend keeps imgproxy's form.
+     */
+    public static function compactOptions(string $options): string
+    {
+        return preg_match('/^rs::(\d*):(\d*)::$/', $options, $size) ? $size[1].'x'.$size[2] : $options;
+    }
+
+    public static function expandOptions(string $options): string
+    {
+        return preg_match('/^(\d*)x(\d*)$/', $options, $size) ? 'rs::'.$size[1].':'.$size[2].'::' : $options;
     }
 
     public static function signature(string $id, string $options, string $extension): string

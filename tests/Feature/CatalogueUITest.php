@@ -1157,7 +1157,7 @@ test('website pages swap imgproxy urls for short signed links that serve the sam
     $shortThumb        = $short['blocks'][0]['web_images']['avif'];
     $shortOriginal     = $short['blocks'][0]['web_images']['original'];
 
-    expect($shortThumb)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/rs::0:600::\.avif$#')
+    expect($shortThumb)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/0x600\.avif$#')
         ->and($shortOriginal)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}\.jpeg$#')
         ->and(strlen($shortThumb))->toBeLessThan(strlen($thumb) - 40)
         ->and($short['blocks'][1]['srcset'])->toBe("$shortThumb 1x, $shortOriginal 2x")
@@ -1166,7 +1166,8 @@ test('website pages swap imgproxy urls for short signed links that serve the sam
     $serve = fn (string $short) => \App\Actions\Helpers\Images\ServeWebsiteShortImage::make()->handle(...array_pad(explode('/', Str::after($short, '/i/'), 3), 3, ''));
     expect($serve($shortThumb))->toBe($thumb)
         ->and($serve($shortOriginal))->toBe($original)
-        ->and($serve(str_replace('rs::0:600::', 'rs::0:1200::', $shortThumb)))->toBeNull()
+        ->and($serve(str_replace('0x600', 'rs::0:600::', $shortThumb)))->toBe($thumb)
+        ->and($serve(str_replace('0x600', '0x1200', $shortThumb)))->toBeNull()
         ->and($serve(str_replace('.avif', '.png', $shortThumb)))->toBeNull();
 
     \Illuminate\Support\Facades\Http::fake(['media.test/*' => \Illuminate\Support\Facades\Http::response('avif-bytes', 200, ['Content-Type' => 'image/avif'])]);
