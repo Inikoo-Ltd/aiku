@@ -437,6 +437,7 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->component('SupplyChain/SupplierProduct')
             ->has('title')
             ->has('pageHead')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.supplier_products.edit')
             ->has('tabs')
             ->has('breadcrumbs', 4);
     });
