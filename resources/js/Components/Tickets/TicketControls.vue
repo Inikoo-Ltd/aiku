@@ -19,7 +19,7 @@ import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
-import { attachmentIconFor } from "@/Components/Tickets/TicketAttachmentPreview.vue"
+import TicketAttachmentPreview, { attachmentIconFor, isPreviewableAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -305,6 +305,11 @@ type DeployCommentFile = { ulid: string; name: string; url: string; is_image: bo
 const keptDeployCommentFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter((file: DeployCommentFile) => !deployCommentRemovedFiles.value.includes(file.ulid)))
 const deployCommentMaxImages = computed(() => Math.max(0, 5 - keptDeployCommentFiles.value.length))
 
+// What is actually posted (not mid-edit): shown the same way as while editing, clickable
+// into the same lightbox everywhere else in a ticket uses for its attachments.
+const deployFilePreviewIndex = ref<number | null>(null)
+const previewableDeployFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter(isPreviewableAttachment))
+
 const canEditDeployComment = computed(
     () => props.can_contribute && props.ticket.status === "pending_deploy" && !!props.routes.deploy_comment
 )
@@ -530,14 +535,15 @@ const saveDeployComment = () => {
                     <template v-else-if="ticket.deploy_comment">
                         <TicketBody v-if="ticket.deploy_comment.body" :text="ticket.deploy_comment.body" />
                         <div v-if="ticket.deploy_comment.files.length" class="mt-2 flex flex-wrap gap-1.5">
-                            <a v-for="file in ticket.deploy_comment.files" :key="file.ulid" :href="file.url" target="_blank" rel="noopener" class="block" :title="file.name">
-                                <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover" />
-                                <span v-else class="inline-flex max-w-[10rem] items-center gap-1 rounded border border-green-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">
-                                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
-                                    <span class="truncate">{{ file.name }}</span>
+                            <button v-for="file in ticket.deploy_comment.files" :key="file.ulid" type="button" class="block" :title="file.name" @click="deployFilePreviewIndex = previewableDeployFiles.indexOf(file)">
+                                <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover transition hover:opacity-80" />
+                                <span v-else class="flex h-12 w-12 flex-col items-center justify-center rounded border border-green-200 bg-white transition hover:opacity-80" :class="attachmentIconFor(file).class">
+                                    <FontAwesomeIcon :icon="attachmentIconFor(file).icon" class="text-lg" fixed-width aria-hidden="true" />
+                                    <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ file.name }}</span>
                                 </span>
-                            </a>
+                            </button>
                         </div>
+                        <TicketAttachmentPreview v-model:index="deployFilePreviewIndex" :files="previewableDeployFiles" />
                     </template>
                     <div v-else class="text-xs italic text-gray-500">{{ ctrans("Nothing will be posted when the deployment lands.") }}</div>
                 </div>
