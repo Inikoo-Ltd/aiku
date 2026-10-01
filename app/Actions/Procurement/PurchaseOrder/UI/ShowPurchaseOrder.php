@@ -487,13 +487,27 @@ class ShowPurchaseOrder extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'key'     => 'confirm_purchase_order',
-                    'estimated_receiving_date' => Arr::get($purchaseOrder->data, 'estimated_receiving_date'),
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.confirm',
                         'parameters' => [
                             'purchaseOrder' => $purchaseOrder->id,
                         ],
+                    ],
+                ],
+                [
+                    'label'   => __('Delivery date'),
+                    'tooltip' => __('Change estimated delivery date'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-calendar-alt',
+                    'key'     => 'edit_estimated_delivery_date',
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.update',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
                     ],
                 ],
                 [
@@ -534,7 +548,7 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'secondary',
                     'icon'    => 'fal fa-calendar-alt',
                     'key'     => 'edit_estimated_delivery_date',
-                    'estimated_receiving_date' => Arr::get($purchaseOrder->data, 'estimated_receiving_date'),
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.update',
@@ -657,7 +671,7 @@ class ShowPurchaseOrder extends OrgAction
             // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
             // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
             // stock delivery estimated received date.
-            $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
+            $estimatedReceivingDate = $purchaseOrder->estimatedReceivingDate();
 
             $timeline['estimated_delivery'] = [
                 'label'     => __('Estimated delivery'),

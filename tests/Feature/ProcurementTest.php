@@ -828,6 +828,23 @@ test('link purchase order transaction to agent supplier purchase order', functio
         ->and((float)$purchaseOrderTransaction->grp_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->grp_exchange ?? 1));
 })->depends('create agent supplier purchase order', 'add item to purchase order');
 
+test('a delivery date typed on a purchase order is the date everywhere, including its open agent supplier orders', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, PurchaseOrder $purchaseOrder) {
+    $agentSupplierPurchaseOrder->update(['state' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED, 'estimated_received_at' => '2026-12-10']);
+
+    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => '2027-03-15']);
+
+    expect($purchaseOrder->estimated_received_at->toDateString())->toBe('2027-03-15')
+        ->and($purchaseOrder->estimatedReceivingDate())->toBe('2027-03-15')
+        ->and($agentSupplierPurchaseOrder->refresh()->estimated_received_at->toDateString())->toBe('2027-03-15');
+
+    $agentSupplierPurchaseOrder->update(['estimated_received_at' => '2027-04-01']);
+    UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => '2027-03-15']);
+    UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => null]);
+
+    expect($agentSupplierPurchaseOrder->refresh()->estimated_received_at->toDateString())->toBe('2027-04-01')
+        ->and($purchaseOrder->refresh()->estimatedReceivingDate())->toBeNull();
+})->depends('create agent supplier purchase order', 'add item to purchase order');
+
 test('housekeeping flags legacy stalled agent supplier purchase orders', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
     $agentSupplierPurchaseOrder->update(['date' => now()->subYears(2)]);
 

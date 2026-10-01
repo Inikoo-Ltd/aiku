@@ -22,6 +22,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use App\Models\Traits\HasSearch;
 use Eloquent;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -225,6 +226,11 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'qc_passed_at',
         'handed_over_at',
     ];
+
+    public function estimatedReceivingDate(): ?string
+    {
+        return Arr::get($this->data, 'estimated_receiving_date') ?: $this->estimated_received_at?->toDateString();
+    }
 
     public function searchIndexShouldBeUpdated(): bool
     {

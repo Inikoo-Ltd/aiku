@@ -96,7 +96,7 @@ class GetPurchaseOrderData
             ],
         ];
 
-        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+        if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
             array_splice($blueprint, 1, 0, [
                 [
                     'title'  => __('Estimated process dates'),
@@ -109,7 +109,7 @@ class GetPurchaseOrderData
                         'estimated_receiving_date'  => [
                             'type'  => 'date',
                             'label' => __('Estimated receiving date'),
-                            'value' => Arr::get($data, 'estimated_receiving_date'),
+                            'value' => $purchaseOrder->estimatedReceivingDate(),
                         ],
                     ],
                 ],
