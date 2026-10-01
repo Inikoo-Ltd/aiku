@@ -24,6 +24,7 @@ import {
   faAlignLeft,
   faBinoculars,
   faBalanceScale,
+  faTruckContainer,
 } from "@fal";
 import { faCheckCircle, faPlusCircle } from "@fas";
 
@@ -40,6 +41,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import TableShopInMaster from "@/Components/Tables/Grp/Masters/TableShopInMaster.vue";
 import TableCompetitors from "@/Components/Tables/Grp/Masters/TableCompetitors.vue";
 import TableMasterAssetCompetitorProducts from "@/Components/Tables/Grp/Masters/TableMasterAssetCompetitorProducts.vue";
+import TableCatalogueOnItsWay from "@/Components/Tables/Grp/Org/Catalogue/TableCatalogueOnItsWay.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans"
@@ -51,7 +53,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faBinoculars, faBalanceScale
+  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faBinoculars, faBalanceScale, faTruckContainer
 );
 
 const props = defineProps<{
@@ -69,6 +71,7 @@ const props = defineProps<{
   shops?: {}
   competitors?: {}
   competitor_prices?: {}
+  on_its_way?: {}
   can_edit?: boolean
   organisations_list: {
     [key: string]: {
@@ -92,6 +95,7 @@ const component = computed(() => {
     shops: TableShopInMaster,
     competitors: TableCompetitors,
     competitor_prices: TableMasterAssetCompetitorProducts,
+    on_its_way: TableCatalogueOnItsWay,
   };
   return components[currentTab.value];
 });

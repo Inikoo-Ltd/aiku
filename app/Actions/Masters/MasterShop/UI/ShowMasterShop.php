@@ -16,6 +16,7 @@ use App\Actions\Masters\Competitor\UI\IndexCompetitors;
 use App\Actions\Masters\Competitor\UI\IndexMasterAssetCompetitorProducts;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
+use App\Actions\Catalogue\UI\IndexCatalogueOnItsWay;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\CompetitorsResource;
@@ -114,6 +115,10 @@ class ShowMasterShop extends OrgAction
                     ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterShop, MasterShopTabsEnum::COMPETITOR_PRICES->value))
                     : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterShop, MasterShopTabsEnum::COMPETITOR_PRICES->value))),
 
+                MasterShopTabsEnum::ON_ITS_WAY->value => $this->tab == MasterShopTabsEnum::ON_ITS_WAY->value
+                    ? fn () => IndexCatalogueOnItsWay::run($masterShop, MasterShopTabsEnum::ON_ITS_WAY->value)
+                    : Inertia::optional(fn () => IndexCatalogueOnItsWay::run($masterShop, MasterShopTabsEnum::ON_ITS_WAY->value)),
+
                 'can_edit' => $this->canEdit,
 
                 MasterShopTabsEnum::HISTORY->value => $this->tab == MasterShopTabsEnum::HISTORY->value ?
@@ -124,7 +129,8 @@ class ShowMasterShop extends OrgAction
         )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value))
             ->table(IndexCompetitors::make()->tableStructure(MasterShopTabsEnum::COMPETITORS->value))
             ->table(IndexMasterAssetCompetitorProducts::make()->tableStructure(MasterShopTabsEnum::COMPETITOR_PRICES->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: MasterShopTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterShopTabsEnum::HISTORY->value))
+            ->table(IndexCatalogueOnItsWay::make()->tableStructure($masterShop, MasterShopTabsEnum::ON_ITS_WAY->value));
     }
 
 

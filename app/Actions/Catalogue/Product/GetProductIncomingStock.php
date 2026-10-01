@@ -55,7 +55,7 @@ class GetProductIncomingStock
     private const string PURCHASE_ORDER_TYPED_DATE = "coalesce(purchase_orders.estimated_received_at::date, nullif(purchase_orders.data->>'estimated_receiving_date', '')::date)";
 
     /**
-     * @return array<int, array{type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
+     * @return array<int, array{type: string, supplier_name: string|null, supplier_code: string|null, supplier_type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
      */
     public function handle(Product $product): array
     {
@@ -72,8 +72,25 @@ class GetProductIncomingStock
             return [];
         }
 
-        $lines = $this->lines($orgStockIds);
+        return $this->sortedByEta($this->lines($orgStockIds));
+    }
 
+    /**
+     * Everything on its way to an organisation, whatever product (if any) it is sold as.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function forOrganisation(Organisation $organisation): array
+    {
+        return $this->sortedByEta($this->lines([], $organisation->id));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>> $lines
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortedByEta(array $lines): array
+    {
         usort($lines, fn ($a, $b) => [$a['eta'] === null, $a['eta']] <=> [$b['eta'] === null, $b['eta']]);
 
         return $lines;
@@ -83,12 +100,12 @@ class GetProductIncomingStock
      * @param  array<int, int> $orgStockIds
      * @return array<int, array<string, mixed>>
      */
-    private function lines(array $orgStockIds): array
+    private function lines(array $orgStockIds, ?int $organisationId = null): array
     {
         return array_merge(
-            $this->stockDeliveryLines($orgStockIds),
-            $this->purchaseOrderLines($orgStockIds),
-            $this->partnerLines($orgStockIds)
+            $this->stockDeliveryLines($orgStockIds, $organisationId),
+            $this->purchaseOrderLines($orgStockIds, $organisationId),
+            $this->partnerLines($orgStockIds, $organisationId)
         );
     }
 
@@ -146,13 +163,17 @@ class GetProductIncomingStock
      * @param  array<int, int> $orgStockIds
      * @return array<int, array<string, mixed>>
      */
-    private function stockDeliveryLines(array $orgStockIds): array
+    private function stockDeliveryLines(array $orgStockIds, ?int $organisationId): array
     {
         return DB::table('stock_delivery_items')
             ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
             ->join('org_stocks', 'org_stocks.id', 'stock_delivery_items.org_stock_id')
             ->join('organisations', 'organisations.id', 'stock_deliveries.organisation_id')
-            ->whereIn('stock_delivery_items.org_stock_id', $orgStockIds)
+            ->when(
+                $organisationId,
+                fn ($query) => $query->where('stock_deliveries.organisation_id', $organisationId),
+                fn ($query) => $query->whereIn('stock_delivery_items.org_stock_id', $orgStockIds)
+            )
             ->whereNull('stock_delivery_items.deleted_at')
             ->whereNull('stock_deliveries.deleted_at')
             ->whereIn('stock_deliveries.state', self::INCOMING_STOCK_DELIVERY_STATES)
@@ -163,6 +184,7 @@ class GetProductIncomingStock
                 'stock_deliveries.parent_type',
                 'stock_deliveries.parent_id',
                 'stock_deliveries.parent_name',
+                'stock_deliveries.parent_code',
                 'stock_deliveries.dispatched_at',
                 'stock_deliveries.received_at',
                 DB::raw("coalesce(
@@ -183,6 +205,8 @@ class GetProductIncomingStock
             ->map(fn ($row) => [
                 'type'              => 'stock_delivery',
                 'supplier_name'     => $row->parent_name,
+                'supplier_code'     => $row->parent_code,
+                'supplier_type'     => $row->parent_type,
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
                 'org_stock_id'      => $row->org_stock_id,
@@ -205,13 +229,17 @@ class GetProductIncomingStock
      * @param  array<int, int> $orgStockIds
      * @return array<int, array<string, mixed>>
      */
-    private function purchaseOrderLines(array $orgStockIds): array
+    private function purchaseOrderLines(array $orgStockIds, ?int $organisationId): array
     {
         return DB::table('purchase_order_transactions')
             ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
             ->join('org_stocks', 'org_stocks.id', 'purchase_order_transactions.org_stock_id')
             ->join('organisations', 'organisations.id', 'purchase_orders.organisation_id')
-            ->whereIn('purchase_order_transactions.org_stock_id', $orgStockIds)
+            ->when(
+                $organisationId,
+                fn ($query) => $query->where('purchase_orders.organisation_id', $organisationId),
+                fn ($query) => $query->whereIn('purchase_order_transactions.org_stock_id', $orgStockIds)
+            )
             ->whereNull('purchase_order_transactions.deleted_at')
             ->whereNull('purchase_orders.deleted_at')
             ->whereNotIn('purchase_orders.state', [
@@ -243,6 +271,8 @@ class GetProductIncomingStock
                 'purchase_orders.reference',
                 'purchase_orders.slug',
                 'purchase_orders.parent_name',
+                'purchase_orders.parent_code',
+                'purchase_orders.parent_type',
                 'purchase_orders.delivery_state',
                 DB::raw(self::PURCHASE_ORDER_TYPED_DATE.' as typed_eta'),
                 'org_stocks.id as org_stock_id',
@@ -256,6 +286,8 @@ class GetProductIncomingStock
             ->map(fn ($row) => [
                 'type'              => 'purchase_order',
                 'supplier_name'     => $row->parent_name,
+                'supplier_code'     => $row->parent_code,
+                'supplier_type'     => $row->parent_type,
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
                 'org_stock_id'      => $row->org_stock_id,
@@ -291,7 +323,7 @@ class GetProductIncomingStock
      * @param  array<int, int> $orgStockIds
      * @return array<int, array<string, mixed>>
      */
-    private function partnerLines(array $orgStockIds): array
+    private function partnerLines(array $orgStockIds, ?int $organisationId): array
     {
         $items = DB::table('partner_shopping_list_items')
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
@@ -308,7 +340,11 @@ class GetProductIncomingStock
             })
             ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
-            ->whereIn('partner_shopping_list_items.org_stock_id', $orgStockIds)
+            ->when(
+                $organisationId,
+                fn ($query) => $query->where('partner_shopping_list_items.organisation_id', $organisationId),
+                fn ($query) => $query->whereIn('partner_shopping_list_items.org_stock_id', $orgStockIds)
+            )
             ->whereNull('partner_shopping_list_items.deleted_at')
             ->where(function ($query) {
                 $query->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
@@ -332,6 +368,7 @@ class GetProductIncomingStock
                 'org_stocks.estimated_lead_time_days',
                 'organisations.slug as organisation_slug',
                 'partners.name as partner_name',
+                'partners.code as partner_code',
                 'partner_org_stocks.quantity_available as partner_quantity_available',
                 'orders.reference as order_reference',
                 'job_orders.reference as job_order_reference',
@@ -364,6 +401,8 @@ class GetProductIncomingStock
             $line       = fn (string $reference, string $label, float $quantity, string $eta) => [
                 'type'              => 'partner_request',
                 'supplier_name'     => $item->partner_name,
+                'supplier_code'     => $item->partner_code,
+                'supplier_type'     => 'OrgPartner',
                 'org_partner_id'    => $item->org_partner_id,
                 'reference'         => $reference,
                 'slug'              => null,

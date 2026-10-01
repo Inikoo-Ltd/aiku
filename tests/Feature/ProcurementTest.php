@@ -93,6 +93,15 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
+use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Actions\Catalogue\Shop\UI\GetCatalogueOnItsWay;
+use App\Actions\Catalogue\UI\IndexCatalogueOnItsWay;
 use App\Actions\Maintenance\GoodsIn\RepairStockDeliveryPurchaseOrderLinks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
@@ -6456,6 +6465,45 @@ test('incoming stock tells the customer when an out of stock product is expected
     expect(GetProductIncomingStock::run($product)[0]['eta'])->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEtaByProduct([$product->id]))->toBe([$product->id => $expectedEta]);
+
+    $stockKey       = "stock:$orgStock->stock_id";
+    $onItsWay       = collect(GetCatalogueOnItsWay::run($product->shop))->firstWhere('key', $stockKey);
+    $notInCatalogue = collect(GetCatalogueOnItsWay::run(StoreShop::run($this->organisation, Shop::factory()->definition())))->firstWhere('key', $stockKey);
+
+    expect($onItsWay['products'][0]['slug'])->toBe($product->slug)
+        ->and($onItsWay['quantity'])->toBe(120.0)
+        ->and($onItsWay['eta'])->toBe($expectedEta)
+        ->and($onItsWay['lines'][0]['reference'])->toBe('ETA-DEL-1')
+        ->and($notInCatalogue['products'])->toBe([]);
+
+    $keysInTable = function (array $facets) use ($product) {
+        request()->merge(['on_its_way_facets' => $facets]);
+
+        return collect(IndexCatalogueOnItsWay::run($product->shop, 'on_its_way')->response()->getData(true)['data'])->pluck('key');
+    };
+
+    expect($keysInTable(['catalogue' => 'in_catalogue']))->toContain($stockKey)
+        ->and($keysInTable(['catalogue' => 'not_in_catalogue']))->not->toContain($stockKey)
+        ->and($keysInTable(['source' => 'purchase_order']))->not->toContain($stockKey)
+        ->and($keysInTable(['source' => 'stock_delivery', 'arrival' => 'month']))->toContain($stockKey);
+    request()->offsetUnset('on_its_way_facets');
+
+    $masterShop = StoreMasterShop::make()->action($this->group, ['type' => ShopTypeEnum::B2B, 'code' => 'ETA'.substr(uniqid(), -6), 'name' => 'ETA master']);
+    $product->shop->updateQuietly(['master_shop_id' => $masterShop->id]);
+
+    expect(collect(GetCatalogueOnItsWay::run($masterShop))->firstWhere('key', $stockKey)['products'])->toBe([]);
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'ETAD'.substr(uniqid(), -6), 'name' => 'dep', 'type' => MasterProductCategoryTypeEnum::DEPARTMENT]),
+        ['code' => 'ETAF'.substr(uniqid(), -6), 'name' => 'fam', 'type' => MasterProductCategoryTypeEnum::FAMILY]
+    );
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, ['code' => 'ETA-MA', 'name' => 'eta master asset', 'is_main' => true, 'type' => MasterAssetTypeEnum::PRODUCT, 'price' => 10, 'stocks' => []]);
+    $masterAsset->stocks()->sync([$orgStock->stock_id => ['quantity' => 1]]);
+
+    $masterOnItsWay = collect(GetCatalogueOnItsWay::run($masterShop))->firstWhere('key', $stockKey);
+
+    expect($masterOnItsWay['products'][0]['slug'])->toBe($masterAsset->slug)
+        ->and($masterOnItsWay['lines'][0]['organisation_slug'])->toBe($this->organisation->slug);
 
     $product->update(['available_quantity' => 0]);
     $productCards = \App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource::collection(collect([$product->fresh()]))->resolve();
