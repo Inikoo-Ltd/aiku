@@ -201,6 +201,7 @@ const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.valu
 
 const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
+const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
 const isReopening = ref(false)
 
@@ -229,6 +230,14 @@ const claimChat = async (
         flag.value = false
     }
 }
+
+const assignSelf = () =>
+    claimChat(
+        "grp.org.chat.agents.whatsapp.assign.self",
+        "post",
+        isAssigningSelf,
+        ctrans("Failed to assign chat")
+    )
 
 const takeoverChat = () =>
     claimChat(
@@ -377,6 +386,7 @@ let dragDepth = 0
 const canAttach = computed(
     () => !props.readOnly
         && !isClosed.value
+        && !isWaiting.value
         && isMyChat.value
         && !hasTemplate.value
         && !templateOnly.value
@@ -582,7 +592,6 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
     messagesLocal.value.push(optimisticMessage)
     scrollBottom()
     isSending.value = true
-    const claimsChat = isWaiting.value
 
     try {
         const { data } = await axios.post(
@@ -597,10 +606,6 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
         const index = messagesLocal.value.findIndex((m) => m._tempId === optimisticMessage._tempId)
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
-        }
-
-        if (claimsChat) {
-            emit("assign-self-success")
         }
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
@@ -1188,6 +1193,24 @@ onUnmounted(() => {
                     size="xs"
                     :label="ctrans('Reopen')"
                     :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="ctrans('Assign to me')"
+                    :icon="faUser"
                 />
             </div>
         </footer>

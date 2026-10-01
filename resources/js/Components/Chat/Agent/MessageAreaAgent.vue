@@ -393,6 +393,30 @@ const markSpam = async (spam: boolean) => {
     }
 }
 
+const isAssigningSelf = ref(false)
+const assignSelf = async () => {
+    if (!props.session?.ulid || isAssigningSelf.value) return
+    isAssigningSelf.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.post(
+            route("grp.org.chat.agents.assign.self", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: ctrans("Error"), text: ctrans("Failed to assign chat"), type: "error" })
+    } finally {
+        isAssigningSelf.value = false
+    }
+}
+
 const isRestoring = ref(false)
 const restoreChat = async () => {
     if (!props.session?.ulid || isRestoring.value) return
@@ -776,7 +800,7 @@ const isDraggingFile = ref(false)
 let dragDepth = 0
 
 const canAttach = computed(
-    () => !props.readOnly && !isTrashed.value && !isClosed.value && isMyChat.value
+    () => !props.readOnly && !isTrashed.value && !isClosed.value && !isWaiting.value && isMyChat.value
 )
 
 // Dragging a selection of text around the page carries no files, and lighting the whole pane up
@@ -1651,6 +1675,24 @@ const handleClickOutside = (e: MouseEvent) => {
                     size="xs"
                     :label="ctrans('Reopen')"
                     :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox :session-ulid="chatSession?.ulid" preview />
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="ctrans('Assign to me')"
+                    :icon="['far', 'fa-user']"
                 />
             </div>
         </footer>
