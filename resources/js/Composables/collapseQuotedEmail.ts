@@ -20,7 +20,7 @@ const QUOTE_HEADERS: QuoteHeader[] = [
         isReply: true,
     },
     {
-        matches: /^\s*(From|De|Von|Od|Da|Van|Från|Fra)\s*:[^\n]*\n\s*(Sent|Enviado|Gesendet|Odoslané|Odesláno|Envoyé|Inviato|Verzonden|Skickat|Sendt|Date|Fecha|Datum)\s*:[^\n]*\n\s*(To|Para|An|Komu|À|A|Aan|Till|Til|Cc|Subject|Asunto|Betreff|Predmet|Předmět|Objet|Oggetto|Onderwerp|Ämne|Emne)\s*:/,
+        matches: /^\s*(From|De|Von|Od|Da|Van|Från|Fra)\s*:[^\n]*(\n\s*(Sent|Enviado|Gesendet|Odoslané|Odesláno|Envoyé|Inviato|Verzonden|Skickat|Sendt|Date|Fecha|Datum|To|Para|An|Komu|À|A|Aan|Till|Til|Cc|Subject|Asunto|Betreff|Predmet|Předmět|Objet|Oggetto|Onderwerp|Ämne|Emne)\s*:[^\n]*){2}/,
         isReply: false,
         unless: /\n\s*(Subject|Asunto|Betreff|Predmet|Předmět|Objet|Oggetto|Onderwerp|Ämne|Emne)\s*:\s*(FW|Fwd|WG|RV|TR|PD|Fw)\s*:/i,
     },
