@@ -23,7 +23,7 @@ class ChatMessageResource extends JsonResource
      *
      * @var array<int, string>
      */
-    public const PRIVATE_METADATA = ['edit_history', 'retraction_note'];
+    public const PRIVATE_METADATA = ['edit_history', 'retraction_note', 'flagged_reason', 'flagged_by_user_id'];
 
     /** A picture small enough to be written into an email's body instead of stored as a file. */
     public const EMBEDDED_PICTURE = '/<img\b[^>]*\ssrc="data:[^"]*"[^>]*>/i';

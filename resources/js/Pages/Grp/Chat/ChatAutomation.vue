@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -14,6 +14,7 @@ import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 
 defineProps<{
     title: string
@@ -28,14 +29,6 @@ const DRAFT_CLASS: Record<string, string> = {
     discarded: "bg-red-50 text-red-700 ring-red-200",
     superseded: "bg-gray-50 text-gray-600 ring-gray-200",
     auto_sent: "bg-violet-50 text-violet-700 ring-violet-200",
-}
-
-const flag = (draftId: number) => {
-    router.post(route("grp.chat.ai.drafts.flag", [draftId]), {}, { preserveScroll: true })
-}
-
-const flagSent = (item: { channel: string; message_id: number }) => {
-    router.post(route("grp.chat.ai.sent.flag", [item.channel === "whatsapp" ? "whatsapp" : "chat", item.message_id]), {}, { preserveScroll: true })
 }
 
 const CHANNEL_ICON: Record<string, object> = {
@@ -81,13 +74,9 @@ const CHANNEL_ICON: Record<string, object> = {
                         :class="item.claim.photos ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'">
                         {{ item.claim.photos ? ctrans(":count photos or files", { count: item.claim.photos }) : ctrans("No photos yet") }}
                     </span>
-                    <span v-if="item.reversed" class="rounded-full bg-red-50 px-2 py-0.5 text-red-700 ring-1 ring-inset ring-red-200">
-                        {{ ctrans("Flagged as wrong") }}
-                    </span>
-                    <button v-else type="button" @click="flagSent(item)"
-                        class="rounded-md px-2 py-0.5 text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50">
-                        {{ ctrans("Flag as wrong") }}
-                    </button>
+                    <FlagWrongButton :key="`sent-${item.channel}-${item.message_id}`"
+                        :url="route('grp.chat.ai.sent.flag', [item.channel === 'whatsapp' ? 'whatsapp' : 'chat', item.message_id])"
+                        :flagged="item.reversed" :reason="item.flagged_reason" />
                 </div>
             </div>
             <div v-else-if="item.draft_status" class="max-w-2xl">
@@ -96,13 +85,9 @@ const CHANNEL_ICON: Record<string, object> = {
                         {{ item.verdict_label }}
                     </span>
                     <span v-if="item.topic_label" class="text-xs text-gray-500">{{ item.topic_label }}</span>
-                    <span v-if="item.reversed" class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200">
-                        {{ ctrans("Flagged as wrong") }}
-                    </span>
-                    <button v-else-if="item.draft_status === 'auto_sent'" type="button" @click="flag(item.draft_id)"
-                        class="rounded-md px-2 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50">
-                        {{ ctrans("Flag as wrong") }}
-                    </button>
+                    <FlagWrongButton v-if="item.reversed || item.draft_status === 'auto_sent'" :key="`draft-${item.draft_id}`"
+                        :url="route('grp.chat.ai.drafts.flag', [item.draft_id])"
+                        :flagged="item.reversed" :reason="item.flagged_reason" />
                 </div>
                 <p class="mt-1 whitespace-pre-line text-gray-700">{{ item.text }}</p>
             </div>

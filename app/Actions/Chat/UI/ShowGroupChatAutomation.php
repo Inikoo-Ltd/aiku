@@ -153,6 +153,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::varchar as source'),
                 DB::raw('false as put_aside'),
                 DB::raw("(chat_messages.metadata->>'flagged_wrong_at') is not null as reversed"),
+                DB::raw("chat_messages.metadata->>'flagged_reason' as flagged_reason"),
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from')"),
             ]);
 
@@ -181,6 +182,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::varchar as source'),
                 DB::raw('false as put_aside'),
                 DB::raw("(meta_chat_messages.metadata->>'flagged_wrong_at') is not null as reversed"),
+                DB::raw("meta_chat_messages.metadata->>'flagged_reason' as flagged_reason"),
                 ...$common('meta_chat_sessions.phone_number'),
             ]);
 
@@ -201,6 +203,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'chat_sessions.noise_source as source',
                 DB::raw('((chat_sessions.is_spam and chat_sessions.spammed_by_agent_id is null) or (coalesce(chat_sessions.is_rubbish, false) and chat_sessions.rubbished_by_agent_id is null)) as put_aside'),
                 DB::raw('chat_sessions.noise_reversed_at is not null as reversed'),
+                DB::raw('null::text as flagged_reason'),
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from')"),
             ]);
 
@@ -221,6 +224,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'meta_chat_sessions.noise_source as source',
                 DB::raw('(meta_chat_sessions.is_spam and meta_chat_sessions.spammed_by_agent_id is null) as put_aside'),
                 DB::raw('meta_chat_sessions.noise_reversed_at is not null as reversed'),
+                DB::raw('null::text as flagged_reason'),
                 ...$common('meta_chat_sessions.phone_number'),
             ]);
 
@@ -242,6 +246,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'chat_ai_drafts.topic as source',
                 DB::raw('false as put_aside'),
                 DB::raw('chat_ai_drafts.flagged_wrong_at is not null as reversed'),
+                'chat_ai_drafts.flagged_reason as flagged_reason',
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from', meta_chat_sessions.phone_number)"),
             ]);
 
@@ -362,27 +367,28 @@ class ShowGroupChatAutomation extends OrgAction
             $draft   = $kind === ChatAutomationKindEnum::AI_DRAFT ? ChatAiDraftStatusEnum::tryFrom((string) $row->verdict) : null;
 
             return [
-                'at'            => $row->at,
-                'kind'          => $row->kind,
-                'kind_label'    => $kind?->label() ?? $row->kind,
-                'sends_message' => (bool) $kind?->sendsMessage(),
-                'channel'       => $row->channel,
-                'shop_name'     => $row->shop_name,
-                'contact'       => $row->contact,
-                'text'          => $row->text,
-                'verdict'       => $row->verdict,
-                'verdict_label' => $draft ? $draft->label() : $verdict?->label(),
-                'draft_status'  => $draft?->value,
-                'topic_label'   => $draft ? ChatTopicEnum::tryFrom((string) $row->source)?->label() : null,
-                'is_noise'      => (bool) $verdict?->isNoise(),
-                'confidence'    => $row->confidence,
-                'source'        => $row->source,
-                'put_aside'     => (bool) $row->put_aside,
-                'reversed'      => (bool) $row->reversed,
-                'claim'         => $claim,
-                'draft_id'      => $row->draft_id,
-                'message_id'    => $row->message_id,
-                'url'           => match (true) {
+                'at'             => $row->at,
+                'kind'           => $row->kind,
+                'kind_label'     => $kind?->label() ?? $row->kind,
+                'sends_message'  => (bool) $kind?->sendsMessage(),
+                'channel'        => $row->channel,
+                'shop_name'      => $row->shop_name,
+                'contact'        => $row->contact,
+                'text'           => $row->text,
+                'verdict'        => $row->verdict,
+                'verdict_label'  => $draft ? $draft->label() : $verdict?->label(),
+                'draft_status'   => $draft?->value,
+                'topic_label'    => $draft ? ChatTopicEnum::tryFrom((string) $row->source)?->label() : null,
+                'is_noise'       => (bool) $verdict?->isNoise(),
+                'confidence'     => $row->confidence,
+                'source'         => $row->source,
+                'put_aside'      => (bool) $row->put_aside,
+                'reversed'       => (bool) $row->reversed,
+                'flagged_reason' => $row->flagged_reason,
+                'claim'          => $claim,
+                'draft_id'       => $row->draft_id,
+                'message_id'     => $row->message_id,
+                'url'            => match (true) {
                     !$row->session_ulid         => route('grp.org.chat.inbox', [$row->organisation_slug]),
                     $row->channel === 'whatsapp' => route('grp.org.chat.inbox', [$row->organisation_slug, 'channel' => 'whatsapp', 'session' => trim($row->session_ulid)]),
                     default                     => route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim($row->session_ulid)]),

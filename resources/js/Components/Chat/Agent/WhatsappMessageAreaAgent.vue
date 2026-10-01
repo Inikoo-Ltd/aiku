@@ -1127,6 +1127,7 @@ onUnmounted(() => {
                             translateUrlBase="/app/api/chats/meta/messages"
                             disable-slack-forward
                             disable-image-verification
+                            flagChannel="whatsapp"
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup

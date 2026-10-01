@@ -1,8 +1,8 @@
 ---
 title: Hablar con clientes en Chat
 summary: Una sola bandeja para el chat de la web, WhatsApp y el correo de la tienda - toma una conversación, responde con los pedidos del cliente a tu lado, registra una llamada, abre un ticket y consulta cómo va el equipo.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-10-01
+source_date: 2026-10-01
 tags: crm, chat
 category: crm
 series: Chat
@@ -54,6 +54,12 @@ Muchos invitados son clientes que simplemente no han iniciado sesión. Cada mens
 Es una sugerencia y decides tú. Cualquiera puede escribir el email de otra persona, y una conversación vinculada pone los pedidos de ese cliente delante de ti. <b>Confirm</b> (Confirmar) vincula la conversación; <b>Not them</b> (No es él/ella) quita la sugerencia para siempre. Un cliente de una tienda hermana, o alguien del mismo dominio de empresa, se muestra como una pista que no se puede confirmar.
 
 Cuando nada identifica a un invitado que escribe como un cliente ya existente, se le pregunta una vez, automáticamente, por el email de su cuenta o un número de pedido. Esto pasa en la web y en WhatsApp, nunca por email.
+
+## Respuestas automáticas
+
+Algunos mensajes salen sin que nadie los escriba, y aparecen en la conversación como notas grises. Cuando la tienda está cerrada, se le dice al cliente cuándo vuelve a abrir. Si está comunicando un problema con la mercancía, también se le piden los datos que vas a necesitar, como el número de pedido, fotos, y los productos y cantidades. Fuera del horario laboral, también puede salir por sí sola una respuesta de la IA a una pregunta que la IA ha aprendido a responder bien.
+
+Estas respuestas no se desactivan cuando una sale mal: son como aprendemos qué funciona. Debajo de cada nota hay un <b>Wrong?</b> (¿Incorrecta?). Haz clic, escribe por qué fue incorrecta (por ejemplo, "el cliente ya había indicado los productos y las cantidades") y pulsa <b>Mark as wrong</b> (Marcar como incorrecta). El motivo es obligatorio, porque es lo que usamos para corregir las respuestas. Una respuesta incorrecta de la IA también hace que, durante un tiempo, la IA deje de responder por sí sola a ese tipo de pregunta en esa tienda. Marcar como incorrecta una respuesta de cierre o una petición de datos no la detiene: se sigue enviando hasta que se corrige.
 
 ## Ruido
 

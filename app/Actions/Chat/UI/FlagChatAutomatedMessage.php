@@ -9,75 +9,113 @@
 namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\ChatSession\SendChatAiAnswer;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\MetaChatMessage;
+use App\Models\SysAdmin\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Staff saying one of the fixed messages the chat sent on its own, in either channel, was wrong.
- * It stays recorded as sent, only marked, the same flag an AI draft carries.
+ * Staff saying a message the chat sent on its own, in either channel, was wrong, and why: the
+ * reason is what the messages are corrected from. It stays recorded as sent, only marked. An
+ * AI-written answer is marked on its draft, so the inbox can flag any automatic message the same way.
  */
 class FlagChatAutomatedMessage
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->hasGroupAccess();
-    }
+    private const array WHATSAPP_AUTOMATED_KEYS = ['claim_details_asked_at', 'out_of_hours_replied_at', 'asked_if_customer', 'greeted_at', 'greeting'];
 
-    public function handle(ChatMessage|MetaChatMessage $message, int $userId): ChatMessage|MetaChatMessage
+    public function handle(ChatMessage|MetaChatMessage $message, int $userId, string $reason): ChatMessage|MetaChatMessage
     {
         if (!Arr::get($message->metadata, 'flagged_wrong_at')) {
             $message->update(['metadata' => array_merge($message->metadata ?? [], [
                 'flagged_wrong_at'   => now()->toISOString(),
                 'flagged_by_user_id' => $userId,
+                'flagged_reason'     => $reason,
             ])]);
         }
 
         return $message;
     }
 
-    public function asController(string $channel, int $messageId, ActionRequest $request): RedirectResponse
+    public function rules(): array
     {
-        $message = $channel === 'whatsapp' ? MetaChatMessage::findOrFail($messageId) : ChatMessage::findOrFail($messageId);
-
-        abort_unless($this->isFlaggable($message, $channel, $request), 404);
-
-        $this->handle($message, $request->user()->id);
-
-        return back();
+        return [
+            'reason' => ['required', 'string', 'max:500'],
+        ];
     }
 
-    /**
-     * A message can only be flagged when it is one the chat sent on its own: an AI-written
-     * reply carries its own flag through the draft, so it is left out here.
-     */
-    private function isFlaggable(ChatMessage|MetaChatMessage $message, string $channel, ActionRequest $request): bool
+    public function asController(string $channel, int $messageId, ActionRequest $request): void
     {
-        if ($message->sender_type !== ChatSenderTypeEnum::SYSTEM) {
-            return false;
+        $message = $channel === 'whatsapp' ? MetaChatMessage::findOrFail($messageId) : ChatMessage::findOrFail($messageId);
+        $user    = $request->user();
+        $reason  = $request->validated('reason');
+
+        abort_unless($message->sender_type === ChatSenderTypeEnum::SYSTEM, 404);
+
+        if ($this->isAiAnswer($message, $channel)) {
+            $draft = ChatAiDraft::where('reply_message_id', $message->id)
+                ->whereNotNull($channel === 'whatsapp' ? 'meta_chat_session_id' : 'chat_session_id')
+                ->first();
+
+            abort_unless($draft && FlagChatAiDraft::mayFlag($user, $draft), 404);
+            abort_if((bool) $draft->flagged_wrong_at, 422, __('This reply is already marked as wrong'));
+
+            FlagChatAiDraft::make()->handle($draft, $user->id, $reason);
+            $this->handle($message, $user->id, $reason);
+
+            return;
         }
 
-        $session = $channel === 'whatsapp' ? $message->metaChatSession : $message->chatSession;
+        abort_unless($this->isAutomated($message, $channel) && $this->mayFlag($user, $message, $channel), 404);
+        abort_if((bool) Arr::get($message->metadata, 'flagged_wrong_at'), 422, __('This reply is already marked as wrong'));
 
-        if (!$session?->shop || $session->shop->group_id !== $request->user()->group_id) {
-            return false;
-        }
+        $this->handle($message, $user->id, $reason);
+    }
 
+    private function isAiAnswer(ChatMessage|MetaChatMessage $message, string $channel): bool
+    {
+        return $channel === 'whatsapp'
+            ? (bool) Arr::get($message->metadata, SendChatAiAnswer::SENT_KEY)
+            : Arr::get($message->metadata, 'automated') === SendChatAiAnswer::MESSAGE_MARKER;
+    }
+
+    private function isAutomated(ChatMessage|MetaChatMessage $message, string $channel): bool
+    {
         if ($channel === 'whatsapp') {
             return (bool) Arr::first(
-                ['claim_details_asked_at', 'out_of_hours_replied_at', 'asked_if_customer', 'greeted_at', 'greeting'],
+                [...self::WHATSAPP_AUTOMATED_KEYS, 'automated'],
                 fn (string $key) => Arr::get($message->metadata, $key)
             );
         }
 
-        $automated = Arr::get($message->metadata, 'automated');
+        return (bool) Arr::get($message->metadata, 'automated');
+    }
 
-        return $automated && $automated !== SendChatAiAnswer::MESSAGE_MARKER;
+    private function mayFlag(User $user, ChatMessage|MetaChatMessage $message, string $channel): bool
+    {
+        $shop = ($channel === 'whatsapp' ? $message->metaChatSession : $message->chatSession)?->shop;
+
+        return $shop
+            && $shop->group_id === $user->group_id
+            && ($user->hasGroupAccess() || $this->userCanActOnChatOnShop($user, $shop));
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
+    }
+
+    public function jsonResponse(): JsonResponse
+    {
+        return response()->json(['success' => true]);
     }
 }
