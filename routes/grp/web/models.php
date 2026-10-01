@@ -558,6 +558,7 @@ use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\RepairWebpageBase64File;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
@@ -1305,6 +1306,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpag
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::post('publish', PublishWebpage::class)->name('publish');
+    Route::post('web-block/{modelHasWebBlock:id}/repair-base64-file', RepairWebpageBase64File::class)->name('web_block.repair_base64_file');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');

@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\WebBlock;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -38,7 +39,7 @@ class RepairScriptWebBlocksBase64Files
         'image/avif' => 'avif',
     ];
 
-    public function handle(WebBlock $webBlock, bool $apply = true, ?Command $command = null): int
+    public function handle(WebBlock $webBlock, bool $apply = true, ?Command $command = null, ?Webpage $webpageToLeaveUnpublished = null): int
     {
         $code = data_get($webBlock->layout, 'data.fieldValue.value');
 
@@ -66,20 +67,59 @@ class RepairScriptWebBlocksBase64Files
         foreach ($files as $dataUri => $file) {
             $checksum = md5($file['content']);
 
-            $urlsByChecksum[$checksum] ??= $file['extension'] === 'pdf'
-                ? $this->uploadPdf($webBlock, $file, $checksum)
-                : $this->uploadImage($webBlock, $file, $checksum, count($urlsByChecksum) + 1);
+            $urlsByChecksum[$checksum] ??= $this->uploadFile($webBlock, $file, $checksum, count($urlsByChecksum) + 1);
 
             $replacements[$dataUri] = $urlsByChecksum[$checksum];
         }
 
-        $layout = $webBlock->layout;
-        data_set($layout, 'data.fieldValue.value', strtr($code, $replacements));
-        $webBlock->update(['layout' => $layout]);
-
-        $this->publishWebpages($webBlock, $command);
+        $this->replaceCode($webBlock, strtr($code, $replacements));
+        $this->publishWebpages($webBlock, $command, $webpageToLeaveUnpublished);
 
         return count($replacements);
+    }
+
+    /**
+     * Uploads one base64 file of the script and links every copy of it to the upload.
+     *
+     * @return string|null the uploaded file URL, or null when the script has no such file that can be uploaded
+     */
+    public function repairFile(WebBlock $webBlock, string $dataUri, ?Webpage $webpageToLeaveUnpublished = null): ?string
+    {
+        $code = data_get($webBlock->layout, 'data.fieldValue.value');
+
+        if (!is_string($code) || !str_contains($code, $dataUri)) {
+            return null;
+        }
+
+        $file = $this->findFiles($code, $webBlock->webpages->isNotEmpty())[$dataUri] ?? null;
+
+        if (!$file) {
+            return null;
+        }
+
+        $url = $this->uploadFile($webBlock, $file, md5($file['content']), $webBlock->images()->count() + 1);
+
+        $this->replaceCode($webBlock, strtr($code, [$dataUri => $url]));
+        $this->publishWebpages($webBlock, null, $webpageToLeaveUnpublished);
+
+        return $url;
+    }
+
+    /**
+     * @param array{content: string, extension: string, name: string|null} $file
+     */
+    private function uploadFile(WebBlock $webBlock, array $file, string $checksum, int $position): string
+    {
+        return $file['extension'] === 'pdf'
+            ? $this->uploadPdf($webBlock, $file, $checksum)
+            : $this->uploadImage($webBlock, $file, $checksum, $position);
+    }
+
+    private function replaceCode(WebBlock $webBlock, string $code): void
+    {
+        $layout = $webBlock->layout;
+        data_set($layout, 'data.fieldValue.value', $code);
+        $webBlock->update(['layout' => $layout]);
     }
 
     /**
@@ -209,12 +249,16 @@ class RepairScriptWebBlocksBase64Files
         }
     }
 
-    private function publishWebpages(WebBlock $webBlock, ?Command $command): void
+    private function publishWebpages(WebBlock $webBlock, ?Command $command, ?Webpage $webpageToLeaveUnpublished): void
     {
         foreach ($webBlock->webpages as $webpage) {
             $hasUnpublishedChanges = $webpage->is_dirty;
 
             UpdateWebpageContent::run($webpage);
+
+            if ($webpage->is($webpageToLeaveUnpublished)) {
+                continue;
+            }
 
             if ($webpage->state === WebpageStateEnum::LIVE && !$hasUnpublishedChanges) {
                 PublishWebpage::make()->action($webpage, [
