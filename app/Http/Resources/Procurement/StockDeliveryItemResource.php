@@ -38,6 +38,8 @@ class StockDeliveryItemResource extends JsonResource
                 'locations.slug as location_slug',
                 'warehouses.slug as warehouse_slug',
             ])
+            ->orderByDesc('location_org_stocks.default_wholesale_picking_location')
+            ->orderByDesc('location_org_stocks.default_dropshipping_picking_location')
             ->orderBy('locations.code')
             ->get();
 

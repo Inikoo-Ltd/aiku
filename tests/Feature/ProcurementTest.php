@@ -3094,9 +3094,15 @@ test('stock delivery item booked in with set as picking location flags that loca
 
     $locationOrgStock = LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->first();
 
+    $firstByCode = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => '0-first-by-code']));
+    \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($stockDeliveryItem->orgStock, $firstByCode, []);
+
+    $resource = (new StockDeliveryItemResource($stockDeliveryItem->fresh()))->resolve();
+
     expect($locationOrgStock->default_wholesale_picking_location)->toBeTrue()
         ->and($locationOrgStock->default_dropshipping_picking_location)->toBeTrue()
-        ->and((new StockDeliveryItemResource($stockDeliveryItem->fresh()))->resolve()['has_picking_location'])->toBeTrue();
+        ->and($resource['has_picking_location'])->toBeTrue()
+        ->and($resource['locations']->first()->location_id)->toBe($location->id);
 });
 
 test('stock delivery item is checked and placed in SKOs while its quantities stay in units', function () {
@@ -6634,6 +6640,8 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
 });
 
 test('purchase order products and items tabs show stock and quarterly usage of each product', function () {
+    $this->travelTo(now()->firstOfQuarter()->addDays(45));
+
     $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
     $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
     $shop      = $this->organisation->shops()->first() ?? StoreShop::run($this->organisation, Shop::factory()->definition());
@@ -6645,7 +6653,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         'reference'        => 'DN-USAGE-'.uniqid(),
         'state'            => DeliveryNoteStateEnum::UNASSIGNED,
         'email'            => 'usage@example.com',
-        'date'             => date('Y-m-d'),
+        'date'             => now()->toDateString(),
         'delivery_address' => new Address(Address::factory()->definition()),
         'warehouse_id'     => $warehouse->id,
     ]);
@@ -6692,17 +6700,16 @@ test('purchase order products and items tabs show stock and quarterly usage of e
                 'number_out_of_stock_org_stocks' => 0,
                 'number_location_org_stocks'     => 0,
             ]);
-        DB::table('org_stock_histories')->updateOrInsert([
-            'organisation_id' => $orgStock->organisation_id,
-            'org_stock_id'    => $orgStock->id,
-            'date'            => $outOfStockDay->toDateString(),
-        ], [
+        DB::table('org_stock_histories')->insert([
             'organisation_stock_history_id' => $organisationStockHistoryId,
+            'organisation_id'               => $orgStock->organisation_id,
+            'org_stock_id'                  => $orgStock->id,
+            'date'                          => $outOfStockDay->toDateString(),
             'quantity_in_locations'         => 0,
         ]);
     }
 
-    $comingStockDelivery = StoreStockDelivery::make()->action($this->orgSupplier, ['reference' => 'SD-COMING-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+    $comingStockDelivery = StoreStockDelivery::make()->action($this->orgSupplier, ['reference' => 'SD-COMING-'.uniqid(), 'date' => now()->toDateString()], strict: false);
     StoreStockDeliveryItem::make()->action($comingStockDelivery, null, $orgStock, ['unit_quantity' => 30, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
 
     $orgStock->stats()->updateOrCreate([], ['days_of_cover' => 45.5, 'days_of_cover_pessimistic' => 30, 'predicted_out_of_stock_at' => '2036-11-15']);
