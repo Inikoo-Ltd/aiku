@@ -26,7 +26,7 @@
     ":_order items ordered; :_dispatched items shipped": ":_order itens encomendados; :_dispatched itens enviados",
     ":count kept, restored when back in stock": ":count reservados, repostos quando voltar a haver stock",
     ":mailshotSubject is still in process": ":mailshotSubject ainda está em processo",
-    ":n or more": "ou mais",
+    ":n or more": ":n ou mais",
     ":product has been added to favorites": ":product foi adicionado aos favoritos.",
     ":qtyPicked items are picked from magic place": ":qtyPicked itens selecionados são escolhidos de um lugar mágico",
     ":quantity on the shelf, made on demand": ":quantity na prateleira, fabricado por encomenda",
