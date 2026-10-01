@@ -15,6 +15,7 @@ use App\Actions\Web\WebBlockHistory\StoreWebBlockHistory;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
+use App\Rules\NoBase64;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,6 +24,7 @@ class UpdateModelHasWebBlocks extends OrgAction
     use WithWebEditAuthorisation;
     use WithActionUpdate;
 
+    private ModelHasWebBlocks $modelHasWebBlocks;
 
     public function handle(ModelHasWebBlocks $modelHasWebBlocks, array $modelData): ModelHasWebBlocks
     {
@@ -42,6 +44,7 @@ class UpdateModelHasWebBlocks extends OrgAction
 
     public function asController(ModelHasWebBlocks $modelHasWebBlocks, ActionRequest $request): ModelHasWebBlocks
     {
+        $this->modelHasWebBlocks = $modelHasWebBlocks;
         $this->initialisationFromShop($modelHasWebBlocks->shop, $request);
         return $this->handle($modelHasWebBlocks, $this->validatedData);
     }
@@ -53,13 +56,20 @@ class UpdateModelHasWebBlocks extends OrgAction
             'show'              => ['sometimes', 'boolean'],
             'show_logged_in'    => ['sometimes', 'boolean'],
             'show_logged_out'   => ['sometimes', 'boolean'],
+            'layout.data.fieldValue.value' => $this->isScriptBlock() ? ['sometimes', new NoBase64()] : [],
         ];
+    }
+
+    private function isScriptBlock(): bool
+    {
+        return $this->modelHasWebBlocks->webBlock?->webBlockType?->code === 'script';
     }
 
 
     public function action(ModelHasWebBlocks $modelHasWebBlocks, $modelData): ModelHasWebBlocks
     {
-        $this->asAction = true;
+        $this->asAction          = true;
+        $this->modelHasWebBlocks = $modelHasWebBlocks;
 
         $this->initialisation($modelHasWebBlocks->organisation, $modelData);
 
