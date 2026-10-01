@@ -17,6 +17,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,41 +27,49 @@ class RepairScriptWebBlocksBase64Images
     use AsAction;
     use WithAttachMediaToModel;
 
-    private const string BASE64_IMAGE_PATTERN = '~data:image/(png|jpe?g|gif|webp|avif);base64,([A-Za-z0-9+/]+={0,2})~i';
+    private const string BASE64_IMAGE_PATTERN = '~data:image/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=\s]++)(?=["\')&])~i';
+
+    private const array EXTENSIONS_BY_MIME_TYPE = [
+        'image/png'  => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif'  => 'gif',
+        'image/webp' => 'webp',
+        'image/avif' => 'avif',
+    ];
 
     public function handle(WebBlock $webBlock, bool $apply = true, ?Command $command = null): int
     {
         $code = data_get($webBlock->layout, 'data.fieldValue.value');
 
-        if (!is_string($code) || !preg_match_all(self::BASE64_IMAGE_PATTERN, $code, $matches, PREG_SET_ORDER)) {
+        if (!is_string($code) || !str_contains($code, ';base64,')) {
             return 0;
         }
 
-        $command?->line("Web block: $webBlock->id || Base64 images: ".count($matches)." || Webpages: ".$webBlock->webpages->pluck('code')->implode(', '));
+        $images = $this->findImages($code);
 
-        if (!$apply) {
-            return count($matches);
+        if ($images === null) {
+            $command?->error("Web block: $webBlock->id || Could not be scanned: ".preg_last_error_msg());
+
+            return 0;
+        }
+
+        $remainingDataUris = substr_count(strtr($code, array_fill_keys(array_keys($images), '')), ';base64,');
+
+        $command?->line("Web block: $webBlock->id || Base64 images: ".count($images)." || Left untouched: $remainingDataUris || Webpages: ".$webBlock->webpages->pluck('code')->implode(', '));
+
+        if (!$apply || !$images) {
+            return count($images);
         }
 
         $imageUrlsByChecksum = [];
         $replacements        = [];
 
-        foreach ($matches as [$dataUri, $extension, $base64]) {
-            $imageContent = base64_decode($base64, true);
-            if ($imageContent === false || $imageContent === '') {
-                $command?->warn("  Skipped undecodable image in web block $webBlock->id");
-                continue;
-            }
-
+        foreach ($images as $dataUri => [$imageContent, $extension]) {
             $checksum = md5($imageContent);
 
-            $imageUrlsByChecksum[$checksum] ??= $this->uploadImage($webBlock, $imageContent, strtolower($extension), $checksum, count($imageUrlsByChecksum) + 1);
+            $imageUrlsByChecksum[$checksum] ??= $this->uploadImage($webBlock, $imageContent, $extension, $checksum, count($imageUrlsByChecksum) + 1);
 
             $replacements[$dataUri] = $imageUrlsByChecksum[$checksum];
-        }
-
-        if (!$replacements) {
-            return 0;
         }
 
         $layout = $webBlock->layout;
@@ -84,9 +93,32 @@ class RepairScriptWebBlocksBase64Images
         return count($replacements);
     }
 
+    /**
+     * @return array<string, array{0: string, 1: string}>|null image content and extension keyed by data URI
+     */
+    private function findImages(string $code): ?array
+    {
+        if (preg_match_all(self::BASE64_IMAGE_PATTERN, $code, $matches, PREG_SET_ORDER) === false) {
+            return null;
+        }
+
+        $images = [];
+
+        foreach ($matches as [$dataUri, $base64]) {
+            $imageContent = base64_decode(preg_replace('/\s+/', '', $base64), true);
+            $imageSize    = $imageContent ? @getimagesizefromstring($imageContent) : false;
+            $extension    = $imageSize ? Arr::get(self::EXTENSIONS_BY_MIME_TYPE, $imageSize['mime']) : null;
+
+            if ($extension) {
+                $images[$dataUri] = [$imageContent, $extension];
+            }
+        }
+
+        return $images;
+    }
+
     private function uploadImage(WebBlock $webBlock, string $imageContent, string $extension, string $checksum, int $position): string
     {
-        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
         $path      = tempnam(sys_get_temp_dir(), 'web-block-image-').".$extension";
         file_put_contents($path, $imageContent);
 
