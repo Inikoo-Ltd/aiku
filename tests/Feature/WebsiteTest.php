@@ -453,35 +453,21 @@ test('update model has web block', function (ModelHasWebBlocks $modelHasWebBlock
     expect($modelHasWebBlock)->toBeInstanceOf(ModelHasWebBlocks::class);
 })->depends('create model has web block');
 
-test('script web block rejects base64 data', function (Website $website) {
-    $webpage          = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-    $scriptBlockType  = $webpage->group->webBlockTypes()->where('code', 'script')->first();
-    $scriptLayout     = fn (string $code) => ['data' => ['fieldValue' => ['value' => $code]]];
-
-    expect(fn () => StoreModelHasWebBlock::make()->action($webpage, [
-        'web_block_type_id' => $scriptBlockType->id,
-        'layout'            => $scriptLayout('<img src="data:image/png;base64,iVBORw0KGgo=">'),
-    ]))->toThrow(ValidationException::class);
+test('script web block accepts base64 data so it can be repaired before publishing', function (Website $website) {
+    $webpage         = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $scriptBlockType = $webpage->group->webBlockTypes()->where('code', 'script')->first();
+    $scriptLayout    = fn (string $code) => ['data' => ['fieldValue' => ['value' => $code]]];
 
     $scriptBlock = StoreModelHasWebBlock::make()->action($webpage, [
         'web_block_type_id' => $scriptBlockType->id,
-        'layout'            => $scriptLayout('<script>console.log("hello")</script>'),
-    ]);
-
-    expect(fn () => UpdateModelHasWebBlocks::make()->action($scriptBlock, [
-        'layout' => $scriptLayout('<script>eval(atob("YWxlcnQoMSk="))</script>'),
-    ]))->toThrow(ValidationException::class)
-        ->and(fn () => UpdateModelHasWebBlocks::make()->action($scriptBlock, [
-            'layout' => $scriptLayout('<img src="data:image/webp;BASE64,UklGRg==">'),
-        ]))->toThrow(ValidationException::class);
-
-    $textBlockType = $webpage->group->webBlockTypes()->where('code', 'text')->first();
-    $textBlock     = StoreModelHasWebBlock::make()->action($webpage, [
-        'web_block_type_id' => $textBlockType->id,
         'layout'            => $scriptLayout('<img src="data:image/png;base64,iVBORw0KGgo=">'),
     ]);
 
-    expect($textBlock)->toBeInstanceOf(ModelHasWebBlocks::class);
+    $scriptBlock = UpdateModelHasWebBlocks::make()->action($scriptBlock, [
+        'layout' => $scriptLayout('<script>eval(atob("YWxlcnQoMSk="))</script><img src="data:image/webp;base64,UklGRg==">'),
+    ]);
+
+    expect(data_get($scriptBlock->webBlock->layout, 'data.fieldValue.value'))->toContain('data:image/webp;base64,');
 })->depends('create b2b website');
 
 test('repair moves base64 files in script web blocks to uploaded images and webpage attachments', function (Website $website) {
@@ -519,6 +505,41 @@ test('repair moves base64 files in script web blocks to uploaded images and webp
         ->and(DownloadIrisAttachment::isPublic($pdf))->toBeTrue()
         ->and(data_get($webpage->refresh()->unpublishedSnapshot->layout, 'web_blocks'))->not->toBeEmpty()
         ->and(RepairScriptWebBlocksBase64Files::run($webBlock))->toBe(0);
+})->depends('create b2b website');
+
+test('workshop repair uploads one base64 file of a script block and leaves publishing to the editor', function (Website $website) {
+    $webpage         = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $scriptBlockType = $webpage->group->webBlockTypes()->where('code', 'script')->first();
+    $scriptBlock     = StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $scriptBlockType->id,
+        'layout'            => ['data' => ['fieldValue' => ['value' => '<p>pending</p>']]],
+    ]);
+    $webpage = PublishWebpage::make()->action($webpage->refresh(), ['comment' => 'first publish']);
+
+    $pngDataUri = 'data:image/png;base64,'.base64_encode(UploadedFile::fake()->image('banner.png', 4, 4)->getContent());
+    $svgDataUri = 'data:image/svg+xml;base64,PHN2Zy8+';
+    $scriptBlock->webBlock->update(['layout' => ['data' => ['fieldValue' => ['value' =>
+        "<img src=\"$pngDataUri\"><div style=\"background:url($pngDataUri)\"></div><img src=\"$svgDataUri\">",
+    ]]]]);
+    $liveSnapshotId = $webpage->live_snapshot_id;
+    $repairRoute    = route('grp.models.webpage.web_block.repair_base64_file', ['webpage' => $webpage->id, 'modelHasWebBlock' => $scriptBlock->id]);
+
+    $url = post($repairRoute, ['data_uri' => $pngDataUri])->assertOk()->json('url');
+
+    post($repairRoute, ['data_uri' => $svgDataUri])->assertSessionHasErrors('data_uri');
+
+    $repairedCode = data_get($scriptBlock->webBlock->refresh()->layout, 'data.fieldValue.value');
+    $webpage->refresh();
+
+    expect(substr_count($repairedCode, $url))->toBe(2)
+        ->and($repairedCode)->not->toContain('image/png;base64')
+        ->and($repairedCode)->toContain($svgDataUri)
+        ->and($webpage->live_snapshot_id)->toBe($liveSnapshotId)
+        ->and($webpage->is_dirty)->toBeTrue();
+
+    $otherWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    post(route('grp.models.webpage.web_block.repair_base64_file', ['webpage' => $otherWebpage->id, 'modelHasWebBlock' => $scriptBlock->id]), ['data_uri' => $svgDataUri])
+        ->assertNotFound();
 })->depends('create b2b website');
 
 test('delete model has web block', function (ModelHasWebBlocks $modelHasWebBlock) {
@@ -1985,6 +2006,69 @@ test('process webpage time series records', function (Webpage $webpage) {
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
 })->depends('create webpage');
 
+test('redo webpage time series with a window fills visitors only for webpages viewed in it', function (Website $website) {
+    $viewedWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $idleWebpage   = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $storeVisitor = fn () => DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => '2026-09-14 10:00:00',
+        'last_seen_at'    => '2026-09-14 10:00:00',
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $storePageView = fn (int $visitorId, string $viewDate) => DB::table('website_page_views')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $viewedWebpage->id,
+        'page_url'           => 'https://test/'.$viewedWebpage->url,
+        'page_path'          => '/'.$viewedWebpage->url,
+        'view_date'          => $viewDate,
+        'duration_seconds'   => 10,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $returningVisitor = $storeVisitor();
+    $storePageView($returningVisitor, '2026-09-14');
+    $storePageView($returningVisitor, '2026-09-14');
+    $storePageView($storeVisitor(), '2026-09-14');
+    $storePageView($returningVisitor, '2026-09-15');
+
+    $this->artisan('webpages:redo_time_series', ['--from' => '2026-09-14', '--to' => '2026-09-15'])->assertExitCode(0);
+
+    $records = fn (TimeSeriesFrequencyEnum $frequency) => DB::table('webpage_time_series_records')
+        ->where('webpage_time_series_id', $viewedWebpage->timeSeries()->where('frequency', $frequency->value)->value('id'))
+        ->orderBy('from')
+        ->get();
+
+    expect($records(TimeSeriesFrequencyEnum::DAILY)->pluck('visitors', 'period')->all())->toBe(['2026-09-14' => 2, '2026-09-15' => 1])
+        ->and($records(TimeSeriesFrequencyEnum::DAILY)->sum('page_views'))->toBe(4)
+        ->and($records(TimeSeriesFrequencyEnum::WEEKLY)->sum('visitors'))->toBe(3)
+        ->and($records(TimeSeriesFrequencyEnum::MONTHLY)->sum('page_views'))->toBe(4);
+
+    Queue::fake();
+
+    $this->artisan('webpages:redo_time_series', ['--from' => '2026-09-14', '--to' => '2026-09-15', '--async' => true])->assertExitCode(0);
+
+    ProcessWebpageTimeSeriesRecords::assertPushedOn('sales_slave_historic', 1, fn ($action, $parameters) => $parameters[0] === $viewedWebpage->id && $parameters[1] === TimeSeriesFrequencyEnum::DAILY);
+    ProcessWebpageTimeSeriesRecords::assertNotPushedWith(fn (int $webpageId) => $webpageId === $idleWebpage->id);
+})->depends('launch website');
+
 function cruxHistoryRecord(int $lcp): array
 {
     return [
@@ -2065,10 +2149,11 @@ test('real user speed from the chrome ux report is stored per page, and a page w
 
     $unvisitedReport = GetCruxReport::run($website, $unvisitedWebpage);
 
-    expect($unvisitedReport['scope'])->toBe('website')
-        ->and($unvisitedReport['url'])->toBe('https://www.crux-example.com')
-        ->and(end($unvisitedReport['history']['phone'])['lcp'])->toBe(2000)
+    expect($unvisitedReport['scope'])->toBeNull()
+        ->and($unvisitedReport['history'])->toBe([])
         ->and(CruxRecord::where('webpage_id', $unvisitedWebpage->id)->exists())->toBeFalse();
+
+    expect(end(GetCruxReport::run($website)['history']['phone'])['lcp'])->toBe(2000);
 
     $callsBefore = count(Http::recorded());
     GetCruxReport::run($website, $visitedWebpage);
@@ -2140,9 +2225,11 @@ test('the weekly chrome ux report fetch queues every live website and the pages 
         ->and($queued)->not->toContain([$website->id, $quietWebpage->id]);
 })->depends('launch website');
 
-test('our visitors web vitals are reported as the daily 75th percentile, a page with too few loads shows the whole website', function (Website $website) {
+test('our visitors web vitals are reported as the daily 75th percentile, weekly for a page with too few loads a day, never the whole website for a page', function (Website $website) {
     $measuredWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
     $quietWebpage    = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $sparseWebpage   = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $monday          = now()->utc()->startOfWeek();
     cache()->forget("web-vitals-report:$website->id");
 
     $sample = fn (?Webpage $webpage, string $device, int $lcp, int $daysAgo = 0) => [
@@ -2159,6 +2246,7 @@ test('our visitors web vitals are reported as the daily 75th percentile, a page 
         ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'phone', $lcp), [6000, 7000]),
         ...array_map(fn (int $lcp) => $sample($quietWebpage, 'desktop', $lcp), [900, 900, 900, 900]),
         $sample($measuredWebpage, 'desktop', 1000, GetWebVitalsReport::DAYS + 2),
+        ...array_map(fn (int $hours) => [...$sample($sparseWebpage, 'desktop', 800), 'created_at' => $monday->copy()->addHours($hours)], [1, 2, 3, 25, 26]),
     ]);
 
     $pageReport = GetWebVitalsReport::run($website, $measuredWebpage);
@@ -2172,9 +2260,16 @@ test('our visitors web vitals are reported as the daily 75th percentile, a page 
 
     $quietReport = GetWebVitalsReport::run($website, $quietWebpage);
 
-    expect($quietReport['scope'])->toBe('website')
-        ->and($quietReport['history']['desktop'][0]['samples'])->toBe(9)
-        ->and($quietReport['history']['all'][0]['samples'])->toBe(11);
+    expect($quietReport['scope'])->toBeNull()
+        ->and($quietReport['history'])->toBe([]);
+
+    $sparseReport = GetWebVitalsReport::run($website, $sparseWebpage);
+
+    expect($sparseReport['scope'])->toBe('page')
+        ->and($sparseReport['period'])->toBe('week')
+        ->and($sparseReport['history']['desktop'][0])->toMatchArray(['period_start' => $monday->toDateString(), 'samples' => 5, 'lcp' => 800])
+        ->and($pageReport['period'])->toBe('day')
+        ->and(GetWebVitalsReport::run($website)['scope'])->toBe('website');
 })->depends('launch website');
 
 test('UI show ads testing webpage does not offer page speed', function (Website $website) {
