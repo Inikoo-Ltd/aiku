@@ -42,10 +42,14 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
-let nextPageBlocks = null;
+const IRIS_PAGE_PRELOAD_LIMIT_MS = 3000;
+
+const appElement = document.getElementById("app");
+const initialPage = JSON.parse(appElement?.dataset.page ?? "null");
+let nextPageProps = appElement?.childElementCount ? null : initialPage?.props;
 
 router.on("beforeUpdate", (event) => {
-  nextPageBlocks = { webBlocks: event.detail.page.props.web_blocks, shopType: event.detail.page.props.retina?.type };
+  nextPageProps = event.detail.page.props;
 });
 
 const irisLocale = normalizeLocale(document.documentElement.lang);
@@ -53,6 +57,7 @@ const irisLocaleMessages = loadLocaleMessages(irisLocale);
 
 createInertiaApp(
   {
+    page   : initialPage ?? undefined,
     resolve: async (name) => {
         const pages = import.meta.glob([
             './Pages/Iris/**/*.{vue,js}',
@@ -71,17 +76,18 @@ createInertiaApp(
             throw new Error(`Page not found: ${name}`)
         }
 
+        const pageProps = nextPageProps
+        nextPageProps = null
+        const pagePreload = pageProps
+            ? import("@/Iris/Composables/getIrisComponents").then(({ preloadIrisPage }) => preloadIrisPage(pageProps))
+            : null
+
         const page = await path()
 
         page.default.layout =
             page.default.layout || IrisLayout
 
-        if (nextPageBlocks?.webBlocks) {
-            const { webBlocks, shopType } = nextPageBlocks
-            nextPageBlocks = null
-            const { preloadIrisBlocks } = await import("@/Iris/Composables/getIrisComponents")
-            await preloadIrisBlocks(webBlocks, shopType)
-        }
+        await Promise.race([pagePreload, new Promise((resolve) => setTimeout(resolve, IRIS_PAGE_PRELOAD_LIMIT_MS))])
 
         return page
     },

@@ -261,14 +261,23 @@ export const getIrisComponent = (
 	return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }
 
+const preloadAsyncComponent = (component: any): Promise<unknown> | null =>
+	component?.__asyncResolved || typeof component?.__asyncLoader !== "function" ? null : component.__asyncLoader().catch(() => null)
+
 export const preloadIrisBlocks = (webBlocks: any, shopType?: string): Promise<unknown> =>
 	Promise.all(
-		(Array.isArray(webBlocks) ? webBlocks : Object.values(webBlocks ?? {})).map((webBlock: any) => {
-			const component: any = getIrisComponent(webBlock?.type, { shop_type: shopType })
-
-			return component?.__asyncResolved || typeof component?.__asyncLoader !== "function" ? null : component.__asyncLoader().catch(() => null)
-		})
+		(Array.isArray(webBlocks) ? webBlocks : Object.values(webBlocks ?? {})).map((webBlock: any) =>
+			preloadAsyncComponent(getIrisComponent(webBlock?.type, { shop_type: shopType }))
+		)
 	)
+
+export const preloadIrisPage = (pageProps: any): Promise<unknown> =>
+	Promise.all([
+		preloadIrisBlocks(pageProps?.web_blocks, pageProps?.retina?.type),
+		...(pageProps?.announcements ?? []).map((announcement: any) =>
+			preloadAsyncComponent(getIrisAnnouncementComponent(announcement?.template_code))
+		),
+	])
 
 export const getProductsRenderDropshippingComponent = (
 	componentName: string,
