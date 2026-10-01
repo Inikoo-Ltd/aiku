@@ -236,6 +236,7 @@ class BlogPosts
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
             'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
             'shops' => array_values(array_filter(array_map('trim', explode(',', $meta['shops'] ?? '')))),
+            'videos' => array_values(array_filter(array_map('trim', explode(',', $meta['videos'] ?? '')))),
             'category' => $meta['category'] ?? null,
             'audience' => $meta['audience'] ?? null,
             'series' => $meta['series'] ?? null,

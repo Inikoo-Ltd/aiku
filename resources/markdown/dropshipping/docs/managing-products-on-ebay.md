@@ -8,6 +8,7 @@ series: ebay
 order: 2
 help_routes: retina.dropshipping.customer_sales_channels.portfolios.index, retina.dropshipping.customer_sales_channels.show, retina.dropshipping.customer_sales_channels.edit, retina.dropshipping.customer_sales_channels.orders.index, retina.dropshipping.customer_sales_channels.orders.show
 shops: awd, dssk, dse
+videos: 1126172614, 1126173148
 ---
 
 <aside class="tldr">

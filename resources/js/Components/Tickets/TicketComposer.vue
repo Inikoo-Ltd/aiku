@@ -17,6 +17,10 @@ const props = defineProps<{
     placeholder?: string
     rows?: number
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
+    // Lets a caller that already has some files attached elsewhere (editing a comment that
+    // already carries a few) leave only the remaining room, rather than offering 5 more on
+    // top of what is already there.
+    maxImages?: number
 }>()
 
 const emit = defineEmits<{
@@ -24,7 +28,7 @@ const emit = defineEmits<{
     (e: "update:images", value: File[]): void
 }>()
 
-const MAX_IMAGES = 5
+const maxImages = computed(() => props.maxImages ?? 5)
 const fileInput = ref<HTMLInputElement | null>(null)
 const attachmentIcons = {
     pdf: { icon: faFilePdf, class: "text-red-600" },
@@ -77,7 +81,7 @@ watch(
 const addFiles = (files: Iterable<File>) => {
     const accepted = Array.from(files).filter(isAcceptedFile)
     if (!accepted.length) return
-    emit("update:images", [...props.images, ...accepted].slice(0, MAX_IMAGES))
+    emit("update:images", [...props.images, ...accepted].slice(0, maxImages.value))
 }
 
 const removeImage = (index: number) => emit("update:images", props.images.filter((_, i) => i !== index))
@@ -218,10 +222,10 @@ const onPick = (event: Event) => {
             </ul>
         </div>
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
-            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="ctrans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
+            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-gray-500" :disabled="images.length >= maxImages" :title="images.length >= maxImages ? ctrans('Attachment limit reached') : ctrans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
                 <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ ctrans("Attach") }}
             </button>
-            <span class="text-xs text-gray-400">{{ ctrans("or paste / drop") }}</span>
+            <span class="text-xs text-gray-400">{{ images.length >= maxImages ? ctrans("limit reached") : ctrans("or paste / drop") }}</span>
             <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">

@@ -7,6 +7,7 @@
 
 <script lang="ts">
 import { ctrans as translate } from "@/Composables/useTrans"
+import { faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo, faFileZipper, faFile as faFileGeneric } from "@fortawesome/free-solid-svg-icons"
 
 export const reasonForResponse = async (response: Response) => {
     if (response.status === 401 || response.status === 419) return translate("Your session has expired. Reload the page and try again.")
@@ -48,6 +49,17 @@ export const isArchiveAttachment = (file: TicketAttachment) => ["zip", "rar", "7
 export const isImageAttachment = (file: TicketAttachment) => (file.mime ?? "").startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extensionOf(file))
 
 export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttachment(file) || isPdfAttachment(file) || isWordAttachment(file) || isSpreadsheetAttachment(file) || isVideoAttachment(file) || isArchiveAttachment(file)
+
+// One look everywhere a non-image file shows as a tile: composing, editing, quick look.
+export const attachmentIconFor = (file: TicketAttachment) => {
+    if (isPdfAttachment(file)) return { icon: faFilePdf, class: "text-red-600" }
+    if (isWordAttachment(file)) return { icon: faFileWord, class: "text-blue-600" }
+    if (extensionOf(file) === "csv") return { icon: faFileCsv, class: "text-emerald-600" }
+    if (isSpreadsheetAttachment(file)) return { icon: faFileExcel, class: "text-green-600" }
+    if (isVideoAttachment(file)) return { icon: faFileVideo, class: "text-purple-600" }
+    if (isArchiveAttachment(file)) return { icon: faFileZipper, class: "text-amber-600" }
+    return { icon: faFileGeneric, class: "text-gray-500" }
+}
 </script>
 
 <script setup lang="ts">

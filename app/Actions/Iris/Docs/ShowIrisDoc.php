@@ -40,6 +40,7 @@ class ShowIrisDoc
             'doc'          => array_merge($this->summary($doc, $website), [
                 'html'            => $this->fillPlaceholders($this->localiseLinks($doc['html'], $language, $everything), $website, isHtml: true),
                 'reading_minutes' => $doc['reading_minutes'],
+                'videos'          => $doc['videos'],
                 'notice'          => $doc['lang'] !== 'en' ? BlogPosts::LANGUAGES[$doc['lang']]['notice'] ?? null : null,
                 'is_stale'        => $doc['lang'] !== 'en' && $english && (!$doc['source_date'] || $english['date']->gt($doc['source_date'])),
                 'stale'           => $doc['lang'] !== 'en' ? BlogPosts::LANGUAGES[$doc['lang']]['stale'] ?? null : null,

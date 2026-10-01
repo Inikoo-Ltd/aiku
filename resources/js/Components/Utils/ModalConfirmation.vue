@@ -148,9 +148,10 @@ watch(isOpenModal, (val) => {
 
         </slot>
 
+        <Teleport to="body">
         <TransitionRoot as="template" :show="isOpenModal">
-            <Dialog 
-                class="relative z-[21]"
+            <Dialog
+                class="relative z-[9999]"
                 @close="isOpenModal = false"
             >
                 <TransitionChild as="template" enter="ease-out duration-150" enter-from="opacity-0" enter-to="opacity-100"
@@ -248,5 +249,6 @@ watch(isOpenModal, (val) => {
                 </div>
             </Dialog>
         </TransitionRoot>
+        </Teleport>
     </div>
 </template>

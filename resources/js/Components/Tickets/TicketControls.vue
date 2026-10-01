@@ -19,6 +19,8 @@ import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import { attachmentIconFor } from "@/Components/Tickets/TicketAttachmentPreview.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots, faBellSlash } from "@fal"
@@ -297,9 +299,11 @@ const deployCommentDraft = ref("")
 const deployCommentImages = ref<File[]>([])
 const deployCommentRemovedFiles = ref<string[]>([])
 const deployCommentError = ref("")
+const deployCommentPreview = ref(false)
 
 type DeployCommentFile = { ulid: string; name: string; url: string; is_image: boolean }
 const keptDeployCommentFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter((file: DeployCommentFile) => !deployCommentRemovedFiles.value.includes(file.ulid)))
+const deployCommentMaxImages = computed(() => Math.max(0, 5 - keptDeployCommentFiles.value.length))
 
 const canEditDeployComment = computed(
     () => props.can_contribute && props.ticket.status === "pending_deploy" && !!props.routes.deploy_comment
@@ -310,7 +314,15 @@ const startEditDeployComment = () => {
     deployCommentImages.value = []
     deployCommentRemovedFiles.value = []
     deployCommentError.value = ""
+    deployCommentPreview.value = false
     isEditingDeployComment.value = true
+}
+
+// Removing a file here is only sent once Save is pressed, but it is still one-way enough
+// (the undo is Cancel, which throws the whole edit away) to make somebody confirm it first.
+const confirmRemoveDeployFile = (ulid: string, closeModal: () => void) => {
+    deployCommentRemovedFiles.value.push(ulid)
+    closeModal()
 }
 
 const cancelEditDeployComment = () => {
@@ -474,14 +486,32 @@ const saveDeployComment = () => {
                     </div>
 
                     <template v-if="isEditingDeployComment">
-                        <TicketComposer v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
+                        <div class="mt-2 flex items-center gap-3 text-xs">
+                            <button type="button" class="pb-0.5" :class="!deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = false">{{ ctrans("Write") }}</button>
+                            <button type="button" class="pb-0.5" :class="deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = true">{{ ctrans("Preview") }}</button>
+                        </div>
+                        <TicketComposer v-if="!deployCommentPreview" v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :max-images="deployCommentMaxImages" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
+                        <div v-else class="rounded border border-green-200 bg-white px-3 py-2 min-h-[4.5rem]">
+                            <TicketBody v-if="deployCommentDraft.trim()" :text="deployCommentDraft" />
+                            <p v-else class="text-sm italic text-gray-400">{{ ctrans("Nothing to preview") }}</p>
+                        </div>
                         <div v-if="keptDeployCommentFiles.length" class="mt-2 flex flex-wrap gap-1.5">
-                            <span v-for="file in keptDeployCommentFiles" :key="file.ulid" class="inline-flex max-w-full items-center gap-1 rounded border border-green-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">
-                                <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
-                                <span class="truncate">{{ file.name }}</span>
-                                <button v-tooltip="ctrans('Remove')" type="button" class="text-gray-400 hover:text-red-500" @click="deployCommentRemovedFiles.push(file.ulid)">
-                                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
-                                </button>
+                            <span v-for="file in keptDeployCommentFiles" :key="file.ulid" class="relative">
+                                <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover" />
+                                <span v-else class="flex h-12 w-12 flex-col items-center justify-center rounded border border-green-200 bg-white" :class="attachmentIconFor(file).class">
+                                    <FontAwesomeIcon :icon="attachmentIconFor(file).icon" class="text-lg" fixed-width aria-hidden="true" />
+                                    <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ file.name }}</span>
+                                </span>
+                                <ModalConfirmation :title="ctrans('Remove this file?')" :description="ctrans('It will be gone once you save. Cancelling the edit keeps it.')">
+                                    <template #default="{ changeModel }">
+                                        <button v-tooltip="ctrans('Remove')" type="button" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-500 text-white hover:bg-red-500" @click="changeModel">
+                                            <FontAwesomeIcon icon="fal fa-times" class="text-[9px]" fixed-width aria-hidden="true" />
+                                        </button>
+                                    </template>
+                                    <template #btn-yes="{ closeModal }">
+                                        <Button type="red" :label="ctrans('Remove')" @click="confirmRemoveDeployFile(file.ulid, closeModal)" />
+                                    </template>
+                                </ModalConfirmation>
                             </span>
                         </div>
                         <div class="mt-1 text-xs text-gray-400">{{ ctrans("(markdown works: **bold**, lists, links)") }}</div>

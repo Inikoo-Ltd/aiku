@@ -113,8 +113,9 @@ const messageDelete = ref("")
 			:isLoadingdelete>
 		</slot>
 
+		<Teleport to="body">
 		<TransitionRoot as="template" :show="isOpenModal">
-			<Dialog class="relative z-30" @close="isOpenModal = false">
+			<Dialog class="relative z-[9999]" @close="isOpenModal = false">
 				<TransitionChild
 					as="template"
 					enter="ease-out duration-150"
@@ -249,5 +250,6 @@ const messageDelete = ref("")
 				</div>
 			</Dialog>
 		</TransitionRoot>
+		</Teleport>
 	</div>
 </template>
