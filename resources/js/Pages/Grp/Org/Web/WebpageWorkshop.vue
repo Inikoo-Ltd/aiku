@@ -27,6 +27,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
+import { useHighlightLinks } from "@/Composables/useHighlightLinks";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -63,7 +64,8 @@ import {
   faSync,
   faLayerPlus,
   faKeyboard,
-  faPaste
+  faPaste,
+  faLink
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -962,6 +964,8 @@ const deselectOrExitFullScreen = () => {
 const hasSelectedBlock = () => selectedBlock.value !== null;
 const canEditSelectedBlock = () => props.editable && hasSelectedBlock();
 
+const { isHighlightingLinks, toggleHighlightLinks, applyToIframe: applyHighlightLinksToIframe, highlightLinksShortcut } = useHighlightLinks(_iframe);
+
 const shortcuts: WorkshopShortcut[] = [
   {
     id: "undo", group: "History", label: "Undo", combos: [["Mod", "Z"]],
@@ -1031,6 +1035,7 @@ const shortcuts: WorkshopShortcut[] = [
     id: "full-screen", group: "Editor", label: "Full screen", combos: [["F11"]],
     run: toggleFullScreen, allowWhileTyping: true,
   },
+  highlightLinksShortcut,
   {
     id: "shortcuts", group: "Editor", label: "Show keyboard shortcuts", combos: [["?"], ["Mod", "/"]],
     run: () => isShortcutsDialogVisible.value = true,
@@ -1049,6 +1054,7 @@ const { listenTo: listenForShortcuts } = useWorkshopShortcuts(shortcuts, isShort
 
 const onIframeLoad = () => {
   isIframeLoading.value = false;
+  applyHighlightLinksToIframe();
   listenForShortcuts(_iframe.value?.contentWindow);
 };
 
@@ -1328,6 +1334,16 @@ const openWebsite = () => {
 
             <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
           </template>
+
+          <!-- Highlight links -->
+          <button type="button" @click="toggleHighlightLinks"
+            v-tooltip.bottom="`${isHighlightingLinks ? ctrans('Hide link highlights') : ctrans('Highlight links')} (${formatShortcutCombo(['L'])})`"
+            class="h-7 w-7 flex items-center justify-center rounded transition-colors"
+            :class="isHighlightingLinks
+              ? 'bg-slate-900 text-white hover:bg-slate-700'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'">
+            <FontAwesomeIcon :icon="faLink" fixed-width />
+          </button>
 
           <!-- Reload preview -->
           <button type="button" v-tooltip.bottom="ctrans('Reload preview')"
