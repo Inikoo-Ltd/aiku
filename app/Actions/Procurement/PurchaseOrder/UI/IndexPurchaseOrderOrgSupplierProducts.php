@@ -238,7 +238,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             return;
         }
 
-        $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $orgStocks = OrgStock::with('tradeUnits.image', 'stats')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
@@ -250,6 +250,11 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
+            $row->stock_cover        = $orgStock?->stats ? [
+                'days'            => $orgStock->stats->days_of_cover === null ? null : (float) $orgStock->stats->days_of_cover,
+                'days_worst_case' => $orgStock->stats->days_of_cover_pessimistic === null ? null : (float) $orgStock->stats->days_of_cover_pessimistic,
+                'out_of_stock_at' => $orgStock->stats->predicted_out_of_stock_at,
+            ] : null;
             $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);
 
             return $row;

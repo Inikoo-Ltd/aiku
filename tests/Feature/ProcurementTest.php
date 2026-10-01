@@ -6639,6 +6639,9 @@ test('purchase order products and items tabs show stock and quarterly usage of e
     $comingStockDelivery = StoreStockDelivery::make()->action($this->orgSupplier, ['reference' => 'SD-COMING-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
     StoreStockDeliveryItem::make()->action($comingStockDelivery, null, $orgStock, ['unit_quantity' => 30, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
 
+    $orgStock->stats()->updateOrCreate([], ['days_of_cover' => 45.5, 'days_of_cover_pessimistic' => 30, 'predicted_out_of_stock_at' => '2036-11-15']);
+    $stockCover = ['days' => 45.5, 'days_worst_case' => 30.0, 'out_of_stock_at' => '2036-11-15'];
+
     $products = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'products']))
         ->assertOk()->viewData('page')['props']['products']['data'];
     $row      = collect($products)->firstWhere('id', $orgSupplierProduct->id);
@@ -6650,7 +6653,8 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and((float) collect($row['quarterly_usage'])->last()['sales'])->toBe(6.0)
         ->and(collect($row['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
         ->and(collect($row['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
-        ->and((float) collect($row['stock_deliveries']['coming'])->firstWhere('reference', $comingStockDelivery->reference)['quantity'])->toBe(30.0);
+        ->and((float) collect($row['stock_deliveries']['coming'])->firstWhere('reference', $comingStockDelivery->reference)['quantity'])->toBe(30.0)
+        ->and($row['stock_cover'])->toEqual($stockCover);
 
     $transaction = StorePurchaseOrderTransaction::make()->action(
         $purchaseOrder,
@@ -6666,7 +6670,8 @@ test('purchase order products and items tabs show stock and quarterly usage of e
     expect($item['stock_in_locations'])->toBe('17')
         ->and((float) collect($item['quarterly_usage'])->last()['sales'])->toBe(6.0)
         ->and(collect($item['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
-        ->and(collect($item['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference);
+        ->and(collect($item['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
+        ->and($item['stock_cover'])->toEqual($stockCover);
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('quantity_in_locations', 0)->delete();
