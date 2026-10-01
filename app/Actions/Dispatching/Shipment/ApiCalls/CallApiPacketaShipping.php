@@ -136,6 +136,11 @@ class CallApiPacketaShipping extends OrgAction
                 }
 
                 foreach ($faults as $fault) {
+                    if (in_array($fault->name, ['eshop', 'eshop_id'])) {
+                        $errorData['sender'] = 'Sender "'.$packetAttributes['eshop'].'" was not found in Packeta or does not match the Indication of any sender in the Packeta client portal.';
+                        continue;
+                    }
+
                     if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip', 'phone']) && !isset($errorData['address'])) {
                         $errorData['address'] = "Invalid address for fields: ";
                     } elseif (!isset($errorData['others'])) {
@@ -174,7 +179,7 @@ class CallApiPacketaShipping extends OrgAction
                 $errorData['others'] = rtrim($errorData['others'], ',');
             }
 
-            $errorData['message'] = $errorData['address'] ?? $errorData['others'];
+            $errorData['message'] = $errorData['sender'] ?? $errorData['address'] ?? $errorData['others'];
         }
 
         return [
