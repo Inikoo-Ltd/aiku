@@ -475,8 +475,11 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <div v-if="item.stock_in_locations !== undefined && item.stock_in_locations !== null" class="text-xs text-gray-500">
                     {{ ctrans('Stock') }}: <span class="font-medium">{{ formatQuantity(Number(item.stock_in_locations)) }}</span> {{ ctrans('SKOs') }}
                 </div>
-                <div v-if="item.stock_cover?.days != null" class="text-xs" :class="coverClass(item.stock_cover.days)">
-                    {{ ctrans('Lasts') }}: <span class="font-medium">{{ coverLabel(item.stock_cover.days) }}</span>
+                <div v-if="item.stock_cover && item.stock_cover.days == null" class="text-xs text-gray-400">
+                    {{ ctrans('Lasts') }}: {{ ctrans('No consumption history') }}
+                </div>
+                <div v-else-if="item.stock_cover?.days != null" class="text-xs" :class="coverClass(item.stock_cover.days)">
+                    <span v-tooltip="ctrans('Based on dispatches from this warehouse over the last 3 months, counting only days it was in stock')" class="cursor-help">{{ ctrans('Lasts') }}</span>: <span class="font-medium">{{ coverLabel(item.stock_cover.days) }}</span>
                     <span v-if="item.stock_cover.days > 0 && item.stock_cover.days < 730 && item.stock_cover.out_of_stock_at">
                         ({{ ctrans('out around :date', { date: useFormatTime(item.stock_cover.out_of_stock_at) }) }})
                     </span>
