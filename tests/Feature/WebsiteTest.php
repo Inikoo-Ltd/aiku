@@ -151,6 +151,7 @@ use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\post;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -524,7 +525,7 @@ test('workshop repair uploads one base64 file of a script block and leaves publi
     $liveSnapshotId = $webpage->live_snapshot_id;
     $repairRoute    = route('grp.models.webpage.web_block.repair_base64_file', ['webpage' => $webpage->id, 'modelHasWebBlock' => $scriptBlock->id]);
 
-    $url = post($repairRoute, ['data_uri' => $pngDataUri])->assertOk()->json('url');
+    $url = postJson($repairRoute, ['data_uri' => $pngDataUri])->assertOk()->json('url');
 
     post($repairRoute, ['data_uri' => $svgDataUri])->assertSessionHasErrors('data_uri');
 

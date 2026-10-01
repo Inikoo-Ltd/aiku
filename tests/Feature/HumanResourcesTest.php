@@ -2722,6 +2722,8 @@ test('profile timesheets tab returns timesheets beyond today', function () {
         'password' => 'secret123',
     ]);
 
+    $this->travelTo(now()->startOfMonth()->addDays(14));
+
     StoreTimesheet::make()->action($employee, ['date' => now()]);
     StoreTimesheet::make()->action($employee, ['date' => now()->subDays(3)]);
 

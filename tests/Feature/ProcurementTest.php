@@ -6692,11 +6692,12 @@ test('purchase order products and items tabs show stock and quarterly usage of e
                 'number_out_of_stock_org_stocks' => 0,
                 'number_location_org_stocks'     => 0,
             ]);
-        DB::table('org_stock_histories')->insert([
+        DB::table('org_stock_histories')->updateOrInsert([
+            'organisation_id' => $orgStock->organisation_id,
+            'org_stock_id'    => $orgStock->id,
+            'date'            => $outOfStockDay->toDateString(),
+        ], [
             'organisation_stock_history_id' => $organisationStockHistoryId,
-            'organisation_id'               => $orgStock->organisation_id,
-            'org_stock_id'                  => $orgStock->id,
-            'date'                          => $outOfStockDay->toDateString(),
             'quantity_in_locations'         => 0,
         ]);
     }
