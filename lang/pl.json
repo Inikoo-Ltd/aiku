@@ -10751,5 +10751,5 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} Zapisanie aktualizacji 1 produktu w sklepie i przetłumaczenie go za pomocą sztucznej inteligencji na język sklepu.|[2,*] Zapisanie aktualizacji wszystkich :count produktów w sklepie i przetłumaczenie ich za pomocą sztucznej inteligencji na każdy język sklepu.",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} To zmieni znaczenie 1 otwartego zamówienia|[2,*] To zmieni znaczenie :count otwartych zamówień",
     "Δ 1Y": "Δ 1Y",
-    "— that is :time for you": "— to jest :time dla ciebie"
+    "(:time for you)": "(:time dla ciebie)"
 }

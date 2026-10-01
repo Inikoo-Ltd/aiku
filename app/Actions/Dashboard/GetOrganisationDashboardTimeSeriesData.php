@@ -10,6 +10,7 @@ namespace App\Actions\Dashboard;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Ordering\Order\GetOrderBacklog;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
+use App\Actions\Comms\Mailshot\GetShopMailshotsSentStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\SysAdmin\Organisation;
@@ -84,6 +85,7 @@ class GetOrganisationDashboardTimeSeriesData
             'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']),
             'platforms'         => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['platforms']),
             'brands'            => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['brands']),
+            'mailshots'         => GetShopMailshotsSentStats::run($organisation, $fromDate, $toDate),
         ];
     }
 

@@ -9,6 +9,7 @@
 namespace App\Models\Helpers;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Events\BroadcastTicketUpdated;
 use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -145,7 +146,18 @@ class Ticket extends Model implements Auditable, HasMedia
             if ($ticket->wasRecentlyCreated || $ticket->wasChanged(['reference', 'subject', 'description', 'tags', 'reporter_id', 'assignee_id', 'customer_id'])) {
                 self::refreshSearchVectors($ticket->id);
             }
+
+            if ($ticket->wasChanged()) {
+                $ticket->broadcastUpdated();
+            }
         });
+
+        static::deleted(fn (Ticket $ticket) => $ticket->broadcastUpdated());
+    }
+
+    public function broadcastUpdated(): void
+    {
+        broadcast(new BroadcastTicketUpdated($this->id, $this->group_id))->toOthers();
     }
 
     /**

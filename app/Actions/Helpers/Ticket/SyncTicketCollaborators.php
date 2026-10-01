@@ -52,6 +52,7 @@ class SyncTicketCollaborators extends OrgAction
         }
 
         $this->recordHistory($ticket, $previousIds, $wantedIds);
+        $ticket->broadcastUpdated();
         $ticket->touch();
 
         foreach (User::whereIn('id', $addedIds)->get() as $collaborator) {
