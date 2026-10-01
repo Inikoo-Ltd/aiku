@@ -9,6 +9,7 @@
 namespace App\Models\Helpers;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Events\BroadcastTicketUpdated;
 use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -49,6 +50,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property bool $is_confidential
  * @property bool $blocks_source
  * @property bool $closes_source
+ * @property bool $reporter_muted
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -108,6 +110,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'is_confidential',
         'blocks_source',
         'closes_source',
+        'reporter_muted',
         'qa_status',
         'pull_request_url',
     ];
@@ -126,6 +129,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'is_confidential' => 'boolean',
             'blocks_source' => 'boolean',
             'closes_source' => 'boolean',
+            'reporter_muted' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
             'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
@@ -145,7 +149,18 @@ class Ticket extends Model implements Auditable, HasMedia
             if ($ticket->wasRecentlyCreated || $ticket->wasChanged(['reference', 'subject', 'description', 'tags', 'reporter_id', 'assignee_id', 'customer_id'])) {
                 self::refreshSearchVectors($ticket->id);
             }
+
+            if ($ticket->wasChanged()) {
+                $ticket->broadcastUpdated();
+            }
         });
+
+        static::deleted(fn (Ticket $ticket) => $ticket->broadcastUpdated());
+    }
+
+    public function broadcastUpdated(): void
+    {
+        broadcast(new BroadcastTicketUpdated($this->id, $this->group_id))->toOthers();
     }
 
     /**

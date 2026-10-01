@@ -6,14 +6,14 @@
 
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -26,7 +26,7 @@ const props = defineProps<{
     modules?: { label: string; value: string }[]
 }>()
 
-const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[] }>({
+const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[]; reporter_muted: boolean }>({
     subject: "",
     description: "",
     reference_url: "",
@@ -35,6 +35,7 @@ const form = useForm<{ subject: string; description: string; reference_url: stri
     kind: props.kinds?.[0]?.value ?? null,
     module: null,
     images: [],
+    reporter_muted: false,
 })
 
 
@@ -79,17 +80,27 @@ const submit = () =>
         <div class="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div class="thinScrollbar space-y-4 overflow-y-auto pr-2">
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans("Subject") }}</label>
-                <input v-model="form.subject" type="text" maxlength="255" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" :placeholder="trans('One line that says what is wrong')" />
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs text-gray-500">{{ ctrans("Subject") }}</label>
+                    <button
+                        type="button"
+                        v-tooltip="form.reporter_muted ? ctrans('Muted: no sound, mini-modal or email for you on this ticket') : ctrans('Mute this ticket for me')"
+                        class="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        :class="form.reporter_muted && '!text-amber-600'"
+                        @click="form.reporter_muted = !form.reporter_muted">
+                        <FontAwesomeIcon :icon="form.reporter_muted ? 'fal fa-bell-slash' : 'fal fa-bell'" fixed-width />
+                    </button>
+                </div>
+                <input v-model="form.subject" type="text" maxlength="255" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" :placeholder="ctrans('One line that says what is wrong')" />
                 <p v-if="form.errors.subject" class="text-xs text-red-600 mt-1">{{ form.errors.subject }}</p>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans("Details") }} <span class="text-gray-400">{{ trans("(markdown works: **bold**, lists, links)") }}</span></label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Details") }} <span class="text-gray-400">{{ ctrans("(markdown works: **bold**, lists, links)") }}</span></label>
                 <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="8" />
                 <p v-if="form.errors.description || form.errors.images" class="text-xs text-red-600 mt-1">{{ form.errors.description || form.errors.images }}</p>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans("Page where it happens") }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Page where it happens") }}</label>
                 <input v-model="form.reference_url" type="url" maxlength="2048" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://app.aiku.io/..." />
                 <p v-if="form.errors.reference_url" class="text-xs text-red-600 mt-1">{{ form.errors.reference_url }}</p>
             </div>
@@ -97,7 +108,7 @@ const submit = () =>
 
         <aside class="space-y-4 overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6">
             <div v-if="types?.length">
-                <label class="block text-xs text-gray-500 mb-1">{{ trans("Type") }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Type") }}</label>
                 <Select v-model="form.type" :options="types" option-label="label" option-value="value" class="w-full">
                     <template #value="{ value, placeholder }">
                         <span v-if="value" class="flex items-center gap-2">
@@ -115,7 +126,7 @@ const submit = () =>
                 </Select>
             </div>
             <div v-if="priorities?.length">
-                <label class="block text-xs text-gray-500 mb-1">{{ trans("Priority") }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Priority") }}</label>
                 <Select v-model="form.priority" :options="priorities" option-label="label" option-value="value" class="w-full">
                     <template #value="{ value, placeholder }">
                         <span v-if="value" class="flex items-center gap-2">
@@ -134,7 +145,7 @@ const submit = () =>
             </div>
             <template v-if="kinds?.length">
                 <div class="border-t border-gray-200 pt-4">
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans("Kind") }}</label>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Kind") }}</label>
                     <Select v-model="form.kind" :options="kinds" option-label="label" option-value="value" class="w-full">
                     <template #value="{ value, placeholder }">
                         <span v-if="value" class="flex items-center gap-2">
@@ -152,8 +163,8 @@ const submit = () =>
                 </Select>
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans("Module") }}</label>
-                    <Select v-model="form.module" :options="modules" option-label="label" option-value="value" show-clear filter class="w-full" :placeholder="trans('Which part of aiku')">
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Module") }}</label>
+                    <Select v-model="form.module" :options="modules" option-label="label" option-value="value" show-clear filter class="w-full" :placeholder="ctrans('Which part of aiku')">
                     <template #value="{ value, placeholder }">
                         <span v-if="value" class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="optionIcons[value]" :icon="optionIcons[value]" :class="optionIconClasses[value]" fixed-width aria-hidden="true" />
@@ -174,7 +185,7 @@ const submit = () =>
         </div>
 
         <div class="mt-4 shrink-0 border-t border-gray-200 pt-4 pb-[40px] flex justify-end">
-            <Button :label="trans('Create ticket')" :loading="form.processing" :disabled="!form.subject.trim()" @click="submit" />
+            <Button :label="ctrans('Create ticket')" :loading="form.processing" :disabled="!form.subject.trim()" @click="submit" />
         </div>
     </form>
 </template>

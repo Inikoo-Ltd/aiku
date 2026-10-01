@@ -1623,6 +1623,43 @@ test('HandleChatRead asController marks unread visitor messages as read via the 
     expect($guestMessage->refresh()->is_read)->toBeTrue();
 });
 
+test('previewing a conversation from the inbox list leaves its messages unread', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $guestMessage = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Is my order on its way?',
+        'is_read'         => false,
+    ]);
+
+    $this->getJson(route('grp.api.chats.sessions.messages', [
+        'chatSession'  => $chatSession->ulid,
+        'request_from' => ChatSenderTypeEnum::AGENT->value,
+        'preview'      => 1,
+        'limit'        => 30,
+    ]))->assertOk()->assertJsonPath('data.messages.0.message_text', 'Is my order on its way?');
+
+    expect($guestMessage->refresh()->is_read)->toBeFalse();
+
+    $this->getJson(route('grp.api.chats.sessions.messages', [
+        'chatSession'  => $chatSession->ulid,
+        'request_from' => ChatSenderTypeEnum::AGENT->value,
+    ]))->assertOk();
+
+    expect($guestMessage->refresh()->is_read)->toBeTrue();
+});
+
 test('chat status for a session moved to trash answers not found instead of failing', function () {
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -3044,10 +3081,10 @@ describe('staff messaging chat theme', function () {
 
     test('each person chooses their own alert sounds, which reach the layout', function () {
         actingAs($this->user)
-            ->patchJson(route('grp.models.profile.update'), ['alert_sounds' => ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent', 'waiting' => 'silent', 'pager' => 'bells']])
+            ->patchJson(route('grp.models.profile.update'), ['alert_sounds' => ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent', 'waiting' => 'silent', 'ticket' => 'genie', 'pager' => 'bells']])
             ->assertOk();
 
-        $expected = ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent', 'waiting' => 'silent'];
+        $expected = ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent', 'waiting' => 'silent', 'ticket' => 'genie'];
 
         expect(Arr::get($this->user->fresh()->settings, 'alert_sounds'))->toEqual($expected)
             ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['alert_sounds'])->toEqual($expected);

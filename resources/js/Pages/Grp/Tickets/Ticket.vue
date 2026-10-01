@@ -91,7 +91,7 @@ const props = defineProps<{
     }
 }>()
 
-useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "can_request_qa", "is_reporter", "can_cancel_as_reporter", "can_reopen_as_reporter", "can_comment_internally", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "can_preview_attachments", "attachment_gallery"], props.ticket.reference)
+useLiveTickets([], props.ticket.reference, undefined, props.ticket.id)
 
 const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticket_history_newest_first", isNewestFirst: boolean) => {
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })

@@ -227,6 +227,7 @@ class UpdateTicket extends OrgAction
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
+            'reporter_muted' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
             'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_status'     => [
@@ -268,12 +269,22 @@ class UpdateTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || Ticket::canBeAssignedBy($request->user())) {
-            return true;
+        // Muting is the reporter's own call. It sits ahead of the blanket engineer/admin
+        // early-return below, because nobody else - whatever they can otherwise do on the ticket
+        // - gets to mute someone else's notifications.
+        if (!$this->asAction && $request->has('reporter_muted') && array_diff(array_keys($request->except('_method')), ['reporter_muted']) === []) {
+            $ticket = $request->route('ticket');
+
+            return $ticket instanceof Ticket && $ticket->isReportedBy($request->user());
         }
 
         $user   = $request->user();
         $ticket = $request->route('ticket');
+
+        if ($this->asAction || (Ticket::canBeAssignedBy($user) && (!$request->has('reporter_muted') || ($ticket instanceof Ticket && $ticket->isReportedBy($user))))) {
+            return true;
+        }
+
         if (!$ticket instanceof Ticket) {
             return false;
         }
@@ -316,7 +327,7 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->canBeUpdatedBy($user)) {
-            return !$request->has('is_confidential');
+            return !$request->has('is_confidential') && (!$request->has('reporter_muted') || $ticket->isReportedBy($user));
         }
 
         if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {

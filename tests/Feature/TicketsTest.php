@@ -361,15 +361,41 @@ test('staff reporter is told of the question by email and slack as their profile
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
     $reporter->update(['settings' => ['notifications' => ['ticket_resolved' => ['email']]]]);
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $reporter->id && ($event->notification['reason'] ?? null) === 'resolved');
 
     app()->detectEnvironment(fn () => 'production');
     $mail = (new TicketNotification($ticket, 'Subject', ['Line'], 'View'))->toMail($reporter);
     app()->detectEnvironment(fn () => 'testing');
     expect($mail->mailer)->toBe('ses')
         ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
+});
+
+test('a reporter mutes their own ticket and hears nothing more about it, but nobody else can mute it for them', function () {
+    Notification::fake();
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Mute me', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    $other = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    actingAs($other);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertForbidden();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeTrue();
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    Notification::assertNotSentTo($reporter, TicketNotification::class);
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => false])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
 });
 
 test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
@@ -3639,4 +3665,54 @@ test('a pull request link is checked on GitHub before it is saved, and read from
     UpdateTicketPullRequest::make()->action($ticket->fresh(), ['pull_request_url' => null]);
     expect($ticket->fresh()->pull_request_url)->toBeNull()
         ->and(GetTicketPullRequest::make()->handle($ticket->fresh()))->toBe(['pull_request' => null, 'commits' => null, 'error' => null]);
+});
+
+test('changing a ticket, commenting on it or changing its collaborators tells the open ticket page to reload', function () {
+    Mail::fake();
+    Notification::fake();
+    Event::fake([\App\Events\BroadcastTicketUpdated::class]);
+
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Live page']);
+    $broadcastsFor = fn () => Event::dispatched(\App\Events\BroadcastTicketUpdated::class, fn ($event) => $event->ticketId === $ticket->id)->count();
+
+    expect($broadcastsFor())->toBe(0);
+
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $afterUpdate = $broadcastsFor();
+    expect($afterUpdate)->toBeGreaterThan(0);
+
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'Looking into it'], false);
+    $afterComment = $broadcastsFor();
+    expect($afterComment)->toBeGreaterThan($afterUpdate);
+
+    SyncTicketCollaborators::make()->action($ticket, [$collaborator->id]);
+    expect($broadcastsFor())->toBeGreaterThan($afterComment);
+
+    $event = new \App\Events\BroadcastTicketUpdated($ticket->id, $ticket->group_id);
+    expect(collect($event->broadcastOn())->pluck('name')->all())->toBe(['private-grp.ticket.'.$ticket->id, 'private-grp.'.$ticket->group_id.'.general'])
+        ->and($event->broadcastAs())->toBe('ticket-updated')
+        ->and($event->broadcastWith())->toBe(['id' => $ticket->id]);
+});
+
+test('a ticket list refetches one changed row, and a confidential ticket is not handed to someone who cannot see it', function () {
+    $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider->removeRole('group-admin');
+
+    $open         = StoreTicket::make()->action($this->group, ['subject' => 'Row to refresh', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $confidential = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+
+    actingAs($this->user);
+    get(route('grp.json.ticket.row', $open->id))->assertOk()
+        ->assertJsonPath('id', $open->id)
+        ->assertJsonPath('reference', $open->reference)
+        ->assertJsonPath('subject', 'Row to refresh');
+
+    actingAs($outsider);
+    get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
 });

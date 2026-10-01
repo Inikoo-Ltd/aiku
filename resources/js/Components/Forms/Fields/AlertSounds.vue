@@ -18,6 +18,7 @@ const kinds: { key: AlertSoundKind, label: string, hint: string }[] = [
     { key: 'email', label: ctrans('Email'), hint: ctrans('A customer email arrives') },
     { key: 'colleague', label: ctrans('Colleague messages'), hint: ctrans('A colleague writes to you') },
     { key: 'waiting', label: ctrans('Customer still waiting'), hint: ctrans('Rings again every 30 seconds while a chat is unanswered') },
+    { key: 'ticket', label: ctrans('Ticket resolved'), hint: ctrans('A ticket you reported is marked done') },
 ]
 
 const labels = alertSoundLabels()
@@ -33,6 +34,11 @@ const emojis: Record<AlertSound, string> = {
     bird: '🐦',
     boing: '🪀',
     fart: '💨',
+    triumph: '🏆',
+    gong: '🥁',
+    sparkle: '✨',
+    knock: '🚪',
+    genie: '🧞',
     silent: '🔇',
 }
 

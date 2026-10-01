@@ -12,11 +12,13 @@ use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\NewsletterMailshotsResource;
+use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +28,9 @@ class IndexNewsletterMailshots extends OrgAction
 {
     use WithOverviewAuthorisation;
     use HasUIMailshots;
-    use WithIndexMailshots;
+    use WithIndexMailshots {
+        tableStructure as baseTableStructure;
+    }
 
     public Group|Outbox|PostRoom|Organisation|Shop $parent;
 
@@ -36,6 +40,20 @@ class IndexNewsletterMailshots extends OrgAction
         return $this->handleMailshot(OutboxCodeEnum::NEWSLETTER, $parent, $prefix);
     }
 
+    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+            ($this->baseTableStructure($parent, $modelOperations, $prefix))($table);
+
+            $table
+                ->betweenDates(['date'])
+                ->elementGroup(
+                    key: 'state',
+                    label: __('State'),
+                    elements: $this->getMailshotStateElements(OutboxCodeEnum::NEWSLETTER, $parent)
+                );
+        };
+    }
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {

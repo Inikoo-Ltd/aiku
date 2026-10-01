@@ -214,4 +214,16 @@ return [
 
     'default_sales_target_growth' => env('DEFAULT_SALES_TARGET_GROWTH', 0.04),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sales target tips
+    |--------------------------------------------------------------------------
+    |
+    | The model that words the morning tip on how each shop and invoice category
+    | can reach the month's target (sales-targets:daily-tips).
+    |
+    */
+
+    'sales_target_tip_model' => env('SALES_TARGET_TIP_MODEL', 'openai/gpt-5.6-luna'),
+
 ];

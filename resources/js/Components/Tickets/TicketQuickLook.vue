@@ -72,17 +72,47 @@ const loadControls = async (ticketId: number) => {
     }
 }
 
+const LIVE_RELOAD_DELAY_MS = 800
+
+let stopListeningForChanges: (() => void) | null = null
+
+const listenForChanges = (ticketId: number) => {
+    if (!window.Echo) {
+        return
+    }
+
+    const channelName = `grp.ticket.${ticketId}`
+    let reloadTimer: ReturnType<typeof setTimeout> | undefined
+
+    const onTicketUpdated = () => {
+        clearTimeout(reloadTimer)
+        reloadTimer = setTimeout(() => {
+            if (ticket.value?.id === ticketId) loadControls(ticketId)
+        }, LIVE_RELOAD_DELAY_MS)
+    }
+
+    window.Echo.private(channelName).listen(".ticket-updated", onTicketUpdated)
+
+    stopListeningForChanges = () => {
+        clearTimeout(reloadTimer)
+        window.Echo.private(channelName).stopListening(".ticket-updated", onTicketUpdated)
+    }
+}
+
 watch(
     () => ticket.value?.id,
     (ticketId) => {
         controls.value = null
         stopReloadingAfterSaves?.()
         stopReloadingAfterSaves = null
+        stopListeningForChanges?.()
+        stopListeningForChanges = null
         if (!ticketId) return
         loadControls(ticketId)
         stopReloadingAfterSaves = router.on("success", () => {
             if (ticket.value?.id === ticketId) loadControls(ticketId)
         })
+        listenForChanges(ticketId)
     },
     { immediate: true }
 )
@@ -95,6 +125,7 @@ onMounted(() => desktopQuery?.addEventListener("change", onDesktopQueryChange))
 
 onBeforeUnmount(() => {
     stopReloadingAfterSaves?.()
+    stopListeningForChanges?.()
     desktopQuery?.removeEventListener("change", onDesktopQueryChange)
 })
 

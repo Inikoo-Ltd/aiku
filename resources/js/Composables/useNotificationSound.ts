@@ -167,11 +167,11 @@ export const resetUnread = () => {
 	emailsWaiting.value = nobodyWaiting()
 }
 
-export const ALERT_SOUNDS = ["chime", "bells", "dingdong", "pop", "marimba", "submarine", "voice", "bird", "boing", "fart", "silent"] as const
+export const ALERT_SOUNDS = ["chime", "bells", "dingdong", "pop", "marimba", "submarine", "voice", "bird", "boing", "fart", "triumph", "gong", "sparkle", "knock", "genie", "silent"] as const
 export type AlertSound = typeof ALERT_SOUNDS[number]
-export type AlertSoundKind = "chat" | "whatsapp" | "email" | "colleague" | "waiting"
+export type AlertSoundKind = "chat" | "whatsapp" | "email" | "colleague" | "waiting" | "ticket"
 
-const DEFAULT_ALERT_SOUNDS: Record<Exclude<AlertSoundKind, "waiting">, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba" }
+const DEFAULT_ALERT_SOUNDS: Record<Exclude<AlertSoundKind, "waiting">, AlertSound> = { chat: "chime", whatsapp: "pop", email: "dingdong", colleague: "marimba", ticket: "genie" }
 
 export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	chime: ctrans("Chime"),
@@ -184,6 +184,11 @@ export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	bird: ctrans("Angry bird"),
 	boing: ctrans("Boing"),
 	fart: ctrans("Fart"),
+	triumph: ctrans("Triumph fanfare"),
+	gong: ctrans("Gong"),
+	sparkle: ctrans("Sparkle"),
+	knock: ctrans("Knock knock"),
+	genie: ctrans("A genie voice: your wish is granted"),
 	silent: ctrans("Silent"),
 })
 
@@ -288,6 +293,8 @@ const speak = (text: string, voice: { lang?: string, pitch?: number, rate?: numb
 	setTimeout(() => resolve(false), 3000)
 })
 
+const GENIE_LINES = (): string[] => [ctrans("Done!"), ctrans("Done, master!"), ctrans("Your wish is granted!")]
+
 export const playChosenSound = (sound: AlertSound, spoken = ""): Promise<boolean> => {
 	switch (sound) {
 		case "silent": return Promise.resolve(true)
@@ -301,6 +308,14 @@ export const playChosenSound = (sound: AlertSound, spoken = ""): Promise<boolean
 		case "bird": return playTones([[1900, 90, 3200], [2100, 90, 3400], [1700, 160, 3000]], 0.15, "triangle")
 		case "boing": return playTones([[160, 380, 820]], 0.3, "triangle")
 		case "fart": return playTones([[150, 380, 55], [110, 260, 45]], 0.35, "sawtooth")
+		case "triumph": return playTones([[523, 90], [659, 90], [784, 90], [1046, 200]], 0.18, "square", 1, { gapMs: 25 })
+		case "gong": return playTones([[196, 900]], 0.22, "sine", 1, { hold: 0.5 })
+		case "sparkle": return playTones([[2093, 60], [2637, 60], [3136, 60], [2637, 60], [2093, 120]], 0.14, "square", 1, { gapMs: 15 })
+		case "knock": return playTones([[140, 90], [140, 90]], 0.3, "square", 1, { gapMs: 140 })
+		case "genie": {
+			const lines = GENIE_LINES()
+			return speak(spoken || lines[Math.floor(Math.random() * lines.length)])
+		}
 	}
 }
 

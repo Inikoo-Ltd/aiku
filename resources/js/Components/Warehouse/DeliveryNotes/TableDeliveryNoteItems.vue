@@ -116,7 +116,7 @@ const emit = defineEmits<{
 const isChangingPackaging = ref(false)
 const canChangePackaging = computed(() =>
     props.isEditable
-    && ['handling', 'packing'].includes(props.state)
+    && ['handling', 'picked'].includes(props.state)
     && !!props.packaging?.options?.length
 )
 

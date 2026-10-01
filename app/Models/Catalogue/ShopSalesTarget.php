@@ -8,17 +8,20 @@
 
 namespace App\Models\Catalogue;
 
+use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Monthly sales target set by management; staff bonuses are paid against it.
+ * Monthly sales target set by management; staff bonuses are paid against it. Rows with an
+ * invoice category are that category's share of the shop; the shop then targets their sum.
  *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
  * @property int $shop_id
+ * @property int|null $invoice_category_id
  * @property \Illuminate\Support\Carbon $month
  * @property string $target_org_currency
  * @property int|null $set_by_user_id
@@ -26,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Shop $shop
  * @property-read User|null $setBy
+ * @property-read InvoiceCategory|null $invoiceCategory
  * @mixin \Eloquent
  */
 class ShopSalesTarget extends Model
@@ -45,5 +49,10 @@ class ShopSalesTarget extends Model
     public function setBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'set_by_user_id');
+    }
+
+    public function invoiceCategory(): BelongsTo
+    {
+        return $this->belongsTo(InvoiceCategory::class);
     }
 }

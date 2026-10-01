@@ -139,7 +139,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
-use App\Actions\Maintenance\Web\RepairScriptWebBlocksBase64Images;
+use App\Actions\Maintenance\Web\RepairScriptWebBlocksBase64Files;
+use App\Actions\Iris\Media\DownloadIrisAttachment;
 use App\Actions\Helpers\Media\SaveModelImages;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -483,7 +484,7 @@ test('script web block rejects base64 data', function (Website $website) {
     expect($textBlock)->toBeInstanceOf(ModelHasWebBlocks::class);
 })->depends('create b2b website');
 
-test('repair moves base64 images in script web blocks to uploaded images', function (Website $website) {
+test('repair moves base64 files in script web blocks to uploaded images and webpage attachments', function (Website $website) {
     $webpage         = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
     $scriptBlockType = $webpage->group->webBlockTypes()->where('code', 'script')->first();
     $scriptBlock     = StoreModelHasWebBlock::make()->action($webpage, [
@@ -493,24 +494,31 @@ test('repair moves base64 images in script web blocks to uploaded images', funct
     $webBlock = $scriptBlock->webBlock;
 
     $pngBase64 = base64_encode(UploadedFile::fake()->image('banner.png', 4, 4)->getContent());
+    $pdfBase64 = chunk_split(base64_encode("%PDF-1.4\n%%EOF\n"), 8, "\n");
     $webBlock->update(['layout' => ['data' => ['fieldValue' => ['value' =>
-        "<img src=\"data:image/png;base64,$pngBase64\"><div style=\"background:url(data:image/png;base64,$pngBase64)\"></div>",
+        "<img src=\"data:image/png;base64,$pngBase64\"><div style=\"background:url(data:image/png;base64,$pngBase64)\"></div>".
+        "<a class=\"btn\" href=\"data:application/pdf;base64,$pdfBase64\" download=\"Soaps - Labeling Guide.pdf\">Download</a>",
     ]]]]);
 
-    expect(RepairScriptWebBlocksBase64Images::run($webBlock->refresh(), false))->toBe(2)
+    expect(RepairScriptWebBlocksBase64Files::run($webBlock->refresh(), false))->toBe(2)
         ->and($webBlock->images()->count())->toBe(0);
 
-    expect(RepairScriptWebBlocksBase64Images::run($webBlock))->toBe(1);
+    expect(RepairScriptWebBlocksBase64Files::run($webBlock))->toBe(2);
 
     $webBlock->refresh();
     $repairedCode = data_get($webBlock->layout, 'data.fieldValue.value');
     $imageUrl     = GetImgProxyUrl::run($webBlock->images()->first()->getImage());
+    $pdf          = $webpage->attachments()->first();
 
     expect($webBlock->images()->count())->toBe(1)
         ->and($repairedCode)->not->toContain('base64')
         ->and(substr_count($repairedCode, $imageUrl))->toBe(2)
+        ->and($repairedCode)->toContain("href=\"/attachment/$pdf->ulid\" download=\"Soaps - Labeling Guide.pdf\"")
+        ->and($pdf->name)->toBe('Soaps - Labeling Guide.pdf')
+        ->and($pdf->pivot->scope)->toBe('webpage')
+        ->and(DownloadIrisAttachment::isPublic($pdf))->toBeTrue()
         ->and(data_get($webpage->refresh()->unpublishedSnapshot->layout, 'web_blocks'))->not->toBeEmpty()
-        ->and(RepairScriptWebBlocksBase64Images::run($webBlock))->toBe(0);
+        ->and(RepairScriptWebBlocksBase64Files::run($webBlock))->toBe(0);
 })->depends('create b2b website');
 
 test('delete model has web block', function (ModelHasWebBlocks $modelHasWebBlock) {

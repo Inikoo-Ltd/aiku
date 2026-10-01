@@ -25,8 +25,9 @@ class GetMetaChatMessages
     public function rules(): array
     {
         return [
-            'limit'  => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'cursor' => ['sometimes', 'date'],
+            'limit'   => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'cursor'  => ['sometimes', 'date'],
+            'preview' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -56,7 +57,9 @@ class GetMetaChatMessages
     {
         $validated = $request->validated();
 
-        MarkMetaChatMessagesAsRead::run($metaChatSession);
+        if (!($validated['preview'] ?? false)) {
+            MarkMetaChatMessagesAsRead::run($metaChatSession);
+        }
 
         $messages = $this->handle($metaChatSession, $validated);
 

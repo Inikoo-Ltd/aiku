@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
 use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
 use App\Actions\Helpers\Ticket\Json\GetTicketChat;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
+use App\Actions\Helpers\Ticket\Json\GetTicketRow;
 use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
 use App\Actions\Helpers\Ticket\Json\GetTicketQaQueue;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
@@ -453,5 +454,6 @@ Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLoc
 Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
 Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');
+Route::get('tickets/{ticket:id}/row', GetTicketRow::class)->name('ticket.row')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/pull-request', GetTicketPullRequest::class)->name('ticket.pull_request')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');

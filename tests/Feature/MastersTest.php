@@ -4337,6 +4337,28 @@ describe('price tips from Jev, HELP-2331', function () {
             ->assertOk();
     });
 
+    test('a markdown is not tipped when the website is the problem, and the reason says how the website is doing', function () {
+        $answers = ['change' => ['choice' => 'down_10', 'probabilities' => ['down_10' => 0.9]], 'temporary_drop' => ['noul' => 0.1]];
+        $healthy = ['shops' => 20, 'online' => 20, 'online_without_images' => 0, 'family_visitors' => 900, 'family_visitors_change_pct' => 5];
+
+        expect(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => $healthy], $answers))->toMatchArray(['change' => -10])
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online' => 14]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online_without_images' => 2]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'family_visitors_change_pct' => -40]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::websiteReason($healthy))->toBe('website OK: online in 20 of 20 shops, family page visitors +5%')
+            ->and(GenerateMasterAssetPriceTips::websiteReason([...$healthy, 'online' => 14, 'family_visitors_change_pct' => -40]))->toBe('website problem: offline in 6 of 20 shops, family page visitors -40%')
+            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'offers' => ['Autumn 10% off', 'Older offer']], ['change' => -10, 'capped' => false]))->toContain('2 offers running, latest: Autumn 10% off')
+            ->and(GenerateMasterAssetPriceTips::make()->websiteHealth([0]))->toBe([]);
+    });
+
+    test('the reason puts the product among its family', function () {
+        $family = ['rank' => 26, 'products' => 31, 'products_selling' => 31, 'share_pct' => 1, 'family_change_pct' => -12];
+
+        expect(GenerateMasterAssetPriceTips::familyReason($family, -10))->toBe('in the family: #26 of 31 by sales, 1% of family sales, family -12% vs this product -10%')
+            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'family' => $family], ['change' => -10, 'capped' => false]))->toContain('in the family: #26 of 31')
+            ->and(GenerateMasterAssetPriceTips::make()->familyContext([], collect()))->toBe([]);
+    });
+
     test('why staff said a tip was wrong goes back to the AI for that product and its family', function () use ($fakeJev) {
         $fakeJev('down_10', 0.72);
         $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);

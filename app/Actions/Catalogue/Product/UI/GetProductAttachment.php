@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use App\Actions\Traits\HasBucketAttachment;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -12,12 +13,13 @@ class GetProductAttachment
 {
     use AsObject;
     use HasBucketAttachment;
+    use WithComplianceEditing;
 
     public function handle(Product $product): array
     {
         return [
             'id'                        => $product->id,
-            'editable'                  => false,
+            'editable'                  => $this->canChangeComplianceDocuments(request()->user(), $product),
             'attachment_category_box'   => $this->getAttachmentData($product),
             'attachRoute' => [
                 'name'       => 'grp.models.product.attachment.attach',

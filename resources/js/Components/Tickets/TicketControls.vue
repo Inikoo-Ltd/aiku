@@ -21,9 +21,9 @@ import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots, faBellSlash } from "@fal"
 
-library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faForward, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faForward, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots, faBellSlash)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -593,6 +593,12 @@ const saveDeployComment = () => {
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
                 {{ ctrans("Confidential") }} <span class="text-xs text-gray-400">({{ ctrans("only reporter and lead engineers") }})</span>
                 <FontAwesomeIcon v-if="isPending('confidential')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
+            </label>
+            <label v-if="is_reporter" v-tooltip="ctrans('No sound, mini-modal or email when this ticket changes')" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
+                <FontAwesomeIcon icon="fal fa-bell-slash" fixed-width :class="ticket.reporter_muted ? 'text-gray-500' : 'text-gray-300'" />
+                <input type="checkbox" :checked="ticket.reporter_muted" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('reporter_muted', ($event.target as HTMLInputElement).checked, 'reporter_muted')" />
+                {{ ctrans("Mute this ticket for me") }}
+                <FontAwesomeIcon v-if="isPending('reporter_muted')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
             </label>
             </template>
     <Dialog v-model:visible="isQaRequestOpen" modal :header="ctrans('Ask QA to check')" :style="{ width: '32rem' }">
