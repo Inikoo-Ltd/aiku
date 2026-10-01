@@ -68,7 +68,7 @@ const cellClass = (state: string) => activeState.value === state
 </script>
 
 <template>
-    <div class="relative mx-4 mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <div class="relative isolate mx-4 mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div ref="scroller" class="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div class="flex min-w-max items-stretch divide-x divide-gray-200 text-sm lg:min-w-0">
             <button

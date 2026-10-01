@@ -2,10 +2,13 @@
     The arrow that tells the user there are more items to scroll to, mostly on a phone where a
     row of boxes, tabs, timeline steps or table columns is wider than the screen. It sits over
     the edge of a horizontally scrolling strip: a solid strip holding the chevron, outlined on
-    its inner side so items passing underneath don't show through, then a soft fade into the
+    its inner side so items passing underneath don't show through and edged on its outer side in
+    the background colour, 1px past the strip, so no sliver of content peeks at the edge, then a soft fade into the
     content. It fades in and out as the strip reaches either end, and clicking it scrolls on.
 
-    Use it with useScrollArrows on the scrolling element, inside a `relative` wrapper:
+    Use it with useScrollArrows on the scrolling element, inside a `relative isolate` wrapper.
+    The arrow is z-20 to sit over the strip's own raised items; isolate keeps that inside the
+    strip, otherwise it ties with the mobile left sidebar (also z-20) and paints over the menu:
         const { canScrollLeft, canScrollRight, scrollBy } = useScrollArrows(scroller)
         <ScrollFadeArrow direction="left" :visible="canScrollLeft" @click="scrollBy(-1)" />
         <ScrollFadeArrow direction="right" :visible="canScrollRight" @click="scrollBy(1)" />
@@ -43,7 +46,10 @@ const isLeft = computed(() => props.direction === "left")
 
 const solidClass = computed(() => [
     props.tone === "gray" ? "bg-gray-50" : "bg-white",
-    isLeft.value ? "border-r" : "border-l",
+    "border-x",
+    isLeft.value
+        ? (props.tone === "gray" ? "border-l-gray-50" : "border-l-white")
+        : (props.tone === "gray" ? "border-r-gray-50" : "border-r-white"),
     props.rounded ? (isLeft.value ? "rounded-l" : "rounded-r") : "",
 ])
 
@@ -65,7 +71,7 @@ const fadeClass = computed(() => {
         <div
             v-if="visible"
             class="pointer-events-none absolute inset-y-0 z-20 flex"
-            :class="[isLeft ? 'left-0' : 'right-0 flex-row-reverse', wrapperClass]">
+            :class="[isLeft ? '-left-px' : '-right-px flex-row-reverse', wrapperClass]">
             <button
                 type="button"
                 class="pointer-events-auto flex w-7 items-center justify-center border-gray-200 text-gray-500 transition-colors hover:text-gray-800"

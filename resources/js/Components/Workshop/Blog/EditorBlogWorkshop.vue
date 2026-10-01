@@ -8,9 +8,11 @@ import { ref, onMounted, provide, watch, inject, IframeHTMLAttributes } from "vu
 import axios from "axios";
 // Utils
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { setIframeView } from "@/Composables/Workshop";
+import { useHighlightLinks } from "@/Composables/useHighlightLinks";
+import { useWorkshopShortcuts, formatShortcutKey } from "@/Composables/useWorkshopShortcuts";
 
 // Components
 import ScreenView from "@/Components/ScreenView.vue";
@@ -25,7 +27,7 @@ import {
   faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye,
+  faEye, faLink,
 } from "@fal";
 
 library.add(
@@ -111,7 +113,7 @@ const debounceSaveWorkshop = (block) => {
     } catch (error) {
       if (!axios.isCancel(error)) {
         notify({
-          title: trans("Something went wrong"),
+          title: ctrans("Something went wrong"),
           text: error?.response?.data?.message || error.message,
           type: "error",
         });
@@ -177,8 +179,18 @@ const openFullScreenPreview = () => {
   window.open(url.toString(), '_blank');
 };
 
+const { isHighlightingLinks, toggleHighlightLinks, applyToIframe: applyHighlightLinksToIframe, highlightLinksShortcut } = useHighlightLinks(_iframe);
+const { listenTo: listenForShortcuts } = useWorkshopShortcuts([highlightLinksShortcut], () => false);
+
+const onIframeLoad = () => {
+  isIframeLoading.value = false;
+  applyHighlightLinksToIframe();
+  listenForShortcuts(_iframe.value?.contentWindow);
+};
+
 // Events
 onMounted(() => {
+  listenForShortcuts(window);
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
@@ -196,7 +208,7 @@ watch(currentView, (newVal) => {
   <div class="flex h-[calc(100vh-5rem)] bg-gray-100">
     <!-- Sidebar -->
     <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-sm space-y-4">
-      <h2 class="text-lg font-bold text-gray-700 border-b pb-2">{{ trans('Blog Settings') }}</h2>
+      <h2 class="text-lg font-bold text-gray-700 border-b pb-2">{{ ctrans('Blog Settings') }}</h2>
       <div v-if="data?.layout?.web_blocks.length" class="h-[calc(100vh-4rem)] bg-gray-100 overflow-auto">
         <SideEditor v-model="data.layout.web_blocks[0].web_block.layout.data.fieldValue" :panelOpen="openedChildSideEditor"
           :blueprint="Blueprint.blueprint"
@@ -213,9 +225,13 @@ watch(currentView, (newVal) => {
         <div class="flex items-center gap-3 text-gray-600">
           <ScreenView v-model="currentView" @screenView="(e) => (currentView = e)" />
           <FontAwesomeIcon :icon="faEye" fixed-width class="cursor-pointer hover:text-blue-600"
-            v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview" />
+            v-tooltip="ctrans('Open preview in new tab')" @click="openFullScreenPreview" />
           <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width
             class="cursor-pointer hover:text-blue-600" v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" />
+          <FontAwesomeIcon :icon="faLink" fixed-width
+            :class="['cursor-pointer', isHighlightingLinks ? 'text-blue-600' : 'hover:text-blue-600']"
+            v-tooltip="`${isHighlightingLinks ? ctrans('Hide link highlights') : ctrans('Highlight links')} (${formatShortcutKey('L')})`"
+            @click="toggleHighlightLinks" />
         </div>
       </div>
 
@@ -224,7 +240,7 @@ watch(currentView, (newVal) => {
           <LoadingIcon class="w-24 h-24 text-6xl" />
         </div>
         <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
-          :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="isIframeLoading = false" allowfullscreen />
+          :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="onIframeLoad" allowfullscreen />
       </div>
     </main>
   </div>
