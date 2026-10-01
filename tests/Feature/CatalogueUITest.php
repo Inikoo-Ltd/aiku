@@ -1100,13 +1100,82 @@ test('products export links every image as a jpg', function () {
     $firstJpg  = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/first.jpeg')->extension('jpg'));
     $secondJpg = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/second.png')->extension('jpg'));
 
-    expect($firstJpg)->toEndWith('.jpg')
-        ->and($secondJpg)->toEndWith('.jpg')
-        ->and($row)->toBe([$product->code, "$firstJpg, $secondJpg", $firstJpg, $secondJpg, null]);
+    [$code, $images, $firstShort, $secondShort, $thirdShort] = $row;
+
+    expect($code)->toBe($product->code)
+        ->and($images)->toBe("$firstShort, $secondShort")
+        ->and($thirdShort)->toBeNull()
+        ->and($firstShort)->toMatch('#^https?://[^/]+/i/[0-9A-Za-z]{1,11}\.jpg$#')
+        ->and(strlen($firstShort))->toBeLessThan(strlen($firstJpg))
+        ->and(\App\Actions\Helpers\Images\RedirectImageShortUrl::run(basename($firstShort)))->toBe($firstJpg)
+        ->and(\App\Actions\Helpers\Images\RedirectImageShortUrl::run(basename($secondShort)))->toBe($secondJpg)
+        ->and($export->mapRow($export->dataQuery()->where('products.id', $product->id)->first()))->toBe($row);
+
+    $this->get($firstShort)->assertRedirect($firstJpg);
+
+    expect(\App\Actions\Helpers\Images\ShortenImgProxyUrls::code($firstJpg, 0))->not->toBe(\App\Actions\Helpers\Images\ShortenImgProxyUrls::code($firstJpg, 1));
 
     $originalExport = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['image_1']);
     expect($originalExport->mapRow($originalExport->dataQuery()->where('products.id', $product->id)->first()))
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
+});
+
+test('website pages swap imgproxy urls for short signed links that serve the same image', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->organisation->group_id,
+        'ulid'                  => (string) Str::ulid(),
+        'uuid'                  => (string) Str::uuid(),
+        'name'                  => 'shot',
+        'file_name'             => 'a1b2c3d4.jpeg',
+        'mime_type'             => 'image/jpeg',
+        'disk'                  => 'local',
+        'collection_name'       => 'images',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    $image    = fn () => new \App\Helpers\ImgProxy\Image()->make($media->getImgProxyFilename());
+    $original = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image());
+    $thumb    = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image()->resize(0, 600)->extension('avif'));
+    $page     = ['blocks' => [['web_images' => ['original' => $original, 'avif' => $thumb]], ['srcset' => "$thumb 1x, $original 2x"]], 'other' => 'https://media.test/x/y'];
+
+    $website           = new \App\Models\Web\Website(['settings' => []]);
+    $shorten           = fn () => \App\Actions\Helpers\Images\ShortenWebsiteImageUrls::run($page, $website, 'https://www.shop.test/some/page');
+    expect($shorten())->toBe($page);
+
+    $website->settings = ['short_image_urls' => true];
+    $short             = $shorten();
+    $shortThumb        = $short['blocks'][0]['web_images']['avif'];
+    $shortOriginal     = $short['blocks'][0]['web_images']['original'];
+
+    expect($shortThumb)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/rs::0:600::\.avif$#')
+        ->and($shortOriginal)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}\.jpeg$#')
+        ->and(strlen($shortThumb))->toBeLessThan(strlen($thumb) - 40)
+        ->and($short['blocks'][1]['srcset'])->toBe("$shortThumb 1x, $shortOriginal 2x")
+        ->and($short['other'])->toBe('https://media.test/x/y');
+
+    $serve = fn (string $short) => \App\Actions\Helpers\Images\ServeWebsiteShortImage::make()->handle(...array_pad(explode('/', Str::after($short, '/i/'), 3), 3, ''));
+    expect($serve($shortThumb))->toBe($thumb)
+        ->and($serve($shortOriginal))->toBe($original)
+        ->and($serve(str_replace('rs::0:600::', 'rs::0:1200::', $shortThumb)))->toBeNull()
+        ->and($serve(str_replace('.avif', '.png', $shortThumb)))->toBeNull();
+
+    \Illuminate\Support\Facades\Http::fake(['media.test/*' => \Illuminate\Support\Facades\Http::response('avif-bytes', 200, ['Content-Type' => 'image/avif'])]);
+    $this->get(Str::after($shortThumb, 'https://www.shop.test'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/avif')
+        ->assertSee('avif-bytes');
+    $this->get(Str::after($shortOriginal, 'https://www.shop.test'))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === $thumb);
 });
 
 test('products export ends with the weight unit columns', function () {
