@@ -265,7 +265,7 @@ test('add 2nd image to product', function () {
 
 test('pictures go to marketplaces main image first, then in the order arranged on the product', function () {
     $product = $this->product;
-    $media   = collect(range(1, 3))->map(fn (int $i) => Media::create([
+    $media   = collect(range(1, 4))->map(fn (int $i) => Media::create([
         'group_id'              => $product->group_id,
         'ulid'                  => \Illuminate\Support\Str::ulid(),
         'name'                  => "order-$i",
@@ -283,6 +283,7 @@ test('pictures go to marketplaces main image first, then in the order arranged o
         $media[2]->id => ['position' => 1, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
         $media[0]->id => ['position' => 3, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
         $media[1]->id => ['position' => 2, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
+        $media[3]->id => ['position' => 0, 'scope' => 'audio', 'group_id' => $product->group_id, 'data' => '{}'],
     ]);
     $previousImageId = $product->image_id;
     $product->update(['image_id' => $media[1]->id]);

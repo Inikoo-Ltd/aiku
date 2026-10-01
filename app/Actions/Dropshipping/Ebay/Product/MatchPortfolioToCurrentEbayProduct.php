@@ -46,11 +46,12 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         $categoryId = Arr::get($listing, 'offers.0.categoryId');
 
         if (! $categoryId) {
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            $categoryKeyword = $product->family?->name ?: $product->name;
+            $categories = $ebayUser->getCategorySuggestions($categoryKeyword);
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
 
             if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+                $categories = $ebayUser->searchAvailableProducts($categoryKeyword);
                 $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
             }
         }
