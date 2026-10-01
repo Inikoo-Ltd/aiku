@@ -203,7 +203,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
         <button v-if="props.screenType !== 'mobile' && !isBeginning" ref="prevEl"
           class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          @click.stop="scrollLeft" type="button">
+          @click.stop="scrollLeft" type="button" :aria-label="ctrans('Previous')">
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" fixed-width />
         </button>
 
@@ -231,7 +231,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                     ...getStyles(props.fieldValue?.button?.view_more?.properties, props.screenType),
                   }"  class="flex-1 flex items-center justify-center bg-gray-100">
                     <span class="text-sm font-semibold">
-                      {{ctrans("View All")}}
+                      {{ ctrans("View All") }}
                     </span>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
         </div>
 
         <button v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext && !isEnd" ref="nextEl" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800
-           opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button">
+           opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button" :aria-label="ctrans('Next')">
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" fixed-width />
         </button>
 
