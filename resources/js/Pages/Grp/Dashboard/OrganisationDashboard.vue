@@ -10,7 +10,7 @@ import { faChevronDown } from "@far"
 import { faPlay, faSortDown, faSortUp } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faSitemap, faTriangle } from "@fal"
 import axios from "axios"
 import { set } from "lodash-es"
@@ -31,6 +31,9 @@ const props = defineProps<{
 const isLoadingOnTable = ref(false)
 provide('isLoadingOnTable', isLoadingOnTable)
 
+const failedTableTab = ref<string | null>(null)
+provide('failedTableTab', failedTableTab)
+
 const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
 	const fetchRoute = block?.tab_fetch_route
@@ -43,6 +46,7 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	}
 
 	isLoadingOnTable.value = true
+	failedTableTab.value = null
 	try {
 		const { data } = await axios.get(route(fetchRoute.name, fetchRoute.parameters ?? {}), {
 			params: {
@@ -53,6 +57,8 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 		if (data?.tab && data?.table) {
 			set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
 		}
+	} catch {
+		failedTableTab.value = tabSlug
 	} finally {
 		isLoadingOnTable.value = false
 	}
@@ -65,7 +71,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 </script>
 
 <template>
-	<Head :title="trans('Dashboard')" />
+	<Head :title="ctrans('Dashboard')" />
 	<div>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
 		<ShopMonthTarget

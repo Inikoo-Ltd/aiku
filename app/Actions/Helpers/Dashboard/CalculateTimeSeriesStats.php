@@ -90,8 +90,6 @@ class CalculateTimeSeriesStats
         $to_date,
         array $additionalWhere
     ): array {
-        $intervals = DateIntervalEnum::cases();
-        $now = now();
         $cacheHash = $this->buildAggregateCacheHash(
             $timeSeriesIds,
             $metricsMapping,
@@ -106,27 +104,7 @@ class CalculateTimeSeriesStats
             return $cachedResults;
         }
 
-        $ranges = [];
-
-        if ($from_date && $to_date) {
-            $start = Carbon::parse($from_date)->startOfDay();
-            $end = Carbon::parse($to_date)->endOfDay();
-
-            $ranges['ctm'] = [$start, $end];
-            $ranges['ctm_ly'] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
-        }
-
-        foreach ($intervals as $interval) {
-            $range = $this->getIntervalRange($interval, $now);
-            if (!$range) {
-                continue;
-            }
-
-            $ranges[$interval->value] = $range;
-            $ranges[$interval->value.'_ly'] = $this->getComparisonRange($interval, $range[0], $range[1]);
-        }
-
-        $mappedResults = $this->aggregateRanges($ranges, $metricsMapping, $tableName, $foreignKey, $timeSeriesIds, $additionalWhere);
+        $mappedResults = $this->aggregateRanges($this->getRanges($from_date, $to_date), $metricsMapping, $tableName, $foreignKey, $timeSeriesIds, $additionalWhere);
 
         $this->storeCachedAggregates(
             $cacheHash,
@@ -141,6 +119,35 @@ class CalculateTimeSeriesStats
         );
 
         return $mappedResults;
+    }
+
+    /**
+     * @return array<string, array{0: Carbon, 1: Carbon}> keyed by interval value, with a "{interval}_ly" entry for the year before
+     */
+    public function getRanges($from_date = null, $to_date = null): array
+    {
+        $now    = now();
+        $ranges = [];
+
+        if ($from_date && $to_date) {
+            $start = Carbon::parse($from_date)->startOfDay();
+            $end   = Carbon::parse($to_date)->endOfDay();
+
+            $ranges['ctm']    = [$start, $end];
+            $ranges['ctm_ly'] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
+        }
+
+        foreach (DateIntervalEnum::cases() as $interval) {
+            $range = $this->getIntervalRange($interval, $now);
+            if (!$range) {
+                continue;
+            }
+
+            $ranges[$interval->value]       = $range;
+            $ranges[$interval->value.'_ly'] = $this->getComparisonRange($interval, $range[0], $range[1]);
+        }
+
+        return $ranges;
     }
 
     public function format(array $stats, array $metricsMapping, ?string $currencyCode = null): array
