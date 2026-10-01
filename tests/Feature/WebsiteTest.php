@@ -1985,6 +1985,69 @@ test('process webpage time series records', function (Webpage $webpage) {
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
 })->depends('create webpage');
 
+test('redo webpage time series with a window fills visitors only for webpages viewed in it', function (Website $website) {
+    $viewedWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $idleWebpage   = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $storeVisitor = fn () => DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => '2026-09-14 10:00:00',
+        'last_seen_at'    => '2026-09-14 10:00:00',
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $storePageView = fn (int $visitorId, string $viewDate) => DB::table('website_page_views')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $viewedWebpage->id,
+        'page_url'           => 'https://test/'.$viewedWebpage->url,
+        'page_path'          => '/'.$viewedWebpage->url,
+        'view_date'          => $viewDate,
+        'duration_seconds'   => 10,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $returningVisitor = $storeVisitor();
+    $storePageView($returningVisitor, '2026-09-14');
+    $storePageView($returningVisitor, '2026-09-14');
+    $storePageView($storeVisitor(), '2026-09-14');
+    $storePageView($returningVisitor, '2026-09-15');
+
+    $this->artisan('webpages:redo_time_series', ['--from' => '2026-09-14', '--to' => '2026-09-15'])->assertExitCode(0);
+
+    $records = fn (TimeSeriesFrequencyEnum $frequency) => DB::table('webpage_time_series_records')
+        ->where('webpage_time_series_id', $viewedWebpage->timeSeries()->where('frequency', $frequency->value)->value('id'))
+        ->orderBy('from')
+        ->get();
+
+    expect($records(TimeSeriesFrequencyEnum::DAILY)->pluck('visitors', 'period')->all())->toBe(['2026-09-14' => 2, '2026-09-15' => 1])
+        ->and($records(TimeSeriesFrequencyEnum::DAILY)->sum('page_views'))->toBe(4)
+        ->and($records(TimeSeriesFrequencyEnum::WEEKLY)->sum('visitors'))->toBe(3)
+        ->and($records(TimeSeriesFrequencyEnum::MONTHLY)->sum('page_views'))->toBe(4);
+
+    Queue::fake();
+
+    $this->artisan('webpages:redo_time_series', ['--from' => '2026-09-14', '--to' => '2026-09-15', '--async' => true])->assertExitCode(0);
+
+    ProcessWebpageTimeSeriesRecords::assertPushedOn('sales_slave_historic', 1, fn ($action, $parameters) => $parameters[0] === $viewedWebpage->id && $parameters[1] === TimeSeriesFrequencyEnum::DAILY);
+    ProcessWebpageTimeSeriesRecords::assertNotPushedWith(fn (int $webpageId) => $webpageId === $idleWebpage->id);
+})->depends('launch website');
+
 function cruxHistoryRecord(int $lcp): array
 {
     return [
