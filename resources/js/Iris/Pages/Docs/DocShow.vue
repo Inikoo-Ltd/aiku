@@ -10,6 +10,7 @@ defineProps<{
 		notice: string | null
 		is_stale: boolean
 		stale: string | null
+		videos: string[]
 	}
 	translations: { lang: string; name: string; url: string }[]
 	series: DocSummary[]
@@ -45,6 +46,19 @@ defineProps<{
 				<p v-if="doc.notice" class="mt-4 rounded-lg bg-gray-50 px-4 py-2 text-sm text-gray-600">
 					{{ doc.is_stale ? doc.stale : doc.notice }}
 				</p>
+
+				<div v-if="doc.videos.length" class="mt-6 flex flex-col gap-6">
+					<div v-for="videoId in doc.videos" :key="videoId" class="aspect-video w-full overflow-hidden rounded-lg bg-black">
+						<iframe
+							:src="`https://player.vimeo.com/video/${videoId}`"
+							:title="doc.title"
+							class="h-full w-full"
+							frameborder="0"
+							allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+							referrerpolicy="strict-origin-when-cross-origin"
+							allowfullscreen />
+					</div>
+				</div>
 
 				<div class="doc-body mt-8" v-html="doc.html" />
 			</article>
