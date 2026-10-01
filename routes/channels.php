@@ -15,6 +15,7 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Ticket;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -95,6 +96,10 @@ Broadcast::channel('grp.org.{organisationId}.production-queues', function (User 
 
 Broadcast::channel('grp.shop.{shopId}.new-orders', function (User $user, int $shopId) {
     return GetUserOrderAlerts::make()->canHear($user, $shopId);
+});
+
+Broadcast::channel('grp.ticket.{ticketId}', function (User $user, int $ticketId) {
+    return Ticket::whereKey($ticketId)->where('group_id', $user->group_id)->visibleTo($user)->exists();
 });
 
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
