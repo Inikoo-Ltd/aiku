@@ -28,6 +28,7 @@ class StockDeliveryItemCostResource extends JsonResource
             'name'                 => $supplierProduct?->name,
             'units_per_pack'       => $supplierProduct?->units_per_pack,
             'units_per_carton'     => $supplierProduct?->units_per_carton,
+            'unit_quantity'        => $item->unit_quantity,
             'unit_quantity_placed' => $item->unit_quantity_placed,
             'org_stock_id'         => $item->org_stock_id,
             'org_stock_code'       => $item->org_stock_code,

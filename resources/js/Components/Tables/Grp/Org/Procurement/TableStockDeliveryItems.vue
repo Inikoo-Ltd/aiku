@@ -223,6 +223,14 @@ function money(item: any, value: number | string | null) {
     return locale.currencyFormat(item.currency ?? props.costing?.currency ?? 'EUR', Number(value ?? 0))
 }
 
+function isShortOrOver(item: any) {
+    return Number(item.unit_quantity) > 0 && item.unit_quantity_placed != null && Number(item.unit_quantity_placed) !== Number(item.unit_quantity)
+}
+
+function receivedShare(item: any) {
+    return Number(item.unit_quantity_placed) / Number(item.unit_quantity)
+}
+
 function rowTotal(item: any) {
     const draft = costDraft[item.id]
 
@@ -388,6 +396,17 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 
         <template #cell(cost_total)="{ item }">
             <span class="font-semibold text-gray-700">{{ money(item, rowTotal(item)) }}</span>
+            <div
+                v-if="isShortOrOver(item)"
+                class="whitespace-nowrap text-xs text-gray-500"
+                v-tooltip="ctrans('Costs are for the :ordered ordered; only the units that arrived go into stock, each at the same cost per unit', { ordered: formatQuantity(Number(item.unit_quantity)) })"
+            >
+                {{ ctrans(':placed in stock: items :items · total :total', {
+                    placed: formatQuantity(Number(item.unit_quantity_placed)),
+                    items: money(item, Number(item.cost_items ?? 0) * receivedShare(item)),
+                    total: money(item, rowTotal(item) * receivedShare(item)),
+                }) }}
+            </div>
         </template>
 
         <template #cell(code)="{ item }">
