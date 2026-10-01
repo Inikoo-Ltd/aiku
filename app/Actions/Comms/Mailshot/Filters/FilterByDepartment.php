@@ -50,18 +50,31 @@ class FilterByDepartment
                 return $query;
             }
 
-            $query->whereExists(function ($subQuery) use ($departmentIds, $includesPurchased, $includesInBasket) {
+            $dateRange = $val['date_range'] ?? null;
+            $startDate = is_array($dateRange) ? ($dateRange[0] ?? null) : null;
+            $endDate   = is_array($dateRange) ? ($dateRange[1] ?? null) : null;
+
+            $query->whereExists(function ($subQuery) use ($departmentIds, $includesPurchased, $includesInBasket, $startDate, $endDate) {
                 $subQuery->select(DB::raw(1))
                     ->from('orders')
                     ->join('transactions', 'orders.id', '=', 'transactions.order_id')
                     ->whereRaw('orders.customer_id = customers.id')
                     ->whereIn('transactions.department_id', $departmentIds)
-                    ->whereNull('orders.deleted_at');
+                    ->whereNull('orders.deleted_at')
+                    ->where('orders.state', '!=', OrderStateEnum::CANCELLED);
 
                 if (!$includesInBasket) {
                     $subQuery->where('orders.state', '!=', OrderStateEnum::CREATING);
                 } elseif (!$includesPurchased) {
                     $subQuery->where('orders.state', OrderStateEnum::CREATING);
+                }
+
+                if ($startDate) {
+                    $subQuery->whereDate('orders.date', '>=', $startDate);
+                }
+
+                if ($endDate) {
+                    $subQuery->whereDate('orders.date', '<=', $endDate);
                 }
             });
         }

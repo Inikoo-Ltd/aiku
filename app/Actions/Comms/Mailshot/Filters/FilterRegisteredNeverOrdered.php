@@ -2,6 +2,7 @@
 
 namespace App\Actions\Comms\Mailshot\Filters;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -36,12 +37,12 @@ class FilterRegisteredNeverOrdered
                 }
             }
 
-            // Use raw subquery to check for customers who have no orders
             $query->whereNotExists(function ($subQuery) {
                 $subQuery->select(DB::raw(1))
                     ->from('orders')
                     ->whereRaw('orders.customer_id = customers.id')
-                    ->whereNull('orders.deleted_at');
+                    ->whereNull('orders.deleted_at')
+                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value]);
             });
 
             if ($dateRange = Arr::get($options, 'date_range')) {

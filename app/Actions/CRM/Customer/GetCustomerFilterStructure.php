@@ -7,6 +7,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Comms\Mailshot\Filters\FilterTopCustomersByRevenue;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
@@ -50,7 +51,7 @@ class GetCustomerFilterStructure
                     'registered_never_ordered' => [
                         'label'       => 'Registered Never Ordered',
                         'type'        => 'boolean',
-                        'description' => 'Targets customers who have created an account but have never placed an order.',
+                        'description' => 'Targets customers who have created an account but have never placed an order. Baskets and cancelled orders do not count as orders. The optional date range filters on the registration date.',
                         'options'     => [
                             'date_range' => [
                                 'type'        => 'daterange',
@@ -62,7 +63,7 @@ class GetCustomerFilterStructure
                     'by_family'              => [
                         'label'       => 'By Family',
                         'type'        => 'entity_behaviour',
-                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+                        'description' => 'Targets customers who have purchased, favourited, or left in their basket without purchasing products from the selected family.',
 
                         'fields'      => [
                             'content' => [
@@ -93,7 +94,7 @@ class GetCustomerFilterStructure
                     'orders_in_basket' => [
                         'label'       => 'Orders In Basket',
                         'type'        => 'boolean',
-                        'description' => 'Targets customers who currently have an order in their basket.',
+                        'description' => 'Targets customers who currently have an order in their basket, optionally by when the basket was last updated and by its net value.',
                         'options'     => [
                             'date_range' => [
                                 'type'        => 'daterange',
@@ -112,7 +113,7 @@ class GetCustomerFilterStructure
                     'by_order_value' => [
                         'label'       => 'By Order Value',
                         'type'        => 'boolean',
-                        'description' => 'Target customers who have placed orders within a specific value range.',
+                        'description' => 'Targets customers who have placed at least one order whose net value is within the range.',
                         'options'     => [
                             'amount_range' => [
                                 'type'        => 'number_range',
@@ -121,6 +122,50 @@ class GetCustomerFilterStructure
                                 'max_label'   => 'Max Value',
                                 'currency'    => $currencySymbol,
 
+                            ]
+                        ]
+                    ],
+                    'ordered_in_period' => [
+                        'label'       => 'Ordered In Period',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who placed at least one order (not a basket, not cancelled) within the date range. Leave the end date empty to count orders up to today, or clear the range to include anyone who has ever ordered.',
+                        'options'     => [
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'Order Date Range',
+                                'placeholder' => 'Select date range',
+                                'hint'        => 'Pick only a start date to count orders up to today. Empty means ordered at any time.',
+                            ]
+                        ]
+                    ],
+                    'lapsed_customers' => [
+                        'label'       => 'Lapsed Customers',
+                        'type'        => 'boolean',
+                        'description' => 'Targets customers who ordered before the start of the date range but placed no order within it. Leave the end date empty to mean no order since the start date.',
+                        'options'     => [
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'No Orders Since',
+                                'placeholder' => 'Select date range',
+                                'hint'        => 'Pick only a start date: customers who ordered before it but not since.',
+                                'required'    => true,
+                            ]
+                        ]
+                    ],
+                    'top_customers_by_revenue' => [
+                        'label'       => 'Top Customers By Revenue',
+                        'type'        => 'boolean',
+                        'description' => 'Targets the customers with the highest net invoiced revenue (refunds deducted) within the date range, as a percentage of the customers who had revenue in that range. Leave the date range empty to rank by all-time revenue.',
+                        'options'     => [
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'Revenue Date Range',
+                                'placeholder' => 'Select date range',
+                            ],
+                            'percentage' => [
+                                'type'    => 'percentage',
+                                'label'   => 'Top Percentage',
+                                'default' => FilterTopCustomersByRevenue::DEFAULT_PERCENTAGE,
                             ]
                         ]
                     ],
@@ -139,7 +184,7 @@ class GetCustomerFilterStructure
                     'by_subdepartment' => [
                         'label'       => 'By Subdepartment',
                         'type'        => 'entity_behaviour',
-                        'description' => 'Target customers based on interaction with sub-departments.',
+                        'description' => 'Targets customers who have purchased, or have in their basket, products from the selected sub-departments.',
                         'fields'      => [
                             'content' => [
                                 'type'        => 'multiselect',
@@ -161,7 +206,7 @@ class GetCustomerFilterStructure
                     'gold_reward_status' => [
                         'label'       => 'Gold Reward Membership',
                         'type'        => 'select',
-                        'description' => 'Filter customers based on their Gold Reward status (Last purchase within 30 days).',
+                        'description' => 'Gold Reward members are customers whose last invoice is within the last 30 days; non-members were last invoiced more than 30 days ago.',
                         'multiple'    => false,
                         'options'     => [
                             ['value' => 'gold', 'label' => 'Gold Reward Members (Active < 30 days)'],
@@ -184,7 +229,7 @@ class GetCustomerFilterStructure
                     'by_location'              => [
                         'label'       => 'By Location',
                         'type'        => 'location',
-                        'description' => 'Target customers based on Country/Postcode OR Radius from a location.',
+                        'description' => 'Targets customers by country and postcode, or by distance from a location.',
                         'fields'      => [
 
                             'mode' => [
@@ -238,11 +283,11 @@ class GetCustomerFilterStructure
                     'by_departments'              => [
                         'label'       => 'By Departments',
                         'type'        => 'entity_behaviour',
-                        'description' => 'Targets customers who have never placed an order containing products from the selected family.',
+                        'description' => 'Targets customers who have ordered, or have in their basket, products from the selected departments, optionally within an order date range.',
                         'fields'      => [
                             'content' => [
                                 'type'        => 'multiselect',
-                                'label'       => 'By Family',
+                                'label'       => 'By Department',
                                 'placeholder' => 'Select',
                                 'multiple'    => true,
                                 'options'     => [],
@@ -254,6 +299,11 @@ class GetCustomerFilterStructure
                                     ['value' => 'purchased', 'label' => 'Purchased'],
                                     ['value' => 'basket_not_purchased', 'label' => 'In basket but not purchased'],
                                 ]
+                            ],
+                            'date_range' => [
+                                'type'        => 'daterange',
+                                'label'       => 'Order Date Range (optional)',
+                                'placeholder' => 'Any time',
                             ]
                         ],
                     ]

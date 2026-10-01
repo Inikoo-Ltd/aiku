@@ -24,7 +24,8 @@ import {
     faUsers,
     faSpinner,
     faDownload,
-    faCalendarPlus
+    faCalendarPlus,
+    faInfoCircle
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
@@ -74,7 +75,8 @@ library.add(
     faPlus,
     faSpinner,
     faDownload,
-    faCalendarPlus
+    faCalendarPlus,
+    faInfoCircle
 );
 
 const props = withDefaults(defineProps<{
@@ -240,6 +242,7 @@ const availableFilters = computed(() => {
             if (!activeFilters.value[key]) {
                 list.push({
                     label: filter.label,
+                    description: filter.description,
                     icon: filter.icon ?? 'pi pi-filter',
                     command: () => addFilter(key, filter)
                 })
@@ -355,6 +358,9 @@ function onBasketModeChange(filter: { value: { mode: any; date_range: any[] | nu
     }
 }
 
+const isDateRangeMissing = (filter: any) =>
+    !!filter.config.options?.date_range?.required && !filter.value.date_range?.[0]
+
 function formatDate(d: Date) {
     return d.toISOString().split('T')[0]
 }
@@ -437,6 +443,15 @@ watch(
                 </div>
 
                 <Menu :model="availableFilters" popup ref="filterMenu">
+                    <template #item="{ item, props: itemProps }">
+                        <a v-bind="itemProps.action" class="flex items-center gap-2">
+                            <span v-if="item.icon" :class="item.icon" />
+                            <span class="grow">{{ ctrans(item.label) }}</span>
+                            <FontAwesomeIcon v-if="item.description" :icon="faInfoCircle"
+                                v-tooltip="{ content: ctrans(item.description), placement: 'right' }"
+                                class="text-gray-400 hover:text-gray-600" fixed-width />
+                        </a>
+                    </template>
                 </Menu>
 
                 <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
@@ -552,7 +567,12 @@ watch(
                 class="filter-card border rounded p-4 bg-gray-50 relative min-w-0">
 
                 <div v-if="filter.config" class="flex justify-between mb-2">
-                    <span class="font-medium flex items-center">{{ filter.config.label ?? '-' }}</span>
+                    <span class="font-medium flex items-center gap-1.5">
+                        {{ filter.config.label ? ctrans(filter.config.label) : '-' }}
+                        <FontAwesomeIcon v-if="filter.config.description" :icon="faInfoCircle"
+                            v-tooltip="ctrans(filter.config.description)"
+                            class="text-gray-400 hover:text-gray-600 cursor-help" fixed-width />
+                    </span>
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
                 <span
@@ -578,7 +598,7 @@ watch(
                         <!-- DATE RANGE (only custom) -->
                         <Calendar v-if="filter.value.mode === 'custom'" v-model="filter.value.date_range"
                             placeholder="Select a date range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
-                            class="w-full" appendTo="body" />
+                            showClear class="w-full" appendTo="body" />
 
                     </template>
                     <template v-else-if="filter.config.options?.date_range">
@@ -596,8 +616,23 @@ watch(
                         <Calendar
                             v-if="filter.value.date_range_preset === 'custom' || !filter.config.options.date_range_presets"
                             v-model="filter.value.date_range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
-                            placeholder="Select a date range" class="w-full" appendTo="body" />
+                            showClear placeholder="Select a date range" class="w-full" appendTo="body"
+                            :invalid="isDateRangeMissing(filter)" />
+                        <small v-if="isDateRangeMissing(filter)" class="block text-red-500 mt-1">
+                            {{ ctrans("Pick a start date, this filter is ignored until then.") }}
+                        </small>
+                        <small v-if="filter.config.options.date_range.hint" class="block text-gray-500 mt-1">
+                            {{ ctrans(filter.config.options.date_range.hint) }}
+                        </small>
                     </template>
+
+                    <div v-if="filter.config.options?.percentage" class="mt-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ ctrans(filter.config.options.percentage.label) }}
+                        </label>
+                        <InputNumber v-model="filter.value.percentage" :min="1" :max="100" suffix="%"
+                            class="w-full" inputClass="w-full" />
+                    </div>
 
                     <!-- AMOUNT RANGE -->
                     <div v-if="filter.config.options?.amount_range" class="grid grid-cols-2 gap-2 mt-2">
@@ -678,6 +713,14 @@ watch(
                                 <label>{{ behavior.label }}</label>
                             </div>
                         </div>
+                    </div>
+                    <div v-if="filter.config.fields.date_range" class="mt-3">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ ctrans(filter.config.fields.date_range.label) }}
+                        </label>
+                        <Calendar v-model="filter.value.date_range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
+                            showClear :placeholder="ctrans(filter.config.fields.date_range.placeholder)"
+                            class="w-full" appendTo="body" />
                     </div>
                 </template>
                 <!-- LOCATION -->
