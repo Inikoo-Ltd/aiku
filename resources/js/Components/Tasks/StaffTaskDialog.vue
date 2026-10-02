@@ -5,13 +5,27 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, watch } from "vue"
+import { computed, inject, nextTick, ref, watch } from "vue"
 import axios from "axios"
+import { format } from "date-fns"
+import Dialog from "primevue/dialog"
+import InputText from "primevue/inputtext"
+import Select from "primevue/select"
+import Textarea from "primevue/textarea"
+import DatePicker from "primevue/datepicker"
+import Button from "primevue/button"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
-import Image from "@/Common/Components/Image.vue"
-import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import StaffTaskPeoplePicker from "@/Components/Tasks/StaffTaskPeoplePicker.vue"
+import VerticalScrollFade from "@/Components/Utils/VerticalScrollFade.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPlus, faTimes } from "@fal"
 import type { StaffCoworker } from "@/Stores/staff-messaging"
+library.add(faPlus, faTimes)
+
+type Person = Pick<StaffCoworker, "id" | "name" | "avatar">
 
 const props = defineProps<{
     isOpen: boolean
@@ -30,12 +44,29 @@ const emit = defineEmits<{
 const layout: any = inject("layout", {})
 const departments = ref<{ value: string; label: string }[]>([])
 const priorities = ref<{ value: string; label: string }[]>([])
-const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, collaborators: [] as any[], priority: "normal", due_at: "" })
-const assigneeQuery = ref("")
-const assigneeResults = ref<StaffCoworker[]>([])
+const people = ref<Person[]>([])
+const isLoadingPeople = ref(false)
+
+const emptyForm = () => ({
+    subject: props.subject ?? "",
+    description: "",
+    department: null as string | null,
+    assignee_id: null as number | null,
+    collaborator_ids: [] as number[],
+    subtasks: [] as string[],
+    priority: "normal",
+    due_at: null as Date | null,
+})
+
+const form = ref(emptyForm())
 const saving = ref(false)
 const errors = ref<Record<string, string[]>>({})
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+const me = computed<Person | null>(() => layout.user?.id
+    ? { id: layout.user.id, name: layout.user.nickname || layout.user.contact_name || layout.user.username, avatar: null }
+    : null)
+
+const assigneeOptions = computed<Person[]>(() => me.value ? [me.value, ...people.value] : people.value)
 
 const loadOptions = async () => {
     if (departments.value.length) return
@@ -44,49 +75,75 @@ const loadOptions = async () => {
     priorities.value = data.priorities
 }
 
-watch(() => props.isOpen, (open) => {
-    if (!open) return
-    form.value = { subject: props.subject ?? "", description: "", department: "", assignee: null, collaborators: [], priority: "normal", due_at: "" }
-    errors.value = {}
-    assigneeQuery.value = ""
-    assigneeResults.value = []
-    loadOptions()
+const loadPeople = async () => {
+    isLoadingPeople.value = true
+    try {
+        const params = props.modelType && props.modelId ? { model_type: props.modelType, model_id: props.modelId } : {}
+        const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params })
+        people.value = data.data
+    } finally {
+        isLoadingPeople.value = false
+    }
+}
+
+const newSubtaskTitle = ref("")
+const subtaskScroller = ref<InstanceType<typeof VerticalScrollFade> | null>(null)
+
+watch(() => form.value.subtasks.length, async (count, previousCount) => {
+    await nextTick()
+    if (count > (previousCount ?? 0)) subtaskScroller.value?.scrollToBottom()
 })
 
-const onAssigneeInput = () => {
-    if (searchTimeout) clearTimeout(searchTimeout)
-    form.value.assignee = null
-    if (assigneeQuery.value.trim().length < 2) {
-        assigneeResults.value = []
-        return
-    }
-    searchTimeout = setTimeout(async () => {
-        const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: { q: assigneeQuery.value.trim() } })
-        assigneeResults.value = data.data
-    }, 250)
+watch(() => props.isOpen, (open) => {
+    if (!open) return
+    form.value = emptyForm()
+    errors.value = {}
+    newSubtaskTitle.value = ""
+    loadOptions()
+    loadPeople()
+}, { immediate: true })
+
+watch(() => form.value.assignee_id, (assigneeId) => {
+    if (!assigneeId) return
+    form.value.department = null
+    form.value.collaborator_ids = form.value.collaborator_ids.filter((id) => id !== assigneeId)
+})
+
+watch(() => form.value.department, (department) => {
+    if (department) form.value.assignee_id = null
+})
+
+const pickMe = () => {
+    if (me.value) form.value.assignee_id = me.value.id
 }
 
-const pickAssignee = (coworker: StaffCoworker) => {
-    form.value.assignee = coworker
-    form.value.department = ""
-    assigneeQuery.value = coworker.name
-    assigneeResults.value = []
+const addSubtask = () => {
+    const title = newSubtaskTitle.value.trim()
+    if (!title) return
+    form.value.subtasks.push(title)
+    newSubtaskTitle.value = ""
 }
 
-const pickMe = () => pickAssignee({ id: layout.user.id, name: layout.user.nickname || layout.user.contact_name || layout.user.username } as StaffCoworker)
+const removeSubtask = (index: number) => form.value.subtasks.splice(index, 1)
+
+const onVisibleChange = (visible: boolean) => {
+    if (!visible) emit("close")
+}
 
 const submit = async () => {
+    addSubtask()
     saving.value = true
     errors.value = {}
     try {
         const { data } = await axios.post(props.storeUrl ?? route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
-            department: form.value.assignee ? null : form.value.department || null,
-            assignee_id: form.value.assignee?.id ?? null,
-            collaborator_ids: form.value.collaborators.map((person) => person.id),
+            department: form.value.assignee_id ? null : form.value.department,
+            assignee_id: form.value.assignee_id,
+            collaborator_ids: form.value.collaborator_ids,
+            subtasks: form.value.subtasks.map((title) => ({ title, status: "todo" })),
             priority: form.value.priority,
-            due_at: form.value.due_at || null,
+            due_at: form.value.due_at ? format(form.value.due_at, "yyyy-MM-dd") : null,
             model_type: props.modelType ?? null,
             model_id: props.modelId ?? null,
             source_message_id: props.sourceMessageId ?? null,
@@ -103,86 +160,174 @@ const submit = async () => {
         saving.value = false
     }
 }
+
+const labelClass = "block text-sm font-semibold text-gray-700 mb-1"
 </script>
 
 <template>
-    <Teleport to="body">
-        <div v-if="isOpen" class="fixed inset-0 z-[99] flex items-center justify-center bg-black/40 p-4" @click.self="emit('close')" @keydown.esc="emit('close')">
-            <form class="w-full max-w-lg bg-white rounded-2xl p-6 shadow-xl text-left space-y-4" @submit.prevent="submit">
-                <h3 class="text-base font-semibold text-gray-900">{{ ctrans('New task') }}</h3>
+    <Dialog
+        :visible="isOpen"
+        modal
+        dismissableMask
+        :header="ctrans('New task')"
+        :style="{ width: '60rem' }"
+        :breakpoints="{ '1024px': '90vw', '640px': '95vw' }"
+        :pt="{ header: { class: '!pb-2' } }"
+        @update:visible="onVisibleChange">
+        <form @submit.prevent="submit">
+            <div class="grid grid-cols-1 md:grid-cols-3">
+                <div class="space-y-3 pb-5 md:col-span-2 md:pb-0 md:pr-6">
+                    <div>
+                        <InputText
+                            v-model="form.subject"
+                            maxlength="255"
+                            autofocus
+                            fluid
+                            :invalid="!!errors.subject"
+                            :placeholder="ctrans('What needs doing?')" />
+                        <small v-if="errors.subject" class="block text-red-600 mt-1">{{ errors.subject[0] }}</small>
+                    </div>
 
-                <div>
-                    <input
-                        v-model="form.subject"
-                        type="text"
-                        maxlength="255"
-                        autofocus
-                        :placeholder="ctrans('What needs doing?')"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
-                    <p v-if="errors.subject" class="text-xs text-red-600 mt-1">{{ errors.subject[0] }}</p>
-                </div>
+                    <Textarea
+                        v-model="form.description"
+                        rows="6"
+                        maxlength="5000"
+                        autoResize
+                        fluid
+                        :placeholder="ctrans('Details (optional)')" />
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="relative">
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="text-xs text-gray-500">{{ ctrans('Ask a person') }}</label>
-                            <button v-if="layout.user?.id" type="button" class="text-xs text-[--app-accent] hover:underline" @click="pickMe">{{ ctrans('For me') }}</button>
+                    <div class="overflow-hidden rounded-md border border-gray-300">
+                        <div class="flex items-center justify-between bg-gray-50 px-3 py-2">
+                            <span class="text-sm font-semibold text-gray-700">{{ ctrans("Sub tasks") }}</span>
+                            <span v-if="form.subtasks.length" class="rounded-full bg-gray-200 px-2 text-xs font-medium tabular-nums text-gray-600">{{ form.subtasks.length }}</span>
                         </div>
-                        <input
-                            v-model="assigneeQuery"
-                            type="text"
-                            :placeholder="ctrans('Search colleague…')"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
-                            @input="onAssigneeInput" />
-                        <div v-if="assigneeResults.length" class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-y-auto">
-                            <button v-for="coworker in assigneeResults" :key="coworker.id" type="button" class="w-full flex items-center gap-x-2 px-3 py-2 hover:bg-gray-50 text-left" @click="pickAssignee(coworker)">
-                                <div class="h-6 w-6 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                                    <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                                </div>
-                                <span class="text-sm truncate">{{ coworker.name }}</span>
+
+                        <VerticalScrollFade v-if="form.subtasks.length" ref="subtaskScroller" max-height-class="max-h-[7.5rem]" class="border-t border-gray-200">
+                            <ol class="divide-y divide-gray-100">
+                                <li v-for="(subtask, index) in form.subtasks" :key="index" class="group flex h-10 items-center gap-3 px-3 text-sm">
+                                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium tabular-nums text-gray-500">{{ index + 1 }}</span>
+                                    <span class="min-w-0 flex-1 truncate text-gray-800" :title="subtask">{{ subtask }}</span>
+                                    <button
+                                        type="button"
+                                        v-tooltip="ctrans('Remove')"
+                                        class="shrink-0 rounded p-1 text-gray-300 opacity-0 transition duration-200 hover:text-red-500 focus:opacity-100 group-hover:opacity-100"
+                                        @click="removeSubtask(index)">
+                                        <FontAwesomeIcon icon="fal fa-times" fixed-width />
+                                    </button>
+                                </li>
+                            </ol>
+                        </VerticalScrollFade>
+
+                        <div class="flex items-center gap-2 border-t border-gray-200 px-3">
+                            <FontAwesomeIcon icon="fal fa-plus" class="text-gray-400" fixed-width />
+                            <InputText
+                                v-model="newSubtaskTitle"
+                                maxlength="255"
+                                fluid
+                                class="!rounded-none !border-0 !bg-transparent !px-0 !shadow-none"
+                                :placeholder="ctrans('Add a sub task and press Enter')"
+                                @keydown.enter.prevent="addSubtask" />
+                            <button
+                                v-if="newSubtaskTitle.trim()"
+                                type="button"
+                                class="shrink-0 rounded px-2 py-1 text-xs font-medium text-[--app-accent-strong] transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                                @click="addSubtask">
+                                {{ ctrans("Add") }}
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div class="space-y-4 border-t border-gray-200 pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('or a department') }}</label>
-                        <select v-model="form.department" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" @change="form.assignee = null; assigneeQuery = ''">
-                            <option value="">—</option>
-                            <option v-for="department in departments" :key="department.value" :value="department.value">{{ department.label }}</option>
-                        </select>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <label for="staff-task-assignee" class="text-sm font-semibold text-gray-700">{{ ctrans('Ask a person') }}</label>
+                                    <Button v-if="me" type="button" link size="small" class="!p-0 !text-xs" :label="ctrans('For me')" @click="pickMe" />
+                                </div>
+                                <Select
+                                    v-model="form.assignee_id"
+                                    input-id="staff-task-assignee"
+                                    :options="assigneeOptions"
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    filter
+                                    resetFilterOnHide
+                                    showClear
+                                    fluid
+                                    :loading="isLoadingPeople"
+                                    :invalid="!!(errors.assignee_id || errors.department)"
+                                    :placeholder="ctrans('Search colleague…')"
+                                    :filterPlaceholder="ctrans('Search colleague…')"
+                                    :emptyMessage="ctrans('No colleague can see this')"
+                                    :emptyFilterMessage="ctrans('No colleague found')">
+                                    <template #option="{ option }">
+                                        <div class="flex min-w-0 items-center gap-x-2">
+                                            <TicketUserAvatar :name="option.name" :avatar="option.avatar" size="sm" />
+                                            <span class="truncate">{{ option.name }}</span>
+                                        </div>
+                                    </template>
+                                </Select>
+                            </div>
+                            <div>
+                                <label for="staff-task-department" :class="labelClass">{{ ctrans('or a department') }}</label>
+                                <Select
+                                    v-model="form.department"
+                                    input-id="staff-task-department"
+                                    :options="departments"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    showClear
+                                    fluid
+                                    :invalid="!!(errors.assignee_id || errors.department)"
+                                    placeholder="—" />
+                            </div>
+                        </div>
+                        <small v-if="errors.assignee_id || errors.department" class="mt-1 block text-red-600">{{ ctrans('Pick a person or a department') }}</small>
+                    </div>
+
+                    <div>
+                        <span :class="labelClass">{{ ctrans('Working on it too') }}</span>
+                        <StaffTaskPeoplePicker
+                            v-model="form.collaborator_ids"
+                            :options="people"
+                            :excludeIds="form.assignee_id ? [form.assignee_id] : []" />
+                        <small v-if="errors.collaborator_ids" class="mt-1 block text-red-600">{{ errors.collaborator_ids[0] }}</small>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="staff-task-due" :class="labelClass">{{ ctrans('Due') }}</label>
+                            <DatePicker
+                                v-model="form.due_at"
+                                input-id="staff-task-due"
+                                dateFormat="dd/mm/yy"
+                                showIcon
+                                iconDisplay="input"
+                                showButtonBar
+                                fluid
+                                :invalid="!!errors.due_at"
+                                placeholder="dd/mm/yyyy" />
+                        </div>
+                        <div>
+                            <label for="staff-task-priority" :class="labelClass">{{ ctrans('Priority') }}</label>
+                            <Select
+                                v-model="form.priority"
+                                input-id="staff-task-priority"
+                                :options="priorities"
+                                optionLabel="label"
+                                optionValue="value"
+                                fluid />
+                        </div>
                     </div>
                 </div>
-                <p v-if="errors.assignee_id || errors.department" class="text-xs text-red-600 -mt-2">{{ ctrans('Pick a person or a department') }}</p>
+            </div>
 
-                <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Working on it too') }}</label>
-                    <StaffTaskCollaborators v-model="form.collaborators" :exclude-ids="form.assignee ? [form.assignee.id] : []" />
-                </div>
-
-                <textarea
-                    v-model="form.description"
-                    rows="3"
-                    maxlength="5000"
-                    :placeholder="ctrans('Details (optional)')"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Due') }}</label>
-                        <input v-model="form.due_at" type="date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Priority') }}</label>
-                        <select v-model="form.priority" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]">
-                            <option v-for="priority in priorities" :key="priority.value" :value="priority.value">{{ priority.label }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-x-2 pt-2">
-                    <button type="button" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900" @click="emit('close')">{{ ctrans('Cancel') }}</button>
-                    <button type="submit" :disabled="saving || !form.subject.trim()" class="px-4 py-2 text-sm rounded-md bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong] disabled:opacity-40">{{ ctrans('Raise task') }}</button>
-                </div>
-            </form>
-        </div>
-    </Teleport>
+            <div class="flex justify-end gap-x-2 pt-2">
+                <Button type="button" text severity="secondary" :label="ctrans('Cancel')" @click="emit('close')" />
+                <Button type="submit" :label="ctrans('Raise task')" :loading="saving" :disabled="saving || !form.subject.trim()" />
+            </div>
+        </form>
+    </Dialog>
 </template>
