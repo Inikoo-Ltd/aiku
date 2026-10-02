@@ -41,7 +41,19 @@ trait WithOrgPartnerSubNavigation
                     ],
                     "number"   => $parent->stats->number_open_shopping_list_items,
                 ],
-            ] : []),
+            ] : [
+                [
+                    "label"    => __("Rescue"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_partners.show.rescue.index",
+                        "parameters" => [$parent->organisation->slug, $parent->id],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-life-ring"],
+                        "tooltip" => __("What they can rescue"),
+                    ],
+                ],
+            ]),
             [
                 "align"    => "right",
                 "route"    => [

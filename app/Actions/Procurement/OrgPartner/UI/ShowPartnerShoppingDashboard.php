@@ -75,7 +75,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function openStockDeliveries(OrgPartner $orgPartner): array
+    public function openStockDeliveries(OrgPartner $orgPartner): array
     {
         return DB::table('stock_deliveries')
             ->where('organisation_id', $orgPartner->organisation_id)

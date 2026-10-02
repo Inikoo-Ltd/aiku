@@ -41,6 +41,11 @@ class StorePurchaseOrderTransaction extends OrgAction
 
     private OrgStock $orgStock;
 
+    /**
+     * Set when adding many lines at once: the caller totals and hydrates the order once at the end.
+     */
+    public bool $batched = false;
+
     public function handle(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
     {
         $modelData = $this->prepareProcurementOrderItem($purchaseOrder, $historicSupplierProduct, $orgStock, $modelData);
@@ -48,8 +53,10 @@ class StorePurchaseOrderTransaction extends OrgAction
         /** @var PurchaseOrderTransaction $purchaseOrderTransaction */
         $purchaseOrderTransaction = $purchaseOrder->purchaseOrderTransactions()->create($modelData);
 
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
-        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
+        if (!$this->batched) {
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+            PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
+        }
 
         return $purchaseOrderTransaction;
     }
