@@ -19,12 +19,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-const options = fontsForCurrentShop()
+const options = computed(() => fontsForCurrentShop())
 
 const compOptions = computed(() => {
   return props.fieldData?.options
-    ? options.filter((opt:any) => props.fieldData.options?.includes(opt))
-    : options
+    ? options.value.filter((opt:any) => props.fieldData.options?.includes(opt))
+    : options.value
 })
 
 const value = ref(props.modelValue)

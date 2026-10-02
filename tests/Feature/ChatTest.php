@@ -4979,6 +4979,39 @@ test('an external shop has no chat permissions at all', function () {
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
 });
 
+test('an external shop with chat enabled gets chat permissions', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    $externalShop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeTrue()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($externalShop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->not->toBeEmpty();
+
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions::run($externalShop);
+
+    setPermissionsTeamId($this->user->group_id);
+    $worker = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
+
+    expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
+});
+
+test('a non external shop with chat disabled loses chat permissions', function () {
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
+    $this->shop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($this->shop))->toBeFalse()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($this->shop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->toBeEmpty();
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    $this->shop->refresh();
+});
+
 test('the meta chat session channel follows the same rule as the rest of chat', function () {
     $metaChatSession = MetaChatSession::create([
         'ulid'            => (string) Str::ulid(),
@@ -8925,6 +8958,96 @@ test('a phone call takes the agent out of the rota, is filed only against their 
 
     expect($seen->total())->toBe(0)
         ->and($own->total())->toBe(2);
+});
+
+test('a widget key resolves only to the shop it belongs to', function () {
+    $key = \App\Actions\Chat\Widget\ChatWidgetKey::make()->ensure($this->shop);
+
+    expect($key)->toBeString()->toHaveLength(32)
+        ->and(\App\Actions\Chat\Widget\ChatWidgetKey::make()->ensure($this->shop))->toBe($key)
+        ->and(\App\Actions\Chat\Widget\ChatWidgetKey::make()->resolveShop($key)?->id)->toBe($this->shop->id)
+        ->and(\App\Actions\Chat\Widget\ChatWidgetKey::make()->resolveShop('nope'))->toBeNull()
+        ->and(\App\Actions\Chat\Widget\ChatWidgetKey::make()->resolveShop(null))->toBeNull();
+});
+
+test('the widget config is served for a shop with chat and hidden for one without', function () {
+    $key = \App\Actions\Chat\Widget\ChatWidgetKey::make()->ensure($this->shop);
+
+    getJson('/app/api/chats/widget-config?key='.$key)
+        ->assertOk()
+        ->assertJsonPath('data.shop_id', $this->shop->id);
+
+    $settings = $this->shop->settings ?? [];
+    data_set($settings, 'chat.enabled', false);
+    $this->shop->update(['settings' => $settings]);
+
+    getJson('/app/api/chats/widget-config?key='.$key)->assertNotFound();
+
+    data_set($settings, 'chat.enabled', true);
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('the widget config refuses an unknown or missing key', function () {
+    getJson('/app/api/chats/widget-config?key=doesnotexist')->assertNotFound();
+    getJson('/app/api/chats/widget-config')->assertNotFound();
+});
+
+test('enabling the chat widget seeds the chat permissions for an external shop', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    expect(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($externalShop))
+        ->filter(fn ($name) => str_starts_with($name, 'chat')))->toBeEmpty();
+
+    $result = \App\Actions\Chat\Widget\EnableShopChatWidget::make()->handle($externalShop);
+
+    $externalShop->refresh();
+
+    expect($result['enabled'])->toBeTrue()
+        ->and($result['key'])->toBeString()
+        ->and(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeTrue()
+        ->and(Permission::where('scope_type', 'Shop')->where('scope_id', $externalShop->id)
+            ->where('name', 'chat.'.$externalShop->id)->exists())->toBeTrue();
+
+    \App\Actions\Chat\Widget\EnableShopChatWidget::make()->handle($externalShop, false);
+    $externalShop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeFalse()
+        ->and(Permission::where('scope_type', 'Shop')->where('scope_id', $externalShop->id)
+            ->where('name', 'chat.'.$externalShop->id)->exists())->toBeFalse();
+});
+
+test('the shop settings toggle turns chat on and off and seeds the permissions with it', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    $permissionExists = fn () => Permission::where('scope_type', 'Shop')
+        ->where('scope_id', $externalShop->id)
+        ->where('name', 'chat.'.$externalShop->id)
+        ->exists();
+
+    expect($permissionExists())->toBeFalse();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($externalShop, ['chat_enabled' => true]);
+    $externalShop->refresh();
+
+    $key = \Illuminate\Support\Arr::get($externalShop->settings, 'chat.widget_key');
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeTrue()
+        ->and($key)->toBeString()
+        ->and($permissionExists())->toBeTrue();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($externalShop, ['chat_enabled' => false]);
+    $externalShop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeFalse()
+        ->and($permissionExists())->toBeFalse()
+        /* The key survives a switch off so the storefront embed never has to be edited. */
+        ->and(\Illuminate\Support\Arr::get($externalShop->settings, 'chat.widget_key'))->toBe($key);
+
+    getJson('/app/api/chats/widget-config?key='.$key)->assertNotFound();
 });
 
 test('a gmail message the sender has deleted is given up on rather than fetched again forever', function () {

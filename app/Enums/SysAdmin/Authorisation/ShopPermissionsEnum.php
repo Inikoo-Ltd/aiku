@@ -10,6 +10,7 @@ namespace App\Enums\SysAdmin\Authorisation;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
+use Illuminate\Support\Arr;
 
 enum ShopPermissionsEnum: string
 {
@@ -86,12 +87,19 @@ enum ShopPermissionsEnum: string
     /**
      * Whether a shop has conversations of ours to work at all.
      *
-     * An external shop's customers write on the marketplace rather than to us, so today
-     * none of them do. When one grows a chat of its own — a Shopify shop, say — this is
-     * the single place that decides it, per shop or per platform.
+     * An external shop's customers usually write on the marketplace rather than to us, so
+     * by type none of them do. A shop that grows a chat of its own — our widget on a
+     * Shopify storefront, say — opts in with the `chat.enabled` setting, which overrides
+     * the type either way. After changing it run `php artisan shop:seed-permissions`.
      */
     public static function shopHasChat(Shop $shop): bool
     {
+        $enabled = Arr::get($shop->settings, 'chat.enabled');
+
+        if ($enabled !== null) {
+            return (bool) $enabled;
+        }
+
         return $shop->type !== ShopTypeEnum::EXTERNAL;
     }
 

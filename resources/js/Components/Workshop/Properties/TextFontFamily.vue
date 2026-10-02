@@ -31,7 +31,7 @@ const model = defineModel<TextProperty | any>({
 
 
 
-const fontFamilies = fontsForCurrentShop()
+const fontFamilies = computed(() => fontsForCurrentShop())
 
 </script>
 
