@@ -8,6 +8,7 @@
 import { computed, nextTick, ref, watch } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import TicketAttachmentPreview, { isArchiveAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
+import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperclip, faTimes, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo, faFileZipper } from "@fortawesome/free-solid-svg-icons"
 
@@ -29,6 +30,10 @@ const emit = defineEmits<{
 }>()
 
 const maxImages = computed(() => props.maxImages ?? 5)
+const isPreviewing = ref(false)
+watch(() => props.body, (body) => {
+    if (!body) isPreviewing.value = false
+})
 const fileInput = ref<HTMLInputElement | null>(null)
 const attachmentIcons = {
     pdf: { icon: faFilePdf, class: "text-red-600" },
@@ -163,6 +168,7 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 const appendMention = (username: string) => {
+    isPreviewing.value = false
     const mention = `@${username} `
     const separator = !props.body || /\s$/.test(props.body) ? "" : " "
     const value = props.body + separator + mention
@@ -186,68 +192,78 @@ const onPick = (event: Event) => {
 </script>
 
 <template>
-    <div
-        class="rounded-md border bg-white"
-        :class="isDragging ? 'border-[--app-accent] ring-2 ring-[--app-accent-muted]' : 'border-gray-300'"
-        @dragover.prevent="isDragging = true"
-        @dragleave="isDragging = false"
-        @drop.prevent="onDrop"
-    >
-        <div class="relative">
-            <textarea
-                ref="textarea"
-                :value="body"
-                :rows="rows ?? 5"
-                class="w-full border-0 rounded-t-md text-sm focus:ring-0 resize-y"
-                :placeholder="placeholder ?? ctrans('Describe it. Paste a screenshot or drop images here, links are fine.')"
-                @input="onInput"
-                @keydown="onKeydown"
-                @click="detectMention"
-                @blur="mentionQuery = null"
-                @paste="onPaste"
-            />
-            <ul v-if="mentionSuggestions.length" class="absolute left-2 top-full z-20 -mt-2 w-64 rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg">
-                <li
-                    v-for="(user, index) in mentionSuggestions"
-                    :key="user.username"
-                    class="flex cursor-pointer gap-2 px-3 py-1.5"
-                    :class="index === mentionIndex ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-700'"
-                    @mousedown.prevent="insertMention(user.username)"
-                    @mouseenter="mentionIndex = index"
-                >
-                    <span class="font-medium">@{{ user.username }}</span>
-                    <span v-if="user.name" class="truncate text-gray-500">{{ user.name }}</span>
-                    <span v-if="user.is_customer" class="ml-auto shrink-0 rounded bg-blue-50 px-1.5 text-[10px] font-medium text-blue-700">{{ ctrans("Customer") }}</span>
-                </li>
-            </ul>
+    <div>
+        <div class="mb-1.5 flex items-center gap-3 text-xs">
+            <button type="button" class="pb-0.5" :class="!isPreviewing ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="isPreviewing = false">{{ ctrans("Write") }}</button>
+            <button type="button" class="pb-0.5" :class="isPreviewing ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="isPreviewing = true">{{ ctrans("Preview") }}</button>
         </div>
-        <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
-            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-gray-500" :disabled="images.length >= maxImages" :title="images.length >= maxImages ? ctrans('Attachment limit reached') : ctrans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
-                <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ ctrans("Attach") }}
-            </button>
-            <span class="text-xs text-gray-400">{{ images.length >= maxImages ? ctrans("limit reached") : ctrans("or paste / drop") }}</span>
-            <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
-            <div v-if="previews.length" class="ml-auto flex gap-1.5">
-                <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
-                    <component
-                        :is="isViewable(preview) ? 'button' : 'div'"
-                        :type="isViewable(preview) ? 'button' : undefined"
-                        class="block rounded"
-                        :class="isViewable(preview) && 'cursor-zoom-in transition hover:opacity-80'"
-                        :title="isViewable(preview) ? ctrans('View :name', { name: preview.name }) : ctrans(':name can be opened once it is posted', { name: preview.name })"
-                        @click="isViewable(preview) && openPreview(preview.url)">
-                        <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class">
-                            <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
-                            <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
-                        </div>
-                        <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
-                    </component>
-                    <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" :aria-label="ctrans('Remove :name', { name: preview.name })" @click.stop="removeImage(index)">
-                        <FontAwesomeIcon :icon="faTimes" fixed-width />
-                    </button>
+        <div
+            class="rounded-md border bg-white"
+            :class="isDragging ? 'border-[--app-accent] ring-2 ring-[--app-accent-muted]' : 'border-gray-300'"
+            @dragover.prevent="isDragging = true"
+            @dragleave="isDragging = false"
+            @drop.prevent="onDrop"
+        >
+            <div v-if="isPreviewing" class="rounded-t-md bg-gray-50 px-3 py-2" :style="{ minHeight: `${(rows ?? 5) * 1.25 + 1}rem` }">
+                <TicketBody v-if="body.trim()" :text="body" />
+                <p v-else class="text-sm italic text-gray-400">{{ ctrans("Nothing to preview") }}</p>
+            </div>
+            <div v-else class="relative">
+                <textarea
+                    ref="textarea"
+                    :value="body"
+                    :rows="rows ?? 5"
+                    class="w-full border-0 rounded-t-md text-sm focus:ring-0 resize-y"
+                    :placeholder="placeholder ?? ctrans('Describe it. Paste a screenshot or drop images here, links are fine.')"
+                    @input="onInput"
+                    @keydown="onKeydown"
+                    @click="detectMention"
+                    @blur="mentionQuery = null"
+                    @paste="onPaste"
+                />
+                <ul v-if="mentionSuggestions.length" class="absolute left-2 top-full z-20 -mt-2 w-64 rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg">
+                    <li
+                        v-for="(user, index) in mentionSuggestions"
+                        :key="user.username"
+                        class="flex cursor-pointer gap-2 px-3 py-1.5"
+                        :class="index === mentionIndex ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-700'"
+                        @mousedown.prevent="insertMention(user.username)"
+                        @mouseenter="mentionIndex = index"
+                    >
+                        <span class="font-medium">@{{ user.username }}</span>
+                        <span v-if="user.name" class="truncate text-gray-500">{{ user.name }}</span>
+                        <span v-if="user.is_customer" class="ml-auto shrink-0 rounded bg-blue-50 px-1.5 text-[10px] font-medium text-blue-700">{{ ctrans("Customer") }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
+                <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-gray-500" :disabled="images.length >= maxImages" :title="images.length >= maxImages ? ctrans('Attachment limit reached') : ctrans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
+                    <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ ctrans("Attach") }}
+                </button>
+                <span class="text-xs text-gray-400">{{ images.length >= maxImages ? ctrans("limit reached") : ctrans("or paste / drop") }}</span>
+                <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
+                <div v-if="previews.length" class="ml-auto flex gap-1.5">
+                    <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
+                        <component
+                            :is="isViewable(preview) ? 'button' : 'div'"
+                            :type="isViewable(preview) ? 'button' : undefined"
+                            class="block rounded"
+                            :class="isViewable(preview) && 'cursor-zoom-in transition hover:opacity-80'"
+                            :title="isViewable(preview) ? ctrans('View :name', { name: preview.name }) : ctrans(':name can be opened once it is posted', { name: preview.name })"
+                            @click="isViewable(preview) && openPreview(preview.url)">
+                            <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class">
+                                <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
+                                <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
+                            </div>
+                            <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
+                        </component>
+                        <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" :aria-label="ctrans('Remove :name', { name: preview.name })" @click.stop="removeImage(index)">
+                            <FontAwesomeIcon :icon="faTimes" fixed-width />
+                        </button>
+                    </div>
                 </div>
             </div>
+            <TicketAttachmentPreview v-model:index="previewIndex" :files="viewableFiles" />
         </div>
-        <TicketAttachmentPreview v-model:index="previewIndex" :files="viewableFiles" />
     </div>
 </template>
