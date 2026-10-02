@@ -66,6 +66,12 @@ class ShowGoodsDashboard extends OrgAction
 
     public const int DISPATCHED_DAYS_AT_SEA = 60;
 
+    public const array IN_WAREHOUSE_DELIVERY_STATES = [
+        StockDeliveryStateEnum::RECEIVED->value,
+        StockDeliveryStateEnum::CHECKED->value,
+        StockDeliveryStateEnum::BOOKING_IN->value,
+    ];
+
     private const int ID_CHUNK_SIZE = 10000;
 
     public const array PERIODS = ['30d', '90d', 'quarter', 'year'];
@@ -497,17 +503,7 @@ class ShowGoodsDashboard extends OrgAction
                 ->select([
                     'stock_delivery_items.org_stock_id',
                     'stock_delivery_items.stock_delivery_id',
-                    'stock_deliveries.state',
-                    DB::raw("case stock_deliveries.state
-                        when 'confirmed' then stock_deliveries.confirmed_at
-                        when 'ready_to_ship' then stock_deliveries.ready_to_ship_at
-                        when 'dispatched' then stock_deliveries.dispatched_at
-                        when 'received' then stock_deliveries.received_at
-                        when 'checked' then stock_deliveries.checked_at
-                        when 'booking_in' then stock_deliveries.booking_in_at
-                        end as state_entered_at"),
-                    'stock_deliveries.date as delivery_date',
-                    DB::raw('(select max(purchase_orders.estimated_received_at) from purchase_order_stock_delivery join purchase_orders on purchase_orders.id = purchase_order_stock_delivery.purchase_order_id where purchase_order_stock_delivery.stock_delivery_id = stock_deliveries.id) as purchase_order_eta'),
+                    ...$this->stockDeliveryTimingColumns(),
                     DB::raw('(stock_delivery_items.unit_quantity - coalesce(stock_delivery_items.unit_quantity_placed, 0)) as quantity'),
                 ])
                 ->get()
@@ -516,8 +512,7 @@ class ShowGoodsDashboard extends OrgAction
                     'org_stock_id' => $row->org_stock_id,
                     'document'     => 'sd:'.$row->stock_delivery_id,
                     'quantity'     => (float) $row->quantity,
-                    'eta'          => $this->stockDeliveryExpectedArrival($row)->max(now()->addDay())->toDateString(),
-                    'is_late'      => $this->stockDeliveryExpectedArrival($row)->lt(today()),
+                    ...$this->stockDeliveryTiming($row),
                 ])
                 ->all());
         }
@@ -601,31 +596,58 @@ class ShowGoodsDashboard extends OrgAction
     }
 
     /**
-     * A delivery is expected when its purchase order says, else the usual number of days after it
-     * entered its current state; a dispatched one is given the time a container takes at sea.
+     * @return array<int, \Illuminate\Contracts\Database\Query\Expression|string>
      */
-    private function stockDeliveryExpectedArrival(object $row): \Illuminate\Support\Carbon
+    public function stockDeliveryTimingColumns(): array
     {
-        if ($row->purchase_order_eta) {
-            return \Illuminate\Support\Carbon::parse($row->purchase_order_eta);
-        }
-
-        $enteredAt = \Illuminate\Support\Carbon::parse($row->state_entered_at ?? $row->delivery_date ?? now());
-        $days      = $row->state === StockDeliveryStateEnum::DISPATCHED->value ? self::DISPATCHED_DAYS_AT_SEA : self::DELIVERY_DAYS_TO_ARRIVE[$row->state];
-
-        return $enteredAt->addDays($days);
+        return [
+            'stock_deliveries.state',
+            DB::raw("case stock_deliveries.state
+                when 'confirmed' then stock_deliveries.confirmed_at
+                when 'ready_to_ship' then coalesce(stock_deliveries.ready_to_ship_at, stock_deliveries.confirmed_at)
+                when 'dispatched' then coalesce(stock_deliveries.dispatched_at, stock_deliveries.ready_to_ship_at, stock_deliveries.confirmed_at)
+                end as state_entered_at"),
+            'stock_deliveries.date as delivery_date',
+            DB::raw('(select max(purchase_orders.estimated_received_at) from purchase_order_stock_delivery join purchase_orders on purchase_orders.id = purchase_order_stock_delivery.purchase_order_id where purchase_order_stock_delivery.stock_delivery_id = stock_deliveries.id) as purchase_order_eta'),
+        ];
     }
 
     /**
-     * A purchase order whose expected arrival has passed: its eta is pushed to tomorrow, but it is late.
+     * Goods already received, checked or being booked in are in the warehouse: due tomorrow, never late.
+     * Before it ships a delivery is due when its purchase order says, else the usual days after it entered
+     * its state; once dispatched its own dispatch date counts, plus the time a container takes at sea.
+     *
+     * @return array{eta: string, is_late: bool}
      */
-    private function isPurchaseOrderLate(object $row): bool
+    public function stockDeliveryTiming(object $row): array
+    {
+        $tomorrow = now()->addDay();
+
+        if (in_array($row->state, self::IN_WAREHOUSE_DELIVERY_STATES, true)) {
+            return ['eta' => $tomorrow->toDateString(), 'is_late' => false];
+        }
+
+        $enteredAt = \Illuminate\Support\Carbon::parse($row->state_entered_at ?? $row->delivery_date ?? now());
+        $expected  = match (true) {
+            $row->state === StockDeliveryStateEnum::DISPATCHED->value => $enteredAt->addDays(self::DISPATCHED_DAYS_AT_SEA),
+            (bool) $row->purchase_order_eta                           => \Illuminate\Support\Carbon::parse($row->purchase_order_eta),
+            default                                                   => $enteredAt->addDays(self::DELIVERY_DAYS_TO_ARRIVE[$row->state]),
+        };
+
+        return ['eta' => $expected->copy()->max($tomorrow)->toDateString(), 'is_late' => $expected->lt(today())];
+    }
+
+    /**
+     * A purchase order whose expected arrival has passed, or that has no date to expect it by: its eta is
+     * pushed to tomorrow, but it is late.
+     */
+    public function isPurchaseOrderLate(object $row): bool
     {
         $expected = $row->estimated_received_at
             ? \Illuminate\Support\Carbon::parse($row->estimated_received_at)
             : ($row->submitted_at ? \Illuminate\Support\Carbon::parse($row->submitted_at)->addDays((int) ($row->measured_lead_time_days ?? self::DEFAULT_LEAD_TIME_DAYS)) : null);
 
-        return $expected !== null && $expected->lt(today());
+        return $expected === null || $expected->lt(today());
     }
 
     private function purchaseOrderEta(object $row): ?string

@@ -143,15 +143,25 @@ class GetStockOutsHistory
     }
 
     /**
-     * Each source with its SKOs out of stock on the latest day of every organisation.
+     * With a source picked the headline follows that source's rows, so the bubbles read the latest day
+     * of the unfiltered totals instead.
+     */
+    private function totalsLatestDate(Group|Organisation $parent, Collection $organisations): ?string
+    {
+        return $this->sumByDate($this->dailyRows($parent, $organisations, today()->subDays(7), null))->last()?->date;
+    }
+
+    /**
+     * Each source with its SKOs out of stock on the day the headline shows.
      *
      * @return array<string, array{label: string, out_of_stock: int}>
      */
-    private function sources(Group|Organisation $parent, Collection $organisations): array
+    private function sources(Group|Organisation $parent, Collection $organisations, ?string $date): array
     {
         $outOfStock = DB::table('organisation_stock_history_sources as sources')
             ->whereIn('sources.organisation_id', $organisations->pluck('id'))
-            ->whereRaw('sources.date = (select max(latest.date) from organisation_stock_history_sources as latest where latest.organisation_id = sources.organisation_id)')
+            ->where('sources.date', $date)
+            ->where('sources.number_org_stocks', '>', 0)
             ->groupBy('sources.source')
             ->selectRaw('sources.source, sum(sources.number_out_of_stock_org_stocks) as out_of_stock')
             ->pluck('out_of_stock', 'source');
@@ -198,7 +208,7 @@ class GetStockOutsHistory
             'period'     => $period,
             'periods'    => $this->periodOptions(),
             'source'     => $source,
-            'sources'    => $this->sources($parent, $organisations),
+            'sources'    => $this->sources($parent, $organisations, $source ? $this->totalsLatestDate($parent, $organisations) : $latest?->date),
             'unit'       => $unit,
             'currency'   => $parent->currency->code,
             'lost_total' => $total['lost_total'],

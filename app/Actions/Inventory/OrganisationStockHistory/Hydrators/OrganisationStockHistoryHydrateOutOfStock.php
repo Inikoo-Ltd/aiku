@@ -32,6 +32,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * and on demand SKOs that customers can still order, are not lost sales.
  *
  * Aurora SKOs were all created in Aiku on 31 Dec 2024, so SKOs without a location only count from then.
+ *
+ * Run as a command, the sources and fresh SKOs of each organisation are read once and the group totals
+ * are rebuilt once per group day at the end, instead of for every organisation day.
  */
 class OrganisationStockHistoryHydrateOutOfStock
 {
@@ -42,6 +45,21 @@ class OrganisationStockHistoryHydrateOutOfStock
 
     public string $commandSignature = 'hydrate:organisation_stock_histories_out_of_stock {organisation?} {--from= : first date, Y-m-d}';
 
+    /**
+     * @var array<int, array<int, string>>
+     */
+    private array $sourcesByOrganisation = [];
+
+    /**
+     * @var array<int, array<int, int>>
+     */
+    private array $freshOrgStockIdsByOrganisation = [];
+
+    /**
+     * @var array<int, int>|null
+     */
+    private ?array $pendingGroupStockHistoryIds = null;
+
     public function asCommand(Command $command): int
     {
         $ids = OrganisationStockHistory::query()
@@ -50,8 +68,14 @@ class OrganisationStockHistoryHydrateOutOfStock
             ->orderByDesc('date')
             ->pluck('id');
 
+        $this->pendingGroupStockHistoryIds = [];
         $command->withProgressBar($ids, fn (int $id) => $this->handle($id));
         $command->newLine();
+
+        foreach (array_keys($this->pendingGroupStockHistoryIds) as $groupStockHistoryId) {
+            GroupStockHistoryHydrateFromOrgStockHistories::run($groupStockHistoryId);
+        }
+        $this->pendingGroupStockHistoryIds = null;
 
         return 0;
     }
@@ -71,13 +95,14 @@ class OrganisationStockHistoryHydrateOutOfStock
             ->pluck('quantity_in_locations', 'org_stock_id')
             ->all();
 
-        $quantities = array_diff_key($quantities, array_flip($this->freshOrgStockIds($organisationStockHistory->organisation_id)));
+        $this->freshOrgStockIdsByOrganisation[$organisationStockHistory->organisation_id] ??= $this->freshOrgStockIds($organisationStockHistory->organisation_id);
+        $quantities = array_diff_key($quantities, array_flip($this->freshOrgStockIdsByOrganisation[$organisationStockHistory->organisation_id]));
 
         $withoutLocation = array_values(array_diff($this->aliveOrgStockIds($organisationStockHistory->organisation_id, $date), array_keys($quantities)));
         $emptyOrgStocks  = array_merge(array_keys(array_filter($quantities, fn ($quantity) => $quantity < 1)), $withoutLocation);
         $outOfStock      = $this->stockOutOrgStockIds($emptyOrgStocks, $date);
         $countedIds      = array_diff(array_merge(array_keys($quantities), $withoutLocation), array_diff($emptyOrgStocks, $outOfStock));
-        $sources         = $this->sourceByOrgStockId($organisationStockHistory->organisation_id);
+        $sources         = $this->sourcesByOrganisation[$organisationStockHistory->organisation_id] ??= $this->sourceByOrgStockId($organisationStockHistory->organisation_id);
         $sourceOf        = fn (int $orgStockId) => $sources[$orgStockId] ?? 'none';
         $countedBySource = array_count_values(array_map($sourceOf, $countedIds));
         $outBySource     = collect($outOfStock)->groupBy($sourceOf);
@@ -109,7 +134,11 @@ class OrganisationStockHistoryHydrateOutOfStock
             'estimated_lost_revenue_org_currency' => round($sourceRows->sum('estimated_lost_revenue_org_currency'), 2),
         ]);
 
-        GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);
+        if ($this->pendingGroupStockHistoryIds === null) {
+            GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);
+        } elseif ($organisationStockHistory->group_stock_history_id) {
+            $this->pendingGroupStockHistoryIds[$organisationStockHistory->group_stock_history_id] = true;
+        }
     }
 
     /**

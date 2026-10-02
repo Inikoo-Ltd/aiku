@@ -156,7 +156,7 @@ class ShowGoodsProductDetail extends OrgAction
             ->select([
                 'stock_delivery_items.org_stock_id',
                 'stock_deliveries.reference',
-                'stock_deliveries.state',
+                ...ShowGoodsDashboard::make()->stockDeliveryTimingColumns(),
                 DB::raw('(stock_delivery_items.unit_quantity - coalesce(stock_delivery_items.unit_quantity_placed, 0)) as quantity'),
             ])
             ->get()
@@ -168,7 +168,7 @@ class ShowGoodsProductDetail extends OrgAction
                 'state'        => $row->state,
                 'state_label'  => StockDeliveryStateEnum::labels()[$row->state],
                 'quantity'     => (float) $row->quantity,
-                'eta'          => now()->addDays(ShowGoodsDashboard::DELIVERY_DAYS_TO_ARRIVE[$row->state])->toDateString(),
+                'eta'          => ShowGoodsDashboard::make()->stockDeliveryTiming($row)['eta'],
             ])
             ->values()
             ->all();

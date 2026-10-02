@@ -6199,6 +6199,37 @@ test('organisation stock cover export downloads the filtered buckets as csv', fu
     $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'nope']))->assertRedirect();
 });
 
+test('deliveries in the warehouse are never late, dispatched ones get their time at sea and POs without dates are late', function () {
+    $goods = App\Actions\Goods\UI\ShowGoodsDashboard::make();
+    $delivery = fn (string $state, ?string $enteredAt, ?string $purchaseOrderEta = null) => (object) [
+        'state'              => $state,
+        'state_entered_at'   => $enteredAt,
+        'delivery_date'      => null,
+        'purchase_order_eta' => $purchaseOrderEta,
+    ];
+
+    expect($goods->stockDeliveryTiming($delivery('received', now()->subMonths(3)->toDateTimeString())))
+        ->toBe(['eta' => now()->addDay()->toDateString(), 'is_late' => false])
+        ->and($goods->stockDeliveryTiming($delivery('dispatched', now()->subDays(10)->toDateTimeString(), now()->subMonth()->toDateString())))
+        ->toBe(['eta' => now()->subDays(10)->addDays(60)->toDateString(), 'is_late' => false])
+        ->and($goods->stockDeliveryTiming($delivery('dispatched', now()->subDays(70)->toDateTimeString()))['is_late'])->toBeTrue()
+        ->and($goods->stockDeliveryTiming($delivery('confirmed', now()->toDateTimeString(), now()->subDay()->toDateString()))['is_late'])->toBeTrue()
+        ->and($goods->stockDeliveryTiming($delivery('confirmed', now()->subDays(5)->toDateTimeString()))['is_late'])->toBeFalse()
+        ->and($goods->isPurchaseOrderLate((object) ['estimated_received_at' => null, 'submitted_at' => null, 'measured_lead_time_days' => null]))->toBeTrue()
+        ->and($goods->isPurchaseOrderLate((object) ['estimated_received_at' => now()->addWeek()->toDateString(), 'submitted_at' => null, 'measured_lead_time_days' => null]))->toBeFalse();
+});
+
+test('the manufacturing hub source is named after the hub organisations', function () {
+    $buckets = App\Actions\Procurement\GetOrganisationStockCoverBuckets::make();
+    $wasHub  = $this->otherOrganisation->is_manufacturing_hub;
+    $this->otherOrganisation->update(['is_manufacturing_hub' => true]);
+
+    expect($buckets->sourceOptions($this->group->id)['hub'])->toContain($this->otherOrganisation->name)
+        ->and($buckets->sourceOptions($this->group->id)['agent'])->toBe('Agents');
+
+    $this->otherOrganisation->update(['is_manufacturing_hub' => $wasHub]);
+});
+
 test('procurement dashboard lists stock levels linking to each bucket', function () {
     $response = $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug]));
 

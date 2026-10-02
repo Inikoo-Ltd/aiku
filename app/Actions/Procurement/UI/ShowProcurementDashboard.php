@@ -27,6 +27,7 @@ use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,6 +39,8 @@ class ShowProcurementDashboard extends OrgAction
     use AsAction;
     use WithInertia;
     use WithAgentOrganisation;
+
+    private const array STOCK_LEVELS_FRESH_AND_STALE_SECONDS = [120, 600];
 
 
 
@@ -237,7 +240,9 @@ class ShowProcurementDashboard extends OrgAction
 
                 'shippers' => Shipper::query()->get(),
                 'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
-                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels($source) : [],
+                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
+                    ? Cache::flexible("procurement-dashboard:stock-levels:{$this->organisation->id}:".($source ?? 'all'), self::STOCK_LEVELS_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels($source))
+                    : [],
                 'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period')), $source) : null,
 
             ]

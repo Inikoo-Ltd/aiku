@@ -3,14 +3,15 @@ import { Link, router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import { computed, inject, ref } from "vue"
+import { onClickOutside, onKeyStroke } from "@vueuse/core"
 import Chart from "primevue/chart"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxOpen, faPercentage, faCoins, faClipboardList, faTruckContainer, faExclamationTriangle, faBoxes, faChevronDown } from "@fal"
+import { faBoxOpen, faPercentage, faCoins, faClipboardList, faTruckContainer, faExclamationTriangle, faChevronDown } from "@fal"
 
-library.add(faBoxOpen, faPercentage, faCoins, faClipboardList, faTruckContainer, faExclamationTriangle, faBoxes, faChevronDown)
+library.add(faBoxOpen, faPercentage, faCoins, faClipboardList, faTruckContainer, faExclamationTriangle, faChevronDown)
 
 const props = defineProps({
 	stockOuts: { type: Object, required: true },
@@ -54,6 +55,10 @@ const selectAll = () => {
 }
 
 const isPeriodOpen = ref(false)
+const periodPicker = ref(null)
+
+onClickOutside(periodPicker, () => (isPeriodOpen.value = false))
+onKeyStroke("Escape", () => (isPeriodOpen.value = false))
 
 const cardTooltip = (card) => [card.description, ...(card.metrics ?? []).map((metric) => `${metric.label}: ${locale.number(metric.value)}`)].join(" · ")
 
@@ -276,7 +281,9 @@ const urgentParts = computed(() => [
 const historyDateLabel = computed(() => {
 	const date = headline.value.now?.date
 	if (!date) return ""
-	const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+	const local = new Date()
+	local.setDate(local.getDate() - 1)
+	const yesterday = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")}`
 	return date === yesterday ? ctrans("yesterday") : new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })
 })
 
@@ -371,7 +378,7 @@ const arrivalsTooltip = (arrivals) =>
 								<span class="font-normal text-gray-400">{{ ctrans("lost in period") }}</span>
 							</span>
 						</div>
-						<div class="relative ml-auto">
+						<div ref="periodPicker" class="relative ml-auto">
 							<button type="button" class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50" :aria-expanded="isPeriodOpen" @click="isPeriodOpen = !isPeriodOpen">
 								{{ stockOuts.periods[stockOuts.period] }}
 								<FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" aria-hidden="true" />
@@ -419,7 +426,7 @@ const arrivalsTooltip = (arrivals) =>
 							</span>
 						</div>
 					</div>
-					<div>
+					<div class="overflow-x-auto">
 						<table class="w-full min-w-0 text-[13px] tabular-nums">
 							<thead>
 								<tr class="border-b border-gray-200 text-[11px] text-gray-400">
@@ -449,13 +456,13 @@ const arrivalsTooltip = (arrivals) =>
 									<td class="whitespace-nowrap border-l border-gray-200 py-1 pl-3 pr-2 text-right text-[12px] tabular-nums" :class="{ 'group-hover:bg-[--app-accent-soft]': level.route }">
 										<span v-if="level.in_transit || level.late" class="inline-flex items-center justify-end">
 											<span v-tooltip="ctrans('SKOs waiting only on purchase orders or deliveries past their expected arrival')" class="inline-flex w-10 items-center justify-end gap-0.5 text-red-600">
-												<template v-if="level.late"><FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-[10px]" aria-hidden="true" />{{ locale.number(level.late) }}</template>
+												<template v-if="level.late"><FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-[10px]" aria-hidden="true" />{{ locale.number(level.late) }}<span class="sr-only"> {{ ctrans("late") }}</span></template>
 											</span>
 											<span v-tooltip="ctrans('Purchase orders')" class="inline-flex w-10 items-center justify-end gap-0.5 text-gray-400">
-												<template v-if="level.purchase_orders"><FontAwesomeIcon icon="fal fa-clipboard-list" class="text-[10px]" aria-hidden="true" />{{ level.purchase_orders }}</template>
+												<template v-if="level.purchase_orders"><FontAwesomeIcon icon="fal fa-clipboard-list" class="text-[10px]" aria-hidden="true" />{{ level.purchase_orders }}<span class="sr-only"> {{ ctrans("purchase orders") }}</span></template>
 											</span>
 											<span v-tooltip="ctrans('Stock deliveries')" class="inline-flex w-10 items-center justify-end gap-0.5 text-gray-400">
-												<template v-if="level.stock_deliveries"><FontAwesomeIcon icon="fal fa-truck-container" class="text-[10px]" aria-hidden="true" />{{ level.stock_deliveries }}</template>
+												<template v-if="level.stock_deliveries"><FontAwesomeIcon icon="fal fa-truck-container" class="text-[10px]" aria-hidden="true" />{{ level.stock_deliveries }}<span class="sr-only"> {{ ctrans("deliveries") }}</span></template>
 											</span>
 											<span v-tooltip="arrivalsTooltip(level.arrivals)" class="inline-block w-16 text-gray-400">{{ waitingDays(level) }}</span>
 											<span class="inline-block w-10 text-[13px] font-medium text-blue-700">{{ level.in_transit ? locale.number(level.in_transit) : "" }}</span>
