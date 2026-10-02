@@ -41,6 +41,8 @@ class GetStaffTaskQuickLook
             'can_edit'      => $task->isWorkedOnBy($request->user()),
             'due_access'    => $task->dueAccessFor($request->user()),
             'can_remove_collaborators' => $task->canRemoveCollaboratorsBy($request->user()),
+            'can_reassign' => $task->canReassignBy($request->user()),
+            'can_ask_for_help' => $task->canAskForHelpBy($request->user()),
             'options'       => StaffTask::editOptions(),
             'messages'      => $canReadChat
                 ? StaffMessageResource::collection(

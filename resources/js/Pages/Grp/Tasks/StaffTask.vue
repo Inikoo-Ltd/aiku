@@ -67,6 +67,8 @@ const props = defineProps<{
     can_edit: boolean
     due_access: StaffTaskDueAccess
     can_remove_collaborators: boolean
+    can_reassign: boolean
+    can_ask_for_help: boolean
     timeline: { at: string; icon: string; text: string; by: string | null }[]
     options: { statuses: Option[]; priorities: Option[] }
 }>()
@@ -92,7 +94,7 @@ const daysAgo = (date: string) => {
 const controls = ref<InstanceType<typeof StaffTaskControls> | null>(null)
 const subtasksBox = ref<InstanceType<typeof StaffTaskSubtasks> | null>(null)
 
-const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "timeline"], preserveScroll: true })
+const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "timeline"], preserveScroll: true })
 
 const panelSummary = computed(() => ({
     assignee: props.task.assignee?.name ?? props.task.department_label,
@@ -246,7 +248,7 @@ onUnmounted(() => {
         <div class="w-full shrink-0 space-y-4 p-4 max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px)] lg:w-[26rem] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
             <Teleport defer to="#task-card-controls" :disabled="isDesktop">
             <TicketControlPanel :ticket="panelSummary" :storage-key="isDesktop ? 'staff-task-control-panel' : 'staff-task-control-panel-mobile'" :default-open="isDesktop" :embedded="!isDesktop">
-                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :options="options" @updated="reloadTask" />
+                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :can-reassign="can_reassign" :can-ask-for-help="can_ask_for_help" :options="options" @updated="reloadTask" />
             </TicketControlPanel>
             </Teleport>
 

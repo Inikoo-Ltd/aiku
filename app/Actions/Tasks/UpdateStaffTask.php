@@ -82,6 +82,10 @@ class UpdateStaffTask
             Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
         }
 
+        if ($task->wasChanged('department')) {
+            NotifyStaffTaskDepartment::run($task, $actor);
+        }
+
         if ($task->wasChanged('status') && !$task->status->isOpen() && $task->requester_id !== $actor->id) {
             $title = $task->status === StaffTaskStatusEnum::DONE
                 ? __(':reference is done', ['reference' => $task->reference])
@@ -97,6 +101,13 @@ class UpdateStaffTask
 
         if ($request->has('due_at') && !$task->canSetDueDate($request->user())) {
             return false;
+        }
+
+        if ($request->has('assignee_id') && (int) $request->input('assignee_id') !== (int) $task->assignee_id) {
+            $isClaimingUnassigned = !$task->assignee_id && (int) $request->input('assignee_id') === $request->user()->id;
+            if (!$isClaimingUnassigned && !$task->canReassignBy($request->user())) {
+                return false;
+            }
         }
 
         return $task->isVisibleTo($request->user());

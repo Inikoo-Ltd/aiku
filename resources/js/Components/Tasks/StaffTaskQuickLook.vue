@@ -39,6 +39,8 @@ type QuickLookData = {
     can_edit: boolean
     due_access: StaffTaskDueAccess
     can_remove_collaborators: boolean
+    can_reassign: boolean
+    can_ask_for_help: boolean
     options: { statuses: any[]; priorities: any[] }
     messages: { id: number; user_id: number; user_name: string; body: string | null; gif_url: string | null; image: any; created_at: string }[] | null
     message_count: number
@@ -175,7 +177,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             </span>
                         </div>
                         <TicketControlPanel v-if="!isDesktop && panelSummary" :ticket="panelSummary" storage-key="staff_task_quick_look_controls_open" :default-open="false">
-                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :options="data!.options" @updated="reload" />
+                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :options="data!.options" @updated="reload" />
                         </TicketControlPanel>
                     </div>
 
@@ -235,7 +237,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                 </div>
 
                 <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :options="data!.options" @updated="reload" />
+                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :options="data!.options" @updated="reload" />
                 </aside>
             </div>
         </div>
