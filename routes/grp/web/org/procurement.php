@@ -11,7 +11,6 @@ use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
-use App\Actions\GoodsIn\StockDelivery\UI\EditStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
@@ -253,6 +252,5 @@ Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
     Route::get('export', ExportStockDeliveries::class)->name('export');
     Route::get('create', CreateStockDelivery::class)->name('create');
     Route::get('{stockDelivery}', ShowStockDelivery::class)->name('show');
-    Route::get('{stockDelivery}/edit', EditStockDelivery::class)->name('edit');
     Route::get('{stockDelivery}/pdf', PdfStockDelivery::class)->name('pdf');
 });

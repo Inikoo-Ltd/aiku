@@ -2959,19 +2959,6 @@ test('UI placed stock delivery costing tab shows every item on one page', functi
             ->has(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cost_per_sko_org'));
 });
 
-test('UI edit stock delivery', function () {
-    $this->withoutExceptionHandling();
-    $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('EditModel')
-            ->has('title')
-            ->has('formData')
-            ->has('pageHead')
-            ->has('breadcrumbs', 3);
-    });
-});
-
 function createStockDeliveryWithItems($test, string $code, array $unitQuantities): StockDelivery
 {
     $supplier    = StoreSupplier::make()->action(parent: $test->group, modelData: Supplier::factory()->definition());
@@ -4183,6 +4170,28 @@ describe('supplier deposits', function () {
 
         actingAs($this->adminGuest->getUser());
     });
+});
+
+test('staff rename a stock delivery public id from its settings and the url keeps working', function () {
+    $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
+        'reference' => 'SD-RENAME-'.StockDelivery::count(),
+        'date'      => date('Y-m-d'),
+    ], strict: false);
+    $other = StoreStockDelivery::make()->action($this->orgSupplier, [
+        'reference' => 'SD-TAKEN-'.StockDelivery::count(),
+        'date'      => date('Y-m-d'),
+    ], strict: false);
+    $slug = $delivery->slug;
+
+    expect(\App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryData::run($delivery)['blueprint'][0]['fields']['reference']['type'])->toBe('input');
+
+    $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['reference' => 'MSKU1234567'])->assertRedirect();
+    expect($delivery->refresh()->reference)->toBe('MSKU1234567')
+        ->and($delivery->slug)->toBe($slug);
+
+    $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['reference' => $other->reference])->assertSessionHasErrors('reference');
+    $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['reference' => 'PO 12/34'])->assertSessionHasErrors('reference');
+    expect($delivery->refresh()->reference)->toBe('MSKU1234567');
 });
 
 describe('org supplier sub pages navigation', function () {
