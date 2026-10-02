@@ -72,6 +72,7 @@ const props = withDefaults(defineProps<{
 			[key: string]: {
 				icon: string
 				title: string
+				shows_sales?: boolean
 			}
 		}
 	}
@@ -86,6 +87,7 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
+const failedTableTab = inject("failedTableTab", ref<string | null>(null))
 
 const layout = inject('layout', layoutStructure)
 
@@ -116,6 +118,15 @@ watch(() => props.tableData.current_tab, (newVal) => {
  * reorders parents only and children ride along; every other table keeps PrimeVue's own
  * sorting untouched.
  */
+const orderedTabs = computed(() => {
+	const tabs = Object.entries(props.tableData?.tabs ?? {}).map(([tabSlug, tab]) => ({ tabSlug, tab }))
+
+	return [
+		...tabs.filter(({ tab }) => tab.align !== "right"),
+		...tabs.filter(({ tab }) => tab.align === "right"),
+	]
+})
+
 const hasGroupedRows = computed(() => {
 	const body = props.tableData.tables?.[localCurrentTab.value]?.body
 	return !!body?.some((row: any) => row.parent_slug)
@@ -205,11 +216,18 @@ const debStoreTab = debounce((tab: string) => {
 		// isLoadingOnTable.value = false
 	})
 }, 800)
-const updateTab = (value: string) => {
-	localCurrentTab.value = value
-	emits('onChangeTab', value)
-	debStoreTab(value)
+const updateTab = (value: string | number) => {
+	const tabSlug = String(value)
+	localCurrentTab.value = tabSlug
+	emits('onChangeTab', tabSlug)
+	debStoreTab(tabSlug)
 }
+
+const retryCurrentTab = () => {
+	emits('onChangeTab', localCurrentTab.value)
+}
+
+const showsPartnersNote = computed(() => !!props.settings.partners_type && props.tableData.tabs?.[localCurrentTab.value]?.shows_sales !== false)
 
 
 
@@ -220,11 +238,10 @@ const updateTab = (value: string) => {
 
 		<div class="">
 			<!-- Section: Tabs -->
-			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
+			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2" @update:value="updateTab">
 				<TabList>
-					<template v-for="(tab, tabSlug) in tableData.tabs" :key="tabSlug">
+					<template v-for="{ tabSlug, tab } in orderedTabs" :key="tabSlug">
 						<Tab
-							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"
 							:class="[tab.align === 'right' ? '!ml-auto' : '', '!outline-none focus-visible:bg-gray-100']"
 							v-tooltip="tab.type === 'icon' ? tab.title : undefined"
@@ -248,7 +265,13 @@ const updateTab = (value: string) => {
 				@sort="onGroupSort"
 			>
 				<template #empty>
-					<div class="flex items-center justify-center h-full text-center">
+					<div v-if="failedTableTab === localCurrentTab" role="alert" class="flex flex-col items-center justify-center gap-1 h-full text-center">
+						<span class="text-red-700">{{ ctrans("This table could not be loaded.") }}</span>
+						<button type="button" class="min-h-11 px-3 underline text-gray-700 hover:text-gray-900" @click="retryCurrentTab">
+							{{ ctrans("Try again") }}
+						</button>
+					</div>
+					<div v-else class="flex items-center justify-center h-full text-center">
 						{{ ctrans("No data available.") }}
 					</div>
 				</template>
@@ -306,13 +329,13 @@ const updateTab = (value: string) => {
 				<LoadingIcon />
 			</div>
 
-			<div class="mt-1 text-right text-[10px] text-gray-400">
-				<template v-if="settings.partners_type">
+			<div class="mt-1 text-right text-[10px] text-gray-500">
+				<template v-if="showsPartnersNote">
 					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Sales to our own companies are included') : ctrans('Sales to our own companies are not included') }}
-					(<button type="button" class="underline hover:text-gray-600" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
+					(<button type="button" class="underline hover:text-gray-700" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
 				</template>
 				{{ ctrans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
-					{{ ctrans('— that is :time for you', { time: utcDayStartInUserTime }) }}
+					{{ ctrans('(:time for you)', { time: utcDayStartInUserTime }) }}
 				</template>
 			</div>
 

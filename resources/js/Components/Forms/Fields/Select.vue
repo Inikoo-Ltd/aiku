@@ -11,6 +11,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { onMounted, ref, computed } from "vue"
 import Tag from '@/Components/Tag.vue'
+import { toSelectOptions } from "@/Composables/useSelectOptions"
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps<{
@@ -33,17 +34,19 @@ const normalizeStr = (str: string): string =>
 
 const searchQuery = ref('')
 
-const filteredOptions = computed(() => {
-    if (!searchQuery.value || !props.fieldData.searchable) return props.options
+const selectOptions = computed(() => toSelectOptions(props.options, props.fieldData.valueProp || 'value', props.fieldData.labelProp || 'label') as typeof props.options)
 
-    const optionsArray = Array.isArray(props.options)
-        ? props.options
-        : Object.values(props.options as Record<string, any>)
+const filteredOptions = computed(() => {
+    if (!searchQuery.value || !props.fieldData.searchable) return selectOptions.value
+
+    const optionsArray = Array.isArray(selectOptions.value)
+        ? selectOptions.value
+        : Object.values(selectOptions.value as Record<string, any>)
 
     const labelKey = props.fieldData.labelProp || 'label'
 
     // Return it in the same format as the original input
-    if (Array.isArray(props.options)) {
+    if (Array.isArray(selectOptions.value)) {
         return optionsArray.filter((option: any) => {
             const label = typeof option === 'string' ? option : (option[labelKey] ?? '')
             return normalizeStr(String(label)).includes(normalizeStr(searchQuery.value))
@@ -51,7 +54,7 @@ const filteredOptions = computed(() => {
     } else {
         // If the origin is an object, return it as an object too
         const result: Record<string, any> = {}
-        Object.entries(props.options as Record<string, any>).forEach(([key, option]) => {
+        Object.entries(selectOptions.value as Record<string, any>).forEach(([key, option]) => {
             const label = typeof option === 'string' ? option : (option[labelKey] ?? '')
             if (normalizeStr(String(label)).includes(normalizeStr(searchQuery.value))) {
                 result[key] = option
@@ -64,7 +67,7 @@ const filteredOptions = computed(() => {
 // Auto assign to first option if 'required' and value is null
 onMounted(() => {
     if(props.fieldData?.required && !props.form[props.fieldName]) {
-        props.form[props.fieldName] = props.options?.[0]?.value
+        props.form[props.fieldName] = selectOptions.value?.[0]?.[props.fieldData.valueProp || 'value']
     }
 })
 </script>

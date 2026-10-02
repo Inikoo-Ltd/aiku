@@ -16,7 +16,7 @@ const input = ref<HTMLInputElement | null>(null)
 
 const add = (event: Event) => {
     const target = event.target as HTMLInputElement
-    files.value = [...files.value, ...Array.from(target.files ?? [])].slice(0, 10)
+    files.value = [...files.value, ...Array.from(target.files ?? [])].slice(0, 30)
     target.value = ""
 }
 
@@ -38,8 +38,8 @@ const remove = (index: number) => {
             </li>
         </ul>
         <input ref="input" type="file" multiple class="hidden"
-            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.pptx" @change="add" />
-        <button v-if="files.length < 10" type="button" class="self-start text-xs text-indigo-600 hover:underline"
+            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.pptx,.zip" @change="add" />
+        <button v-if="files.length < 30" type="button" class="self-start text-xs text-indigo-600 hover:underline"
             @click="input?.click()">
             <FontAwesomeIcon :icon="faPaperclip" fixed-width aria-hidden="true" />
             {{ ctrans("Attach files") }}

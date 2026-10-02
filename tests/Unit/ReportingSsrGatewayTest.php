@@ -62,3 +62,33 @@ test('a storefront 404 is not rendered on the server, so junk urls cannot hold a
 
     Http::assertNothingSent();
 });
+
+test('a page over 1 MB is sent without Expect: 100-Continue, which the bun SSR server answers with 400', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'http://127.0.0.1:13714/render' => Http::response(['head' => [], 'body' => '<div>Family</div>']),
+    ]);
+
+    $response = app(ReportingSsrGateway::class)->dispatch([
+        'url'       => '/catalogue/family/example',
+        'component' => 'Catalogue/Family',
+        'props'     => ['products' => str_repeat('x', 1_100_000)],
+    ]);
+
+    expect($response)->not->toBeNull();
+
+    Http::assertSent(fn (Request $request) => !$request->hasHeader('Expect'));
+});
+
+test('a grp error page is not sent to the storefront SSR bundle', function () {
+    Http::preventStrayRequests();
+    app()->instance('env', 'production');
+    $request = \Illuminate\Http\Request::create('https://app.'.config('app.domain').'/grp/assets/app-grp-old.js');
+    app()->instance('request', $request);
+    \Illuminate\Support\Facades\Request::clearResolvedInstance('request');
+
+    app(\App\Exceptions\Handler::class)->render($request, new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException());
+
+    expect(config('inertia.ssr.enabled'))->toBeFalse();
+    Http::assertNothingSent();
+});

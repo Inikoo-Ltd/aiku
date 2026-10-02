@@ -12,8 +12,12 @@ namespace App\Actions\Accounting\InvoiceCategory\UI;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
 use App\Actions\Accounting\InvoiceCategory\WithInvoiceCategorySubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Http\Resources\Accounting\InvoiceCategoryResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -86,10 +90,38 @@ class ShowInvoiceCategory extends OrgAction
                     ]
                 ],
                 'overview'    => GetInvoiceCategoryOverview::run($invoiceCategory),
+                'shopTarget'  => $this->getShopTarget($invoiceCategory),
             ]
         );
     }
 
+
+    public function getShopTarget(InvoiceCategory $invoiceCategory): ?array
+    {
+        if ($invoiceCategory->type !== InvoiceCategoryTypeEnum::SHOP_FALLBACK) {
+            return null;
+        }
+
+        $shop = Shop::find(Arr::get($invoiceCategory->settings, 'shop_id'));
+        if (!$shop) {
+            return null;
+        }
+
+        $monthTarget = GetShopMonthSalesTarget::run($shop);
+
+        return [
+            'shop_name' => $shop->name,
+            'url'       => route('grp.org.shops.show.dashboard.show', [$shop->organisation->slug, $shop->slug, 'section' => ShopDashboardSectionsEnum::TARGET->value]),
+            'month'     => [
+                'label'          => $monthTarget['month_label'],
+                'currency_code'  => $monthTarget['currency_code'],
+                'sales_so_far'   => $monthTarget['sales_so_far'],
+                'target'         => $monthTarget['target']['amount'],
+                'expected'       => $monthTarget['expected'],
+                'remaining_days' => $monthTarget['remaining_days'],
+            ],
+        ];
+    }
 
     public function jsonResponse(InvoiceCategory $invoiceCategory): InvoiceCategoryResource
     {
@@ -141,7 +173,8 @@ class ShowInvoiceCategory extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.org.accounting.invoice-categories.show.invoices.index' => array_merge(
+            'grp.org.accounting.invoice-categories.show.invoices.index',
+            'grp.org.accounting.invoice-categories.show.backlog.index' => array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs(
                     'grp.org.accounting.dashboard',
                     Arr::only($routeParameters, ['organisation'])

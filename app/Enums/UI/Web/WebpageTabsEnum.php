@@ -17,9 +17,9 @@ enum WebpageTabsEnum: string
     use HasTabs;
 
     case SHOWCASE             = 'showcase';
+    case ANALYTICS            = 'analytics';
     case EXTERNAL_LINKS        = 'external_links';
     case WEBPAGES             = 'webpages';
-    case ANALYTICS            = 'analytics';
 
 
 

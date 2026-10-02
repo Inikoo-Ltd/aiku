@@ -62,7 +62,7 @@
         'Laila'            => 'Laila',
         'Lobster'          => 'Lobster',
         'Playfair'         => 'Playfair',
-        'Playfair Display' => 'Playfair',
+        'Playfair Display' => 'Playfair+Display',
         'Port Lligat Slab' => 'Port+Lligat+Slab',
         'Quicksand'        => 'Quicksand',
         'Yatra One'        => 'Yatra+One',

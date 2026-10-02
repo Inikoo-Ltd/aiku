@@ -45,13 +45,11 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
             'confirmed_at' => now(),
         ];
 
-        if (array_key_exists('estimated_receiving_date', $modelData)) {
-            $updateData['data'] = [
-                'estimated_receiving_date' => $modelData['estimated_receiving_date'],
-            ];
-        }
+        $purchaseOrder = $this->update($purchaseOrder, $updateData);
 
-        $purchaseOrder = $this->update($purchaseOrder, $updateData, ['data']);
+        if (array_key_exists('estimated_receiving_date', $modelData)) {
+            $purchaseOrder = UpdatePurchaseOrder::run($purchaseOrder, ['estimated_receiving_date' => $modelData['estimated_receiving_date']]);
+        }
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 

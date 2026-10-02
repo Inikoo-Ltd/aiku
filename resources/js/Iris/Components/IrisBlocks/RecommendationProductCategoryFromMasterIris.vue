@@ -177,7 +177,8 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             v-slot="{ isLoading } = { isLoading: false }">
             <!-- Image -->
             <div class="relative aspect-square overflow-hidden bg-gray-100">
-              <Image v-if="data?.web_images?.main?.original" :src="data?.web_images?.main?.original" :alt="data.name"
+              <Image v-if="data?.web_images?.main?.original" :src="data?.web_images?.main?.original" :srcset="data?.srcset ?? undefined"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw" :alt="data.name"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
               <div v-else class="flex h-full items-center justify-center">

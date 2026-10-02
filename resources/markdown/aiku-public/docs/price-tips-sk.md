@@ -8,21 +8,21 @@ category: shop
 ---
 
 <aside class="tldr">
-Každú noc aiku prejde hlavné produkty, ktorých je <b>príliš veľa na sklade v každom sklade</b>, alebo ktoré <b>sa míňajú v každom sklade</b>, a môže navrhnúť zmenu ceny. Tip je len návrh: <b>cena sa nezmení, kým ho niekto nepoužije a neuloží</b>. Tipy uvidíte na karte <b>Pricing</b>, najistejšie sú navrchu.
+Každú noc aiku prejde hlavné produkty, ktorých je <b>príliš veľa na sklade</b> alebo ktoré <b>sa míňajú</b>, vrátane nových položiek, a môže navrhnúť zmenu ceny. Tip je len návrh: <b>cena sa nezmení, kým ho niekto nepoužije a neuloží</b>. Tipy uvidíte na karte <b>Pricing</b>, najistejšie sú navrchu.
 </aside>
 
 ## Ktoré produkty dostanú tip
 
-Cena hlavného produktu je rovnaká v každom obchode, ktorý ho predáva, preto sa tip zobrazí len vtedy, keď sa zhodnú všetky organizácie:
+Cena hlavného produktu je rovnaká v každom obchode, ktorý ho predáva, preto aiku vezme dni zásob každej organizácie a spriemeruje ich podľa toho, **koľko každá organizácia predala za posledný rok**. Organizácia, ktorá predá väčšinu produktu, sa počíta najviac; tá, ktorá predá málo, takmer vôbec.
 
-- **Zníženie ceny:** produkt má zásobu na **120 dní alebo viac** v každej organizácii, ktorá ho drží na sklade.
-- **Zvýšenie ceny:** produkt sa **minie do 45 dní** v každej organizácii.
+- **Zníženie ceny:** tento priemer je **120 dní zásob alebo viac**.
+- **Zvýšenie ceny:** tento priemer je **pod 45 dní**.
 
-Ak je jeden sklad plný a v inom sa produkt míňa, tip sa nezobrazí.
+**Nové položky** (bez predaja v tých istých mesiacoch pred rokom) dostanú tip, keď sú v predaji **60 dní**. Keďže nemajú minulý rok na porovnanie, AI ich posúdi podľa predaja od uvedenia na trh v porovnaní s ostatnými produktmi rodiny a podľa ceny v porovnaní s bežnou cenou rodiny a konkurencie.
 
 Niektoré produkty tip nikdy nedostanú:
 
-- produkty, ktoré sa v tých istých mesiacoch pred rokom nepredali vôbec, takže nové položky sa nikdy nezlacňujú;
+- produkty, ktoré sa za posledné dva roky nepredali vôbec;
 - hlavný obchod Aroma.
 
 ## Ako sa tip vypočíta
@@ -43,10 +43,10 @@ aiku potom pred zobrazením čohokoľvek uplatní pevné pravidlá:
 
 - zmena musí ísť správnym smerom: zníženie len pri nadbytku zásob, zvýšenie len keď sa zásoby míňajú;
 - AI musí byť svojím výberom istá aspoň na 50 %;
-- žiadne zníženie, keď pokles predaja vyzerá dočasne;
+- žiadne zníženie, keď pokles predaja vyzerá dočasne (u nových položiek sa nekontroluje, nemajú minulý rok);
 - zníženie nikdy nezníži cenu pod **náklady + 25 %**. Ak by to tak bolo, zníženie sa zmenší a dôvod to uvedie.
 
-Keď je odpoveď AI „nechať cenu", tip sa nezobrazí.
+Keď sa tip nezobrazí, stĺpec **Price tip** to sivým písmom vysvetlí, napríklad *No tip: stock for 80 days, no change needed* (bez tipu: zásoby na 80 dní, netreba meniť), *No tip: the AI keeps the price (71% sure)* (AI nechá cenu, istá na 71 %), *No tip: the fall in sales looks temporary (65% likely)* (pokles predaja vyzerá dočasne, s pravdepodobnosťou 65 %) alebo *No tip yet: new, on sale for 30 days* (zatiaľ bez tipu: nový, v predaji 30 dní).
 
 ## Čo tip ukazuje
 
@@ -56,7 +56,7 @@ Na karte **Pricing** stĺpec **Price tip** (cenový tip) ukazuje:
 - ako si je AI istá, napríklad **72 % sure**;
 - odkaz **Dismiss** (zamietnuť).
 
-Prejdením myšou nad zmenou si prečítate dôvod, napríklad: *Zásoby na 400 dní v každej organizácii, predaj o 20 % nižší ako minulý rok, 20 kusov ďalej na ceste, marža 80 %, cena −10 % dňa 2025-03-10 zvýšila predaj o +25 %*. Dôvod je zostavený z uvedených čísel, takže každé si môžete overiť.
+Prejdením myšou nad zmenou si prečítate dôvod, napríklad: *Zásoby na 400 dní, spriemerované podľa predaja každej organizácie, predaj o 20 % nižší ako minulý rok, 20 kusov ďalej na ceste, marža 80 %, cena −10 % dňa 2025-03-10 zvýšila predaj o +25 %*. Dôvod je zostavený z uvedených čísel, takže každé si môžete overiť.
 
 Produkty s tipom sú v zozname prvé, najistejšie navrchu. Kliknutím na hlavičku stĺpca zmeníte triedenie.
 

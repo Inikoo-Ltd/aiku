@@ -11,7 +11,11 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Helpers\Translations\ChatGPT5Driver;
+use App\Actions\Helpers\Translations\GetCatalogueTranslationBrief;
+use App\Actions\Helpers\Translations\MineTranslationTerms;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\TranslateFromMaster;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -24,11 +28,18 @@ use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Language;
+use App\Models\Helpers\TranslationReview;
+use App\Models\Helpers\TranslationTerm;
 use App\Models\Tasks\StaffTask;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -268,4 +279,168 @@ test('part of a trade unit is only accepted when the trade unit is divisible', f
     UpdateMasterAsset::make()->action($this->masterAsset, $partOfABottle);
 
     expect((float) $this->masterAsset->refresh()->tradeUnits->first()->pivot->quantity)->toBe(0.01);
+});
+
+test('a webmaster rating and then rewriting a machine translation is kept as one review', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $this->product->updateQuietly(['name' => 'strojový preklad', 'is_name_reviewed' => false]);
+
+    post(route('grp.models.product.translation_review.store', $this->product->id), ['field' => 'name', 'rating' => 2])
+        ->assertSuccessful();
+    patch(route('grp.models.product.update', $this->product->id), ['name' => 'levanduľové mydlo'])
+        ->assertRedirect();
+
+    $review = TranslationReview::where('model_type', 'Product')->where('model_id', $this->product->id)->sole();
+
+    expect($review->field)->toBe('name')
+        ->and($review->source_text)->toBe('unit label asset')
+        ->and($review->machine_text)->toBe('strojový preklad')
+        ->and($review->corrected_text)->toBe('levanduľové mydlo')
+        ->and($review->rating)->toBe(2)
+        ->and($review->language_id)->toBe($this->shop->language_id);
+});
+
+test('editing text a webmaster already reviewed is not taken for a machine correction', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $this->product->updateQuietly(['name' => 'ľudský preklad', 'is_name_reviewed' => true]);
+
+    patch(route('grp.models.product.update', $this->product->id), ['name' => 'iný ľudský preklad'])
+        ->assertRedirect();
+
+    expect(TranslationReview::where('model_type', 'Product')->where('model_id', $this->product->id)->exists())->toBeFalse();
+});
+
+test('the catalogue brief keeps brand names, follows the family and learns from corrections', function () {
+    config(['auto-translations.keep_in_english' => ['Ancient Witch']]);
+    Cache::forget('translation-brief:kept-names');
+    $slovak = Language::where('code', 'sk')->first();
+    $this->shop->updateQuietly(['language_id' => $slovak->id]);
+    $this->product->updateQuietly(['name' => 'Sviečka Ancient Witch', 'is_name_reviewed' => true]);
+    TranslationReview::create([
+        'group_id'          => $this->shop->group_id,
+        'organisation_id'   => $this->shop->organisation_id,
+        'shop_id'           => $this->shop->id,
+        'language_id'       => $slovak->id,
+        'model_type'        => 'Product',
+        'model_id'          => $this->product->id,
+        'field'             => 'name',
+        'source_text'       => 'Incense cones',
+        'machine_text'      => 'Kadidlové šišky',
+        'machine_text_hash' => md5('Kadidlové šišky'),
+        'corrected_text'    => 'Vonné kužele',
+    ]);
+
+    $brief = GetCatalogueTranslationBrief::run($slovak, $this->product->family);
+
+    expect($brief)->toContain('Ancient Witch')
+        ->and($brief)->toContain('- unit label asset => Sviečka Ancient Witch')
+        ->and($brief)->toContain('corrected: Vonné kužele');
+});
+
+test('the brief reaches the translator and is gone after the call', function () {
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => '{"0":"Sviečka Ancient Witch"}']]]])]);
+    $english = Language::where('code', 'en')->first();
+    $slovak  = Language::where('code', 'sk')->first();
+
+    $translated = Translate::make()->translateWith('Ancient Witch candle', $english, $slovak, 'sonnet', 'Never translate Ancient Witch.');
+
+    expect($translated)->toBe('Sviečka Ancient Witch')
+        ->and(app()->bound(ChatGPT5Driver::BRIEF))->toBeFalse();
+    Http::assertSent(fn (Request $request) => str_starts_with($request['messages'][0]['content'], 'Never translate Ancient Witch.'));
+});
+
+test('a mined term is kept only when the webmasters really use it', function () {
+    $slovak = Language::where('code', 'sk')->first();
+    TranslationTerm::where('language_id', $slovak->id)->delete();
+    foreach (['Incense Cones - Rose' => 'Vonné kužele - ruža', 'Incense Cones - Sage' => 'Vonných kužeľov - šalvia', 'Incense Cones - Lotus' => 'Vonné kužele - lotos'] as $english => $slovakName) {
+        TranslationReview::create([
+            'group_id'          => $this->shop->group_id,
+            'organisation_id'   => $this->shop->organisation_id,
+            'shop_id'           => $this->shop->id,
+            'language_id'       => $slovak->id,
+            'model_type'        => 'Product',
+            'model_id'          => $this->product->id,
+            'field'             => 'name',
+            'source_text'       => $english,
+            'machine_text'      => 'stroj '.$english,
+            'machine_text_hash' => md5('stroj '.$english),
+            'corrected_text'    => $slovakName,
+        ]);
+    }
+    Http::fake(['*' => Http::sequence()
+        ->push(['choices' => [['message' => ['content' => '{"incense cones": "kadidlové šišky"}']]]])
+        ->push(['choices' => [['message' => ['content' => '{"incense cones": "vonné kužele"}']]]])]);
+
+    MineTranslationTerms::run($slovak, ['incense cones'], 6);
+    expect(TranslationTerm::where('language_id', $slovak->id)->exists())->toBeFalse();
+
+    MineTranslationTerms::run($slovak, ['incense cones'], 6);
+    $term = TranslationTerm::where('language_id', $slovak->id)->sole();
+    expect($term->target_term)->toBe('vonné kužele')
+        ->and($term->support)->toBeGreaterThanOrEqual(3);
+
+    $terms = GetCatalogueTranslationBrief::make()->termsFor($slovak, '<p>Backflow <b>incense cones</b> with holder</p>');
+    expect($terms)->toContain('- incense cones => vonné kužele')
+        ->and(GetCatalogueTranslationBrief::make()->termsFor($slovak, 'Lavender soap'))->toBe('');
+});
+
+test('translate all from master redoes only the product texts nobody reviewed', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $this->masterAsset->updateQuietly(['description' => 'Lavender soap description']);
+    $this->product->updateQuietly(['name' => 'starý strojový názov', 'is_name_reviewed' => false, 'description' => 'ľudský popis', 'is_description_reviewed' => true]);
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => 'SK '.$text);
+
+    post(route('grp.models.product.translate_from_master', $this->product->id))->assertRedirect();
+
+    expect($this->product->refresh()->name)->toBe('SK unit label asset')
+        ->and($this->product->is_name_reviewed)->toBeFalse()
+        ->and($this->product->description)->toBe('ľudský popis');
+});
+
+test('a person saving a family text marks it reviewed and translate all leaves it alone', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $family = $this->product->family;
+    $this->masterFamily->updateQuietly(['description' => 'Soaps of every scent', 'description_title' => 'Our soaps']);
+    $family->updateQuietly([
+        'master_product_category_id'    => $this->masterFamily->id,
+        'is_description_reviewed'       => false,
+        'is_description_title_reviewed' => false,
+        'is_name_reviewed'              => false,
+    ]);
+
+    patch(route('grp.models.product_category.update', $family->id), ['description' => 'Mydlá každej vône'])->assertRedirect();
+    expect($family->refresh()->is_description_reviewed)->toBeTrue();
+
+    $family->updateQuietly(['is_description_reviewed' => false]);
+    DB::table('audits')->where('auditable_type', 'ProductCategory')->where('auditable_id', $family->id)->delete();
+    DB::table('audits')->insert([
+        'group_id'       => $family->group_id,
+        'user_type'      => 'User',
+        'user_id'        => $this->adminGuest->getUser()->id,
+        'auditable_type' => 'ProductCategory',
+        'auditable_id'   => $family->id,
+        'event'          => 'updated',
+        'tags'           => '[]',
+        'old_values'     => '{}',
+        'new_values'     => json_encode(['description' => 'Mydlá každej vône']),
+        'url'            => 'https://app.aiku.test/models/product_category/'.$family->id.'/update',
+        'created_at'     => now(),
+        'updated_at'     => now(),
+    ]);
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => 'SK '.$text);
+
+    $translated = TranslateFromMaster::run($family->refresh());
+
+    expect($translated)->toBe(['name', 'description_title'])
+        ->and($family->refresh()->description)->toBe('Mydlá každej vône')
+        ->and($family->description_title)->toBe('SK Our soaps')
+        ->and($family->is_description_title_reviewed)->toBeFalse();
+});
+
+test('the layout tells the page editor which language each shop writes in, for the font pickers', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'pl')->first()->id]);
+
+    $shops = App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout::make()->getShops($this->adminGuest->getUser(), $this->shop->organisation);
+
+    expect(collect($shops)->firstWhere('id', $this->shop->id)['language'])->toBe('pl');
 });

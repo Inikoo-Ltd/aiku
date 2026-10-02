@@ -405,6 +405,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('hydrate:org-stock-demand-forecast')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->sentryMonitor(
+                    monitorSlug: 'ForecastOrgStockDemand',
+                ),
+                name: 'ForecastOrgStockDemand',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->onOneServer()->timezone('UTC')->sentryMonitor(
                     monitorSlug: 'FulfilmentCustomersHydrateStatus'
                 ),
@@ -646,6 +655,15 @@ class Kernel extends ConsoleKernel
                 $schedule->command('shopify-app:refresh-expiring-offline-tokens')->daily()->withoutOverlapping()->onOneServer()->sentryMonitor(),
                 name: 'UpdateShopifyAccessTokens',
                 type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('shopify:sweep-missed-orders')->hourlyAt(10)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepShopifyMissedOrders',
+                ),
+                name: 'SweepShopifyMissedOrders',
+                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -1058,6 +1076,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('hydrate:shop-sales-forecast')->dailyAt('00:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ForecastShopSales',
+                ),
+                name: 'ForecastShopSales',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('hydrate:best_seller')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'HydrateBestSellerProduct',
                 ),
@@ -1172,6 +1199,28 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('websites:redo_time_series --from='.now()->subDays()->format('Y-m-d').' --to='.now()->format('Y-m-d').' --async')
+                    ->dailyAt('01:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'WebsiteRedoTimeSeries',
+                    ),
+                name: 'WebsiteRedoTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('webpages:redo_time_series --from='.now()->subDays()->format('Y-m-d').' --to='.now()->format('Y-m-d').' --async')
+                    ->dailyAt('01:05')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'WebpageRedoTimeSeries',
+                    ),
+                name: 'WebpageRedoTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:prune-agent-presence')->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'PruneStaleChatAgentPresence',
                 ),
@@ -1190,6 +1239,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('sales-targets:daily-tips')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'GenerateSalesTargetTips',
+                ),
+                name: 'GenerateSalesTargetTips',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('masters:price-tips')->dailyAt('05:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'GenerateMasterAssetPriceTips',
                 ),
@@ -1199,10 +1257,37 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('masters:competitor-feeds')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ImportCompetitorFeed',
+                ),
+                name: 'ImportCompetitorFeed',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('masters:competitor-prices')->weeklyOn(0, '02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ResearchCompetitorPrices',
+                ),
+                name: 'ResearchCompetitorPrices',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:hydrate-knowledge')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'HydrateChatKnowledge',
                 ),
                 name: 'HydrateChatKnowledge',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:hydrate-reply-examples')->dailyAt('03:50')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateChatReplyExamples',
+                ),
+                name: 'HydrateChatReplyExamples',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

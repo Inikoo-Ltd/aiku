@@ -35,7 +35,7 @@ class BackfillGmailThreadHistory
         $result = ['sessions' => 0, 'messages' => 0, 'failed' => 0];
         $client = GmailClient::forShop($shop);
 
-        if (! $client) {
+        if (! $client || FetchShopMailboxMessages::wasRecentlyRefused($shop)) {
             return $result;
         }
 

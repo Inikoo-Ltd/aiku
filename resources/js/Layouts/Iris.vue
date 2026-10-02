@@ -27,7 +27,7 @@ import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import { isAnnouncementVisible, useAnnouncementClock } from '@/Iris/Composables/useAnnouncementVisibility'
+import { announcementsAtPosition, useAnnouncementClock, type AnnouncementAudience } from '@/Iris/Composables/useAnnouncementVisibility'
 import axios from 'axios'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
@@ -67,13 +67,13 @@ const bundleToggleStyle = computed(() => {
 const announcementNow = useAnnouncementClock()
 
 const announcementAtPosition = (position: string) =>
-    computed(() => {
-        const list = (usePage().props?.announcements ?? []) as any[]
-        return list.find(a =>
-            a?.settings?.position === position
-            && isAnnouncementVisible(a, announcementNow.value, !!layout?.iris?.is_logged_in)
-        ) ?? null
-    })
+    computed(() => announcementsAtPosition((usePage().props?.announcements ?? []) as any[], position, announcementNow.value))
+
+const announcementAudienceClass: Record<AnnouncementAudience, string> = {
+    everyone: '',
+    logged_in: 'hidden [.iris-logged-in_&]:block',
+    logged_out: '[.iris-logged-in_&]:hidden',
+}
 
 const propsAnnouncementsTopbar = announcementAtPosition('top-bar')
 const propsAnnouncementsBottomMenu = announcementAtPosition('bottom-menu')
@@ -317,8 +317,10 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
             <IrisAnnouncement
-                v-if="propsAnnouncementsTopbar"
-                :data="propsAnnouncementsTopbar"
+                v-for="item in propsAnnouncementsTopbar"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
@@ -332,8 +334,10 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
             />
 
             <IrisAnnouncement
-                v-if="propsAnnouncementsBottomMenu"
-                :data="propsAnnouncementsBottomMenu"
+                v-for="item in propsAnnouncementsBottomMenu"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <div class="border-b border-gray-200 ">
@@ -388,8 +392,10 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
                 </div>
             </main>
             <IrisAnnouncement
-                v-if="propsAnnouncementsTopFooter"
-                :data="propsAnnouncementsTopFooter"
+                v-for="item in propsAnnouncementsTopFooter"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <Footer :colorThemed="theme" />

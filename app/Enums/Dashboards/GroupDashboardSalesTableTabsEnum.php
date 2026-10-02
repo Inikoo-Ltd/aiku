@@ -16,17 +16,20 @@ use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderSalesChannelsSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderShopsMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardSalesChannelSalesResource;
+use App\Http\Resources\Dashboards\DashboardShopMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardShopSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalOrganisationsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalSalesChannelsSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalShopsMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsTimeSeriesSalesResource;
 use App\Http\Resources\SysAdmin\DashboardHeaderOrganisationsSalesResource;
 use App\Models\SysAdmin\Group;
@@ -44,6 +47,7 @@ enum GroupDashboardSalesTableTabsEnum: string
     case GLOBAL_MARKETPLACES = 'global_marketplaces';
     case GLOBAL_DROPSHIPPING = 'global_dropshipping';
     case GLOBAL_FULFILMENT = 'global_fulfilment';
+    case MAILSHOTS = 'mailshots';
 
     public function blueprint(): array
     {
@@ -78,6 +82,11 @@ enum GroupDashboardSalesTableTabsEnum: string
                 'title' => __('Global Fulfilment'),
                 'icon'  => 'fal fa-pallet-alt',
             ],
+            GroupDashboardSalesTableTabsEnum::MAILSHOTS => [
+                'title'       => __('Mailshots sent'),
+                'icon'        => 'fal fa-mail-bulk',
+                'shows_sales' => false,
+            ],
         };
     }
 
@@ -96,6 +105,7 @@ enum GroupDashboardSalesTableTabsEnum: string
         $dropshippingShopTimeSeriesStats = $timeSeriesData['shops']['dropshipping'];
         $fulfilmentShopTimeSeriesStats = $timeSeriesData['shops']['fulfilment'];
         $faireTimeSeriesStats = $timeSeriesData['faire'];
+        $mailshotStats = $timeSeriesData['mailshots'] ?? [];
 
         if (!$bool) {
             $header = match ($this) {
@@ -106,6 +116,7 @@ enum GroupDashboardSalesTableTabsEnum: string
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardHeaderSalesChannelsSalesResource::make($group)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardHeaderShopsSalesResource::make($group)->withContext($this)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardHeaderShopsSalesResource::make($group)->withContext($this)),
+                GroupDashboardSalesTableTabsEnum::MAILSHOTS => self::resourceToArray(DashboardHeaderShopsMailshotsResource::make($group)),
             };
 
             $body = match ($this) {
@@ -116,6 +127,7 @@ enum GroupDashboardSalesTableTabsEnum: string
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardSalesChannelSalesResource::collection($salesChannelTimeSeriesStats)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardShopSalesResource::collection($dropshippingShopTimeSeriesStats)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardShopSalesResource::collection($fulfilmentShopTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::MAILSHOTS => self::resourceToArray(DashboardShopMailshotsResource::collection($mailshotStats)),
             };
 
             $totals = match ($this) {
@@ -126,6 +138,7 @@ enum GroupDashboardSalesTableTabsEnum: string
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardTotalSalesChannelsSalesResource::make($salesChannelTimeSeriesStats)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->withContext($this)),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardTotalShopsTimeSeriesSalesResource::make($fulfilmentShopTimeSeriesStats)->withContext($this)),
+                GroupDashboardSalesTableTabsEnum::MAILSHOTS => self::resourceToArray(DashboardTotalShopsMailshotsResource::make($mailshotStats)),
             };
         } else {
             $header = match ($this) {
@@ -157,13 +170,25 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => $salesChannelTimeSeriesStats,
             GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => $dropshippingShopTimeSeriesStats,
             GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT   => $fulfilmentShopTimeSeriesStats,
+            GroupDashboardSalesTableTabsEnum::MAILSHOTS           => $mailshotStats,
         };
 
         return AddDashboardBacklogColumns::run([
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ], array_values($rows), true);
+        ], array_values($rows), true, $this === self::INVOICE_CATEGORIES ? self::invoiceCategoryBacklogRouteTarget(...) : null);
+    }
+
+    private static function invoiceCategoryBacklogRouteTarget(array $row): array
+    {
+        return [
+            'name'       => 'grp.org.accounting.invoice-categories.show.backlog.index',
+            'parameters' => [
+                'organisation'    => $row['organisation_slug'],
+                'invoiceCategory' => $row['slug'],
+            ],
+        ];
     }
 
     public static function tables(Group $group, array $timeSeriesData = [], ?bool $bool = false): array

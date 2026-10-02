@@ -37,8 +37,8 @@ const form = useForm({
 })
 
 const newEmailDraftKey = (field: string) => () => `new-email:${props.shopId ?? "none"}:${field}`
-useComposerDraft(newEmailDraftKey("subject"), toRef(form, "subject"))
-useComposerDraft(newEmailDraftKey("message"), toRef(form, "message"))
+const clearSubjectDraft = useComposerDraft(newEmailDraftKey("subject"), toRef(form, "subject"))
+const clearMessageDraft = useComposerDraft(newEmailDraftKey("message"), toRef(form, "message"))
 
 const fetchRoute = computed<routeType>(() => ({
     name: "grp.json.shop.customers",
@@ -92,6 +92,8 @@ const send = () => {
 
     form.post(target, {
         onSuccess: () => {
+            clearSubjectDraft()
+            clearMessageDraft()
             form.reset("subject", "message", "attachments")
             visible.value = false
         },

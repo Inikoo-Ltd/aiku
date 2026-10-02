@@ -12,6 +12,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -76,10 +78,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|StockDeliveryItem query()
  * @mixin Eloquent
  */
-class StockDeliveryItem extends Model
+class StockDeliveryItem extends Model implements Auditable
 {
     use HasFactory;
     use InOrganisation;
+    use HasHistory;
+
+    protected array $auditEvents = [
+        'updated',
+    ];
+
+    protected array $auditInclude = [
+        'cost_items',
+        'cost_extra',
+        'cost_shipping',
+        'cost_duties',
+        'cost_tax',
+    ];
+
+    public function generateTags(): array
+    {
+        return [
+            'procurement'
+        ];
+    }
 
     protected $casts = [
         'state'           => StockDeliveryItemStateEnum::class,

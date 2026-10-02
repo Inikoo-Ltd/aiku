@@ -8,21 +8,21 @@ category: shop
 ---
 
 <aside class="tldr">
-Cada noche aiku revisa los productos maestros que tienen <b>demasiado stock en todos los almacenes</b>, o que se <b>están agotando en todos los almacenes</b>, y puede sugerir un cambio de precio. Una sugerencia es solo eso: <b>ningún precio cambia hasta que alguien la aplica y guarda</b>. Las sugerencias aparecen en la pestaña <b>Pricing</b> (precios), con las más seguras primero.
+Cada noche aiku revisa los productos maestros que tienen <b>demasiado stock</b> o que se <b>están agotando</b>, incluidas las líneas nuevas, y puede sugerir un cambio de precio. Una sugerencia es solo eso: <b>ningún precio cambia hasta que alguien la aplica y guarda</b>. Las sugerencias aparecen en la pestaña <b>Pricing</b> (precios), con las más seguras primero.
 </aside>
 
 ## Qué productos reciben una sugerencia
 
-El precio de un producto maestro es el mismo en todas las tiendas que lo venden, así que solo se da una sugerencia cuando todas las organizaciones coinciden:
+El precio de un producto maestro es el mismo en todas las tiendas que lo venden, así que aiku mira los días de stock de cada organización y hace la media ponderada por **lo que vendió cada organización en el último año**. La organización que vende la mayor parte del producto cuenta más; la que vende poco apenas cuenta.
 
-- **Rebaja (precio más bajo):** el producto tiene stock para **120 días o más** en todas las organizaciones que lo tienen en stock.
-- **Subida (precio más alto):** el producto **se agotará en menos de 45 días** en todas las organizaciones.
+- **Rebaja (precio más bajo):** esa media es de **120 días de stock o más**.
+- **Subida (precio más alto):** esa media es **inferior a 45 días**.
 
-Si un almacén está lleno y otro se está quedando sin stock, no se da ninguna sugerencia.
+Las **líneas nuevas** (sin ventas en esos mismos meses hace un año) reciben una sugerencia cuando llevan **60 días** a la venta. Al no haber un año anterior con el que comparar, la IA las juzga por sus ventas desde el lanzamiento frente al resto de la familia, y por su precio frente al precio habitual de la familia y de la competencia.
 
 Algunos productos nunca reciben sugerencia:
 
-- productos que no vendieron nada en esos mismos meses hace un año, así que las líneas nuevas nunca se rebajan;
+- productos que no han vendido nada en los últimos dos años;
 - la tienda maestra Aroma.
 
 ## Cómo se calcula la sugerencia
@@ -43,10 +43,10 @@ Antes de mostrar nada, aiku aplica reglas fijas:
 
 - el cambio debe ir en la dirección correcta: una rebaja solo cuando sobra stock, una subida solo cuando el stock se está agotando;
 - la IA debe estar al menos un 50% segura de su elección;
-- no hay rebaja cuando la caída de las ventas parece temporal;
+- no hay rebaja cuando la caída de las ventas parece temporal (no se comprueba en las líneas nuevas, que no tienen año anterior);
 - una rebaja nunca lleva el precio por debajo de **coste + 25%**. Si lo hiciera, la rebaja se reduce, y el motivo lo indica.
 
-Cuando la respuesta de la IA es "mantener el precio", no se muestra ninguna sugerencia.
+Cuando no se da ninguna sugerencia, la columna **Price tip** explica el motivo en gris, por ejemplo *No tip: stock for 80 days, no change needed* (sin sugerencia: stock para 80 días, no hace falta cambiar), *No tip: the AI keeps the price (71% sure)* (la IA mantiene el precio, 71% segura), *No tip: the fall in sales looks temporary (65% likely)* (la caída de las ventas parece temporal, 65% probable) o *No tip yet: new, on sale for 30 days* (aún sin sugerencia: nuevo, a la venta desde hace 30 días).
 
 ## Qué muestra una sugerencia
 
@@ -56,7 +56,7 @@ En la pestaña **Pricing**, la columna **Price tip** (sugerencia de precio) mues
 - lo segura que está la IA, por ejemplo **72% sure**;
 - un enlace **Dismiss** (descartar).
 
-Pasa el ratón por encima del cambio para leer el motivo, por ejemplo: *Stock para 400 días en todas las organizaciones, ventas un 20% por debajo del año pasado, 20 más en camino, 80% de margen, el precio −10% el 2025-03-10 movió las ventas +25%*. El motivo se construye con las cifras anteriores, así que puedes comprobar cada una.
+Pasa el ratón por encima del cambio para leer el motivo, por ejemplo: *Stock para 400 días, promediado según lo que vende cada organización, ventas un 20% por debajo del año pasado, 20 más en camino, 80% de margen, el precio −10% el 2025-03-10 movió las ventas +25%*. El motivo se construye con las cifras anteriores, así que puedes comprobar cada una.
 
 Los productos con sugerencia aparecen primero, con los más seguros arriba. Pulsa la cabecera de la columna para ordenar de otra manera.
 

@@ -10,7 +10,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreStockDeliveryCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
 
     private StockDelivery $stockDelivery;
 
@@ -42,6 +42,10 @@ class StoreStockDeliveryCost extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDelivery->is_costed) {
+            $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
+        }
+
         $type = StockDeliveryCostTypeEnum::tryFrom($this->get('type'));
 
         if ($type && $type !== StockDeliveryCostTypeEnum::EXTRA && $this->stockDelivery->costs()->where('type', $type)->exists()) {

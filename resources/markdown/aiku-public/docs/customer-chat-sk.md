@@ -1,8 +1,8 @@
 ---
 title: Rozhovor so zákazníkmi v Chate
 summary: Jedna schránka pre webový chat, WhatsApp aj e-mail obchodu - prevezmite konverzáciu, odpovedajte s objednávkami zákazníka po ruke, zaznamenajte telefonát, založte ticket a sledujte, ako si vedie pult.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-10-01
+source_date: 2026-10-01
 tags: crm, chat
 category: crm
 series: Chat
@@ -37,7 +37,7 @@ Lišta vľavo zobrazuje vaše obchody s tým, čo <b>čaká</b> (Waiting) a čo 
 
 Schránka má dva zoznamy, každý so svojím počtom: <b>My Chats</b> (moje chaty) a <b>Colleagues' Chats</b> (chaty kolegov), teda tie, ktoré drží niekto iný na obchode, ktorý máte tiež na starosti. V rámci nich <b>Waiting</b> (čaká) je to, čo si nikto neprevzal, <b>Active</b> (aktívne) je v riešení a <b>Closed</b> (zatvorené) je to, čo bolo zatvorené dnes. <b>Assign to me</b> (prideliť mne) urobí čakajúcu konverzáciu vašou; <b>Take Over</b> (prevziať) vezme konverzáciu kolegovi, ktorý odišiel na obed.
 
-Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte toľko obrázkov či dokumentov, koľko potrebujete. <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
+Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte obrázky a dokumenty, najviac 30 súborov naraz (ktoré súbory, nájdete v <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>). <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
 
 Odoslanú správu nemožno upraviť, pretože zákazník ju už má. <b>Take back</b> (vziať späť) ju odstráni na každom kanáli a oznámi to zákazníkovi. <b>Redact</b> (začierniť) natrvalo vymaže vybraný text - číslo karty, heslo - zo správy.
 
@@ -54,6 +54,12 @@ Mnohí hostia sú zákazníci, ktorí jednoducho nie sú prihlásení. Každá s
 Je to len návrh a rozhoduje sa sami. Ktokoľvek môže napísať cudzí e-mail a prepojená konverzácia vám ukáže objednávky daného zákazníka. <b>Confirm</b> (potvrdiť) konverzáciu prepojí; <b>Not them</b> (nie je to on/ona) návrh natrvalo odstráni. Zákazník sesterského obchodu alebo niekto z tej istej firemnej domény sa zobrazí ako náznak, ktorý nemožno potvrdiť.
 
 Keď nič neidentifikuje hosťa, ktorý píše ako existujúci zákazník, systém sa ho raz automaticky opýta na e-mail z jeho účtu alebo číslo objednávky. Deje sa to na webe a WhatsApp, nikdy e-mailom.
+
+## Automatické odpovede
+
+Niektoré správy odídu bez toho, že by ich niekto napísal, a v konverzácii sa zobrazia ako sivé poznámky. Keď je obchod zatvorený, zákazník sa dozvie, kedy sa znova otvorí. Ak nahlasuje problém s tovarom, dostane aj požiadavku na podrobnosti, ktoré budete potrebovať, napríklad číslo objednávky, fotografie a produkty s množstvami. Mimo pracovnej doby môže sama odísť aj odpoveď od AI, na otázku, na ktorú sa AI naučila dobre odpovedať.
+
+Tieto odpovede sa nevypínajú, keď sa niektorá pokazí: práve vďaka nim sa učíme, čo funguje. Pod každou poznámkou je <b>Wrong?</b> (nesprávne?). Kliknite naň, napíšte, prečo bola odpoveď nesprávna (napríklad "zákazník už uviedol produkty a množstvá") a stlačte <b>Mark as wrong</b> (označiť ako nesprávne). Dôvod je povinný, pretože podľa neho odpovede opravujeme. Nesprávna odpoveď od AI zároveň na istý čas zastaví samostatné odosielanie odpovedí AI na ten istý typ otázok v danom obchode. Označenie odpovede mimo otváracích hodín alebo žiadosti o údaje ako nesprávnej ju nezastaví: posiela sa ďalej, kým ju neopravíme.
 
 ## Šum
 

@@ -39,10 +39,10 @@ class ImportShopifyFulfilmentOrder
             return;
         }
 
-        $existingOrder = Order::where('platform_order_id', Arr::get($fulfilmentOrder, 'id'))->first();
+        $existingOrder = Order::withTrashed()->where('platform_order_id', Arr::get($fulfilmentOrder, 'id'))->first();
 
         if ($existingOrder && !$existingOrder->isDeclinedPlatformRequest()) {
-            if ($existingOrder->state !== OrderStateEnum::CANCELLED) {
+            if (!$existingOrder->trashed() && $existingOrder->state !== OrderStateEnum::CANCELLED) {
                 AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfilmentOrder);
             }
 

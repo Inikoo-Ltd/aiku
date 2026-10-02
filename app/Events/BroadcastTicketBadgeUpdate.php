@@ -22,7 +22,7 @@ class BroadcastTicketBadgeUpdate implements ShouldBroadcastNow
 
     /**
      * @param array<string, mixed> $ticketBadges
-     * @param array{title: string, body: string, route: string}|null $notification
+     * @param array{title: string, body: string, route: string, reason?: string}|null $notification
      */
     public function __construct(
         public int $userId,

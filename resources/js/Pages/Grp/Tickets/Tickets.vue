@@ -17,6 +17,7 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import { useLiveTicketRows } from "@/Composables/useLiveTicketRows"
 import { useTicketStatusActions, type TicketStatusAction } from "@/Composables/useTicketStatusActions"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketsQaSummary from "@/Components/Tickets/TicketsQaSummary.vue"
@@ -60,7 +61,8 @@ const props = defineProps<{
     }
 }>()
 
-useLiveTickets(["data"])
+const { isShown: isTicketShown } = useLiveTicketRows(["data.data"])
+useLiveTickets(["data"], undefined, undefined, undefined, (event) => isTicketShown(event.id))
 
 const { statusActions, assigneeStatusActions, actionsFor } = useTicketStatusActions()
 

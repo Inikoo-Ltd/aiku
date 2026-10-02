@@ -28,7 +28,7 @@ class TranslateVariantLabel
         $english = Language::where('code', 'en')->first();
 
         $variant->update([
-            'label' => blank($label) ? null : Translate::run($label, $english, $variant->shop->language, 'gpt-5-nano'),
+            'label' => blank($label) ? null : Translate::run($label, $english, $variant->shop->language, 'catalogue'),
         ]);
 
         return $variant;

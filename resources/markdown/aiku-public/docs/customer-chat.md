@@ -1,7 +1,7 @@
 ---
 title: Talking to customers in Chat
 summary: One inbox for the website chat, WhatsApp and the shop's email - take a conversation, answer with the customer's orders at your side, log a phone call, raise a ticket, and see how the desk is doing.
-date: 2026-09-29
+date: 2026-10-01
 tags: crm, chat
 category: crm
 help_routes: grp.org.shops.show.chat
@@ -37,7 +37,7 @@ The rail on the left lists your shops with what is <b>waiting</b> and <b>active<
 
 The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. <b>Assign to me</b> makes a waiting conversation yours; <b>Take Over</b> takes one from a colleague who has gone to lunch.
 
-Then it works like any messenger: type and send, add an emoji, attach as many images or documents as you need. <b>Translate</b> lets you read the customer in your language and answer in theirs.
+Then it works like any messenger: type and send, add an emoji, attach images and documents, up to 30 files at a time (see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a> for which files). <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
 
@@ -54,6 +54,12 @@ Many guests are customers who are simply not logged in. Every guest message is c
 It is a suggestion and you decide. Anybody can type somebody else's email, and a linked conversation puts that customer's orders in front of you. <b>Confirm</b> links the conversation; <b>Not them</b> removes the suggestion for good. A customer of a sister shop, or somebody on the same company domain, is shown as a hint that cannot be confirmed.
 
 When nothing identifies a guest who writes like an existing customer, they are asked once, automatically, for the email on their account or an order number. This happens on the website and WhatsApp, never by email.
+
+## Automatic replies
+
+Some messages go out without anybody writing them, and they show in the conversation as grey notes. When the shop is closed, the customer is told when it opens again. If they are reporting a problem with goods, they are also asked for the details you will need, such as the order number, photos, and the products and quantities. Outside working hours, an AI answer can also go out on its own for a question the AI has learned to answer well.
+
+These replies are not turned off when one goes wrong: they are how we learn what works. Under each note is <b>Wrong?</b>. Click it, write why it was wrong (for example, "the customer had already given the products and quantities") and press <b>Mark as wrong</b>. The reason is required, because it is what we use to correct the replies. A wrong AI answer also stops AI answers on that kind of question for the shop going out on their own for a while. Marking a closing-time reply or a request for details as wrong does not stop it: it goes on being sent until it is corrected.
 
 ## Noise
 

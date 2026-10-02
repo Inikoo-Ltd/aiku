@@ -15,6 +15,7 @@ use App\Models\Masters\MasterAssetPriceTip;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * Applies a price tip through the normal master price update, with the prices staff reviewed in
@@ -70,5 +71,10 @@ class ApplyMasterAssetPriceTip extends OrgAction
         $this->initialisationFromGroup($masterAssetPriceTip->masterAsset->group, $modelData);
 
         return $this->handle($masterAssetPriceTip, $this->validatedData, $user);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

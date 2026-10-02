@@ -47,6 +47,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
+use App\Actions\Catalogue\Product\SetBulkProductsActive;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -292,6 +293,8 @@ use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\ReopenStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
@@ -325,7 +328,9 @@ use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
+use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\TranslateFromMaster;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
@@ -377,6 +382,9 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
+use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
+use App\Actions\Masters\Competitor\StoreCompetitor;
+use App\Actions\Masters\Competitor\UpdateCompetitor;
 use App\Actions\Masters\MasterAsset\DismissMasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
@@ -555,6 +563,7 @@ use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\RepairWebpageBase64File;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
@@ -734,6 +743,7 @@ Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
     Route::patch('price-exchange', UpdateMasterShopPriceExchange::class)->name('price_exchange.update');
+    Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
@@ -789,6 +799,8 @@ Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/apply', ApplyMasterAssetPriceTip::class)->name('master_asset_price_tip.apply');
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
+Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');
+Route::patch('master-asset-competitor-product/{masterAssetCompetitorProduct:id}/review', ReviewMasterAssetCompetitorProduct::class)->name('master_asset_competitor_product.review');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 
@@ -809,6 +821,8 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::post('translation-review', [RecordTranslationReview::class, 'inProductCategory'])->name('translation_review.store');
+    Route::post('translate-from-master', [TranslateFromMaster::class, 'inProductCategory'])->name('translate_from_master');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
     Route::patch('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
     Route::post('upload-images', UploadImagesToProductCategory::class)->name('upload_images');
@@ -957,8 +971,11 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/retire-into-replacement', RetireProductIntoReplacement::class)->name('retire_into_replacement');
     Route::patch('/{product:id}/keep-as-separate', KeepRetiredProductAsSeparate::class)->name('keep_as_separate');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
+    Route::post('/{product:id}/translation-review', [RecordTranslationReview::class, 'inProduct'])->name('translation_review.store');
+    Route::post('/{product:id}/translate-from-master', [TranslateFromMaster::class, 'inProduct'])->name('translate_from_master');
     Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
+    Route::patch('/{shop:id}/bulk-set-active', SetBulkProductsActive::class)->name('bulk_set_active');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
@@ -1299,6 +1316,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpag
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::post('publish', PublishWebpage::class)->name('publish');
+    Route::post('web-block/{modelHasWebBlock:id}/repair-base64-file', RepairWebpageBase64File::class)->name('web_block.repair_base64_file');
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
@@ -1480,6 +1498,8 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
     Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
+    Route::patch('reopen-costing', ReopenStockDeliveryCosting::class)->name('reopen-costing');
+    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
     Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
     Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');

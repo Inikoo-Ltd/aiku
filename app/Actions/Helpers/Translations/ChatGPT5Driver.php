@@ -23,6 +23,8 @@ class ChatGPT5Driver implements TranslationDriver
     use WithAICreditErrorHandler;
     use WithAIGateway;
 
+    public const string BRIEF = 'translation.brief';
+
     private const BUFFER_FACTOR = 2;
 
     // Below this a retry is not worth the call; the strings just stay English.
@@ -129,11 +131,13 @@ class ChatGPT5Driver implements TranslationDriver
 
     protected function buildPrompt(array $chunk, string $sourceLang, string $targetLang): array
     {
+        $brief = app()->bound(self::BRIEF) ? app(self::BRIEF)."\n\n" : '';
+
         return [
             [
                 'role' => 'system',
                 'content' => <<<EOL
-You are a helpful assistant that translates text from {$sourceLang} to {$targetLang}.
+{$brief}You are a helpful assistant that translates text from {$sourceLang} to {$targetLang}.
     IMPORTANT INSTRUCTIONS:
     - The input will always be a JSON object.
     - Do NOT alter or translate any of the keys in the JSON object. Keys must remain exactly as provided.

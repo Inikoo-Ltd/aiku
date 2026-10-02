@@ -1400,7 +1400,7 @@ const getSeverity = (type?: string) => {
                     </slot>
 
                     <slot name="table">
-                        <div class="relative">
+                        <div class="relative isolate">
                         <div ref="virtualContainerRef"
                             class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"

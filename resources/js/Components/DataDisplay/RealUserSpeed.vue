@@ -21,6 +21,7 @@ type Period = { period_start: string; period_end: string; samples?: number; hist
 type SourceReport = {
 	scope: "page" | "website" | null
 	url: string | null
+	period?: "day" | "week"
 	history: Partial<Record<FormFactor, Period[]>>
 }
 
@@ -32,12 +33,12 @@ const props = defineProps<{
 const ratingColor = { good: "#0CCE6B", needs_improvement: "#FFA400", poor: "#FF4E42" }
 const ratingTextColor = { good: "#0A7B41", needs_improvement: "#8F5700", poor: "#B3261E" }
 
-const metrics: Array<{ key: Metric; label: string; short: string; good: number; poor: number; pointStyle: string; icon: typeof faImage }> = [
-	{ key: "lcp", label: ctrans("Largest Contentful Paint"), short: "LCP", good: 2500, poor: 4000, pointStyle: "circle", icon: faImage },
-	{ key: "inp", label: ctrans("Interaction to Next Paint"), short: "INP", good: 200, poor: 500, pointStyle: "rect", icon: faHandPointer },
-	{ key: "cls", label: ctrans("Cumulative Layout Shift"), short: "CLS", good: 0.1, poor: 0.25, pointStyle: "triangle", icon: faArrowsAlt },
-	{ key: "fcp", label: ctrans("First Contentful Paint"), short: "FCP", good: 1800, poor: 3000, pointStyle: "rectRot", icon: faPaintBrush },
-	{ key: "ttfb", label: ctrans("Time to First Byte"), short: "TTFB", good: 800, poor: 1800, pointStyle: "star", icon: faServer },
+const metrics: Array<{ key: Metric; label: string; short: string; good: number; poor: number; color: string; icon: typeof faImage }> = [
+	{ key: "lcp", label: ctrans("Largest Contentful Paint"), short: "LCP", good: 2500, poor: 4000, color: "#2563eb", icon: faImage },
+	{ key: "inp", label: ctrans("Interaction to Next Paint"), short: "INP", good: 200, poor: 500, color: "#9333ea", icon: faHandPointer },
+	{ key: "cls", label: ctrans("Cumulative Layout Shift"), short: "CLS", good: 0.1, poor: 0.25, color: "#db2777", icon: faArrowsAlt },
+	{ key: "fcp", label: ctrans("First Contentful Paint"), short: "FCP", good: 1800, poor: 3000, color: "#0891b2", icon: faPaintBrush },
+	{ key: "ttfb", label: ctrans("Time to First Byte"), short: "TTFB", good: 800, poor: 1800, color: "#64748b", icon: faServer },
 ]
 
 const metricGroups = [
@@ -62,7 +63,9 @@ watch(
 	() => props.report,
 	(report) => {
 		if (report && !report[source.value]?.scope) {
-			source.value = sources.find((option) => report[option.key]?.scope)?.key ?? source.value
+			source.value = sources.find((option) => report[option.key]?.scope === "page")?.key
+				?? sources.find((option) => report[option.key]?.scope)?.key
+				?? source.value
 		}
 	},
 	{ immediate: true }
@@ -133,25 +136,29 @@ const bandPosition = (key: Metric, value: number | null) => {
 	return Math.min(3, 2 + (value - metric.poor) / metric.poor)
 }
 
+const hiddenMetrics = ref<Metric[]>([])
+
+const toggleMetric = (key: Metric) => {
+	hiddenMetrics.value = hiddenMetrics.value.includes(key) ? hiddenMetrics.value.filter((hidden) => hidden !== key) : [...hiddenMetrics.value, key]
+}
+
 const chartData = computed(() => ({
 	labels: periods.value.map((period) => period.period_end),
 	datasets: metrics.map((metric) => {
 		const values = periods.value.map((period) => period[metric.key])
-		const markerColors = values.map((value) => ratingColor[ratingOf(metric.key, value) ?? "needs_improvement"])
 
 		return {
 			label: metric.short,
 			metric: metric.key,
 			values,
 			data: values.map((value) => bandPosition(metric.key, value)),
-			borderColor: "#374151",
-			backgroundColor: "#fff",
+			borderColor: metric.color,
+			backgroundColor: metric.color,
 			borderWidth: 1.5,
-			pointStyle: metric.pointStyle,
-			pointRadius: 4,
-			pointBorderWidth: 1.5,
-			pointBackgroundColor: "#fff",
-			pointBorderColor: markerColors,
+			tension: 0,
+			pointRadius: periods.value.length > 40 ? 0 : 2.5,
+			pointHoverRadius: 4,
+			hidden: hiddenMetrics.value.includes(metric.key),
 			spanGaps: true,
 			clip: false,
 		}
@@ -195,20 +202,7 @@ const chartOptions = computed(() => ({
 	layout: { padding: { left: 30, top: 8, right: 8 } },
 	interaction: { mode: "index", intersect: false },
 	plugins: {
-		legend: {
-			position: "bottom",
-			labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, color: "#4b5563", generateLabels: (chart: any) =>
-				chart.data.datasets.map((dataset: any, index: number) => ({
-					text: dataset.label,
-					pointStyle: dataset.pointStyle,
-					strokeStyle: "#374151",
-					fillStyle: "#fff",
-					fontColor: "#4b5563",
-					hidden: !chart.isDatasetVisible(index),
-					datasetIndex: index,
-				})),
-			},
-		},
+		legend: { display: false },
 		tooltip: {
 			backgroundColor: "#fff",
 			titleColor: "#111827",
@@ -216,23 +210,22 @@ const chartOptions = computed(() => ({
 			borderColor: "#d1d5db",
 			borderWidth: 1,
 			padding: 10,
-			usePointStyle: true,
 			callbacks: {
 				title: (items: any[]) => {
 					const period = periods.value[items[0].dataIndex]
 
-					if (period.period_start === period.period_end) {
-						return `${useFormatTime(period.period_end, { formatTime: "PP" })} · ${ctrans(":count page loads", { count: period.samples ?? 0 })}`
-					}
+					const dates = period.period_start === period.period_end
+						? useFormatTime(period.period_end, { formatTime: "PP" })
+						: `${useFormatTime(period.period_start, { formatTime: "PP" })} – ${useFormatTime(period.period_end, { formatTime: "PP" })}`
 
-					return `${useFormatTime(period.period_start, { formatTime: "PP" })} – ${useFormatTime(period.period_end, { formatTime: "PP" })}`
+					return period.samples ? `${dates} · ${ctrans(":count page loads", { count: period.samples })}` : dates
 				},
 				label: (item: any) => `${item.dataset.label}: ${display(item.dataset.metric, item.dataset.values[item.dataIndex])}`,
 			},
 		},
 	},
 	scales: {
-		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, color: "#4b5563" } },
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0, color: "#4b5563", callback: (value: number) => useFormatTime(periods.value[value]?.period_end, { formatTime: "d MMM" }) } },
 		y: {
 			min: 0,
 			max: 3,
@@ -265,8 +258,8 @@ const chartOptions = computed(() => ({
 		<div v-else-if="!current?.scope" class="px-6 py-6 text-sm text-gray-600">
 			{{
 				source === "crux"
-					? ctrans("Google has no real user data for this website yet. It needs enough visits from Chrome users over 28 days.")
-					: ctrans("No measurements from our visitors yet. A day is shown once :count page loads have been measured.", { count: 5 })
+					? ctrans("Google does not have enough visits from Chrome users here to report it. It needs enough visits over 28 days. See Our visitors.")
+					: ctrans("Not enough measured page loads yet. A week is shown once :count page loads have been measured.", { count: 5 })
 			}}
 		</div>
 
@@ -282,8 +275,9 @@ const chartOptions = computed(() => ({
 							v-for="metric in group.metrics"
 							:key="metric.key"
 							v-tooltip="`${metric.short}: ${metric.label}`"
-							class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm tabular-nums shadow-sm">
-							<FontAwesomeIcon :icon="metric.icon" :style="{ color: ratingTextColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" fixed-width aria-hidden="true" />
+							class="inline-flex items-center gap-1.5 rounded-lg border border-b-2 border-gray-200 bg-white px-3 py-2 text-sm tabular-nums shadow-sm"
+							:style="{ borderBottomColor: metric.color }">
+							<FontAwesomeIcon :icon="metric.icon" :style="{ color: metric.color }" fixed-width aria-hidden="true" />
 							<span class="font-semibold text-gray-700">{{ display(metric.key, latest?.[metric.key] ?? null) }}</span>
 							<span class="h-1.5 w-1.5 shrink-0 rounded-full" :style="{ backgroundColor: ratingColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" aria-hidden="true" />
 							<span class="sr-only">{{ metric.label }}</span>
@@ -296,18 +290,27 @@ const chartOptions = computed(() => ({
 				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[ratingBands]" />
 			</div>
 
+			<div class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-gray-600" data-speed-legend>
+				<button
+					v-for="metric in metrics"
+					:key="metric.key"
+					type="button"
+					class="inline-flex items-center gap-1.5"
+					:class="{ 'opacity-40': hiddenMetrics.includes(metric.key) }"
+					v-tooltip="metric.label"
+					@click="toggleMetric(metric.key)">
+					<FontAwesomeIcon :icon="metric.icon" :style="{ color: metric.color }" fixed-width aria-hidden="true" />
+					<span :class="{ 'line-through': hiddenMetrics.includes(metric.key) }">{{ metric.short }}</span>
+				</button>
+			</div>
+
 			<div class="space-y-1 text-xs text-gray-600">
 				<template v-if="source === 'crux'">
-					<div v-if="current.scope === 'website'" data-crux-website-scope>
-						{{ ctrans("Whole website (:url): this page does not have enough visits for Google to report it on its own.", { url: current.url ?? "" }) }}
-					</div>
 					<div>{{ ctrans("75th percentile of real Chrome visits over 28 days, from the Chrome UX Report. Google adds a new point every week.") }}</div>
 				</template>
 				<template v-else>
-					<div v-if="current.scope === 'website'" data-web-vitals-website-scope>
-						{{ ctrans("Whole website: no day of this page has enough measured page loads yet.") }}
-					</div>
-					<div>{{ ctrans("75th percentile per day of every page load measured in our visitors' browsers, any browser. Updated as visitors browse.") }}</div>
+					<div v-if="current.period === 'week'">{{ ctrans("75th percentile per week of every page load of this page measured in our visitors' browsers, any browser. Weekly because this page has too few loads a day for a daily figure.") }}</div>
+					<div v-else>{{ ctrans("75th percentile per day of every page load measured in our visitors' browsers, any browser. Updated as visitors browse.") }}</div>
 				</template>
 			</div>
 		</div>

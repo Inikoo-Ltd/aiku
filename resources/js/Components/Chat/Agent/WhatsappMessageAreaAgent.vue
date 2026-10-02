@@ -38,6 +38,7 @@ import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
+import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
@@ -200,6 +201,7 @@ const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.valu
 
 const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
+const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
 const isReopening = ref(false)
 
@@ -228,6 +230,14 @@ const claimChat = async (
         flag.value = false
     }
 }
+
+const assignSelf = () =>
+    claimChat(
+        "grp.org.chat.agents.whatsapp.assign.self",
+        "post",
+        isAssigningSelf,
+        ctrans("Failed to assign chat")
+    )
 
 const takeoverChat = () =>
     claimChat(
@@ -376,6 +386,7 @@ let dragDepth = 0
 const canAttach = computed(
     () => !props.readOnly
         && !isClosed.value
+        && !isWaiting.value
         && isMyChat.value
         && !hasTemplate.value
         && !templateOnly.value
@@ -581,7 +592,6 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
     messagesLocal.value.push(optimisticMessage)
     scrollBottom()
     isSending.value = true
-    const claimsChat = isWaiting.value
 
     try {
         const { data } = await axios.post(
@@ -596,10 +606,6 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
         const index = messagesLocal.value.findIndex((m) => m._tempId === optimisticMessage._tempId)
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
-        }
-
-        if (claimsChat) {
-            emit("assign-self-success")
         }
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
@@ -996,14 +1002,14 @@ onUnmounted(() => {
         <!-- Header -->
         <!-- When the thread is too narrow for the name and the buttons side by side, the name
              keeps the first row and the buttons drop to a second one beneath it. -->
-        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-1.5 border-b"
             :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
             <button type="button"
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
+                class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
                 @click="emit('view-profile')">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
@@ -1063,14 +1069,14 @@ onUnmounted(() => {
 
             <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
                 v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
-                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-6 px-2 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
                 <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
                 <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
             </a>
 
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam">
                 <FontAwesomeIcon :icon="faBan" class="text-[11px]" fixed-width />
                 {{ ctrans("Spam") }}
@@ -1087,7 +1093,7 @@ onUnmounted(() => {
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
-                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
                         {{ ctrans("End chat") }}
@@ -1126,6 +1132,7 @@ onUnmounted(() => {
                             translateUrlBase="/app/api/chats/meta/messages"
                             disable-slack-forward
                             disable-image-verification
+                            flagChannel="whatsapp"
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup
@@ -1134,6 +1141,7 @@ onUnmounted(() => {
                     </div>
                 </template>
             </template>
+            <ChatBackToNewest :target="messagesContainer" />
         </div>
 
         <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
@@ -1185,6 +1193,24 @@ onUnmounted(() => {
                     size="xs"
                     :label="ctrans('Reopen')"
                     :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="ctrans('Assign to me')"
+                    :icon="faUser"
                 />
             </div>
         </footer>
@@ -1279,7 +1305,7 @@ onUnmounted(() => {
                 <ChatMessageEditor v-if="!hasTemplate" ref="messageEditor" v-model="newMessage"
                     @paste="onPasteAttachment" @submit="sendMessage" enter-sends :disabled="templateOnly"
                     :placeholder="templateOnly ? ctrans('24h window closed, send a template message') : ctrans('Type message...')"
-                    class="px-4 pt-3 pb-1 rounded-t-xl [&_.ProseMirror]:max-h-[120px]" />
+                    class="px-4 pt-3 pb-1 rounded-t-xl [&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">

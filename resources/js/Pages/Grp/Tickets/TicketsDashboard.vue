@@ -23,6 +23,7 @@ import TicketRecentUpdates from "@/Components/Tickets/TicketRecentUpdates.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import Icon from "@/Components/Icon.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import { useLiveTicketRows } from "@/Composables/useLiveTicketRows"
 
 const props = defineProps<{
     pageHead: any
@@ -69,7 +70,8 @@ const qaDetails = computed(() => props.qa_stats ? [
 
 const quickLook = ref<any | null>(null)
 
-useLiveTickets(liveProps, undefined, computed(() => quickLook.value !== null))
+const { isShown: isTicketShown } = useLiveTicketRows(["mine", "recently_closed", "queue", "qa_queue", "qa_checking", "assigned", "collaborating", "waiting_due"])
+useLiveTickets(liveProps, undefined, computed(() => quickLook.value !== null), undefined, (event) => isTicketShown(event.id))
 
 provide("openTicketQuickLook", (ticket: any) => (quickLook.value = ticket))
 

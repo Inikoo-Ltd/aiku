@@ -1,13 +1,14 @@
 <script setup lang='ts'>
+import { ctrans } from '@/Composables/useTrans'
 import { computed, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLink, faUnlink } from "@fal"
 import { faExclamation } from "@fas"
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
-import { useFontFamilyList } from '@/Composables/useFont'
+import { fontsForCurrentShop } from '@/Composables/useFont'
+import FontNotFor from "@/Components/Workshop/Properties/FontNotFor.vue"
 import { set, get } from 'lodash-es'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 
@@ -30,7 +31,7 @@ const model = defineModel<TextProperty | any>({
 
 
 
-const fontFamilies = [...useFontFamilyList];
+const fontFamilies = fontsForCurrentShop()
 
 </script>
 
@@ -47,6 +48,7 @@ const fontFamilies = [...useFontFamilyList];
                                 fontFamily: option.value
                             }">
                                 {{ option.label }}
+                                <FontNotFor :languages="option.notFor" />
                             </span>
                         </template>
                         <template #label="{ value }">

@@ -40,6 +40,7 @@ class UpdateTicket extends OrgAction
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
         $deployCommit = strtolower(trim((string) Arr::pull($modelData, 'deploy_commit', '')));
         $images = Arr::pull($modelData, 'images', []);
+        $reopensOnQaFailure = (bool) Arr::pull($modelData, 'reopen', true);
 
         $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
@@ -70,10 +71,12 @@ class UpdateTicket extends OrgAction
            is not finished, and a ticket left Closed drops off the board where nobody looks at it
            again. Only from Done - failing a ticket that is still in progress changes nothing,
            since it is already where it needs to be - and only when the caller is not setting a
-           status itself, so an explicit choice always wins. Passing and skipping never move a
+           status itself, so an explicit choice always wins, and only when QA left "Reopen ticket
+           back" ticked. Passing and skipping never move a
            ticket. The status block below does the rest: it clears resolved_at and closed_at and
            restores started_at, and the usual status notifications go out. */
         if (Arr::get($modelData, 'qa_status') === TicketQaStatusEnum::FAILED->value
+            && $reopensOnQaFailure
             && $ticket->status === TicketStatusEnum::RESOLVED
             && !Arr::exists($modelData, 'status')
         ) {
@@ -224,6 +227,7 @@ class UpdateTicket extends OrgAction
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
+            'reporter_muted' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
             'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_status'     => [
@@ -239,7 +243,9 @@ class UpdateTicket extends OrgAction
                     $current  = $this->updatingTicket;
                     $user     = request()->user();
 
-                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict()) {
+                    $isRecheck = $qaStatus === TicketQaStatusEnum::CHECKING && $current?->qa_status?->canBeCheckedAgain();
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict() && !$isRecheck) {
                         $fail(__('This ticket already has a QA verdict. Ask QA to check it again first.'));
 
                         return;
@@ -251,6 +257,7 @@ class UpdateTicket extends OrgAction
                 },
             ],
             'qa_note'       => ['nullable', 'string', 'max:10000', 'required_if:qa_status,'.TicketQaStatusEnum::FAILED->value.','.TicketQaStatusEnum::SKIPPED->value],
+            'reopen'        => ['sometimes', 'boolean'],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'deploy_commit' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
@@ -262,12 +269,22 @@ class UpdateTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || Ticket::canBeAssignedBy($request->user())) {
-            return true;
+        // Muting is the reporter's own call. It sits ahead of the blanket engineer/admin
+        // early-return below, because nobody else - whatever they can otherwise do on the ticket
+        // - gets to mute someone else's notifications.
+        if (!$this->asAction && $request->has('reporter_muted') && array_diff(array_keys($request->except('_method')), ['reporter_muted']) === []) {
+            $ticket = $request->route('ticket');
+
+            return $ticket instanceof Ticket && $ticket->isReportedBy($request->user());
         }
 
         $user   = $request->user();
         $ticket = $request->route('ticket');
+
+        if ($this->asAction || (Ticket::canBeAssignedBy($user) && (!$request->has('reporter_muted') || ($ticket instanceof Ticket && $ticket->isReportedBy($user))))) {
+            return true;
+        }
+
         if (!$ticket instanceof Ticket) {
             return false;
         }
@@ -275,7 +292,7 @@ class UpdateTicket extends OrgAction
         $fields = array_keys($request->except('_method'));
 
         if ($request->has('qa_status')) {
-            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images']) !== []) {
+            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images', 'reopen']) !== []) {
                 return false;
             }
 
@@ -310,7 +327,7 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->canBeUpdatedBy($user)) {
-            return !$request->has('is_confidential');
+            return !$request->has('is_confidential') && (!$request->has('reporter_muted') || $ticket->isReportedBy($user));
         }
 
         if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {

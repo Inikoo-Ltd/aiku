@@ -13,10 +13,13 @@ use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailHistoryExpiredException;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Laravel\Nightwatch\Facades\Nightwatch;
+use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class FetchShopMailboxMessages
@@ -25,7 +28,40 @@ class FetchShopMailboxMessages
 
     public string $commandSignature = 'mailbox:fetch {shop? : shop slug}';
 
+    private const int ARCHIVE_STANDS_DOWN_MINUTES = 15;
+
     public function handle(Shop $shop): int
+    {
+        try {
+            return $this->fetch($shop);
+        } catch (RequestException $exception) {
+            if (GmailClient::isRateLimited($exception->response)) {
+                if (! self::wasRecentlyRefused($shop)) {
+                    Log::warning("mailbox:fetch {$shop->slug}: Gmail refused the fetch of new mail", ['status' => $exception->response->status(), 'body' => $exception->response->body()]);
+                }
+
+                Cache::put(self::refusedKey($shop), true, now()->addMinutes(self::ARCHIVE_STANDS_DOWN_MINUTES));
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Gmail's allowance is per mailbox and shared with the archive. When the live fetch is refused,
+     * the archive of that mailbox stands down so the customers' mail gets the allowance back first.
+     */
+    public static function wasRecentlyRefused(Shop $shop): bool
+    {
+        return Cache::has(self::refusedKey($shop));
+    }
+
+    private static function refusedKey(Shop $shop): string
+    {
+        return "gmail-live-fetch-refused:{$shop->id}";
+    }
+
+    private function fetch(Shop $shop): int
     {
         $client = GmailClient::forShop($shop);
 
@@ -158,7 +194,11 @@ class FetchShopMailboxMessages
 
         $total = 0;
         foreach ($shops as $shop) {
-            $total += $this->handle($shop);
+            try {
+                $total += $this->handle($shop);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         $command->info("Dispatched {$total} inbound email(s) across {$shops->count()} shop(s)");

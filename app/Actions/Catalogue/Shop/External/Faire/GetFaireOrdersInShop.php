@@ -42,7 +42,7 @@ class GetFaireOrdersInShop extends OrgAction
         ], $command);
 
         $this->fetchFaireOrders($shop, [
-            'excluded_states' => 'NEW,PROCESSING,PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED',
+            'excluded_states' => 'NEW,PROCESSING,PENDING_RETAILER_CONFIRMATION,BACKORDERED',
             'updated_at_min'  => now()->subDays(2)->toIsoString(),
         ], $command);
     }

@@ -34,6 +34,7 @@ const props = defineProps<{
     tab?: string,
     costing?: {
         is_costed: boolean
+        can_edit: boolean
         currency: string | null
         distributeExtraCostRoute: routeType | null
     }
@@ -210,7 +211,7 @@ watch(() => props.data?.data, (items) => {
     }
 
     for (const item of items ?? []) {
-        if (!item.updateCostRoute) {
+        if (!item.updateCostRoute || props.costing?.can_edit === false) {
             continue
         }
 
@@ -220,6 +221,14 @@ watch(() => props.data?.data, (items) => {
 
 function money(item: any, value: number | string | null) {
     return locale.currencyFormat(item.currency ?? props.costing?.currency ?? 'EUR', Number(value ?? 0))
+}
+
+function isShortOrOver(item: any) {
+    return Number(item.unit_quantity) > 0 && item.unit_quantity_placed != null && Number(item.unit_quantity_placed) !== Number(item.unit_quantity)
+}
+
+function receivedShare(item: any) {
+    return Number(item.unit_quantity_placed) / Number(item.unit_quantity)
 }
 
 function rowTotal(item: any) {
@@ -320,7 +329,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #before-table>
-            <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
+            <div v-if="costing?.distributeExtraCostRoute && costing.can_edit" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <label for="extra-cost-to-distribute" class="text-sm text-gray-600">
                     {{ ctrans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
                 </label>
@@ -387,6 +396,21 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 
         <template #cell(cost_total)="{ item }">
             <span class="font-semibold text-gray-700">{{ money(item, rowTotal(item)) }}</span>
+            <div
+                v-if="isShortOrOver(item)"
+                class="whitespace-nowrap text-xs text-gray-500"
+                v-tooltip="ctrans('Costs are for the :ordered ordered; only the units that arrived go into stock, each at the same cost per unit', { ordered: formatQuantity(Number(item.unit_quantity)) })"
+            >
+                {{ ctrans(':placed in stock: items :items · total :total', {
+                    placed: formatQuantity(Number(item.unit_quantity_placed)),
+                    items: money(item, Number(item.cost_items ?? 0) * receivedShare(item)),
+                    total: money(item, rowTotal(item) * receivedShare(item)),
+                }) }}
+            </div>
+        </template>
+
+        <template #cell(cost_per_sko_org)="{ item }">
+            <span v-if="item.cost_per_sko_org !== null" class="font-semibold text-gray-700 tabular-nums">{{ locale.currencyFormat(item.org_currency ?? 'GBP', Number(item.cost_per_sko_org)) }}</span>
         </template>
 
         <template #cell(code)="{ item }">
@@ -469,7 +493,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         <template #cell(actions)="{ item }">
             <div class="flex justify-end items-center gap-2">
                 <Button
-                    v-if="item.updateCostRoute"
+                    v-if="item.updateCostRoute && costDraft[item.id]"
                     :label="ctrans('Save')"
                     :tooltip="ctrans('Save the costs of this item')"
                     icon="fal fa-save"

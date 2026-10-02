@@ -589,3 +589,18 @@ test('saving a dropshipping shop queues a purge of its docs from the website cac
     PurgeIrisDocsFromVarnish::forShop($website->shop);
     PurgeIrisDocsFromVarnish::assertPushed();
 });
+
+test('iris family page does not ship the family products twice', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    $response = $this->withoutVite()->get('http://'.$this->website->domain.'/catalogue/family/'.$family->slug);
+    $response->assertOk();
+
+    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
+    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+
+    expect($page['component'])->toBe('Catalogue/Family')
+        ->and($page['props']['data']['family']['slug'])->toBe($family->slug)
+        ->and($page['props']['data']['family'])->not->toHaveKey('products');
+});

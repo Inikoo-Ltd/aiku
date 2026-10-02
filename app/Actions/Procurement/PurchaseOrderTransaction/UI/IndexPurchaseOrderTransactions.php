@@ -105,6 +105,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             'orgSupplierProduct.orgSupplier',
             'organisation.currency',
             'orgStock.tradeUnits.image',
+            'orgStock.stats',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')

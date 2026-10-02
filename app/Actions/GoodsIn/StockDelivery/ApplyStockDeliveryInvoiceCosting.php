@@ -10,7 +10,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ApplyStockDeliveryInvoiceCosting extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
 
     private StockDelivery $stockDelivery;
 

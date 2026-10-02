@@ -19,7 +19,8 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye } from "@fal"
+import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -997,9 +998,68 @@ onUnmounted(() => {
     chatAreaObserver?.disconnect()
 })
 
+type FolderGroup = "queues" | "bins"
+
+// The chevron alone decides whether the rest of a group shows: closed, a click pins it open;
+// open, a click closes it. No hover timing involved — hover is just a plain visual highlight.
+const pinnedFolderGroups = ref<Record<FolderGroup, boolean>>({ queues: false, bins: false })
+
+const folderGroupLead = computed<Record<FolderGroup, string>>(() => ({
+    queues: carrierView.value ? "carriers" : colleagueView.value ? "colleagues" : "unclaimed",
+    bins: rubbishView.value ? "ignored" : trashView.value ? "trash" : "spam",
+}))
+
+const isFolderGroupOpen = (group: FolderGroup) => pinnedFolderGroups.value[group]
+
+const showsFolder = (group: FolderGroup, folder: string) =>
+    !railCollapsed.value || pinnedFolderGroups.value[group] || folderGroupLead.value[group] === folder
+
+const toggleFolderGroupPin = (group: FolderGroup) => {
+    pinnedFolderGroups.value[group] = !pinnedFolderGroups.value[group]
+}
+
+watch(railCollapsed, () => {
+    pinnedFolderGroups.value = { queues: false, bins: false }
+})
+
 const railElement = ref<HTMLElement | null>(null)
 
-/* On a tablet or a phone the rail is a third of the screen, so it is opened to pick a shop and
+// A column of avatar circles gives no hint that there is more above or below, so the edge
+// that actually has more gets a shade. Recomputed on scroll and whenever the list's own size
+// changes — a shop added, the rail folded, the window resized.
+const shopListElement = ref<HTMLElement | null>(null)
+const shopListHasMoreAbove = ref(false)
+const shopListHasMoreBelow = ref(false)
+
+const updateShopListOverflow = () => {
+    const el = shopListElement.value
+
+    if (!el) {
+        shopListHasMoreAbove.value = false
+        shopListHasMoreBelow.value = false
+
+        return
+    }
+
+    shopListHasMoreAbove.value = el.scrollTop > 1
+    shopListHasMoreBelow.value = el.scrollTop + el.clientHeight < el.scrollHeight - 1
+}
+
+let shopListObserver: ResizeObserver | null = null
+
+onMounted(() => {
+    if (shopListElement.value && typeof ResizeObserver !== "undefined") {
+        shopListObserver = new ResizeObserver(updateShopListOverflow)
+        shopListObserver.observe(shopListElement.value)
+    }
+    updateShopListOverflow()
+})
+
+onUnmounted(() => shopListObserver?.disconnect())
+
+watch(railCollapsed, () => nextTick(updateShopListOverflow))
+
+/* Below 1440px (a phone, a tablet, a 14" laptop) the rail is a third of the screen, so it is opened to pick a shop and
    then wants to be out of the way: four seconds after the last touch it folds itself back.
    Anything the pointer or keyboard does inside it starts the count again, so it never closes
    under somebody mid-scroll. On a desktop there is room for it, and folding a rail the user
@@ -1007,7 +1067,7 @@ const railElement = ref<HTMLElement | null>(null)
 const RAIL_IDLE_MS = 4000
 
 const narrowScreen = typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(max-width: 1023px)")
+    ? window.matchMedia("(max-width: 1439px)")
     : null
 
 let railIdleTimer: ReturnType<typeof setTimeout> | null = null
@@ -1122,10 +1182,60 @@ function afterSelectionChanged() {
     reloadContacts()
 }
 
+// What was on before switching into a folder view — every shop a supervisor had selected,
+// not just one — so unclicking that folder can put it back exactly, rather than falling
+// through to a single-shop reset that silently drops the rest of the selection.
+let preFolderViewSelection: { shopIds: number[]; cells: string[] } | null = null
+
+const captureInboxSnapshot = () => {
+    if (crossShopView.value) {
+        return
+    }
+
+    preFolderViewSelection = { shopIds: [...selectedShopIds.value], cells: [...selectedCells.value] }
+}
+
+// Clicking an already-selected folder a second time turns it off rather than doing nothing,
+// landing back on the ordinary inbox: exactly the shops and channels that were on before,
+// or whatever was last looked at, or the first shop if nothing was stored.
+const backToMainInbox = () => {
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+
+    if (preFolderViewSelection) {
+        selectedShopIds.value = preFolderViewSelection.shopIds
+        selectedCells.value = preFolderViewSelection.cells
+        preFolderViewSelection = null
+        reloadContacts()
+
+        return
+    }
+
+    selectedCells.value = []
+
+    if (restoreSelection()) {
+        reloadContacts()
+
+        return
+    }
+
+    if (props.inboxes?.[0]?.id) {
+        selectInbox(props.inboxes[0].id)
+    }
+}
+
 // Rubbish is the takeover backlog: an out of office, a circular, a newsletter. Not spam, so
 // nobody is blocked, and the conversation keeps its status so unmarking restores it exactly.
 const selectRubbish = () => {
-    if (rubbishView.value) return
+    if (rubbishView.value) {
+        rubbishView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     rubbishView.value = true
     spamView.value = false
     trashView.value = false
@@ -1142,7 +1252,13 @@ const selectRubbish = () => {
 }
 
 const selectSpam = () => {
-    if (spamView.value) return
+    if (spamView.value) {
+        spamView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     spamView.value = true
     rubbishView.value = false
     trashView.value = false
@@ -1159,7 +1275,13 @@ const selectSpam = () => {
 }
 
 const selectTrash = () => {
-    if (trashView.value) return
+    if (trashView.value) {
+        trashView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     trashView.value = true
     rubbishView.value = false
     spamView.value = false
@@ -1178,7 +1300,13 @@ const selectTrash = () => {
 // Taking one out of here is answering it: the row leaves the queue as soon as somebody holds
 // it, so the list is reloaded rather than trusted after any action.
 const selectUnclaimed = () => {
-    if (unclaimedView.value) return
+    if (unclaimedView.value) {
+        unclaimedView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     unclaimedView.value = true
     carrierView.value = false
     colleagueView.value = false
@@ -1195,7 +1323,13 @@ const selectUnclaimed = () => {
 }
 
 const selectCarriers = () => {
-    if (carrierView.value) return
+    if (carrierView.value) {
+        carrierView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     carrierView.value = true
     colleagueView.value = false
     highlightView.value = false
@@ -1212,7 +1346,13 @@ const selectCarriers = () => {
 }
 
 const selectColleagues = () => {
-    if (colleagueView.value) return
+    if (colleagueView.value) {
+        colleagueView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     colleagueView.value = true
     carrierView.value = false
     highlightView.value = false
@@ -1229,7 +1369,13 @@ const selectColleagues = () => {
 }
 
 const selectHighlight = () => {
-    if (highlightView.value) return
+    if (highlightView.value) {
+        highlightView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     highlightView.value = true
     carrierView.value = false
     colleagueView.value = false
@@ -1616,6 +1762,78 @@ const onWhatsappChatCreated = (session: any) => {
     reloadContacts()
 }
 
+const LONG_PRESS_MS = 500
+
+const previewContact = ref<Contact | null>(null)
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressStart: { x: number, y: number } | null = null
+let lastPointerType = "mouse"
+let swallowNextRowClick = false
+
+const cancelLongPress = () => {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+    }
+    longPressStart = null
+}
+
+const startLongPress = (c: Contact, event: PointerEvent) => {
+    lastPointerType = event.pointerType
+    swallowNextRowClick = false
+    cancelLongPress()
+
+    if (event.button !== 0) {
+        return
+    }
+
+    longPressStart = { x: event.clientX, y: event.clientY }
+    longPressTimer = setTimeout(() => {
+        longPressTimer = null
+        swallowNextRowClick = true
+        previewContact.value = c
+    }, LONG_PRESS_MS)
+}
+
+const moveLongPress = (event: PointerEvent) => {
+    if (longPressStart && Math.hypot(event.clientX - longPressStart.x, event.clientY - longPressStart.y) > 10) {
+        cancelLongPress()
+    }
+}
+
+const onRowClick = (c: Contact) => {
+    if (swallowNextRowClick) {
+        swallowNextRowClick = false
+
+        return
+    }
+
+    handleClickContact(c)
+}
+
+const onRowContextMenu = (c: Contact, event: MouseEvent) => {
+    if (lastPointerType === "touch") {
+        return
+    }
+
+    toggleRowMenu(c.ulid, event)
+}
+
+const closePreview = () => {
+    previewContact.value = null
+    swallowNextRowClick = false
+}
+
+const openFromPreview = () => {
+    const contact = previewContact.value
+    previewContact.value = null
+    swallowNextRowClick = false
+
+    if (contact) {
+        handleClickContact(contact)
+    }
+}
+
 const handleClickContact = (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
     // Waiting chats open into an "Assign to me" step (no composer) until assigned.
@@ -1934,47 +2152,54 @@ onUnmounted(() => {
     <Head :title="title" />
 
     <template v-if="!isEmbedded">
-    <div class="mx-4 my-3 flex flex-wrap items-center gap-3">
+    <div class="mx-4 my-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-gray-500">
         <template v-if="inboxes.length > 1">
-            <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
-                <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
-                    <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
-                    <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
-                </span>
-                <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                    <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
-                </span>
-                <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                    <span class="font-semibold text-gray-700">{{ totalActive }}</span>
-                </span>
-            </div>
+            <span v-tooltip="ctrans('Customers waiting, every shop')" class="inline-flex items-center gap-1">
+                <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalCustomersWaiting }}</span>
+                <span class="hidden xl:inline">{{ ctrans("waiting") }}</span>
+            </span>
+            <span v-tooltip="ctrans('Guests waiting, every shop')" class="inline-flex items-center gap-1">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalGuestsWaiting }}</span>
+                <span class="hidden xl:inline">{{ ctrans("guests") }}</span>
+            </span>
+            <span v-tooltip="ctrans('Active, every shop')" class="inline-flex items-center gap-1">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalActive }}</span>
+                <span class="hidden xl:inline">{{ ctrans("active") }}</span>
+            </span>
+            <span class="h-3.5 w-px bg-gray-200" aria-hidden="true" />
             <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
-                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-100"
+                :class="unclaimedView && 'bg-gray-100'"
                 @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
                 <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
-                <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
+                <span class="font-semibold" :class="totalUnclaimed ? 'text-red-600' : 'text-gray-800'">{{ totalUnclaimed }}</span>
+                <span class="hidden xl:inline">{{ ctrans("unclaimed") }}</span>
             </button>
             <button type="button" v-tooltip="ctrans('Spam, every shop')"
-                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-100"
+                :class="spamView && 'bg-gray-100'"
                 @click="openAcrossAllShops(selectSpam, spamView)">
                 <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
-                <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
+                <span class="font-semibold text-gray-800">{{ totalSpam }}</span>
+                <span class="hidden xl:inline">{{ ctrans("spam") }}</span>
             </button>
         </template>
-        <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex items-center gap-0.5">
             <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
-                class="p-2 rounded-lg transition-colors"
+                :aria-label="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
+                class="rounded-md p-1 transition-colors"
                 :class="phoneCallState.call
                     ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'">
-                <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width />
+                <FontAwesomeIcon :icon="faPhone" class="text-sm" fixed-width />
             </button>
-            <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
-                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                <FontAwesomeIcon :icon="faCog" class="text-base" fixed-width />
+            <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" :aria-label="ctrans('Chat settings')" @click="openChatSettings"
+                class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700">
+                <FontAwesomeIcon :icon="faCog" class="text-sm" fixed-width />
             </button>
         </div>
     </div>
@@ -1990,15 +2215,17 @@ onUnmounted(() => {
 
     <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" />
 
+    <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
+
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
-        class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
+        class="relative isolate flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
-        <!-- Below lg the rail lies over the conversation instead of pushing it aside: a phone has
-             no room for both, and squeezed, the thread header's buttons ran over the name. It stays
+        <!-- Below 1440px the rail lies over the conversation instead of pushing it aside: a phone,
+             a tablet or a 14" laptop has no room for both, and squeezed, the thread header's buttons ran over the name. It stays
              lifted while folded too, or closing would animate it back in the flow and shove the
              thread sideways before letting go. -->
-        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-40"
-            :class="railCollapsed ? 'w-16' : 'w-64 max-lg:shadow-xl'"
+        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-[1439px]:absolute max-[1439px]:inset-y-0 max-[1439px]:left-0 max-[1439px]:z-40"
+            :class="railCollapsed ? 'w-16' : 'w-64 max-[1439px]:shadow-xl'"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
             <!-- Header + collapse toggle -->
@@ -2018,9 +2245,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Shop list -->
-            <div v-if="!railCollapsed && !railSectionOpen.shops" class="flex-1" />
+            <div class="relative flex-1 min-h-0">
+            <div v-if="!railCollapsed && !railSectionOpen.shops" class="absolute inset-0" />
 
-            <div v-show="railCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
+            <div v-show="railCollapsed || railSectionOpen.shops" ref="shopListElement" @scroll="updateShopListOverflow"
+                class="absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
                     :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
@@ -2028,16 +2257,19 @@ onUnmounted(() => {
                         v-tooltip="railCollapsed ? inbox.name : undefined"
                         class="w-full flex items-center gap-2 min-w-0"
                         :class="[
-                            railCollapsed ? 'justify-center py-1' : 'px-2 py-1',
+                            railCollapsed ? 'justify-center py-2' : 'px-2 py-1',
                             shopIsOn(inbox.id) ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
                         <!-- The initials only stand in for the name when the rail is folded and
                              there is no room for it; beside the name they said it twice. -->
                         <div v-if="railCollapsed" class="relative shrink-0">
-                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition hover:scale-110"
+                                :class="shopIsOn(inbox.id) ? 'ring-2 ring-green-500 ring-offset-1' : (!agentView && selectedShopIds.length ? 'opacity-50' : '')"
                                 :style="shopAvatarStyle(inbox)">
                                 {{ shopInitials(inbox.name) }}
                             </div>
+                            <FontAwesomeIcon v-if="shopIsOn(inbox.id)" :icon="faCircleCheck"
+                                class="absolute -bottom-1.5 -right-1.5 rounded-full bg-white text-[11px] text-green-500" fixed-width aria-hidden="true" />
                             <span v-if="inboxUnread[inbox.id]"
                                 v-tooltip="ctrans('Customers waiting')"
                                 class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
@@ -2145,6 +2377,12 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <!-- A column of circles says nothing about what is past the edge on its own, so a
+                 shade stands in for it — only on the edge that actually has more behind it. -->
+            <div v-show="shopListHasMoreAbove" class="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-black/15 to-transparent" />
+            <div v-show="shopListHasMoreBelow" class="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-t from-black/15 to-transparent" />
+            </div>
+
             <!-- The people on these shops: who is there and what they are holding -->
             <template v-if="supervisor && !railCollapsed">
                 <div v-if="railSectionOpen.agents" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
@@ -2200,8 +2438,11 @@ onUnmounted(() => {
 
             <div v-show="railCollapsed || railSectionOpen.folders"
                 class="shrink-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
+                :class="railCollapsed && 'border-t border-gray-200'"
                 :style="railCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
             <div class="py-1">
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'unclaimed') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectUnclaimed"
                     v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2226,6 +2467,10 @@ onUnmounted(() => {
                         {{ unclaimedCount }}
                     </span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'carriers') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectCarriers"
                     v-tooltip="ctrans('Emails from couriers about deliveries')"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2241,6 +2486,10 @@ onUnmounted(() => {
                         {{ carriersCount }}
                     </span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'colleagues') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectColleagues"
                     v-tooltip="ctrans('Emails colleagues wrote to this mailbox; their circulars, newsletters and notifications stay out')"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2256,10 +2505,21 @@ onUnmounted(() => {
                         {{ colleaguesCount }}
                     </span>
                 </button>
+                </div>
+                </div>
+                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('queues')"
+                    :aria-label="pinnedFolderGroups.queues ? ctrans('Show less') : ctrans('Show more')"
+                    class="relative w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('queues') && 'rotate-180'" fixed-width aria-hidden="true" />
+                    <span v-if="!isFolderGroupOpen('queues') && folderGroupLead.queues !== 'unclaimed' && unclaimedCount"
+                        class="absolute top-0.5 right-5 h-1.5 w-1.5 rounded-full bg-red-500" />
+                </button>
             </div>
 
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'spam') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectSpam"
                     v-tooltip="railCollapsed ? spamRailTooltip : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2276,6 +2536,10 @@ onUnmounted(() => {
                         {{ spamCount }}
                     </span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'ignored') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectRubbish"
                     v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2287,6 +2551,10 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Ignored") }}</span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'trash') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectTrash"
                     v-tooltip="railCollapsed ? ctrans('Trash') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -2297,6 +2565,13 @@ onUnmounted(() => {
                     :style="trashView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Trash") }}</span>
+                </button>
+                </div>
+                </div>
+                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('bins')"
+                    :aria-label="pinnedFolderGroups.bins ? ctrans('Show less') : ctrans('Show more')"
+                    class="w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('bins') && 'rotate-180'" fixed-width aria-hidden="true" />
                 </button>
             </div>
 
@@ -2320,20 +2595,20 @@ onUnmounted(() => {
         <!-- Holds the folded rail's place so nothing behind shifts, and a tap on the dimmed thread
              folds the rail away for this page only, as the idle timer does. -->
         <template v-if="!isEmbedded">
-            <div class="lg:hidden shrink-0 w-16" />
-            <div v-if="!railCollapsed" class="lg:hidden absolute inset-0 z-[35] bg-black/20" @click="railAutoCollapsed = true" />
+            <div class="min-[1440px]:hidden shrink-0 w-16" />
+            <div v-if="!railCollapsed" class="min-[1440px]:hidden absolute inset-0 z-[35] bg-black/20" @click="railAutoCollapsed = true" />
         </template>
 
         <!-- PANEL 2: conversation list for the selected inbox.
              Narrow screens have room for one column, not three, so the list and the thread take
              turns: the list until a conversation is picked, the thread after, with its own back
-             button to return. From lg up both stand side by side as before. -->
-        <div class="border-r border-gray-200 flex-col lg:w-80 lg:shrink-0 lg:flex-none"
-            :class="selectedSession ? 'hidden lg:flex' : 'flex flex-1 min-w-0'">
+             button to return. From 1440px up both stand side by side. -->
+        <div class="border-r border-gray-200 flex-col min-[1440px]:w-80 min-[1440px]:shrink-0 min-[1440px]:flex-none"
+            :class="selectedSession ? 'hidden min-[1440px]:flex' : 'flex flex-1 min-w-0'">
             <!-- Selected inbox + My/Team segmented toggle -->
-            <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
+            <div class="px-3 py-1.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
-                    <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
+                    <div class="text-sm font-semibold text-gray-800 truncate mb-0.5">
                         {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : colleagueView ? ctrans("Colleagues") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
@@ -2443,11 +2718,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Status capsules: any combination, never none -->
-            <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-2 border-b">
-                <div class="flex items-center gap-1.5 text-xs">
+            <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-1.5 border-b">
+                <div class="flex flex-wrap items-center gap-1.5 text-xs">
                     <button v-for="capsule in statusCapsules" v-show="!isPromisedList" :key="capsule.key" type="button"
                         v-tooltip="ctrans('Show or hide these, at least one stays on')"
-                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        class="shrink-0 py-1 px-3 rounded-full border transition-all inline-flex items-center justify-center gap-1"
                         :class="isStatusOn(capsule.key)
                             ? 'bg-white shadow-sm font-semibold border-transparent'
                             : 'border-gray-200 text-gray-500 hover:text-gray-700'"
@@ -2461,7 +2736,7 @@ onUnmounted(() => {
                     </button>
                     <button v-if="promisedCapsuleShown && (promisedCount || promisedOnly)" type="button"
                         v-tooltip="ctrans('Only the chats told while we were closed that we would reply when we open, not answered yet, in every channel and whoever holds them')"
-                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        class="shrink-0 py-1 px-3 rounded-full border transition-all inline-flex items-center justify-center gap-1"
                         :class="promisedOnly
                             ? 'bg-amber-50 shadow-sm font-semibold border-amber-400 text-amber-700'
                             : 'border-gray-200 text-gray-500 hover:text-gray-700'"
@@ -2511,8 +2786,13 @@ onUnmounted(() => {
                         <div class="group relative flex items-center gap-2 px-3 py-2 border-b cursor-pointer transition-colors"
                             :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
                             :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                            @click="handleClickContact(c)"
-                            @contextmenu.prevent="toggleRowMenu(c.ulid, $event)">
+                            @click="onRowClick(c)"
+                            @pointerdown="startLongPress(c, $event)"
+                            @pointermove="moveLongPress"
+                            @pointerup="cancelLongPress"
+                            @pointerleave="cancelLongPress"
+                            @pointercancel="cancelLongPress"
+                            @contextmenu.prevent="onRowContextMenu(c, $event)">
                             <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                                 <LoadingIcon class="w-8 h-8 text-white" />
@@ -2536,7 +2816,13 @@ onUnmounted(() => {
                                     </span>
                                     <img v-if="(c as any).country_code" :src="`/flags/${(c as any).country_code.toLowerCase()}.png`"
                                         :alt="(c as any).country_code" v-tooltip="(c as any).country_code" class="shrink-0 h-3 w-auto" />
-                                    <span class="flex-1 min-w-0 text-sm text-gray-800 truncate" :class="c.unread && !onlyClosed ? 'font-bold' : 'font-medium'">{{ capitalize(c.name) }}</span>
+                                    <span class="min-w-0 text-sm text-gray-800 truncate" :class="c.unread && !onlyClosed ? 'font-bold' : 'font-medium'">{{ capitalize(c.name) }}</span>
+                                    <button type="button" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')"
+                                        class="shrink-0 -my-1 flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                                        @click.stop="previewContact = c" @pointerdown.stop>
+                                        <FontAwesomeIcon :icon="faEye" class="text-xs" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <span class="flex-1" />
                                     <span class="text-[10px] text-gray-500 shrink-0">
                                         {{ c.lastMessageTime }}
                                         <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
@@ -2607,9 +2893,9 @@ onUnmounted(() => {
                                     <button v-if="!trashView && !isReadOnly" type="button"
                                         v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
-                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
+                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-400 opacity-0 group-hover:opacity-100 hover:text-amber-500'"
                                         @click.stop="toggleHighlight(c)">
-                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" fixed-width />
+                                        <FontAwesomeIcon :icon="c.is_highlighted ? faStarSolid : faStar" class="text-[11px]" fixed-width />
                                     </button>
                                     <span v-if="c.unread && !onlyClosed"
                                         v-tooltip="ctrans('Unread messages')"
@@ -2641,7 +2927,7 @@ onUnmounted(() => {
         </div>
 
         <!-- CENTER: thread + composer -->
-        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden lg:block'">
+        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden min-[1440px]:block'">
             <div v-if="!selectedSession"
                 class="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                 <div class="text-4xl">💬</div>

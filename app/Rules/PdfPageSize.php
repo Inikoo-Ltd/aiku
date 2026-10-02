@@ -33,7 +33,7 @@ class PdfPageSize implements ValidationRule
 
     public function validate($attribute, $value, $fail): void
     {
-        if (!$value instanceof UploadedFile) {
+        if (!$value instanceof UploadedFile || strtolower($value->getClientOriginalExtension()) !== 'pdf') {
             return;
         }
 

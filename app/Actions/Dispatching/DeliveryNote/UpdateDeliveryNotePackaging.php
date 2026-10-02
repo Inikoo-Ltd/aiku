@@ -87,10 +87,10 @@ class UpdateDeliveryNotePackaging extends OrgAction
             return;
         }
 
-        if ($this->deliveryNote->state !== DeliveryNoteStateEnum::HANDLING) {
+        if (!in_array($this->deliveryNote->state, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::PICKED], true)) {
             $validator->errors()->add(
                 'packaging_id',
-                __('Packaging can only be changed while the delivery note is being picked.')
+                __('Packaging can only be changed while the delivery note is being picked or after picking is complete.')
             );
 
             return;

@@ -8,6 +8,7 @@ series: shopify
 order: 1
 help_routes: retina.dropshipping.customer_sales_channels.index, retina.dropshipping.customer_sales_channels.create, retina.dropshipping.customer_sales_channels.show
 shops: awd, dssk, dse
+videos: 1126168024, 1126169701
 ---
 
 <aside class="tldr">

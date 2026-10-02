@@ -8,6 +8,7 @@ series: manual
 order: 3
 help_routes: retina.dropshipping.customer_sales_channels.client.index, retina.dropshipping.customer_sales_channels.client.create, retina.dropshipping.customer_sales_channels.client.show, retina.dropshipping.customer_sales_channels.client.edit, retina.dropshipping.customer_sales_channels.client.upload_templates
 shops: awd, dssk, dse
+videos: 1126164160
 ---
 
 <aside class="tldr">

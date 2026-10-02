@@ -14,6 +14,7 @@ enum CatalogueTabsEnum: string
     case TOP_LISTED_FAMILIES = 'top_listed_families';
     case TOP_LISTED_PRODUCTS = 'top_listed_products';
     case TOP_SOLD_PRODUCTS   = 'top_sold_products';
+    case ON_ITS_WAY          = 'on_its_way';
 
     public function blueprint(): array
     {
@@ -33,6 +34,10 @@ enum CatalogueTabsEnum: string
             self::TOP_SOLD_PRODUCTS => [
                 'title' => __('Top Sold Products'),
                 'icon'  => 'fal fa-trophy',
+            ],
+            self::ON_ITS_WAY => [
+                'title' => __('On its way'),
+                'icon'  => 'fal fa-truck-container',
             ],
         };
     }

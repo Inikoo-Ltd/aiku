@@ -55,6 +55,8 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterVariant\ShowMasterVariant;
 use App\Actions\Masters\MasterVariant\EditMasterVariant;
+use App\Actions\Masters\Competitor\UI\CreateCompetitor;
+use App\Actions\Masters\Competitor\UI\EditCompetitor;
 use App\Actions\Masters\MasterShop\UI\CreateMasterShop;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
@@ -123,6 +125,8 @@ Route::name("master_shops")->prefix('master-shops')
 
         Route::prefix('/{masterShop}')->as('.show')->group(function () {
             Route::get('', ShowMasterShop::class)->name('');
+            Route::get('competitors/create', CreateCompetitor::class)->name('.competitors.create');
+            Route::get('competitors/{competitor}/edit', EditCompetitor::class)->name('.competitors.edit');
 
             Route::prefix('/shop')->as('.shop')->group(function () {
                 Route::get('/create/{organisation}', CreateShopFromMaster::class)->name('.create');

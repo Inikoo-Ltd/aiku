@@ -50,6 +50,14 @@ class MasterAssetStats extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'price_tip_check'      => 'array',
+            'price_tip_checked_at' => 'datetime',
+        ];
+    }
+
     public function masterAsset(): BelongsTo
     {
         return $this->belongsTo(MasterAsset::class);

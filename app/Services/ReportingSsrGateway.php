@@ -34,6 +34,7 @@ class ReportingSsrGateway extends HttpGateway
         try {
             $response = Http::connectTimeout(2)
                 ->timeout(5)
+                ->withOptions(['expect' => false])
                 ->post($this->getUrl('/render'), $page)
                 ->throw()
                 ->json();

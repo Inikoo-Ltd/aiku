@@ -1,7 +1,7 @@
 ---
 title: Answering emails in Chat
 summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments. Real customers that Gmail put in spam come in too, with their files held back for safety.
-date: 2026-09-29
+date: 2026-10-01
 tags: crm, chat, email
 category: crm
 series: Chat
@@ -19,6 +19,10 @@ The shop's mailbox has to be connected once - see <a href="/docs/connecting-an-e
 ## Reading and answering
 
 An email joins <b>Waiting</b> like any conversation, and <b>Assign to me</b> makes it yours - see <a href="/docs/customer-chat">Talking to customers in Chat</a> for the rest. The whole thread comes with it. Your answer is sent from the shop's mailbox in the same thread, and when the customer replies it lands back in the same conversation, not a new one.
+
+## Attaching files
+
+Click the paperclip, or drop the files on the conversation. You can attach images (JPG, PNG, WebP, AVIF), PDF, Word, Excel, CSV, text, PowerPoint and zip files, up to 30 at a time and 10MB each. The same goes for <b>New email</b>. Mail services refuse an email bigger than about 25MB in total, so when a customer asks for many documents at once, put them in one zip or send them over a few emails.
 
 ## Website visitors in the email list
 
@@ -45,6 +49,7 @@ aiku reads the mailbox's inbox and its spam folder, and files mail that is not c
 <ul>
 <li><b>Connect the mailbox:</b> the shop's <b>Settings</b> &rarr; <b>Customer mailbox</b>.</li>
 <li><b>Answer an email:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; light the email square for your shop &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Attach files to an answer:</b> the paperclip under the message box, or drop the files on the conversation.</li>
 <li><b>Open the files of an email that came out of spam:</b> the email in the conversation &rarr; <b>Show attachments</b>.</li>
 <li><b>Find a mail that never reached the inbox:</b> the shop's Gmail &rarr; <b>aiku/filtered</b>, then Gmail's <b>Spam</b>.</li>
 </ul>

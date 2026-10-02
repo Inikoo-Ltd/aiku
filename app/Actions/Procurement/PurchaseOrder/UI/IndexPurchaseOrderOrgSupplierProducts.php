@@ -80,8 +80,17 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
         }
 
-        $queryBuilder->where(function ($query) {
-            $query->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+        $hasDiscontinuingSko = "exists (select 1 from org_stocks os
+            inner join stock_has_supplier_products shsp on shsp.stock_id = os.stock_id
+            where shsp.supplier_product_id = supplier_products.id
+                and os.organisation_id = {$orgId}
+                and os.state in ('".OrgStockStateEnum::DISCONTINUING->value."', '".OrgStockStateEnum::DISCONTINUED->value."'))";
+
+        $queryBuilder->where(function ($query) use ($hasDiscontinuingSko) {
+            $query->where(fn ($query) => $query->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+                ->where('org_supplier_products.is_available', true)
+                ->where('supplier_products.is_available', true)
+                ->whereRaw("not $hasDiscontinuingSko"))
                 ->orWhereNotNull('purchase_order_transactions.id');
         });
 
@@ -238,7 +247,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             return;
         }
 
-        $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $orgStocks = OrgStock::with('tradeUnits.image', 'stats')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
@@ -250,6 +259,11 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
+            $row->stock_cover        = $orgStock?->stats ? [
+                'days'            => $orgStock->stats->days_of_cover === null ? null : (float) $orgStock->stats->days_of_cover,
+                'days_worst_case' => $orgStock->stats->days_of_cover_pessimistic === null ? null : (float) $orgStock->stats->days_of_cover_pessimistic,
+                'out_of_stock_at' => $orgStock->stats->predicted_out_of_stock_at,
+            ] : null;
             $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);
 
             return $row;

@@ -129,7 +129,7 @@ class GetUserOrganisationLayout
     {
         $shopsData = [];
 
-        $authorisedShops = $user->authorisedShops()->where('organisation_id', $organisation->id)->where('shops.type', '!=', ShopTypeEnum::FULFILMENT)->get();
+        $authorisedShops = $user->authorisedShops()->with('language')->where('organisation_id', $organisation->id)->where('shops.type', '!=', ShopTypeEnum::FULFILMENT)->get();
 
         /** @var Shop $shop */
         foreach ($authorisedShops as $shop) {
@@ -139,6 +139,7 @@ class GetUserOrganisationLayout
                 'code'                 => $shop->code,
                 'label'                => $shop->name,
                 'state'                => $shop->state,
+                'language'             => $shop->language?->code,
                 'org_slug'             => $organisation->slug,
                 'website_slug'         => $shop->website?->slug ?? null,
                 'type'                 => $shop->type,

@@ -21,7 +21,7 @@ class DownloadIrisAttachment
 
     public function handle(Media $media): BinaryFileResponse
     {
-        $filename = $media->media_scope == 'labeling_guide' ? $media->name : $media->file_name;
+        $filename = in_array($media->media_scope, ['labeling_guide', 'webpage']) ? $media->name : $media->file_name;
 
         return response()->download($media->getPath(), $filename);
     }
@@ -46,6 +46,9 @@ class DownloadIrisAttachment
                 })->orWhere(function (Builder $query) {
                     $query->whereIn('model_type', ['ProductCategory', 'TradeUnitFamily'])
                         ->where('scope', 'labeling_guide');
+                })->orWhere(function (Builder $query) {
+                    $query->where('model_type', 'Webpage')
+                        ->where('scope', 'webpage');
                 });
             })
             ->exists();

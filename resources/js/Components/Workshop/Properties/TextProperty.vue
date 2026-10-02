@@ -1,13 +1,14 @@
 <script setup lang='ts'>
+import { ctrans } from '@/Composables/useTrans'
 import { computed, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLink, faUnlink } from "@fal"
 import { faExclamation } from "@fas"
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
-import { useFontFamilyList } from '@/Composables/useFont'
+import { fontsForCurrentShop } from '@/Composables/useFont'
+import FontNotFor from "@/Components/Workshop/Properties/FontNotFor.vue"
 import { set, get } from 'lodash-es'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
@@ -42,13 +43,13 @@ const localModel = computed<TextProperty>({
     }
 })
 
-const fontFamilies = [...useFontFamilyList];
+const fontFamilies = fontsForCurrentShop()
 
 
 const fontStyleOptions = [
 	{ label: 'Normal', value: 'normal' },
 	{ label: 'Italic', value: 'italic' },
-    { label: 'Oblique', value: 'oblique', information: trans('Similar to italic but with a slanting effect') },
+    { label: 'Oblique', value: 'oblique', information: ctrans('Similar to italic but with a slanting effect') },
 ]
 
 const textDecorationOptions = [
@@ -57,9 +58,9 @@ const textDecorationOptions = [
 ]
 
 const textTransformOptions = [
-	{ label: 'Uppercase', value: 'uppercase', information: trans('Transforms all characters to uppercase') },
-	{ label: 'Lowercase', value: 'lowercase', information: trans('Transforms all characters to lowercase') },
-	{ label: 'Capitalize', value: 'capitalize', information: trans('Transforms the first character of each word to uppercase') },
+	{ label: 'Uppercase', value: 'uppercase', information: ctrans('Transforms all characters to uppercase') },
+	{ label: 'Lowercase', value: 'lowercase', information: ctrans('Transforms all characters to lowercase') },
+	{ label: 'Capitalize', value: 'capitalize', information: ctrans('Transforms the first character of each word to uppercase') },
 ]
 
 </script>
@@ -68,7 +69,7 @@ const textTransformOptions = [
     <div class="flex flex-col pt-1 pb-1.5">
         <div class="pb-1">
             <div class="px-2 flex justify-between items-center mb-1.5">
-                <div class="text-xs">{{ trans('Text Color') }}</div>
+                <div class="text-xs">{{ ctrans('Text Color') }}</div>
                 <ColorPicker :color="get(localModel, 'color', null)" @changeColor="(newColor) => {
                     const finalColor = newColor ? `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})` : null
                     set(localModel, 'color', finalColor)
@@ -95,7 +96,7 @@ const textTransformOptions = [
             </div>
 
             <div class="px-2 items-center mb-1.5">
-                <div class="text-xs mb-1">{{ trans('Font') }}</div>
+                <div class="text-xs mb-1">{{ ctrans('Font') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect v-model="localModel.fontFamily"
                         @update:modelValue="(e) => (set(localModel, 'fontFamily', e), emits('update:modelValue', localModel))"
@@ -105,6 +106,7 @@ const textTransformOptions = [
                                 fontFamily: option.value
                             }">
                                 {{ option.label }}
+                                <FontNotFor :languages="option.notFor" />
                             </span>
                         </template>
                         <template #label="{ value }">
@@ -121,7 +123,7 @@ const textTransformOptions = [
 
             <!-- Section: Font style (normal, italic, oblique) -->
             <div class="px-2 items-center mb-1.5">
-                <div class="text-xs mb-1">{{ trans('Font Style') }}</div>
+                <div class="text-xs mb-1">{{ ctrans('Font Style') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
                         v-model="localModel.fontStyle"
@@ -145,7 +147,7 @@ const textTransformOptions = [
 
             <!-- Section: Font Decoration (underline, line-through) -->
             <div class="px-2 items-center mb-1.5">
-                <div class="text-xs mb-1">{{ trans('Text Decoration') }}</div>
+                <div class="text-xs mb-1">{{ ctrans('Text Decoration') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
                         v-model="localModel.textDecoration"
@@ -171,7 +173,7 @@ const textTransformOptions = [
 
             <!-- Section: Font Transform (uppercase, lowercase, capitalize) -->
             <div class="px-2 items-center mb-1.5">
-                <div class="text-xs mb-1">{{ trans('Text Transform') }}</div>
+                <div class="text-xs mb-1">{{ ctrans('Text Transform') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
                         v-model="localModel.textTransform"
@@ -197,7 +199,7 @@ const textTransformOptions = [
 
             <!-- Section: Font size -->
             <div class="px-2 items-center">
-                <div class="text-xs mb-1">{{ trans('Font size') }}</div>
+                <div class="text-xs mb-1">{{ ctrans('Font size') }}</div>
                 <div class="col-span-4">
                     <PureInputNumber
                         v-model="localModel.fontSize"

@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\DB;
  * Predicts when an org stock will run out.
  *
  * The pipeline, in order:
+ *  0. Use the nightly TimesFM forecast of ForecastOrgStockDemand when it is fresh and the stock
+ *     was on the shelf at least 70% of the window: the expected demand of the next six weeks,
+ *     already scaled to what the organisation really dispatched. It was a third more accurate per
+ *     SKO than steps 1 to 3 on production dispatches. TimesFM reads empty weeks as weeks nobody
+ *     wanted it, so an item that was out of stock a lot keeps step 1, which only counts the days
+ *     it could be sold, as do SKOs with too little history or no forecast that night.
  *  1. Rebuild the daily demand series over the last 91 days from delivery_note_items.created_at
  *     (delivery_note_items.date is only set on Aurora-fetched rows), counting ONLY days the stock
  *     was actually on the shelf (running balance > 0 from org_stock_movements). An item that
@@ -40,6 +46,8 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
 
     private const int WINDOW = 91;
 
+    private const float TIMESFM_MINIMUM_IN_STOCK_SHARE = 0.7;
+
     public function __construct()
     {
         $this->model = OrgStock::class;
@@ -54,7 +62,10 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     {
         $quantityAvailable = (float) $orgStock->quantity_available;
 
-        [$dailyUsage, $sigma, $source] = $this->predictedDailyUsage($orgStock);
+        [$dailyUsage, $sigma, $source, $inStockShare] = $this->predictedDailyUsage($orgStock);
+        if ($inStockShare >= self::TIMESFM_MINIMUM_IN_STOCK_SHARE && $timesFm = $this->timesFmDailyUsage($orgStock)) {
+            [$dailyUsage, $sigma, $source] = $timesFm;
+        }
 
         if ($dailyUsage !== null) {
             $dailyUsage = round($dailyUsage, 4);
@@ -128,7 +139,33 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
-     * @return array{0: float|null, 1: float|null, 2: string|null} [demand per in-stock day, daily sigma, source]
+     * The next six weeks of the TimesFM forecast as a daily rate and daily spread, when it was made
+     * today or yesterday.
+     *
+     * @return array{0: float, 1: float, 2: string}|null
+     */
+    private function timesFmDailyUsage(OrgStock $orgStock): ?array
+    {
+        $forecast = $orgStock->stats->demand_forecast;
+        if (!is_array($forecast['weeks'] ?? null) || !isset($forecast['from']) || Carbon::parse($forecast['from'])->lt(now()->subDay()->startOfDay())) {
+            return null;
+        }
+
+        $weeks = array_slice($forecast['weeks'], 0, 6);
+        $days  = count($weeks) * 7;
+        if ($days === 0) {
+            return null;
+        }
+
+        return [
+            array_sum(array_column($weeks, 0)) / $days,
+            sqrt(array_sum(array_column($weeks, 1)) / $days),
+            'timesfm',
+        ];
+    }
+
+    /**
+     * @return array{0: float|null, 1: float|null, 2: string|null, 3: float} [demand per in-stock day, daily sigma, source, share of the window in stock]
      */
     private function predictedDailyUsage(OrgStock $orgStock): array
     {
@@ -143,31 +180,33 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
             ->pluck('dispatched', 'day');
 
         $series = [];
-        foreach ($this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available) as $day => $inStock) {
+        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available);
+        foreach ($days as $day => $inStock) {
             if ($inStock) {
                 $series[$day] = (float) ($dispatchedByDay[$day] ?? 0);
             }
         }
+        $inStockShare = $days ? count($series) / count($days) : 0.0;
 
         if (array_sum($series) <= 0) {
             if ($rate = $this->usageFromSiblingOrganisations($orgStock)) {
-                return [$rate, null, 'siblings'];
+                return [$rate, null, 'siblings', $inStockShare];
             }
             if ($rate = $this->usageFromFamily($orgStock)) {
-                return [$rate, null, 'family'];
+                return [$rate, null, 'family', $inStockShare];
             }
 
-            return [null, null, null];
+            return [null, null, null, $inStockShare];
         }
 
         $sigma = $this->standardDeviation(array_values($series));
 
         $nonZeroShare = count(array_filter($series)) / count($series);
         if ($nonZeroShare < 0.3) {
-            return [$this->crostonSba(array_values($series)), $sigma, 'croston'];
+            return [$this->crostonSba(array_values($series)), $sigma, 'croston', $inStockShare];
         }
 
-        return [$this->holtDamped($series), $sigma, 'holt'];
+        return [$this->holtDamped($series), $sigma, 'holt', $inStockShare];
     }
 
     /**

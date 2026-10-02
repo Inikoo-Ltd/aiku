@@ -8,6 +8,8 @@
 
 namespace App\Actions\Comms\Mailbox;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatMessage;
 use App\Models\Comms\EmailArchiveMessage;
@@ -37,15 +39,23 @@ use Throwable;
  * customer are fetched whole. Already archived mails are skipped and the page reached is
  * remembered, so a run that stops is continued by running it again. With --queue each mailbox is
  * read one page per job on the long-low-priority queue, three mailboxes at a time, a few mails
- * at a time, well inside Gmail's limit per mailbox; a page Gmail refuses is read again a minute
- * later, giving up after MAX_RATE_LIMITED refusals in a row. Starting the command again replaces
+ * at a time. Gmail's allowance is per mailbox and the fetch of new customer mail needs it too, so
+ * the archive reads at most MAX_READS_PER_HOUR mails of a mailbox an hour, PAGE_SIZE at a time,
+ * and stands down while the fetch of that mailbox is being refused. A page Gmail refuses is read
+ * again a minute later, then two, four and so on up to LONG_PAUSE, so Gmail holding a mailbox
+ * back for a while never ends the run. Starting the command again replaces
  * the chain of jobs a mailbox already has, so two never read the same mailbox.
+ *
+ * With --top only the shop's best customers are read, all their mail however old: VIPs and those
+ * invoiced at least TOP_MIN_INVOICES times in TOP_MONTHS who are in the shop's top TOP_SHARE by
+ * sales over that time. Gmail is searched by their addresses, TOP_ADDRESSES_PER_SEARCH at a time,
+ * in a chain of its own beside the one by months; running it again starts those searches over.
  */
 class ArchiveShopMailbox
 {
     use AsAction;
 
-    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--queue : Run every mailbox side by side on the queue}';
+    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--queue : Run every mailbox side by side on the queue} {--top : Only the best customers, all their mail however old}';
 
     private const int TEXT_LIMIT = 20000;
 
@@ -53,7 +63,21 @@ class ArchiveShopMailbox
 
     private const int RATE_LIMIT_PAUSE = 60;
 
-    private const int MAX_RATE_LIMITED = 10;
+    private const int LONG_PAUSE = 1800;
+
+    private const int STAND_DOWN_PAUSE = 900;
+
+    private const int PAGE_SIZE = 100;
+
+    private const int MAX_READS_PER_HOUR = 600;
+
+    private const int TOP_MONTHS = 24;
+
+    private const int TOP_MIN_INVOICES = 12;
+
+    private const float TOP_SHARE = 0.1;
+
+    private const int TOP_ADDRESSES_PER_SEARCH = 20;
 
     /**
      * Left out by Gmail's own search, never fetched: spam, bin, drafts, chats and the
@@ -77,20 +101,20 @@ class ArchiveShopMailbox
      *
      * @return array{read: int, archived: int, skipped: int, failed: int, done: bool}
      */
-    public function handle(Shop $shop, int $months = 12, ?int $limit = null): array
+    public function handle(Shop $shop, int $months = 12, ?int $limit = null, bool $top = false): array
     {
         $total = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false];
 
         do {
-            $page = $this->archivePage($shop, $months);
+            $page = $this->archivePage($shop, $months, $top);
 
             foreach (['read', 'archived', 'skipped', 'failed'] as $key) {
                 $total[$key] += $page[$key];
             }
             $total['done'] = $page['done'];
 
-            if ($page['rate_limited'] && !$page['stopped']) {
-                Sleep::for(self::RATE_LIMIT_PAUSE)->seconds();
+            if ($page['rate_limited']) {
+                Sleep::for($page['pause'])->seconds();
             }
         } while (!$page['done'] && !$page['stopped'] && (!$limit || $total['read'] < $limit));
 
@@ -102,21 +126,21 @@ class ArchiveShopMailbox
      * long and a restarted worker carries on from the page reached. A job of a chain the command
      * has since replaced does nothing.
      */
-    public function asJob(Shop $shop, int $months = 12, ?string $run = null): void
+    public function asJob(Shop $shop, int $months = 12, ?string $run = null, bool $top = false): void
     {
-        if (Cache::get(self::runKey($shop)) !== $run) {
+        if (Cache::get(self::runKey($shop, $top)) !== $run) {
             return;
         }
 
-        $page = $this->archivePage($shop, $months);
+        $page = $this->archivePage($shop, $months, $top);
 
         if ($page['done'] || $page['stopped']) {
             return;
         }
 
         $page['rate_limited']
-            ? static::dispatch($shop, $months, $run)->delay(now()->addSeconds(self::RATE_LIMIT_PAUSE))
-            : static::dispatch($shop, $months, $run);
+            ? static::dispatch($shop, $months, $run, $top)->delay(now()->addSeconds($page['pause']))
+            : static::dispatch($shop, $months, $run, $top);
     }
 
     /**
@@ -125,11 +149,11 @@ class ArchiveShopMailbox
      *
      * Gmail still refusing after a pause leaves the page where it was, to be read again later.
      *
-     * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool}
+     * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool, pause: int}
      */
-    public function archivePage(Shop $shop, int $months): array
+    public function archivePage(Shop $shop, int $months, bool $top = false): array
     {
-        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false];
+        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false, 'pause' => 0];
         $client  = GmailClient::forShop($shop);
         $mailbox = mb_strtolower((string) Arr::get($shop->settings, 'gmail.email'));
 
@@ -139,16 +163,36 @@ class ArchiveShopMailbox
             return $result;
         }
 
-        $cursorKey = self::cursorKey($shop, $months);
-        $page      = retry(4, fn () => $client->listMessageIds("newer_than:{$months}m ".self::LEAVE_OUT, Cache::get($cursorKey)), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
+        if (FetchShopMailboxMessages::wasRecentlyRefused($shop)) {
+            return ['rate_limited' => true, 'pause' => self::STAND_DOWN_PAUSE] + $result;
+        }
+
+        if ((int) Cache::get(self::readsKey($shop)) >= self::MAX_READS_PER_HOUR) {
+            return ['rate_limited' => true, 'pause' => (int) now()->diffInSeconds(now()->addHour()->startOfHour()) + 1] + $result;
+        }
+
+        $cursorKey = self::cursorKey($shop, $months, $top);
+        $cursor    = $top ? Cache::get($cursorKey, ['search' => 0, 'page' => null]) : ['search' => 0, 'page' => Cache::get($cursorKey)];
+        $searches  = $top ? array_chunk(self::topAddresses($shop), self::TOP_ADDRESSES_PER_SEARCH) : [["newer_than:{$months}m"]];
+
+        if (!isset($searches[$cursor['search']])) {
+            Cache::forget($cursorKey);
+
+            return ['done' => true] + $result;
+        }
+
+        $search = $top
+            ? '{'.collect($searches[$cursor['search']])->map(fn (string $address) => "from:$address to:$address cc:$address")->join(' ').'}'
+            : $searches[0][0];
+        $page   = retry(4, fn () => $client->listMessageIds($search.' '.self::LEAVE_OUT, $cursor['page'], self::PAGE_SIZE), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
         $new       = array_values(array_diff($page['ids'], EmailArchiveMessage::where('shop_id', $shop->id)->whereIn('gmail_message_id', $page['ids'])->pluck('gmail_message_id')->all()));
         $worth     = [];
 
         foreach (array_chunk($new, self::CONCURRENCY) as $ids) {
-            $headers = $this->fetch($client, $ids, self::HEADERS);
+            $headers = $this->fetch($shop, $client, $ids, self::HEADERS);
 
             if ($headers === null) {
-                return ['rate_limited' => true, 'stopped' => $this->refusedTooOften($shop)] + $result;
+                return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
             }
 
             foreach ($headers as $id => $raw) {
@@ -165,10 +209,10 @@ class ArchiveShopMailbox
         }
 
         foreach (array_chunk($worth, self::CONCURRENCY) as $ids) {
-            $messages = $this->fetch($client, $ids);
+            $messages = $this->fetch($shop, $client, $ids);
 
             if ($messages === null) {
-                return ['rate_limited' => true, 'stopped' => $this->refusedTooOften($shop)] + $result;
+                return ['rate_limited' => true, 'pause' => $this->pauseAfterRefusal($shop)] + $result;
             }
 
             foreach ($messages as $raw) {
@@ -189,8 +233,14 @@ class ArchiveShopMailbox
 
         Cache::forget(self::rateLimitedKey($shop));
 
-        if ($page['next']) {
-            Cache::put($cursorKey, $page['next'], now()->addDays(7));
+        $next = match (true) {
+            (bool) $page['next']                    => ['search' => $cursor['search'], 'page' => $page['next']],
+            isset($searches[$cursor['search'] + 1]) => ['search' => $cursor['search'] + 1, 'page' => null],
+            default                                 => null,
+        };
+
+        if ($next) {
+            Cache::put($cursorKey, $top ? $next : $next['page'], now()->addDays(7));
         } else {
             Cache::forget($cursorKey);
             $result['done'] = true;
@@ -199,14 +249,58 @@ class ArchiveShopMailbox
         return $result;
     }
 
-    public static function cursorKey(Shop $shop, int $months): string
+    public static function cursorKey(Shop $shop, int $months, bool $top = false): string
     {
-        return "mailbox-archive:{$shop->id}:{$months}";
+        return $top ? "mailbox-archive:{$shop->id}:top" : "mailbox-archive:{$shop->id}:{$months}";
     }
 
-    public static function runKey(Shop $shop): string
+    public static function runKey(Shop $shop, bool $top = false): string
     {
-        return "mailbox-archive-run:{$shop->id}";
+        return "mailbox-archive-run:{$shop->id}".($top ? ':top' : '');
+    }
+
+    private static function topAddressesKey(Shop $shop): string
+    {
+        return "mailbox-archive-top-addresses:{$shop->id}";
+    }
+
+    /**
+     * The addresses of the shop's best customers, kept for the length of a run so its searches
+     * stay the same from one job to the next.
+     *
+     * @return array<int, string>
+     */
+    public static function topAddresses(Shop $shop): array
+    {
+        return Cache::remember(self::topAddressesKey($shop), now()->addDays(7), function () use ($shop) {
+            $buyers = Invoice::where('shop_id', $shop->id)
+                ->where('type', InvoiceTypeEnum::INVOICE)
+                ->where('date', '>=', now()->subMonths(self::TOP_MONTHS))
+                ->whereNotNull('customer_id')
+                ->groupBy('customer_id')
+                ->selectRaw('customer_id, count(*) as invoices, sum(grp_net_amount) as amount')
+                ->orderByDesc('amount')
+                ->get();
+
+            $best = $buyers->take((int) ceil($buyers->count() * self::TOP_SHARE))
+                ->where('invoices', '>=', self::TOP_MIN_INVOICES)
+                ->pluck('customer_id');
+
+            return Customer::where('shop_id', $shop->id)
+                ->where(fn ($query) => $query->whereIn('id', $best)->orWhere('is_vip', true))
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->map(fn (string $email) => mb_strtolower(trim($email)))
+                ->filter(fn (string $email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+                ->unique()
+                ->values()
+                ->all();
+        });
+    }
+
+    private static function readsKey(Shop $shop): string
+    {
+        return "mailbox-archive-reads:{$shop->id}:".now()->format('YmdH');
     }
 
     private static function rateLimitedKey(Shop $shop): string
@@ -214,18 +308,16 @@ class ArchiveShopMailbox
         return "mailbox-archive-rate-limited:{$shop->id}";
     }
 
-    private function refusedTooOften(Shop $shop): bool
+    private function pauseAfterRefusal(Shop $shop): int
     {
         $refusals = Cache::increment(self::rateLimitedKey($shop));
+        $pause    = (int) min(self::RATE_LIMIT_PAUSE * 2 ** ($refusals - 1), self::LONG_PAUSE);
 
-        if ($refusals < self::MAX_RATE_LIMITED) {
-            return false;
+        if ($pause === self::LONG_PAUSE) {
+            Log::warning("mailbox:archive {$shop->slug}: Gmail refused $refusals times in a row, trying again in ".(self::LONG_PAUSE / 60).' minutes');
         }
 
-        Cache::forget(self::rateLimitedKey($shop));
-        Log::warning("mailbox:archive {$shop->slug}: Gmail refused ".self::MAX_RATE_LIMITED.' times in a row, stopped; run it again to continue');
-
-        return true;
+        return $pause;
     }
 
     /**
@@ -235,8 +327,11 @@ class ArchiveShopMailbox
      * @param  array<int, string>  $onlyHeaders
      * @return array<string, array<string, mixed>|null>|null
      */
-    private function fetch(GmailClient $client, array $ids, array $onlyHeaders = []): ?array
+    private function fetch(Shop $shop, GmailClient $client, array $ids, array $onlyHeaders = []): ?array
     {
+        Cache::add(self::readsKey($shop), 0, now()->addHours(2));
+        Cache::increment(self::readsKey($shop), count($ids));
+
         $messages = $client->getMessages($ids, $onlyHeaders);
 
         if (in_array('rate_limited', $messages, true)) {
@@ -343,23 +438,31 @@ class ArchiveShopMailbox
         $slug  = $command->argument('shop');
         $shops = $slug ? Shop::where('slug', $slug)->get() : Shop::whereNotNull('settings->gmail->refresh_token')->get();
 
+        $top = (bool) $command->option('top');
+
         foreach ($shops as $shop) {
             $run = (string) Str::uuid();
-            Cache::put(self::runKey($shop), $run, now()->addDays(7));
+            Cache::put(self::runKey($shop, $top), $run, now()->addDays(7));
 
             if ($command->option('fresh')) {
                 EmailArchiveMessage::where('shop_id', $shop->id)->delete();
-                Cache::forget(self::cursorKey($shop, (int) $command->option('months')));
+                Cache::forget(self::cursorKey($shop, (int) $command->option('months'), $top));
+            }
+
+            if ($top) {
+                Cache::forget(self::topAddressesKey($shop));
+                Cache::forget(self::cursorKey($shop, (int) $command->option('months'), true));
+                $command->info("{$shop->slug}: ".count(self::topAddresses($shop)).' best customers');
             }
 
             if ($command->option('queue')) {
-                static::dispatch($shop, (int) $command->option('months'), $run);
+                static::dispatch($shop, (int) $command->option('months'), $run, $top);
                 $command->info("{$shop->slug}: queued");
 
                 continue;
             }
 
-            $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null);
+            $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null, $top);
             $command->info("{$shop->slug}: {$result['archived']} archived, {$result['skipped']} left out, {$result['failed']} failed of {$result['read']} read".($result['done'] ? '' : ' (run again to continue)'));
         }
 

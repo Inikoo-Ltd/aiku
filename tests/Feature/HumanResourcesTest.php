@@ -91,6 +91,9 @@ use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
 use App\Models\HumanResources\JobPosition;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\HolidayYear;
@@ -2719,6 +2722,8 @@ test('profile timesheets tab returns timesheets beyond today', function () {
         'password' => 'secret123',
     ]);
 
+    $this->travelTo(now()->startOfMonth()->addDays(14));
+
     StoreTimesheet::make()->action($employee, ['date' => now()]);
     StoreTimesheet::make()->action($employee, ['date' => now()->subDays(3)]);
 
@@ -3244,4 +3249,44 @@ test('marketing job positions can create and edit offers', function () {
 
     expect($roles('mrk-m'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_SUPERVISOR)
         ->and($roles('mrk-c'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_CLERK);
+});
+
+test('the new employee form shows login errors on its own fields', function () {
+    $orgAdmin = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'org-admin')->firstOrFail();
+    $administrator = StoreEmployee::make()->action($this->organisation, [
+        'worker_number'   => 'hr-form-admin',
+        'alias'           => 'hr-form-admin',
+        'contact_name'    => 'Hr Form Admin',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $orgAdmin->slug, 'scopes' => []]],
+        'username'        => 'hr-form-admin',
+        'password'        => 'secret-password-123',
+    ]);
+    actingAs($administrator->getUser());
+
+    $newEmployee = fn (string $username) => [
+        'contact_name'    => 'Bicky Shrestha',
+        'type'            => EmployeeTypeEnum::EMPLOYEE->value,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME->value,
+        'worker_number'   => 'AWN01',
+        'alias'           => 'Bicky',
+        'state'           => EmployeeStateEnum::WORKING->value,
+        'username'        => $username,
+        'password'        => 'Abcdefgh1234',
+    ];
+
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('Bicky'))
+        ->assertSessionHasErrors('username');
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
+
+    $administrator->getUser()->update(['email' => 'taken-by-a-user@example.com']);
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), array_merge($newEmployee('bicky'), ['work_email' => 'taken-by-a-user@example.com']))
+        ->assertSessionHasErrors('work_email');
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
+
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('bicky'))
+        ->assertSessionHasNoErrors();
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->firstOrFail()->getUser()->username)->toBe('bicky');
 });

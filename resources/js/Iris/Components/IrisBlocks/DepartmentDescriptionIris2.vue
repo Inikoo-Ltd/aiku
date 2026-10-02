@@ -399,7 +399,6 @@ watch(
 										<Image
 											v-if="fieldValue.department.showcase_video_thumbnail"
 											:src="{ original: fieldValue.department.showcase_video_thumbnail }"
-											:responsiveEnabled="false"
 											:alt="fieldValue.department.name || ctrans('Department video')"
 											:imageCover="true"
 											class="absolute inset-0 w-full h-full" />

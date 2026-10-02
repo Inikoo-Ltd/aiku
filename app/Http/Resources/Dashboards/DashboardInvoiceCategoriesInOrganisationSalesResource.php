@@ -11,6 +11,7 @@ namespace App\Http\Resources\Dashboards;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
@@ -53,17 +54,34 @@ class DashboardInvoiceCategoriesInOrganisationSalesResource extends JsonResource
             ],
         ];
 
+        $shopLink = empty($data['shop_slug']) ? [] : [
+            'shop_link' => [
+                'label'   => $data['shop_code'],
+                'tooltip' => __('Shop sales target'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.dashboard.show',
+                    'parameters' => [
+                        'organisation' => $data['organisation_slug'],
+                        'shop'         => $data['shop_slug'],
+                        'section'      => ShopDashboardSectionsEnum::TARGET->value,
+                    ],
+                ],
+            ],
+        ];
+
         $columns = [
             'label' => [
                 'formatted_value' => $data['name'] ?? 'Unknown',
                 'align'           => 'left',
-                ...$routeTargets['invoiceCategories']
+                ...$routeTargets['invoiceCategories'],
+                ...$shopLink,
             ],
             'label_minified' => [
                 'formatted_value' => Abbreviate::run($data['name'] ?? 'Unknown'),
                 'tooltip'         => $data['name'] ?? 'Unknown',
                 'align'           => 'left',
-                ...$routeTargets['invoiceCategories']
+                ...$routeTargets['invoiceCategories'],
+                ...$shopLink,
             ]
         ];
 

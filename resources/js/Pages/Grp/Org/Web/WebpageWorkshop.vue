@@ -26,7 +26,8 @@ import { getCopyPermissions, getDeletePermissions, getHiddenPermissions } from "
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
+import { findScriptBase64Files, getRevealSetting, ScriptBase64File, setIframeView } from "@/Composables/Workshop";
+import { useHighlightLinks } from "@/Composables/useHighlightLinks";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -41,6 +42,7 @@ import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedF
 import CreateTemplateDialog from '@/Components/Workshop/CreateTemplateDialog.vue'
 import ApplyTemplateDialog from '@/Components/Workshop/ApplyTemplateDialog.vue'
 import WorkshopShortcutsDialog from '@/Components/Workshop/WorkshopShortcutsDialog.vue'
+import RepairBase64FilesDialog from '@/Components/Workshop/RepairBase64FilesDialog.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
@@ -63,7 +65,8 @@ import {
   faSync,
   faLayerPlus,
   faKeyboard,
-  faPaste
+  faPaste,
+  faLink
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -142,6 +145,9 @@ const isApplyingTemplate = ref(false);
 const selectedTemplate = ref<WebLayoutTemplate | null>(null);
 const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], incoming: [] });
 const isShortcutsDialogVisible = ref(false);
+const isRepairBase64DialogVisible = ref(false);
+const base64Files = ref<ScriptBase64File[]>([]);
+const pendingPublish = ref<{ route: routeType, popover: any } | null>(null);
 const COPIED_BLOCK_STORAGE_KEY = "webpageWorkshop.copiedBlock";
 
 const canUndo = computed(() => history.value.length > 1);
@@ -512,6 +518,43 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   if (!props.editable) return;
+
+  base64Files.value = findScriptBase64Files(data.value.layout.web_blocks);
+  if (base64Files.value.length) {
+    pendingPublish.value = { route, popover };
+    isRepairBase64DialogVisible.value = true;
+    return;
+  }
+
+  checkTitleBeforePublish(route, popover);
+};
+
+const reloadAfterBase64Repair = () => {
+  router.reload({
+    only: ['webpage'],
+    onSuccess: (newValue) => {
+      data.value = newValue.props.webpage;
+      sideKey.value++;
+      sendToIframe({ key: 'reload', value: {} });
+    },
+  });
+};
+
+const publishAfterBase64Dialog = () => {
+  isRepairBase64DialogVisible.value = false;
+  if (pendingPublish.value) {
+    checkTitleBeforePublish(pendingPublish.value.route, pendingPublish.value.popover);
+  }
+  pendingPublish.value = null;
+};
+
+const checkPageAfterBase64Repair = () => {
+  isRepairBase64DialogVisible.value = false;
+  pendingPublish.value?.popover?.close();
+  pendingPublish.value = null;
+};
+
+const checkTitleBeforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
   if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
@@ -962,6 +1005,8 @@ const deselectOrExitFullScreen = () => {
 const hasSelectedBlock = () => selectedBlock.value !== null;
 const canEditSelectedBlock = () => props.editable && hasSelectedBlock();
 
+const { isHighlightingLinks, toggleHighlightLinks, applyToIframe: applyHighlightLinksToIframe, highlightLinksShortcut } = useHighlightLinks(_iframe);
+
 const shortcuts: WorkshopShortcut[] = [
   {
     id: "undo", group: "History", label: "Undo", combos: [["Mod", "Z"]],
@@ -1031,6 +1076,7 @@ const shortcuts: WorkshopShortcut[] = [
     id: "full-screen", group: "Editor", label: "Full screen", combos: [["F11"]],
     run: toggleFullScreen, allowWhileTyping: true,
   },
+  highlightLinksShortcut,
   {
     id: "shortcuts", group: "Editor", label: "Show keyboard shortcuts", combos: [["?"], ["Mod", "/"]],
     run: () => isShortcutsDialogVisible.value = true,
@@ -1043,12 +1089,14 @@ const isShortcutBlocked = () =>
   || isApplyTemplateDialogVisible.value
   || dialogUploadImageVisible.value
   || isShortcutsDialogVisible.value
+  || isRepairBase64DialogVisible.value
   || !!document.querySelector(".p-dialog-mask, .p-confirmpopup");
 
 const { listenTo: listenForShortcuts } = useWorkshopShortcuts(shortcuts, isShortcutBlocked);
 
 const onIframeLoad = () => {
   isIframeLoading.value = false;
+  applyHighlightLinksToIframe();
   listenForShortcuts(_iframe.value?.contentWindow);
 };
 
@@ -1186,6 +1234,15 @@ const openWebsite = () => {
   </ConfirmDialog>
 
   <WorkshopShortcutsDialog v-model:visible="isShortcutsDialogVisible" :shortcuts="shortcuts" />
+
+  <RepairBase64FilesDialog
+    v-model:visible="isRepairBase64DialogVisible"
+    :webpageId="data.id"
+    :files="base64Files"
+    @repaired="reloadAfterBase64Repair"
+    @checkPage="checkPageAfterBase64Repair"
+    @publish="publishAfterBase64Dialog"
+  />
 
   <div class="flex bg-slate-100" :class="isFullScreen ? 'fixed inset-0 z-[45]' : ''">
     <div class="hidden lg:flex lg:flex-col relative z-[20] bg-white border-r border-slate-200 shadow-sm"
@@ -1328,6 +1385,16 @@ const openWebsite = () => {
 
             <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
           </template>
+
+          <!-- Highlight links -->
+          <button type="button" @click="toggleHighlightLinks"
+            v-tooltip.bottom="`${isHighlightingLinks ? ctrans('Hide link highlights') : ctrans('Highlight links')} (${formatShortcutCombo(['L'])})`"
+            class="h-7 w-7 flex items-center justify-center rounded transition-colors"
+            :class="isHighlightingLinks
+              ? 'bg-slate-900 text-white hover:bg-slate-700'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'">
+            <FontAwesomeIcon :icon="faLink" fixed-width />
+          </button>
 
           <!-- Reload preview -->
           <button type="button" v-tooltip.bottom="ctrans('Reload preview')"

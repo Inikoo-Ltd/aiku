@@ -16,6 +16,8 @@ use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\ClearCacheByWildcard;
+use App\Actions\Helpers\Translations\RecordTranslationReview;
+use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -23,6 +25,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -78,6 +81,16 @@ class UpdateProductCategory extends OrgAction
 
         $originalImageId = $productCategory->image_id;
         $oldState        = $productCategory->state;
+
+        $webpageData = [];
+        foreach (['webpage_title' => 'title', 'webpage_description' => 'description', 'webpage_url' => 'url'] as $field => $webpageField) {
+            if (Arr::has($modelData, $field)) {
+                $webpageData[$webpageField] = Arr::pull($modelData, $field) ?? '';
+            }
+        }
+        if ($productCategory->webpage && $webpageData) {
+            UpdateWebpage::make()->action($productCategory->webpage, $webpageData);
+        }
 
         if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
             Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
@@ -171,8 +184,6 @@ class UpdateProductCategory extends OrgAction
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')],
                 ]
             ]);
-
-            data_set($modelData, 'is_name_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_title')) {
@@ -181,7 +192,6 @@ class UpdateProductCategory extends OrgAction
                     'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
                 ]
             ]);
-            data_set($modelData, 'is_description_title_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description')) {
@@ -190,7 +200,6 @@ class UpdateProductCategory extends OrgAction
                     'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
-            data_set($modelData, 'is_description_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_extra')) {
@@ -199,7 +208,6 @@ class UpdateProductCategory extends OrgAction
                     'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
-            data_set($modelData, 'is_description_extra_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'not_follow_master_prices') && !$productCategory->not_follow_master_prices) {
@@ -349,6 +357,9 @@ class UpdateProductCategory extends OrgAction
             ],
             'webpage_id'                    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
+            'webpage_title'                 => ['sometimes', 'string'],
+            'webpage_description'           => ['sometimes', 'nullable', 'string'],
+            'webpage_url'                   => ['sometimes', 'string'],
             'images'                        => ['sometimes', 'array'],
             'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'name_i8n'                      => ['sometimes', 'array'],
@@ -554,8 +565,28 @@ class UpdateProductCategory extends OrgAction
         $this->user = $request->user();
 
         $this->initialisationFromShop($productCategory->shop, $request);
+        RecordTranslationReview::make()->fromEdit($productCategory, $this->validatedData, $request->user());
 
-        return $this->handle($productCategory, $this->validatedData);
+        return $this->handle($productCategory, $this->markWrittenTextAsReviewed($this->validatedData));
+    }
+
+    /**
+     * A person writing the text is what counts as reviewing it. Only here, on the controller: the
+     * master cascade and TranslateModel call handle() with machine text that still needs a person.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markWrittenTextAsReviewed(array $modelData): array
+    {
+        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, $reviewFlag, true, false);
+            }
+        }
+
+        return $modelData;
     }
 
 

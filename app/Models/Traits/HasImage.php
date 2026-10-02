@@ -34,6 +34,7 @@ trait HasImage
     public function orderedImages(): Collection
     {
         return $this->images()
+            ->whereRaw("model_has_media.scope IS DISTINCT FROM 'audio'")
             ->orderByRaw('model_has_media.media_id = ? desc', [$this->image_id ?? 0])
             ->orderByPivot('position')
             ->orderBy('media.id')

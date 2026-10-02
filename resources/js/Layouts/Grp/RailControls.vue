@@ -21,7 +21,8 @@ import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
 import CustomersWaiting from './CustomersWaiting.vue';
 import WhatsappCallAlert from './WhatsappCallAlert.vue';
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 library.add(faCircle, faLifeRing, faShoppingCart, faCube)
 
 const layout = inject('layout', layoutStructure)
@@ -38,13 +39,76 @@ const hasTicketBadges = computed(() => Boolean(layout.ticket_badges?.queue) || B
 const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
 
+type BadgeGroup = 'orders' | 'catalogue'
+
+const GROUP_IDLE_MS = 5000
+
+const isShortScreen = useMediaQuery('(max-height: 800px)')
+const isCompact = computed(() => !layout.messagingSidebar.show && isShortScreen.value)
+const expandedGroup = ref<BadgeGroup | null>(null)
+const isPointerInside = ref(false)
+const controlsElement = ref<HTMLElement | null>(null)
+let collapseTimer: ReturnType<typeof setTimeout> | null = null
+
+const ordersCount = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0))
+const catalogueCount = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0))
+
+const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
+
+const clearCollapseTimer = () => {
+    if (collapseTimer) {
+        clearTimeout(collapseTimer)
+        collapseTimer = null
+    }
+}
+
+const scheduleCollapse = () => {
+    clearCollapseTimer()
+
+    if (!expandedGroup.value || isPointerInside.value) {
+        return
+    }
+
+    collapseTimer = setTimeout(() => {
+        collapseTimer = null
+
+        if (controlsElement.value?.querySelector('[data-headlessui-state="open"]')) {
+            scheduleCollapse()
+
+            return
+        }
+
+        expandedGroup.value = null
+    }, GROUP_IDLE_MS)
+}
+
+const expandGroup = (group: BadgeGroup) => {
+    expandedGroup.value = group
+    scheduleCollapse()
+}
+
+const onPointerEnter = () => {
+    isPointerInside.value = true
+    clearCollapseTimer()
+}
+
+const onPointerLeave = () => {
+    isPointerInside.value = false
+    scheduleCollapse()
+}
+
+onBeforeUnmount(clearCollapseTimer)
+
 // ponytail: only ever mounted inside MessagingSideBar, so read the expand state straight off layout instead of threading a prop
 </script>
 
 <template>
     <div
+        ref="controlsElement"
         class="border-b border-[var(--chat-line)] flex-shrink-0"
-        :class="layout.messagingSidebar.show ? 'px-2 py-2 space-y-2' : 'flex flex-col items-center gap-y-3 py-3'">
+        :class="layout.messagingSidebar.show ? 'px-2 py-2 space-y-2' : 'flex flex-col items-center gap-y-3 py-3'"
+        @pointerenter="onPointerEnter"
+        @pointerleave="onPointerLeave">
         <div :class="layout.messagingSidebar.show ? 'flex items-center gap-2 min-w-0' : 'contents'">
         <!-- Button: Profile -->
         <div @click="layout.stackedComponents.push({ component: Profile})"
@@ -106,7 +170,16 @@ const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + 
             :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'"
             aria-hidden="true" />
 
-        <div v-if="!layout.messagingSidebar.show || hasOrderBadges" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
+        <button v-if="isFolded('orders') && ordersCount > 0" type="button"
+            v-tooltip="ctrans('Orders: :count waiting, click to show', { count: String(ordersCount) })"
+            class="relative flex h-8 w-8 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md bg-amber-300/80 font-medium tabular-nums leading-none text-amber-800 hover:bg-amber-300"
+            @click="expandGroup('orders')">
+            <FontAwesomeIcon :icon="faShoppingCart" class="text-[9px]" fixed-width aria-hidden="true" />
+            <span :class="ordersCount > 99 ? 'text-[9px]' : 'text-[11px]'">{{ ordersCount > 99 ? '99+' : ordersCount }}</span>
+            <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+        </button>
+
+        <div v-if="(!layout.messagingSidebar.show || hasOrderBadges) && !isFolded('orders')" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
         <FontAwesomeIcon v-if="layout.messagingSidebar.show" icon="fal fa-shopping-cart" class="w-4 shrink-0 text-center text-white xtext-[var(--chat-muted)] text-xs" fixed-width v-tooltip="ctrans('Orders')" aria-hidden="true" />
         <!-- Badge: Warehouse Waiting Items -->
         <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
@@ -173,9 +246,19 @@ const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + 
         </div>
         </div>
 
-        <div v-if="layout.messagingSidebar.show && hasOrderBadges && hasCatalogueBadges" class="w-full border-t border-[var(--chat-line)] shrink-0" aria-hidden="true" />
+        <div v-if="hasOrderBadges && hasCatalogueBadges" class="border-t border-[var(--chat-line)] shrink-0"
+            :class="layout.messagingSidebar.show ? 'w-full' : 'w-6'" aria-hidden="true" />
 
-        <div v-if="!layout.messagingSidebar.show || hasCatalogueBadges" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
+        <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button"
+            v-tooltip="ctrans('Catalogue: :count to check, click to show', { count: String(catalogueCount) })"
+            class="relative flex h-8 w-8 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md bg-rose-300/80 font-medium tabular-nums leading-none text-rose-800 hover:bg-rose-300"
+            @click="expandGroup('catalogue')">
+            <FontAwesomeIcon :icon="faCube" class="text-[9px]" fixed-width aria-hidden="true" />
+            <span :class="catalogueCount > 99 ? 'text-[9px]' : 'text-[11px]'">{{ catalogueCount > 99 ? '99+' : catalogueCount }}</span>
+            <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px]" fixed-width aria-hidden="true" />
+        </button>
+
+        <div v-if="(!layout.messagingSidebar.show || hasCatalogueBadges) && !isFolded('catalogue')" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
         <FontAwesomeIcon v-if="layout.messagingSidebar.show" icon="fal fa-cube" class="w-4 shrink-0 text-center text-white xtext-[var(--chat-muted)] text-xs" fixed-width v-tooltip="ctrans('Catalogue')" aria-hidden="true" />
         <!-- Badge: Products not following master prices -->
         <div v-if="layout?.master_updated_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">

@@ -406,7 +406,6 @@ watch(
 								<Image
 									v-if="modelValue.department.showcase_video_thumbnail"
 									:src="{ original: modelValue.department.showcase_video_thumbnail }"
-									:responsiveEnabled="false"
 									:alt="modelValue.department.name || ctrans('Department video')"
 									:imageCover="true"
 									class="absolute inset-0 w-full h-full" />

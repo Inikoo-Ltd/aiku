@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, inject, onUnmounted, ref, watch } from "vue"
+import { onClickOutside, useEventListener } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,8 +21,8 @@ import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiplePriceCurrency from "@/Components/Pure/PureMultiplePriceCurrency.vue"
 import { useForm, router } from "@inertiajs/vue3"
-import { faPencil } from "@fal"
-library.add(faExclamationTriangle, faSpinnerThird, faPencil)
+import { faPencil, faQuestionCircle, faSave } from "@fal"
+library.add(faExclamationTriangle, faSpinnerThird, faPencil, faQuestionCircle, faSave)
 
 interface CurrencyValue {
     value: string | number | null
@@ -32,6 +33,9 @@ interface MasterProductPricing {
     id: number
     slug: string
     code: string
+    master_family_code?: string | null
+    master_family_slug?: string | null
+    master_department_slug?: string | null
     name: string
     units: number
     unit: string | null
@@ -60,6 +64,7 @@ interface MasterProductPricing {
     customers: number
     sales_ly: string | number | null
     price_tip: { id: number, change: number, confidence: number, reason: string } | null
+    price_tip_note: string | null
 }
 
 interface SalesFigures {
@@ -156,19 +161,6 @@ const openEdit = (masterProduct: MasterProductPricing, field: 'master_prices' | 
     subscribeCascade(masterProduct.id)
 }
 
-const applyingTipId = ref<number | null>(null)
-
-const applyPriceTip = (masterProduct: MasterProductPricing) => {
-    openEdit(masterProduct, 'master_prices')
-    applyingTipId.value = masterProduct.price_tip!.id
-    const factor = 1 + masterProduct.price_tip!.change / 100
-    for (const entry of Object.values(editForm.value.master_prices as Record<string, CurrencyValue>)) {
-        if (entry?.value != null) {
-            entry.value = Math.round(Number(entry.value) * factor * 100) / 100
-        }
-    }
-}
-
 const bulkPrefilled = ref(false)
 const bulkCounterpart = ref<Record<string, CurrencyValue> | null>(null)
 const bulkEffectiveCost = ref<number | null>(null)
@@ -261,26 +253,65 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     })
 }
 
-const dismissingTip = ref<MasterProductPricing | null>(null)
+const explainingTip = ref<MasterProductPricing | null>(null)
+const givingFeedback = ref(false)
 const dismissForm = useForm({ dismissed_reason: '' })
 
-const openDismiss = (masterProduct: MasterProductPricing) => {
+const tipPanel = ref<HTMLElement | null>(null)
+const tipPanelPosition = ref({ top: 0, left: 0 })
+const TIP_PANEL_WIDTH = 380
+
+const openExplain = (masterProduct: MasterProductPricing, event: Event) => {
+    if (explainingTip.value?.id === masterProduct.id) {
+        closeExplain()
+        return
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    tipPanelPosition.value = {
+        top: rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - TIP_PANEL_WIDTH, window.innerWidth - TIP_PANEL_WIDTH - 8)),
+    }
     dismissForm.reset()
-    dismissingTip.value = masterProduct
+    dismissForm.clearErrors()
+    givingFeedback.value = false
+    explainingTip.value = masterProduct
 }
 
+const isApplyingTip = ref(false)
+
+const applyTipNow = () => {
+    const masterAssetId = explainingTip.value!.id
+    router.patch(route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {}, {
+        preserveScroll: true,
+        onStart: () => { isApplyingTip.value = true },
+        onFinish: () => { isApplyingTip.value = false },
+        onSuccess: () => {
+            closeExplain()
+            subscribeCascade(masterAssetId)
+            router.reload({ only: ['pricing'] })
+        },
+    })
+}
+
+const closeExplain = () => {
+    explainingTip.value = null
+}
+
+onClickOutside(tipPanel, closeExplain, { ignore: ['.price-tip-trigger'] })
+useEventListener('keydown', (event: KeyboardEvent) => event.key === 'Escape' && closeExplain())
+useEventListener('scroll', closeExplain, { capture: true, passive: true })
+
 const submitDismiss = () => {
-    dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: dismissingTip.value!.price_tip!.id }), {
+    dismissForm.patch(route('grp.models.master_asset_price_tip.dismiss', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {
         preserveScroll: true,
         onSuccess: () => {
-            dismissingTip.value = null
+            closeExplain()
             router.reload({ only: ['pricing'] })
         },
     })
 }
 
 const closeEdit = () => {
-    applyingTipId.value = null
     editingProduct.value = null
     editForm.value = null
     bulkMode.value = false
@@ -310,18 +341,10 @@ const submitEdit = () => {
         return
     }
 
-    editForm.value.patch(
-        applyingTipId.value
-            ? route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: applyingTipId.value })
-            : route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }),
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                applyingTipId.value = null
-                router.reload({ only: ['pricing'] })
-            },
-        }
-    )
+    editForm.value.patch(route('grp.models.master_asset.prices.update', { masterAsset: editingProduct.value.id }), {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['pricing'] }),
+    })
 }
 
 const majorSet = computed(() => new Set(props.majorCurrencies ?? []))
@@ -391,9 +414,9 @@ const cycleInterval = async () => {
     isLoadingSales.value = true
     try {
         const { data } = await axios.post(
-            route('grp.json.master_product_category.pricing_sales', {
-                masterProductCategory: props.masterProductCategoryId,
-            }),
+            props.masterProductCategoryId
+                ? route('grp.json.master_product_category.pricing_sales', { masterProductCategory: props.masterProductCategoryId })
+                : route('grp.json.master_shop.pricing_sales', { masterShop: (route().params as RouteParams).masterShop }),
             {
                 interval: interval,
                 ids: rowIds.value,
@@ -414,6 +437,14 @@ const productRoute = (masterProduct: MasterProductPricing) => {
         masterProduct: masterProduct.slug,
     })
 }
+
+const familyPricingRoute = (masterProduct: MasterProductPricing) =>
+    route("grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index", {
+        masterShop: (route().params as RouteParams).masterShop,
+        masterDepartment: masterProduct.master_department_slug,
+        masterFamily: masterProduct.master_family_slug,
+        tab: "pricing",
+    })
 
 const formatMoney = (value: string | number | null, currencyCode: string) => {
     if (value == null) {
@@ -441,9 +472,9 @@ const stockByOrgTooltip = (masterProduct: MasterProductPricing): string =>
         .map(orgStock => `${orgStock.code}: ${locale.number(Math.floor(Number(orgStock.qty)))}`)
         .join(' · ')
 
-const priceMarginPct = (masterProduct: MasterProductPricing, code: string): string | null => {
+const priceMarginPct = (masterProduct: MasterProductPricing, code: string, priceChangePct = 0): string | null => {
     const cost  = costsFor(masterProduct.effective_cost)?.[code] ?? null
-    const price = Number(masterProduct.master_prices?.[code]?.value ?? 0)
+    const price = Number(masterProduct.master_prices?.[code]?.value ?? 0) * (1 + priceChangePct / 100)
 
     if (!cost || !price) {
         return null
@@ -491,6 +522,14 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 fixed-width
                 aria-hidden="true"
             />
+        </template>
+
+        <template #cell(master_family_code)="{ item: masterProduct }">
+            <Link v-if="masterProduct.master_family_slug && masterProduct.master_department_slug"
+                :href="familyPricingRoute(masterProduct)" class="secondaryLink">
+                {{ masterProduct.master_family_code }}
+            </Link>
+            <span v-else>{{ masterProduct.master_family_code }}</span>
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
@@ -625,20 +664,32 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </template>
 
         <template #cell(price_tip)="{ item: masterProduct }">
-            <div v-if="masterProduct.price_tip" class="flex flex-col items-end gap-1">
-                <button
-                    type="button"
-                    class="rounded border px-1.5 py-px text-xs font-medium tabular-nums"
-                    :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
-                    v-tooltip="`${masterProduct.price_tip.reason}. ${ctrans('Click to review the suggested prices and apply them')}`"
-                    @click="applyPriceTip(masterProduct)"
-                >
-                    {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
-                </button>
-                <span class="text-xs tabular-nums text-gray-400" v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
-                <button type="button" class="text-xs text-gray-400 underline hover:text-gray-600" @click="openDismiss(masterProduct)">
-                    {{ ctrans('Dismiss') }}
-                </button>
+            <div v-if="masterProduct.price_tip" class="grid grid-cols-[auto_auto] items-center justify-end gap-x-3 gap-y-0.5">
+                <template v-for="(code, index) in majorCurrencies ?? []" :key="code">
+                    <button
+                        v-if="index === 0"
+                        type="button"
+                        class="price-tip-trigger justify-self-end rounded border px-1 text-xs font-medium tabular-nums"
+                        :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
+                        v-tooltip="ctrans('Why this price?')"
+                        @click="openExplain(masterProduct, $event)"
+                    >
+                        {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
+                    </button>
+                    <span v-else-if="index === 1" class="flex items-center justify-end gap-x-1 whitespace-nowrap text-xs tabular-nums text-gray-400">
+                        <span v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
+                        <button type="button" class="price-tip-trigger text-indigo-500 hover:text-indigo-700" v-tooltip="ctrans('Why this price?')" :aria-label="ctrans('Why this price?')" @click="openExplain(masterProduct, $event)">
+                            <FontAwesomeIcon :icon="faQuestionCircle" fixed-width aria-hidden="true" />
+                        </button>
+                    </span>
+                    <span v-else />
+                    <span class="whitespace-nowrap text-right tabular-nums" :class="masterProduct.price_tip.change < 0 ? 'text-amber-700' : 'text-green-700'" v-tooltip="ctrans('Recommended price')">
+                        {{ masterProduct.master_prices?.[code]?.value != null ? formatMoney(Math.round(Number(masterProduct.master_prices[code].value) * (1 + masterProduct.price_tip.change / 100) * 100) / 100, code) : '' }}
+                    </span>
+                </template>
+            </div>
+            <div v-else-if="masterProduct.price_tip_note" class="ml-auto max-w-56 text-right text-xs text-gray-400">
+                {{ masterProduct.price_tip_note }}
             </div>
         </template>
 
@@ -729,18 +780,50 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </div>
     </Modal>
 
-    <Modal :isOpen="!!dismissingTip" @onClose="dismissingTip = null" width="w-full max-w-md">
-        <form v-if="dismissingTip" @submit.prevent="submitDismiss">
-            <div class="mb-2 text-sm font-medium text-gray-700">
-                {{ ctrans('Dismiss price tip') }} — {{ dismissingTip.code }}
+    <Teleport to="body">
+        <form v-if="explainingTip?.price_tip" ref="tipPanel" class="fixed z-50 rounded-lg border border-gray-200 bg-white p-4 shadow-lg" :style="{ top: `${tipPanelPosition.top}px`, left: `${tipPanelPosition.left}px`, width: `${TIP_PANEL_WIDTH}px` }" @submit.prevent="submitDismiss">
+            <div class="mb-1 text-sm font-medium text-gray-700">
+                {{ ctrans('Why') }}
+                <span class="mx-0.5 rounded-full px-2 py-px text-xs font-semibold tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">{{ explainingTip.price_tip.change > 0 ? '+' : '' }}{{ explainingTip.price_tip.change }}%</span>
+                — {{ explainingTip.code }}
             </div>
-            <p class="mb-3 text-xs text-gray-500">{{ dismissingTip.price_tip?.reason }}</p>
-            <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is this tip wrong?') }}</label>
-            <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="3" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" />
-            <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
-            <div class="mt-3 flex justify-end">
-                <button type="submit" :disabled="dismissForm.processing" class="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white disabled:opacity-50">{{ ctrans('Dismiss') }}</button>
+            <p class="mb-3 text-xs text-gray-500">{{ explainingTip.name }} · {{ ctrans(':pct% sure', { pct: `${explainingTip.price_tip.confidence}` }) }}</p>
+            <ul class="list-disc space-y-0.5 pl-5 text-xs text-gray-700">
+                <li v-for="(line, index) in explainingTip.price_tip.reason.split(', ')" :key="index">{{ line }}</li>
+            </ul>
+            <div class="mt-3 flex items-center justify-between gap-3 rounded-md bg-gray-50 px-3 py-2">
+                <div class="grid grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-0.5 text-sm tabular-nums">
+                    <template v-for="code in (majorCurrencies ?? []).filter(code => explainingTip!.master_prices?.[code]?.value != null)" :key="code">
+                        <span class="text-right text-gray-500">{{ formatMoney(explainingTip!.master_prices[code].value, code) }}</span>
+                        <span class="text-gray-400">→</span>
+                        <span class="text-right font-semibold" :class="explainingTip!.price_tip!.change < 0 ? 'text-amber-700' : 'text-green-700'">
+                            {{ formatMoney(Math.round(Number(explainingTip!.master_prices[code].value) * (1 + explainingTip!.price_tip!.change / 100) * 100) / 100, code) }}
+                        </span>
+                        <span class="whitespace-nowrap pl-2 text-xs text-gray-500" v-tooltip="ctrans('Margin vs effective cost')">
+                            <template v-if="priceMarginPct(explainingTip!, code)">{{ priceMarginPct(explainingTip!, code) }} → {{ priceMarginPct(explainingTip!, code, explainingTip!.price_tip!.change) }}</template>
+                        </span>
+                    </template>
+                </div>
+                <span class="whitespace-nowrap rounded border px-1.5 py-px text-sm font-medium tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'">
+                    {{ explainingTip.price_tip.change > 0 ? '▲ +' : '▼ ' }}{{ explainingTip.price_tip.change }}%
+                </span>
+            </div>
+            <div class="mt-4 flex items-center justify-between gap-3">
+                <button v-if="!givingFeedback" type="button" class="text-xs text-gray-500 underline hover:text-gray-700" @click="givingFeedback = true">{{ ctrans('This tip is wrong') }}</button>
+                <span v-else />
+                <button type="button" :disabled="isApplyingTip" class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50" @click="applyTipNow">
+                    <FontAwesomeIcon :icon="isApplyingTip ? 'fad fa-spinner-third' : faSave" :class="{ 'animate-spin': isApplyingTip }" fixed-width aria-hidden="true" />
+                    {{ ctrans('Apply') }}
+                </button>
+            </div>
+            <div v-if="givingFeedback" class="mt-3 border-t border-gray-100 pt-3">
+                <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is it wrong? The AI learns from it') }}</label>
+                <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="2" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" :placeholder="ctrans('e.g. Christmas stock, sells in December')" />
+                <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
+                <div class="mt-2 flex justify-end">
+                    <button type="submit" :disabled="dismissForm.processing" class="rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">{{ ctrans('Send and hide tip') }}</button>
+                </div>
             </div>
         </form>
-    </Modal>
+    </Teleport>
 </template>

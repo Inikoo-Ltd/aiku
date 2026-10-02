@@ -15,6 +15,7 @@ use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Media;
+use App\Rules\ImagePageSize;
 use App\Rules\PdfPageSize;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
@@ -102,7 +103,15 @@ class UpdateRetinaLeaflet extends RetinaAction
                     ->where('state', PackagingStateEnum::ACTIVE->value),
             ],
             'name'        => ['sometimes', 'required', 'string', 'max:250'],
-            'file'        => ['sometimes', 'required', 'file', 'mimes:pdf', 'max:20480', new PdfPageSize(105, 148, 'A6')],
+            'file'        => [
+                'sometimes',
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:20480',
+                new PdfPageSize(105, 148, 'A6'),
+                new ImagePageSize(105, 148, 'A6'),
+            ],
         ];
     }
 

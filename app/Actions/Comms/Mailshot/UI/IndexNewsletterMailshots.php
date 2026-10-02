@@ -36,6 +36,10 @@ class IndexNewsletterMailshots extends OrgAction
         return $this->handleMailshot(OutboxCodeEnum::NEWSLETTER, $parent, $prefix);
     }
 
+    public function filterableOutboxCode(): OutboxCodeEnum
+    {
+        return OutboxCodeEnum::NEWSLETTER;
+    }
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {

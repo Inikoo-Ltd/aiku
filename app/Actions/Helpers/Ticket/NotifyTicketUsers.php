@@ -361,14 +361,19 @@ class NotifyTicketUsers
             return;
         }
 
+        if ($ticket->reporter_muted && $ticket->isReportedBy($recipient)) {
+            return;
+        }
+
         $channels = $event?->channelsFor($recipient) ?? [];
 
         $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email, $reason));
 
         SendTicketBadgeUpdateToUsers::run([$recipient->id], [
-            'title' => $subject,
-            'body'  => $lines[0] ?? '',
-            'route' => route('grp.tickets.show', $ticket->reference),
+            'title'  => $subject,
+            'body'   => $lines[0] ?? '',
+            'route'  => route('grp.tickets.show', $ticket->reference),
+            'reason' => $reason,
         ]);
 
         if (in_array('slack', $channels, true) && $recipient->slack_user_id) {

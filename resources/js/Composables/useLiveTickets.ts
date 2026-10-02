@@ -15,14 +15,16 @@ interface TicketChangedEvent {
 let restoredFromHistory = false
 globalThis.window?.addEventListener("popstate", () => (restoredFromHistory = true))
 
-export const useLiveTickets = (only: string[], reference?: string, paused?: Ref<boolean>) => {
+export const useLiveTickets = (only: string[], reference?: string, paused?: Ref<boolean>, ticketId?: number, skip?: (event: TicketChangedEvent) => boolean) => {
     const groupId = (usePage().props.layout as any)?.group?.id
-    const channelName = `grp.${groupId}.general`
+    const channelName = ticketId ? `grp.ticket.${ticketId}` : `grp.${groupId}.general`
+    const eventName = ticketId ? ".ticket-updated" : ".ticket-changed"
+    const canListen = Boolean(ticketId || groupId)
 
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let missedWhilePaused = false
 
-    const reload = () => router.reload({ only, preserveScroll: true, preserveState: true })
+    const reload = () => router.reload({ ...(only.length ? { only } : {}), preserveScroll: true, preserveState: true })
 
     if (paused) {
         watch(paused, (isPaused) => {
@@ -34,7 +36,11 @@ export const useLiveTickets = (only: string[], reference?: string, paused?: Ref<
     }
 
     const handler = (e: TicketChangedEvent) => {
-        if (reference && e.reference !== reference) {
+        if (!ticketId && reference && e.reference !== reference) {
+            return
+        }
+
+        if (skip?.(e)) {
             return
         }
 
@@ -44,31 +50,29 @@ export const useLiveTickets = (only: string[], reference?: string, paused?: Ref<
         }
 
         clearTimeout(debounceTimer)
-        debounceTimer = setTimeout(() => {
-            router.reload({ only, preserveScroll: true, preserveState: true })
-        }, 800)
+        debounceTimer = setTimeout(reload, 800)
     }
 
     onMounted(() => {
         if (restoredFromHistory) {
             restoredFromHistory = false
-            router.reload({ only, preserveScroll: true, preserveState: true })
+            reload()
         }
 
-        if (!groupId) {
+        if (!canListen) {
             return
         }
 
-        window.Echo.private(channelName).listen(".ticket-changed", handler)
+        window.Echo.private(channelName).listen(eventName, handler)
     })
 
     onBeforeUnmount(() => {
         clearTimeout(debounceTimer)
 
-        if (!groupId) {
+        if (!canListen) {
             return
         }
 
-        window.Echo.private(channelName).stopListening(".ticket-changed", handler)
+        window.Echo.private(channelName).stopListening(eventName, handler)
     })
 }

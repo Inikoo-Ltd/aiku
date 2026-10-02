@@ -8,7 +8,6 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
@@ -25,7 +24,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictProcurementOrderRules;
     use WithNoStrictRules;
@@ -80,7 +78,9 @@ class UpdateStockDelivery extends OrgAction
             EvaluateStockDeliveryCosting::run($stockDelivery);
         }
 
-        RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+        if (!Arr::has($stockDelivery->data, 'costing_reopened')) {
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+        }
     }
 
     public function rules(): array
@@ -131,10 +131,39 @@ class UpdateStockDelivery extends OrgAction
         return $rules;
     }
 
+    /**
+     * Accounts cost stock deliveries, so they may change the invoice rate, and nothing else of the delivery.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+            return true;
+        }
+
+        return array_keys($request->except(['_method', '_token'])) === ['org_exchange']
+            && $request->user()->authTo([
+                "accounting.{$this->organisation->id}.edit",
+                "org-supervisor.{$this->organisation->id}.accounting",
+            ]);
+    }
+
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
         if ($stockDelivery->isManagedByPartner()) {
             throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
+        if ($request->has('org_exchange')) {
+            if ($stockDelivery->is_costed) {
+                throw ValidationException::withMessages(['org_exchange' => __('This stock delivery is costed, an accounting manager can change it with Update costing')]);
+            }
+            if (Arr::has($stockDelivery->data, 'costing_reopened') && !$request->user()->authTo("org-supervisor.{$stockDelivery->organisation_id}.accounting")) {
+                throw ValidationException::withMessages(['org_exchange' => __('Only an accounting manager can change the costing while it is being updated')]);
+            }
         }
 
         $this->stockDelivery = $stockDelivery;

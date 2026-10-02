@@ -135,6 +135,7 @@ return [
         'decision_model' => env('OPENROUTER_DECISION_MODEL', '~typesafe/jev-latest'),
         'low_credit_alert' => (float) env('OPENROUTER_LOW_CREDIT_ALERT', 5),
         // Sent with every request to these models. DeepSeek V4.1 Flash thinks first by default: 40 seconds and five times the price for the same answer.
+        'embedding_model' => env('OPENROUTER_EMBEDDING_MODEL', 'baai/bge-m3'),
         'model_options' => [
             'deepseek/deepseek-v4.1-flash' => ['reasoning' => ['enabled' => false], 'provider' => ['data_collection' => 'deny']],
         ],
@@ -162,6 +163,10 @@ return [
     ],
     'indexnow' => [
         'key' => env('INDEXNOW_KEY'),
+    ],
+    'timesfm' => [
+        'url'   => env('TIMESFM_URL'),
+        'token' => env('TIMESFM_TOKEN'),
     ],
 
 ];

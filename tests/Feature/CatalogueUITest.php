@@ -16,6 +16,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
+use App\Actions\Catalogue\Shop\SalesTarget\ForecastShopSales;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
@@ -23,6 +24,13 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Catalogue\Shop\SalesTarget\GenerateSalesTargetTips;
+use App\Actions\Helpers\AI\AskToAi;
+use App\Models\Catalogue\SalesTargetTip;
+use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -58,6 +66,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Guest;
@@ -1091,13 +1100,83 @@ test('products export links every image as a jpg', function () {
     $firstJpg  = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/first.jpeg')->extension('jpg'));
     $secondJpg = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/second.png')->extension('jpg'));
 
-    expect($firstJpg)->toEndWith('.jpg')
-        ->and($secondJpg)->toEndWith('.jpg')
-        ->and($row)->toBe([$product->code, "$firstJpg, $secondJpg", $firstJpg, $secondJpg, null]);
+    [$code, $images, $firstShort, $secondShort, $thirdShort] = $row;
+
+    expect($code)->toBe($product->code)
+        ->and($images)->toBe("$firstShort, $secondShort")
+        ->and($thirdShort)->toBeNull()
+        ->and($firstShort)->toMatch('#^https?://[^/]+/i/[0-9A-Za-z]{1,11}\.jpg$#')
+        ->and(strlen($firstShort))->toBeLessThan(strlen($firstJpg))
+        ->and(\App\Actions\Helpers\Images\RedirectImageShortUrl::run(basename($firstShort)))->toBe($firstJpg)
+        ->and(\App\Actions\Helpers\Images\RedirectImageShortUrl::run(basename($secondShort)))->toBe($secondJpg)
+        ->and($export->mapRow($export->dataQuery()->where('products.id', $product->id)->first()))->toBe($row);
+
+    $this->get($firstShort)->assertRedirect($firstJpg);
+
+    expect(\App\Actions\Helpers\Images\ShortenImgProxyUrls::code($firstJpg, 0))->not->toBe(\App\Actions\Helpers\Images\ShortenImgProxyUrls::code($firstJpg, 1));
 
     $originalExport = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['image_1']);
     expect($originalExport->mapRow($originalExport->dataQuery()->where('products.id', $product->id)->first()))
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
+});
+
+test('website pages swap imgproxy urls for short signed links that serve the same image', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->organisation->group_id,
+        'ulid'                  => (string) Str::ulid(),
+        'uuid'                  => (string) Str::uuid(),
+        'name'                  => 'shot',
+        'file_name'             => 'a1b2c3d4.jpeg',
+        'mime_type'             => 'image/jpeg',
+        'disk'                  => 'local',
+        'collection_name'       => 'images',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    $image    = fn () => new \App\Helpers\ImgProxy\Image()->make($media->getImgProxyFilename());
+    $original = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image());
+    $thumb    = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image()->resize(0, 600)->extension('avif'));
+    $page     = ['blocks' => [['web_images' => ['original' => $original, 'avif' => $thumb]], ['srcset' => "$thumb 1x, $original 2x"]], 'other' => 'https://media.test/x/y'];
+
+    $website           = new \App\Models\Web\Website(['settings' => []]);
+    $shorten           = fn () => \App\Actions\Helpers\Images\ShortenWebsiteImageUrls::run($page, $website, 'https://www.shop.test/some/page');
+    expect($shorten())->toBe($page);
+
+    $website->settings = ['short_image_urls' => true];
+    $short             = $shorten();
+    $shortThumb        = $short['blocks'][0]['web_images']['avif'];
+    $shortOriginal     = $short['blocks'][0]['web_images']['original'];
+
+    expect($shortThumb)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/0x600\.avif$#')
+        ->and($shortOriginal)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}\.jpeg$#')
+        ->and(strlen($shortThumb))->toBeLessThan(strlen($thumb) - 40)
+        ->and($short['blocks'][1]['srcset'])->toBe("$shortThumb 1x, $shortOriginal 2x")
+        ->and($short['other'])->toBe('https://media.test/x/y');
+
+    $serve = fn (string $short) => \App\Actions\Helpers\Images\ServeWebsiteShortImage::make()->handle(...array_pad(explode('/', Str::after($short, '/i/'), 3), 3, ''));
+    expect($serve($shortThumb))->toBe($thumb)
+        ->and($serve($shortOriginal))->toBe($original)
+        ->and($serve(str_replace('0x600', 'rs::0:600::', $shortThumb)))->toBe($thumb)
+        ->and($serve(str_replace('0x600', '0x1200', $shortThumb)))->toBeNull()
+        ->and($serve(str_replace('.avif', '.png', $shortThumb)))->toBeNull();
+
+    \Illuminate\Support\Facades\Http::fake(['media.test/*' => \Illuminate\Support\Facades\Http::response('avif-bytes', 200, ['Content-Type' => 'image/avif'])]);
+    $this->get(Str::after($shortThumb, 'https://www.shop.test'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/avif')
+        ->assertSee('avif-bytes');
+    $this->get(Str::after($shortOriginal, 'https://www.shop.test'))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === $thumb);
 });
 
 test('products export ends with the weight unit columns', function () {
@@ -1245,7 +1324,10 @@ test('catalogue top of the month links to the department, family and product wit
 });
 
 test('shop top menu links to the target section of the shop dashboard', function () {
-    $target = collect(GetShopNavigation::run($this->shop, $this->user)['dashboard']['topMenu']['subSections'])->filter()->first();
+    $shopNavigation = GetShopNavigation::run($this->shop, $this->user)['dashboard'];
+    $target         = collect($shopNavigation['topMenu']['subSections'])->filter()->first();
+
+    expect($shopNavigation['route']['parameters']['section'])->toBe(ShopDashboardSectionsEnum::TARGET->value);
 
     expect($target['root'])->toBe('grp.org.shops.show.dashboard.show')
         ->and($target['route']['name'])->toBe('grp.org.shops.show.dashboard.show')
@@ -1342,10 +1424,17 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
     $growth = (float) config('marketing.default_sales_target_growth');
     $month  = GetShopMonthSalesTarget::run($this->organisation, $this->user, $today);
 
+    $shopChildren = collect($month['children'])->keyBy('key');
+
     expect($month['sales_so_far'])->toBe(1000.0)
         ->and($month['last_year_so_far'])->toBe(1100.0)
         ->and($month['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
         ->and($month['target']['is_sum_of_shops'])->toBeTrue()
+        ->and($month['selection_setting'])->toBe('organisation_target_shop_'.$this->organisation->id)
+        ->and($shopChildren->has((string) $closedShop->id))->toBeFalse()
+        ->and($shopChildren[(string) $secondShop->id])->toMatchArray(['name' => $secondShop->name, 'sales_so_far' => 700.0, 'last_year_total' => 600.0])
+        ->and($shopChildren[(string) $secondShop->id]['target']['amount'])->toEqualWithDelta(600 * (1 + $growth), 0.05)
+        ->and($shopChildren[(string) $secondShop->id]['link']['parameters'])->toMatchArray(['shop' => $secondShop->slug, 'section' => 'target'])
         ->and($month['can_edit'])->toBeFalse()
         ->and($month['update_route'])->toBeNull()
         ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(3000 * (1 + $growth), 0.05);
@@ -1360,6 +1449,67 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
         ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
 
     $secondShop->update(['state' => ShopStateEnum::CLOSED]);
+});
+
+test('expected month and year end add the TimesFM forecast of the days left, drawn with its likely range, and fall back to last year without one', function () {
+    $shop  = $this->shop;
+    $today = Carbon::parse('2036-05-10', 'UTC');
+
+    $daily = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    for ($day = Carbon::parse('2036-04-01'); $day->lt($today); $day->addDay()) {
+        $daily->records()->updateOrCreate(
+            ['period' => $day->toDateString(), 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+            ['sales_org_currency_external' => $day->day === 3 ? 300 : 50, 'sales_grp_currency_external' => 40]
+        );
+    }
+
+    config(['services.timesfm.url' => 'http://timesfm.test', 'services.timesfm.token' => 'secret']);
+    Http::fake(['timesfm.test/forecast' => fn ($request) => Http::response([
+        'version' => '3',
+        'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], [-20, 40, 60, 80, 100, 120, 140, 160, 220])),
+    ])]);
+
+    expect(ForecastShopSales::run($today))->toBeGreaterThanOrEqual(1);
+
+    Http::assertSent(fn ($request) => $request['horizon'] === 22 && $request->hasHeader('Authorization', 'Bearer secret'));
+    Http::assertSent(fn ($request) => $request['horizon'] === 34);
+
+    $variance = round((220 / 2.563) ** 2, 2);
+    $forecast = $shop->stats->fresh()->sales_forecast;
+    expect($forecast['version'])->toBe('3')
+        ->and($forecast['from'])->toBe('2036-05-10')
+        ->and($forecast['org'])->toHaveCount(22 + 214)
+        ->and($forecast['org']['2036-05-10'])->toEqual([102.22, $variance])
+        ->and($forecast['org']['2036-06-01'])->toEqual([14.6, round($variance / 7, 2)])
+        ->and(array_key_last($forecast['org']))->toBe('2036-12-31');
+
+    $salesSoFar = 300 + 8 * 50;
+    $block      = GetShopMonthSalesTarget::run($shop, null, $today);
+    $line       = $block['chart']['forecast'];
+    expect($block['sales_so_far'])->toEqual($salesSoFar)
+        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+        ->and($line['expected'][8])->toBeNull()
+        ->and($line['expected'][9])->toEqual($salesSoFar)
+        ->and($line['expected'][30])->toEqualWithDelta($block['expected'], 0.01)
+        ->and($line['low'][30])->toBeGreaterThan($salesSoFar)->toBeLessThan($line['expected'][30])
+        ->and($line['high'][30])->toEqualWithDelta($line['expected'][30] + 1.2816 * 1.5 * sqrt(21 * $variance), 0.05);
+
+    $year = GetShopYearSalesTarget::run($shop, null, $today);
+    expect($year['expected'])->toEqualWithDelta($year['sales_so_far'] + 21 * 102.22 + 214 * 14.6, 0.05)
+        ->and($year['chart']['forecast']['expected'][3])->toEqual(round($year['sales_so_far'] - $salesSoFar, 2))
+        ->and($year['chart']['forecast']['expected'][11])->toEqualWithDelta($year['expected'], 0.05)
+        ->and($year['chart']['forecast']['high'][11])->toBeGreaterThan($year['expected']);
+
+    $shopChild = collect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['children'])->firstWhere('key', (string) $shop->id);
+    $nextMonth = GetShopMonthSalesTarget::run($shop, null, Carbon::parse('2036-06-02', 'UTC'));
+    expect($shopChild['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+        ->and($nextMonth['expected'])->toEqual(0)
+        ->and($nextMonth['chart']['forecast'])->toBeNull();
+
+    config(['services.timesfm.url' => null]);
+    expect(ForecastShopSales::run($today))->toBe(0);
+
+    $shop->stats->update(['sales_forecast' => null, 'sales_forecast_hydrated_at' => null]);
 });
 
 test('group target adds up every organisation in the group currency', function () {
@@ -1384,6 +1534,9 @@ test('group target adds up every organisation in the group currency', function (
     expect($month['sales_so_far'])->toBe(900.0)
         ->and($month['last_year_so_far'])->toBe(800.0)
         ->and($month['currency_code'])->toBe($this->group->currency->code)
+        ->and($month['selection_setting'])->toBe('group_target_organisation')
+        ->and(collect($month['children'])->sum('target.amount'))->toEqualWithDelta($month['target']['amount'], 0.05)
+        ->and(collect($month['children'])->firstWhere('key', (string) $this->organisation->id)['currency_code'])->toBe($this->group->currency->code)
         ->and($month['target']['amount'])->toEqualWithDelta(800 * (1 + $growth), 0.05)
         ->and($month['target']['is_sum_of_shops'])->toBeTrue()
         ->and($month['can_edit'])->toBeFalse()
@@ -1391,6 +1544,113 @@ test('group target adds up every organisation in the group currency', function (
 
     get(route('grp.dashboard.show'))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+});
+
+test('a shop selling under several invoice categories targets their sum, partners included, each category taking its share of the shop target until set', function () {
+    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $customer = createCustomer($shop);
+    $today    = Carbon::parse('2038-05-10', 'UTC');
+    $growth   = (float) config('marketing.default_sales_target_growth');
+
+    $category = fn (string $name) => StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => $name,
+        'type'        => InvoiceCategoryTypeEnum::VIP->value,
+        'currency_id' => $this->organisation->currency_id,
+    ]);
+    $retail   = $category('Retail '.uniqid());
+    $partners = $category('Partners '.uniqid());
+
+    $invoice = function (string $date, int $invoiceCategoryId, float $amount) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, [...Invoice::factory()->definition(), 'date' => $date, 'in_process' => false]);
+        DB::table('invoices')->where('id', $invoice->id)->update(['invoice_category_id' => $invoiceCategoryId, 'org_net_amount' => $amount, 'in_process' => false]);
+    };
+    $invoice('2037-05-12', $retail->id, 750);
+    $invoice('2037-05-20', $partners->id, 250);
+    $invoice('2038-05-03', $retail->id, 300);
+    $invoice('2038-05-04', $partners->id, 200);
+
+    $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    $timeSeries->records()->updateOrCreate(['period' => '2037-05-12', 'frequency' => 'D'], ['sales_org_currency_external' => 750, 'sales_org_currency_internal' => 0]);
+    $timeSeries->records()->updateOrCreate(['period' => '2037-05-20', 'frequency' => 'D'], ['sales_org_currency_external' => 0, 'sales_org_currency_internal' => 250]);
+    $timeSeries->records()->updateOrCreate(['period' => '2038-05-03', 'frequency' => 'D'], ['sales_org_currency_external' => 300, 'sales_org_currency_internal' => 0]);
+    $timeSeries->records()->updateOrCreate(['period' => '2038-05-04', 'frequency' => 'D'], ['sales_org_currency_external' => 0, 'sales_org_currency_internal' => 200]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+    $byCategory = collect($block['children'])->keyBy('invoice_category_id');
+
+    expect($block['sales_so_far'])->toBe(500.0)
+        ->and($block['last_year_total'])->toBe(1000.0)
+        ->and($block['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($block['target']['is_sum_of_categories'])->toBeTrue()
+        ->and($block['selected_child'])->toBe('all')
+        ->and($block['selection_setting'])->toBe('shop_target_category_'.$shop->id)
+        ->and($byCategory[$retail->id])->toMatchArray(['key' => (string) $retail->id, 'name' => $retail->name, 'sales_so_far' => 300.0, 'last_year_total' => 750.0, 'can_edit' => true])
+        ->and($byCategory[$retail->id]['target']['is_share'])->toBeTrue()
+        ->and($byCategory[$retail->id]['chart']['this_year'])->toHaveCount(10)
+        ->and($byCategory[$retail->id]['target']['amount'])->toEqualWithDelta(750 * (1 + $growth), 0.05)
+        ->and($byCategory[$partners->id]['target']['amount'])->toEqualWithDelta(250 * (1 + $growth), 0.05);
+
+    $organisationTarget = GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'];
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 500, 'month' => '2038-05', 'invoice_category_id' => $partners->id]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['amount'])->toEqualWithDelta(750 * (1 + $growth) + 500, 0.05)
+        ->and(collect($block['children'])->firstWhere('invoice_category_id', $partners->id)['target'])->toMatchArray(['amount' => 500.0, 'is_share' => false])
+        ->and(GetShopMonthSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta($organisationTarget + 500 - 250 * (1 + $growth), 0.05);
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 2000, 'month' => '2038-05']);
+
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['children'])->firstWhere('invoice_category_id', $retail->id)['target']['amount'])->toEqualWithDelta(1500, 0.05)
+        ->and(GetShopYearSalesTarget::run($shop, null, $today)['target']['months_set'])->toBe(1);
+
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['shop_target_category_'.$shop->id => (string) $partners->id]])->assertSuccessful();
+
+    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
+
+    $movedToOwnShop = $category('Faire '.uniqid());
+    DB::table('invoice_categories')->where('id', $movedToOwnShop->id)->update(['settings' => json_encode(['shop_ids' => [$shop->id + 1000]])]);
+    $invoice('2037-05-15', $movedToOwnShop->id, 400);
+    Cache::tags(["dashboard-shop-$shop->id"])->flush();
+
+    expect(collect(GetShopMonthSalesTarget::run($shop, null, $today)['children'])->pluck('invoice_category_id'))->not->toContain($movedToOwnShop->id);
+
+    $shop->stats->update(['sales_forecast' => ['version' => '3', 'from' => '2038-05-10', 'org' => collect(range(10, 31))->mapWithKeys(fn (int $day) => [sprintf('2038-05-%02d', $day) => [10.0, 4.0]])->all(), 'grp' => null]]);
+    $block      = GetShopMonthSalesTarget::run($shop, null, $today);
+    $byCategory = collect($block['children'])->keyBy('invoice_category_id');
+
+    expect($block['expected'])->toEqual(500 + 21 * 10)
+        ->and(array_sum(array_column($block['children'], 'expected')))->toEqualWithDelta(500 + 21 * 10, 0.01)
+        ->and($byCategory[$retail->id]['expected'])->toEqualWithDelta(300 + 210 * 630 / 1050, 0.01);
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
+});
+
+test('each morning a tip on reaching the target is written for the shop and shown on its target block', function () {
+    $shop  = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $today = Carbon::parse('2039-05-06', 'UTC');
+
+    ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY])
+        ->records()->updateOrCreate(['period' => '2038-05-12', 'frequency' => 'D'], ['sales_org_currency_external' => 1000]);
+
+    AskToAi::shouldRun()->once()->andReturn('Call the customers due to reorder today.');
+
+    expect(GenerateSalesTargetTips::run($shop, $today))->toBe(1);
+
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $tip    = SalesTargetTip::where('shop_id', $shop->id)->sole();
+    $block  = GetShopMonthSalesTarget::run($shop, null, $today);
+
+    expect($tip->invoice_category_id)->toBeNull()
+        ->and($tip->facts['target'])->toEqualWithDelta(1000 * (1 + $growth), 0.05)
+        ->and($tip->facts)->toHaveKeys(['customers_due_to_reorder_within_a_week', 'open_baskets_amount', 'customers_who_bought_same_month_last_year_not_yet_this_month'])
+        ->and($block['tip'])->toBe('Call the customers due to reorder today.')
+        ->and($block['needed_per_day'])->toEqualWithDelta(1000 * (1 + $growth) / 25, 0.05)
+        ->and($block['needed_this_week'])->toEqualWithDelta(1000 * (1 + $growth) * 3 / 26, 0.05)
+        ->and(GetShopMonthSalesTarget::run($shop, null, $today->copy()->addDay())['tip'])->toBeNull();
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
 });
 
 test('group warehouse overview derives its numbers from the hydrated stats', function () {

@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
+use App\Actions\Helpers\Images\RedirectImageShortUrl;
+use App\Actions\Helpers\Images\ServeWebsiteShortImage;
 use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
@@ -88,6 +90,15 @@ class RouteServiceProvider extends ServiceProvider
         ->prefix('app/api')
         ->name('grp.api.')
         ->group(base_path('routes/api/grp/grp_api.php'));
+
+        Route::domain(config('app.domain'))
+            ->get('i/{code}', RedirectImageShortUrl::class)
+            ->where('code', '[0-9A-Za-z]+(\.[a-z0-9]{2,4})?')
+            ->name('image_short_url');
+
+        Route::get('i/{id}/{signature}/{optionsAndExtension?}', ServeWebsiteShortImage::class)
+            ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}(\.[a-z0-9]{2,4})?', 'optionsAndExtension' => '(rs:[0-9a-z:]*|[0-9]*x[0-9]*)(\.[a-z0-9]{2,4})?'])
+            ->name('website_short_image');
 
         Route::middleware('analytics')
             ->name('analytics.')

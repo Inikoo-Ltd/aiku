@@ -265,7 +265,7 @@ test('add 2nd image to product', function () {
 
 test('pictures go to marketplaces main image first, then in the order arranged on the product', function () {
     $product = $this->product;
-    $media   = collect(range(1, 3))->map(fn (int $i) => Media::create([
+    $media   = collect(range(1, 4))->map(fn (int $i) => Media::create([
         'group_id'              => $product->group_id,
         'ulid'                  => \Illuminate\Support\Str::ulid(),
         'name'                  => "order-$i",
@@ -283,6 +283,7 @@ test('pictures go to marketplaces main image first, then in the order arranged o
         $media[2]->id => ['position' => 1, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
         $media[0]->id => ['position' => 3, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
         $media[1]->id => ['position' => 2, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
+        $media[3]->id => ['position' => 0, 'scope' => 'audio', 'group_id' => $product->group_id, 'data' => '{}'],
     ]);
     $previousImageId = $product->image_id;
     $product->update(['image_id' => $media[1]->id]);
@@ -1376,4 +1377,21 @@ test('customer downloads the signed letter of authorisation from account setting
         ->assertHeader('Content-Type', 'application/pdf');
     $this->get(route('retina.sysadmin.settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'retina.sysadmin.letter_of_authorisation.pdf'));
+});
+
+test('an ebay match that crashes marks its upload log failed instead of leaving it processing', function () {
+    Http::fake(fn ($request) => str_contains($request->url(), 'oauth2/token')
+        ? Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200])
+        : Http::response([]));
+
+    $ebayUser  = storeConnectedEbayUser($this->customer, 'test-ebay-match-crash');
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    CheckEbayPortfolio::shouldRun()->andThrow(new RuntimeException('eBay match crashed'));
+
+    expect(fn () => \App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct::run($portfolio, ['platform_product_id' => 'abc-1']))
+        ->toThrow(RuntimeException::class, 'eBay match crashed');
+
+    $log = \App\Models\Dropshipping\PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->first();
+    expect($log->status)->toBe(\App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum::FAIL)
+        ->and($log->response)->toContain('eBay match crashed');
 });

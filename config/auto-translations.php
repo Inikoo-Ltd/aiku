@@ -30,6 +30,10 @@ return [
     'source_language' => 'en',
     'default_driver'  => 'sonnet',
 
+    'keep_in_english' => ['Green Man', 'Pocket Pod'],
+    'terms_model'     => 'anthropic/claude-sonnet-5.5',
+    'terms_in_brief'  => false,
+
     'drivers' => [
         'sonnet' => [
             'class'           => ChatGPT5Driver::class,

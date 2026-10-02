@@ -13,11 +13,6 @@ defineProps<{
     pageHeading: object
     data: any
     organisationSlug?: string
-    routes?: {
-        delete?: string
-        restore?: string
-        force_delete?: string
-    }
 }>()
 
 const waitEchoReady = (callback: Function) => {

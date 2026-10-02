@@ -12,7 +12,7 @@ No passwords, tokens or IP addresses belong on this page: the repo is public.
 |---|---|
 | **boro** | Postgres primary. Queue Redis (own instance, never evicts). Database backups. The light, customer-facing Horizon queues, at low CPU priority so the database always comes first. The scheduler. The standby web node: HAProxy, Varnish, Octane and SSR stay installed and deployed, idling on a few workers. |
 | **litio** | Web: HAProxy, Varnish, Octane, Inertia SSR. Cache and session Redis. Postgres replica (the failover target, also serving web reads). The heavy Horizon queues, under a hard memory cap. The scheduler. Staging, with small caps, stopped whenever litio has to take over from boro. Aurora, until it is retired. |
-| **helio** | No production role. The CI runner, fenced off from everything else. NightOwl monitoring (its own Postgres, low disk priority). The WordPress sites. |
+| **helio** | No production role. The CI runner, fenced off from everything else. NightOwl monitoring (its own Postgres, low disk priority). The WordPress sites. The forecast service (TimesFM), which the nightly forecasts call; it runs on litio until litio takes over the web. |
 
 litio and boro have the same processors and disks, which is why litio is the failover for the
 database. litio has less memory, so as the primary it runs slower until boro is back.
@@ -123,6 +123,7 @@ The site stays up.
 - CI stops. Merge nothing that has not passed.
 - NightOwl telemetry buffers on each server for a while, then drops. Nothing in the app depends on it.
 - The WordPress sites are down.
+- The nightly forecasts are skipped. Dashboards keep the last forecast for the month, or fall back to last year's pattern.
 
 ## When several fail together
 

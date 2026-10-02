@@ -505,6 +505,11 @@ class IndexProductsInCatalogue extends OrgAction
                 'products_export'              => $this->getProductsExport($shop),
                 'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
+                'bulk_set_active_route'        => $this->bucket == 'in_process' && $this->canEdit ? [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.product.bulk_set_active',
+                    'parameters' => ['shop' => $shop->id],
+                ] : null,
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

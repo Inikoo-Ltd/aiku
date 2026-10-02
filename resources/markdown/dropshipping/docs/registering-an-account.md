@@ -6,6 +6,7 @@ tags: register, sign up, account, google, login
 category: account
 help_routes: retina.register, retina.register_standalone, retina.register_from_google, retina.login.show, retina.sysadmin.settings.edit
 shops: awd, dssk, dse
+videos: 1126154599
 ---
 
 <aside class="tldr">

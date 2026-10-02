@@ -31,7 +31,7 @@ class UpdateProfile extends OrgAction
     use WithActionUpdate;
     use WithProfile;
 
-    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting'];
+    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting', 'ticket'];
 
     public function handle(User $user, array $modelData): User
     {
@@ -224,7 +224,7 @@ class UpdateProfile extends OrgAction
             'order_alerts.types.*.sound'  => ['sometimes', Rule::in(OrderAlertTypeEnum::SOUNDS)],
             'order_alerts.types.*.muted'  => ['sometimes', 'boolean'],
             'order_alerts.popup.show'     => ['sometimes', 'boolean'],
-            'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'silent'])],
+            'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'triumph', 'gong', 'sparkle', 'knock', 'genie', 'silent'])],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],
             'notifications.*.*' => [Rule::in(UserNotificationEnum::CHANNELS)],

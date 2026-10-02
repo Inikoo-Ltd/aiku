@@ -157,7 +157,7 @@ class IndexPartnerShippingList extends OrgAction
         }
 
 
-        return $queryBuilder
+        $queryBuilder
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.job_order_id',
@@ -197,8 +197,13 @@ class IndexPartnerShippingList extends OrgAction
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
-            ->withPaginator(null, $this->groupBy === 'mixes' ? 1 : ($this->groupBy ? 10000 : null), tableName: request()->route()->getName())
+            ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at']);
+
+        $paginator = $this->groupBy && $this->groupBy !== 'mixes'
+            ? $queryBuilder->paginate(perPage: 10000)
+            : $queryBuilder->withPaginator(null, $this->groupBy === 'mixes' ? 1 : null, tableName: request()->route()->getName());
+
+        return $paginator
             ->withQueryString()
             ->through(function ($item) {
                 $item->job_units = BatchedUnitsForDemand::run(

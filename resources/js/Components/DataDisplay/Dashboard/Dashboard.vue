@@ -5,7 +5,7 @@ import DashboardWidget from "./DashboardWidget.vue"
 import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import ShopDashboardWidgets from "./ShopDashboardWidgets.vue"
 import { ref, provide, computed, onMounted } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -48,6 +48,9 @@ provide("dashboardTabActive", dashboardTabActive)
 const isLoadingOnTable = ref(false)
 provide("isLoadingOnTable", isLoadingOnTable)
 
+const failedTableTab = ref<string | null>(null)
+provide("failedTableTab", failedTableTab)
+
 const widgetsInterval = ref(props.dashboard?.super_blocks?.[0]?.intervals?.value ?? 'all')
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
@@ -65,6 +68,7 @@ const fetchDashboardTabData = async (tabSlug: string, force: boolean = false): P
     }
 
     isLoadingOnTable.value = true
+    failedTableTab.value = null
     try {
         const { data } = await axios.get(route(fetchRoute.name, fetchRoute.parameters ?? {}), {
             params: { tab: tabSlug },
@@ -77,6 +81,8 @@ const fetchDashboardTabData = async (tabSlug: string, force: boolean = false): P
                 [data.tab]: data.table,
             })
         }
+    } catch {
+        failedTableTab.value = tabSlug
     } finally {
         isLoadingOnTable.value = false
     }
@@ -124,9 +130,16 @@ const loadSectionTable = () => {
 
 const onChangeSection = (section: string) => {
     currentSection.value = section
+    const url = new URL(window.location.href)
+    url.searchParams.set("section", section)
     axios.patch(route("grp.models.profile.update"), { settings: { shop_dashboard_section: section } })
     loadSectionTable()
-    emit("sectionChanged", section)
+    router.replace({
+        url: url.pathname + url.search,
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => emit("sectionChanged", section),
+    })
 }
 
 onMounted(() => {
@@ -147,7 +160,7 @@ onMounted(() => {
         />
 
         <KeepAlive v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.tabs_box">
-            <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
+            <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
         </KeepAlive>
 
         <ShopMonthBriefing

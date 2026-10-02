@@ -5,9 +5,14 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRedoAlt, faShoppingBasket, faGift, faBell, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy } from "@fal"
+import { faRedoAlt, faShoppingBasket, faGift, faBell, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy, faChevronLeft, faChevronRight } from "@fal"
 import { faBell as fasBell } from "@fas"
+import { Swiper, SwiperSlide } from "swiper/vue"
+import "swiper/css"
+import type { Swiper as SwiperInstance } from "swiper"
 import Image from "@common/Components/Image.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ProductCardEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -251,7 +256,7 @@ const stockChip = (status: StockStatus) => {
         case "out_of_stock":
             return { label: ctrans("Awaiting stock"), class: "bg-sky-50 text-sky-800 ring-sky-600/20" }
         case "unavailable":
-            return { label: ctrans("No longer available"), class: "bg-stone-100 text-stone-600 ring-stone-500/20" }
+            return { label: ctrans("No longer available"), class: "bg-gray-100 text-gray-600 ring-gray-500/20" }
         default:
             return { label: ctrans("In stock"), class: "bg-emerald-50 text-emerald-800 ring-emerald-600/20" }
     }
@@ -310,6 +315,56 @@ const toggleReminder = async (favourite: { id: number, has_reminder: boolean }) 
     } finally {
         togglingReminderIds.value = togglingReminderIds.value.filter((id) => id !== favourite.id)
     }
+}
+
+const recommendationsBreakpoints = {
+    0: { slidesPerView: 1.6, slidesPerGroup: 1, spaceBetween: 12 },
+    480: { slidesPerView: 2.3, slidesPerGroup: 2, spaceBetween: 16 },
+    760: { slidesPerView: 4, slidesPerGroup: 3, spaceBetween: 20 },
+    1000: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 24 },
+    1300: { slidesPerView: 5, slidesPerGroup: 5, spaceBetween: 24 },
+}
+
+const recommendationsSwiper = ref<SwiperInstance | null>(null)
+const isRecommendationsSwipeable = ref(false)
+
+const syncRecommendationsNavigation = (swiper: SwiperInstance) => {
+    isRecommendationsSwipeable.value = !swiper.isLocked
+}
+
+const onRecommendationsSwiperReady = (swiper: SwiperInstance) => {
+    recommendationsSwiper.value = swiper
+    syncRecommendationsNavigation(swiper)
+}
+
+const togglingFavouriteIds = ref<number[]>([])
+
+const toggleRecommendationFavourite = async (product: { id: number, is_favourite: boolean }) => {
+    if (props.readOnly || togglingFavouriteIds.value.includes(product.id)) return
+    togglingFavouriteIds.value.push(product.id)
+    try {
+        if (product.is_favourite) {
+            await axios.delete(route("retina.models.product.unfavourite", { product: product.id }))
+        } else {
+            await axios.post(route("retina.models.product.favourite", { product: product.id }))
+        }
+        product.is_favourite = !product.is_favourite
+        layout?.reload_handle?.()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Please try again"),
+            type: "error",
+        })
+    } finally {
+        togglingFavouriteIds.value = togglingFavouriteIds.value.filter((id) => id !== product.id)
+    }
+}
+
+const toggleRecommendationBackInStock = async (product: { id: number, is_back_in_stock: boolean }) => {
+    const reminder = { id: product.id, has_reminder: product.is_back_in_stock }
+    await toggleReminder(reminder)
+    product.is_back_in_stock = reminder.has_reminder
 }
 
 const repeatingOrderId = ref<number | null>(null)
@@ -378,8 +433,8 @@ const copyVoucherCode = async (code: string) => {
 
 const orderStateChip = (state: string) => {
     if (["dispatched", "finalised"].includes(state)) return "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
-    if (state === "cancelled") return "bg-stone-100 text-stone-600 ring-stone-500/20"
-    return "bg-[#f8efe4] text-[#7a4f33] ring-[#a0694a]/20"
+    if (state === "cancelled") return "bg-gray-100 text-gray-600 ring-gray-500/20"
+    return "bg-blue-50 text-blue-700 ring-blue-600/20"
 }
 
 const recommendationsTitle = computed(() => props.insights.recommendations_source === "shop_best_sellers"
@@ -414,48 +469,46 @@ const overview = computed(() => {
 </script>
 
 <template>
-    <div class="b2b-dashboard space-y-8 font-['Raleway',_ui-sans-serif,_system-ui,_sans-serif] text-stone-800">
+    <div class="space-y-6 text-gray-700">
         <header>
-            <h2 class="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">{{ heading.title }}</h2>
-            <p class="mt-1 text-stone-600">{{ heading.subtitle }}</p>
+            <h2 class="text-2xl font-semibold tracking-tight text-gray-900">{{ heading.title }}</h2>
+            <p class="mt-1 text-gray-500">{{ heading.subtitle }}</p>
         </header>
 
-        <div v-if="isLapsed && lastOrder" class="flex flex-col gap-3 rounded-lg bg-[#f8efe4] px-4 py-3 sm:flex-row sm:items-center">
-            <p class="flex flex-1 items-center gap-3 font-medium text-[#7a4f33]">
-                <FontAwesomeIcon :icon="faRedoAlt" class="text-[#a0694a]" fixed-width aria-hidden="true" />
+        <div v-if="isLapsed && lastOrder" class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center">
+            <p class="flex flex-1 items-center gap-3 text-sm font-medium text-gray-700">
+                <FontAwesomeIcon :icon="faRedoAlt" class="text-gray-500" fixed-width aria-hidden="true" />
                 {{ ctrans("Pick up where you left off: your last order was :reference on :date.", { reference: lastOrder.reference, date: shortDate(lastOrder.date) }) }}
             </p>
-            <button
-                type="button"
-                class="inline-flex items-center justify-center gap-2 rounded-md bg-[#a0694a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
-                :disabled="readOnly || repeatingOrderId === lastOrder.id"
+            <Button
+                :label="ctrans('Repeat this order')"
+                :icon="faRedoAlt"
+                :loading="repeatingOrderId === lastOrder.id"
+                :disabled="readOnly"
                 @click="repeatOrder(lastOrder)"
-            >
-                <FontAwesomeIcon :icon="faRedoAlt" fixed-width aria-hidden="true" :spin="repeatingOrderId === lastOrder.id" />
-                {{ ctrans("Repeat this order") }}
-            </button>
+            />
         </div>
-        <div v-else-if="insights.gold_reward" class="flex flex-col gap-1 rounded-lg bg-[#f8efe4] px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
-            <p class="flex items-center gap-3 font-semibold text-[#7a4f33]">
-                <FontAwesomeIcon :icon="faGift" class="text-[#a0694a]" fixed-width aria-hidden="true" />
+        <div v-else-if="insights.gold_reward" class="flex flex-col gap-1 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm sm:flex-row sm:items-center sm:gap-3">
+            <p class="flex items-center gap-3 font-semibold text-gray-900">
+                <FontAwesomeIcon :icon="faGift" class="text-yellow-600" fixed-width aria-hidden="true" />
                 {{ insights.gold_reward.label }}
             </p>
-            <p class="text-[#7a4f33] sm:before:mr-3 sm:before:content-['·']">
+            <p class="text-gray-600 sm:before:mr-3 sm:before:content-['·']">
                 {{ goldRewardDaysLeft(insights.gold_reward.days_left) }} · {{ ctrans("Expires :date", { date: longDate(insights.gold_reward.expires_at) }) }}
             </p>
         </div>
 
-        <ul v-if="insights.vouchers?.length" class="divide-y divide-[#a0694a]/15 rounded-lg border border-dashed border-[#a0694a]/40">
+        <ul v-if="insights.vouchers?.length" class="divide-y divide-gray-200 rounded-lg border border-dashed border-gray-400">
             <li v-for="voucher in insights.vouchers" :key="voucher.code" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-                <FontAwesomeIcon :icon="faTicketAlt" class="text-[#a0694a]" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faTicketAlt" class="text-gray-500" fixed-width aria-hidden="true" />
                 <div class="min-w-0 flex-1">
-                    <p class="font-semibold text-[#7a4f33]">{{ voucher.name }}</p>
-                    <p v-if="voucherBenefit(voucher)" class="text-sm text-stone-600">{{ voucherBenefit(voucher) }}</p>
-                    <p v-if="voucher.expires_at" class="text-xs text-stone-500">{{ ctrans("Ends :date", { date: shortDate(voucher.expires_at) }) }}</p>
+                    <p class="font-semibold text-gray-900">{{ voucher.name }}</p>
+                    <p v-if="voucherBenefit(voucher)" class="text-sm text-gray-600">{{ voucherBenefit(voucher) }}</p>
+                    <p v-if="voucher.expires_at" class="text-xs text-gray-500">{{ ctrans("Ends :date", { date: shortDate(voucher.expires_at) }) }}</p>
                 </div>
                 <button
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-md bg-[#f8efe4] px-3 py-1.5 font-mono text-sm font-semibold tracking-wide text-[#7a4f33] hover:bg-[#f1e2cf]"
+                    class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 font-mono text-sm font-semibold tracking-wide text-gray-700 hover:bg-gray-100"
                     :aria-label="ctrans('Copy voucher code :code', { code: voucher.code })"
                     @click="copyVoucherCode(voucher.code)"
                 >
@@ -466,211 +519,260 @@ const overview = computed(() => {
             </li>
         </ul>
 
-        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:divide-x lg:divide-stone-200">
-            <section v-if="orderAgainRows.length" class="lg:col-span-2">
-                <h3 class="text-xl font-bold text-stone-900">{{ isLapsed ? ctrans("Review and order again") : ctrans("Order again") }}</h3>
-                <p class="text-sm text-stone-500">{{ ctrans("Your most ordered products. Check the quantity and add them to your basket.") }}</p>
+        <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+            <section v-if="orderAgainRows.length" class="overflow-hidden rounded-lg border border-gray-200 lg:col-span-2">
+                <div class="border-b border-gray-200 bg-gray-50 px-4 py-2">
+                    <h3 class="text-base font-semibold text-gray-900">{{ isLapsed ? ctrans("Review and order again") : ctrans("Order again") }}</h3>
+                    <p class="text-xs text-gray-500">{{ ctrans("Your most ordered products. Check the quantity and add them to your basket.") }}</p>
+                </div>
 
-                <Select
-                    v-if="pickerOptions.length"
-                    :modelValue="null"
-                    :options="pickerOptions"
-                    optionValue="id"
-                    optionLabel="name"
-                    filter
-                    :filterFields="['code', 'name']"
-                    :placeholder="ctrans('Find a product you have ordered before')"
-                    :disabled="readOnly"
-                    class="mt-3 w-full"
-                    @update:modelValue="pickProduct"
-                >
-                    <template #option="{ option }">
-                        <span class="truncate">{{ option.name }}</span>
-                        <span class="ml-2 flex-none text-xs text-stone-500">{{ option.code }}</span>
-                    </template>
-                </Select>
+                <div class="px-4 pb-4">
+                    <Select
+                        v-if="pickerOptions.length"
+                        :modelValue="null"
+                        :options="pickerOptions"
+                        optionValue="id"
+                        optionLabel="name"
+                        filter
+                        :filterFields="['code', 'name']"
+                        :placeholder="ctrans('Find a product you have ordered before')"
+                        :disabled="readOnly"
+                        class="mt-3 w-full"
+                        @update:modelValue="pickProduct"
+                    >
+                        <template #option="{ option }">
+                            <span class="truncate">{{ option.name }}</span>
+                            <span class="ml-2 flex-none text-xs text-gray-500">{{ option.code }}</span>
+                        </template>
+                    </Select>
 
-                <ul class="mt-3 divide-y divide-stone-200">
-                    <li v-for="regular in orderAgainRows" :key="regular.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:flex-nowrap">
-                        <div class="h-14 w-14 flex-none overflow-hidden rounded-md bg-stone-50" :class="{ 'opacity-60': regular.stock_status === 'out_of_stock' }">
-                            <Image v-if="regular.image" :src="regular.image" :alt="regular.name" class="h-full w-full object-contain" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <a v-if="regular.url && !readOnly" :href="regular.url" class="block truncate font-medium text-stone-900 hover:underline">{{ regular.name }}</a>
-                            <span v-else class="block truncate font-medium text-stone-900">{{ regular.name }}</span>
-                            <p class="text-xs text-stone-500">
-                                {{ regular.code }} · {{ packLine(regular.price, regular.units, regular.unit) }}
-                            </p>
-                            <p class="text-xs" :class="regular.stock_status === 'low' ? 'font-medium text-amber-800' : 'text-stone-500'">{{ rowHint(regular) }}</p>
-                        </div>
-                        <span class="hidden whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset md:inline-flex" :class="stockChip(regular.stock_status).class">
-                            {{ stockChip(regular.stock_status).label }}
-                        </span>
-
-                        <div v-if="inBasket(regular)" class="flex w-full items-center justify-end gap-1 whitespace-nowrap text-sm font-medium text-emerald-800 sm:w-auto">
-                            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-                            {{ ctrans(":count in basket", { count: String(inBasket(regular)) }) }}
-                        </div>
-                        <div v-else-if="canAdd(regular)" class="flex w-full items-center justify-end gap-2 sm:w-auto">
-                            <div class="flex items-center rounded-md border border-stone-300 focus-within:ring-2 focus-within:ring-[#a0694a]">
-                                <button
-                                    type="button"
-                                    class="min-h-11 min-w-11 px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
-                                    :aria-label="ctrans('Decrease quantity')"
-                                    :disabled="readOnly"
-                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), -1, maxQuantity(regular))"
-                                >
-                                    <FontAwesomeIcon :icon="faMinus" fixed-width aria-hidden="true" />
-                                </button>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    :max="maxQuantity(regular) || undefined"
-                                    :value="quantityFor(regular.id, suggestedQuantity(regular))"
-                                    :aria-label="ctrans('Quantity for :product', { product: regular.name })"
-                                    :disabled="readOnly"
-                                    class="w-12 border-0 p-0 text-center text-sm tabular-nums focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-                                    @change="setQuantity(regular.id, $event.target as HTMLInputElement, maxQuantity(regular))"
-                                />
-                                <button
-                                    type="button"
-                                    class="min-h-11 min-w-11 px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
-                                    :aria-label="ctrans('Increase quantity')"
-                                    :disabled="readOnly"
-                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), 1, maxQuantity(regular))"
-                                >
-                                    <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
-                                </button>
+                    <ul class="mt-3 divide-y divide-gray-100">
+                        <li v-for="regular in orderAgainRows" :key="regular.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:flex-nowrap">
+                            <div class="h-14 w-14 flex-none overflow-hidden rounded-md border border-gray-200 bg-white" :class="{ 'opacity-60': regular.stock_status === 'out_of_stock' }">
+                                <Image v-if="regular.image" :src="regular.image" :alt="regular.name" class="h-full w-full object-contain" />
                             </div>
-                            <button
-                                type="button"
-                                class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#a0694a] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
-                                :disabled="readOnly || addingProductIds.includes(regular.id)"
-                                @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)))"
-                            >
-                                <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
-                                {{ ctrans("Add") }}
-                            </button>
-                        </div>
-                        <button
-                            v-else-if="regular.stock_status === 'out_of_stock'"
-                            type="button"
-                            class="inline-flex flex-none items-center gap-1.5 rounded-md border border-[#a0694a] px-2.5 py-1.5 text-xs font-semibold text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
-                            :aria-pressed="regular.has_reminder"
-                            :disabled="readOnly || togglingReminderIds.includes(regular.id)"
-                            @click="toggleReminder(regular)"
-                        >
-                            <FontAwesomeIcon :icon="regular.has_reminder ? fasBell : faBell" fixed-width aria-hidden="true" />
-                            {{ regular.has_reminder ? ctrans("Notifying you") : ctrans("Notify me") }}
-                        </button>
-                        <span v-else class="w-full text-right text-xs text-stone-500 sm:w-auto">{{ ctrans("Not available to order") }}</span>
-                    </li>
-                </ul>
+                            <div class="min-w-0 flex-1">
+                                <a v-if="regular.url && !readOnly" :href="regular.url" class="block truncate text-sm font-semibold text-gray-900 hover:underline">{{ regular.name }}</a>
+                                <span v-else class="block truncate text-sm font-semibold text-gray-900">{{ regular.name }}</span>
+                                <p class="text-xs text-gray-500">
+                                    {{ regular.code }} · {{ packLine(regular.price, regular.units, regular.unit) }}
+                                </p>
+                                <p class="text-xs" :class="regular.stock_status === 'low' ? 'font-medium text-amber-700' : 'text-gray-500'">{{ rowHint(regular) }}</p>
+                            </div>
+                            <span class="hidden whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset md:inline-flex" :class="stockChip(regular.stock_status).class">
+                                {{ stockChip(regular.stock_status).label }}
+                            </span>
 
-                <Link v-if="!readOnly" :href="route('retina.ecom.interest.previously_ordered.index')" class="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#8a5a3e] underline-offset-4 hover:underline">
-                    {{ ctrans("View all purchased products") }}
-                    <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />
-                </Link>
+                            <div v-if="inBasket(regular)" class="flex w-full items-center justify-end gap-1 whitespace-nowrap text-sm font-medium text-green-600 sm:w-auto">
+                                <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                                {{ ctrans(":count in basket", { count: String(inBasket(regular)) }) }}
+                            </div>
+                            <div v-else-if="canAdd(regular)" class="flex w-full items-center justify-end gap-2 sm:w-auto">
+                                <div class="flex items-center rounded-md border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-gray-400">
+                                    <button
+                                        type="button"
+                                        class="px-2.5 py-2 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                                        :aria-label="ctrans('Decrease quantity')"
+                                        :disabled="readOnly"
+                                        @click="stepQuantity(regular.id, suggestedQuantity(regular), -1, maxQuantity(regular))"
+                                    >
+                                        <FontAwesomeIcon :icon="faMinus" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        :max="maxQuantity(regular) || undefined"
+                                        :value="quantityFor(regular.id, suggestedQuantity(regular))"
+                                        :aria-label="ctrans('Quantity for :product', { product: regular.name })"
+                                        :disabled="readOnly"
+                                        class="w-12 border-0 p-0 text-center text-sm tabular-nums focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                                        @change="setQuantity(regular.id, $event.target as HTMLInputElement, maxQuantity(regular))"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="px-2.5 py-2 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                                        :aria-label="ctrans('Increase quantity')"
+                                        :disabled="readOnly"
+                                        @click="stepQuantity(regular.id, suggestedQuantity(regular), 1, maxQuantity(regular))"
+                                    >
+                                        <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
+                                    </button>
+                                </div>
+                                <Button
+                                    :label="ctrans('Add')"
+                                    :icon="faShoppingBasket"
+                                    :loading="addingProductIds.includes(regular.id)"
+                                    :disabled="readOnly"
+                                    @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)))"
+                                />
+                            </div>
+                            <Button
+                                v-else-if="regular.stock_status === 'out_of_stock'"
+                                type="tertiary"
+                                size="xs"
+                                :label="regular.has_reminder ? ctrans('Notifying you') : ctrans('Notify me')"
+                                :icon="regular.has_reminder ? fasBell : faBell"
+                                :aria-pressed="regular.has_reminder"
+                                :loading="togglingReminderIds.includes(regular.id)"
+                                :disabled="readOnly"
+                                @click="toggleReminder(regular)"
+                            />
+                            <span v-else class="w-full text-right text-xs text-gray-500 sm:w-auto">{{ ctrans("Not available to order") }}</span>
+                        </li>
+                    </ul>
+
+                    <Link v-if="!readOnly" :href="route('retina.ecom.interest.previously_ordered.index')" class="mt-2 inline-flex items-center gap-2 text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline">
+                        {{ ctrans("View all purchased products") }}
+                        <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />
+                    </Link>
+                </div>
             </section>
 
-            <section :class="orderAgainRows.length ? 'lg:pl-8' : 'lg:col-span-3'">
-                <h3 class="text-xl font-bold text-stone-900">{{ ctrans("Favourites and watchlist") }}</h3>
-                <template v-if="insights.favourites.length">
-                    <p class="text-sm text-stone-500">{{ ctrans("Your saved products.") }}</p>
-                    <ul class="mt-3 divide-y divide-stone-200">
+            <section class="overflow-hidden rounded-lg border border-gray-200" :class="{ 'lg:col-span-3': !orderAgainRows.length }">
+                <div class="border-b border-gray-200 bg-gray-50 px-4 py-2">
+                    <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Favourites and watchlist") }}</h3>
+                    <p v-if="insights.favourites.length" class="text-xs text-gray-500">{{ ctrans("Your saved products.") }}</p>
+                </div>
+                <div v-if="insights.favourites.length" class="px-4 pb-4">
+                    <ul class="divide-y divide-gray-100">
                         <li v-for="favourite in insights.favourites" :key="favourite.id" class="flex items-center gap-3 py-3">
-                            <div class="h-12 w-12 flex-none overflow-hidden rounded-md bg-stone-50">
+                            <div class="h-12 w-12 flex-none overflow-hidden rounded-md border border-gray-200 bg-white">
                                 <Image v-if="favourite.image" :src="favourite.image" :alt="favourite.name" class="h-full w-full object-contain" />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <a v-if="favourite.url && !readOnly" :href="favourite.url" class="block truncate text-sm font-medium text-stone-900 hover:underline">{{ favourite.name }}</a>
-                                <span v-else class="block truncate text-sm font-medium text-stone-900">{{ favourite.name }}</span>
+                                <a v-if="favourite.url && !readOnly" :href="favourite.url" class="block truncate text-sm font-semibold text-gray-900 hover:underline">{{ favourite.name }}</a>
+                                <span v-else class="block truncate text-sm font-semibold text-gray-900">{{ favourite.name }}</span>
                                 <span class="mt-1 inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset" :class="stockChip(favourite.stock_status).class">
                                     {{ stockChip(favourite.stock_status).label }}
                                 </span>
                             </div>
-                            <span v-if="inBasket(favourite)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-emerald-800">
+                            <span v-if="inBasket(favourite)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-green-600">
                                 <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                                 {{ ctrans(":count in basket", { count: String(inBasket(favourite)) }) }}
                             </span>
-                            <button
+                            <Button
                                 v-else-if="canAdd(favourite)"
-                                type="button"
-                                class="min-h-11 min-w-11 flex-none rounded-md bg-[#a0694a] px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
-                                :aria-label="ctrans('Add to basket')"
-                                :disabled="readOnly || addingProductIds.includes(favourite.id)"
+                                :icon="faShoppingBasket"
+                                :tooltip="ctrans('Add to basket')"
+                                :loading="addingProductIds.includes(favourite.id)"
+                                :disabled="readOnly"
                                 @click="addToBasket(favourite, 1)"
-                            >
-                                <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
-                            </button>
-                            <button
+                            />
+                            <Button
                                 v-else-if="favourite.stock_status === 'out_of_stock'"
-                                type="button"
-                                class="inline-flex flex-none items-center gap-1.5 rounded-md border border-[#a0694a] px-2.5 py-1.5 text-xs font-semibold text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
+                                type="tertiary"
+                                size="xs"
+                                :label="favourite.has_reminder ? ctrans('Notifying you') : ctrans('Notify me')"
+                                :icon="favourite.has_reminder ? fasBell : faBell"
                                 :aria-pressed="favourite.has_reminder"
-                                :disabled="readOnly || togglingReminderIds.includes(favourite.id)"
+                                :loading="togglingReminderIds.includes(favourite.id)"
+                                :disabled="readOnly"
                                 @click="toggleReminder(favourite)"
-                            >
-                                <FontAwesomeIcon :icon="favourite.has_reminder ? fasBell : faBell" fixed-width aria-hidden="true" />
-                                {{ favourite.has_reminder ? ctrans("Notifying you") : ctrans("Notify me") }}
-                            </button>
+                            />
                         </li>
                     </ul>
-                    <Link v-if="!readOnly" :href="route('retina.ecom.interest.favourites.index')" class="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#8a5a3e] underline-offset-4 hover:underline">
+                    <Link v-if="!readOnly" :href="route('retina.ecom.interest.favourites.index')" class="mt-2 inline-flex items-center gap-2 text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline">
                         {{ ctrans("All favourites") }}
                         <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />
                     </Link>
-                </template>
-                <div v-else class="mt-3 flex gap-3">
-                    <FontAwesomeIcon :icon="faHeart" class="mt-0.5 text-xl text-[#a0694a]" fixed-width aria-hidden="true" />
-                    <p class="text-sm text-stone-600">
+                </div>
+                <div v-else class="flex gap-3 p-4">
+                    <FontAwesomeIcon :icon="faHeart" class="mt-0.5 text-xl text-gray-400" fixed-width aria-hidden="true" />
+                    <p class="text-sm text-gray-500">
                         {{ ctrans("Tap the heart on any product to save it here and follow its stock.") }}
                     </p>
                 </div>
             </section>
         </div>
 
-        <section v-if="insights.recent_orders.length" class="border-t border-stone-200 pt-6">
-            <div class="flex items-baseline justify-between gap-4">
-                <h3 class="text-xl font-bold text-stone-900">{{ ctrans("Recent orders") }}</h3>
-                <Link v-if="!readOnly" :href="route('retina.ecom.orders.index')" class="inline-flex items-center gap-2 text-sm font-medium text-[#8a5a3e] underline-offset-4 hover:underline">
+        <section v-if="insights.recent_orders.length" class="overflow-hidden rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between gap-4 border-b border-gray-200 bg-gray-50 px-4 py-2">
+                <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Recent orders") }}</h3>
+                <Link v-if="!readOnly" :href="route('retina.ecom.orders.index')" class="inline-flex items-center gap-2 text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline">
                     {{ ctrans("All orders") }}
                     <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />
                 </Link>
             </div>
-            <ul class="mt-2 divide-y divide-stone-200">
+            <ul class="divide-y divide-gray-100 px-4">
                 <li v-for="order in insights.recent_orders.slice(0, 3)" :key="order.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
                     <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                        <span v-if="readOnly" class="font-semibold text-stone-900">{{ order.reference }}</span>
-                        <Link v-else :href="route('retina.ecom.orders.show', { order: order.slug })" class="font-semibold text-stone-900 hover:underline">{{ order.reference }}</Link>
-                        <span class="text-stone-500">· {{ shortDate(order.date) }} · {{ order.items === 1 ? ctrans("1 item") : ctrans(":count items", { count: String(order.items) }) }} · {{ money(order.total) }}</span>
+                        <span v-if="readOnly" class="font-semibold text-gray-900">{{ order.reference }}</span>
+                        <Link v-else :href="route('retina.ecom.orders.show', { order: order.slug })" class="font-semibold text-gray-900 hover:underline">{{ order.reference }}</Link>
+                        <span class="text-gray-500">· {{ shortDate(order.date) }} · {{ order.items === 1 ? ctrans("1 item") : ctrans(":count items", { count: String(order.items) }) }} · {{ money(order.total) }}</span>
                         <span class="rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset" :class="orderStateChip(order.state)">{{ order.state_label }}</span>
                     </div>
-                    <div class="flex items-center gap-4 text-sm font-medium">
-                        <Link v-if="order.invoice && !readOnly" :href="route('retina.ecom.invoices.show', [order.invoice])" class="inline-flex items-center gap-1.5 text-[#8a5a3e] underline-offset-4 hover:underline">
-                            <FontAwesomeIcon :icon="faFileInvoice" fixed-width aria-hidden="true" />
-                            {{ ctrans("Invoice") }}
+                    <div class="flex items-center gap-2">
+                        <Link v-if="order.invoice && !readOnly" :href="route('retina.ecom.invoices.show', [order.invoice])">
+                            <Button type="tertiary" size="xs" :label="ctrans('Invoice')" :icon="faFileInvoice" />
                         </Link>
-                        <button
-                            type="button"
-                            class="inline-flex items-center gap-1.5 text-[#8a5a3e] underline-offset-4 hover:underline disabled:opacity-50 disabled:no-underline"
-                            :disabled="readOnly || repeatingOrderId === order.id"
+                        <Button
+                            type="tertiary"
+                            size="xs"
+                            :label="ctrans('Order again')"
+                            :icon="faRedoAlt"
+                            :loading="repeatingOrderId === order.id"
+                            :disabled="readOnly"
                             @click="repeatOrder(order)"
-                        >
-                            <FontAwesomeIcon :icon="faRedoAlt" fixed-width aria-hidden="true" :spin="repeatingOrderId === order.id" />
-                            {{ ctrans("Order again") }}
-                        </button>
+                        />
                     </div>
                 </li>
             </ul>
         </section>
 
-        <section v-if="insights.recommendations.length" id="recommendations" class="border-t border-stone-200 pt-6">
-            <h3 class="text-xl font-bold text-stone-900">{{ recommendationsTitle }}</h3>
-            <p class="text-sm text-stone-500">{{ recommendationsSubtitle }}</p>
-            <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
-                <div v-for="product in insights.recommendations.slice(0, 6)" :key="product.id" class="group flex flex-col" :class="{ 'pointer-events-none': readOnly }">
-                    <a :href="readOnly ? undefined : product.url" class="flex h-28 items-center justify-center overflow-hidden rounded-md bg-stone-50">
+        <section v-if="insights.recommendations.length" id="recommendations">
+            <div class="flex items-end justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900">{{ recommendationsTitle }}</h3>
+                    <p class="text-sm text-gray-500">{{ recommendationsSubtitle }}</p>
+                </div>
+                <div v-if="!readOnly && isRecommendationsSwipeable" class="hidden flex-none gap-2 sm:flex">
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        :icon="faChevronLeft"
+                        :tooltip="ctrans('Previous')"
+                        @click="recommendationsSwiper?.slidePrev()"
+                    />
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        :icon="faChevronRight"
+                        :tooltip="ctrans('Next')"
+                        @click="recommendationsSwiper?.slideNext()"
+                    />
+                </div>
+            </div>
+            <Swiper
+                v-if="!readOnly"
+                :breakpoints="recommendationsBreakpoints"
+                breakpointsBase="container"
+                :loop="true"
+                class="mt-4 w-full"
+                @swiper="onRecommendationsSwiperReady"
+                @lock="syncRecommendationsNavigation"
+                @unlock="syncRecommendationsNavigation"
+                @breakpoint="syncRecommendationsNavigation"
+            >
+                <SwiperSlide v-for="product in insights.recommendations" :key="product.id" class="offers !h-auto">
+                    <ProductCardEcom3
+                        :product="product"
+                        :hasInBasket="product"
+                        :basketButton="true"
+                        :isLoadingFavourite="togglingFavouriteIds.includes(product.id)"
+                        :isLoadingRemindBackInStock="togglingReminderIds.includes(product.id)"
+                        :addToBasketRoute="{ name: 'retina.models.product.add-to-basket', method: 'post' }"
+                        :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
+                        :routeGettransactionProductData="{ name: 'retina.json.basket_transaction_product_data' }"
+                        @setFavorite="toggleRecommendationFavourite"
+                        @unsetFavorite="toggleRecommendationFavourite"
+                        @setBackInStock="toggleRecommendationBackInStock"
+                        @unsetBackInStock="toggleRecommendationBackInStock"
+                    />
+                </SwiperSlide>
+            </Swiper>
+            <div v-else class="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+                <div v-for="product in insights.recommendations.slice(0, 5)" :key="product.id" class="group pointer-events-none flex flex-col">
+                    <a class="flex h-28 items-center justify-center overflow-hidden rounded bg-white">
                         <Image
                             v-if="product.web_images?.main"
                             :src="product.web_images.main.gallery ?? product.web_images.main.thumbnail ?? product.web_images.main.original"
@@ -678,46 +780,47 @@ const overview = computed(() => {
                             class="flex h-full w-full justify-center transition group-hover:scale-105"
                         />
                     </a>
-                    <a :href="readOnly ? undefined : product.url" class="mt-2 line-clamp-2 text-sm font-medium text-stone-900 hover:underline">{{ product.name }}</a>
-                    <p class="text-xs text-stone-500">{{ product.code }}</p>
-                    <div class="mt-auto flex items-center justify-between gap-2 pt-1">
-                        <p class="text-xs tabular-nums text-stone-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
-                        <span v-if="inBasket(product)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-emerald-800">
+                    <span class="mt-2 line-clamp-2 text-sm font-semibold text-gray-900">{{ product.name }}</span>
+                    <p class="text-xs text-gray-500">{{ product.code }}</p>
+                    <div class="mt-auto flex items-center justify-between gap-2 pt-2">
+                        <p class="text-xs tabular-nums text-gray-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
+                        <span v-if="inBasket(product)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-green-600">
                             <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                             {{ ctrans(":count in basket", { count: String(inBasket(product)) }) }}
                         </span>
-                        <button
-                            v-else
-                            type="button"
-                            class="min-h-11 min-w-11 rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
-                            :disabled="readOnly || addingProductIds.includes(product.id)"
-                            :aria-label="ctrans('Add :product to basket', { product: product.name })"
-                            @click="addToBasket(product, 1)"
-                        >
-                            <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
-                        </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="border-t border-stone-200 pt-6">
-            <h3 class="text-xl font-bold text-stone-900">{{ ctrans("Your order overview") }}</h3>
-            <p v-if="!hasHistory" class="text-sm text-stone-500">{{ ctrans("Your summary will appear after your first order.") }}</p>
-            <dl class="mt-4 grid grid-cols-1 divide-y divide-stone-200 text-center sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <div v-for="stat in overview" :key="stat.label" class="px-4 py-3">
-                    <dt class="text-sm text-stone-500">{{ stat.label }}</dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{{ stat.value }}</dd>
-                    <dd v-if="stat.hint" class="mt-1 text-xs text-stone-500">{{ stat.hint }}</dd>
+        <section class="overflow-hidden rounded-lg border border-gray-200">
+            <div class="border-b border-gray-200 bg-gray-50 px-4 py-2">
+                <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Your order overview") }}</h3>
+                <p v-if="!hasHistory" class="text-xs text-gray-500">{{ ctrans("Your summary will appear after your first order.") }}</p>
+            </div>
+            <dl class="grid grid-cols-1 divide-y divide-gray-200 text-center sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div v-for="stat in overview" :key="stat.label" class="px-4 py-4">
+                    <dt class="text-sm text-gray-500">{{ stat.label }}</dt>
+                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-900">{{ stat.value }}</dd>
+                    <dd v-if="stat.hint" class="mt-1 text-xs text-gray-400">{{ stat.hint }}</dd>
                 </div>
             </dl>
         </section>
     </div>
 </template>
 
-<style scoped>
-.b2b-dashboard :is(a, button):focus-visible {
-    outline: 2px solid #a0694a;
-    outline-offset: 2px;
+<style scoped lang="scss">
+:deep(.discount .background-primary) {
+    background-color: v-bind("layout?.iris?.theme?.color?.[4]") !important;
+}
+
+:deep(.discount .text-primary) {
+    color: v-bind("layout?.iris?.theme?.color?.[4]") !important;
+}
+
+:deep(.discount .offer-trigger-label) {
+    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+    color: #E87928 !important;
+    border-color: #E87928 !important;
 }
 </style>

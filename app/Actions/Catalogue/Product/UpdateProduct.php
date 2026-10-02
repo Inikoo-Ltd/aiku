@@ -25,6 +25,7 @@ use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Models\Masters\MasterAsset;
+use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -580,6 +581,8 @@ class UpdateProduct extends OrgAction
     {
         $this->product = $product;
         $this->initialisationFromShop($product->shop, $request);
+
+        RecordTranslationReview::make()->fromEdit($product, $this->validatedData, $request->user());
 
         return $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
     }

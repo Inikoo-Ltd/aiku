@@ -92,7 +92,7 @@ class StoreModelHasWebBlock extends OrgAction
             ],
             'layout' => [
                 'sometimes'
-            ]
+            ],
         ];
     }
 

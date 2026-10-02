@@ -11,6 +11,7 @@ import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } fro
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { Link, usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
+import DeploymentChangeLog from "@/Components/DevOps/DeploymentChangeLog.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
 import "@/Composables/Icon/NavigationImportIcon"
@@ -228,12 +229,12 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[23] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar
                 class="-left-2/3 z-20 block md:left-[0]"
-                :class="[{ 'left-[0]': sidebarOpen }]"
+                :class="[{ 'left-[0] max-md:z-[24]': sidebarOpen }]"
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 
@@ -353,50 +354,50 @@ const safeTheme = computed(() => {
         :closable="false"
         :closeOnEscape="false"
         :showHeader="false"
-        :style="{ width: '32rem' }"
-        :breakpoints="{ '640px': '90vw' }">
-        <div class="pt-8 pb-4">
-            <div class="text-center">
+        :style="{ width: '38rem' }"
+        :breakpoints="{ '640px': '92vw' }">
+        <div class="pt-6 pb-4">
+            <div class="flex items-center justify-between gap-4">
                 <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
                     🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
                 </div>
-                <div v-else class="font-semibold text-2xl">
+                <div v-else class="font-semibold text-xl">
                     {{ ctrans("Hey, sorry for your inconvenience.") }}
                 </div>
 
-                <div
-                    v-if="deploymentInfo?.change_log"
-                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
-                    {{ deploymentInfo.change_log }}
-                </div>
-
-                <div v-else class="mt-2 text-sm text-gray-500">
-                    {{
-                        ctrans(
-                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                        )
-                    }}
-                </div>
-
-                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                <div v-if="deploymentInfo?.committers?.length" class="flex shrink-0 items-center -space-x-2">
                     <template v-for="committer in deploymentInfo.committers" :key="committer.email">
                         <img
                             v-if="committer.avatar"
                             :src="committer.avatar"
                             :alt="committer.name"
-                            :title="committer.name"
-                            class="size-7 rounded-full ring-2 ring-white" />
+                            v-tooltip="committer.name"
+                            class="size-8 rounded-full ring-2 ring-white" />
                         <div
                             v-else
-                            :title="committer.name"
-                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            v-tooltip="committer.name"
+                            class="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
                             {{ committer.name.charAt(0).toUpperCase() }}
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+            <div
+                v-if="deploymentInfo?.change_log"
+                class="mt-4 max-h-72 overflow-y-auto rounded-md bg-gray-50 px-4 pb-3 pt-1 text-left">
+                <DeploymentChangeLog :text="deploymentInfo.change_log" :clamped="false" />
+            </div>
+
+            <div v-else class="mt-3 text-sm text-gray-500">
+                {{
+                    ctrans(
+                        "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                    )
+                }}
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3">
                 <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
                 <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
             </div>
@@ -435,6 +436,25 @@ const safeTheme = computed(() => {
                 <div class="mt-1 truncate text-sm font-semibold text-gray-900">{{ item.data.reference }} · {{ item.data.customer }}</div>
                 <div class="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{{ item.data.money }}</div>
                 <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
+            </Link>
+        </template>
+    </notifications>
+
+    <notifications
+        group="ticket-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
+                <div class="mt-1 truncate text-xs text-gray-500">{{ item.text }}</div>
             </Link>
         </template>
     </notifications>

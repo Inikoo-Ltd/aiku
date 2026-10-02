@@ -30,11 +30,7 @@ class GetChatAgentByUserId
             );
         }
 
-        $shopDetails = $chatAgent->shopAssignments->map(function ($assignment) {
-            $orgCode = $assignment->organisation->code ?? '-';
-            $shopName = $assignment->shop->name ?? '-';
-            return "{$orgCode} | {$shopName}";
-        })->implode(', ');
+        $shopDetails = GetChatAgents::make()->shopNamesFor($chatAgent->user_id);
 
         $user = $chatAgent->user;
         $name = $user->contact_name ?? $user->username ?? 'Unknown';

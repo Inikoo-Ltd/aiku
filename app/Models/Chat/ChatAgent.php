@@ -10,15 +10,12 @@ namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Language;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -44,9 +41,6 @@ use Illuminate\Support\Facades\DB;
  * @property Carbon|null $last_activity_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
  * @property-read Language|null $language
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ShopHasChatAgent> $shopAssignments
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read User|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
@@ -133,27 +127,6 @@ class ChatAgent extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
-    }
-
-    public function shopAssignments(): HasMany
-    {
-        return $this->hasMany(ShopHasChatAgent::class);
-    }
-
-    public function shops(): BelongsToMany
-    {
-        return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
-            ->withPivot(['organisation_id'])
-            ->wherePivotNull('deleted_at')
-            ->withTimestamps();
-    }
-
-    public function organisations(): BelongsToMany
-    {
-        return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
-            ->withPivot(['shop_id'])
-            ->wherePivotNull('deleted_at')
-            ->withTimestamps();
     }
 
     public function language(): BelongsTo

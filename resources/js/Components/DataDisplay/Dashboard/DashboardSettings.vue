@@ -262,7 +262,7 @@ const updateTopCustomersLimit = (value: number) => {
     <div class="relative px-3 sm:px-6 mt-3 md:mt-1">
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
-            <div class="relative flex-1 min-w-0">
+            <div class="relative isolate flex-1 min-w-0">
                 <ScrollFadeArrow direction="left" rounded :visible="hasOverflowLeft" @click="scrollLeft" />
                 <ScrollFadeArrow direction="right" rounded :visible="hasOverflowRight" @click="scrollRight" />
 

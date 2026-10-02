@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use Illuminate\Console\Command;
+use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -60,7 +61,7 @@ class EvaluateTranslationModels
     public function getCommandSignature(): string
     {
         return 'translations:evaluate-models
-            {--models=* : OpenRouter model ids to compare}
+            {--models=* : OpenRouter model ids to compare; append +brief to send catalogue texts with the catalogue brief, +terms for the brief plus the mined glossary}
             {--judges=* : OpenRouter model ids that score the translations}
             {--no-judges : Only translate; score the saved JSON some other way}
             {--languages=* : Target language codes for catalogue texts, default every open shop language but English}
@@ -141,6 +142,9 @@ class EvaluateTranslationModels
 
         $sources = [
             'product_name'        => $englishProducts()->whereRaw('length(products.name) > 10')->pluck('products.name'),
+            'brand_product_name'  => $englishProducts()
+                ->whereExists(fn ($query) => $query->from('brands')->whereRaw("products.name ilike '%' || brands.name || '%'"))
+                ->pluck('products.name'),
             'product_description' => $englishProducts()->whereRaw('length(products.description) > 80')->pluck('products.description'),
             'family_description'  => DB::table('product_categories')
                 ->join('shops', 'shops.id', 'product_categories.shop_id')
@@ -209,13 +213,16 @@ class EvaluateTranslationModels
      */
     public function translateWith(string $model, string $payloadKey, array $indexes): array
     {
-        $samples = Arr::only(Cache::get($payloadKey)['samples'], $indexes);
+        $samples   = Arr::only(Cache::get($payloadKey)['samples'], $indexes);
+        $withTerms = str_ends_with($model, '+terms');
+        $withBrief = $withTerms || str_ends_with($model, '+brief');
+        $modelId   = Str::before($model, '+');
 
         $driver = new class ([
-            'model'        => $model,
+            'model'        => $modelId,
             'max_tokens'   => 16384,
             'http_timeout' => 300,
-            'temperature'     => str_starts_with($model, 'openai/gpt-5') ? 1 : 0.2,
+            'temperature'     => str_starts_with($modelId, 'openai/gpt-5') ? 1 : 0.2,
             'fallback_models' => [],
         ]) extends ChatGPT5Driver {
             public function translateOne(string $text, string $from, string $to): ?string
@@ -228,6 +235,12 @@ class EvaluateTranslationModels
         foreach ($samples as $index => $sample) {
             $driver->lastUsage = null;
             $started           = microtime(true);
+
+            app()->forgetInstance(ChatGPT5Driver::BRIEF);
+            if ($withBrief && $sample['bucket'] === 'catalogue') {
+                $language = Language::where('code', $sample['to'])->firstOrFail();
+                app()->instance(ChatGPT5Driver::BRIEF, GetCatalogueTranslationBrief::run($language).($withTerms ? GetCatalogueTranslationBrief::make()->termsFor($language, $sample['text']) : ''));
+            }
 
             try {
                 $translation = retry(self::RATE_LIMIT_RETRIES, fn () => $driver->translateOne($sample['text'], $sample['from'], $sample['to']), self::RATE_LIMIT_WAIT_MS, $this->isRateLimited(...));
@@ -332,6 +345,8 @@ Score every candidate from 0 to 100 for how ready it is to use without editing, 
 - meaning is accurate, nothing added or left out
 - natural, fluent wording and the right register for a shop or a customer service reply
 - correct product terminology, units, numbers and names
+- brand and product range names (Ancient Witch, Ancient Wisdom, Agnes + Cat, Greenman Rituals...) stay in English; translating them is an error
+- the product terms local shoppers actually use, not a word-for-word rendering of the English
 - HTML tags, placeholders, emojis and line structure preserved
 90-100 publishable as is, 70-89 small fixes, 40-69 real errors, below 40 wrong or unusable.
 

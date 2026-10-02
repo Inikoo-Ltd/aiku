@@ -176,7 +176,20 @@ class EditProduct extends OrgAction
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Goods')
                     ],
-                    'actions'   => [
+                    'actions'   => array_values(array_filter([
+                        $product->shop->language->code !== 'en' && $product->masterProduct ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => ['fal', 'fa-language'],
+                            'label'   => __('Translate all from master'),
+                            'tooltip' => __('Translate again every text here that nobody has reviewed yet'),
+                            'key'     => 'translate_from_master',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.product.translate_from_master',
+                                'parameters' => ['product' => $product->id],
+                            ],
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -185,7 +198,7 @@ class EditProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ],
+                    ])),
                     'iconLinks' => $iconLinks
                 ],
 
@@ -412,6 +425,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->name,
                     'reviewed'      => $product->is_name_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
                 ]
                 : [
@@ -434,6 +448,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This show in product webpage'),
                     'routeGetInternalLink' => [
                         'name' => 'grp.org.shops.show.web.webpages.index',
@@ -516,6 +531,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
+                    'review_route'     => ['name' => 'grp.models.product.translation_review.store', 'parameters' => ['product' => $product->id]],
                     'information'   => __('This above product specification in product webpage'),
                     'routeGetInternalLink' => [
                         'name' => 'grp.org.shops.show.web.webpages.index',

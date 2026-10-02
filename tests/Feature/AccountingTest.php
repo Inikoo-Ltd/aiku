@@ -77,6 +77,9 @@ use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
+use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use Illuminate\Support\Facades\Event;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -862,8 +865,31 @@ test('invoice category overview adds partner sales and compares with the same da
 
     expect($overview['month'])->toMatchArray(['sales' => 120.0, 'invoices' => 2, 'sales_last_year' => 60.0, 'invoices_last_year' => 1])
         ->and($overview['year'])->toMatchArray(['sales' => 170.0, 'invoices' => 3, 'sales_last_year' => 60.0])
-        ->and(array_column($overview['monthly'], 'period'))->toBe(['2025-09', '2026-09']);
+        ->and(array_column($overview['monthly'], 'period'))->toBe(['2025-09', '2026-09'])
+        ->and($overview['monthly'][1])->toMatchArray(['invoices' => 2, 'refunds' => 0]);
 })->depends('store invoice category');
+
+test('shop fallback invoice category links to its shop dashboard target tab', function (InvoiceCategory $invoiceCategory) {
+    $invoiceCategory->settings = ['shop_id' => $this->shop->id];
+
+    expect(ShowInvoiceCategory::make()->getShopTarget($invoiceCategory))->toMatchArray([
+        'shop_name' => $this->shop->name,
+        'url'       => route('grp.org.shops.show.dashboard.show', [$this->shop->organisation->slug, $this->shop->slug, 'section' => ShopDashboardSectionsEnum::TARGET->value]),
+    ])->toHaveKey('month.target')->toHaveKey('month.sales_so_far')->toHaveKey('month.remaining_days');
+
+    $invoiceCategory->type = InvoiceCategoryTypeEnum::IN_COUNTRY;
+    expect(ShowInvoiceCategory::make()->getShopTarget($invoiceCategory))->toBeNull();
+})->depends('store invoice category');
+
+test('dashboard invoice category row of a shop links to the shop dashboard target tab', function () {
+    $row = ['slug' => 'awgifts-romania', 'name' => 'AWGifts Romania', 'organisation_slug' => 'sk', 'shop_slug' => 'ro', 'shop_code' => 'RO'];
+
+    $columns = DashboardInvoiceCategoriesInOrganisationSalesResource::make($row)->resolve()['columns'];
+
+    expect($columns['label']['shop_link']['label'])->toBe('RO')
+        ->and(route($columns['label']['shop_link']['route']['name'], $columns['label']['shop_link']['route']['parameters'], false))->toBe('/org/sk/shops/ro/dashboard?section=target')
+        ->and(DashboardInvoiceCategoriesInOrganisationSalesResource::make([...$row, 'shop_slug' => null])->resolve()['columns']['label'])->not->toHaveKey('shop_link');
+});
 
 test('UI show invoice in invoice category', function (InvoiceCategory $invoiceCategory) {
     $response = get(route('grp.org.accounting.invoice-categories.show.invoices.index', [$this->organisation->slug, $invoiceCategory->slug]));

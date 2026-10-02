@@ -113,6 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/meta/sessions/{metaChatSession:ulid}/engineer-ticket', [RaiseChatEngineerTicket::class, 'inMetaChatSession'])->name('meta.sessions.engineer_ticket');
     Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');
     Route::post('/ai-drafts/{chatAiDraft}/discard', [HandleChatAiDraft::class, 'discard'])->name('ai_drafts.discard');
+    Route::post('/ai-drafts/{chatAiDraft}/rate', [HandleChatAiDraft::class, 'rate'])->name('ai_drafts.rate');
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/tickets', [GetChatSessionTickets::class, 'inMetaChatSession'])->name('meta.sessions.tickets')->withTrashed();

@@ -136,6 +136,7 @@ const props = defineProps<{
 		is_partner: boolean
 		can_edit: boolean
 		can_edit_payments: boolean
+		reopened: { at: string, by: string | null, reason: string } | null
 		currency: string | null
 		checklist: any[]
 		agent_invoice_missing: boolean
@@ -436,6 +437,51 @@ const confirmStartStockDeliveryCosting = (action: any) => {
 	})
 }
 
+const updateCostingLoading = ref(false)
+
+const patchCosting = (action: any, data: Record<string, string>, failure: string) => {
+	router.patch(route(action.route.name, action.route.parameters), data, {
+		preserveScroll: true,
+		onStart: () => { updateCostingLoading.value = true },
+		onFinish: () => { updateCostingLoading.value = false },
+		onError: (errors: Record<string, string>) => {
+			notify({
+				title: ctrans("Something went wrong"),
+				text: Object.values(errors)[0] || failure,
+				type: "error",
+			})
+		},
+	})
+}
+
+const confirmReopenStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: ctrans("This delivery is costed and its stock is already in the warehouse. Changing its costs changes the value of that stock: when you finish, the stock is revalued and its stock history is rebuilt from the day it was put away, so past stock values and reports will change. Every change is recorded with your name."),
+		header: ctrans("Update costing"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Update costing"), severity: "danger" },
+		accept: () => {
+			const reason = window.prompt(ctrans("Why does the costing need to change?"))
+			if (!reason?.trim()) {
+				return
+			}
+			patchCosting(action, { reason: reason.trim() }, ctrans("Failed to update the costing"))
+		},
+	})
+}
+
+const confirmFinishStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: ctrans("The stock put away from this delivery will be revalued with the new costs and its stock history rebuilt from the day it was put away."),
+		header: ctrans("Finish costing"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Finish costing"), severity: "primary" },
+		accept: () => patchCosting(action, {}, ctrans("Failed to finish the costing")),
+	})
+}
+
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
@@ -535,6 +581,28 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="startCostingLoading"
 				@click="() => confirmStartStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-reopen-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="updateCostingLoading"
+				@click="() => confirmReopenStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-finish-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="updateCostingLoading"
+				@click="() => confirmFinishStockDeliveryCosting(action)"
 			/>
 		</template>
 

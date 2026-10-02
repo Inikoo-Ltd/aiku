@@ -45,7 +45,11 @@ class MasterProductsPricingResource extends JsonResource
             'customers'       => (int) $this->customers,
             'sales_ly'        => $this->sales_ly,
             'price_tip'       => $this->price_tip,
+            'price_tip_note'  => $this->price_tip_note,
             'is_dropship'     => (bool) $this->is_dropship,
+            'master_family_code'     => $this->master_family_code,
+            'master_family_slug'     => $this->master_family_slug,
+            'master_department_slug' => $this->master_department_slug,
         ];
     }
 }

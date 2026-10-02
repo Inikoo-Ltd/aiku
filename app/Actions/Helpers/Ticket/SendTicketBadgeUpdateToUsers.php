@@ -21,7 +21,7 @@ class SendTicketBadgeUpdateToUsers
 
     /**
      * @param array<int, int> $userIds
-     * @param array{title: string, body: string, route: string}|null $notification
+     * @param array{title: string, body: string, route: string, reason?: string}|null $notification
      */
     public function handle(array $userIds, ?array $notification = null): void
     {

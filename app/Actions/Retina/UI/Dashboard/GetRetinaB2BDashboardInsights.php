@@ -103,7 +103,7 @@ class GetRetinaB2BDashboardInsights
         }
 
         [$recommendationsSource, $recommendations] = Cache::remember(
-            "retina_b2b_recommendations:v2:$customer->id",
+            "retina_b2b_recommendations:v3:$customer->id",
             now()->addHours(self::RECOMMENDATIONS_CACHE_HOURS),
             fn () => $this->getRecommendations($customer, $productSales)
         );
@@ -118,10 +118,7 @@ class GetRetinaB2BDashboardInsights
             'regulars'               => $this->getRegulars($customer, $productSales->take(self::PURCHASED_PRODUCTS), $today, $basketTransactions),
             'favourites'             => $this->getFavourites($customer, $basketTransactions),
             'recent_orders'          => $this->getRecentOrders($customer),
-            'recommendations'        => array_map(
-                fn (array $product) => $product + ['quantity_in_basket' => $basketTransactions[$product['id']]['quantity_ordered'] ?? 0],
-                $recommendations
-            ),
+            'recommendations'        => $this->withCustomerRecommendationsData($customer, $recommendations, $basketTransactions),
             'recommendations_source' => $recommendationsSource,
         ];
     }
@@ -529,10 +526,40 @@ class GetRetinaB2BDashboardInsights
     {
         return array_map(function (array $product) {
             $product['web_images'] = ['main' => ['gallery' => $this->slimImage(data_get($product, 'web_images.main.gallery') ?? data_get($product, 'web_images.main.thumbnail'))]];
-            unset($product['offers_data'], $product['product_offers_data']);
+            unset($product['offers_data']);
 
             return $product;
         }, $products);
+    }
+
+    /**
+     * The cached suggestions with what changes between visits: what is in the basket, the favourites and the back in stock reminders.
+     */
+    private function withCustomerRecommendationsData(Customer $customer, array $recommendations, array $basketTransactions): array
+    {
+        $productIds = array_column($recommendations, 'id');
+
+        $favouriteProductIds = DB::table('favourites')
+            ->where('customer_id', $customer->id)
+            ->whereNull('unfavourited_at')
+            ->whereIn('product_id', $productIds)
+            ->pluck('product_id')
+            ->flip();
+
+        $remindedProductIds = $this->getRemindedProductIds($customer, $productIds);
+
+        return array_map(function (array $product) use ($basketTransactions, $favouriteProductIds, $remindedProductIds) {
+            $quantityInBasket = $basketTransactions[$product['id']]['quantity_ordered'] ?? 0;
+
+            return $product + [
+                'quantity_in_basket'   => $quantityInBasket,
+                'transaction_id'       => $basketTransactions[$product['id']]['id'] ?? null,
+                'quantity_ordered'     => $quantityInBasket,
+                'quantity_ordered_new' => $quantityInBasket,
+                'is_favourite'         => $favouriteProductIds->has($product['id']),
+                'is_back_in_stock'     => $remindedProductIds->has($product['id']),
+            ];
+        }, $recommendations);
     }
 
     private function productUrl(?string $canonicalUrl): ?string
