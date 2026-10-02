@@ -45,6 +45,7 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\Transfers\Aurora\FetchAuroraStockDeliveryItems;
 use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
@@ -2767,6 +2768,40 @@ test('UI Index stock deliveries shows the expected received date', function () {
     expect($row['estimated_receiving_date'])->toBe('2026-10-15')
         ->and($row['parent_type'])->toBe('OrgAgent')
         ->and($row['parent_route_key'])->toBe($this->orgAgent->slug);
+});
+
+test('UI Index stock deliveries counts the items that have never been in stock', function () {
+    $stockDelivery = StoreStockDelivery::make()->action(
+        $this->orgAgent,
+        [
+            'reference'   => 'NEW-ITEMS-1',
+            'date'        => date('Y-m-d'),
+            'currency_id' => $this->organisation->currency_id,
+        ],
+        strict: false,
+    );
+    [$newOrgStock, $stockedOrgStock, $cancelledNewOrgStock] = OrgStock::where('organisation_id', $this->organisation->id)->limit(3)->get();
+    $newOrgStock->update(['has_been_in_warehouse' => false]);
+    $stockedOrgStock->update(['has_been_in_warehouse' => true]);
+    $cancelledNewOrgStock->update(['has_been_in_warehouse' => false]);
+    StoreStockDeliveryItem::make()->action($stockDelivery, null, $newOrgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::DISPATCHED], strict: false);
+    StoreStockDeliveryItem::make()->action($stockDelivery, null, $stockedOrgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::DISPATCHED], strict: false);
+    StoreStockDeliveryItem::make()->action($stockDelivery, null, $cancelledNewOrgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::CANCELLED], strict: false);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.index', [$this->organisation->slug]).'?filter[global]=NEW-ITEMS-1');
+
+    $data = $response->viewData('page')['props']['data'];
+    $row  = collect($data['data'] ?? $data)->firstWhere('id', $stockDelivery->id);
+    expect($row['number_new_org_stocks'])->toBe(1);
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.second_block.total_new_org_stocks', 1)->etc());
+
+    $isNewByOrgStock = collect(IndexStockDeliveryItems::run($stockDelivery)->items())
+        ->mapWithKeys(fn (StockDeliveryItem $item) => [$item->org_stock_id => StockDeliveryItemResource::make($item)->toArray(request())['is_new_org_stock']]);
+    expect($isNewByOrgStock[$newOrgStock->id])->toBeTrue()
+        ->and($isNewByOrgStock[$stockedOrgStock->id])->toBeFalse();
 });
 
 test('UI Index org agent stock deliveries shows deliveries with empty between filter', function () {

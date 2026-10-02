@@ -444,6 +444,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 >
                     <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
                 </Link>
+
+                <span v-if="item.is_new_org_stock"
+                    v-tooltip="ctrans('Never been in stock')"
+                    class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    {{ ctrans('New') }}
+                </span>
             </div>
         </template>
 

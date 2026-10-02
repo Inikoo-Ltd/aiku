@@ -220,6 +220,12 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.state',
             'stock_deliveries.date',
         ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date")
+            ->selectRaw("(select count(distinct stock_delivery_items.org_stock_id) from stock_delivery_items
+                join org_stocks on org_stocks.id = stock_delivery_items.org_stock_id
+                where stock_delivery_items.stock_delivery_id = stock_deliveries.id
+                and stock_delivery_items.deleted_at is null
+                and stock_delivery_items.state not in ('cancelled', 'not_received')
+                and not org_stocks.has_been_in_warehouse) as number_new_org_stocks")
             ->selectRaw("case stock_deliveries.parent_type
                 when 'OrgSupplier' then (select org_suppliers.slug from org_suppliers where org_suppliers.id = stock_deliveries.parent_id)
                 when 'OrgAgent' then (select org_agents.slug from org_agents where org_agents.id = stock_deliveries.parent_id)

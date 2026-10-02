@@ -122,6 +122,7 @@ class StockDeliveryItemResource extends JsonResource
             'org_stock_slug'        => $item->org_stock_slug,
             'org_stock_code'        => $item->org_stock_code,
             'org_stock_name'        => $item->org_stock_name,
+            'is_new_org_stock'      => $item->org_stock_id && $item->has_been_in_warehouse === false,
             'confirmRoute'          => !$isManagedByPartner && $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
                 'name'       => 'grp.models.stock-delivery-item.confirm',
                 'parameters' => ['stockDeliveryItem' => $item->id],

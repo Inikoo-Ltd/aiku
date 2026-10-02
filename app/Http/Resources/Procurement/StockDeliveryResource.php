@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $date
  * @property mixed $estimated_receiving_date
+ * @property mixed $number_new_org_stocks
  * @property mixed $organisation_name
  * @property mixed $number_stock_delivery_items_except_cancelled
  * @property mixed $number_stock_delivery_items
@@ -50,6 +51,7 @@ class StockDeliveryResource extends JsonResource
             'estimated_receiving_date' => $this->estimated_receiving_date,
             'organisation_name'  => $this->organisation_name,
             'organisation_slug'  => $this->organisation_slug,
+            'number_new_org_stocks' => (int) $this->number_new_org_stocks,
         ];
 
         if (isset($this->currency_code)) {

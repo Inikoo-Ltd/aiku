@@ -532,6 +532,11 @@ class ShowStockDelivery extends OrgAction
                 'total_items'                  => $stockDelivery->number_stock_delivery_items,
                 'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
                 'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
+                'total_new_org_stocks'         => $stockDelivery->items()
+                    ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
+                    ->whereHas('orgStock', fn ($query) => $query->where('has_been_in_warehouse', false))
+                    ->distinct()
+                    ->count('org_stock_id'),
                 'show_delivery_discrepancy'    => $stockDelivery->checked_at !== null,
                 'total_under_delivered_items'  => $stockDelivery->number_stock_delivery_items_under_delivered,
                 'total_over_delivered_items'   => $stockDelivery->number_stock_delivery_items_over_delivered,

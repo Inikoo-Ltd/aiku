@@ -124,6 +124,7 @@ class IndexStockDeliveryItems extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.has_been_in_warehouse',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])
