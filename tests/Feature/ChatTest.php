@@ -3686,6 +3686,217 @@ test('staff tasks page and options respond', function () {
     getJson(route('grp.tasks.list', ['view' => 'department']))->assertOk();
 });
 
+test('all tasks list counts tasks per status and tells who works on each row', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Count the top shelf', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+
+    $row = (new \App\Http\Resources\Tasks\StaffTasksResource($task->load(['requester.image', 'assignee.image', 'collaborators', 'conversation'])))->resolve();
+
+    expect($row['assignee_id'])->toBe($assignee->id)
+        ->and($row['assignee_short'])->toBe(strtok($assignee->chatName(), ' '))
+        ->and(collect($row['collaborators'])->pluck('id')->all())->toBe([$helper->id])
+        ->and($row['conversation_ulid'])->not->toBeNull()
+        ->and($row['is_overdue'])->toBeFalse();
+
+    $summary = \App\Actions\Tasks\UI\IndexStaffTasks::make()->listSummary($this->organisation->group, $this->user);
+    $visible = \App\Models\Tasks\StaffTask::query()->within($this->organisation->group)->visibleTo($this->user);
+
+    expect(array_keys($summary))->toBe(['todo', 'in_progress', 'done', 'cancelled'])
+        ->and($summary['todo'])->toBe((clone $visible)->where('status', 'todo')->count())
+        ->and($summary['todo'])->toBeGreaterThanOrEqual(1);
+
+    actingAs($this->user);
+    get(route('grp.tasks.list_all'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('listSummary.todo', $summary['todo'])
+        ->has('options.statuses', 4)
+        ->has('options.priorities')
+        ->where('showRoute.name', 'grp.tasks.show'));
+});
+
+test('task page shows the task with its chat and only the people working on it can change it', function () {
+    $newColleague = fn (array $positions) => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => $positions]))->getUser();
+    $assignee     = $newColleague([['slug' => 'group-admin', 'scopes' => []]]);
+    $helper       = $newColleague([['slug' => 'group-admin', 'scopes' => []]]);
+    $outsider     = $newColleague([]);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the leaflets', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+
+    actingAs($this->user);
+    get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('task.reference', $task->reference)
+        ->where('conversation.ulid', $task->conversation->ulid)
+        ->where('can_edit', false)
+        ->has('options.statuses', 4));
+    get(route('grp.org.tasks.show', [$this->organisation->slug, $task->reference]))->assertOk();
+
+    actingAs($assignee);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit', true));
+
+    actingAs($helper);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit', true));
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskChanged::class]);
+    actingAs($assignee);
+    \App\Actions\Tasks\UpdateStaffTask::run($task, $assignee, ['status' => 'in_progress', 'priority' => 'high']);
+    \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastStaffTaskChanged::class, fn ($event) => $event->reference === $task->reference);
+
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('timeline.0.by', $assignee->chatName())
+        ->where('timeline', fn ($timeline) => collect($timeline)->pluck('text')->contains(fn ($text) => str_contains($text, 'Working on it'))
+            && collect($timeline)->last()['text'] === 'Task raised'));
+
+    actingAs($this->user);
+    getJson(route('grp.tasks.list', ['view' => 'requested']))->assertOk()->assertJsonStructure(['counts' => ['mine', 'department', 'requested']]);
+
+    actingAs($helper);
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()
+        ->assertJsonPath('task.reference', $task->reference)
+        ->assertJsonPath('can_edit', true)
+        ->assertJsonStructure(['linked_url', 'options' => ['statuses', 'priorities'], 'messages' => [['id', 'user_name', 'body', 'created_at']], 'message_count']);
+
+    actingAs($outsider);
+    get(route('grp.tasks.show', $task->reference))->assertForbidden();
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertForbidden();
+
+    $resource = (new \App\Http\Resources\Chat\StaffConversationResource($task->conversation->load(['participants', 'context'])))->resolve();
+    expect($resource['context_url'])->toBe(route('grp.tasks.show', $task->reference));
+});
+
+test('tasks reports break down by person, requester and department and drill into the task list', function () {
+    $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Report me', 'assignee_id' => $colleague->id]);
+
+    actingAs($this->user);
+    get(route('grp.tasks.reports', ['created' => '1w']))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->has('stats.people.assignee')
+        ->has('stats.people.collaborator')
+        ->has('stats.people.involved')
+        ->has('stats.requesters')
+        ->has('stats.departments')
+        ->has('stats.cleared.rows')
+        ->has('personOptions')
+        ->where('stats.people.assignee', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $colleague->id && $row['todo'] >= 1)));
+
+    get(route('grp.tasks.reports', ['person' => $colleague->id]))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('stats.person', $colleague->id)
+        ->where('stats.cleared', null)
+        ->where('stats.totals.created', fn ($created) => $created >= 1));
+
+    get(route('grp.tasks.list_all', [
+        'filter'   => ['created_since' => now()->subWeek()->toDateString(), 'involved' => $colleague->id, 'department' => 'none', 'has_assignee' => 1, 'created_before' => now()->addDay()->toDateString()],
+        'elements' => ['status' => 'todo,in_progress,done,cancelled'],
+    ]))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('subject')->contains('Report me')));
+});
+
+test('people can hide right panel badges from the narrow bar', function () {
+    actingAs($this->user);
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks', 'crm_waiting']])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting']);
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['not_a_badge']])->assertSessionHasErrors('rail_hidden_badges.0');
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => []])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['rail_hidden_badges'] ?? [])->toBe([]);
+});
+
+test('people get told about tasks for them and the task badge counts their work', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class]);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $taskNotes    = fn ($user) => $user->notifications()->whereRaw("(data::jsonb)->>'type' = 'staff_task'");
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Badge me', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id], 'due_at' => now()->subDay()->toDateString()]);
+
+    expect($taskNotes($assignee)->count())->toBe(1)
+        ->and($taskNotes($helper)->count())->toBe(1);
+
+    $badges = \App\Actions\Tasks\GetStaffTaskBadgeData::run($assignee);
+    expect($badges['mine']['todo']['count'])->toBe(1)
+        ->and($badges['mine']['overdue']['count'])->toBe(1)
+        ->and($badges['today'])->toBe(['done' => 0, 'open' => 1])
+        ->and($badges['recent'][0]['read'])->toBeFalse();
+    \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastStaffTaskBadgeUpdate::class, fn ($event) => $event->userId === $assignee->id);
+
+    actingAs($assignee);
+    \App\Actions\Tasks\UpdateStaffTask::run($task, $assignee, ['status' => 'done']);
+    expect($taskNotes($this->user)->whereRaw("(data::jsonb)->>'title' = ?", ["{$task->reference} is done"])->exists())->toBeTrue()
+        ->and(\App\Actions\Tasks\GetStaffTaskBadgeData::run($assignee)['today'])->toBe(['done' => 1, 'open' => 0]);
+
+    get(route('grp.tasks.show', $task->reference))->assertOk();
+    expect($assignee->unreadNotifications()->whereRaw("(data::jsonb)->>'type' = 'staff_task'")->count())->toBe(0);
+
+    get(route('grp.tasks.list_all', ['filter' => ['involved' => $assignee->id, 'overdue' => 1, 'unassigned' => 0, 'department' => 'warehouse,office'], 'elements' => ['status' => 'todo,in_progress,done,cancelled']]))->assertOk();
+});
+
+test('the people working on a task keep its list of sub tasks', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Prepare the stand', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id], 'subtasks' => [['title' => ' Book the van ']]]);
+    expect($task->fresh()->data['subtasks'])->toBe([['title' => 'Book the van', 'status' => 'todo']]);
+
+    $task->update(['data' => ['nudged_at' => '2026-10-01']]);
+
+    actingAs($assignee);
+    \Pest\Laravel\patchJson(route('grp.tasks.subtasks.update', $task->reference), ['subtasks' => [
+        ['title' => '  Do A ', 'status' => 'done'],
+        ['title' => 'Check B', 'status' => 'todo'],
+        ['title' => 'Do C', 'status' => 'in_progress'],
+    ]])->assertOk()
+        ->assertJsonPath('data.subtasks.0.title', 'Do A')
+        ->assertJsonPath('data.subtasks.2.status', 'in_progress');
+
+    expect($task->fresh()->data['subtasks'])->toHaveCount(3)
+        ->and($task->fresh()->data['nudged_at'])->toBe('2026-10-01');
+
+    $thread    = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($assignee)->firstWhere('id', $task->staff_conversation_id);
+    $threadRow = (new \App\Http\Resources\Chat\StaffConversationResource($thread))->resolve();
+    expect($threadRow['task']['reference'])->toBe($task->reference)
+        ->and($threadRow['task']['assignee_id'])->toBe($assignee->id)
+        ->and($threadRow['task']['collaborator_ids'])->toBe([$helper->id])
+        ->and($threadRow['task']['subtasks'])->toHaveCount(3);
+
+    actingAs($helper);
+    \Pest\Laravel\patchJson(route('grp.tasks.subtasks.update', $task->reference), ['subtasks' => [['title' => 'Do A', 'status' => 'finished']]])->assertUnprocessable();
+    \Pest\Laravel\patchJson(route('grp.tasks.subtasks.update', $task->reference), ['subtasks' => []])->assertOk();
+    expect($task->fresh()->data['subtasks'])->toBe([]);
+
+    actingAs($this->user);
+    \Pest\Laravel\patchJson(route('grp.tasks.subtasks.update', $task->reference), ['subtasks' => []])->assertForbidden();
+});
+
+test('people offered for a task on a record are the colleagues who can open it', function () {
+    $shop = $this->customer->shop;
+    setPermissionsTeamId($this->user->group_id);
+    SeedShopPermissions::run($shop);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $crmColleague = $newColleague();
+    $crmColleague->givePermissionTo("crm.$shop->id.view");
+    $outsider = $newColleague();
+
+    $permissions = \App\Models\Tasks\StaffTask::viewPermissionsOf('Customer', $this->customer->id, $this->user->group_id);
+    \Illuminate\Support\Facades\Cache::forget('staff-coworkers:'.$this->user->group_id);
+    \Illuminate\Support\Facades\Cache::forget('staff-coworkers-able:'.$this->user->group_id.':'.implode('|', $permissions));
+
+    actingAs($this->user);
+    $everyone = collect(getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data'))->pluck('id');
+    $scoped   = collect(getJson(route('grp.chat.staff.coworkers.index', ['model_type' => 'Customer', 'model_id' => $this->customer->id]))->assertOk()->json('data'))->pluck('id');
+
+    expect($everyone)->toContain($crmColleague->id)->toContain($outsider->id)
+        ->and($scoped)->toContain($crmColleague->id)
+        ->and($scoped)->not->toContain($outsider->id)
+        ->and($scoped)->not->toContain($this->user->id);
+
+    getJson(route('grp.chat.staff.coworkers.index', ['model_type' => 'Location', 'model_id' => 1]))->assertUnprocessable();
+});
+
 test('stale staff task nudges its assignee once per window', function () {
     $requester = $this->user;
     $assignee  = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
@@ -3695,10 +3906,11 @@ test('stale staff task nudges its assignee once per window', function () {
     expect(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(0);
 
     $task->conversation->update(['last_message_at' => now()->subHours(50)]);
+    $notificationsBeforeNudge = $assignee->notifications()->count();
 
     expect(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(1)
         ->and(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(0)
-        ->and($assignee->notifications()->count())->toBe(1)
+        ->and($assignee->notifications()->count())->toBe($notificationsBeforeNudge + 1)
         ->and($task->fresh()->data['nudged_at'])->not->toBeNull();
 });
 
@@ -4110,16 +4322,23 @@ test('staff task collaborators join the thread and see the task as theirs', func
     expect($task->collaborators()->count())->toBe(0);
 });
 
-test('staff task reports share a task between its assignee and collaborators', function () {
+test('staff task reports count a task for its assignee and for each collaborator', function () {
     $requester = $this->user;
     $people    = collect(range(1, 3))->map(fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser());
 
-    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Three person job', 'assignee_id' => $people[0]->id, 'collaborator_ids' => [$people[1]->id, $people[2]->id]]);
+    \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Three person job', 'assignee_id' => $people[0]->id, 'collaborator_ids' => [$people[1]->id, $people[2]->id]]);
 
-    $rows = collect(\App\Actions\Tasks\UI\ShowStaffTasksReports::make()->handle($this->organisation->group, $requester, '1w')['by_assignee'])->keyBy('name');
+    $peopleReport = \App\Actions\Tasks\UI\ShowStaffTasksReports::make()->handle($this->organisation->group, $requester, '1w')['people'];
+    $byRole       = collect($peopleReport)->map(fn ($rows) => collect($rows)->keyBy('id'));
+
+    expect($byRole['assignee'][$people[0]->id]['created'])->toBe(1)
+        ->and($byRole['assignee']->has($people[1]->id))->toBeFalse()
+        ->and($byRole['collaborator'][$people[1]->id]['created'])->toBe(1)
+        ->and($byRole['collaborator'][$people[2]->id]['created'])->toBe(1)
+        ->and($byRole['collaborator']->has($people[0]->id))->toBeFalse();
 
     foreach ($people as $person) {
-        expect($rows[$person->contact_name ?: $person->username]['created'])->toBe(0.33);
+        expect($byRole['involved'][$person->id]['created'])->toBe(1);
     }
 });
 
