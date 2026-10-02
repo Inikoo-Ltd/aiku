@@ -10,6 +10,7 @@ namespace App\Actions\Procurement;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
@@ -19,7 +20,8 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Plays the next eight weeks forward for every SKO the stock cover dashboard counts: what is on hand,
+ * Plays the next eight weeks forward for the same SKOs the stock out history counts (active and
+ * discontinuing, never on demand ones): what is on hand,
  * less each day's forecast demand, plus what open purchase orders and stock deliveries bring on their
  * expected day; late ones are not counted until they have a new date. A SKO with less than one left is out of stock that day, as in the stock out history,
  * and loses its average daily sales of the six full months before, as the history's lost revenue
@@ -46,7 +48,15 @@ class ProjectOrganisationStockOuts
     {
         $today   = ($today ?? today())->copy()->startOfDay();
         $buckets = GetOrganisationStockCoverBuckets::make();
-        $skos    = $buckets->scope(DB::table('org_stocks'), $organisation)
+        $skos    = DB::table('org_stocks')
+            ->leftJoinLateral($buckets->primarySupplierProduct(), 'sp')
+            ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
+            ->where('org_stocks.organisation_id', $organisation->id)
+            ->whereIn('org_stocks.state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])
+            ->whereNull('org_stocks.deleted_at')
+            ->whereRaw('coalesce(org_stocks.is_fresh, false) = false')
+            ->whereRaw('coalesce(org_stocks.is_on_demand, false) = false')
+            ->where(fn ($query) => $query->where('org_stocks.quantity_available', '>', 0)->orWhere(fn ($query) => $buckets->whereCountsAsStockOut($query)))
             ->select('org_stocks.id', 'org_stocks.quantity_available', 'org_stocks.packed_in', 'org_stock_stats.predicted_daily_usage', 'org_stock_stats.demand_variability', 'org_stock_stats.forecast_source')
             ->selectRaw("org_stock_stats.demand_forecast->'weeks' as weeks, org_stock_stats.demand_forecast->>'from' as forecast_from")
             ->selectRaw($buckets->sourceExpression().' as source')

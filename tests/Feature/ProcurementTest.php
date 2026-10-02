@@ -6367,6 +6367,15 @@ test('stock outs are projected eight weeks ahead from forecast demand, each sko 
         ->and(collect($history['projection'])->pluck('date')->min())->toBeGreaterThan(collect($history['series'])->pluck('date')->max() ?? '');
 
     $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'sort' => '-projected_lost_revenue']))->assertOk();
+
+    $onDemandStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $onDemand      = orgStockOnSaleAndReceived(createOrgStocks($this->organisation, [$onDemandStock])[0]);
+    $onDemand->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0, 'is_on_demand' => true]);
+    $hydrator = App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateOutOfStock::make();
+
+    expect($hydrator->stockOutOrgStockIds([$onDemand->id], today()))->toBe([]);
+    $onDemand->update(['is_on_demand' => false]);
+    expect($hydrator->stockOutOrgStockIds([$onDemand->id], today()))->toBe([$onDemand->id]);
 });
 
 test('procurement dashboard charts stock outs and their estimated lost revenue', function () {
