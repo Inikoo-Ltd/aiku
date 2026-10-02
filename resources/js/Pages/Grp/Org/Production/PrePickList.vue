@@ -22,6 +22,7 @@ type PrePickItem = {
 	can_pick: number
 	stock_code: string
 	stock_name: string
+	is_cosmetic: boolean
 	buyer_code: string
 	priority: string
 }
@@ -242,7 +243,14 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			</button>
 		</template>
 		<template #cell(stock_code)="{ item }: { item: PrePickItem }">
-			<div class="font-medium">{{ item.stock_code }}</div>
+			<div class="flex items-center gap-1.5 font-medium">
+				{{ item.stock_code }}
+				<span
+					v-if="item.is_cosmetic"
+					class="rounded-full bg-pink-100 px-1.5 text-xs font-normal text-pink-700"
+					>{{ trans("Cosmetic") }}</span
+				>
+			</div>
 			<div class="text-xs text-gray-500">{{ item.stock_name }}</div>
 		</template>
 		<template #cell(quantity)="{ item }: { item: PrePickItem }">

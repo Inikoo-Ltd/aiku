@@ -28,6 +28,8 @@ class IndexPrePickList extends OrgAction
 {
     private const CATEGORY = "coalesce(artefact_departments.name, '')";
 
+    private const COSMETIC = "case when stocks.is_cosmetic then 'cosmetic' else 'non-cosmetic' end";
+
     private ?array $elementGroups = null;
 
 
@@ -89,6 +91,7 @@ class IndexPrePickList extends OrgAction
                 'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
+                'stocks.is_cosmetic',
                 'organisations.code as buyer_code',
                 DB::raw(self::CATEGORY.' as category'),
                 DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
@@ -153,6 +156,7 @@ class IndexPrePickList extends OrgAction
 
         return $this->elementGroups = [
             'category'  => $group(__('Category'), self::CATEGORY, $counts(self::CATEGORY)),
+            'cosmetic'  => $group(__('Cosmetic'), self::COSMETIC, $counts(self::COSMETIC)),
             'requester' => $group(__('Requester'), 'organisations.code', $counts('organisations.code')),
             'priority'  => $group(__('Urgency'), 'partner_shopping_list_items.priority', $counts('partner_shopping_list_items.priority')),
         ];

@@ -137,6 +137,7 @@ class UpdateStock extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
+            'is_cosmetic'     => ['sometimes', 'boolean'],
             'trade_units'              => ['sometimes', 'array'],
             'trade_units.*.id'         => ['required', 'exists:trade_units,id'],
             'trade_units.*.quantity'   => ['required', 'numeric', 'gt:0'],
