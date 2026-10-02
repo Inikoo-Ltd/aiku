@@ -5534,12 +5534,25 @@ test('pre-pick list only shows partner lines that have stock behind them', funct
     expect($props['data']['data'])->toHaveCount(1)
         ->and((float) $props['data']['data'][0]['can_pick'])->toBe(12.0)
         ->and((float) $props['data']['data'][0]['quantity'])->toBe(30.0)
-        ->and($props['filters'])->toHaveKeys(['category', 'requester', 'priority'])
+        ->and($props['filters'])->toHaveKeys(['category', 'cosmetic', 'requester', 'priority'])
         ->and(collect($props['filters']['requester']['options'])->pluck('value')->all())
         ->toBe([$this->orgPartner->organisation->code]);
 
-    expect(collect($props['data']['data'])->firstWhere('id', $item->id)['can_pick'])->toEqual(12);
+    expect(collect($props['data']['data'])->firstWhere('id', $item->id)['can_pick'])->toEqual(12)
+        ->and($props['data']['data'][0]['is_cosmetic'])->toBeFalse()
+        ->and(collect($props['filters']['cosmetic']['options'])->pluck('value')->all())->toBe(['non-cosmetic']);
 
+    $withStock->stock->update(['is_cosmetic' => true]);
+    $prePickUrl = route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]);
+
+    $props = $this->get($prePickUrl)->assertOk()->viewData('page')['props'];
+    expect($props['data']['data'][0]['is_cosmetic'])->toBeTrue()
+        ->and(collect($props['filters']['cosmetic']['options'])->pluck('value')->all())->toBe(['cosmetic']);
+
+    expect($this->get($prePickUrl.'?elements[cosmetic]=cosmetic')->viewData('page')['props']['data']['data'])->toHaveCount(1)
+        ->and($this->get($prePickUrl.'?elements[cosmetic]=non-cosmetic')->viewData('page')['props']['data']['data'])->toBe([]);
+
+    $withStock->stock->update(['is_cosmetic' => false]);
     $sellerStock->update(['quantity_available' => 0]);
     $props = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
         ->assertOk()->viewData('page')['props'];
