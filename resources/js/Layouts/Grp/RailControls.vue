@@ -61,7 +61,7 @@ const cacheHiddenBadges = (keys: string[]) => {
 const hiddenBadges = ref<string[]>(readCachedHiddenBadges() ?? [...(layout.user?.settings?.rail_hidden_badges ?? [])])
 const isHiddenBadge = (key: string) => hiddenBadges.value.includes(key)
 const isOffRail = (key: string) => !layout.messagingSidebar.show && isHiddenBadge(key)
-const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)]:opacity-40' : ''
+const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)>button]:opacity-40' : ''
 
 watch(() => layout.user?.settings?.rail_hidden_badges, (savedKeys) => {
     if (!Array.isArray(savedKeys)) return
@@ -102,8 +102,9 @@ const isPointerInside = ref(false)
 const controlsElement = ref<HTMLElement | null>(null)
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
-const ordersCount = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0))
-const catalogueCount = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0))
+const countOnRail = (badges: [string, number | undefined][]) => badges.reduce((total, [key, count]) => total + (isOffRail(key) ? 0 : (count ?? 0)), 0)
+const ordersCount = computed(() => countOnRail([['dispatching_waiting', layout?.dispatching_waiting_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]]))
+const catalogueCount = computed(() => countOnRail([['master_updated', layout?.master_updated_count], ['products_need_review', layout?.products_need_review_count]]))
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
 
