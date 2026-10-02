@@ -70,7 +70,7 @@ class IndexPartnerRescueItems extends OrgAction
                     'id'   => $this->orgPartner->id,
                     'name' => $this->orgPartner->partner->name,
                 ],
-                'rescueOrder'   => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0)['order'],
+                'rescueBuckets' => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0)['buckets'],
                 'draftReference' => $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->value('reference'),
                 'items'         => $items,
             ]

@@ -34,7 +34,14 @@ const props = defineProps<{
 	title: string
 	currency_code: string
 	orgPartner: { id: number; name: string }
-	rescueOrder: { lines: number; cost: number }
+	rescueBuckets: {
+		bucket: "out" | "w1" | "w2"
+		label: string
+		count: number
+		cost: number
+		order_lines: number
+		order_cost: number
+	}[]
 	draftReference: string | null
 	items: {
 		data: RescueItem[]
@@ -73,8 +80,7 @@ const bucketClass = {
 				:partnerName="orgPartner.name"
 				:currencyCode="currency_code"
 				:draftReference="draftReference"
-				:estimatedLines="rescueOrder.lines"
-				:estimatedCost="rescueOrder.cost" />
+				:buckets="rescueBuckets" />
 		</template>
 	</PageHeading>
 

@@ -2590,7 +2590,7 @@ test('UI Index org partners', function () {
                 ->where('is_hub', $this->orgPartner->partner->is_manufacturing_hub)
                 ->has('stats', fn (AssertableInertia $stats) => $this->orgPartner->partner->is_manufacturing_hub
                     ? $stats->has('open_shopping_list_items')->etc()
-                    : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.top')->etc())
+                    : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.buckets.0.left_out')->has('rescuable.top')->etc())
                 ->etc());
     });
 });

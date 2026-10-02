@@ -21,6 +21,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,7 +39,10 @@ class StoreRescuePurchaseOrder extends OrgAction
      *
      * @throws ValidationException
      */
-    public function handle(OrgPartner $orgPartner, ?float $budget = null): PurchaseOrder
+    /**
+     * @param  array<int, string>  $buckets
+     */
+    public function handle(OrgPartner $orgPartner, ?float $budget = null, array $buckets = ['out', 'w1', 'w2'], bool $worstOnly = true): PurchaseOrder
     {
         $fail = fn (string $message) => throw ValidationException::withMessages(['rescue' => $message]);
 
@@ -46,10 +50,10 @@ class StoreRescuePurchaseOrder extends OrgAction
             $fail(__('Buy from :partner with the shopping list', ['partner' => $orgPartner->partner->name]));
         }
 
-        return DB::transaction(function () use ($orgPartner, $fail, $budget) {
+        return DB::transaction(function () use ($orgPartner, $fail, $budget, $buckets, $worstOnly) {
             OrgPartner::whereKey($orgPartner->id)->lockForUpdate()->first();
 
-            $lines = GetPartnerStockCoverBuckets::make()->rescueLines($orgPartner);
+            $lines = GetPartnerStockCoverBuckets::make()->rescueLines($orgPartner, $buckets, $worstOnly);
             if (!$lines) {
                 $fail(__(':partner has nothing to rescue right now', ['partner' => $orgPartner->partner->name]));
             }
@@ -121,7 +125,10 @@ class StoreRescuePurchaseOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'budget' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'budget'     => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'buckets'    => ['sometimes', 'array', 'min:1'],
+            'buckets.*'  => ['string', Rule::in(['out', 'w1', 'w2'])],
+            'worst_only' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -131,7 +138,12 @@ class StoreRescuePurchaseOrder extends OrgAction
 
         $budget = $this->validatedData['budget'] ?? null;
 
-        return $this->handle($orgPartner, $budget === null ? null : (float) $budget);
+        return $this->handle(
+            $orgPartner,
+            $budget === null ? null : (float) $budget,
+            $this->validatedData['buckets'] ?? ['out', 'w1', 'w2'],
+            (bool) ($this->validatedData['worst_only'] ?? true)
+        );
     }
 
     public function htmlResponse(PurchaseOrder $purchaseOrder): RedirectResponse

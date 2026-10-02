@@ -75,6 +75,9 @@ interface PartnerCard {
 				bestsellers: number
 				lost: number
 				cost: number
+				order_lines: number
+				order_cost: number
+				left_out: Record<string, number>
 			}[]
 			top: {
 				code: string
@@ -398,8 +401,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 									:partnerName="partner.name"
 									:draftReference="purchaseOrderInProcess(partner)?.reference"
 									:currencyCode="currency_code"
-									:estimatedLines="partner.stats.rescuable!.order.lines"
-									:estimatedCost="partner.stats.rescuable!.order.cost"
+									:buckets="partner.stats.rescuable!.buckets"
 									size="xs" />
 								<span
 									v-if="partner.stats.rescuable!.order.lines"

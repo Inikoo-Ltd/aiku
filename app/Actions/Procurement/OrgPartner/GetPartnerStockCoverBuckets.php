@@ -152,7 +152,7 @@ class GetPartnerStockCoverBuckets
      * needs over its critical threshold (same edge that would flag it critical), so a rescue never
      * puts the partner itself at risk.
      *
-     * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float}>, top: array<int, array<string, mixed>>}
+     * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float, order_lines: int, order_cost: float}>, top: array<int, array<string, mixed>>}
      */
     public function rescuable(OrgPartner $orgPartner, int $topLimit = 20): array
     {
@@ -169,6 +169,7 @@ class GetPartnerStockCoverBuckets
             ->keyBy('bucket');
 
         $exchange = $orgPartner->exchangeToOrgCurrency();
+        $leftOut  = $this->leftOut($orgPartner, $leadTime['days']);
 
         return [
             'order'   => [
@@ -183,9 +184,60 @@ class GetPartnerStockCoverBuckets
                 'bestsellers' => (int) ($counts->get($bucket)->bestsellers ?? 0),
                 'lost'        => (float) ($counts->get($bucket)->lost ?? 0),
                 'cost'        => round((float) ($counts->get($bucket)->cost ?? 0) * $exchange, 2),
+                'order_lines' => (int) ($counts->get($bucket)->order_lines ?? 0),
+                'order_cost'  => round((float) ($counts->get($bucket)->order_cost ?? 0) * $exchange, 2),
+                'left_out'    => (object) ($leftOut[$bucket] ?? []),
             ])->all(),
             'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
         ];
+    }
+
+    /**
+     * Why our out, doomed and critical SKOs are not rescuable, per bucket: each one counted once, under
+     * the first reason in the order rescuableQuery checks them, so staff can see why a rescue is small.
+     *
+     * @return array<string, array<string, int>> bucket => reason => SKOs
+     */
+    public function leftOut(OrgPartner $orgPartner, int $leadDays): array
+    {
+        $expression = $this->bucketExpression($leadDays);
+        $spare      = "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
+        $onDraft    = "exists (select 1 from purchase_order_transactions pot
+                join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
+                where pot.org_stock_id = os.id and pot.deleted_at is null and po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."'
+                    and po.parent_type = 'OrgPartner' and po.parent_id = ".(int) $orgPartner->id.')';
+        $reason     = "case
+            when coalesce(s.predicted_daily_usage, 0) <= 0 then 'not_selling'
+            when p.id is null then 'not_stocked'
+            when $onDraft then 'on_draft'
+            when {$this->alreadyComingExpression($orgPartner)} then 'coming'
+            when $spare is null then 'partner_no_forecast'
+            when $spare < 1 then 'partner_short'
+            when os.health_rank in ('A', 'B') then 'rescuable'
+            when {$this->orgSkoPrice($orgPartner)} <= 0 then 'no_price'
+            when {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} < ".self::MINIMUM_LINE_VALUE." then 'too_small'
+            else 'rescuable' end";
+
+        return DB::table('org_stocks as os')
+            ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
+            ->leftJoin('org_stocks as p', function ($join) use ($orgPartner) {
+                $join->on('p.stock_id', 'os.stock_id')
+                    ->where('p.organisation_id', $orgPartner->partner_id)
+                    ->where('p.state', OrgStockStateEnum::ACTIVE->value);
+            })
+            ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
+            ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
+            ->where('os.organisation_id', $orgPartner->organisation_id)
+            ->where('os.state', OrgStockStateEnum::ACTIVE->value)
+            ->whereRaw('coalesce(os.is_on_demand, false) = false')
+            ->whereRaw("$expression in ('out', 'w1', 'w2')")
+            ->selectRaw("$expression as bucket, $reason as reason, count(*) as total")
+            ->groupByRaw('1, 2')
+            ->get()
+            ->groupBy('bucket')
+            ->map(fn ($rows) => $rows->where('reason', '!=', 'rescuable')->pluck('total', 'reason')->map(fn ($total) => (int) $total)->all())
+            ->all();
     }
 
     /**
@@ -226,15 +278,24 @@ class GetPartnerStockCoverBuckets
     }
 
     /**
-     * What to order to rescue every SKO that would lose sales, plus any A/B bestseller. Purchase order
-     * quantities are units, so the SKOs to order are multiplied by the units in each SKO.
+     * What to order to rescue the SKOs in these buckets: by default only the ones that would lose
+     * sales and the A/B bestsellers, or every one of them. Purchase order quantities are units, so the
+     * SKOs to order are multiplied by the units in each SKO.
      *
+     * @param  array<int, string>  $buckets
      * @return array<int, array{org_stock_id: int, quantity: int}>
      */
-    public function rescueLines(OrgPartner $orgPartner): array
+    public function rescueLines(OrgPartner $orgPartner, array $buckets = ['out', 'w1', 'w2'], bool $worstOnly = true): array
     {
-        return $this->rescueItems($orgPartner)
-            ->whereRaw($this->inRescueOrder())
+        $leadDays = GetPartnerLeadTime::run($orgPartner)['days'];
+        $buckets  = array_values(array_intersect(['out', 'w1', 'w2'], $buckets));
+        if (!$buckets) {
+            return [];
+        }
+
+        return $this->rescueItems($orgPartner, $leadDays)
+            ->whereRaw($this->bucketExpression($leadDays)." in ('".implode("', '", $buckets)."')")
+            ->when($worstOnly, fn ($query) => $query->whereRaw($this->inRescueOrder()))
             ->addSelect('os.packed_in')
             ->get()
             ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'quantity' => (int) $row->quantity * max(1, (int) $row->packed_in)])
