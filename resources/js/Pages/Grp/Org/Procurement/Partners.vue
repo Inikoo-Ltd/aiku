@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -146,9 +147,23 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 		{
 			onStart: () => (creatingFor.value = partner.id),
 			onFinish: () => (creatingFor.value = null),
+			onError: (errors) => {
+				notify({
+					title: ctrans("No purchase order created"),
+					text:
+						Object.values(errors)[0] ??
+						ctrans("Something went wrong, please try again"),
+					type: "error",
+				})
+			},
 		}
 	)
 }
+
+const draftPurchaseOrder = (partner: PartnerCard) =>
+	partner.stats.current?.find(
+		(item) => item.type === "purchase_order" && item.state === "in_process"
+	)
 </script>
 
 <template>
@@ -435,18 +450,24 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					">
 					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" />
 				</Link>
+				<Link
+					v-else-if="draftPurchaseOrder(partner)"
+					:href="draftPurchaseOrder(partner)!.url">
+					<Button
+						:label="
+							ctrans('Continue :reference', {
+								reference: draftPurchaseOrder(partner)!.reference,
+							})
+						"
+						icon="fal fa-pencil"
+						size="s"
+						class="whitespace-nowrap" />
+				</Link>
 				<Button
 					v-else
 					:label="ctrans('New purchase order')"
 					icon="fal fa-plus"
 					size="s"
-					:type="
-						partner.stats.current?.some(
-							(item) => item.type === 'purchase_order' && item.state === 'in_process'
-						)
-							? 'tertiary'
-							: 'primary'
-					"
 					:loading="creatingFor === partner.id"
 					class="whitespace-nowrap"
 					@click="createPurchaseOrder(partner)" />

@@ -2591,6 +2591,26 @@ test('UI partner rescue items for a sister company', function () {
     }
 });
 
+test('new purchase order to a sister company redirects to it', function () {
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    $partner->update(['is_manufacturing_hub' => false]);
+
+    try {
+        $response = $this->post(route('grp.models.org-partner.purchase-order.store', ['orgPartner' => $this->orgPartner->id]));
+
+        $purchaseOrder = $this->orgPartner->purchaseOrders()->latest('id')->first();
+
+        $response->assertRedirect(route('grp.org.procurement.org_partners.show.purchase-orders.show', [
+            $this->organisation->slug,
+            $this->orgPartner->id,
+            $purchaseOrder->slug,
+        ]));
+    } finally {
+        $partner->update(['is_manufacturing_hub' => $wasHub]);
+    }
+});
+
 test('rescue page and rescue order refuse the manufacturing hub', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;

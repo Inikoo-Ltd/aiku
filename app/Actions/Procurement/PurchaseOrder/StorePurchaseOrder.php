@@ -218,7 +218,7 @@ class StorePurchaseOrder extends OrgAction
         } elseif ($this->parent instanceof OrgSupplier) {
             return Redirect::route('grp.org.procurement.org_suppliers.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
         } else {
-            return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
+            return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->id, $purchaseOrder->slug]);
         }
     }
 }
