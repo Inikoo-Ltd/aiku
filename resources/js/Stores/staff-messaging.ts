@@ -79,8 +79,6 @@ export interface StaffCoworker {
 interface WindowState {
     ulid: string
     minimised: boolean
-    x: number | null
-    y: number | null
 }
 
 interface ArchivedNote {
@@ -89,21 +87,7 @@ interface ArchivedNote {
     created_at: string
 }
 
-const bubblePositionKey = (ulid: string) => `staff-chat-bubble-${ulid}`
-
-const MAX_BUBBLES = 6
-
-const savedBubblePosition = (ulid: string): { x: number | null; y: number | null } => {
-    try {
-        const raw = localStorage.getItem(bubblePositionKey(ulid))
-        if (raw) {
-            const parsed = JSON.parse(raw)
-            return { x: parsed.x ?? null, y: parsed.y ?? null }
-        }
-    } catch { }
-
-    return { x: null, y: null }
-}
+const MAX_BUBBLES = 12
 
 export const isWorkThread = (conversation: StaffConversation) => !!conversation.context_type
 
@@ -203,7 +187,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 oldest.minimised = true
             }
 
-            this.openWindows.push({ ulid, minimised: false, ...savedBubblePosition(ulid) })
+            this.openWindows.push({ ulid, minimised: false })
             this.loadMessages(ulid)
             this.markRead(ulid)
         },
@@ -224,7 +208,6 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         closeConversation(ulid: string) {
             if (!canArchiveConversation(this.conversationByUlid(ulid))) return
-            localStorage.removeItem(`staff-chat-bubble-${ulid}`)
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
             axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
             const index = this.conversations.findIndex((c) => c.ulid === ulid)
@@ -243,7 +226,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 this.openWindows = this.openWindows.filter((w) => w !== quietest)
             }
 
-            this.openWindows.push({ ulid, minimised: true, ...savedBubblePosition(ulid) })
+            this.openWindows.push({ ulid, minimised: true })
         },
 
         minimiseConversation(ulid: string, minimised: boolean) {
@@ -254,17 +237,6 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                     this.markRead(ulid)
                 }
             }
-        },
-
-        setBubblePosition(ulid: string, x: number, y: number) {
-            const w = this.openWindows.find((w) => w.ulid === ulid)
-            if (w) {
-                w.x = x
-                w.y = y
-            }
-            try {
-                localStorage.setItem(bubblePositionKey(ulid), JSON.stringify({ x, y }))
-            } catch { }
         },
 
         async loadMessages(ulid: string, beforeId?: number) {

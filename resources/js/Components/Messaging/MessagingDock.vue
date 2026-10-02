@@ -111,49 +111,85 @@ const unreadOf = (ulid: string) => store.conversationByUlid(ulid)?.unread_count 
 
 const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
 
-const BUBBLE_BASE_REM = 4.5
-const BUBBLE_STEP_REM = 3.75
+const MAX_SINGLE_BUBBLES = 3
+const OVERFLOW_LIST_CLOSE_MS = 5000
+const CLUSTER_POSITION_KEY = "staff-chat-bubble-cluster"
 
-const stackedBubbleBottom = (ulid: string) => {
-    const stacked = store.openWindowsMinimised.filter((w) => w.x == null)
-    return `${BUBBLE_BASE_REM + stacked.findIndex((w) => w.ulid === ulid) * BUBBLE_STEP_REM}rem`
+const orderedBubbles = computed(() => [...store.openWindowsMinimised].reverse().sort((a, b) => Number(unreadOf(b.ulid) > 0) - Number(unreadOf(a.ulid) > 0)))
+const singleBubbles = computed(() => orderedBubbles.value.slice(0, MAX_SINGLE_BUBBLES))
+const overflowBubbles = computed(() => orderedBubbles.value.slice(MAX_SINGLE_BUBBLES))
+const overflowUnread = computed(() => overflowBubbles.value.reduce((total, w) => total + unreadOf(w.ulid), 0))
+
+const isOverflowListOpen = ref(false)
+let overflowCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const keepOverflowListOpen = () => {
+    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
+    overflowCloseTimer = null
+    isOverflowListOpen.value = true
 }
 
-// Draggable bubbles
-const bubbleDrag = ref<{ ulid: string; startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
+const closeOverflowListSoon = () => {
+    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
+    overflowCloseTimer = setTimeout(() => (isOverflowListOpen.value = false), OVERFLOW_LIST_CLOSE_MS)
+}
 
-const bubbleStyle = (ulid: string) => {
-    const w = store.openWindows.find((w) => w.ulid === ulid)
-    if (w?.x != null && w?.y != null) {
-        return { left: `${w.x}px`, top: `${w.y}px`, right: "auto", bottom: "auto" }
+watch(() => overflowBubbles.value.length, (count) => {
+    if (!count) isOverflowListOpen.value = false
+})
+
+const openBubble = (ulid: string) => {
+    isOverflowListOpen.value = false
+    store.minimiseConversation(ulid, false)
+}
+
+const readClusterPosition = (): { x: number; y: number } | null => {
+    try {
+        return JSON.parse(localStorage.getItem(CLUSTER_POSITION_KEY) ?? "null")
+    } catch {
+        return null
     }
-    return {}
 }
 
-const onBubblePointerDown = (event: PointerEvent, ulid: string) => {
-    const target = event.currentTarget as HTMLElement
-    const rect = target.getBoundingClientRect()
-    bubbleDrag.value = { ulid, startX: event.clientX, startY: event.clientY, origX: rect.left, origY: rect.top, moved: false }
-    target.setPointerCapture(event.pointerId)
+const clusterPosition = ref<{ x: number; y: number } | null>(readClusterPosition())
+const clusterElement = ref<HTMLElement | null>(null)
+const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
+
+const clusterStyle = computed(() => clusterPosition.value
+    ? { left: `${clusterPosition.value.x}px`, top: `${clusterPosition.value.y}px`, right: "auto", bottom: "auto" }
+    : { bottom: "4.5rem" })
+
+const onClusterPointerDown = (event: PointerEvent) => {
+    if (!clusterElement.value) return
+    const rect = clusterElement.value.getBoundingClientRect()
+    clusterDrag.value = { startX: event.clientX, startY: event.clientY, origX: rect.left, origY: rect.top, moved: false }
+    clusterElement.value.setPointerCapture(event.pointerId)
 }
 
-const onBubblePointerMove = (event: PointerEvent) => {
-    if (!bubbleDrag.value) return
-    const dx = event.clientX - bubbleDrag.value.startX
-    const dy = event.clientY - bubbleDrag.value.startY
-    if (Math.abs(dx) + Math.abs(dy) > 5) bubbleDrag.value.moved = true
-    if (!bubbleDrag.value.moved) return
-    let x = bubbleDrag.value.origX + dx
-    let y = bubbleDrag.value.origY + dy
-    x = Math.max(4, Math.min(window.innerWidth - 52, x))
-    y = Math.max(4, Math.min(window.innerHeight - 52, y))
-    store.setBubblePosition(bubbleDrag.value.ulid, x, y)
+const onClusterPointerMove = (event: PointerEvent) => {
+    if (!clusterDrag.value || !clusterElement.value) return
+    const dx = event.clientX - clusterDrag.value.startX
+    const dy = event.clientY - clusterDrag.value.startY
+    if (Math.abs(dx) + Math.abs(dy) > 5) clusterDrag.value.moved = true
+    if (!clusterDrag.value.moved) return
+    const { width, height } = clusterElement.value.getBoundingClientRect()
+    clusterPosition.value = {
+        x: Math.max(4, Math.min(window.innerWidth - width - 4, clusterDrag.value.origX + dx)),
+        y: Math.max(4, Math.min(window.innerHeight - height - 4, clusterDrag.value.origY + dy)),
+    }
 }
 
-const onBubblePointerUp = (ulid: string) => {
-    const moved = bubbleDrag.value?.moved
-    bubbleDrag.value = null
-    if (!moved) store.minimiseConversation(ulid, false)
+const onClusterPointerUp = (event: PointerEvent) => {
+    const moved = clusterDrag.value?.moved
+    clusterDrag.value = null
+    if (moved) {
+        try {
+            localStorage.setItem(CLUSTER_POSITION_KEY, JSON.stringify(clusterPosition.value))
+        } catch { }
+        return
+    }
+    const ulid = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-bubble-ulid]")?.dataset.bubbleUlid
+    if (ulid) openBubble(ulid)
 }
 
 onMounted(() => {
@@ -166,6 +202,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
     window.removeEventListener("resize", onResize)
     window.visualViewport?.removeEventListener("resize", syncSheetToViewport)
     window.visualViewport?.removeEventListener("scroll", syncSheetToViewport)
@@ -255,44 +292,116 @@ onUnmounted(() => {
             </div>
         </template>
 
-        <!-- Minimised chat-head bubbles (draggable), stacked upwards unless dragged -->
+        <!-- Minimised chat-head bubbles: up to three, the rest folded into one; the whole row drags -->
         <div
-            v-for="w in store.openWindowsMinimised"
-            :key="w.ulid"
-            v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'left' }"
-            class="group/bubble fixed z-[30] h-12 w-12 cursor-pointer touch-none rounded-full"
-            :class="w.x == null ? desktopAnchor : ''"
-            :style="{ ...bubbleStyle(w.ulid), bottom: w.x == null ? stackedBubbleBottom(w.ulid) : undefined }"
-            @pointerdown="onBubblePointerDown($event, w.ulid)"
-            @pointermove="onBubblePointerMove"
-            @pointerup="onBubblePointerUp(w.ulid)"
+            v-if="orderedBubbles.length"
+            ref="clusterElement"
+            class="fixed z-[30] flex touch-none items-center"
+            :class="clusterPosition ? '' : desktopAnchor"
+            :style="clusterStyle"
+            @pointerdown="onClusterPointerDown"
+            @pointermove="onClusterPointerMove"
+            @pointerup="onClusterPointerUp"
         >
             <div
-                class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shadow-lg transition duration-200"
-                :class="unreadOf(w.ulid) ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-white'"
+                v-for="(w, bubbleIndex) in singleBubbles"
+                :key="w.ulid"
+                :data-bubble-ulid="w.ulid"
+                v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'top' }"
+                class="group/bubble relative h-12 w-12 shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-0.5"
+                :class="bubbleIndex > 0 && '-ml-3'"
             >
-                <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-lg text-indigo-600">
-                    <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                <div
+                    class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shadow-lg"
+                    :class="unreadOf(w.ulid) ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-white'"
+                >
+                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-lg text-indigo-600">
+                        <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                    </span>
+                    <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
+                    <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
+                </div>
+                <span
+                    v-if="unreadOf(w.ulid)"
+                    class="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+                >
+                    {{ unreadOf(w.ulid) > 99 ? "99+" : unreadOf(w.ulid) }}
                 </span>
-                <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
-                <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
+                <button
+                    type="button"
+                    :aria-label="ctrans('Dismiss')"
+                    class="absolute -left-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-gray-700 text-[10px] text-white shadow group-hover/bubble:flex"
+                    @pointerdown.stop
+                    @pointerup.stop
+                    @click.stop="store.dismissWindow(w.ulid)"
+                >
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                </button>
             </div>
-            <span
-                v-if="unreadOf(w.ulid)"
-                class="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+
+            <div
+                v-if="overflowBubbles.length"
+                class="relative -ml-3 shrink-0"
+                @mouseenter="keepOverflowListOpen"
+                @mouseleave="closeOverflowListSoon"
             >
-                {{ unreadOf(w.ulid) > 99 ? "99+" : unreadOf(w.ulid) }}
-            </span>
-            <button
-                type="button"
-                :aria-label="ctrans('Dismiss')"
-                class="absolute -left-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-gray-700 text-[10px] text-white shadow group-hover/bubble:flex"
-                @pointerdown.stop
-                @pointerup.stop
-                @click.stop="store.dismissWindow(w.ulid)"
-            >
-                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
-            </button>
+                <button
+                    type="button"
+                    :aria-label="ctrans(':count more chats', { count: String(overflowBubbles.length) })"
+                    :aria-expanded="isOverflowListOpen"
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-semibold text-gray-700 shadow-lg transition duration-200 hover:-translate-y-0.5"
+                    :class="overflowUnread ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-gray-200'"
+                    @pointerdown.stop
+                    @pointerup.stop
+                    @click.stop="isOverflowListOpen ? (isOverflowListOpen = false) : keepOverflowListOpen()"
+                >
+                    +{{ overflowBubbles.length }}
+                </button>
+                <span
+                    v-if="overflowUnread"
+                    class="pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+                >
+                    {{ overflowUnread > 99 ? "99+" : overflowUnread }}
+                </span>
+
+                <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="translate-y-1 opacity-0" leave-active-class="transition duration-100 ease-in" leave-to-class="translate-y-1 opacity-0">
+                    <div
+                        v-if="isOverflowListOpen"
+                        class="absolute bottom-full right-0 mb-3 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-900 shadow-xl"
+                        @pointerdown.stop
+                        @pointerup.stop
+                    >
+                        <p class="border-b border-gray-100 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("More chats") }}</p>
+                        <ul class="max-h-80 divide-y divide-gray-50 overflow-y-auto">
+                            <li v-for="w in overflowBubbles" :key="w.ulid" class="group/row flex items-center">
+                                <button type="button" class="flex min-w-0 flex-1 items-center gap-x-2.5 px-3 py-2 text-left transition duration-200 hover:bg-gray-50 active:!bg-gray-100" @click="openBubble(w.ulid)">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full" :class="unreadOf(w.ulid) ? 'ring-2 ring-red-500' : ''">
+                                        <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-indigo-600">
+                                            <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                                        </span>
+                                        <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
+                                        <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-xs font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block truncate text-sm" :class="unreadOf(w.ulid) ? 'font-semibold text-gray-900' : 'text-gray-700'">{{ otherName(store.conversationByUlid(w.ulid)) }}</span>
+                                        <span class="block truncate text-xs text-gray-500">{{ lastMessagePreview(store.conversationByUlid(w.ulid)?.last_message ?? null) }}</span>
+                                    </span>
+                                    <span v-if="unreadOf(w.ulid)" class="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white">{{ unreadOf(w.ulid) }}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    v-tooltip="ctrans('Dismiss')"
+                                    :aria-label="ctrans('Dismiss')"
+                                    class="mr-1.5 shrink-0 rounded p-1.5 text-gray-300 opacity-0 transition duration-200 hover:bg-gray-100 hover:text-gray-600 focus:opacity-100 group-hover/row:opacity-100"
+                                    @click.stop="store.dismissWindow(w.ulid)"
+                                >
+                                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </Transition>
+            </div>
         </div>
         </Teleport>
     </div>
