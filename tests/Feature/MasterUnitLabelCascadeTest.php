@@ -6,6 +6,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\AskShopkeeperToReviewMasterText;
 use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -22,6 +23,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
@@ -236,6 +238,30 @@ test('writing the shop text clears the review flag', function () {
 
     expect($this->product->refresh()->name)->toBe('levanduľové mydlo')
         ->and($this->product->is_name_reviewed)->toBeTrue();
+});
+
+test('a master text change asks the shopkeeper to review it, piles onto the open task and ticks off what was rewritten', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id, 'state' => ShopStateEnum::OPEN]);
+    UpdateShop::make()->action($this->shop, ['shopkeeper_in_charge_id' => $this->user->id]);
+    $reviewTasks = fn () => StaffTask::where('data->kind', AskShopkeeperToReviewMasterText::TASK_KIND)->where('data->shop_id', $this->shop->id);
+    $reviewTasks()->delete();
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    $task = $reviewTasks()->sole();
+    expect($task->assignee_id)->toBe($this->user->id)
+        ->and($task->model_type)->toBe('Product')
+        ->and($task->data['subtasks'])->toBe([['title' => $this->product->code.' · Name', 'status' => 'todo']]);
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['description' => 'Smells of lavender']);
+
+    expect($reviewTasks()->sole()->data['subtasks'])->toBe([['title' => $this->product->code.' · Name, Description', 'status' => 'todo']]);
+
+    patch(route('grp.models.product.update', $this->product->id), ['name' => 'levanduľové mydlo'])->assertRedirect();
+    expect($reviewTasks()->sole()->data['subtasks'][0]['status'])->toBe('todo');
+
+    patch(route('grp.models.product.update', $this->product->id), ['description' => 'Vonia levanduľou'])->assertRedirect();
+    expect($reviewTasks()->sole()->data['subtasks'][0]['status'])->toBe('done');
 });
 
 test('a machine rewriting the text does not mark it reviewed', function () {

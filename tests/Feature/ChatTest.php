@@ -2991,6 +2991,30 @@ describe('staff messaging archive', function () {
         \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $other, ['body' => 'are you there?']);
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull();
     });
+
+    test('a task chat cannot be archived while the task is open and lives on the task page', function () {
+        $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the blue mugs', 'department' => 'warehouse']);
+        $conversation = $task->conversation;
+
+        expect((new \App\Http\Resources\Chat\StaffConversationResource($conversation))->resolve()['task']['is_open'])->toBeTrue();
+
+        actingAs($this->user)
+            ->get(route('grp.chat.staff.show', $conversation))
+            ->assertRedirect(route('grp.tasks.show', $task->reference));
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.archive', $conversation))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('conversation');
+
+        $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.archive', $conversation))
+            ->assertOk();
+
+        expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->toBeNull();
+    });
 });
 
 describe('staff messaging gifs', function () {
@@ -3682,8 +3706,128 @@ test('staff tasks page and options respond', function () {
     get(route('grp.tasks.board'))->assertOk();
     get(route('grp.tasks.reports'))->assertOk();
     get(route('grp.tasks.reports', ['created' => '1w']))->assertOk();
+    get(route('grp.tasks.eta_map'))->assertOk();
     getJson(route('grp.tasks.options'))->assertOk()->assertJsonStructure(['departments', 'my_departments', 'priorities', 'statuses']);
     getJson(route('grp.tasks.list', ['view' => 'department']))->assertOk();
+});
+
+test('whoever works on a task suggests a new ETA and the requester accepts or declines it', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Repaint the loading bay', 'assignee_id' => $worker->id, 'due_at' => now()->addDays(2)->toDateString()]);
+
+    actingAs($worker)
+        ->patchJson(route('grp.tasks.update', $task->reference), ['due_at' => now()->addDays(9)->toDateString()])
+        ->assertForbidden();
+
+    $newEta = now()->addDays(9)->toDateString();
+    actingAs($worker)
+        ->postJson(route('grp.tasks.eta_proposal.store', $task->reference), ['due_at' => $newEta, 'reason' => 'The paint arrives next week'])
+        ->assertOk()
+        ->assertJsonPath('data.eta_proposal.due_at', $newEta)
+        ->assertJsonPath('data.eta_proposal.by_id', $worker->id);
+
+    $notification = $this->user->notifications()->where('data', 'like', '%suggests a new ETA for '.$task->reference.'%')->latest()->first();
+
+    expect($notification?->data['body'])->toBe('The paint arrives next week')
+        ->and($task->conversation->messages()->latest('id')->first()->body)->toContain('The paint arrives next week');
+
+    actingAs($worker)
+        ->postJson(route('grp.tasks.eta_proposal.decide', $task->reference), ['decision' => 'accept'])
+        ->assertForbidden();
+
+    actingAs($this->user)
+        ->postJson(route('grp.tasks.eta_proposal.decide', $task->reference), ['decision' => 'accept'])
+        ->assertOk()
+        ->assertJsonPath('data.due_at', $newEta)
+        ->assertJsonPath('data.eta_proposal', null);
+
+    actingAs($worker)->postJson(route('grp.tasks.eta_proposal.store', $task->reference), ['due_at' => now()->addDays(20)->toDateString(), 'reason' => 'Rain all week']);
+    actingAs($this->user)
+        ->postJson(route('grp.tasks.eta_proposal.decide', $task->reference), ['decision' => 'decline'])
+        ->assertOk()
+        ->assertJsonPath('data.due_at', $newEta)
+        ->assertJsonPath('data.eta_proposal', null);
+
+    actingAs($this->user)
+        ->postJson(route('grp.tasks.eta_proposal.decide', $task->reference), ['decision' => 'accept'])
+        ->assertUnprocessable();
+});
+
+test('a supervisor working on a task asks for a new ETA while a supervisor outside it sets the date', function () {
+    $newSupervisor = function () {
+        $user     = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+        $position = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $user->group_id)->where('code', 'like', '%-m')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->value('id');
+        \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $user->id, 'job_position_id' => $position, 'group_id' => $user->group_id, 'scopes' => '{}']);
+
+        return $user;
+    };
+    $workingSupervisor = $newSupervisor();
+    $outsideSupervisor = $newSupervisor();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Check the returns shelf', 'assignee_id' => $workingSupervisor->id, 'due_at' => now()->addDays(3)->toDateString()]);
+
+    expect($task->dueAccessFor($workingSupervisor))->toBe(['can_set' => false, 'can_suggest' => true])
+        ->and($task->dueAccessFor($outsideSupervisor))->toBe(['can_set' => true, 'can_suggest' => false])
+        ->and($task->dueAccessFor($this->user))->toBe(['can_set' => true, 'can_suggest' => false]);
+
+    actingAs($workingSupervisor)
+        ->patchJson(route('grp.tasks.update', $task->reference), ['due_at' => now()->addDays(10)->toDateString()])
+        ->assertForbidden();
+
+    actingAs($workingSupervisor)
+        ->postJson(route('grp.tasks.eta_proposal.store', $task->reference), ['due_at' => now()->addDays(10)->toDateString(), 'reason' => 'Two returns still in transit'])
+        ->assertOk();
+
+    actingAs($outsideSupervisor)
+        ->postJson(route('grp.tasks.eta_proposal.decide', $task->reference), ['decision' => 'accept'])
+        ->assertOk()
+        ->assertJsonPath('data.due_at', now()->addDays(10)->toDateString());
+});
+
+test('a collaborator can only take themselves off a task while its assignee can take anyone off', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $otherHelper  = $newColleague();
+
+    $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restack the pallets', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id, $otherHelper->id]]);
+    $syncAs       = fn ($user, array $ids) => actingAs($user)->patchJson(route('grp.tasks.collaborators.update', $task->reference), ['collaborator_ids' => $ids]);
+    $collaborators = fn () => $task->refresh()->collaborators()->pluck('users.id')->sort()->values()->all();
+
+    expect($task->canRemoveCollaboratorsBy($helper))->toBeFalse()
+        ->and($task->canRemoveCollaboratorsBy($assignee))->toBeTrue();
+
+    $syncAs($helper, [$helper->id])->assertForbidden();
+    expect($collaborators())->toBe(collect([$helper->id, $otherHelper->id])->sort()->values()->all());
+
+    $syncAs($helper, [$otherHelper->id])->assertOk();
+    expect($collaborators())->toBe([$otherHelper->id]);
+
+    $syncAs($assignee, [])->assertOk();
+    expect($collaborators())->toBe([]);
+});
+
+test('the ETA map lays open tasks out by person and day with how pressing each one is', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $overdue  = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Late one', 'assignee_id' => $worker->id, 'due_at' => now()->subDays(2)->toDateString()]);
+    $tomorrow = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Tomorrow one', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);
+    $pressing = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Urgent next week', 'assignee_id' => $worker->id, 'priority' => 'urgent', 'due_at' => now()->addDays(6)->toDateString()]);
+    $relaxed  = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Some day', 'assignee_id' => $worker->id, 'due_at' => now()->addDays(30)->toDateString()]);
+    $open     = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Whenever', 'department' => 'warehouse']);
+    \App\Actions\Tasks\UpdateStaffTask::run($relaxed->refresh(), $worker, ['status' => 'done']);
+
+    $map = \App\Actions\Tasks\UI\ShowStaffTasksEtaMap::make()->handle($this->organisation->group, $this->user);
+
+    $chips = collect($map['rows'])->flatMap(fn (array $row) => collect($row['cells'])->flatMap(fn (array $cell, string $column) => collect($cell)->map(fn (array $chip) => [...$chip, 'row' => $row['key'], 'column' => $column])))->keyBy('id');
+
+    expect($chips[$overdue->id])->toMatchArray(['urgency' => 'overdue', 'column' => 'overdue', 'row' => 'user:'.$worker->id])
+        ->and($chips[$tomorrow->id])->toMatchArray(['urgency' => 'critical', 'column' => now()->addDay()->toDateString()])
+        ->and($chips[$pressing->id])->toMatchArray(['urgency' => 'soon', 'column' => now()->addDays(6)->toDateString()])
+        ->and($chips[$open->id])->toMatchArray(['urgency' => 'none', 'column' => 'none', 'row' => 'department:warehouse'])
+        ->and($chips->has($relaxed->id))->toBeFalse()
+        ->and(collect($map['columns'])->pluck('key')->first())->toBe('overdue')
+        ->and(collect($map['columns'])->firstWhere('is_today', true)['key'])->toBe(now()->toDateString());
 });
 
 test('all tasks list counts tasks per status and tells who works on each row', function () {
