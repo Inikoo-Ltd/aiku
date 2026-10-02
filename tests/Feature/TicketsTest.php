@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
+use App\Actions\Helpers\Ticket\ClassifyTicket;
 use App\Actions\Helpers\Ticket\CloseTicketsAfterDeployment;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
@@ -3724,7 +3725,11 @@ test('jev fills in the kind and module nobody set, only when sure, and the repor
             'kind'   => ['choice' => 'feature', 'probabilities' => ['feature' => 0.8, 'bug' => 0.2]],
             'module' => ['choice' => 'procurement', 'probabilities' => ['procurement' => 0.9]],
         ]])
-        ->push(['answers' => ['module' => ['choice' => 'crm', 'probabilities' => ['crm' => 0.3, 'chat' => 0.3]]]])]);
+        ->push(['answers' => ['module' => ['choice' => 'crm', 'probabilities' => ['crm' => 0.3, 'chat' => 0.3]]]])
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'aurora', 'probabilities' => ['aurora' => 0.7]],
+            'module' => ['choice' => 'websites', 'probabilities' => ['websites' => 0.2]],
+        ]])]);
 
     $classified = StoreTicket::make()->action($this->group, ['subject' => 'Add supplier lead times to purchase orders']);
     $unsure     = StoreTicket::make()->action($this->group, ['subject' => 'Something odd', 'kind' => TicketKindEnum::BUG->value]);
@@ -3744,4 +3749,9 @@ test('jev fills in the kind and module nobody set, only when sure, and the repor
         ->and($today['modules']['none'])->toBeGreaterThanOrEqual(1)
         ->and(collect($stats['modules'])->firstWhere('module', 'chat')['label'])->toBe('Chat')
         ->and(collect($stats['modules'])->sum('total'))->toBe($stats['created']);
+
+    ClassifyTicket::make()->handle($setByStaff, reclassify: true);
+
+    expect($setByStaff->refresh()->kind)->toBe(TicketKindEnum::AURORA)
+        ->and($setByStaff->module)->toBe(TicketModuleEnum::CHAT);
 });

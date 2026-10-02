@@ -19,7 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Jev reads a ticket's subject and description and fills in its kind and module when nobody
  * did, so the reports can show which parts of aiku the tickets are about over time. What a
- * person set is never changed, and a guess Jev is not sure of is left empty.
+ * person set is only changed when every ticket is classified again on purpose (--all), and a
+ * guess Jev is not sure of never replaces anything.
  */
 class ClassifyTicket
 {
@@ -29,7 +30,7 @@ class ClassifyTicket
 
     public int $jobTries = 2;
 
-    public string $commandSignature = 'tickets:classify {--limit= : most tickets to classify}';
+    public string $commandSignature = 'tickets:classify {--all : classify every ticket again, also those with a kind and module} {--limit= : most tickets to classify}';
 
     private const float MIN_CONFIDENCE = 0.5;
 
@@ -64,10 +65,10 @@ class ClassifyTicket
         'reports'         => 'reports, dashboards, sales figures, statistics, exports',
     ];
 
-    public function handle(Ticket $ticket): Ticket
+    public function handle(Ticket $ticket, bool $reclassify = false): Ticket
     {
-        $needsKind   = $ticket->kind === null;
-        $needsModule = $ticket->module === null;
+        $needsKind   = $reclassify || $ticket->kind === null;
+        $needsModule = $reclassify || $ticket->module === null;
 
         if (!$needsKind && !$needsModule) {
             return $ticket;
@@ -118,27 +119,26 @@ class ClassifyTicket
 
     public function asCommand(Command $command): int
     {
-        $query = Ticket::where(fn ($query) => $query->whereNull('kind')->orWhereNull('module'))->orderByDesc('id');
-        if ($command->option('limit')) {
-            $query->limit((int) $command->option('limit'));
-        }
+        $reclassify = (bool) $command->option('all');
+        $tickets    = Ticket::when(!$reclassify, fn ($query) => $query->where(fn ($query) => $query->whereNull('kind')->orWhereNull('module')))
+            ->orderByDesc('id')
+            ->when($command->option('limit'), fn ($query, $limit) => $query->limit((int) $limit))
+            ->get();
 
-        $before = ['kind' => 0, 'module' => 0];
-        $after  = ['kind' => 0, 'module' => 0];
-        $bar    = $command->getOutput()->createProgressBar($query->count());
+        $changed = ['kind' => 0, 'module' => 0];
+        $bar     = $command->getOutput()->createProgressBar($tickets->count());
 
-        $query->get()->each(function (Ticket $ticket) use (&$before, &$after, $bar) {
-            $before['kind']   += (int) ($ticket->kind === null);
-            $before['module'] += (int) ($ticket->module === null);
-            $this->handle($ticket);
-            $after['kind']   += (int) ($ticket->kind === null);
-            $after['module'] += (int) ($ticket->module === null);
+        $tickets->each(function (Ticket $ticket) use ($reclassify, &$changed, $bar) {
+            $before = ['kind' => $ticket->kind, 'module' => $ticket->module];
+            $this->handle($ticket, $reclassify);
+            $changed['kind']   += (int) ($ticket->kind !== $before['kind']);
+            $changed['module'] += (int) ($ticket->module !== $before['module']);
             $bar->advance();
         });
 
         $bar->finish();
         $command->newLine();
-        $command->info(($before['kind'] - $after['kind']).'/'.$before['kind'].' kinds and '.($before['module'] - $after['module']).'/'.$before['module'].' modules filled in');
+        $command->info($tickets->count().' tickets read: '.$changed['kind'].' kinds and '.$changed['module'].' modules changed');
 
         return 0;
     }
