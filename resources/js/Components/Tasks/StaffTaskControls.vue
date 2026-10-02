@@ -223,6 +223,11 @@ const toggleSubscription = () => send("subscription", async () => {
     await store.fetchConversations()
 })
 
+const me = computed<Person | null>(() => {
+    const user = (usePage().props.auth as { user?: { id: number; contact_name?: string; username?: string; avatar?: any } } | undefined)?.user
+    return user ? { id: user.id, name: user.contact_name || user.username || ctrans("Me"), avatar: user.avatar ?? null } : null
+})
+
 const assigneePopover = ref()
 const isAssigneePickerOpen = ref(false)
 const assigneeQuery = ref("")
@@ -300,6 +305,14 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                 <div class="w-64 space-y-2 text-sm">
                     <input v-model="assigneeQuery" type="text" class="w-full rounded border-gray-300 text-sm" :placeholder="ctrans('Search colleague…')" />
                     <div class="flex max-h-72 flex-col overflow-y-auto">
+                        <button
+                            v-if="me && task.assignee?.id !== me.id && !assigneeQuery.trim()"
+                            type="button"
+                            class="mb-1 flex items-center gap-2 rounded border-b border-gray-100 p-2 text-left font-medium text-[--app-accent-strong] transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                            @click="reassignTo(me.id)">
+                            <TicketUserAvatar :name="me.name" :avatar="me.avatar" size="sm" />
+                            <span class="truncate">{{ ctrans("Assign to me") }}</span>
+                        </button>
                         <button
                             v-for="person in assigneeCandidates"
                             :key="person.id"
