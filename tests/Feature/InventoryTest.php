@@ -3073,6 +3073,22 @@ describe('aurora provisional cost fix', function () {
         expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
     });
 
+    test('recalculating a sko history keeps its organisation day totals until they are hydrated again', function () {
+        [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFK');
+        \Illuminate\Support\Facades\Queue::fake();
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+        $organisationStockHistory = \App\Models\Inventory\OrganisationStockHistory::where('organisation_id', $this->organisation->id)->where('date', today()->toDateString())->firstOrFail();
+        $organisationStockHistory->update(['number_org_stocks' => 50, 'number_out_of_stock_org_stocks' => 5, 'org_stock_lpp_value' => 100]);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+
+        $organisationStockHistory->refresh();
+        expect($organisationStockHistory->number_org_stocks)->toBe(50)
+            ->and($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(5)
+            ->and((float) $organisationStockHistory->org_stock_lpp_value)->toBe(100.0);
+    });
+
     test('stock history exports carry the three valuations with legends', function () {
         [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFH');
         $headings   = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();

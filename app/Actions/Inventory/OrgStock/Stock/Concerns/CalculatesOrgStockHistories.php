@@ -382,7 +382,7 @@ trait CalculatesOrgStockHistories
         );
 
 
-        $organisationStockHistory = OrganisationStockHistory::updateOrCreate(
+        $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
             [
 
                 'organisation_id' => $orgStock->organisation_id,
