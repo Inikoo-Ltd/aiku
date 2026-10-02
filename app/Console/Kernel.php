@@ -13,6 +13,7 @@ use App\Actions\Ordering\PreOrder\ProcessPreOrders;
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
+use App\Actions\Catalogue\RebuildCatalogueRankings;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
@@ -173,6 +174,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'NotifyShopStockArrivals',
                 ),
                 name: 'NotifyShopStockArrivals',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RebuildCatalogueRankings::makeJob())->hourlyAt(25)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RebuildCatalogueRankings',
+                ),
+                name: 'RebuildCatalogueRankings',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -409,6 +419,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ForecastOrgStockDemand',
                 ),
                 name: 'ForecastOrgStockDemand',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:organisation-stock-out-projection')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'ProjectOrganisationStockOuts',
+                ),
+                name: 'ProjectOrganisationStockOuts',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

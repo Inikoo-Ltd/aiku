@@ -43,19 +43,15 @@ class IndexTopListedFamiliesInPlatform extends OrgAction
                 DB::raw('COUNT(portfolios.id) as total_listed'),
                 DB::raw('COUNT(DISTINCT portfolios.customer_id) as total_customers')
             )
-            // portfolios -> assets (via item_id)
-            ->join('assets', function ($join) {
-                $join->on('portfolios.item_id', '=', 'assets.id')
+            ->join('products', function ($join) {
+                $join->on('portfolios.item_id', '=', 'products.id')
                     ->where('portfolios.item_type', '=', 'Product');
             })
-            // assets -> products (via product.asset_id = assets.id)
-            ->join('products', 'products.asset_id', '=', 'assets.id')
-            // products -> product_categories/families (via products.family_id)
+            ->join('assets', 'assets.id', '=', 'products.asset_id')
             ->join('product_categories as families', 'families.id', '=', 'products.family_id')
             ->where('portfolios.platform_id', $platform->id)
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')
-            ->whereNotNull('products.family_id') // pastikan ada family-nya
             ->groupBy('families.id', 'families.slug', 'families.code', 'families.name')
             ->orderByDesc('total_listed');
 

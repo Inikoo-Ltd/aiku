@@ -1921,3 +1921,85 @@ test('accounts can edit billables, staff without product or accounting edit cann
     expect($this->service->refresh()->name)->toBe('Accounts rename')
         ->and($this->charge->refresh()->name)->toBe('Accounts rename');
 });
+
+test('catalogue top listed and top sold tabs read the hourly rankings with the same totals as the live query', function () {
+    $platform = $this->group->platforms()->where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL)->firstOrFail();
+    $customers = [$this->customer, createCustomer($this->shop)];
+    foreach ($customers as $index => $customer) {
+        $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'rankings-'.$index]);
+        \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($channel, $this->product, []);
+    }
+
+    \App\Actions\Catalogue\RebuildCatalogueRankings::run();
+    actingAs($this->user);
+
+    $rows = function (string $url, string $tab, array $columns) {
+        return collect(get($url)->assertOk()->viewData('page')['props'][$tab]['data'])
+            ->map(fn (array $row) => array_map(fn ($value) => is_numeric($value) ? (float) $value : $value, \Illuminate\Support\Arr::only($row, $columns)))
+            ->sortBy('id')->values()->all();
+    };
+
+    $everything = '20000101-20991231';
+    foreach (
+        [
+            route('grp.catalogue.show'),
+            route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $this->shop->slug]),
+        ] as $url
+    ) {
+        foreach (
+            [
+                'top_listed_families' => [['id', 'total_listed', 'total_customers'], 'created_at'],
+                'top_listed_products' => [['id', 'total_listed', 'total_customers'], 'created_at'],
+                'top_sold_products'   => [['id', 'total_sold', 'total_amount'], 'date'],
+            ] as $tab => [$columns, $dateColumn]
+        ) {
+            $separator = str_contains($url, '?') ? '&' : '?';
+            $ranked    = $rows($url.$separator.'tab='.$tab, $tab, $columns);
+            $live      = $rows($url.$separator.'tab='.$tab.'&between['.$dateColumn.']='.$everything, $tab, $columns);
+
+            expect($ranked)->toBe($live);
+        }
+    }
+
+    $listedFamilies = $rows(route('grp.catalogue.show').'?tab=top_listed_families', 'top_listed_families', ['id', 'total_listed', 'total_customers']);
+    expect(collect($listedFamilies)->firstWhere('id', (float) $this->family->id))->toMatchArray(['total_listed' => 2.0, 'total_customers' => (float) collect($customers)->unique('id')->count()]);
+});
+
+test('platform and country top listed and top sold tabs count portfolios and invoice lines against the product they belong to', function () {
+    $platform = $this->group->platforms()->where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL)->firstOrFail();
+    actingAs($this->user);
+
+    $platformUrl = fn (string $tab) => route('grp.org.shops.show.crm.platforms.show', [$this->organisation->slug, $this->shop->slug, $platform->slug, 'tab' => $tab]);
+    $rowFor      = fn (string $url, string $tab, int $id) => collect(get($url)->assertOk()->viewData('page')['props'][$tab]['data'])->firstWhere('id', $id) ?? [];
+
+    $before = [
+        'families' => $rowFor($platformUrl('top_listed_families'), 'top_listed_families', $this->family->id)['total_listed'] ?? 0,
+        'products' => $rowFor($platformUrl('top_listed_products'), 'top_listed_products', $this->product->asset_id)['total_listed'] ?? 0,
+        'sold'     => $rowFor($platformUrl('top_sold_products'), 'top_sold_products', $this->product->asset_id)['total_sold'] ?? 0,
+    ];
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    DB::table('customers')->where('id', $customer->id)->update(['location' => json_encode(['AQ', 'Antarctica', ''])]);
+
+    foreach ([0, 1] as $index) {
+        $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'platform-top-'.$index]);
+        \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($channel, $this->product, []);
+
+        $invoice = StoreInvoice::make()->action($customer, [...Invoice::factory()->definition(), 'in_process' => false]);
+        \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $this->product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 3,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+    }
+
+    expect($rowFor($platformUrl('top_listed_families'), 'top_listed_families', $this->family->id)['total_listed'])->toEqual($before['families'] + 2)
+        ->and($rowFor($platformUrl('top_listed_products'), 'top_listed_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_listed' => $before['products'] + 2])
+        ->and($rowFor($platformUrl('top_sold_products'), 'top_sold_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_sold' => (float) ($before['sold'] + 6)]);
+
+    $countryUrl = route('grp.org.shops.show.crm.countries.show', [$this->organisation->slug, $this->shop->slug, 'AQ', 'tab' => 'top_products']);
+    expect(get($countryUrl)->assertOk()->viewData('page')['props']['top_products']['data'])->toHaveCount(1)
+        ->and($rowFor($countryUrl, 'top_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_sold' => 6, 'total_amount' => 20]);
+});

@@ -1,8 +1,8 @@
 ---
 title: Ako aiku predpovedá, čo vám dôjde
 summary: Čo v skutočnosti znamená "dôjde nám to za ~12 dní" a navrhované množstvo, prečo bestseller, ktorý je vypredaný, žiada tak veľa, a kedy dôverovať číslu viac než vlastnému úsudku.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, stock, intercompany, shopping-list
 category: procurement
 ---
@@ -61,11 +61,18 @@ Pravidlo palca: predpoveď je lepšia ako vy v nudnom strede katalógu — stovk
 
 Auto-fill zoraďuje kandidátov podľa toho, ako skoro vám dôjdu, a najprv dopĺňa tie najnaliehavejšie, kým sa nevyčerpá rozpočet. Každá navrhnutá položka nesie svoj dôvod jasnými slovami — *"Our sales/quarter ~48 · our stock 0 · we run out now"* — čo je predpoveď, ktorá ukazuje svoj postup. Prečítajte si dôvody pred potvrdením; tam sa najľahšie chytí nesprávne číslo a odškrtnutie riadku zaberie jedno kliknutie. Nič sa neobjedná, kým nestlačíte **Add items to shopping list**.
 
+## Pohľad dopredu: čo dôjde, ak sa nič ďalšie neobjedná
+
+Na paneli **Procurement** graf vypredaní pokračuje za včerajšok dvoma bodkovanými čiarami: koľko SKO bude vypredaných každý deň počas nasledujúcich ôsmich týždňov a aké tržby by za deň stratili. Sklad každého SKO sa posúva dopredu podľa jeho predpovede a každá už otvorená objednávka u dodávateľa i dodávka pristane v deň, na ktorý sa očakáva. Objednávky, ktoré už prekročili očakávaný deň, sa vynechajú, kým nedostanú nový dátum, takže keď neskorú objednávku vyurgujete a znova jej určíte dátum, jej sklad sa do čiary vráti. Nič, čo ste ešte neobjednali, sa nepočíta, takže čiary ukazujú, čo sa stane, ak nikto nič ďalšie neobjedná. Objednajte dnes a zajtrajšia čiara klesne.
+
+Zoznam **Stock levels** (úrovne skladu) za každou úrovňou na paneli má stĺpec **Lost if not ordered** (stratené, ak sa neobjedná): tržby, o ktoré by SKO prišlo počas dodacej lehoty a nasledujúceho mesiaca, ak sa nič ďalšie neobjedná. Zoraďte podľa neho a medzery, ktoré stoja najviac, budú navrchu.
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Vidieť čísla pri jednotlivých položkách:</b> <b>Procurement → Partners</b> (alebo <b>Suppliers</b>, alebo <b>Agents</b>) → otvorte jedného → <b>Browse</b>: každá karta ukazuje <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> a čiarkovaný čip <b>suggested</b>, ktorý vyplní pole s množstvom.</li>
 <li><b>Vidieť ich naprieč katalógom:</b> panel **Shopping** toho istého partnera → dlaždice stock-at-risk sú postavené na dni vypredania; kliknite na číslo dlaždice pre položky za ním.</li>
 <li><b>Vidieť ich na otvorenej objednávke:</b> <b>Shopping list</b> → stĺpec **Info** nesie príbeh o sklade pre každý riadok.</li>
+<li><b>Vidieť, čo dôjde:</b> <b>Procurement</b> → graf vypredaní, bodkované čiary za včerajškom; nad ním vyberte zdroj (agenti, dodávatelia…). Kliknite na úroveň skladu vpravo a potom zoraďte zoznam podľa <b>Lost if not ordered</b>.</li>
 <li><b>Vidieť ich na objednávke u dodávateľa:</b> <b>Procurement → Suppliers</b> → otvorte jedného → jeho objednávku → <b>Items</b> alebo <b>Products</b>: riadok <b>Lasts</b> pod <b>Stock</b>, červený do dvoch týždňov, jantárový do šiestich.</li>
 <li><b>Prebiť jednu z nich:</b> zadajte vlastné množstvo do poľa na karte <b>Browse</b> — priamo tým upravíte otvorený riadok. Nič sa nad vami znovu nenavrhne.</li>
 <li><b>Opraviť dodaciu lehotu za návrhom:</b> nastavenia SKO, alebo nastavenia produktu dodávateľa, kým ešte hovorí <i>estimate</i>.</li>

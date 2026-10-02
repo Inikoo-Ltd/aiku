@@ -11,12 +11,12 @@ import { format } from "date-fns"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
-import Textarea from "primevue/textarea"
 import DatePicker from "primevue/datepicker"
 import Button from "primevue/button"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import StaffTaskPeoplePicker from "@/Components/Tasks/StaffTaskPeoplePicker.vue"
 import VerticalScrollFade from "@/Components/Utils/VerticalScrollFade.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -56,11 +56,13 @@ const emptyForm = () => ({
     subtasks: [] as string[],
     priority: "normal",
     due_at: null as Date | null,
+    images: [] as File[],
 })
 
 const form = ref(emptyForm())
 const saving = ref(false)
 const errors = ref<Record<string, string[]>>({})
+const imageError = computed(() => Object.entries(errors.value).find(([field]) => field === "description" || field.startsWith("images"))?.[1]?.[0])
 
 const me = computed<Person | null>(() => layout.user?.id
     ? { id: layout.user.id, name: layout.user.nickname || layout.user.contact_name || layout.user.username, avatar: null }
@@ -135,7 +137,7 @@ const submit = async () => {
     saving.value = true
     errors.value = {}
     try {
-        const { data } = await axios.post(props.storeUrl ?? route("grp.tasks.store"), {
+        const { data } = await axios.postForm(props.storeUrl ?? route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
             department: form.value.assignee_id ? null : form.value.department,
@@ -147,6 +149,7 @@ const submit = async () => {
             model_type: props.modelType ?? null,
             model_id: props.modelId ?? null,
             source_message_id: props.sourceMessageId ?? null,
+            images: form.value.images,
         })
         emit("close")
         emit("created", data.data)
@@ -188,13 +191,14 @@ const labelClass = "block text-sm font-semibold text-gray-700 mb-1"
                         <small v-if="errors.subject" class="block text-red-600 mt-1">{{ errors.subject[0] }}</small>
                     </div>
 
-                    <Textarea
-                        v-model="form.description"
-                        rows="6"
-                        maxlength="5000"
-                        autoResize
-                        fluid
-                        :placeholder="ctrans('Details (optional)')" />
+                    <div>
+                        <TicketComposer
+                            v-model:body="form.description"
+                            v-model:images="form.images"
+                            :rows="6"
+                            :placeholder="ctrans('Details (optional). Paste a screenshot or drop files here.')" />
+                        <small v-if="imageError" class="mt-1 block text-red-600">{{ imageError }}</small>
+                    </div>
 
                     <div class="overflow-hidden rounded-md border border-gray-300">
                         <div class="flex items-center justify-between bg-gray-50 px-3 py-2">

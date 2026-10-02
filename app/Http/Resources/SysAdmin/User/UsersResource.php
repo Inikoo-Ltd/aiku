@@ -64,6 +64,7 @@ class UsersResource extends JsonResource
             'can_use_mcp_sql'           => (bool) $this->can_use_mcp_sql,
             'can_use_mcp_discontinue'   => (bool) $this->can_use_mcp_discontinue,
             'can_use_mcp_web'           => (bool) $this->can_use_mcp_web,
+            'can_use_mcp_procurement'   => (bool) $this->can_use_mcp_procurement,
             'has_mcp_queries'           => (bool) $this->has_mcp_queries,
             'last_active'               => $this->last_active,
         ];

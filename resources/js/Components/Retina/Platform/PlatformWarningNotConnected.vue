@@ -18,6 +18,8 @@ const props = defineProps<{
 
 // Method: Platform reconnect
 const onClickReconnect = async () => {
+    const reconnectTab = window.open('', '_blank')
+
     try {
         const response = await axios[props.customer_sales_channel.reconnect_route.method || 'get'](
             route(
@@ -27,14 +29,16 @@ const onClickReconnect = async () => {
         )
         if (response.status !== 200) {
             throw new Error('Something went wrong. Try again later.')
+        } else if (response.data.id) {
+            reconnectTab?.close()
+            window.location.href = ''
+        } else if (reconnectTab) {
+            reconnectTab.location.href = response.data
         } else {
-            if(! response.data.id) {
-                window.location.href = response.data
-            } else {
-                window.location.href = ''
-            }
+            window.location.href = response.data
         }
     } catch (error: any) {
+        reconnectTab?.close()
         notify({
             title: 'Something went wrong',
             text: error.message || 'Please try again later.',

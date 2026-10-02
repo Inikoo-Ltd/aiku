@@ -14,6 +14,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import StaffTaskControls from "@/Components/Tasks/StaffTaskControls.vue"
 import StaffTaskSubtasks from "@/Components/Tasks/StaffTaskSubtasks.vue"
 import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
@@ -197,6 +198,7 @@ onUnmounted(() => {
                     </div>
                     <TicketBody v-if="task.description" :text="task.description" />
                     <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
+                    <TicketAttachmentList v-if="task.attachments?.length" :files="task.attachments" compact class="mt-3" />
 
                     <StaffTaskSubtasks ref="subtasksBox" :reference="task.reference" :subtasks="task.subtasks" :can-edit="can_edit" />
                 </section>

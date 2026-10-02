@@ -3929,6 +3929,58 @@ test('engineers and qa see staff tasks but cannot be assigned one', function () 
     \Pest\Laravel\postJson(route('grp.tasks.store'), ['subject' => 'Fix the bug', 'assignee_id' => $engineer->id])->assertUnprocessable();
 });
 
+test('staff task can be raised with attachments that only people who see the task can open', function () {
+    $assignee = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert([
+        'user_id'         => $outsider->id,
+        'job_position_id' => \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->organisation->group_id)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'),
+        'group_id'        => $this->organisation->group_id,
+        'scopes'          => '{}',
+    ]);
+
+    actingAs($this->user);
+    $response = \Pest\Laravel\post(route('grp.tasks.store'), [
+        'subject'     => 'Repack the damaged boxes',
+        'description' => 'See the photo',
+        'assignee_id' => $assignee->id,
+        'images'      => [
+            \Illuminate\Http\UploadedFile::fake()->image('damage.png', 400, 300),
+            \Illuminate\Http\UploadedFile::fake()->createWithContent('packing-list.pdf', "%PDF-1.4\n%%EOF\n"),
+        ],
+    ], ['Accept' => 'application/json'])->assertCreated();
+
+    $task = \App\Models\Tasks\StaffTask::where('reference', $response->json('data.reference'))->firstOrFail();
+
+    expect($task->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($task->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and(collect($response->json('data.attachments'))->pluck('name')->all())->toBe(['damage.png', 'packing-list.pdf'])
+        ->and($response->json('data.attachments.0.thumbnail'))->not->toBeNull();
+
+    $pdf = $task->getMedia('ticket_attachments')->first();
+
+    actingAs($assignee);
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $pdf->ulid]))->assertOk();
+    \Pest\Laravel\getJson(route('grp.tasks.details', $task->reference))->assertOk()
+        ->assertJsonPath('data.reference', $task->reference)
+        ->assertJsonCount(2, 'data.attachments');
+
+    $otherTask  = \App\Actions\Tasks\StoreStaffTask::run($assignee, ['subject' => 'Other task', 'assignee_id' => $assignee->id, 'images' => [\Illuminate\Http\UploadedFile::fake()->image('other.png')]]);
+    $otherMedia = $otherTask->getMedia('ticket_images')->first();
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $otherMedia->ulid]))->assertNotFound();
+
+    actingAs($outsider);
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $pdf->ulid]))->assertForbidden();
+    \Pest\Laravel\getJson(route('grp.tasks.details', $task->reference))->assertForbidden();
+
+    actingAs($this->user);
+    \Pest\Laravel\postJson(route('grp.tasks.store'), [
+        'subject'     => 'Too many files',
+        'assignee_id' => $assignee->id,
+        'images'      => array_map(fn (int $index) => \Illuminate\Http\UploadedFile::fake()->image("shot-$index.png"), range(1, 6)),
+    ])->assertUnprocessable()->assertJsonValidationErrors('images');
+});
+
 test('staff tasks are raised from a pasted list with people, departments and due dates', function () {
     $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $department = \App\Models\Tasks\StaffTask::departments($this->organisation->group_id)[0];
@@ -6777,7 +6829,7 @@ test('an agent waits for the customer: it closes when the time is up unless the 
 
     $silent = noiseTestEmailSession($this->shop, 'wait-silent@example.com', 'Order', 'Can you check my order?');
     $lastId = $waitFor($silent, 24);
-    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addDay(), true))->toBeLessThan(1);
+    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addWeekdays(1), true))->toBeLessThan(1);
     $wait::make()->asJob($silent, $lastId);
     expect($silent->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($wait::until($silent))->toBeNull();
@@ -8136,6 +8188,36 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
 
     $reset();
     \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::runKey($this->shop));
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+test('oldest first reads the mailbox a calendar month at a time from the oldest, and a run whose mark left the cache carries on', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    $mailbox = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::class;
+    \Illuminate\Support\Carbon::setTestNow('2026-10-15 12:00:00');
+    \Illuminate\Support\Facades\Cache::forget($mailbox::cursorKey($this->shop, 3, false, true));
+    \Illuminate\Support\Facades\Cache::forget($mailbox::runKey($this->shop));
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => []]),
+    ]);
+
+    $july   = \Illuminate\Support\Carbon::parse('2026-07-01')->timestamp;
+    $august = \Illuminate\Support\Carbon::parse('2026-08-01')->timestamp;
+    expect($mailbox::monthByMonth(\Illuminate\Support\Carbon::parse('2026-07-20')))->toHaveCount(4)->and($mailbox::monthByMonth(now())[0])->toStartWith('after:'.now()->startOfMonth()->timestamp);
+
+    $mailbox::make()->asJob($this->shop, 3, 'a-run-whose-mark-was-cleared', false, true);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), "after:$july before:$august"));
+    expect(\Illuminate\Support\Facades\Cache::get($mailbox::cursorKey($this->shop, 3, false, true)))->toMatchArray(['search' => 1, 'page' => null, 'from' => $july]);
+    $mailbox::assertPushed(1);
+
+    $mailbox::make()->asJob($this->shop, 3, 'a-run-whose-mark-was-cleared', false, true);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), "after:$august before:"));
+
+    \Illuminate\Support\Facades\Cache::forget($mailbox::cursorKey($this->shop, 3, false, true));
     \Illuminate\Support\Carbon::setTestNow();
 });
 

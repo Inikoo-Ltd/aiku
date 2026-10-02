@@ -34,7 +34,7 @@ class ShowStaffTask extends OrgAction
 
     public function handle(StaffTask $staffTask): StaffTask
     {
-        return $staffTask->load(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants.image', 'conversation.context', 'model']);
+        return $staffTask->load(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants.image', 'conversation.context', 'model', 'media']);
     }
 
     public function asController(StaffTask $staffTask, ActionRequest $request): StaffTask

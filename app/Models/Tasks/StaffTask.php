@@ -14,7 +14,10 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Actions\Helpers\Images\GetPictureSources;
+use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasTicketImages;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +29,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -53,10 +58,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Model|null $model
  * @mixin \Eloquent
  */
-class StaffTask extends Model implements Auditable
+class StaffTask extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasHistory;
+    use InteractsWithMedia;
+    use HasTicketImages;
 
     public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock', 'ChatSession', 'MetaChatSession'];
 
@@ -132,6 +139,33 @@ class StaffTask extends Model implements Auditable
     public function model(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * @return array<int, array{name: string, url: string, mime: string|null, size: int, created_at: mixed, thumbnail: array<string, string>|null}>
+     */
+    public function attachmentGallery(): array
+    {
+        return $this->media
+            ->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])
+            ->sortBy('id')
+            ->map(fn (Media $media) => [
+                'name'       => $media->name,
+                'url'        => route('grp.tasks.attachments.show', ['staffTask' => $this->reference, 'media' => $media->ulid]),
+                'mime'       => $media->mime_type,
+                'size'       => $media->size,
+                'created_at' => $media->created_at,
+                'thumbnail'  => $media->collection_name === 'ticket_images' ? GetPictureSources::run($media->getImage()->resize(400, 0)) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function hasAttachment(Media $media): bool
+    {
+        return $media->model_type === $this->getMorphClass()
+            && (int) $media->model_id === $this->id
+            && in_array($media->collection_name, ['ticket_images', 'ticket_attachments'], true);
     }
 
     public function scopeOpen(Builder $query): Builder

@@ -28,7 +28,7 @@ class GetStaffTasks
     {
         return $this->query($user, $view, $closed, $modelType, $modelId)
             ->when($closed, fn (Builder $query) => $query->orderByDesc('closed_at'), fn (Builder $query) => $query->orderByRaw('due_at asc nulls last, id asc'))
-            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model', 'media'])
             ->limit(200)
             ->get();
     }

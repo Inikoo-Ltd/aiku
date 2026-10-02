@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -52,6 +52,17 @@ Auto-fill también puede abrirse ya acotado: **+ fill** en una casilla de riesgo
 
 Un buen hábito: trabaja las casillas del panel empezando por las peores, luego ejecuta Auto-fill una vez por ciclo de reposición para lo que quede, lee los motivos, desmarca lo que no te convenza y añade el resto.
 
+## Pedirle a tu asistente de IA que añada líneas
+
+Si tu cuenta está habilitada, el asistente de IA que conectas a aiku puede poner líneas en la lista por ti. Haz la planificación en tu propio asistente — pregúntale qué se está agotando, repasad los números juntos — y cuando estés conforme, dile: *"vale, añade esto a la lista de la compra"*. Primero te muestra los códigos de SKO y las cantidades, y solo los añade cuando lo confirmas.
+
+- Para planificar, el asistente lee los mismos números que ves tú: stock, ventas, días hasta que nos quedemos sin él, la cantidad del pronóstico, el order step y el shelf life. Nunca propone más de lo que se vende antes de que caduque; un artículo sin shelf life registrado todavía se planifica como si durara un año.
+- Las cantidades están en SKOs y **fijan** la línea: un SKO que ya está en la lista recibe la nueva cantidad, no una más.
+- Se aplican las mismas reglas que al añadir a mano: las comprobaciones de budget, espacio de almacén y packs que verás más abajo. Una línea que la lista rechaza vuelve con su motivo, y el resto se añade igualmente.
+- Solo añade y cambia cantidades; las prioridades y eliminar líneas se quedan en la tabla de la lista de la compra.
+- Cada cambio queda registrado con tu petición y se puede deshacer: pídele al asistente que lo revierta, o un administrador puede hacerlo desde el registro de cambios de IA (AI changes).
+- La habilitación es un interruptor en tu cuenta de usuario que activa un administrador, y además necesitas permiso para editar procurement de tu organización.
+
 ## Cuando la lista dice que no
 
 Los añadidos se rechazan en tres casos, a propósito: la lista ha alcanzado el **budget** para este socio (los artículos de rango A y sin stock están exentos — una emergencia siempre cabe), el almacén está por debajo del 5% de ubicaciones libres, o este socio ya ha reclamado su parte proporcional de las plazas libres con productos que nunca has almacenado. Atiende el mensaje en vez de buscar otra vía: la misma protección cubre los añadidos manuales, en bloque y de Auto-fill. El [artículo del panel](/docs/reading-the-partner-shopping-dashboard-es) explica de dónde vienen esos límites.
@@ -66,6 +77,7 @@ En cuanto el socio [envía un cargamento a su almacén](/docs/fulfilling-partner
 <li><b>Añadir a la lista:</b> <b>Shopping list</b> → <b>Add stocks</b>, o <b>Browse</b> y fija cantidades en las fichas de producto, o <b>Auto-fill</b> (o <b>+ fill</b> en una casilla del panel) para una propuesta.</li>
 <li><b>Pedir en hornadas completas:</b> el botón junto a <i>full batches every N SKO</i> en la línea o en la ficha de producto.</li>
 <li><b>Ajustar líneas abiertas:</b> cambia la priority o elimina líneas en la tabla de la lista de la compra; cambia cantidades desde las fichas de producto en <b>Browse</b>.</li>
+<li><b>Dejar que alguien rellene la lista con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can connect AI assistant</b> y después <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Mantener un artículo fuera de auto-fill:</b> tu organización → <b>Warehouse → Inventory</b> → abre el SKO → <b>Edit SKO</b> → activa <b>Do not auto order</b>.</li>
 <li><b>Seguir y recibir el envío:</b> misma página del socio → <b>Stock deliveries</b> → cuando llega la mercancía, <b>Receive</b> → comprueba → coloca en ubicaciones.</li>
 </ul>

@@ -70,7 +70,7 @@ test('discontinued products are not brought back by the bulk set active', functi
 
 test('products from another shop are not touched', function () {
     $inProcess = ($this->makeProductInState)(ProductStateEnum::IN_PROCESS);
-    list(, , $otherShop) = createShop();
+    [, , $otherShop] = createOwnShop('set-bulk-products-active-other-shop');
 
     $this->patch(route('grp.models.product.bulk_set_active', ['shop' => $otherShop->id]), [
         'products' => [$inProcess->id],

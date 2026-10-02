@@ -16,6 +16,7 @@ import { taskRoute } from "@/Composables/useTasksRoute"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import Icon from "@/Components/Icon.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import StaffTaskControls from "@/Components/Tasks/StaffTaskControls.vue"
@@ -172,6 +173,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                         <div class="flex min-h-full flex-col">
                             <TicketBody v-if="shown.description" :text="shown.description" />
                             <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
+                            <TicketAttachmentList v-if="shown.attachments?.length" :files="shown.attachments" compact />
 
                             <StaffTaskSubtasks ref="subtasksBox" :reference="shown.reference" :subtasks="shown.subtasks" :can-edit="data!.can_edit" />
 

@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -27,6 +28,31 @@ class IndexTopListedFamilies extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $query = filled(request()->input('between')) ? $this->liveQuery($parent) : $this->rankedQuery($parent);
+
+        return $query
+            ->allowedSorts(['total_listed', 'total_customers', 'families.name', 'families.slug', 'families.code'])
+            ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    private function rankedQuery(Group|Shop $parent): QueryBuilder
+    {
+        $totals = DB::table('catalogue_top_listed_families')
+            ->when($parent instanceof Shop, fn ($query) => $query->where('shop_id', $parent->id))
+            ->groupBy('family_id')
+            ->select('family_id', DB::raw('SUM(total_listed)::bigint as total_listed'), DB::raw('SUM(total_customers)::bigint as total_customers'));
+
+        return QueryBuilder::for(ProductCategory::withTrashed()->from('product_categories as families'))
+            ->joinSub($totals, 'rankings', 'rankings.family_id', '=', 'families.id')
+            ->select('families.id', 'families.slug', 'families.code', 'families.name', 'rankings.total_listed', 'rankings.total_customers')
+            ->orderByDesc('total_listed');
+    }
+
+    private function liveQuery(Group|Shop $parent): QueryBuilder
+    {
         $query = QueryBuilder::for(\App\Models\Dropshipping\Portfolio::class)
             ->select(
                 'families.id',
@@ -36,11 +62,11 @@ class IndexTopListedFamilies extends OrgAction
                 DB::raw('COUNT(portfolios.id) as total_listed'),
                 DB::raw('COUNT(DISTINCT portfolios.customer_id) as total_customers')
             )
-            ->join('assets', function ($join) {
-                $join->on('portfolios.item_id', '=', 'assets.id')
+            ->join('products', function ($join) {
+                $join->on('portfolios.item_id', '=', 'products.id')
                     ->where('portfolios.item_type', '=', 'Product');
             })
-            ->join('products', 'products.asset_id', '=', 'assets.id')
+            ->join('assets', 'assets.id', '=', 'products.asset_id')
             ->join('product_categories as families', 'families.id', '=', 'products.family_id')
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')
@@ -52,12 +78,7 @@ class IndexTopListedFamilies extends OrgAction
             $query->where('portfolios.shop_id', $parent->id);
         }
 
-        return $query
-            ->allowedSorts(['total_listed', 'total_customers', 'families.name', 'families.slug', 'families.code'])
-            ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['created_at'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $query;
     }
 
     public function tableStructure(?array $modelOperations = null, ?string $prefix = null): Closure

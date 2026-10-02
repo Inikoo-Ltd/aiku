@@ -11,7 +11,7 @@ import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList } from "@fal"
+import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList, faPaperclip } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -26,7 +26,7 @@ import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 
-library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList)
+library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList, faPaperclip)
 
 const props = defineProps<{
     title: string
@@ -158,7 +158,7 @@ onMounted(async () => {
     await load()
     if (props.selected_task) {
         const task = tasks.value.find((t) => t.reference === props.selected_task)
-        if (task) openThread(task)
+        if (task) quickLook.value = task
     }
 })
 </script>
@@ -253,9 +253,13 @@ onMounted(async () => {
                             {{ useFormatTime(task.due_at) }}
                         </span>
                         <span>{{ useFormatTime(task.created_at, { formatTime: 'hm' }) }}</span>
+                        <span v-if="task.attachments?.length" v-tooltip="ctrans('Attachments')" class="flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                            {{ task.attachments.length }}
+                        </span>
                     </div>
                 </div>
-                <div class="flex items-center gap-x-1 shrink-0">
+                <div class="flex items-center gap-x-1 shrink-0" @click.stop>
                     <button v-tooltip="ctrans('Open thread')" class="p-1.5 text-gray-400 hover:text-[--app-accent]" @click="openThread(task)">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </button>

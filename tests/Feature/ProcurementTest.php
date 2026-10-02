@@ -202,6 +202,8 @@ use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
@@ -1991,7 +1993,9 @@ test('UI show procurement dashboard', function () {
                     ->where('title', 'Procurement')
                     ->etc()
             )
-            ->has('shoppingLists');
+            ->where('dashboardCards', fn ($cards) => collect($cards)->pluck('label')->intersect(['Agents', 'Suppliers', 'Supplier Products'])->isEmpty()
+                && collect($cards)->pluck('label')->contains('Open purchase orders'))
+            ->missing('search_demand');
     });
 });
 
@@ -5214,6 +5218,54 @@ describe('partner shopping list', function () {
         expect($order->transactions()->count())->toBe(2);
     });
 
+    test('the ai assistant fills the hub shopping list only when enrolled, logged and revertible', function () {
+        $user = $this->adminGuest->getUser();
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => false]);
+        $arguments = [
+            'organisation' => $this->orgPartner->organisation->slug,
+            'lines'        => [['sko' => strtolower($this->buyerOrgStock->code), 'quantity' => 4]],
+            'request_text' => 'ok add it to the shopping list',
+        ];
+        $openLine = fn () => PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->first();
+
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, $arguments)
+            ->assertHasErrors(['not enabled for this user']);
+        expect($openLine())->toBeNull();
+
+        $user->update(['can_use_mcp_procurement' => true]);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, $arguments)
+            ->assertOk()->assertSee('change_log_id');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect((float) $openLine()->quantity)->toBe(4.0)
+            ->and($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PARTNER_SHOPPING_LIST)
+            ->and($mcpChange->data['after_text'])->toBe($this->buyerOrgStock->stock->code.': 4');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $user);
+        expect($openLine())->toBeNull();
+
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, [...$arguments, 'lines' => [['sko' => 'NOPE-999', 'quantity' => 1]]])
+            ->assertHasErrors(['NOPE-999']);
+    });
+
+    test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {
+        $user = $this->adminGuest->getUser();
+        $this->buyerOrgStock->update(['quantity_available' => 10]);
+        $this->buyerOrgStock->stats()->update(['predicted_daily_usage' => 2, 'days_of_cover' => 5, 'recommended_order_quantity' => 30]);
+        $planning = fn () => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubOrderPlanningTool::class, [
+            'organisation' => $this->orgPartner->organisation->slug,
+            'codes'        => [$this->buyerOrgStock->code],
+        ])->assertOk();
+
+        $planning()->assertSee(['"days_until_out_of_stock":5', '"shelf_life_days":365,"shelf_life_recorded":false,"max_order_before_expiry":720,"suggested_quantity":30']);
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $sellerOrgStock->organisation_id)->first()
+            ?? StoreProduction::make()->action($sellerOrgStock->organisation, ['code' => 'PLNP', 'name' => 'Planning factory']);
+        StoreArtefact::make()->action($production, ['code' => 'PLN-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id, 'shelf_life_days' => 10]);
+
+        $planning()->assertSee('"shelf_life_days":10,"shelf_life_recorded":true,"max_order_before_expiry":10,"suggested_quantity":10');
+    });
 });
 
 describe('partner browse', function () {
@@ -5977,6 +6029,32 @@ test('agent misplaced shopping list cleanup only accepts non-orderable buckets',
         ->toBeInt();
 });
 
+function orgStockOnSaleAndReceived(OrgStock $orgStock): OrgStock
+{
+    $shop = StoreShop::run($orgStock->organisation, Shop::factory()->definition());
+    $shop->update(['state' => ShopStateEnum::OPEN]);
+    [, $product] = createProduct($shop);
+    $product->update(['is_for_sale' => true]);
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+    DB::table('org_stock_movements')->insert([
+        'group_id'        => $orgStock->group_id,
+        'organisation_id' => $orgStock->organisation_id,
+        'warehouse_id'    => ($orgStock->organisation->warehouses()->oldest('id')->first() ?? createWarehouse())->id,
+        'org_stock_id'    => $orgStock->id,
+        'date'            => now()->subYear(),
+        'class'           => OrgStockMovementClassEnum::MOVEMENT->value,
+        'type'            => OrgStockMovementTypeEnum::PURCHASE->value,
+        'flow'            => OrgStockMovementFlowEnum::IN->value,
+        'quantity'        => 1,
+        'org_amount'      => 0,
+        'grp_amount'      => 0,
+        'data'            => '{}',
+    ]);
+
+    return $orgStock;
+}
+
 function independentOrgSupplierFixture($test): array
 {
     $supplier = StoreSupplier::make()->action(
@@ -6081,6 +6159,9 @@ test('organisation stock cover buckets judge each active sko against its lead ti
         ->and($bucketFor(['days_of_cover' => null, 'predicted_daily_usage' => 0, 'stock_value' => 100]))->toBe('dead');
 
     $orgStock->update(['quantity_available' => 0]);
+    expect($buckets->bucketOf($orgStock->fresh()))->toBeNull();
+
+    orgStockOnSaleAndReceived($orgStock);
     expect($buckets->bucketOf($orgStock->fresh()))->toBe('out');
 
     $counts = collect(App\Actions\Procurement\GetOrganisationStockCoverBuckets::run($this->organisation))->pluck('count', 'bucket');
@@ -6089,7 +6170,7 @@ test('organisation stock cover buckets judge each active sko against its lead ti
 });
 
 test('UI organisation stock cover items index', function () {
-    $orgStock = $this->orgStocks[0];
+    $orgStock = orgStockOnSaleAndReceived($this->orgStocks[0]);
     $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
 
     $response = $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out']));
@@ -6107,7 +6188,7 @@ test('UI organisation stock cover items index', function () {
 });
 
 test('organisation stock cover export downloads the filtered buckets as csv', function () {
-    $orgStock = $this->orgStocks[0];
+    $orgStock = orgStockOnSaleAndReceived($this->orgStocks[0]);
     $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
 
     $response = $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'out,w1']));
@@ -6116,6 +6197,37 @@ test('organisation stock cover export downloads the filtered buckets as csv', fu
     expect($response->streamedContent())->toContain('Days of cover')->toContain($orgStock->code)->toContain('Out of stock');
 
     $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'nope']))->assertRedirect();
+});
+
+test('deliveries in the warehouse are never late, dispatched ones get their time at sea and POs without dates are late', function () {
+    $goods = App\Actions\Goods\UI\ShowGoodsDashboard::make();
+    $delivery = fn (string $state, ?string $enteredAt, ?string $purchaseOrderEta = null) => (object) [
+        'state'              => $state,
+        'state_entered_at'   => $enteredAt,
+        'delivery_date'      => null,
+        'purchase_order_eta' => $purchaseOrderEta,
+    ];
+
+    expect($goods->stockDeliveryTiming($delivery('received', now()->subMonths(3)->toDateTimeString())))
+        ->toBe(['eta' => now()->addDay()->toDateString(), 'is_late' => false])
+        ->and($goods->stockDeliveryTiming($delivery('dispatched', now()->subDays(10)->toDateTimeString(), now()->subMonth()->toDateString())))
+        ->toBe(['eta' => now()->subDays(10)->addDays(60)->toDateString(), 'is_late' => false])
+        ->and($goods->stockDeliveryTiming($delivery('dispatched', now()->subDays(70)->toDateTimeString()))['is_late'])->toBeTrue()
+        ->and($goods->stockDeliveryTiming($delivery('confirmed', now()->toDateTimeString(), now()->subDay()->toDateString()))['is_late'])->toBeTrue()
+        ->and($goods->stockDeliveryTiming($delivery('confirmed', now()->subDays(5)->toDateTimeString()))['is_late'])->toBeFalse()
+        ->and($goods->isPurchaseOrderLate((object) ['estimated_received_at' => null, 'submitted_at' => null, 'measured_lead_time_days' => null]))->toBeTrue()
+        ->and($goods->isPurchaseOrderLate((object) ['estimated_received_at' => now()->addWeek()->toDateString(), 'submitted_at' => null, 'measured_lead_time_days' => null]))->toBeFalse();
+});
+
+test('the manufacturing hub source is named after the hub organisations', function () {
+    $buckets = App\Actions\Procurement\GetOrganisationStockCoverBuckets::make();
+    $wasHub  = $this->otherOrganisation->is_manufacturing_hub;
+    $this->otherOrganisation->update(['is_manufacturing_hub' => true]);
+
+    expect($buckets->sourceOptions($this->group->id)['hub'])->toContain($this->otherOrganisation->name)
+        ->and($buckets->sourceOptions($this->group->id)['agent'])->toBe('Agents');
+
+    $this->otherOrganisation->update(['is_manufacturing_hub' => $wasHub]);
 });
 
 test('procurement dashboard lists stock levels linking to each bucket', function () {
@@ -6131,6 +6243,32 @@ test('procurement dashboard lists stock levels linking to each bucket', function
             ->where('stockLevels.6.bucket', 'excess')
             ->etc();
     });
+});
+
+test('stock outs are projected eight weeks ahead from forecast demand, each sko carrying the sales it would lose', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'measured_lead_time_days' => null, 'estimated_lead_time_days' => 10, 'quantity_available' => 10]);
+    $orgStock->stats->update(['predicted_daily_usage' => 1, 'demand_variability' => 0, 'forecast_source' => 'croston', 'demand_forecast' => null]);
+
+    $windowEnd   = today()->startOfMonth();
+    $windowStart = $windowEnd->copy()->subMonths(6);
+    $seriesId    = DB::table('org_stock_time_series')->insertGetId(['org_stock_id' => $orgStock->id, 'frequency' => App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::MONTHLY->value]);
+    DB::table('org_stock_time_series_records')->insert(['org_stock_time_series_id' => $seriesId, 'frequency' => 'M', 'from' => $windowStart->toDateString(), 'sales_org_currency_external' => 2 * $windowStart->diffInDays($windowEnd)]);
+
+    App\Actions\Procurement\ProjectOrganisationStockOuts::run($this->organisation);
+
+    $projection = $this->organisation->procurementStats->fresh()->stock_out_projection;
+    expect($projection['from'])->toBe(today()->addDay()->toDateString())
+        ->and($projection['sources']['all'])->toHaveCount(56)
+        ->and((float) $orgStock->stats->fresh()->projected_lost_revenue)->toEqualWithDelta((40 - 9) * 2, 0.01);
+
+    $history = App\Actions\Procurement\GetStockOutsHistory::run($this->organisation, '1m');
+    expect($history['projection'])->not->toBeEmpty()
+        ->and($history['projection'][0])->toHaveKeys(['date', 'out_of_stock', 'lost_per_day'])
+        ->and(collect($history['projection'])->pluck('date')->min())->toBeGreaterThan(collect($history['series'])->pluck('date')->max() ?? '');
+
+    $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'sort' => '-projected_lost_revenue']))->assertOk();
 });
 
 test('procurement dashboard charts stock outs and their estimated lost revenue', function () {
@@ -6156,23 +6294,48 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
             ->etc());
 
     $hydrator = App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateOutOfStock::make();
-    $hydrator->handle($organisationStockHistoryId);
 
     $aliveOrgStockIds      = $hydrator->aliveOrgStockIds($this->organisation->id, today());
     $inStockOrgStockIds    = DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->where('quantity_in_locations', '>=', 1)->pluck('org_stock_id')->all();
     $outOfStockOrgStockIds = array_values(array_diff($aliveOrgStockIds, $inStockOrgStockIds));
+    expect($outOfStockOrgStockIds)->not->toBeEmpty();
+
+    $stockOutIds = $hydrator->stockOutOrgStockIds($outOfStockOrgStockIds, today());
+    $onSaleOrgStock = orgStockOnSaleAndReceived(App\Models\Inventory\OrgStock::whereIn('id', array_diff($outOfStockOrgStockIds, $stockOutIds))->firstOrFail());
+    $stockOutIds[] = $onSaleOrgStock->id;
+    $hydrator->handle($organisationStockHistoryId);
     $organisationStockHistory = DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->first();
 
-    expect($outOfStockOrgStockIds)->not->toBeEmpty()
-        ->and($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(count($outOfStockOrgStockIds))
-        ->and($organisationStockHistory->number_org_stocks)->toBe(count($aliveOrgStockIds))
+    expect($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(count($stockOutIds))
+        ->and($organisationStockHistory->number_org_stocks)->toBe(count($aliveOrgStockIds) - count($outOfStockOrgStockIds) + count($stockOutIds))
         ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
 
-    $freshOrgStock = App\Models\Inventory\OrgStock::whereIn('id', $outOfStockOrgStockIds)->first();
-    $freshOrgStock->update(['is_fresh' => true]);
+    $sourceRows = DB::table('organisation_stock_history_sources')->where('organisation_stock_history_id', $organisationStockHistoryId)->get();
+    expect($sourceRows->pluck('source')->sort()->values()->all())->toBe(collect(array_keys(App\Actions\Procurement\GetOrganisationStockCoverBuckets::SOURCES))->sort()->values()->all())
+        ->and((int) $sourceRows->sum('number_out_of_stock_org_stocks'))->toBe(count($stockOutIds))
+        ->and((int) $sourceRows->sum('number_org_stocks'))->toBe($organisationStockHistory->number_org_stocks);
+
+    $source = $hydrator->sourceByOrgStockId($this->organisation->id)[$onSaleOrgStock->id];
+    $onSaleOrgStock->update(['quantity_available' => 0]);
+
+    $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'period' => '1m', 'source' => $source]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stockOuts.source', $source)
+            ->where('stockOuts.sources.agent.label', 'Agents')
+            ->where("stockOuts.sources.$source.out_of_stock", $sourceRows->firstWhere('source', $source)->number_out_of_stock_org_stocks)
+            ->where('stockOuts.now.out_of_stock', $sourceRows->firstWhere('source', $source)->number_out_of_stock_org_stocks)
+            ->where('stockLevels.0.bucket', 'out')
+            ->where('stockLevels.0.count', fn ($count) => $count >= 1)
+            ->where('stockLevels.0.in_transit', fn ($inTransit) => $inTransit >= 0)
+            ->has('stockLevels.0.arrivals')
+            ->etc());
+
+    $onSaleOrgStock->update(['is_fresh' => true]);
     $hydrator->handle($organisationStockHistoryId);
 
-    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe(count($outOfStockOrgStockIds) - 1);
+    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe(count($stockOutIds) - 1);
+
+    $freshOrgStock = $onSaleOrgStock;
 
     $freshOrgStock->update(['is_fresh' => false]);
 

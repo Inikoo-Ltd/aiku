@@ -58,7 +58,7 @@ class GetStockOutsHistory
     /**
      * Daily rows per shop organisation, lost revenue converted to the parent's currency at today's rate.
      */
-    private function dailyRows(Group|Organisation $parent, Collection $organisations, ?Carbon $from): Collection
+    private function dailyRows(Group|Organisation $parent, Collection $organisations, ?Carbon $from, ?string $source): Collection
     {
         if ($organisations->isEmpty()) {
             return collect();
@@ -72,8 +72,9 @@ class GetStockOutsHistory
             return "when $organisation->id then estimated_lost_revenue_org_currency * $rate";
         })->implode(' ');
 
-        return DB::table('organisation_stock_histories')
+        return DB::table($source ? 'organisation_stock_history_sources' : 'organisation_stock_histories')
             ->whereIn('organisation_id', $organisations->pluck('id'))
+            ->when($source, fn ($query) => $query->where('source', $source))
             ->where('number_org_stocks', '>', 0)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
             ->orderBy('date')
@@ -142,9 +143,86 @@ class GetStockOutsHistory
     }
 
     /**
+     * The next eight weeks played forward by ProjectOrganisationStockOuts, if nothing more is ordered,
+     * in the chart's unit and the parent's currency. Only when every organisation has a projection
+     * made since yesterday, so a group never shows some organisations' future as everyone's.
+     *
+     * @return list<array{date: string, out_of_stock: int, lost_per_day: float}>|null
+     */
+    private function projection(Group|Organisation $parent, Collection $organisations, ?string $source, string $unit, Carbon $lastHistoryDay): ?array
+    {
+        if ($organisations->isEmpty()) {
+            return null;
+        }
+
+        $byDate = [];
+        foreach ($organisations as $organisation) {
+            $stats = $organisation->procurementStats;
+            $days  = $stats?->stock_out_projection['sources'][$source ?? 'all'] ?? null;
+            if ($days === null && $stats?->stock_out_projection_hydrated_at?->gte(today()->subDay())) {
+                continue;
+            }
+            if ($days === null || !$stats->stock_out_projection_hydrated_at?->gte(today()->subDay())) {
+                return null;
+            }
+
+            $rate = $organisation->currency_id === $parent->currency_id ? 1.0 : (GetCurrencyExchange::run($organisation->currency, $parent->currency) ?? 1.0);
+            $date = Carbon::parse($stats->stock_out_projection['from']);
+            foreach ($days as [$outOfStock, , , $lost]) {
+                $key                          = $date->toDateString();
+                $byDate[$key]['out_of_stock'] = ($byDate[$key]['out_of_stock'] ?? 0) + $outOfStock;
+                $byDate[$key]['lost_per_day'] = ($byDate[$key]['lost_per_day'] ?? 0) + $lost * $rate;
+                $date->addDay();
+            }
+        }
+
+        return collect($byDate)
+            ->filter(fn ($day, string $date) => $date > $lastHistoryDay->toDateString())
+            ->groupBy(fn ($day, string $date) => Carbon::parse($date)->startOf($unit)->toDateString(), true)
+            ->map(fn ($days, string $bucketStart) => [
+                'date'         => $bucketStart,
+                'out_of_stock' => (int) round($days->avg('out_of_stock')),
+                'lost_per_day' => round($days->avg('lost_per_day'), 2),
+            ])
+            ->filter(fn ($bucket, string $bucketStart) => $bucketStart > $lastHistoryDay->copy()->startOf($unit)->toDateString())
+            ->sortKeys()
+            ->values()
+            ->all() ?: null;
+    }
+
+    /**
+     * With a source picked the headline follows that source's rows, so the bubbles read the latest day
+     * of the unfiltered totals instead.
+     */
+    private function totalsLatestDate(Group|Organisation $parent, Collection $organisations): ?string
+    {
+        return $this->sumByDate($this->dailyRows($parent, $organisations, today()->subDays(7), null))->last()?->date;
+    }
+
+    /**
+     * Each source with its SKOs out of stock on the day the headline shows.
+     *
+     * @return array<string, array{label: string, out_of_stock: int}>
+     */
+    private function sources(Group|Organisation $parent, Collection $organisations, ?string $date): array
+    {
+        $outOfStock = DB::table('organisation_stock_history_sources as sources')
+            ->whereIn('sources.organisation_id', $organisations->pluck('id'))
+            ->where('sources.date', $date)
+            ->where('sources.number_org_stocks', '>', 0)
+            ->groupBy('sources.source')
+            ->selectRaw('sources.source, sum(sources.number_out_of_stock_org_stocks) as out_of_stock')
+            ->pluck('out_of_stock', 'source');
+
+        return collect(GetOrganisationStockCoverBuckets::make()->sourceOptions($parent instanceof Group ? $parent->id : $parent->group_id))
+            ->map(fn (string $label, string $source) => ['label' => $label, 'out_of_stock' => (int) ($outOfStock[$source] ?? 0)])
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    public function handle(Group|Organisation $parent, string $period): array
+    public function handle(Group|Organisation $parent, string $period, ?string $source = null): array
     {
         $today = today();
         $from  = match ($period) {
@@ -157,9 +235,9 @@ class GetStockOutsHistory
         };
 
         $organisations = $this->organisations($parent);
-        $orgRows       = $this->dailyRows($parent, $organisations, $from);
+        $orgRows       = $this->dailyRows($parent, $organisations, $from, $source);
         if ($orgRows->isEmpty()) {
-            $orgRows = $this->dailyRows($parent, $organisations, null)->groupBy('date')->last() ?? collect();
+            $orgRows = $this->dailyRows($parent, $organisations, null, $source)->groupBy('date')->last() ?? collect();
         }
         $rows   = $this->sumByDate($orgRows);
         $latest = $rows->last();
@@ -177,11 +255,14 @@ class GetStockOutsHistory
         $result = [
             'period'     => $period,
             'periods'    => $this->periodOptions(),
+            'source'     => $source,
+            'sources'    => $this->sources($parent, $organisations, $source ? $this->totalsLatestDate($parent, $organisations) : $latest?->date),
             'unit'       => $unit,
             'currency'   => $parent->currency->code,
             'lost_total' => $total['lost_total'],
             'now'        => $this->now($latest),
             'series'     => $total['series'],
+            'projection' => $this->projection($parent, $organisations, $source, $unit, $end),
         ];
 
         if ($parent instanceof Group) {

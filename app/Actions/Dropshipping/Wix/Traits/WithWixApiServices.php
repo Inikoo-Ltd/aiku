@@ -54,10 +54,12 @@ trait WithWixApiServices
             if ($response->failed()) {
                 $json = $response->json();
 
-                $message = Arr::get($json, 'message')
-                    ?? Arr::get($json, 'details.applicationError.description')
-                    ?? Arr::get($json, 'error')
-                    ?? 'Unknown Wix API error';
+                $message = collect([
+                    Arr::get($json, 'message'),
+                    Arr::get($json, 'details.applicationError.description'),
+                    Arr::get($json, 'error'),
+                ])->first(fn ($candidate) => is_string($candidate) && trim($candidate) !== '')
+                    ?? __('Unknown Wix API error (HTTP :status)', ['status' => $response->status()]);
 
                 return [
                     'message'          => $this->translateWixError($message).$this->violationSuffix($json),
@@ -181,8 +183,8 @@ trait WithWixApiServices
     {
         $instance = $this->getAppInstance();
 
-        if (Arr::get($instance, 'message')) {
-            throw new \Exception(Arr::get($instance, 'message'));
+        if (Arr::has($instance, 'message') || !Arr::get($instance, 'instance')) {
+            throw new \Exception(Arr::get($instance, 'message') ?: __('Could not reach the Wix site.'));
         }
 
         return $instance;

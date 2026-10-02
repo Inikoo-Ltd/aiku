@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Průvodce pro kupujícího - začněte u nákupního dashboardu, naplňte seznam ručně, z partnerova katalogu nebo pomocí automatického doplnění, a přijměte zboží, když dorazí.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -52,6 +52,17 @@ Automatické doplnění lze otevřít i už zaměřené na konkrétní oblast: *
 
 Dobrý zvyk: projděte dlaždice dashboardu od nejhoršího, pak jednou za doplňovací cyklus spusťte automatické doplnění, přečtěte si důvody, odškrtněte, s čím nesouhlasíte, a zbytek přidejte.
 
+## Požádejte svého AI asistenta o přidání řádků
+
+Pokud je váš účet zapojen, může vám AI asistent, kterého k aiku připojíte, řádky na seznam přidat. Plánování udělejte ve svém vlastním asistentovi — zeptejte se ho, čeho se blíží nedostatek, a projděte čísla společně — a až budete spokojeni, řekněte mu: *„dobře, přidej to na nákupní seznam"*. Nejdřív vám ukáže kódy SKO a množství a přidá je teprve po vašem potvrzení.
+
+- Při plánování asistent čte stejná čísla, která vidíte vy: sklad, prodeje, dny do vyprodání, prognózované množství, krok objednávky (order step) a dobu použitelnosti (shelf life). Nikdy nenavrhne víc, než se prodá před vypršením doby použitelnosti; produkt, u kterého zatím není doba použitelnosti zaznamenána, se plánuje jako by vydržel jeden rok.
+- Množství jsou v SKO a řádek **nastavují**: SKO, které už na seznamu je, dostane nové množství, ne další navíc.
+- Platí stejná pravidla jako při ručním přidání: kontroly rozpočtu, skladového prostoru a balení uvedené níže. Řádek, který seznam odmítne, se vrátí s důvodem a ostatní se přidají.
+- Asistent pouze přidává a mění množství; priority a odstraňování řádků zůstávají v tabulce nákupního seznamu.
+- Každá změna se zaznamená spolu s vaším požadavkem a lze ji vrátit: požádejte asistenta o vrácení, nebo to může udělat administrátor v logu AI změn (AI changes).
+- Zapojení je přepínač na vašem uživatelském účtu, který zapíná administrátor, a navíc potřebujete oprávnění upravovat nákup (procurement) pro vaši organizaci.
+
 ## Když seznam řekne ne
 
 Přidání je odmítnuto ve třech případech, záměrně: seznam dosáhl **budget** (rozpočtu) pro tohoto partnera (položky ranku A a bez skladu jsou z limitu vyňaty — nouzová situace se vejde vždy), sklad má pod 5 % volných míst, nebo tento partner už vyčerpal svůj spravedlivý podíl na volných místech u produktů, které jste nikdy neskladovali. Řešte tu zprávu, nehledejte jinou cestu — stejná pojistka platí pro ruční přidání, hromadné přidání i automatické doplnění. [Článek o dashboardu](/docs/reading-the-partner-shopping-dashboard-cs) vysvětluje, odkud tyto limity pocházejí.
@@ -66,6 +77,7 @@ Jakmile partner [odešle zásilku do svého skladu](/docs/fulfilling-partner-ord
 <li><b>Přidat na seznam:</b> <b>Shopping list</b> (Nákupní seznam) → <b>Add stocks</b> (Přidat skladové položky), nebo <b>Browse</b> (Procházet) a nastavit množství na kartách produktů, nebo <b>Auto-fill</b> (Automatické doplnění) (nebo <b>+ fill</b> na dlaždici dashboardu) pro návrh.</li>
 <li><b>Objednat v celých dávkách:</b> tlačítko vedle <i>full batches every N SKO</i> na řádku nebo na kartě produktu.</li>
 <li><b>Upravit otevřené řádky:</b> změnit prioritu nebo smazat řádky v tabulce nákupního seznamu; změnit množství na kartách produktů v <b>Browse</b>.</li>
+<li><b>Nechat někoho plnit seznam přes jeho AI asistenta (administrátoři):</b> <b>Sysadmin → Users</b> (Správa systému → Uživatelé) → otevřít uživatele → <b>Edit</b> (Upravit) → <b>Access</b> (Přístup) → zapnout <b>Can connect AI assistant</b>, poté <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Vyloučit položku z automatického doplnění:</b> vaše organizace → <b>Warehouse → Inventory</b> (Sklad → Zásoby) → otevřít SKO → <b>Edit SKO</b> (Upravit SKO) → zapnout <b>Do not auto order</b> (Neobjednávat automaticky).</li>
 <li><b>Sledovat a přijmout zásilku:</b> stejná stránka partnera → <b>Stock deliveries</b> (Skladové dodávky) → až zboží dorazí, <b>Receive</b> (Přijmout) → zkontrolovat → uložit na místa.</li>
 </ul>

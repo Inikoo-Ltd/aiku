@@ -3,6 +3,8 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { computed } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps(['form', 'fieldName', 'options', 'fieldData'])
@@ -21,6 +23,15 @@ const attributes = {
 }
 delete attributes.value
 
+const maxLength = computed<number | null>(() => {
+    const limit = Number(props.fieldData?.maxlength ?? props.fieldData?.maxLength)
+    return limit > 0 ? limit : null
+})
+
+const currentLength = computed(() => props.form[props.fieldName]?.length || 0)
+
+const isOverLimit = computed(() => maxLength.value !== null && currentLength.value > maxLength.value)
+
 </script>
 
 
@@ -31,12 +42,12 @@ delete attributes.value
             <textarea
                 v-model.trim="form[fieldName]"
                 @update:modelValue="() => form.errors[fieldName] = null"
-                :id="fieldName" v-bind="attributes"
+                :id="fieldName"
+                v-bind="attributes"
                 :name="fieldName"
-                :rows="attributes.rows || 3"
+                :rows="attributes.rows || 4"
                 class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
                 :class="form.errors[fieldName] ? 'errorShake' : ''"
-
             />
         </div>
 
@@ -45,11 +56,13 @@ delete attributes.value
             class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start">
             <p class="">
                 <!-- {{ pageBody.layout.profile.fields.about.notes }} -->
-                Characters: {{ form[fieldName]?.length || 0 }}
+                <span :class="isOverLimit ? 'text-red-500 font-semibold' : ''">
+                    {{ ctrans("Characters") }}: {{ currentLength }}<template v-if="maxLength"> / {{ maxLength }}</template>
+                </span>
             </p>
             <p class="">
                 <!-- {{ pageBody.layout.profile.fields.about.notes }} -->
-                Words: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length || 0 }}
+                {{ ctrans("Words") }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length || 0 }}
             </p>
         </div>
     </div>

@@ -18,6 +18,7 @@ use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessage;
 use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -33,9 +34,10 @@ class StoreStaffTask
 
     public function handle(User $requester, array $modelData): StaffTask
     {
+        $images        = Arr::pull($modelData, 'images', []);
         $sourceMessage = isset($modelData['source_message_id']) ? StaffMessage::with('conversation')->find($modelData['source_message_id']) : null;
 
-        return DB::transaction(function () use ($requester, $modelData, $sourceMessage) {
+        return DB::transaction(function () use ($requester, $modelData, $sourceMessage, $images) {
             $number = DB::selectOne('SELECT nextval(?) AS number', ['staff_task_number_seq'])->number;
 
             $task = StaffTask::create([
@@ -73,6 +75,7 @@ class StoreStaffTask
             ]);
             $conversation->participants()->attach($participantIds);
             $task->update(['staff_conversation_id' => $conversation->id]);
+            $task->attachTicketImages($images);
 
             SendStaffMessage::run($conversation, $requester, ['body' => $task->description ?: $task->subject]);
 
@@ -114,14 +117,26 @@ class StoreStaffTask
             'subtasks'          => ['sometimes', 'array'],
             'subtasks.*.title'  => ['required', 'string', 'max:255'],
             'subtasks.*.status' => ['sometimes', Rule::in(StaffTask::SUBTASK_STATUSES)],
+            'images'            => ['sometimes', 'array', 'max:5'],
+            'images.*'          => StaffTask::ticketFileRules(),
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return StaffTask::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return StaffTask::ticketFileValidationAttributes(request()->file('images', []));
     }
 
     public function action(User $requester, array $modelData): StaffTask
     {
         $this->requester = $requester;
 
-        return $this->handle($requester, Validator::make($modelData, $this->rules())->validate());
+        return $this->handle($requester, Validator::make($modelData, $this->rules(), $this->getValidationMessages(), StaffTask::ticketFileValidationAttributes($modelData['images'] ?? []))->validate());
     }
 
     public function asController(ActionRequest $request): StaffTaskResource

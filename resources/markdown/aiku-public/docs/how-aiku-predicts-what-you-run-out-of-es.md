@@ -1,8 +1,8 @@
 ---
 title: Cómo predice aiku lo que se te va a acabar
 summary: Qué significan de verdad "se acaba en ~12 días" y la cantidad sugerida, por qué un superventas sin stock pide tanto, y cuándo confiar en el número por encima de tu propio criterio.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, stock, intercompany, shopping-list
 category: procurement
 ---
@@ -61,11 +61,18 @@ La norma general: el pronóstico es mejor que tú en el aburrido grueso del cat�
 
 Auto-fill ordena los candidatos por lo pronto que se te acaban y va rellenando primero los más urgentes hasta que se agota el presupuesto. Cada línea propuesta lleva su motivo en palabras claras — *"Our sales/quarter ~48 · our stock 0 · we run out now"* — que es el pronóstico enseñando su trabajo. Lee los motivos antes de confirmar; ahí es donde un número equivocado es más fácil de pillar, y desmarcar una línea es un solo clic. No se pide nada hasta que pulsas **Add items to shopping list**.
 
+## Mirar hacia delante: qué se acaba si no se pide nada más
+
+En el panel de **Procurement** (compras), el gráfico de agotamientos de stock sigue más allá de ayer con dos líneas de puntos: cuántos SKO estarán sin stock cada día de las próximas ocho semanas, y las ventas que perderían al día. El stock de cada SKO se proyecta hacia delante con su pronóstico, y cada pedido de compra y cada entrega que ya están abiertos llegan en el día previsto. Los pedidos que ya han pasado su día previsto se dejan fuera hasta que reciben una fecha nueva, así que reclamar un pedido retrasado y volver a fecharlo devuelve su stock a la línea. No se cuenta nada que todavía no hayas pedido, así que las líneas muestran lo que pasa si nadie pide nada más. Pide hoy y la línea de mañana baja.
+
+La lista de **Stock levels** (niveles de stock) que hay detrás de cada nivel del panel tiene una columna **Lost if not ordered** (perdido si no se pide): las ventas que perdería un SKO durante su plazo de entrega y el mes siguiente, si no se pide nada más. Ordénala por esa columna y los huecos que más cuestan salen primero.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Ver los números por artículo:</b> <b>Procurement → Partners</b> (o <b>Suppliers</b>, o <b>Agents</b>) → abre uno → <b>Browse</b>: cada tarjeta muestra <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> y una casilla <b>suggested</b> de líneas discontinuas que rellena la caja de cantidad.</li>
 <li><b>Verlos en todo el catálogo:</b> el panel de <b>Shopping</b> del mismo socio → las casillas de stock en riesgo se construyen con el día de agotamiento; pulsa el número de una casilla para ver los artículos detrás.</li>
 <li><b>Verlos en un pedido abierto:</b> <b>Shopping list</b> → la columna <b>Info</b> lleva la historia del stock de cada línea.</li>
+<li><b>Ver qué se va a acabar:</b> <b>Procurement</b> → el gráfico de agotamientos de stock, líneas de puntos después de ayer; elige una fuente (agentes, proveedores…) encima. Pulsa un nivel de stock a la derecha y ordena la lista por <b>Lost if not ordered</b>.</li>
 <li><b>Verlos en un pedido de compra a un proveedor:</b> <b>Procurement → Suppliers</b> → abre uno → su pedido de compra → <b>Items</b> o <b>Products</b>: la línea <b>Lasts</b> bajo <b>Stock</b>, en rojo a menos de dos semanas, en ámbar a menos de seis.</li>
 <li><b>Pasar por encima de uno:</b> escribe tu propia cantidad en el contador de la tarjeta <b>Browse</b> — edita la línea abierta directamente. Nada se vuelve a sugerir por encima de ti.</li>
 <li><b>Corregir el plazo de entrega detrás de una sugerencia:</b> los ajustes del SKO, o los del producto de proveedor, mientras siga diciendo <i>estimate</i>.</li>

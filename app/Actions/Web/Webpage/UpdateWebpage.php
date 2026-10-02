@@ -260,7 +260,7 @@ class UpdateWebpage extends OrgAction
             'title'                          => ['sometimes', 'string'],
             'show_in_parent'                 => ['sometimes', 'nullable', 'boolean'],
             'allow_fetch'                    => ['sometimes', 'nullable', 'boolean'],
-            'description'                    => ['sometimes', 'string'],
+            'description'                    => ['sometimes', 'nullable', 'string'],
             'product_name'                   => ['sometimes', 'required', 'max:250', 'string'],
             'product_description'            => ['sometimes', 'required', 'max:1500'],
             'product_description_extra'      => ['sometimes', 'nullable', 'max:65500'],

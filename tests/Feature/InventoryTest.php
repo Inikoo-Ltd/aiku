@@ -103,6 +103,9 @@ use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
@@ -4278,6 +4281,39 @@ describe('out of stock forecast', function () {
         $this->customer  = createCustomer($this->shop);
 
         list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    });
+
+    test('an empty SKO is a stock out only once it feeds a product on sale and has received stock', function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        [$orgStock] = createOrgStocks($this->shop->organisation, [$stock]);
+        $this->product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
+        $this->shop->update(['state' => ShopStateEnum::OPEN]);
+        $this->product->update(['is_for_sale' => true]);
+        $buckets = GetOrganisationStockCoverBuckets::make();
+
+        expect($buckets->bucketOf($orgStock->fresh()))->toBeNull();
+
+        DB::table('org_stock_movements')->insert([
+            'group_id'        => $orgStock->group_id,
+            'organisation_id' => $orgStock->organisation_id,
+            'warehouse_id'    => $this->warehouse->id,
+            'org_stock_id'    => $orgStock->id,
+            'date'            => now()->subMonth(),
+            'class'           => OrgStockMovementClassEnum::MOVEMENT->value,
+            'type'            => OrgStockMovementTypeEnum::PURCHASE->value,
+            'flow'            => OrgStockMovementFlowEnum::IN->value,
+            'quantity'        => 10,
+            'org_amount'      => 0,
+            'grp_amount'      => 0,
+            'data'            => '{}',
+        ]);
+
+        expect($buckets->bucketOf($orgStock->fresh()))->toBe('out');
+
+        $this->product->update(['is_for_sale' => false]);
+
+        expect($buckets->bucketOf($orgStock->fresh()))->toBeNull();
     });
 
     test('dispatches from delivery notes made in aiku feed the forecast although they carry no date', function () {

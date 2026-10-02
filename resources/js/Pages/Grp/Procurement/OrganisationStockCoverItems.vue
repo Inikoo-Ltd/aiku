@@ -32,6 +32,7 @@ type StockCoverOrgStock = {
     supplier_code: string | null
     recommended_quantity: number | null
     stock_value: number
+    projected_lost_revenue: number | null
 }
 
 const props = defineProps<{
@@ -108,6 +109,11 @@ const downloadHref = () => route(props.exportRoute.name, props.exportRoute.param
 
         <template #cell(recommended_quantity)="{ item: orgStock }">
             <span class="tabular-nums">{{ orgStock.recommended_quantity !== null ? locale.number(orgStock.recommended_quantity) : "—" }}</span>
+        </template>
+
+        <template #cell(projected_lost_revenue)="{ item: orgStock }">
+            <span v-if="orgStock.projected_lost_revenue" class="tabular-nums" :class="orgStock.projected_lost_revenue >= 100 ? 'font-medium text-red-600' : ''">{{ locale.currencyFormat(currency, orgStock.projected_lost_revenue) }}</span>
+            <span v-else class="text-gray-300">-</span>
         </template>
 
         <template #cell(stock_value)="{ item: orgStock }">
