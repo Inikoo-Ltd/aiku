@@ -60,6 +60,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurcha
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -4874,9 +4875,39 @@ describe('partner shopping list', function () {
         $this->delete(route('grp.models.stock-delivery.delete', $stockDelivery->id))->assertSessionHasErrors('state');
         $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('state');
         $this->patch(route('grp.models.stock-delivery.receive', $stockDelivery->id))->assertSessionHasErrors('state');
+        $this->patch(route('grp.models.stock-delivery-item.ready-to-ship', $stockDelivery->items()->first()->id))->assertSessionHasErrors('state');
 
         expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
-            ->and($stockDelivery->trashed())->toBeFalse();
+            ->and($stockDelivery->trashed())->toBeFalse()
+            ->and($stockDelivery->items()->first()->state)->toBe(StockDeliveryItemStateEnum::CONFIRMED);
+    });
+
+    test('a partner stock delivery set ready to ship by the buyer still follows the seller dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($order);
+        UpdateStateToReadyToShipStockDeliveryItem::make()->action($stockDelivery->items()->first());
+
+        expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::READY_TO_SHIP);
+
+        $deliveryNote = $order->deliveryNotes()->first();
+        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            $deliveryNoteItem->update(['quantity_dispatched' => $deliveryNoteItem->quantity_required]);
+        }
+
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
+            ->and($stockDelivery->items()->first()->state)->toBe(StockDeliveryItemStateEnum::DISPATCHED);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     });
 
     test('out of stock forecast hydrator fills stats', function () {

@@ -9,6 +9,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStateToReadyToShipStockDeliveryItem extends OrgAction
@@ -35,6 +36,10 @@ class UpdateStateToReadyToShipStockDeliveryItem extends OrgAction
 
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
     {
+        if ($stockDeliveryItem->stockDelivery->isManagedByPartner()) {
+            throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
         $this->initialisation($stockDeliveryItem->organisation, $request);
 
         return $this->handle($stockDeliveryItem);

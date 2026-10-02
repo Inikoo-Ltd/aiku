@@ -85,6 +85,8 @@ class StockDeliveryItemResource extends JsonResource
         $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
             && $item->stockDelivery?->isInGoodsIn();
 
+        $isManagedByPartner = (bool) $item->stockDelivery?->isManagedByPartner();
+
         $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
         $canCheck = in_array($item->state, [
             StockDeliveryItemStateEnum::RECEIVED,
@@ -120,12 +122,12 @@ class StockDeliveryItemResource extends JsonResource
             'org_stock_slug'        => $item->org_stock_slug,
             'org_stock_code'        => $item->org_stock_code,
             'org_stock_name'        => $item->org_stock_name,
-            'confirmRoute'          => $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
+            'confirmRoute'          => !$isManagedByPartner && $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
                 'name'       => 'grp.models.stock-delivery-item.confirm',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'readyToShipRoute'      => $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
+            'readyToShipRoute'      => !$isManagedByPartner && $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
                 'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',

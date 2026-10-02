@@ -27,7 +27,7 @@ class SyncPartnerStockDeliveryOnDispatch
             return null;
         }
 
-        if (!in_array($stockDelivery->state, [StockDeliveryStateEnum::CONFIRMED, StockDeliveryStateEnum::DISPATCHED], true)) {
+        if (!$stockDelivery->isManagedByPartner()) {
             return $stockDelivery;
         }
 
