@@ -46,6 +46,9 @@ class StoreTicket extends OrgAction
         SyncTicketSlackAlert::run($ticket);
         NotifyTicketUsers::make()->raised($ticket);
         NotifyTicketUsers::make()->pushBadges($ticket);
+        if ($ticket->kind === null || $ticket->module === null) {
+            ClassifyTicket::dispatch($ticket);
+        }
 
         return $ticket;
     }

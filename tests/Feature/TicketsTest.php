@@ -1667,8 +1667,8 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     setPermissionsTeamId($this->group->id);
     $engineer->assignRole('help-desk-clerk');
 
-    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support'])
-        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support']);
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support', 'aurora'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support', 'aurora']);
 
     $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
 
@@ -3715,4 +3715,33 @@ test('a ticket list refetches one changed row, and a confidential ticket is not 
 
     actingAs($outsider);
     get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
+});
+
+test('jev fills in the kind and module nobody set, only when sure, and the reports chart tickets by module', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    Http::fake(['openrouter.ai/api/alpha/decisions' => Http::sequence()
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'feature', 'probabilities' => ['feature' => 0.8, 'bug' => 0.2]],
+            'module' => ['choice' => 'procurement', 'probabilities' => ['procurement' => 0.9]],
+        ]])
+        ->push(['answers' => ['module' => ['choice' => 'crm', 'probabilities' => ['crm' => 0.3, 'chat' => 0.3]]]])]);
+
+    $classified = StoreTicket::make()->action($this->group, ['subject' => 'Add supplier lead times to purchase orders']);
+    $unsure     = StoreTicket::make()->action($this->group, ['subject' => 'Something odd', 'kind' => TicketKindEnum::BUG->value]);
+    $setByStaff = StoreTicket::make()->action($this->group, ['subject' => 'Chat lag', 'kind' => TicketKindEnum::BUG->value, 'module' => TicketModuleEnum::CHAT->value]);
+
+    expect($classified->refresh()->kind)->toBe(TicketKindEnum::FEATURE)
+        ->and($classified->module)->toBe(TicketModuleEnum::PROCUREMENT)
+        ->and($unsure->refresh()->kind)->toBe(TicketKindEnum::BUG)
+        ->and($unsure->module)->toBeNull()
+        ->and($setByStaff->refresh()->module)->toBe(TicketModuleEnum::CHAT);
+    Http::assertSentCount(2);
+
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
+    $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
+
+    expect($today['modules']['procurement'])->toBeGreaterThanOrEqual(1)
+        ->and($today['modules']['none'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($stats['modules'])->firstWhere('module', 'chat')['label'])->toBe('Chat')
+        ->and(collect($stats['modules'])->sum('total'))->toBe($stats['created']);
 });

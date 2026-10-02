@@ -19,9 +19,9 @@ import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/P
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers } from "@fal"
+import { faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes } from "@fal"
 
-library.add(faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers)
+library.add(faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes)
 
 const props = defineProps<{
     pageHead: any
@@ -41,7 +41,8 @@ const props = defineProps<{
         oldest_open: { reference: string; age_days: number } | null
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
-        daily: { date: string; created: number; done: number; open: number }[]
+        daily: { date: string; created: number; done: number; open: number; modules: Record<string, number> }[]
+        modules: { module: string; label: string; total: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
         assignees: (Metrics & { name: string; username: string; short_name: string; avatar: any; collaborating?: Record<"assigned" | "in_progress" | "open" | "done", number> })[]
         assignees_total: Metrics
@@ -112,6 +113,74 @@ const lineOptions = computed(() => ({
     scales: {
         x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
         y: { beginAtZero: true, ticks: { precision: 0 } },
+    },
+}))
+
+const MODULE_PALETTE = ["#3b82f6", "#c0399f", "#16a34a", "#f59e0b", "#8b5cf6", "#06b6d4", "#ef4444", "#84cc16", "#f97316", "#14b8a6", "#6366f1", "#a16207"]
+
+const moduleColor = (slug: string) => (slug === "none" ? "#d1d5db" : MODULE_PALETTE[Math.max(props.stats.modules.findIndex((row) => row.module === slug), 0) % MODULE_PALETTE.length])
+
+const selectedModules = ref<string[] | null>(null)
+
+const moduleMode = ref<"count" | "share">("count")
+
+const moduleModeTabs: { key: "count" | "share"; label: string }[] = [
+    { key: "count", label: ctrans("Count") },
+    { key: "share", label: ctrans("Share %") },
+]
+
+const activeModules = computed(() => props.stats.modules.filter((row) => selectedModules.value === null || selectedModules.value.includes(row.module)))
+
+const isModuleSelected = (slug: string) => selectedModules.value === null || selectedModules.value.includes(slug)
+
+const toggleModule = (slug: string) => {
+    const current = selectedModules.value ?? props.stats.modules.map((row) => row.module)
+    selectedModules.value = current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]
+}
+
+const moduleChart = computed(() => ({
+    labels: props.stats.daily.map((day) => bucketLabel(day.date)),
+    datasets: activeModules.value.map((row) => ({
+        label: row.label,
+        data: props.stats.daily.map((day) => {
+            const count = day.modules[row.module] ?? 0
+            if (moduleMode.value === "count") return count
+            const bucketTotal = activeModules.value.reduce((sum, active) => sum + (day.modules[active.module] ?? 0), 0)
+            return bucketTotal ? (count / bucketTotal) * 100 : 0
+        }),
+        backgroundColor: moduleColor(row.module),
+        borderWidth: 0,
+    })),
+}))
+
+const moduleOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    onHover: (event: { native?: { target?: HTMLElement } }, elements: { datasetIndex: number }[]) => {
+        const slug = elements[0] ? activeModules.value[elements[0].datasetIndex]?.module : null
+        if (event.native?.target) event.native.target.style.cursor = slug && slug !== "none" ? "pointer" : "default"
+    },
+    onClick: (_event: unknown, elements: { datasetIndex: number }[]) => {
+        const slug = elements[0] ? activeModules.value[elements[0].datasetIndex]?.module : null
+        if (slug && slug !== "none") router.visit(listUrl({ filter: { created_since: props.stats.from }, elements: { module: slug } }))
+    },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            mode: "index",
+            intersect: false,
+            filter: (item: { raw: number }) => item.raw > 0,
+            callbacks: {
+                title: (items: any[]) => (props.stats.bucket === "day" ? items[0].label : `${ctrans(props.stats.bucket === "week" ? "Week of" : "Month")} ${items[0].label}`),
+                ...(moduleMode.value === "share" ? { label: (item: { dataset: { label: string }; raw: number }) => `${item.dataset.label}: ${item.raw.toFixed(1)}%` } : {}),
+            },
+        },
+    },
+    scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+        y: moduleMode.value === "share"
+            ? { stacked: true, beginAtZero: true, max: 100, ticks: { precision: 0, callback: (value: number | string) => `${value}%` } }
+            : { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
     },
 }))
 
@@ -375,6 +444,44 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         </table>
                     </div>
                 </div>
+            </div>
+        </DashboardWidgetBox>
+
+        <DashboardWidgetBox storageKey="tickets_reports_by_module_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-cubes" class="text-indigo-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("Tickets by module") }}
+                </span>
+                <span class="text-xs text-gray-400">{{ stats.modules.length }} {{ ctrans("modules") }}</span>
+            </template>
+            <div class="mb-3 flex flex-wrap items-center gap-1.5">
+                <button
+                    v-for="row in stats.modules"
+                    :key="row.module"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-px text-xs"
+                    :class="isModuleSelected(row.module) ? 'border-[--app-accent] bg-[--app-accent-soft] text-[--app-accent-strong]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                    @click="toggleModule(row.module)">
+                    <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: moduleColor(row.module) }" />
+                    {{ row.label }} {{ row.total }}
+                </button>
+                <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedModules = null">{{ ctrans("All") }}</button>
+                <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedModules = []">{{ ctrans("None") }}</button>
+                <span class="ml-auto inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
+                    <button
+                        v-for="tab in moduleModeTabs"
+                        :key="tab.key"
+                        type="button"
+                        class="px-2.5 py-px transition duration-200"
+                        :class="moduleMode === tab.key ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-50'"
+                        @click="moduleMode = tab.key">
+                        {{ tab.label }}
+                    </button>
+                </span>
+            </div>
+            <div class="h-72">
+                <Chart type="bar" :data="moduleChart" :options="moduleOptions" class="h-full" />
             </div>
         </DashboardWidgetBox>
 

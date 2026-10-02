@@ -10,10 +10,10 @@ import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash, faHistory } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash, faHistory)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -51,6 +51,7 @@ const optionIcons: Record<string, string> = {
     documentation: "fal fa-books",
     data_integrity: "fal fa-database",
     support: "fal fa-search",
+    aurora: "fal fa-history",
     urgent: "fas fa-exclamation-triangle",
     high: "fas fa-arrow-up",
     normal: "fas fa-minus",

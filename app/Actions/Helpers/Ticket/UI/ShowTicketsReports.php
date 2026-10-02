@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -53,12 +54,26 @@ class ShowTicketsReports extends OrgAction
             ->selectRaw("to_char(date_trunc('$bucket', closed_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
         $openTickets = (clone $base)->where('created_at', '<', $from)->count() - (clone $base)->where('closed_at', '<', $from)->count();
 
+        $createdByModule = (clone $base)->whereBetween('created_at', [$from, $to])
+            ->selectRaw("to_char(date_trunc('$bucket', created_at), 'YYYY-MM-DD') as day, coalesce(module, 'none') as module, count(*) as total")
+            ->groupBy('day', 'module')->toBase()->get();
+        $moduleLabels = TicketModuleEnum::labels() + ['none' => __('No module')];
+        $modules      = $createdByModule->groupBy('module')->map(fn ($rows, $module) => ['module' => $module, 'label' => $moduleLabels[$module] ?? $module, 'total' => (int) $rows->sum('total')])
+            ->sortByDesc('total')->values();
+        $modulesByDay = $createdByModule->groupBy('day')->map(fn ($rows) => $rows->pluck('total', 'module')->map(fn ($total) => (int) $total)->all());
+
         $daily  = collect();
         $cursor = $from->copy()->startOf($bucket);
         while ($cursor->lte($to)) {
             $day         = $cursor->toDateString();
             $openTickets += (int) ($createdByDay[$day] ?? 0) - (int) ($closedByDay[$day] ?? 0);
-            $daily->push(['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0), 'open' => $openTickets]);
+            $daily->push([
+                'date'    => $day,
+                'created' => (int) ($createdByDay[$day] ?? 0),
+                'done'    => (int) ($resolvedByDay[$day] ?? 0),
+                'open'    => $openTickets,
+                'modules' => $modulesByDay[$day] ?? [],
+            ]);
             $cursor->add(1, $bucket);
         }
 
@@ -122,6 +137,7 @@ class ShowTicketsReports extends OrgAction
             'csat'          => $csat === null ? null : round((float) $csat, 1),
             'csat_by_month' => $csatByMonth->values()->all(),
             'daily'         => $daily->values()->all(),
+            'modules'       => $modules->all(),
             'by_status'     => collect(TicketStatusEnum::cases())->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,
                 'label'  => TicketStatusEnum::labels()[$status->value],
