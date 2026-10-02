@@ -11,6 +11,7 @@ namespace App\Http\Resources\Chat;
 use App\Models\Analytics\UserRequest;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -65,6 +66,7 @@ class StaffConversationResource extends JsonResource
             'handle' => $user->nickname ?: $user->username,
             'avatar' => $user->image_id ? $user->imageSources(0, 48) : null,
             'last_seen_at' => Cache::remember('staff-last-seen:'.$user->id, 120, fn () => UserRequest::where('user_id', $user->id)->max('date')),
+            'last_read_at' => $user->pivot?->last_read_at ? Carbon::parse($user->pivot->last_read_at)->toIso8601ZuluString('microsecond') : null,
         ])->values();
 
         return [

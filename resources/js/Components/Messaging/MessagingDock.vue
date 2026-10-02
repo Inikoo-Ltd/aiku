@@ -24,7 +24,6 @@ library.add(faComments, faSearch, faUser, faChevronLeft, faTimes)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
-const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : (layout.messagingSidebar.micro ? "right-8" : "right-16")))
 const visibleConversationWindows = computed(() =>
     store.openWindowsVisible
         .map((openWindow) => ({ ulid: openWindow.ulid, conversation: store.conversationByUlid(openWindow.ulid) }))
@@ -34,16 +33,9 @@ const visibleConversationWindows = computed(() =>
 // while a conversation is a full-screen sheet on anything tablet-sized or smaller.
 const isMobile = ref(window.innerWidth < 768)
 const isCompact = ref(window.innerWidth < 1024)
-const maxVisible = computed(() => (window.innerWidth < 1280 ? 2 : 3))
 const onResize = () => {
     isMobile.value = window.innerWidth < 768
     isCompact.value = window.innerWidth < 1024
-    store.maxVisible = window.innerWidth < 1280 ? 2 : 3
-    const visible = store.openWindows.filter((w) => !w.minimised)
-    while (visible.length > store.maxVisible) {
-        const oldest = visible.shift()
-        if (oldest) oldest.minimised = true
-    }
 }
 
 const mobilePanelOpen = ref(false)
@@ -169,12 +161,53 @@ const clusterPosition = ref<{ x: number; y: number } | null>(readClusterPosition
 const clusterElement = ref<HTMLElement | null>(null)
 const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
 
-const isDockShown = computed(() => orderedBubbles.value.length > 0 && !(isCompact.value && (mobilePanelOpen.value || visibleConversationWindows.value.length > 0)))
+const isDockShown = computed(() => orderedBubbles.value.length > 0
+    && !layout.messagingSidebar.show
+    && !(isCompact.value && (mobilePanelOpen.value || visibleConversationWindows.value.length > 0)))
 const hasDockButton = computed(() => isMobile.value && !mobilePanelOpen.value && !visibleConversationWindows.value.length)
 
-const clusterStyle = computed(() => clusterPosition.value
-    ? { left: `${clusterPosition.value.x}px`, top: `${clusterPosition.value.y}px`, right: "auto", bottom: "auto" }
-    : { bottom: isMobile.value ? "3rem" : "4.5rem" })
+const dockWidth = ref(0)
+const DOCK_GAP_PX = 12
+
+watch(clusterElement, (element, _previous, onCleanup) => {
+    if (!element) {
+        dockWidth.value = 0
+        return
+    }
+    const observer = new ResizeObserver(() => (dockWidth.value = element.offsetWidth))
+    observer.observe(element)
+    onCleanup(() => observer.disconnect())
+}, { flush: "post" })
+
+const desktopAnchorRem = computed(() => (layout.messagingSidebar.show ? 15 : (layout.messagingSidebar.micro ? 2 : 4)))
+
+const hideIfMakingRoom = (element: Element) => {
+    const ulid = (element as HTMLElement).dataset.windowUlid
+    if (!ulid || !store.instantlyMinimised.includes(ulid)) return
+
+    ;(element as HTMLElement).style.display = "none"
+    store.instantlyMinimised = store.instantlyMinimised.filter((minimisedUlid) => minimisedUlid !== ulid)
+}
+
+const windowsRowStyle = computed(() => {
+    const besideDock = isDockShown.value && !clusterPosition.value && dockWidth.value > 0 ? dockWidth.value + DOCK_GAP_PX : 0
+
+    return { right: `calc(${desktopAnchorRem.value}rem + ${besideDock}px)` }
+})
+
+const clusterStyle = computed(() => {
+    if (clusterPosition.value) {
+        return { left: `${clusterPosition.value.x}px`, top: `${clusterPosition.value.y}px`, right: "auto", bottom: "auto" }
+    }
+    if (isMobile.value) {
+        return { bottom: "3rem" }
+    }
+
+    return {
+        right: `calc(${desktopAnchorRem.value}rem + var(--chat-pane, 0px))`,
+        bottom: isCompact.value ? "4.5rem" : "1.5rem",
+    }
+})
 
 const onClusterPointerDown = (event: PointerEvent) => {
     if (!clusterElement.value) return
@@ -209,7 +242,7 @@ const onClusterPointerUp = (event: PointerEvent) => {
     if (ulid) openBubble(ulid)
 }
 
-const bubbleUlidsKey = computed(() => store.openWindowsMinimised.map((w) => w.ulid).join(","))
+const bubbleUlidsKey = computed(() => store.openWindows.map((w) => `${w.ulid}:${w.minimised ? 1 : 0}`).join(","))
 let areBubblesRestored = false
 
 watch(bubbleUlidsKey, () => {
@@ -223,7 +256,6 @@ const onStorageChange = (event: StorageEvent) => {
 onMounted(async () => {
     document.addEventListener("pointerdown", onDocumentPointerDown, true)
     window.addEventListener("storage", onStorageChange)
-    store.maxVisible = maxVisible.value
     window.addEventListener("resize", onResize)
     window.visualViewport?.addEventListener("resize", syncSheetToViewport)
     window.visualViewport?.addEventListener("scroll", syncSheetToViewport)
@@ -231,7 +263,7 @@ onMounted(async () => {
     try {
         await store.fetchConversations()
     } finally {
-        store.restoreBubbles()
+        store.restoreBubbles({ reopenWindows: !isCompact.value })
         areBubblesRestored = true
     }
 })
@@ -252,7 +284,7 @@ onUnmounted(() => {
         <template v-if="isMobile">
             <button
                 v-if="!mobilePanelOpen && !visibleConversationWindows.length && !orderedBubbles.length"
-                class="fixed bottom-12 right-3 z-40 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center"
+                class="fixed bottom-12 right-3 z-40 h-14 w-14 rounded-full bg-[--app-accent] text-[--app-accent-text] shadow-lg flex items-center justify-center"
                 @click="mobilePanelOpen = true"
             >
                 <FontAwesomeIcon icon="fal fa-comments" class="text-xl" fixed-width aria-hidden="true" />
@@ -266,7 +298,7 @@ onUnmounted(() => {
                         <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
                     </button>
                     <input v-model="search" type="text" :placeholder="ctrans('Search coworkers…')" autocapitalize="none" autocorrect="off" spellcheck="false"
-                        class="w-full px-3 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                        class="w-full px-3 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
                 </div>
                 <div class="flex-1 overflow-y-auto">
                     <button v-if="!search" v-for="conversation in store.conversations" :key="conversation.ulid"
@@ -281,7 +313,7 @@ onUnmounted(() => {
                             <div class="text-base truncate">{{ otherName(conversation) }}</div>
                             <div class="text-sm text-gray-500 truncate">{{ lastMessagePreview(conversation.last_message) }}</div>
                         </div>
-                        <span v-if="conversation.unread_count > 0" class="bg-indigo-600 text-white rounded-full h-6 min-w-[1.5rem] px-1.5 flex items-center justify-center text-xs shrink-0">{{ conversation.unread_count }}</span>
+                        <span v-if="conversation.unread_count > 0" class="bg-[--app-accent] text-[--app-accent-text] rounded-full h-6 min-w-[1.5rem] px-1.5 flex items-center justify-center text-xs shrink-0">{{ conversation.unread_count }}</span>
                     </button>
                     <div class="px-4 pt-3 pb-1 text-sm text-gray-400">{{ ctrans('Coworkers') }}</div>
                     <button v-for="coworker in visibleCoworkers" :key="coworker.id"
@@ -294,7 +326,7 @@ onUnmounted(() => {
                         </div>
                         <div class="text-base truncate">{{ coworker.name }}</div>
                     </button>
-                    <button v-if="!showAllCoworkers && sortedCoworkers.length > 8" class="w-full text-left px-4 py-3 text-sm text-indigo-600" @click="showAllCoworkers = true">{{ ctrans('Show more') }}</button>
+                    <button v-if="!showAllCoworkers && sortedCoworkers.length > 8" class="w-full text-left px-4 py-3 text-sm text-[--app-accent-strong]" @click="showAllCoworkers = true">{{ ctrans('Show more') }}</button>
                 </div>
             </div>
             </Transition>
@@ -319,23 +351,39 @@ onUnmounted(() => {
 
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
-            <div class="fixed bottom-6 z-[30] mr-[var(--chat-pane,0px)] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
-                <div v-for="w in visibleConversationWindows" :key="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)]">
+            <TransitionGroup
+                tag="div"
+                class="fixed bottom-6 z-[30] mr-[var(--chat-pane,0px)] flex flex-row-reverse items-end gap-x-3 text-gray-900 transition-[right] duration-200"
+                :style="windowsRowStyle"
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="translate-y-4 opacity-0"
+                leave-active-class="transition duration-150 ease-in"
+                leave-to-class="translate-y-4 opacity-0"
+                move-class="transition-transform duration-200 ease-out"
+                @before-leave="hideIfMakingRoom"
+            >
+                <div v-for="w in visibleConversationWindows" :key="w.ulid" :data-window-ulid="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)] origin-bottom-right">
                     <MessagingConversation
                         :conversation="w.conversation"
                         @close="store.dismissWindow(w.ulid)"
                         @minimise="store.minimiseConversation(w.ulid, true)"
                     />
                 </div>
-            </div>
+            </TransitionGroup>
         </template>
 
         <!-- Minimised chat-head bubbles: up to three, the rest folded into one; the whole row drags -->
+        <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="translate-x-6 opacity-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-to-class="translate-x-6 opacity-0"
+        >
         <div
             v-if="isDockShown"
             ref="clusterElement"
             class="fixed z-[40] flex touch-none select-none items-center rounded-full border border-gray-200/80 bg-white/95 py-1 pl-1.5 shadow-[0_6px_24px_rgba(15,23,42,0.18)] backdrop-blur"
-            :class="[clusterPosition ? '' : isMobile ? 'right-3' : desktopAnchor, hasDockButton ? 'pr-1' : 'pr-1.5']"
+            :class="[!clusterPosition && isMobile && 'right-3', hasDockButton ? 'pr-1' : 'pr-1.5']"
             :style="clusterStyle"
             @pointerdown="onClusterPointerDown"
             @pointermove="onClusterPointerMove"
@@ -350,7 +398,7 @@ onUnmounted(() => {
                 :class="bubbleIndex > 0 && '-ml-2'"
             >
                 <div class="rounded-full ring-2" :class="unreadOf(w.ulid) ? 'ring-red-500' : 'ring-white'">
-                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-10 w-10 items-center justify-center rounded-full bg-[--app-accent-soft] text-[--app-accent-strong]">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </span>
                     <TicketUserAvatar v-else :name="otherName(store.conversationByUlid(w.ulid))" :avatar="otherAvatar(store.conversationByUlid(w.ulid))" size="xl" />
@@ -412,7 +460,7 @@ onUnmounted(() => {
                             <li v-for="w in overflowBubbles" :key="w.ulid" class="group/row flex items-center">
                                 <button type="button" class="flex min-w-0 flex-1 items-center gap-x-2.5 px-3 py-2 text-left transition duration-200 hover:bg-gray-50 active:!bg-gray-100" @click="openBubble(w.ulid)">
                                     <span class="shrink-0 rounded-full" :class="unreadOf(w.ulid) ? 'ring-2 ring-red-500' : ''">
-                                        <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                                        <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-9 w-9 items-center justify-center rounded-full bg-[--app-accent-soft] text-[--app-accent-strong]">
                                             <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                                         </span>
                                         <TicketUserAvatar v-else :name="otherName(store.conversationByUlid(w.ulid))" :avatar="otherAvatar(store.conversationByUlid(w.ulid))" size="lg" />
@@ -444,7 +492,7 @@ onUnmounted(() => {
                 <button
                     type="button"
                     :aria-label="ctrans('Messages')"
-                    class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md transition duration-200 hover:bg-indigo-700 active:!bg-indigo-800"
+                    class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[--app-accent] text-[--app-accent-text] shadow-md transition duration-200 hover:bg-[--app-accent-strong] active:!bg-[--app-accent-deep]"
                     @pointerdown.stop
                     @pointerup.stop
                     @click.stop="mobilePanelOpen = true"
@@ -454,6 +502,7 @@ onUnmounted(() => {
                 </button>
             </template>
         </div>
+        </Transition>
         </Teleport>
     </div>
 </template>

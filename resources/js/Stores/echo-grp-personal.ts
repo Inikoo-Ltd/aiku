@@ -188,6 +188,9 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
             .listen('.staff-conversation-archived', (e: {conversation_ulid: string; user_id: number; user_name: string}) => {
                 useStaffMessaging().handleArchived(e)
             })
+            .listen('.staff-conversation-read', (e: { conversation_ulid: string; user_id: number; last_read_at: string }) => {
+                useStaffMessaging().handleRead(e)
+            })
         },
 
         startCloneFamilyProgress(masterFamilyId: number, masterFamily: string = '') {
