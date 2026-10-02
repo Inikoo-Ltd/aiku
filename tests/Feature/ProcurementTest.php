@@ -222,6 +222,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
 use App\Transfers\AuroraOrganisationService;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -2395,13 +2396,14 @@ test('UI show purchase order', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Procurement/PurchaseOrder')
+            ->where('data.data.is_partner', $this->purchaseOrder->parent_type === 'OrgPartner')
             ->has('title')
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'Purchase Order')
-                    ->where('afterTitle.label', $this->purchaseOrder->reference)
+                    ->where('title', $this->purchaseOrder->reference)
+                    ->where('model', 'Purchase Order')
                     ->etc()
             )
             ->has('tabs')
@@ -2453,7 +2455,8 @@ test('new purchase orders use the default warehouse address and show empty physi
             ->where('box_stats.second_block.volume', 0)
             ->where('box_stats.second_block.is_weight_partial', false)
             ->where('box_stats.second_block.is_volume_partial', false)
-            ->where('tabs.navigation.showcase.title', 'Showcase')
+            ->missing('tabs.navigation.showcase')
+            ->has('showcase.blueprint')
             ->etc());
 });
 
@@ -7119,7 +7122,9 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and(collect($row['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
         ->and(collect($row['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
         ->and((float) collect($row['stock_deliveries']['coming'])->firstWhere('reference', $comingStockDelivery->reference)['quantity'])->toBe(30.0)
-        ->and($row['stock_cover'])->toEqual($stockCover);
+        ->and(Arr::only($row['stock_cover'], array_keys($stockCover)))->toEqual($stockCover)
+        ->and($row['stock_cover']['overstock_days'])->toBe(GetOrganisationStockCoverBuckets::EXCESS_DAYS)
+        ->and($row['stock_cover']['lead_time_days'])->toBeInt();
 
     $transaction = StorePurchaseOrderTransaction::make()->action(
         $purchaseOrder,
@@ -7136,7 +7141,9 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and((float) collect($item['quarterly_usage'])->last()['sales'])->toBe(6.0)
         ->and(collect($item['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
         ->and(collect($item['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
-        ->and($item['stock_cover'])->toEqual($stockCover);
+        ->and(Arr::only($item['stock_cover'], array_keys($stockCover)))->toEqual($stockCover)
+        ->and($item['stock_cover']['overstock_days'])->toBe(GetOrganisationStockCoverBuckets::EXCESS_DAYS)
+        ->and($item['stock_cover']['lead_time_days'])->toBeInt();
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('quantity_in_locations', 0)->delete();

@@ -47,6 +47,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,6 +134,7 @@ class ShowPurchaseOrder extends OrgAction
                 ],
             ];
         } elseif ($purchaseOrder->parent instanceof OrgPartner) {
+            $orderer = ['name' => $purchaseOrder->parent->partner->name, 'type' => 'Partner'];
             $productListRoute = [
                 'method'     => 'get',
                 'name'       => 'grp.json.org-partner.purchase-order-org-stocks',
@@ -163,13 +165,14 @@ class ShowPurchaseOrder extends OrgAction
                     'next'     => $this->getNext($purchaseOrder, $request),
                 ],
                 'pageHead'    => [
-                    'title' => __('Purchase Order'),
+                    'title' => $purchaseOrder->reference,
+                    'model' => __('Purchase Order'),
                     'icon'  => [
                         'icon'  => ['fal', 'clipboard-list'],
                         'title' => __('Purchase Order'),
                     ],
                     'afterTitle' => [
-                        'label' => $purchaseOrder->reference,
+                        'label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
                     ],
                     'actions' => [
                         $this->canEdit ? [
@@ -239,7 +242,9 @@ class ShowPurchaseOrder extends OrgAction
                             'port_of_export'   => Arr::get($purchaseOrder->data, 'port_of_export'),
                             'port_of_import'   => Arr::get($purchaseOrder->data, 'port_of_import'),
                             'delivery_address' => $deliveryAddress,
+                            'is_own_warehouse' => $deliveryAddress === ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation),
                         ],
+                        'seller_order' => $this->sellerOrder($purchaseOrder, $request),
                     ],
                     'second_block'     => [
                         'state'                    => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
@@ -278,9 +283,7 @@ class ShowPurchaseOrder extends OrgAction
                     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
                     : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
 
-                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                    fn () => GetPurchaseOrderData::run($purchaseOrder)
-                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
+                'showcase' => GetPurchaseOrderData::run($purchaseOrder),
 
                 PurchaseOrderTabsEnum::NOTES->value => $this->tab == PurchaseOrderTabsEnum::NOTES->value ?
                     fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($purchaseOrder, PurchaseOrderTabsEnum::NOTES->value))
@@ -909,4 +912,25 @@ class ShowPurchaseOrder extends OrgAction
             default => []
         };
     }
+
+    /**
+     * The order a sister company's purchase order became in their shop, linked when the user can see that shop's orders.
+     *
+     * @return array{reference: string, url: string|null}|null
+     */
+    private function sellerOrder(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
+    {
+        $order = Order::find(Arr::get($purchaseOrder->data, 'seller_order_id'));
+        if (!$order) {
+            return null;
+        }
+
+        return [
+            'reference' => $order->reference,
+            'url'       => $request->user()->authTo(["orders.$order->shop_id.view", "accounting.$order->organisation_id.view"])
+                ? route('grp.org.shops.show.ordering.orders.show', [$order->organisation->slug, $order->shop->slug, $order->slug])
+                : null,
+        ];
+    }
+
 }

@@ -15,7 +15,7 @@ import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
-import { useFormatTime } from '@/Composables/useFormatTime'
+import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderItemStockInfo.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -35,6 +35,7 @@ const props = defineProps<{
     state?: string
     isOrgAgent?: boolean
     orgAgentSlug?: string
+    isPartner?: boolean
 }>()
 
 function supplierRoute(item: any): string {
@@ -55,7 +56,7 @@ const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
 
-const levels = computed(() => getOrderingLevels())
+const levels = computed(() => getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'))
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
 
@@ -74,28 +75,7 @@ function formatQuantity(value: number) {
     return locale.number(Math.round(value * 1000) / 1000)
 }
 
-function coverLabel(days: number) {
-    if (days <= 0) {
-        return ctrans('out of stock')
-    }
-    if (days >= 730) {
-        return ctrans('over 2 years')
-    }
-    if (days < 14) {
-        return ctrans(':count days', { count: String(Math.round(days)) })
-    }
-    if (days < 120) {
-        return ctrans(':count weeks', { count: String(Math.round(days / 7)) })
-    }
-    return ctrans(':count months', { count: String(Math.round(days / 30)) })
-}
 
-function coverClass(days: number) {
-    if (days <= 14) {
-        return 'text-red-600'
-    }
-    return days <= 44 ? 'text-amber-600' : 'text-gray-500'
-}
 
 function quantityAtLevel(item: any) {
     return Number(item.quantity_ordered) / unitsPerLevel(item)
@@ -122,6 +102,10 @@ function quantityBreakdown(item: any) {
     const pack = Number(item.units_per_pack) || 1
     const carton = Number(item.units_per_carton) || 1
 
+    if (props.isPartner) {
+        return `${formatQuantity(units / pack)}sko.`
+    }
+
     return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
 }
 
@@ -137,7 +121,7 @@ function amount(item: any) {
 
 const savingId = ref<number | null>(null)
 
-const isPriceEditable = computed(() => ['in_process', 'submitted'].includes(props.state ?? ''))
+const isPriceEditable = computed(() => !props.isPartner && ['in_process', 'submitted'].includes(props.state ?? ''))
 const alsoUpdateSupplierPrice = ref<Record<number, boolean>>({})
 const savingPriceId = ref<number | null>(null)
 
@@ -180,6 +164,13 @@ async function savePrice(item: any, unitCost: number, updateSupplierCost: boolea
 
 function onSavePrice(item: any, form: any) {
     savePrice(item, Number(form.quantity) / unitsPerLevel(item), !!alsoUpdateSupplierPrice.value[item.id], form)
+}
+
+const typedSkos = ref<Record<number, number>>({})
+
+function applySuggestion(item: any, skos: number) {
+    typedSkos.value[item.id] = skos
+    onSaveQuantity(item, { quantity: (skos * (Number(item.units_per_pack) || 1)) / unitsPerLevel(item), defaults: () => {} })
 }
 
 async function onSaveQuantity(item: any, form: any) {
@@ -303,9 +294,6 @@ function supplierProductRoute(item: { slug?: string }) {
     return route('grp.supply-chain.supplier_products.show', [item.slug])
 }
 
-function stockDeliveryRoute(slug: string) {
-    return route('grp.org.procurement.stock_deliveries.show', [route().params.organisation, slug])
-}
 
 const firstRowOfSupplier = computed(() => {
     const ids = new Set<number>()
@@ -321,9 +309,6 @@ const firstRowOfSupplier = computed(() => {
     return ids
 })
 
-function purchaseOrderRoute(slug: string) {
-    return route('grp.org.procurement.purchase_orders.show', [route().params.organisation, slug])
-}
 
 function orgStockRoute(item: { org_stock_id?: number }) {
     if (!item.org_stock_id) {
@@ -336,7 +321,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess" #before-table>
+        <template v-if="isInProcess && levels.length > 1" #before-table>
             <div class="flex items-end gap-1 border-b border-gray-200 px-3 sm:px-4">
                 <button
                     v-for="item in levels"
@@ -468,57 +453,11 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <div v-else-if="isInProcess" class="text-xs text-gray-500">
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
-                <div class="text-xs text-gray-500">
+                <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
-                <div v-if="item.stock_in_locations !== undefined && item.stock_in_locations !== null" class="text-xs text-gray-500">
-                    {{ ctrans('Stock') }}: <span class="font-medium">{{ formatQuantity(Number(item.stock_in_locations)) }}</span> {{ ctrans('SKOs') }}
-                </div>
-                <div v-if="item.stock_cover && item.stock_cover.days == null" class="text-xs text-gray-400">
-                    {{ ctrans('Lasts') }}: {{ ctrans('No consumption history') }}
-                </div>
-                <div v-else-if="item.stock_cover?.days != null" class="text-xs" :class="coverClass(item.stock_cover.days)">
-                    <span v-tooltip="ctrans('Based on dispatches from this warehouse over the last 3 months, counting only days it was in stock')" class="cursor-help">{{ ctrans('Lasts') }}</span>: <span class="font-medium">{{ coverLabel(item.stock_cover.days) }}</span>
-                    <span v-if="item.stock_cover.days > 0 && item.stock_cover.days < 730 && item.stock_cover.out_of_stock_at">
-                        ({{ ctrans('out around :date', { date: useFormatTime(item.stock_cover.out_of_stock_at) }) }})
-                    </span>
-                    <span
-                        v-if="item.stock_cover.days_worst_case != null && item.stock_cover.days_worst_case < item.stock_cover.days"
-                        v-tooltip="ctrans('If sales run high: 1 time in 10 it runs out this soon')"
-                        class="cursor-help"
-                    >· {{ ctrans('could be :time', { time: coverLabel(item.stock_cover.days_worst_case) }) }}</span>
-                </div>
-                <div v-if="item.quarterly_usage?.length" class="text-xs text-gray-500">
-                    {{ ctrans('Usage (SKOs)') }}:
-                    <span v-for="record in item.quarterly_usage" :key="record.period" class="mr-2">
-                        {{ record.period }}: <span class="font-medium">{{ formatQuantity(record.sales) }}</span>
-                        <span v-if="record.days_out_of_stock" v-tooltip="ctrans('Days out of stock in this quarter')" class="text-red-600">
-                            ({{ record.days_out_of_stock }}{{ ctrans('d OOS') }})
-                        </span>
-                    </span>
-                </div>
-                <div v-if="item.stock_deliveries?.coming?.length" class="text-xs text-indigo-700">
-                    {{ ctrans('Coming') }}:
-                    <span v-for="delivery in item.stock_deliveries.coming" :key="delivery.slug" class="mr-2">
-                        <Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink font-medium">{{ delivery.reference }}</Link>
-                        {{ delivery.state_label }}
-                        ({{ quantityBreakdown({ ...item, quantity_ordered: delivery.quantity }) }})
-                    </span>
-                </div>
-                <div v-if="item.stock_deliveries?.last_received" class="text-xs text-gray-500">
-                    {{ ctrans('Last received') }}:
-                    <Link :href="stockDeliveryRoute(item.stock_deliveries.last_received.slug)" class="primaryLink font-medium">{{ item.stock_deliveries.last_received.reference }}</Link>
-                    {{ useFormatTime(item.stock_deliveries.last_received.received_at) }}
-                    ({{ quantityBreakdown({ ...item, quantity_ordered: item.stock_deliveries.last_received.quantity }) }})
-                </div>
-                <div v-if="item.other_open_purchase_orders?.length" class="text-xs text-amber-700">
-                    {{ ctrans('Also in') }}:
-                    <span v-for="openPurchaseOrder in item.other_open_purchase_orders" :key="openPurchaseOrder.slug" class="mr-2">
-                        <Link :href="purchaseOrderRoute(openPurchaseOrder.slug)" class="primaryLink font-medium">{{ openPurchaseOrder.reference }}</Link>
-                        ({{ quantityBreakdown({ ...item, quantity_ordered: openPurchaseOrder.quantity_ordered }) }})
-                    </span>
-                </div>
+                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
         </template>
 
@@ -550,6 +489,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
                     :isLoading="savingId === item.id"
+                    @update:modelValue="(value) => (typedSkos[item.id] = (Number(value) * unitsPerLevel(item)) / (Number(item.units_per_pack) || 1))"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
             </div>

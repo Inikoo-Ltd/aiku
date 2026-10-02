@@ -15,6 +15,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
+import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -43,7 +44,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -52,7 +53,7 @@ library.add(
 	faIdCardAlt,
 	faEnvelope,
 	faPhone,
-	faWeight,
+	faWeight, faCube, faShoppingCart,
 	faStickyNote,
 	faShip,
 	faBox,
@@ -81,6 +82,7 @@ const props = defineProps < {
         data: {
             state: string
             state_label: string
+            is_partner?: boolean
         }
     }
    	timelines: {
@@ -122,7 +124,9 @@ const props = defineProps < {
     			port_of_export: string | null
     			port_of_import: string | null
     			delivery_address: string | null
+    			is_own_warehouse?: boolean
     		}
+    		seller_order?: { reference: string; url: string | null } | null
         }
         second_block: {
             state: string
@@ -159,7 +163,7 @@ const props = defineProps < {
 	}
 	items?: {}
 	products?: {}
-	showcase?: {}
+	showcase?: { blueprint: any[]; updateRoute: routeType }
 	notes?: {}
 	note_store_route?: routeType
 	attachments?: {}
@@ -263,6 +267,28 @@ const costBlocks = computed(() => {
 	return sameCurrency ? [supplierBlock] : [supplierBlock, organisationBlock]
 })
 
+const summaryGroups = computed(() => {
+	const { items, extra, shipping, duties, tax, total, currency, org_currency, org_items } = props.box_stats.third_block
+	const inOrgCurrency = org_currency && org_currency !== currency
+	const orgMoney = (amount: number) => (inOrgCurrency ? locale.currencyFormat(org_currency, amount) : undefined)
+	const rate = Number(orgPerOrder.value) || 0
+	const net = (Number(items) || 0) + (Number(extra) || 0) + (Number(shipping) || 0) + (Number(duties) || 0)
+
+	return [
+		[{ label: ctrans("Items"), quantity: props.box_stats.second_block.total_items, price_total: Number(items) || 0, information: orgMoney(Number(org_items) || 0) }],
+		[
+			{ label: ctrans("Extra costs"), price_total: Number(extra) || 0 },
+			{ label: ctrans("Shipping"), price_total: Number(shipping) || 0 },
+			{ label: ctrans("Duties"), price_total: Number(duties) || 0 },
+		],
+		[
+			{ label: ctrans("Net"), price_total: net },
+			{ label: ctrans("Tax"), price_total: Number(tax) || 0 },
+		],
+		[{ label: ctrans("Total"), price_total: Number(total) || 0, information: inOrgCurrency ? `${orgMoney(Number(total) * rate)} · ${moneyTable.value.rateLabel}` : undefined }],
+	]
+})
+
 const moneyTable = computed(() => {
 	const [supplierBlock, organisationBlock] = costBlocks.value
 
@@ -281,7 +307,7 @@ const moneyTable = computed(() => {
 const currentTab = ref(props.tabs.current)
 const isModalUploadExcel = ref(false)
 
-const currentLevel = ref<OrderingLevel>("cartons")
+const currentLevel = ref<OrderingLevel>(props.data.data.is_partner ? "skos" : "cartons")
 
 const isOrderingLevelTab = computed(() => ["items", "products"].includes(currentTab.value))
 
@@ -559,7 +585,6 @@ const component = computed(() => {
 	const components: Component = {
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
-		showcase: ProcurementOrderData,
 		notes: TableProcurementNotes,
 		attachments: TableAttachments,
 		dispatched_emails: TableDispatchedEmailsInOrder,
@@ -568,6 +593,13 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
+
+const hasMiddleBox = computed(() =>
+	!!props.stock_delivery_timelines.length
+	|| props.data.data.state === "cancelled"
+	|| !!props.box_stats.second_block.is_delivery_items_active
+	|| !!props.box_stats.second_block.is_placed_items_active
+)
 
 const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
 
@@ -751,123 +783,39 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<div class="grid grid-cols-2 text-gray-500 divide-x divide-gray-300 border-b border-gray-300" :class="stock_delivery_timelines.length ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
+	<div class="grid grid-cols-2 text-gray-500 divide-x divide-gray-300 border-b border-gray-300" :class="['lg:grid-cols-2', 'lg:grid-cols-3', 'lg:grid-cols-4'][Number(hasMiddleBox) + Number(!!stock_delivery_timelines.length)]">
 	    <!-- First Block -->
 		<BoxStatPallet class="p-4">
-			<div class="flex flex-col gap-4">
-				<!-- Supplier -->
-				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
-					<dt>
-						<FontAwesomeIcon
-							v-tooltip="ctrans(box_stats.first_block.orderer.type)"
-							icon="fal fa-hand-holding-box"
-							aria-hidden="true"
-							fixed-width
-						/>
-					</dt>
-					<dd>
-						<Link v-if="ordererRoute" :href="ordererRoute" class="primaryLink">
-							{{ box_stats.first_block.orderer.name }}
-						</Link>
-						<span v-else>{{ box_stats.first_block.orderer.name }}</span>
-					</dd>
+			<div class="flex flex-col gap-2">
+				<h3 class="text-lg font-semibold text-gray-700">
+					{{ ctrans("Order") }}
+					<span v-if="box_stats.first_block.orderer.type" class="text-base font-normal text-gray-400">({{ ctrans(box_stats.first_block.orderer.type) }})</span>
+				</h3>
+				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-3 text-sm">
+					<FontAwesomeIcon icon="fal fa-hand-holding-box" class="text-gray-400" aria-hidden="true" fixed-width />
+					<Link v-if="ordererRoute" :href="ordererRoute" class="primaryLink">
+						{{ box_stats.first_block.orderer.name }}
+					</Link>
+					<span v-else class="text-gray-700">{{ box_stats.first_block.orderer.name }}</span>
 				</div>
-
-				<!-- Delivery terms -->
-				<div v-if="box_stats.first_block.delivery.type === 'container'">
-					<div class="flex items-center gap-2">
-						<dt>
-							<FontAwesomeIcon
-								v-tooltip="ctrans('Incoterm')"
-								icon="fas fa-share"
-								aria-hidden="true"
-								fixed-width
-							/>
-						</dt>
-						<dd v-if="box_stats.first_block.delivery.incoterm">{{ box_stats.first_block.delivery.incoterm }}</dd>
-						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
-		                    <FontAwesomeIcon
-    							icon="fas fa-exclamation-circle"
-    							aria-hidden="true"
-    							fixed-width
-    						/>
-						    <span>{{ ctrans("Incoterm not set") }}</span>
-						</dd>
-					</div>
-
-					<div class="flex items-center gap-2">
-						<dt>
-							<FontAwesomeIcon
-								v-tooltip="ctrans('Port of export')"
-								icon="fas fa-arrow-circle-right"
-								aria-hidden="true"
-								fixed-width
-							/>
-						</dt>
-						<dd v-if="box_stats.first_block.delivery.port_of_export">{{ box_stats.first_block.delivery.port_of_export }}</dd>
-						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
-                            <FontAwesomeIcon
-     							icon="fas fa-exclamation-circle"
-     							aria-hidden="true"
-     							fixed-width
-      						/>
-                            <span>{{ ctrans("Port of export not set") }}</span>
-						</dd>
-					</div>
-
-					<div class="flex items-center gap-2">
-						<dt>
-							<FontAwesomeIcon
-								v-tooltip="ctrans('Port of import')"
-								icon="fas fa-arrow-circle-left"
-								aria-hidden="true"
-								fixed-width
-							/>
-						</dt>
-						<dd v-if="box_stats.first_block.delivery.port_of_import">{{ box_stats.first_block.delivery.port_of_import }}</dd>
-						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
-                            <FontAwesomeIcon
-     							icon="fas fa-exclamation-circle"
-     							aria-hidden="true"
-     							fixed-width
-      						/>
-                            <span>{{ ctrans("Port of import not set") }}</span>
-						</dd>
-					</div>
+				<div v-if="box_stats.first_block.seller_order" class="flex items-center gap-3 text-sm">
+					<FontAwesomeIcon v-tooltip="ctrans('Their order')" icon="fal fa-shopping-cart" class="text-gray-400" aria-hidden="true" fixed-width />
+					<Link v-if="box_stats.first_block.seller_order.url" :href="box_stats.first_block.seller_order.url" class="primaryLink">
+						{{ box_stats.first_block.seller_order.reference }}
+					</Link>
+					<span v-else class="text-gray-700">{{ box_stats.first_block.seller_order.reference }}</span>
 				</div>
-
-				<!-- Deliver to -->
-				<div class="pt-2 text-sm">
-					<div class="text-gray-400">{{ ctrans("Deliver to") }}:</div>
-					<div v-if="box_stats.first_block.delivery.delivery_address" class="text-xs whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
-					<div v-else class="flex items-center gap-1 text-red-500 text-xs italic">
-                        <FontAwesomeIcon
- 							icon="fas fa-exclamation-circle"
- 							aria-hidden="true"
- 							fixed-width
-  						/>
-                        <span>{{ ctrans("Delivery address not set") }}</span>
-					</div>
+				<div v-else-if="data.data.is_partner" class="flex items-center gap-3 text-sm text-gray-400">
+					<FontAwesomeIcon icon="fal fa-shopping-cart" aria-hidden="true" fixed-width />
+					<span class="italic">{{ ctrans("Their order is created when you submit") }}</span>
 				</div>
+				<ProcurementOrderData v-if="showcase" :data="showcase" bare :isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse" />
 			</div>
 		</BoxStatPallet>
 
 		<!-- Second Block -->
-		<BoxStatPallet class="p-4">
+		<BoxStatPallet v-if="hasMiddleBox" class="p-4">
             <div class="flex h-8 justify-center items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <FontAwesomeIcon
-                        v-tooltip="ctrans('Purchase Order')"
-                        icon="fal fa-clipboard-list"
-                        class="text-gray-400"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                    <span>{{ box_stats.second_block.state }}</span>
-                </div>
-
-                <div v-if="stock_delivery_timelines.length" class="h-4 w-px bg-gray-300" />
-
                 <div v-if="stock_delivery_timelines.length" class="flex items-center gap-2">
                     <FontAwesomeIcon
                         v-tooltip="ctrans('Stock Delivery')"
@@ -905,17 +853,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
             <!-- Todo: Create Purchase Order Export as PDF -->
 
-            <div class="flex justify-center gap-4">
-                <div class="flex items-center gap-1">
-                    <FontAwesomeIcon
-                        v-tooltip="ctrans('Items')"
-        				icon="fas fa-bars"
-        				aria-hidden="true"
-        				fixed-width
-    				/>
-                    <span>{{ box_stats.second_block.total_items }}</span>
-                </div>
-
+            <div v-if="box_stats.second_block.is_delivery_items_active || box_stats.second_block.is_placed_items_active" class="flex justify-center gap-4">
                 <div
                     class="flex items-center gap-1"
                     :class="box_stats.second_block.is_delivery_items_active ? '' : 'text-gray-300'"
@@ -943,24 +881,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 </div>
             </div>
 
-            <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <div
-                    v-for="metric in metrics"
-                    :key="metric.key"
-                    class="flex items-center justify-center gap-1"
-                    :class="metric.isUnknown ? 'italic text-red-500' : ''"
-                >
-                    <FontAwesomeIcon
-                        v-if="metric.showMark"
-                        v-tooltip="metric.tooltip"
-                        icon="fas fa-exclamation-circle"
-                        :class="metric.isUnknown ? 'text-red-500' : 'text-orange-500'"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                    <span>{{ metric.text }}</span>
-                </div>
-            </div>
 		</BoxStatPallet>
 
 		<!-- Third Block: stock deliveries -->
@@ -990,21 +910,29 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</BoxStatPallet>
 
 		<!-- Fourth Block: money -->
-		<BoxStatPallet class="p-4">
-			<div class="flex h-8 items-center justify-center text-center">
-				{{ moneyTable.title }}
+		<BoxStatPallet class="min-w-0 pb-4">
+			<div class="text-xs md:text-sm">
+				<div class="flex items-center justify-between px-3 pt-2">
+					<div class="text-base font-semibold">{{ ctrans("Summary") }}</div>
+					<div class="text-xs text-gray-400">{{ moneyTable.title }}</div>
+				</div>
+				<section class="rounded-lg px-4 py-2">
+					<div class="mb-2 flex items-center gap-x-4 border-b border-gray-300 pb-2 text-gray-500">
+						<span v-for="metric in metrics" :key="metric.key" class="flex items-center gap-x-1.5 whitespace-nowrap" :class="metric.isUnknown ? 'italic text-gray-400' : ''">
+							<FontAwesomeIcon :icon="metric.key === 'weight' ? 'fal fa-weight' : 'fal fa-cube'" fixed-width aria-hidden="true" />
+							{{ metric.text }}
+							<FontAwesomeIcon
+								v-if="metric.showMark"
+								v-tooltip="metric.tooltip"
+								icon="fas fa-exclamation-circle"
+								:class="metric.isUnknown ? 'text-red-500' : 'text-orange-500'"
+								fixed-width
+								aria-hidden="true" />
+						</span>
+					</div>
+					<OrderSummary :order_summary="summaryGroups" :currency_code="box_stats.third_block.currency ?? ''" />
+				</section>
 			</div>
-
-			<hr class="-mx-4 mb-1 border-t border-gray-300" />
-
-			<table class="mt-2 w-full text-sm">
-				<tr v-for="row in moneyTable.rows" :key="row.label" :class="row.isTotal ? 'font-semibold text-gray-700' : ''">
-					<td class="py-0.5">{{ row.label }}</td>
-					<td class="py-0.5 text-right tabular-nums">{{ row.supplier }}</td>
-					<td v-if="moneyTable.rateLabel" class="py-0.5 pl-3 text-right tabular-nums text-gray-400">{{ row.org }}</td>
-				</tr>
-			</table>
-			<div v-if="moneyTable.rateLabel" class="mt-1 text-right text-xs text-gray-400">{{ moneyTable.rateLabel }}</div>
 		</BoxStatPallet>
 	</div>
 
@@ -1024,6 +952,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:detachRoute="attachmentRoutes.detachRoute"
 			v-bind="isOrderingLevelTab ? {
 				level: currentLevel,
+				isPartner: data.data.is_partner,
 				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
 			} : {}"
 			@update:tab="handleTabUpdate"
@@ -1047,6 +976,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:current="currentTab"
 		v-model:currentTab="currentTab"
 		:typeModel="'purchase_order'"
+		:isPartner="data.data.is_partner"
 		v-model:level="currentLevel"
 	/>
 

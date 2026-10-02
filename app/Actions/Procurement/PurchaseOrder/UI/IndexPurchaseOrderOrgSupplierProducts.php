@@ -9,6 +9,8 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
@@ -124,7 +126,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
 
-        $this->attachOrgStockData($paginator);
+        $this->attachOrgStockData($paginator, $purchaseOrder);
         $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
 
         return $paginator;
@@ -228,7 +230,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withPaginator(null, tableName: request()->route()?->getName())
             ->withQueryString();
 
-        $this->attachOrgStockData($paginator);
+        $this->attachOrgStockData($paginator, $purchaseOrder);
         $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
 
         return $paginator;
@@ -239,7 +241,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    private function attachOrgStockData(LengthAwarePaginator $paginator): void
+    private function attachOrgStockData(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
     {
         $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
 
@@ -247,23 +249,21 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             return;
         }
 
-        $orgStocks = OrgStock::with('tradeUnits.image', 'stats')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $orgStocks = OrgStock::with('tradeUnits.image', 'stats', 'stock.stockFamily')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $supplierProducts    = SupplierProduct::whereIn('id', $paginator->getCollection()->pluck('supplier_product_id')->filter()->unique())->get()->keyBy('id');
+        $partnerLeadTimeDays = $purchaseOrder->parent instanceof OrgPartner ? GetPartnerLeadTime::run($purchaseOrder->parent)['days'] : null;
 
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage, $stockDeliveries) {
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage, $stockDeliveries, $supplierProducts, $partnerLeadTimeDays) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
             $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
 
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
-            $row->stock_cover        = $orgStock?->stats ? [
-                'days'            => $orgStock->stats->days_of_cover === null ? null : (float) $orgStock->stats->days_of_cover,
-                'days_worst_case' => $orgStock->stats->days_of_cover_pessimistic === null ? null : (float) $orgStock->stats->days_of_cover_pessimistic,
-                'out_of_stock_at' => $orgStock->stats->predicted_out_of_stock_at,
-            ] : null;
+            $row->stock_cover        = GetOrgStockBuyingSignals::run($orgStock, $supplierProducts->get($row->supplier_product_id ?? null), $partnerLeadTimeDays);
             $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);
 
             return $row;
