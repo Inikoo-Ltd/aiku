@@ -6558,7 +6558,7 @@ test('an agent waits for the customer: it closes when the time is up unless the 
 
     $silent = noiseTestEmailSession($this->shop, 'wait-silent@example.com', 'Order', 'Can you check my order?');
     $lastId = $waitFor($silent, 24);
-    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addDay(), true))->toBeLessThan(1);
+    expect(\Illuminate\Support\Carbon::parse($wait::until($silent))->diffInMinutes(now()->addWeekdays(1), true))->toBeLessThan(1);
     $wait::make()->asJob($silent, $lastId);
     expect($silent->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($wait::until($silent))->toBeNull();
