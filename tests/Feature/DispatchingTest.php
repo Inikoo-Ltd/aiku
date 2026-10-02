@@ -1630,7 +1630,8 @@ test('a delivery note going to a box packing list destination is packed only onc
     \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 10]]]);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED)
-        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200);
+        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200)
+        ->and(app()->getLocale())->toBe($deliveryNote->shop->language->code);
 
     get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page

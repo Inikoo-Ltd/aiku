@@ -20,6 +20,8 @@ class PdfPackingList extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): Response
     {
+        app()->setLocale($deliveryNote->shop->language->code);
+
         $deliveryNote->loadMissing([
             'orders',
             'deliveryAddress',
