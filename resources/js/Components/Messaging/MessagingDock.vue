@@ -159,7 +159,7 @@ const readClusterPosition = (): { x: number; y: number } | null => {
 
 const clusterPosition = ref<{ x: number; y: number } | null>(readClusterPosition())
 const clusterElement = ref<HTMLElement | null>(null)
-const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
+const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean; bubbleUlid: string | null } | null>(null)
 
 const isDockShown = computed(() => orderedBubbles.value.length > 0
     && !layout.messagingSidebar.show
@@ -212,7 +212,8 @@ const clusterStyle = computed(() => {
 const onClusterPointerDown = (event: PointerEvent) => {
     if (!clusterElement.value) return
     const rect = clusterElement.value.getBoundingClientRect()
-    clusterDrag.value = { startX: event.clientX, startY: event.clientY, origX: rect.left, origY: rect.top, moved: false }
+    const bubbleUlid = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-bubble-ulid]")?.dataset.bubbleUlid ?? null
+    clusterDrag.value = { startX: event.clientX, startY: event.clientY, origX: rect.left, origY: rect.top, moved: false, bubbleUlid }
     clusterElement.value.setPointerCapture(event.pointerId)
 }
 
@@ -229,8 +230,9 @@ const onClusterPointerMove = (event: PointerEvent) => {
     }
 }
 
-const onClusterPointerUp = (event: PointerEvent) => {
+const onClusterPointerUp = () => {
     const moved = clusterDrag.value?.moved
+    const ulid = clusterDrag.value?.bubbleUlid
     clusterDrag.value = null
     if (moved) {
         try {
@@ -238,7 +240,6 @@ const onClusterPointerUp = (event: PointerEvent) => {
         } catch { }
         return
     }
-    const ulid = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-bubble-ulid]")?.dataset.bubbleUlid
     if (ulid) openBubble(ulid)
 }
 
