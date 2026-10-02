@@ -13,6 +13,9 @@ use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 
 class UpdateClockingNotes
 {
@@ -38,21 +41,29 @@ class UpdateClockingNotes
         return $clocking;
     }
 
-    public function asController(Clocking $clocking, ActionRequest $request)
+    public function asController(Clocking $clocking, ActionRequest $request): Clocking
     {
         $validated = $request->validated();
 
-        $this->handle(
+        return $this->handle(
             $clocking,
             $request->has('notes') ? ($validated['notes'] ?? null) : $clocking->notes,
             $validated['clocked_at'] ?? null
         );
+    }
 
+    public function jsonResponse(Clocking $clocking): JsonResponse
+    {
         return response()->json([
-            'success' => true,
-            'message' => __('Notes updated successfully.'),
+            'success'  => true,
+            'message'  => __('Notes updated successfully.'),
             'clocking' => $clocking
         ]);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function rules(): array

@@ -21,6 +21,7 @@ use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -105,34 +106,21 @@ class ShowClocking extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ?
-                            match ($request->route()->getName()) {
-                                'grp.org.hr.clockings.show' => [
-                                    'type'  => 'button',
-                                    'style' => 'delete',
-                                    'route' => [
-                                        'name'       => 'grp.org.hr.clockings.remove',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ],
-
-                                ],
-                                'grp.org.hr.workplaces.show.clockings.show' => [
-                                    'type'  => 'button',
-                                    'style' => 'delete',
-                                    'route' => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clockings.remove',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ],
-                                ],
-                                'grp.org.hr.workplaces.show.clocking_machines.show.clockings.show' => [
-                                    'type'  => 'button',
-                                    'style' => 'delete',
-                                    'route' => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.remove',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'key'   => 'delete',
+                            'style' => 'delete',
+                            'title' => __('Delete this clocking?'),
+                            'description' => __('Timesheet hours that use this clocking will be recalculated.'),
+                            'route' => [
+                                'method'     => 'delete',
+                                'name'       => 'grp.models.clocking-machine.clocking.delete',
+                                'parameters' => [
+                                    'clocking'           => $clocking->id,
+                                    'from_clocking_page' => 1
                                 ]
-                            } : false
+                            ]
+                        ] : false
                     ]
                 ],
                 'tabs'        => [
@@ -160,18 +148,26 @@ class ShowClocking extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Clocking $clocking, array $routeParameters, string $suffix) {
+        $clocking = Clocking::find($routeParameters['clocking']);
+
+        $headCrumb = function (string $indexRouteName, string $modelRouteName) use ($clocking, $routeParameters, $suffix) {
             return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => $routeParameters['index'],
+                            'route' => [
+                                'name'       => $indexRouteName,
+                                'parameters' => Arr::except($routeParameters, 'clocking')
+                            ],
                             'label' => __('clockings')
                         ],
                         'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $clocking->clocked_at,
+                            'route' => [
+                                'name'       => $modelRouteName,
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $clocking?->clocked_at,
                         ],
 
                     ],
@@ -181,102 +177,27 @@ class ShowClocking extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.hr.clockings.show' =>
-            array_merge(
+            'grp.org.hr.clockings.show' => array_merge(
                 ShowHumanResourcesDashboard::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    $routeParameters['clocking'],
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.hr.clockings.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.hr.clockings.show',
-                            'parameters' => [$routeParameters['clocking']->slug]
-                        ]
-                    ],
-                    $suffix
-                ),
+                $headCrumb('grp.org.hr.clockings.index', $routeName)
             ),
             'grp.org.hr.workplaces.show.clockings.show' => array_merge(
-                (new ShowWorkplace())->getBreadcrumbs($routeParameters['workplace']),
-                $headCrumb(
-                    $routeParameters['clocking'],
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.hr.workplaces.show.clockings.index',
-                            'parameters' => [
-                                $routeParameters['workplace']->slug,
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.hr.workplaces.show.clockings.show',
-                            'parameters' => [
-                                $routeParameters['workplace']->slug,
-                                $routeParameters['clocking']->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                )
+                ShowWorkplace::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'workplace'])),
+                $headCrumb('grp.org.hr.workplaces.show.clockings.index', $routeName)
             ),
             'grp.org.hr.clocking_machines.show.clockings.show' => array_merge(
-                (new ShowClockingMachine())->getBreadcrumbs(
+                ShowClockingMachine::make()->getBreadcrumbs(
                     'grp.org.hr.clocking_machines.show',
-                    [
-                        'clockingMachine' => $routeParameters['clockingMachine']
-                    ]
+                    Arr::only($routeParameters, ['organisation', 'clockingMachine'])
                 ),
-                $headCrumb(
-                    $routeParameters['clocking'],
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.hr.clocking_machines.show.clockings.index',
-                            'parameters' => [
-                                $routeParameters['clockingMachine']->slug,
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.hr.clocking_machines.show.clockings.show',
-                            'parameters' => [
-                                $routeParameters['clockingMachine']->slug,
-                                $routeParameters['clocking']->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                ),
+                $headCrumb('grp.org.hr.clocking_machines.clockings.index', $routeName)
             ),
             'grp.org.hr.workplaces.show.clocking_machines.show.clockings.show' => array_merge(
-                (new ShowClockingMachine())->getBreadcrumbs(
+                ShowClockingMachine::make()->getBreadcrumbs(
                     'grp.org.hr.workplaces.show.clocking_machines.show',
-                    [
-                        'workplace'       => $routeParameters['workplace'],
-                        'clockingMachine' => $routeParameters['clockingMachine'],
-                    ]
+                    Arr::only($routeParameters, ['organisation', 'workplace', 'clockingMachine'])
                 ),
-                $headCrumb(
-                    $routeParameters['clocking'],
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index',
-                            'parameters' => [
-                                $routeParameters['workplace']->slug,
-                                $routeParameters['clockingMachine']->slug,
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.show',
-                            'parameters' => [
-                                $routeParameters['workplace']->slug,
-                                $routeParameters['clockingMachine']->slug,
-                                $routeParameters['clocking']->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                ),
+                $headCrumb('grp.org.hr.workplaces.show.clocking_machines.show.clockings.index', $routeName)
             ),
 
             default => []
@@ -333,7 +254,8 @@ class ShowClocking extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'clocking' => $clocking->id
+                        'organisation' => $this->organisation->slug,
+                        'clocking'     => $clocking->id
                     ]
 
                 ]
@@ -343,6 +265,7 @@ class ShowClocking extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
+                        'organisation'    => $this->organisation->slug,
                         'clockingMachine' => $clocking->clockingMachine->slug,
                         'clocking'        => $clocking->id
                     ]
@@ -354,8 +277,9 @@ class ShowClocking extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'workplace' => $clocking->workplace->slug,
-                        'clocking'  => $clocking->id
+                        'organisation' => $this->organisation->slug,
+                        'workplace'    => $clocking->workplace->slug,
+                        'clocking'     => $clocking->id
                     ]
 
                 ]
@@ -366,6 +290,7 @@ class ShowClocking extends OrgAction
                     'name'       => $routeName,
                     'parameters' => [
                         'workplace'       => $clocking->workplace->slug,
+                        'organisation'    => $this->organisation->slug,
                         'clockingMachine' => $clocking->clockingMachine->slug,
                         'clocking'        => $clocking->id
                     ]

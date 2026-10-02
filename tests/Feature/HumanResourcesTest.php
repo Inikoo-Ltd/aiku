@@ -3313,7 +3313,28 @@ test('a human resources supervisor can open the organisation clockings and emplo
     ]);
     EmployeeLeaveBalance::updateOrCreate(['employee_id' => $employee->id, 'employee_contract_id' => $contract->id], ['annual_used' => 3]);
 
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Analytics Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, ['type' => 'in', 'at' => now()->toDateTimeString()], 0, true);
+
     get(route('grp.org.hr.clockings.index', $this->organisation->slug))->assertOk();
+    get(route('grp.org.hr.clockings.show', [$this->organisation->slug, $clocking->id]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('pageHead.actions.1.key', 'delete')->where('pageHead.actions.1.route.name', 'grp.models.clocking-machine.clocking.delete'));
+    get(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('formData.args.updateRoute.name', 'grp.models.clocking-machine.clocking.notes.update'));
+
+    \Pest\Laravel\from(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]))
+        ->patch(route('grp.models.clocking-machine.clocking.notes.update', $clocking->id), ['notes' => 'forgot to clock in'], ['X-Inertia' => 'true'])
+        ->assertRedirect(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]));
+    expect($clocking->fresh()->notes)->toBe('forgot to clock in');
+
+    \Pest\Laravel\delete(route('grp.models.clocking-machine.clocking.delete', ['clocking' => $clocking->id, 'from_clocking_page' => 1]))
+        ->assertRedirect(route('grp.org.hr.clockings.index', $this->organisation->slug));
+    expect(\App\Models\HumanResources\Clocking::find($clocking->id))->toBeNull();
     get(route('grp.org.hr.analytics.show', [$this->organisation->slug, $employee->slug]))
         ->assertOk()
         ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('analytics.leave.leave_balance.annual_remaining', 17));
