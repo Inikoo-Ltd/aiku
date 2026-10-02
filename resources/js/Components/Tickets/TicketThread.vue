@@ -60,6 +60,8 @@ const composer = ref<{ appendMention: (username: string) => void } | null>(null)
 
 const mentionInReply = (username: string) => composer.value?.appendMention(username)
 
+defineExpose({ mentionInReply })
+
 const isNewestFirst = ref(props.commentsNewestFirst)
 
 const toggleCommentOrder = () => {

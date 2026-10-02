@@ -16,6 +16,7 @@ import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
 import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
@@ -52,13 +53,7 @@ const copyTicketLink = async () => {
     setTimeout(() => (isLinkCopied.value = false), 2000)
 }
 
-const roleClasses: Record<string, string> = {
-    lead_engineer: "bg-teal-100 text-teal-700",
-    engineer: "bg-blue-100 text-blue-700",
-    qa: "bg-purple-100 text-purple-700",
-    staff: "bg-gray-100 text-gray-600",
-    customer: "bg-slate-200 text-slate-700",
-}
+const thread = ref<InstanceType<typeof TicketThread> | null>(null)
 
 const isTicketClosed = computed(() => ["resolved", "cancelled"].includes(displayTicket.value?.status))
 
@@ -181,14 +176,20 @@ const close = () => {
                     <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
                         <span class="flex flex-wrap items-center gap-1"
                             >{{ ctrans("Raised") }}: {{ shortDate(displayTicket.created_at) }}
-                            {{ displayTicket.reporter ? "· " + displayTicket.reporter : "" }}
-                            <span
-                                v-for="role in displayTicket.reporter_roles ?? []"
-                                :key="role.key"
-                                class="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                                :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
-                                >{{ role.label }}</span
-                            ></span
+                            <template v-if="displayTicket.reporter">
+                                ·
+                                <TicketUserHoverCard
+                                    :name="displayTicket.reporter"
+                                    :avatar="displayTicket.reporter_avatar ?? null"
+                                    :roles="displayTicket.reporter_roles ?? []"
+                                    :username="displayTicket.reporter_username ?? null"
+                                    :reporterKey="displayTicket.reporter_key ?? null"
+                                    :profileUrl="displayTicket.reporter_profile_url ?? null"
+                                    :canMention="!!thread"
+                                    size="xs"
+                                    class="font-normal"
+                                    @mention="(username) => thread?.mentionInReply(username)" />
+                            </template></span
                         >
                         <span v-if="displayTicket.assignee"
                             >{{ ctrans("Assignee") }}: {{ displayTicket.assignee }}</span
@@ -235,6 +236,7 @@ const close = () => {
                             </div>
                             <div class="mt-2">
                                 <TicketThread
+                                    ref="thread"
                                     :ticket="controls.ticket"
                                     :comments="controls.comments ?? []"
                                     :comment-route="controls.routes.comment"

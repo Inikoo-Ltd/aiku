@@ -156,7 +156,14 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                         </div>
                         <h2 class="mb-3 text-lg font-semibold leading-snug">{{ shown.subject }}</h2>
                         <div class="mb-4 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
-                            <span>{{ ctrans("Raised") }}: {{ shortDate(shown.created_at) }}{{ shown.requester ? " · " + shown.requester.name : "" }}</span>
+                            <span class="flex flex-wrap items-center gap-1">
+                                {{ ctrans("Raised") }}: {{ shortDate(shown.created_at) }}
+                                <template v-if="shown.requester">
+                                    ·
+                                    <TicketUserAvatar :name="shown.requester.name" :avatar="shown.requester.avatar" size="xs" />
+                                    {{ shown.requester.name }}
+                                </template>
+                            </span>
                             <span>{{ ctrans("Assignee") }}: {{ shown.assignee?.name ?? shown.department_label ?? ctrans("Unassigned") }}</span>
                             <span v-if="shown.started_at">{{ ctrans("Started") }}: {{ shortDate(shown.started_at) }}</span>
                             <span v-if="shown.due_at" :class="shown.is_overdue && 'font-medium text-red-600'">{{ ctrans("Due") }}: {{ shortDate(shown.due_at) }}</span>
