@@ -7,10 +7,14 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Product\AskShopkeeperToReviewMasterText;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Language;
 use App\Models\Masters\MasterAsset;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class PropagateMasterContentToProducts
@@ -41,7 +45,8 @@ class PropagateMasterContentToProducts
             return;
         }
 
-        $english = Language::where('code', 'en')->first();
+        $english         = Language::where('code', 'en')->first();
+        $flaggedProducts = collect();
 
         foreach ($masterAsset->products()->with('shop.language')->get() as $product) {
             if ($product->shop->language_id == $english->id) {
@@ -51,7 +56,28 @@ class PropagateMasterContentToProducts
             }
 
             $this->flagForReview($masterAsset, $product, $changedFields);
+            $flaggedProducts->push($product);
         }
+
+        $this->askShopkeepersToReview($flaggedProducts, $changedFields);
+    }
+
+    /**
+     * @param Collection<int, Product> $flaggedProducts
+     * @param array<int, string> $changedFields
+     */
+    private function askShopkeepersToReview(Collection $flaggedProducts, array $changedFields): void
+    {
+        $requester = auth()->user();
+
+        if (!$requester instanceof User) {
+            return;
+        }
+
+        $flaggedProducts
+            ->filter(fn (Product $product) => $product->shop->state === ShopStateEnum::OPEN)
+            ->groupBy('shop_id')
+            ->each(fn (Collection $products) => AskShopkeeperToReviewMasterText::run($products->first()->shop, $products, $changedFields, $requester));
     }
 
     /**

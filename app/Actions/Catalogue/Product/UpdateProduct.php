@@ -584,7 +584,10 @@ class UpdateProduct extends OrgAction
 
         RecordTranslationReview::make()->fromEdit($product, $this->validatedData, $request->user());
 
-        return $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
+        $product = $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
+        AskShopkeeperToReviewMasterText::make()->tickReviewed($product);
+
+        return $product;
     }
 
     /**
