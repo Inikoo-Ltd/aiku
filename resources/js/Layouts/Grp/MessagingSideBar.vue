@@ -18,7 +18,7 @@ import RailControls from "@/Layouts/Grp/RailControls.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, isAlerting, isWorkThread, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, isAlerting, isWorkThread, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -647,6 +647,7 @@ onUnmounted(() => {
                         </div>
                         <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>
                         <span
+                            v-if="canArchiveConversation(conversation)"
                             role="button" tabindex="0"
                             class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
                             v-tooltip="ctrans('Archive chat')"

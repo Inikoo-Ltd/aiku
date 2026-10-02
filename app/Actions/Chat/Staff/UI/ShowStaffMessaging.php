@@ -14,6 +14,8 @@ use App\Actions\UI\WithInertia;
 use App\Http\Resources\Chat\StaffConversationResource;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\Group;
+use App\Models\Tasks\StaffTask;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,10 +50,14 @@ class ShowStaffMessaging extends OrgAction
         return $this->handle($this->group);
     }
 
-    public function htmlResponse(Group $group, ActionRequest $request): Response
+    public function htmlResponse(Group $group, ActionRequest $request): Response|RedirectResponse
     {
         $title        = __('Internal Messages');
         $conversation = $this->conversation;
+
+        if ($conversation?->context instanceof StaffTask) {
+            return redirect()->route('grp.tasks.show', $conversation->context->reference);
+        }
 
         return Inertia::render(
             'Chat/StaffMessaging',

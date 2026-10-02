@@ -37,7 +37,7 @@ class StaffConversationResource extends JsonResource
     }
 
     /**
-     * @return array{reference: string, requester_id: int, assignee_id: int|null, collaborator_ids: int[], subtasks: array<int, array{title: string, status: string}>}|null
+     * @return array{reference: string, is_open: bool, requester_id: int, assignee_id: int|null, collaborator_ids: int[], subtasks: array<int, array{title: string, status: string}>}|null
      */
     protected function task(): ?array
     {
@@ -49,6 +49,7 @@ class StaffConversationResource extends JsonResource
 
         return [
             'reference'        => $task->reference,
+            'is_open'          => $task->isOpen(),
             'requester_id'     => $task->requester_id,
             'assignee_id'      => $task->assignee_id,
             'collaborator_ids' => $task->collaborators->pluck('id')->all(),

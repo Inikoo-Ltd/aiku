@@ -57,6 +57,7 @@ export interface StaffConversation {
 
 export interface StaffConversationTask {
     reference: string
+    is_open: boolean
     requester_id: number
     assignee_id: number | null
     collaborator_ids: number[]
@@ -91,6 +92,8 @@ interface ArchivedNote {
 const bubblePositionKey = (ulid: string) => `staff-chat-bubble-${ulid}`
 
 export const isWorkThread = (conversation: StaffConversation) => !!conversation.context_type
+
+export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
 
 export const isAlerting = (conversation: StaffConversation) => conversation.has_mention || (conversation.type === "dm" && !isWorkThread(conversation))
 
@@ -217,6 +220,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         },
 
         closeConversation(ulid: string) {
+            if (!canArchiveConversation(this.conversationByUlid(ulid))) return
             localStorage.removeItem(`staff-chat-bubble-${ulid}`)
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
             axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
