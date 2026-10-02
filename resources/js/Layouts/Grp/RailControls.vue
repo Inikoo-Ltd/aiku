@@ -25,7 +25,7 @@ import axios from 'axios'
 import { faTasks } from '@fal'
 import CustomersWaiting from './CustomersWaiting.vue';
 import WhatsappCallAlert from './WhatsappCallAlert.vue';
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 library.add(faCircle, faLifeRing, faShoppingCart, faCube)
 
@@ -40,13 +40,37 @@ const myTicketsUnread = computed(() => (layout.ticket_badges?.recent ?? []).filt
 const queueCount = computed(() => (layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0) + (layout.ticket_badges?.queue?.collaborating?.count ?? 0))
 const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 const hasTicketBadges = computed(() => Boolean(layout.ticket_badges?.queue) || Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0)))
-const hiddenBadges = ref<string[]>([...(layout.user?.settings?.rail_hidden_badges ?? [])])
+const hiddenBadgesStorageKey = () => `rail-hidden-badges:${layout.user?.id ?? 'guest'}`
+
+const readCachedHiddenBadges = (): string[] | null => {
+    try {
+        const cached = JSON.parse(localStorage.getItem(hiddenBadgesStorageKey()) ?? 'null')
+        return Array.isArray(cached) ? cached.filter((key): key is string => typeof key === 'string') : null
+    } catch {
+        return null
+    }
+}
+
+const cacheHiddenBadges = (keys: string[]) => {
+    try {
+        localStorage.setItem(hiddenBadgesStorageKey(), JSON.stringify(keys))
+    } catch { }
+}
+
+const hiddenBadges = ref<string[]>(readCachedHiddenBadges() ?? [...(layout.user?.settings?.rail_hidden_badges ?? [])])
 const isHiddenBadge = (key: string) => hiddenBadges.value.includes(key)
 const isOffRail = (key: string) => !layout.messagingSidebar.show && isHiddenBadge(key)
 const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)]:opacity-40' : ''
 
+watch(() => layout.user?.settings?.rail_hidden_badges, (savedKeys) => {
+    if (!Array.isArray(savedKeys)) return
+    hiddenBadges.value = [...savedKeys]
+    cacheHiddenBadges(hiddenBadges.value)
+}, { immediate: true })
+
 const toggleBadge = (key: string) => {
     hiddenBadges.value = isHiddenBadge(key) ? hiddenBadges.value.filter((hidden) => hidden !== key) : [...hiddenBadges.value, key]
+    cacheHiddenBadges(hiddenBadges.value)
     if (layout.user?.settings) layout.user.settings.rail_hidden_badges = hiddenBadges.value
     axios.patch(route('grp.models.profile.update'), { rail_hidden_badges: hiddenBadges.value })
 }
@@ -78,6 +102,10 @@ const ordersCount = computed(() => (layout?.dispatching_waiting_count ?? 0) + (l
 const catalogueCount = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0))
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
+
+const tasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
+const ordersSectionShown = computed(() => (isFolded('orders') ? ordersCount.value > 0 : ordersOnRail.value))
+const catalogueSectionShown = computed(() => (isFolded('catalogue') ? catalogueCount.value > 0 : catalogueOnRail.value))
 
 const clearCollapseTimer = () => {
     if (collapseTimer) {
@@ -191,12 +219,12 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <div
-            v-if="ticketsOnRail"
+            v-if="ticketsOnRail && (tasksOnRail || ordersSectionShown || catalogueSectionShown)"
             class="border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'"
             aria-hidden="true" />
 
-        <template v-if="hasTaskBadges && shownOnRail('tasks', true)">
+        <template v-if="tasksOnRail">
             <div class="shrink-0" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
                 <FontAwesomeIcon :icon="faTasks" class="w-4 shrink-0 text-center text-xs text-white" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Tasks')" aria-hidden="true" />
                 <!-- Badge: My tasks -->
@@ -217,7 +245,7 @@ onBeforeUnmount(clearCollapseTimer)
                 </div>
             </div>
 
-            <div class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
+            <div v-if="ordersSectionShown || catalogueSectionShown" class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
         </template>
 
         <button v-if="isFolded('orders') && ordersCount > 0" type="button"
@@ -300,7 +328,7 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
         </div>
 
-        <div v-if="ordersOnRail && catalogueOnRail" class="border-t border-[var(--chat-line)] shrink-0"
+        <div v-if="ordersSectionShown && catalogueSectionShown" class="border-t border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full' : 'w-6'" aria-hidden="true" />
 
         <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button"
