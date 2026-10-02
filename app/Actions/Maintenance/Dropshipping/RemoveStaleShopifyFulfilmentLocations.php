@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Dropshipping;
 
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteFulfilmentService;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -33,6 +34,8 @@ class RemoveStaleShopifyFulfilmentLocations
     use AsAction;
     use WithShopifyApi;
 
+    public string $jobQueue = 'shopify';
+
     private const int MAX_ORDER_PAGES = 10;
 
     /**
@@ -46,21 +49,44 @@ class RemoveStaleShopifyFulfilmentLocations
             return [false, 'No live Shopify user on this channel', []];
         }
 
+        /** With no current service to compare against, every aiku service would look stale, the live one among them. */
+        if (!$shopifyUser->shopify_fulfilment_service_id) {
+            return [false, 'The live login has no fulfilment service of its own yet, nothing can be told apart as stale', []];
+        }
+
         [$status, $shop] = CheckShopifyChannel::make()->getShopifyShopData($customerSalesChannel);
         if ($status !== 'ok') {
             return [false, 'Cannot read the store: '.json_encode($shop), []];
         }
 
-        $stale = collect(Arr::get($shop, 'fulfillmentServices', []))
+        $ours = collect(Arr::get($shop, 'fulfillmentServices', []))
             ->filter(fn (array $service) => str_starts_with(Arr::get($service, 'serviceName', ''), 'aiku-'))
-            ->filter(fn (array $service) => $service['id'] !== $shopifyUser->shopify_fulfilment_service_id)
             ->values();
 
-        if ($stale->isEmpty()) {
+        $report = [];
+
+        /**
+         * The live service itself can be broken the same way: a reconnect that reused the channel
+         * kept the service's name, but every reconnect gets a fresh login, so the callback can
+         * still carry a retired login's id. That service must not be deleted, only re-pointed.
+         */
+        $current          = $ours->firstWhere('id', $shopifyUser->shopify_fulfilment_service_id);
+        $expectedCallback = 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id;
+        if ($current && Arr::get($current, 'callbackUrl') !== $expectedCallback) {
+            if ($dryRun) {
+                $report[] = ['id' => $current['id'], 'name' => Arr::get($current, 'serviceName', 'Unknown'), 'action' => 'would re-point', 'reason' => 'Its callback holds a retired login'];
+            } else {
+                [$retargeted, $error] = AdoptShopifyFulfilmentService::make()->retarget($customerSalesChannel, $current['id']);
+                $report[]             = ['id' => $current['id'], 'name' => Arr::get($current, 'serviceName', 'Unknown'), 'action' => $retargeted ? 're-pointed' : 'failed', 'reason' => $retargeted ? null : $error];
+            }
+        }
+
+        $stale = $ours->filter(fn (array $service) => $service['id'] !== $shopifyUser->shopify_fulfilment_service_id)->values();
+
+        if ($stale->isEmpty() && $report === []) {
             return [true, 'No stale aiku fulfilment service on this store', []];
         }
 
-        $report = [];
         foreach ($stale as $service) {
             $report[] = $this->process($customerSalesChannel, $shopifyUser, $service, $dryRun);
         }
@@ -92,7 +118,7 @@ class RemoveStaleShopifyFulfilmentLocations
             return ['id' => $id, 'name' => $name, 'action' => 'would delete', 'reason' => null];
         }
 
-        [$deleted, $error] = DeleteFulfilmentService::run($customerSalesChannel, $id);
+        [$deleted, $error] = DeleteFulfilmentService::run($customerSalesChannel, $id, 'DELETE');
 
         return ['id' => $id, 'name' => $name, 'action' => $deleted ? 'deleted' : 'failed', 'reason' => $deleted ? null : (is_string($error) ? $error : json_encode($error))];
     }
@@ -205,7 +231,7 @@ class RemoveStaleShopifyFulfilmentLocations
                 $acted++;
                 $command->line('    '.$row['action'].' '.$row['name'].' ('.$row['id'].')'.($row['reason'] ? ' - '.$row['reason'] : ''));
 
-                if ($row['action'] === 'skipped') {
+                if (in_array($row['action'], ['skipped', 'failed'], true)) {
                     $toReview[] = $channel->slug.': '.$row['name'].' - '.$row['reason'];
                 }
             }

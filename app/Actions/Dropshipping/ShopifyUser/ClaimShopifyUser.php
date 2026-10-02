@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use App\Actions\Maintenance\Dropshipping\RemoveStaleShopifyFulfilmentLocations;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -20,6 +21,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -45,20 +47,41 @@ class ClaimShopifyUser extends RetinaAction
         CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
 
         /**
-         * CheckShopifyChannel already matched an exact service name to this channel, so the
-         * reused channel's own earlier service is already in place; nothing more to do. Only
-         * when nothing matched do we look for an aiku service left on the store under a
-         * different name (an earlier channel generation) to adopt, so stock and open fulfilment
-         * orders on it stay put; a store with no earlier aiku service at all gets a brand new one.
+         * A service CheckShopifyChannel matched by name is the reused channel's own from before
+         * the disconnect, but every reconnect gets a fresh login, so its callback still carries
+         * the retired login's id and requests to it die unanswered: it is re-pointed at this one.
+         * No match by name means the service on the store belongs to an earlier channel
+         * generation; adopting renames it and re-points it at once, keeping its stock and open
+         * fulfilment orders. Only a store with no aiku service at all gets a brand new one.
          */
         if (!$shopifyUser->refresh()->shopify_fulfilment_service_id) {
             [$adopted] = AdoptShopifyFulfilmentService::run($shopifyUser->customerSalesChannel);
             if (!$adopted) {
                 StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
             }
+        } elseif (!$this->callbackIsCurrent($shopifyUser)) {
+            [$retargeted, $error] = AdoptShopifyFulfilmentService::make()->retarget($shopifyUser->customerSalesChannel, $shopifyUser->shopify_fulfilment_service_id);
+            if (!$retargeted) {
+                \Sentry::captureMessage("Could not re-point fulfilment service $shopifyUser->shopify_fulfilment_service_id at reconnected shopify_user $shopifyUser->id: $error");
+            }
         }
 
+        /**
+         * Adopting re-points one earlier service; a store that reconnected several times can hold
+         * more. The sweep removes the rest off the request path, skipping any with an order still
+         * open at it, so after a reconnect no stale aiku location is left for Shopify to route to.
+         */
+        RemoveStaleShopifyFulfilmentLocations::dispatch($shopifyUser->customerSalesChannel, false);
+
         return $shopifyUser;
+    }
+
+    private function callbackIsCurrent(ShopifyUser $shopifyUser): bool
+    {
+        $service = collect(Arr::get($shopifyUser->data, 'shop.fulfillmentServices', []))
+            ->firstWhere('id', $shopifyUser->shopify_fulfilment_service_id);
+
+        return Arr::get($service, 'callbackUrl') === 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id;
     }
 
     public function authenticateUrl(Customer $customer, string $shopDomain): string
