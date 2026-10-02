@@ -91,6 +91,20 @@ interface ArchivedNote {
 
 const bubblePositionKey = (ulid: string) => `staff-chat-bubble-${ulid}`
 
+const MAX_BUBBLES = 6
+
+const savedBubblePosition = (ulid: string): { x: number | null; y: number | null } => {
+    try {
+        const raw = localStorage.getItem(bubblePositionKey(ulid))
+        if (raw) {
+            const parsed = JSON.parse(raw)
+            return { x: parsed.x ?? null, y: parsed.y ?? null }
+        }
+    } catch { }
+
+    return { x: null, y: null }
+}
+
 export const isWorkThread = (conversation: StaffConversation) => !!conversation.context_type
 
 export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
@@ -189,18 +203,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 oldest.minimised = true
             }
 
-            let x: number | null = null
-            let y: number | null = null
-            try {
-                const raw = localStorage.getItem(bubblePositionKey(ulid))
-                if (raw) {
-                    const parsed = JSON.parse(raw)
-                    x = parsed.x
-                    y = parsed.y
-                }
-            } catch { }
-
-            this.openWindows.push({ ulid, minimised: false, x, y })
+            this.openWindows.push({ ulid, minimised: false, ...savedBubblePosition(ulid) })
             this.loadMessages(ulid)
             this.markRead(ulid)
         },
@@ -229,6 +232,18 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 this.conversations.splice(index, 1)
             }
             delete this.messagesByUlid[ulid]
+        },
+
+        showAsBubble(ulid: string) {
+            if (this.openWindows.some((w) => w.ulid === ulid) || this.fullViewUlid === ulid) return
+
+            const bubbles = this.openWindows.filter((w) => w.minimised)
+            if (bubbles.length >= MAX_BUBBLES) {
+                const quietest = bubbles.find((w) => !(this.conversationByUlid(w.ulid)?.unread_count ?? 0)) ?? bubbles[0]
+                this.openWindows = this.openWindows.filter((w) => w !== quietest)
+            }
+
+            this.openWindows.push({ ulid, minimised: true, ...savedBubblePosition(ulid) })
         },
 
         minimiseConversation(ulid: string, minimised: boolean) {
@@ -343,7 +358,10 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             if (!conversation) {
                 this.fetchConversations().then(() => {
                     const fetched = this.conversationByUlid(ulid)
-                    if (fetched && message.user_id !== myId && isAlerting(fetched)) alertMessage()
+                    if (fetched && message.user_id !== myId) {
+                        this.showAsBubble(ulid)
+                        if (isAlerting(fetched)) alertMessage()
+                    }
                 })
                 return
             }
@@ -360,6 +378,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
                 if (!isOpen) {
                     conversation.unread_count = (conversation.unread_count || 0) + 1
+                    this.showAsBubble(ulid)
                 }
                 if (isMentioned) {
                     conversation.has_mention = true

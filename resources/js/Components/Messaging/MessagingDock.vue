@@ -11,7 +11,7 @@ import { usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faComments, faSearch, faUser, faChevronLeft } from "@fal"
+import { faComments, faSearch, faUser, faChevronLeft, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
@@ -19,7 +19,7 @@ import { useStaffMessaging, type StaffConversation, type StaffCoworker } from "@
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 
-library.add(faComments, faSearch, faUser, faChevronLeft)
+library.add(faComments, faSearch, faUser, faChevronLeft, faTimes)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
@@ -106,6 +106,18 @@ const others = (conversation: any) => (conversation?.participants ?? []).filter(
 const otherName = (conversation: any) => conversation?.name || others(conversation).map((p: any) => p.name).join(", ")
 const otherAvatar = (conversation: any) => others(conversation)[0]?.avatar ?? null
 const otherOnline = (conversation: any) => isCoworkerOnline(others(conversation)[0]?.id)
+
+const unreadOf = (ulid: string) => store.conversationByUlid(ulid)?.unread_count ?? 0
+
+const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
+
+const BUBBLE_BASE_REM = 4.5
+const BUBBLE_STEP_REM = 3.75
+
+const stackedBubbleBottom = (ulid: string) => {
+    const stacked = store.openWindowsMinimised.filter((w) => w.x == null)
+    return `${BUBBLE_BASE_REM + stacked.findIndex((w) => w.ulid === ulid) * BUBBLE_STEP_REM}rem`
+}
 
 // Draggable bubbles
 const bubbleDrag = ref<{ ulid: string; startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
@@ -243,27 +255,44 @@ onUnmounted(() => {
             </div>
         </template>
 
-        <!-- Minimised chat-head bubbles (draggable) -->
+        <!-- Minimised chat-head bubbles (draggable), stacked upwards unless dragged -->
         <div
             v-for="w in store.openWindowsMinimised"
             :key="w.ulid"
-            class="fixed z-[30] h-12 w-12 rounded-full shadow-lg cursor-pointer touch-none"
+            v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'left' }"
+            class="group/bubble fixed z-[30] h-12 w-12 cursor-pointer touch-none rounded-full"
             :class="w.x == null ? desktopAnchor : ''"
-            :style="{ ...bubbleStyle(w.ulid), bottom: w.x == null ? '4.5rem' : undefined }"
+            :style="{ ...bubbleStyle(w.ulid), bottom: w.x == null ? stackedBubbleBottom(w.ulid) : undefined }"
             @pointerdown="onBubblePointerDown($event, w.ulid)"
             @pointermove="onBubblePointerMove"
             @pointerup="onBubblePointerUp(w.ulid)"
         >
-            <div class="relative h-12 w-12 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow">
-                <Image v-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-gray-500" fixed-width aria-hidden="true" />
-                <span
-                    v-if="(store.conversationByUlid(w.ulid)?.unread_count ?? 0) > 0"
-                    class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs"
-                >
-                    {{ store.conversationByUlid(w.ulid)?.unread_count }}
+            <div
+                class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shadow-lg transition duration-200"
+                :class="unreadOf(w.ulid) ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-white'"
+            >
+                <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-lg text-indigo-600">
+                    <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                 </span>
+                <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
+                <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
             </div>
+            <span
+                v-if="unreadOf(w.ulid)"
+                class="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+            >
+                {{ unreadOf(w.ulid) > 99 ? "99+" : unreadOf(w.ulid) }}
+            </span>
+            <button
+                type="button"
+                :aria-label="ctrans('Dismiss')"
+                class="absolute -left-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-gray-700 text-[10px] text-white shadow group-hover/bubble:flex"
+                @pointerdown.stop
+                @pointerup.stop
+                @click.stop="store.dismissWindow(w.ulid)"
+            >
+                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+            </button>
         </div>
         </Teleport>
     </div>
