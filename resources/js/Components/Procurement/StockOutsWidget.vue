@@ -193,12 +193,21 @@ const stockOutChart = computed(() => {
 			}),
 		}
 	}
+	const projection = props.stockOuts.projection ?? []
+	const future = new Array(projection.length).fill(null)
+	const projected = (key) => [...new Array(Math.max(series.length - 1, 0)).fill(null), ...(series.length ? [series[series.length - 1][key]] : []), ...projection.map((row) => row[key])]
 	return {
-		labels: series.map((row) => bucketLabel(row.date)),
+		labels: [...series, ...projection].map((row) => bucketLabel(row.date)),
 		datasets: [
-			{ label: ctrans("Out of stock"), data: series.map((row) => row.out_of_stock), borderColor: "#dc2626", backgroundColor: "#dc2626", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "y" },
-			{ label: ctrans("Estimated lost revenue per day"), data: series.map((row) => row.lost_per_day), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "money" },
-			{ label: ctrans("% out of stock"), data: series.map((row) => row.percentage), borderColor: "#7c3aed", backgroundColor: "#7c3aed", tension: 0, borderWidth: 1.5, borderDash: [4, 3], pointRadius, yAxisID: "percent" },
+			{ label: ctrans("Out of stock"), data: [...series.map((row) => row.out_of_stock), ...future], borderColor: "#dc2626", backgroundColor: "#dc2626", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "y" },
+			{ label: ctrans("Estimated lost revenue per day"), data: [...series.map((row) => row.lost_per_day), ...future], borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "money" },
+			{ label: ctrans("% out of stock"), data: [...series.map((row) => row.percentage), ...future], borderColor: "#7c3aed", backgroundColor: "#7c3aed", tension: 0, borderWidth: 1.5, borderDash: [4, 3], pointRadius, yAxisID: "percent" },
+			...(projection.length
+				? [
+						{ label: ctrans("Projected out of stock if nothing more is ordered"), data: projected("out_of_stock"), borderColor: "#dc2626", backgroundColor: "#dc2626", tension: 0, borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, yAxisID: "y", isProjection: true },
+						{ label: ctrans("Projected lost revenue per day"), data: projected("lost_per_day"), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, yAxisID: "money", isProjection: true },
+					]
+				: []),
 		],
 	}
 })
@@ -236,12 +245,14 @@ const stockOutOptions = computed(() => {
 		plugins: {
 			legend: { position: "bottom", labels: { boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, color: "#9ca3af" } },
 			tooltip: {
+				filter: (item) => item.raw !== null && item.raw !== undefined && !(item.dataset.isProjection && item.dataIndex < (props.stockOuts.series ?? []).length),
 				callbacks: {
 					title: tooltipTitle,
-					label: (item) =>
-						item.dataset.yAxisID === "money"
-							? `${item.dataset.label}: ${money(item.raw)}`
-							: `${item.dataset.label}: ${locale.number(item.raw)} (${props.stockOuts.series[item.dataIndex].percentage}%)`,
+					label: (item) => {
+						if (item.dataset.yAxisID === "money") return `${item.dataset.label}: ${money(item.raw)}`
+						const row = item.dataset.isProjection ? null : props.stockOuts.series[item.dataIndex]
+						return row ? `${item.dataset.label}: ${locale.number(item.raw)} (${row.percentage}%)` : `${item.dataset.label}: ${locale.number(item.raw)}`
+					},
 				},
 			},
 		},

@@ -143,6 +143,54 @@ class GetStockOutsHistory
     }
 
     /**
+     * The next eight weeks played forward by ProjectOrganisationStockOuts, if nothing more is ordered,
+     * in the chart's unit and the parent's currency. Only when every organisation has a projection
+     * made since yesterday, so a group never shows some organisations' future as everyone's.
+     *
+     * @return list<array{date: string, out_of_stock: int, lost_per_day: float}>|null
+     */
+    private function projection(Group|Organisation $parent, Collection $organisations, ?string $source, string $unit, Carbon $lastHistoryDay): ?array
+    {
+        if ($organisations->isEmpty()) {
+            return null;
+        }
+
+        $byDate = [];
+        foreach ($organisations as $organisation) {
+            $stats = $organisation->procurementStats;
+            $days  = $stats?->stock_out_projection['sources'][$source ?? 'all'] ?? null;
+            if ($days === null && $stats?->stock_out_projection_hydrated_at?->gte(today()->subDay())) {
+                continue;
+            }
+            if ($days === null || !$stats->stock_out_projection_hydrated_at?->gte(today()->subDay())) {
+                return null;
+            }
+
+            $rate = $organisation->currency_id === $parent->currency_id ? 1.0 : (GetCurrencyExchange::run($organisation->currency, $parent->currency) ?? 1.0);
+            $date = Carbon::parse($stats->stock_out_projection['from']);
+            foreach ($days as [$outOfStock, , , $lost]) {
+                $key                          = $date->toDateString();
+                $byDate[$key]['out_of_stock'] = ($byDate[$key]['out_of_stock'] ?? 0) + $outOfStock;
+                $byDate[$key]['lost_per_day'] = ($byDate[$key]['lost_per_day'] ?? 0) + $lost * $rate;
+                $date->addDay();
+            }
+        }
+
+        return collect($byDate)
+            ->filter(fn ($day, string $date) => $date > $lastHistoryDay->toDateString())
+            ->groupBy(fn ($day, string $date) => Carbon::parse($date)->startOf($unit)->toDateString(), true)
+            ->map(fn ($days, string $bucketStart) => [
+                'date'         => $bucketStart,
+                'out_of_stock' => (int) round($days->avg('out_of_stock')),
+                'lost_per_day' => round($days->avg('lost_per_day'), 2),
+            ])
+            ->filter(fn ($bucket, string $bucketStart) => $bucketStart > $lastHistoryDay->copy()->startOf($unit)->toDateString())
+            ->sortKeys()
+            ->values()
+            ->all() ?: null;
+    }
+
+    /**
      * With a source picked the headline follows that source's rows, so the bubbles read the latest day
      * of the unfiltered totals instead.
      */
@@ -214,6 +262,7 @@ class GetStockOutsHistory
             'lost_total' => $total['lost_total'],
             'now'        => $this->now($latest),
             'series'     => $total['series'],
+            'projection' => $this->projection($parent, $organisations, $source, $unit, $end),
         ];
 
         if ($parent instanceof Group) {

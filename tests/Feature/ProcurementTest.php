@@ -6245,6 +6245,32 @@ test('procurement dashboard lists stock levels linking to each bucket', function
     });
 });
 
+test('stock outs are projected eight weeks ahead from forecast demand, each sko carrying the sales it would lose', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'measured_lead_time_days' => null, 'estimated_lead_time_days' => 10, 'quantity_available' => 10]);
+    $orgStock->stats->update(['predicted_daily_usage' => 1, 'demand_variability' => 0, 'forecast_source' => 'croston', 'demand_forecast' => null]);
+
+    $windowEnd   = today()->startOfMonth();
+    $windowStart = $windowEnd->copy()->subMonths(6);
+    $seriesId    = DB::table('org_stock_time_series')->insertGetId(['org_stock_id' => $orgStock->id, 'frequency' => App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::MONTHLY->value]);
+    DB::table('org_stock_time_series_records')->insert(['org_stock_time_series_id' => $seriesId, 'frequency' => 'M', 'from' => $windowStart->toDateString(), 'sales_org_currency_external' => 2 * $windowStart->diffInDays($windowEnd)]);
+
+    App\Actions\Procurement\ProjectOrganisationStockOuts::run($this->organisation);
+
+    $projection = $this->organisation->procurementStats->fresh()->stock_out_projection;
+    expect($projection['from'])->toBe(today()->addDay()->toDateString())
+        ->and($projection['sources']['all'])->toHaveCount(56)
+        ->and((float) $orgStock->stats->fresh()->projected_lost_revenue)->toEqualWithDelta((40 - 9) * 2, 0.01);
+
+    $history = App\Actions\Procurement\GetStockOutsHistory::run($this->organisation, '1m');
+    expect($history['projection'])->not->toBeEmpty()
+        ->and($history['projection'][0])->toHaveKeys(['date', 'out_of_stock', 'lost_per_day'])
+        ->and(collect($history['projection'])->pluck('date')->min())->toBeGreaterThan(collect($history['series'])->pluck('date')->max() ?? '');
+
+    $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'sort' => '-projected_lost_revenue']))->assertOk();
+});
+
 test('procurement dashboard charts stock outs and their estimated lost revenue', function () {
     $todayKey = ['organisation_id' => $this->organisation->id, 'date' => today()->toDateString()];
     $previousTodayHistory = DB::table('organisation_stock_histories')->where($todayKey)->first();

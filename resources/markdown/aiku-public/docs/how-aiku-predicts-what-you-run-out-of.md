@@ -1,7 +1,7 @@
 ---
 title: How aiku predicts what you run out of
 summary: What "Estimated: Would run out in ~12 days" and the suggested quantity actually mean, why a bestseller that is out of stock asks for so much, and when to trust the number over your own judgement.
-date: 2026-10-01
+date: 2026-10-02
 tags: procurement, stock, intercompany, shopping-list
 category: procurement
 ---
@@ -60,11 +60,18 @@ The rule of thumb: the forecast is better than you at the boring middle of the c
 
 Auto-fill ranks candidates by how soon you run out and tops up the most urgent first until the budget is gone. Every proposed line carries its reason in plain words — *"Our sales/quarter ~48 · our stock 0 · we run out now"* — which is the forecast showing its working. Read the reasons before you confirm; that is where a wrong number is easiest to catch, and unticking a line takes one click. Nothing is ordered until you press **Add items to shopping list**.
 
+## Looking ahead: what runs out if nothing more is ordered
+
+On the **Procurement** dashboard the stock outs chart carries on past yesterday with two dotted lines: how many SKOs will be out of stock each day of the next eight weeks, and the sales they would lose a day. Each SKO's stock is played forward with its forecast, and every purchase order and delivery already open lands on its expected day. Orders already past their expected day are left out until they get a new date, so chasing a late order and dating it again brings its stock back into the line. Nothing you have not ordered yet is counted, so the lines show what happens if nobody orders anything more. Order today and tomorrow's line comes down.
+
+The **Stock levels** list behind each level on the dashboard has a column **Lost if not ordered**: the sales a SKO would lose over its lead time and the month after, if nothing more is ordered. Sort by it and the gaps that cost the most come first.
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>See the numbers per item:</b> <b>Procurement → Partners</b> (or <b>Suppliers</b>, or <b>Agents</b>) → open one → <b>Browse</b>: each card shows <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> and a dashed <b>suggested</b> chip that fills the quantity box.</li>
 <li><b>See them across the catalogue:</b> the same partner's <b>Shopping</b> dashboard → the stock-at-risk tiles are built from the run-out day; click a tile's number for the items behind it.</li>
 <li><b>See them on an open order:</b> <b>Shopping list</b> → the <b>Info</b> column carries the stock story for each line.</li>
+<li><b>See what will run out:</b> <b>Procurement</b> → the stock outs chart, dotted lines after yesterday; pick a source (agents, suppliers…) above it. Click a stock level on the right, then sort the list by <b>Lost if not ordered</b>.</li>
 <li><b>See them on a supplier purchase order:</b> <b>Procurement → Suppliers</b> → open one → its purchase order → <b>Items</b> or <b>Products</b>: the <b>Lasts</b> line under <b>Stock</b>, red within two weeks, amber within six.</li>
 <li><b>Overrule one:</b> type your own quantity in the stepper on the <b>Browse</b> card — it edits the open line directly. Nothing re-suggests over the top of you.</li>
 <li><b>Fix the lead time behind a suggestion:</b> the SKO's settings, or the supplier product's settings, while it still says <i>estimate</i>.</li>

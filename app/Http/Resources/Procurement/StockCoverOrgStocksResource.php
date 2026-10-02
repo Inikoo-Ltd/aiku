@@ -25,6 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property ?int $on_the_way_po_count
  * @property ?float $recommended_order_quantity
  * @property ?float $stock_value
+ * @property ?float $projected_lost_revenue
  * @property string $bucket
  */
 class StockCoverOrgStocksResource extends JsonResource
@@ -45,6 +46,7 @@ class StockCoverOrgStocksResource extends JsonResource
             'on_the_way'           => (int) $this->on_the_way_po_count > 0,
             'recommended_quantity' => $this->recommended_order_quantity !== null ? (int) ceil((float) $this->recommended_order_quantity) : null,
             'stock_value'          => (float) $this->stock_value,
+            'projected_lost_revenue' => $this->projected_lost_revenue !== null ? (float) $this->projected_lost_revenue : null,
             'bucket'               => $this->bucket,
             'bucket_label'         => GetOrganisationStockCoverBuckets::make()->bucketLabel($this->bucket),
             'bucket_tone'          => GetOrganisationStockCoverBuckets::BUCKETS[$this->bucket]['tone'],
