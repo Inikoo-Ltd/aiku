@@ -28,7 +28,7 @@ class ShowStaffTasksBoard extends OrgAction
     public function handle(Group|Organisation $parent, User $viewer, string $interval): array
     {
         $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->within($parent)->visibleTo($viewer), $interval, 'staff_tasks.created_at')
-            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model', 'media'])
             ->orderByRaw('due_at asc nulls last, id desc')
             ->get()
             ->groupBy(fn (StaffTask $task) => $task->status->value);

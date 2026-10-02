@@ -53,6 +53,7 @@ const languagesTo = ref<Language>(
 
 if (typeof props.form[props.fieldName] !== "string") {
   props.form[props.fieldName] = ""
+  props.form.defaults?.(props.fieldName, "")
 }
 
 
