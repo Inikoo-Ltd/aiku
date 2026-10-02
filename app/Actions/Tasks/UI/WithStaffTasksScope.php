@@ -8,6 +8,7 @@
 namespace App\Actions\Tasks\UI;
 
 use App\Actions\Traits\WithGroupModuleScope;
+use App\Models\Tasks\StaffTask;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -30,9 +31,20 @@ trait WithStaffTasksScope
     /**
      * @return array{name: string, parameters: array<int, string>}
      */
-    protected function tasksRoute(string $suffix): array
+    /**
+     * @param  array<int, string>  $extraParameters
+     */
+    protected function tasksRoute(string $suffix, array $extraParameters = []): array
     {
-        return $this->moduleScopeRoute('tasks', $suffix);
+        return $this->moduleScopeRoute('tasks', $suffix, $extraParameters);
+    }
+
+    /**
+     * @return array{statuses: \Illuminate\Support\Collection, priorities: \Illuminate\Support\Collection}
+     */
+    protected function staffTaskEditOptions(): array
+    {
+        return StaffTask::editOptions();
     }
 
     protected function tasksBreadcrumbs(): array

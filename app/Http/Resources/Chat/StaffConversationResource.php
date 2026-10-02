@@ -29,11 +29,31 @@ class StaffConversationResource extends JsonResource
         return match ($this->context_type) {
             'DeliveryNote' => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             'Order'        => route('grp.org.shops.show.ordering.orders.show', [$context->organisation->slug, $context->shop->slug, $context->slug]),
-            'StaffTask'    => route('grp.tasks.index', ['task' => $context->reference]),
+            'StaffTask'    => route('grp.tasks.show', $context->reference),
             'ChatSession'  => route('grp.org.chat.conversations.detail', ['organisation' => $context->shop?->organisation?->slug, 'chatSession' => $context->id]),
             'PickingSession' => route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             default        => null,
         };
+    }
+
+    /**
+     * @return array{reference: string, requester_id: int, assignee_id: int|null, collaborator_ids: int[], subtasks: array<int, array{title: string, status: string}>}|null
+     */
+    protected function task(): ?array
+    {
+        if ($this->context_type !== 'StaffTask' || !$this->context) {
+            return null;
+        }
+
+        $task = $this->context;
+
+        return [
+            'reference'        => $task->reference,
+            'requester_id'     => $task->requester_id,
+            'assignee_id'      => $task->assignee_id,
+            'collaborator_ids' => $task->collaborators->pluck('id')->all(),
+            'subtasks'         => $task->data['subtasks'] ?? [],
+        ];
     }
 
     public function toArray($request): array
@@ -54,6 +74,7 @@ class StaffConversationResource extends JsonResource
             'context_id'      => $this->context_id,
             'context_label'   => $this->context?->reference ?? $this->name,
             'context_url'     => $this->contextUrl(),
+            'task'            => $this->task(),
             'participants'    => $participants,
             'last_message_at' => $this->last_message_at,
             'last_message'    => $this->last_message_body ?? null,

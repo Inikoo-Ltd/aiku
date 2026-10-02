@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -58,6 +59,27 @@ class StaffTask extends Model implements Auditable
     use HasHistory;
 
     public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock', 'ChatSession', 'MetaChatSession'];
+
+    public const array PEOPLE_SCOPED_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote'];
+
+    public const array SUBTASK_STATUSES = ['todo', 'in_progress', 'done'];
+
+    /**
+     * Mirrors the authorisation of the linked record's own page, so the people offered for a task are the ones who can open it.
+     *
+     * @return string[]
+     */
+    public static function viewPermissionsOf(string $modelType, int $modelId, int $groupId): array
+    {
+        $record = Relation::getMorphedModel($modelType)::query()->where('group_id', $groupId)->findOrFail($modelId);
+
+        return match ($modelType) {
+            'Customer'     => ["crm.$record->shop_id.view", "accounting.$record->organisation_id.view"],
+            'Order'        => ["orders.$record->shop_id.view", "accounting.$record->organisation_id.view"],
+            'Product'      => ["products.$record->shop_id.view", "web.$record->shop_id.view", 'group-webmaster.view', "accounting.$record->organisation_id.view"],
+            'DeliveryNote' => ["dispatching.$record->warehouse_id.view", "fulfilment.$record->warehouse_id.view"],
+        };
+    }
 
     protected $guarded = [];
 
@@ -154,6 +176,36 @@ class StaffTask extends Model implements Auditable
     public function isVisibleTo(User $viewer): bool
     {
         return $this->group_id === $viewer->group_id && self::query()->whereKey($this->id)->visibleTo($viewer)->exists();
+    }
+
+    /**
+     * @return array{statuses: \Illuminate\Support\Collection, priorities: \Illuminate\Support\Collection}
+     */
+    public static function editOptions(): array
+    {
+        return [
+            'statuses'   => collect(StaffTaskStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => StaffTaskStatusEnum::stateIcon()[$value]])->values(),
+            'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),
+        ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function involvedUserIds(): array
+    {
+        return collect([$this->requester_id, $this->assignee_id])
+            ->merge($this->collaborators()->pluck('users.id'))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function isWorkedOnBy(User $user): bool
+    {
+        return $this->assignee_id === $user->id || $this->collaborators->contains('id', $user->id);
     }
 
     public static function departmentLabel(string $department): string

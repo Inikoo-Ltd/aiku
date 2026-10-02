@@ -52,6 +52,15 @@ export interface StaffConversation {
     context_type?: string | null
     context_label?: string | null
     context_url?: string | null
+    task?: StaffConversationTask | null
+}
+
+export interface StaffConversationTask {
+    reference: string
+    requester_id: number
+    assignee_id: number | null
+    collaborator_ids: number[]
+    subtasks: { title: string; status: "todo" | "in_progress" | "done" }[]
 }
 
 export interface StaffCoworker {

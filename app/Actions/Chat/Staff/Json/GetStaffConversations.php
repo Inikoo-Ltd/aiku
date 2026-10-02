@@ -15,6 +15,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -59,6 +60,7 @@ class GetStaffConversations
                     DeliveryNote::class   => ['organisation', 'warehouse'],
                     Order::class          => ['organisation', 'shop'],
                     PickingSession::class => ['organisation', 'warehouse'],
+                    StaffTask::class      => ['collaborators'],
                 ]),
             ])
             ->orderByRaw('staff_conversations.last_message_at desc nulls last')

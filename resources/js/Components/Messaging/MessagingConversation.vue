@@ -7,15 +7,21 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import { usePage, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
+import { useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useStaffTaskMembers } from "@/Composables/useStaffTaskMembers"
+import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
+import axios from "axios"
+import { Drawer } from "primevue"
+import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
+import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt)
 
@@ -26,6 +32,7 @@ const StaffTaskDialog = defineAsyncComponent(() => import("@/Components/Tasks/St
 const props = defineProps<{
     conversation: StaffConversation
     fullScreen?: boolean
+    embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -49,6 +56,31 @@ const otherParticipants = computed(() => participants.value.filter((p) => p.id !
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
 const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
 const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
+
+const freshTaskInfo = ref<StaffConversationTask | null>(null)
+const taskInfo = computed(() => freshTaskInfo.value ?? props.conversation.task ?? null)
+watch(() => props.conversation.ulid, () => (freshTaskInfo.value = null))
+
+const refreshTaskInfo = async () => {
+    if (!taskInfo.value) return
+    const { data } = await axios.get(route("grp.tasks.conversation", taskInfo.value.reference))
+    freshTaskInfo.value = data.data.task ?? null
+}
+
+useLiveStaffTasks(refreshTaskInfo, (event) => !props.embedded && event.reference === taskInfo.value?.reference)
+
+const reactsOnHover = computed(() => !props.fullScreen || (props.embedded && window.matchMedia("(hover: hover)").matches))
+
+const isTaskMembersOpen = ref(false)
+
+const { members: taskMembers, onlineCount: taskOnlineCount } = useStaffTaskMembers(
+    () => participants.value,
+    () => ({
+        requesterId: taskInfo.value?.requester_id ?? null,
+        assigneeId: taskInfo.value?.assignee_id ?? null,
+        collaboratorIds: taskInfo.value?.collaborator_ids ?? [],
+    })
+)
 
 const newMessage = ref("")
 const mentionQuery = ref<string | null>(null)
@@ -143,11 +175,11 @@ const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 const quickReplies = computed(
     () =>
         usePage().props?.layout?.staff_chat?.quick_replies ?? [
-            trans("Done"),
-            trans("Help!"),
-            trans("Call me"),
-            trans("OK"),
-            trans("Thanks"),
+            ctrans("Done"),
+            ctrans("Help!"),
+            ctrans("Call me"),
+            ctrans("OK"),
+            ctrans("Thanks"),
         ]
 )
 
@@ -361,7 +393,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
-            <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
+            <button v-if="fullScreen && !embedded" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
             <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">
@@ -372,26 +404,39 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
-                    <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
-                    <span v-else-if="lastSeenAt && !isOnline">{{ trans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
+                    <span v-if="typingUser">{{ typingUser }} {{ ctrans('is typing…') }}</span>
+                    <span v-else-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
                     <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
-            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
+            <slot name="header-actions" />
+            <button
+                v-if="taskInfo && !embedded"
+                type="button"
+                v-tooltip="ctrans('Who is in this chat')"
+                class="flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ring-1 transition duration-200"
+                :class="fullScreen ? 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50' : 'text-[var(--chat-muted)] ring-[var(--chat-line)] hover:text-[var(--chat-text)]'"
+                @click="isTaskMembersOpen = true">
+                <span class="h-2 w-2 rounded-full" :class="taskOnlineCount ? 'bg-green-500' : 'bg-gray-300'" />
+                {{ fullScreen ? ctrans(":online of :total online", { online: taskOnlineCount, total: taskMembers.length }) : `${taskOnlineCount}/${taskMembers.length}` }}
+            </button>
+            <button v-if="!fullScreen" v-tooltip="ctrans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
-            <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
+            <button v-if="!fullScreen" v-tooltip="ctrans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button v-tooltip="conversation.type === 'dm' ? trans('Done talking to :name', { name: displayName }) : trans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
+            <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>
 
+        <StaffTaskSubtaskProgress v-if="taskInfo?.subtasks.length && !embedded" :subtasks="taskInfo.subtasks" @opened="refreshTaskInfo" />
+
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-2" @scroll="onScroll">
             <div
-                v-for="message in messages"
+                v-for="(message, messageIndex) in messages"
                 :key="message.id"
                 class="group flex flex-col"
                 :class="message.user_id === myId ? 'items-end' : 'items-start'"
@@ -405,9 +450,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <div
                         class="relative max-w-[80%] rounded-lg text-sm"
                         :class="[message.gif_url ? 'p-1' : 'px-3 py-2', message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900']"
-                        @mouseenter="!fullScreen && (activeReactionFor = message.id)"
-                        @mouseleave="!fullScreen && (activeReactionFor = null)"
-                        @click="fullScreen && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
+                        @mouseenter="reactsOnHover && (activeReactionFor = message.id)"
+                        @mouseleave="reactsOnHover && (activeReactionFor = null)"
+                        @click="!reactsOnHover && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
                     >
                         <div v-if="conversation.type === 'group' && message.user_id !== myId" class="text-xxs opacity-70 mb-0.5">
                             {{ message.user_name }}
@@ -421,10 +466,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             :class="message.user_id === myId ? 'text-indigo-100' : 'text-gray-500'"
                             @click="showOriginal[message.id] = !showOriginal[message.id]"
                         >
-                            {{ showOriginal[message.id] ? trans('translated') : trans('original') }}
+                            {{ showOriginal[message.id] ? ctrans('translated') : ctrans('original') }}
                         </button>
 
-                        <div v-if="activeReactionFor === message.id" class="absolute -top-9 flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="message.user_id === myId ? 'right-0' : 'left-0'">
+                        <div v-if="activeReactionFor === message.id" class="absolute flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full mt-1' : '-top-9']">
                             <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
                                 {{ emoji }}
                             </button>
@@ -432,10 +477,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     </div>
 
                     <button class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
-                        {{ trans('reply') }}
+                        {{ ctrans('reply') }}
                     </button>
-                    <button v-if="!message.gif_url && messageText(message)" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
-                        {{ trans('task') }}
+                    <button v-if="!message.gif_url && messageText(message) && conversation.context_type !== 'StaffTask'" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
+                        {{ ctrans('task') }}
                     </button>
                 </div>
 
@@ -465,7 +510,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
         <!-- Composer -->
         <div class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
             <div v-if="parentMessage" class="flex items-center justify-between px-2 py-1 mb-1 rounded bg-gray-100 text-xs text-gray-600">
-                <span class="truncate">{{ trans('Replying to') }}: {{ parentMessage.body }}</span>
+                <span class="truncate">{{ ctrans('Replying to') }}: {{ parentMessage.body }}</span>
                 <button class="ml-2 shrink-0" @click="clearReply">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
@@ -486,7 +531,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="flex items-center gap-x-1 shrink-0">
                     <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                     <button
-                        v-tooltip="trans('Send a GIF')"
+                        v-tooltip="ctrans('Send a GIF')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showGifPicker = !showGifPicker; showEmojiPicker = false"
@@ -494,7 +539,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         <span :class="fullScreen ? 'text-xs' : 'text-xxs'" class="font-medium">GIF</span>
                     </button>
                     <button
-                        v-tooltip="trans('Emoji')"
+                        v-tooltip="ctrans('Emoji')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
@@ -545,7 +590,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     rows="1"
                     class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     :class="fullScreen ? 'min-h-[44px] text-base' : 'text-sm'"
-                    :placeholder="trans('Write a message…')"
+                    :placeholder="ctrans('Write a message…')"
                     @input="handleTypingInput"
                     @keydown="onTextareaKeydown"
                     @paste="onPaste"
@@ -566,5 +611,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             :subject="taskSource ? messageText(taskSource).slice(0, 255) : ''"
             :source-message-id="taskSource?.id ?? null"
             @close="taskDialogOpen = false" />
+
+        <Drawer v-if="taskInfo && !embedded" v-model:visible="isTaskMembersOpen" position="right" :header="ctrans('In this chat')" class="!w-80 !max-w-[85vw]" :pt="{ content: { class: '!p-0' } }">
+            <p class="border-b border-gray-200 px-3 pb-2 text-xs text-gray-500">{{ ctrans(":online of :total online", { online: taskOnlineCount, total: taskMembers.length }) }}</p>
+            <StaffTaskChatMembers :members="taskMembers" :my-id="myId ?? null" />
+        </Drawer>
     </div>
 </template>

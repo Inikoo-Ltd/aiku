@@ -8,16 +8,19 @@
 
 use App\Actions\Tasks\Json\GetStaffTaskConversation;
 use App\Actions\Tasks\Json\GetStaffTaskOptions;
+use App\Actions\Tasks\Json\GetStaffTaskQuickLook;
 use App\Actions\Tasks\Json\GetStaffTasks;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Actions\Tasks\StoreStaffTasksFromList;
 use App\Actions\Tasks\SyncStaffTaskCollaborators;
 use App\Actions\Tasks\ToggleStaffTaskSubscription;
+use App\Actions\Tasks\UI\ShowStaffTask;
 use App\Actions\Tasks\UI\ShowStaffTasks;
 use App\Actions\Tasks\UI\ShowStaffTasksBoard;
 use App\Actions\Tasks\UI\ShowStaffTasksReports;
 use App\Actions\Tasks\UI\IndexStaffTasks;
 use App\Actions\Tasks\UpdateStaffTask;
+use App\Actions\Tasks\UpdateStaffTaskSubtasks;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowStaffTasks::class)->name('index');
@@ -31,4 +34,7 @@ Route::post('/import', StoreStaffTasksFromList::class)->name('import');
 Route::patch('/{staffTask}', UpdateStaffTask::class)->name('update');
 Route::get('/{staffTask}/conversation', GetStaffTaskConversation::class)->name('conversation');
 Route::patch('/{staffTask}/collaborators', SyncStaffTaskCollaborators::class)->name('collaborators.update');
+Route::patch('/{staffTask}/subtasks', UpdateStaffTaskSubtasks::class)->name('subtasks.update');
 Route::post('/{staffTask}/subscription', ToggleStaffTaskSubscription::class)->name('subscription.toggle');
+Route::get('/{staffTask}/quick-look', GetStaffTaskQuickLook::class)->name('quick_look');
+Route::get('/{staffTask}', ShowStaffTask::class)->name('show');
