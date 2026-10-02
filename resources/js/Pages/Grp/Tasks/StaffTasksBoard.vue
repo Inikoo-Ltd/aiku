@@ -21,10 +21,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faColumns, faCalendar, faSpinner, faCircle, faCheckCircle, faBan, faBuilding, faLink, faCheck, faLock } from "@fal"
+import { faColumns, faCalendar, faSpinner, faCircle, faCheckCircle, faBan, faBuilding, faLink, faCheck, faLock, faGripLines, faChevronRight } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faColumns, faCalendar, faSpinner, faCircle, faCheckCircle, faBan, faBuilding, faLink, faCheck, faLock)
+library.add(faColumns, faCalendar, faSpinner, faCircle, faCheckCircle, faBan, faBuilding, faLink, faCheck, faLock, faGripLines, faChevronRight)
 
 type Column = { status: string; label: string; color: string; icon: any; tasks: any[] }
 
@@ -239,6 +239,27 @@ const abortCancel = () => {
 
 const quickLook = ref<{ id: number; reference: string } | null>(null)
 
+const CANCELLED_OPEN_KEY = "staff-tasks-board-cancelled-open"
+
+const readCancelledOpen = () => {
+    try {
+        return localStorage.getItem(CANCELLED_OPEN_KEY) === "true"
+    } catch {
+        return false
+    }
+}
+
+const isCancelledOpen = ref(readCancelledOpen())
+
+const toggleCancelledColumn = (open: boolean) => {
+    isCancelledOpen.value = open
+    try {
+        localStorage.setItem(CANCELLED_OPEN_KEY, String(open))
+    } catch { }
+}
+
+const isFoldedColumn = (column: Column) => column.status === "cancelled" && !isCancelledOpen.value && !dragging.value
+
 const openTask = (task: any, event: MouseEvent) => {
     const target = event.target as HTMLElement | null
     if (target?.closest("a, button") || Date.now() - lastDragEndedAt < 300) return
@@ -337,8 +358,28 @@ const subtaskSummary = (task: any) => task.subtasks?.length
 
         <div class="-mx-4 overflow-x-auto px-4 pb-2">
             <div class="flex w-max min-w-full gap-3">
-                <div v-for="column in columns" :key="column.status" class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2" :class="columnClasses[column.color] ?? columnClasses.gray">
+                <template v-for="column in columns" :key="column.status">
+                <button
+                    v-if="isFoldedColumn(column)"
+                    type="button"
+                    v-tooltip="ctrans(':label · :count, click to show', { label: column.label, count: String(visibleCount(column)) })"
+                    class="flex w-11 shrink-0 flex-col items-center gap-2 rounded-lg px-1 py-2 opacity-70 transition duration-200 hover:opacity-100"
+                    :class="columnClasses[column.color] ?? columnClasses.gray"
+                    @click="toggleCancelledColumn(true)">
+                    <Icon :data="column.icon" />
+                    <span class="rounded bg-white/70 px-1.5 py-0.5 text-xs tabular-nums text-gray-600">{{ visibleCount(column) }}</span>
+                    <span class="text-xs font-medium text-gray-600 [writing-mode:vertical-rl]">{{ column.label }}</span>
+                </button>
+                <div v-else class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2" :class="columnClasses[column.color] ?? columnClasses.gray">
                     <div class="flex flex-nowrap items-center gap-1.5 whitespace-nowrap px-1 pb-2">
+                        <button
+                            v-if="column.status === 'cancelled' && !dragging"
+                            type="button"
+                            v-tooltip="ctrans('Fold away')"
+                            class="-ml-1 rounded p-0.5 text-gray-400 transition duration-200 hover:bg-white/70 hover:text-gray-700"
+                            @click="toggleCancelledColumn(false)">
+                            <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+                        </button>
                         <Icon :data="column.icon" />
                         <span class="text-sm font-semibold">{{ column.label }}</span>
                         <span class="rounded bg-white/70 px-1.5 py-0.5 text-xs tabular-nums text-gray-600">{{ visibleCount(column) }}</span>
@@ -371,6 +412,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                         group="staff-tasks"
                         :data-column="column.status"
                         :move="onMoveCheck"
+                        handle=".task-drag-handle"
                         filter=".task-card-locked"
                         :prevent-on-filter="false"
                         :force-fallback="true"
@@ -382,10 +424,18 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                         <template #item="{ element: task }">
                             <div
                                 v-show="matches(task)"
-                                class="relative rounded-md border border-gray-200 bg-white p-2.5 shadow-sm hover:border-gray-400"
-                                :class="canDragTask(task) ? 'cursor-grab active:cursor-grabbing' : 'task-card-locked cursor-pointer'"
+                                class="relative cursor-pointer rounded-md border border-gray-200 bg-white p-2.5 pl-7 shadow-sm transition duration-200 hover:border-gray-400"
+                                :class="!canDragTask(task) && 'task-card-locked'"
                                 :aria-busy="savingTaskIds.includes(task.id)"
                                 @click="openTask(task, $event)">
+                                <span
+                                    v-if="canDragTask(task)"
+                                    v-tooltip="{ content: ctrans('Drag to move'), delay: 300 }"
+                                    class="task-drag-handle absolute inset-y-0 left-0 flex w-6 cursor-grab items-center justify-center rounded-l-md text-gray-300 transition duration-200 hover:bg-gray-50 hover:text-gray-500 active:cursor-grabbing"
+                                    data-drag-handle
+                                    @click.stop>
+                                    <FontAwesomeIcon icon="fal fa-grip-lines" fixed-width aria-hidden="true" />
+                                </span>
                                 <FontAwesomeIcon v-if="savingTaskIds.includes(task.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
                                 <FontAwesomeIcon
                                     v-else-if="!canDragTask(task)"
@@ -434,6 +484,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                         </template>
                     </draggable>
                 </div>
+                </template>
             </div>
         </div>
     </div>
