@@ -39,6 +39,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     close: []
     minimise: []
+    back: []
 }>()
 
 const store = useStaffMessaging()
@@ -415,7 +416,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
-            <button v-if="fullScreen && !embedded" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
+            <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2 text-gray-600" @click="emit('back')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
             <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">

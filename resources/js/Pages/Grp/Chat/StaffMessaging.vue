@@ -224,6 +224,7 @@ onUnmounted(() => {
                 v-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
+                @back="closeConversation"
                 @close="closeConversation" />
             <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
                 <FontAwesomeIcon icon="fal fa-comments" class="text-5xl mb-3" fixed-width aria-hidden="true" />

@@ -309,6 +309,7 @@ onUnmounted(() => {
                 <MessagingConversation
                     :conversation="visibleConversationWindows[0].conversation"
                     full-screen
+                    @back="store.minimiseConversation(visibleConversationWindows[0].ulid, true)"
                     @close="store.dismissWindow(visibleConversationWindows[0].ulid)"
                     @minimise="store.minimiseConversation(visibleConversationWindows[0].ulid, true)"
                 />
