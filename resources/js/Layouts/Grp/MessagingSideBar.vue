@@ -523,7 +523,7 @@ onUnmounted(() => {
                 :aria-label="conversationTitle(conversation)"
                 class="relative shrink-0 rounded-full transition duration-200 hover:-translate-y-0.5"
                 @click="store.openConversation(conversation.ulid)">
-                <span class="block rounded-full ring-2 ring-offset-1 ring-offset-[var(--chat-bg)]" :class="conversation.unread_count > 0 ? 'ring-[var(--chat-red)]' : 'ring-transparent'">
+                <span class="flex rounded-full ring-2 ring-offset-1 ring-offset-[var(--chat-bg)]" :class="conversation.unread_count > 0 ? 'ring-[var(--chat-red)]' : 'ring-transparent'">
                     <span v-if="conversation.type === 'group'" class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--chat-line)] text-[var(--chat-accent)]">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </span>

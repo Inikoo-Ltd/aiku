@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
@@ -23,16 +24,7 @@ const props = withDefaults(defineProps<{
     embedded?: boolean
 }>(), { defaultOpen: true, embedded: false })
 
-const kindIcons: Record<string, string> = {
-    bug: "fal fa-bug",
-    feature: "fal fa-lightbulb",
-    escalation: "fal fa-level-up",
-    task: "fal fa-tasks",
-    qa: "fal fa-vial",
-    documentation: "fal fa-books",
-    data_integrity: "fal fa-database",
-    support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const readPanelState = (): boolean => {
     try {

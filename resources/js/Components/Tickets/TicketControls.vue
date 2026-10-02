@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { Popover, Listbox, Dialog } from "primevue"
@@ -70,16 +71,7 @@ const emit = defineEmits<{
     (e: "updated"): void
 }>()
 
-const kindIcons: Record<string, string> = {
-    bug: "fal fa-bug",
-    feature: "fal fa-lightbulb",
-    escalation: "fal fa-level-up",
-    task: "fal fa-tasks",
-    qa: "fal fa-vial",
-    documentation: "fal fa-books",
-    data_integrity: "fal fa-database",
-    support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const kindPopover = ref()
 const modulePopover = ref()
