@@ -4018,3 +4018,28 @@ test('cancelling a payment made from the balance gives the money back to the bal
 
     expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore, 2));
 });
+
+test('categorise invoices command dry run shows changes without saving them', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    $invoice->update(['invoice_category_id' => null]);
+
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'     => 'Dry run fallback',
+        'type'     => 'shop_fallback',
+        'state'    => 'active',
+        'priority' => 250,
+        'settings' => ['shop_id' => $this->shop->id],
+    ]);
+
+    $this->artisan('categorise:invoices --dry-run --id='.$invoice->id)
+        ->expectsOutputToContain('Dry run: nothing was saved')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBeNull();
+
+    $this->artisan('categorise:invoices --id='.$invoice->id)
+        ->doesntExpectOutputToContain('Dry run')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBe($invoiceCategory->id);
+});
