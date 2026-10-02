@@ -50,6 +50,10 @@ const emits = defineEmits()
 const loading = ref(false)
 const key = ref(ulid())
 
+watch(() => props.fieldData.value, () => {
+  key.value = ulid()
+})
+
 
 const languagesTo = ref<Language>(
   Object.values(props.fieldData.languages).find(
