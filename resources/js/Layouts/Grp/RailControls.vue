@@ -19,6 +19,10 @@ import MasterUpdatedList from './MasterUpdatedList.vue';
 import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
+import TaskBadgeList from './TaskBadgeList.vue';
+import RailBadgeVisibilityToggle from './RailBadgeVisibilityToggle.vue';
+import axios from 'axios'
+import { faTasks } from '@fal'
 import CustomersWaiting from './CustomersWaiting.vue';
 import WhatsappCallAlert from './WhatsappCallAlert.vue';
 import { computed, onBeforeUnmount, ref } from 'vue'
@@ -36,8 +40,28 @@ const myTicketsUnread = computed(() => (layout.ticket_badges?.recent ?? []).filt
 const queueCount = computed(() => (layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0) + (layout.ticket_badges?.queue?.collaborating?.count ?? 0))
 const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 const hasTicketBadges = computed(() => Boolean(layout.ticket_badges?.queue) || Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0)))
+const hiddenBadges = ref<string[]>([...(layout.user?.settings?.rail_hidden_badges ?? [])])
+const isHiddenBadge = (key: string) => hiddenBadges.value.includes(key)
+const isOffRail = (key: string) => !layout.messagingSidebar.show && isHiddenBadge(key)
+const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)]:opacity-40' : ''
+
+const toggleBadge = (key: string) => {
+    hiddenBadges.value = isHiddenBadge(key) ? hiddenBadges.value.filter((hidden) => hidden !== key) : [...hiddenBadges.value, key]
+    if (layout.user?.settings) layout.user.settings.rail_hidden_badges = hiddenBadges.value
+    axios.patch(route('grp.models.profile.update'), { rail_hidden_badges: hiddenBadges.value })
+}
+
+const shownOnRail = (key: string, isShown: boolean) => isShown && !isOffRail(key)
+
+const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo', 'in_progress']))
+const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
+const myTasksUnread = computed(() => (layout.task_badges?.recent ?? []).filter((update) => !update.read).length)
+const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0))
 const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
+const ticketsOnRail = computed(() => shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue)) || shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0))))
+const ordersOnRail = computed(() => ([['dispatching_waiting', layout?.dispatching_waiting_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]] as [string, number][]).some(([key, count]) => shownOnRail(key, (count ?? 0) > 0)))
+const catalogueOnRail = computed(() => ([['master_updated', layout?.master_updated_count], ['products_need_review', layout?.products_need_review_count]] as [string, number][]).some(([key, count]) => shownOnRail(key, (count ?? 0) > 0)))
 
 type BadgeGroup = 'orders' | 'catalogue'
 
@@ -128,12 +152,13 @@ onBeforeUnmount(clearCollapseTimer)
         <CustomersWaiting />
 
         <div
-            v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0))"
+            v-if="ticketsOnRail"
             class="shrink-0"
             :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
         <FontAwesomeIcon icon="fal fa-life-ring" class="w-4 shrink-0 text-center text-white xtext-[var(--chat-muted)] text-xs" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Tickets')" aria-hidden="true" />
         <!-- Badge: Ticket work queue (engineers and QA) -->
-        <div v-if="layout.ticket_badges?.queue" class="relative flex items-center justify-center shrink-0">
+        <div v-if="shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue))" class="relative flex items-center justify-center shrink-0" :class="dimmedClass('tickets_queue')">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tickets_queue')" @toggle="toggleBadge('tickets_queue')" />
             <Popover width="w-72" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Tickets assigned to me')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0) ? 'rounded-t-xl' : 'rounded-xl'">
@@ -148,7 +173,8 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <!-- Badge: My tickets -->
-        <div v-if="layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0)" class="relative flex items-center justify-center shrink-0">
+        <div v-if="shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0)))" class="relative flex items-center justify-center shrink-0" :class="dimmedClass('tickets_mine')">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tickets_mine')" @toggle="toggleBadge('tickets_mine')" />
             <Popover width="w-72" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('My tickets')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-100 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.queue ? 'rounded-b-xl' : 'rounded-xl'">
@@ -165,10 +191,34 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <div
-            v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0))"
+            v-if="ticketsOnRail"
             class="border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'"
             aria-hidden="true" />
+
+        <template v-if="hasTaskBadges && shownOnRail('tasks', true)">
+            <div class="shrink-0" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
+                <FontAwesomeIcon :icon="faTasks" class="w-4 shrink-0 text-center text-xs text-white" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Tasks')" aria-hidden="true" />
+                <!-- Badge: My tasks -->
+                <div class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks')">
+                    <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks')" @toggle="toggleBadge('tasks')" />
+                    <Popover width="w-72" position="right-full mr-2 top-0">
+                        <template #button>
+                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-cyan-200 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100">
+                                <Transition name="spin-to-right"><span :key="myTasksCount"><span :class="myTasksCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTasksCount > 99 ? '99+' : myTasksCount }}</span></span></Transition>
+                                <FontAwesomeIcon v-if="myTasksOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-red-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else-if="myTasksUnread" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-cyan-400" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <TaskBadgeList :badges="layout.task_badges!" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+            </div>
+
+            <div class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
+        </template>
 
         <button v-if="isFolded('orders') && ordersCount > 0" type="button"
             v-tooltip="ctrans('Orders: :count waiting, click to show', { count: String(ordersCount) })"
@@ -182,7 +232,8 @@ onBeforeUnmount(clearCollapseTimer)
         <div v-if="(!layout.messagingSidebar.show || hasOrderBadges) && !isFolded('orders')" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
         <FontAwesomeIcon v-if="layout.messagingSidebar.show" icon="fal fa-shopping-cart" class="w-4 shrink-0 text-center text-white xtext-[var(--chat-muted)] text-xs" fixed-width v-tooltip="ctrans('Orders')" aria-hidden="true" />
         <!-- Badge: Warehouse Waiting Items -->
-        <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('dispatching_waiting', layout?.dispatching_waiting_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('dispatching_waiting')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('dispatching_waiting')" @toggle="toggleBadge('dispatching_waiting')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Orders waiting in the warehouse')" class="relative bg-amber-300 text-amber-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
@@ -198,7 +249,8 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <!-- Badge: CRM Waiting Items -->
-        <div v-if="layout?.crm_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('crm_waiting', layout?.crm_waiting_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('crm_waiting')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('crm_waiting')" @toggle="toggleBadge('crm_waiting')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Orders waiting in CRM')" class="relative bg-purple-300 text-purple-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
@@ -214,7 +266,8 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <!-- Badge: CRM Return Items -->
-        <div v-if="layout?.crm_return_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('crm_return', layout?.crm_return_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('crm_return')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('crm_return')" @toggle="toggleBadge('crm_return')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Orders with returns')" class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
@@ -230,7 +283,8 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <!-- Badge: Faire orders that could not be imported -->
-        <div v-if="layout?.faire_skipped_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('faire_skipped', layout?.faire_skipped_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('faire_skipped')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('faire_skipped')" @toggle="toggleBadge('faire_skipped')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Faire orders not imported')" class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
@@ -246,7 +300,7 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
         </div>
 
-        <div v-if="hasOrderBadges && hasCatalogueBadges" class="border-t border-[var(--chat-line)] shrink-0"
+        <div v-if="ordersOnRail && catalogueOnRail" class="border-t border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full' : 'w-6'" aria-hidden="true" />
 
         <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button"
@@ -261,7 +315,8 @@ onBeforeUnmount(clearCollapseTimer)
         <div v-if="(!layout.messagingSidebar.show || hasCatalogueBadges) && !isFolded('catalogue')" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'contents'">
         <FontAwesomeIcon v-if="layout.messagingSidebar.show" icon="fal fa-cube" class="w-4 shrink-0 text-center text-white xtext-[var(--chat-muted)] text-xs" fixed-width v-tooltip="ctrans('Catalogue')" aria-hidden="true" />
         <!-- Badge: Products not following master prices -->
-        <div v-if="layout?.master_updated_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('master_updated', layout?.master_updated_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('master_updated')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('master_updated')" @toggle="toggleBadge('master_updated')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Prices not matching master')" class="relative bg-rose-300 text-rose-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
@@ -277,7 +332,8 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <!-- Badge: Master name or description changed, shop keeps its own translation -->
-        <div v-if="layout?.products_need_review_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+        <div v-if="shownOnRail('products_need_review', layout?.products_need_review_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('products_need_review')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('products_need_review')" @toggle="toggleBadge('products_need_review')" />
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
                     <div v-tooltip="ctrans('Master text changed')" class="relative bg-emerald-300 text-emerald-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">

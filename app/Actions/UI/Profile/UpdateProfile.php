@@ -33,6 +33,8 @@ class UpdateProfile extends OrgAction
 
     private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting', 'ticket'];
 
+    public const array RAIL_BADGES = ['tickets_queue', 'tickets_mine', 'tasks', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
+
     public function handle(User $user, array $modelData): User
     {
         if (Arr::exists($modelData, 'nickname')) {
@@ -83,6 +85,10 @@ class UpdateProfile extends OrgAction
         if (Arr::exists($modelData, 'app_theme')) {
             $appTheme                           = Arr::pull($modelData, 'app_theme');
             $modelData['settings']['app_theme'] = $appTheme;
+        }
+
+        if (Arr::exists($modelData, 'rail_hidden_badges')) {
+            $modelData['settings']['rail_hidden_badges'] = array_values(array_intersect(Arr::pull($modelData, 'rail_hidden_badges') ?? [], self::RAIL_BADGES));
         }
 
         if (Arr::exists($modelData, 'tickets_list_mine')) {
@@ -243,6 +249,8 @@ class UpdateProfile extends OrgAction
             'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
+            'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],
+            'rail_hidden_badges.*'                => ['string', Rule::in(self::RAIL_BADGES)],
         ];
     }
 
