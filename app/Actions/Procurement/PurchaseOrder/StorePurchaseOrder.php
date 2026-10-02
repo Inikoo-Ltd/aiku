@@ -203,9 +203,20 @@ class StorePurchaseOrder extends OrgAction
         return $this->handle($orgSupplier, $this->validatedData);
     }
 
+    /**
+     * Only one purchase order to a partner is in process at a time: asking for a new one while one is
+     * being prepared opens that one.
+     */
     public function inOrgPartner(OrgPartner $orgPartner, ActionRequest $request): PurchaseOrder
     {
         $this->parent = $orgPartner;
+
+        /** @var PurchaseOrder|null $openPurchaseOrder */
+        $openPurchaseOrder = $orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first();
+        if ($openPurchaseOrder && !$orgPartner->partner->is_manufacturing_hub) {
+            return $openPurchaseOrder;
+        }
+
         $this->initialisation($orgPartner->organisation, $request);
 
         return $this->handle($orgPartner, $this->validatedData);
