@@ -763,6 +763,15 @@ class GetShopNavigation
                         ],
                     ],
                     [
+                        "label" => __("ETA map"),
+                        "icon"  => ["fal", "fa-calendar-alt"],
+                        "root"  => "grp.org.shops.show.tasks.eta_map",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.eta_map",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
                         "label" => __("Reports"),
                         "icon"  => ["fal", "fa-chart-line"],
                         "root"  => "grp.org.shops.show.tasks.reports",

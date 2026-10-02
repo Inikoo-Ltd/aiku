@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import axios from "axios"
-import { format, parseISO } from "date-fns"
+import { addDays, format, parseISO } from "date-fns"
 import { Popover, Listbox, DatePicker, Dialog, Textarea, Button } from "primevue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
@@ -16,11 +16,13 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTaskPeoplePicker from "@/Components/Tasks/StaffTaskPeoplePicker.vue"
+import StaffTaskEtaDialog from "@/Components/Tasks/StaffTaskEtaDialog.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+import type { StaffTaskDueAccess, StaffTaskEtaProposal } from "@/types/StaffTaskEta"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBuilding, faBell, faCalendar, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan } from "@fal"
-library.add(faBuilding, faBell, faCalendar, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan)
+import { faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan } from "@fal"
+library.add(faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan)
 
 type Person = { id: number; name: string; avatar: any }
 type Option = { label: string; value: string; icon: any }
@@ -43,8 +45,11 @@ const props = defineProps<{
         model_type: string | null
         model_id: number | null
         is_subscribed: boolean | null
+        eta_proposal?: StaffTaskEtaProposal | null
     }
     canEdit: boolean
+    canRemoveCollaborators?: boolean
+    dueAccess?: StaffTaskDueAccess
     options: { statuses: Option[]; priorities: Option[] }
 }>()
 
@@ -134,6 +139,42 @@ const chooseDueDate = (date: Date | Date[] | (Date | null)[] | null | undefined)
     if (picked !== props.task.due_at) patchTask("due_at", { due_at: picked })
 }
 
+const startOfToday = new Date(new Date().setHours(0, 0, 0, 0))
+const daysFromToday = (days: number) => addDays(startOfToday, days)
+
+const quickDuePicks = [
+    { label: ctrans("Today"), date: daysFromToday(0) },
+    { label: ctrans("Tomorrow"), date: daysFromToday(1) },
+    { label: ctrans("In 3 days"), date: daysFromToday(3) },
+    { label: ctrans("Next week"), date: daysFromToday(7) },
+]
+
+const canSetDue = computed(() => props.dueAccess?.can_set ?? false)
+const canSuggestEta = computed(() => (props.dueAccess?.can_suggest ?? false) && !props.task.eta_proposal)
+const isDueClickable = computed(() => canSetDue.value || canSuggestEta.value)
+
+const dueTooltip = computed(() => {
+    if (canSetDue.value) return ctrans("Due date · click to change")
+    if (canSuggestEta.value) return ctrans("Due date · click to suggest a new ETA")
+    return ctrans("Due date")
+})
+
+const etaDialogOpen = ref(false)
+
+const onDueClick = (event: Event) => {
+    if (canSetDue.value) {
+        duePopover.value?.toggle(event)
+        return
+    }
+    if (canSuggestEta.value) etaDialogOpen.value = true
+}
+
+const decideEta = (decision: "accept" | "decline") => send(`eta:${decision}`, () => axios.post(route("grp.tasks.eta_proposal.decide", props.task.reference), { decision }))
+
+const shortDate = (date: string) => useFormatTime(date, { formatTime: "mdy" })
+
+const canManagePeople = computed(() => props.canEdit || props.canRemoveCollaborators)
+
 const coworkers = ref<Person[]>([])
 
 const loadCoworkers = async () => {
@@ -210,13 +251,14 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
             </div>
         </div>
 
-        <div v-if="task.collaborators.length || canEdit">
+        <div v-if="task.collaborators.length || canManagePeople">
             <p :class="sectionLabelClass">{{ ctrans("Working on it too") }}</p>
             <StaffTaskPeoplePicker
                 :modelValue="collaboratorIds"
                 :options="collaboratorPeople"
                 :excludeIds="task.assignee ? [task.assignee.id] : []"
-                :editable="canEdit"
+                :editable="canManagePeople"
+                :canRemove="(personId) => canRemoveCollaborators || personId === myId"
                 :pending="isPending('collaborators')"
                 @update:modelValue="changeCollaborators"
                 @hide="saveCollaborators" />
@@ -258,14 +300,30 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                     {{ priorityOption?.label ?? task.priority }}
                 </span>
                 <span
-                    v-tooltip="canEdit ? ctrans('Due date · click to change') : ctrans('Due date')"
-                    :class="[chipClass, canEdit && editableChipClass, isDuePickerOpen && '!bg-gray-300', task.is_overdue && '!bg-red-100 text-red-700']"
-                    :tabindex="canEdit ? 0 : undefined"
-                    @click="canEdit && duePopover.toggle($event)"
-                    @keydown.enter.prevent="canEdit && duePopover.toggle($event)">
+                    v-tooltip="dueTooltip"
+                    :class="[chipClass, isDueClickable && editableChipClass, isDuePickerOpen && '!bg-gray-300', task.is_overdue && '!bg-red-100 text-red-700']"
+                    :tabindex="isDueClickable ? 0 : undefined"
+                    @click="onDueClick"
+                    @keydown.enter.prevent="onDueClick">
                     <FontAwesomeIcon :icon="isPending('due_at') ? 'fal fa-spinner' : 'fal fa-calendar'" :spin="isPending('due_at')" fixed-width />
-                    {{ task.due_at ? useFormatTime(task.due_at, { formatTime: "mdy" }) : ctrans("No due date") }}
+                    {{ task.due_at ? shortDate(task.due_at) : ctrans("No due date") }}
                 </span>
+            </div>
+
+            <div v-if="task.eta_proposal" class="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-sm">
+                <p class="flex items-center gap-1.5 font-medium text-amber-800">
+                    <FontAwesomeIcon icon="fal fa-calendar-edit" fixed-width />
+                    {{ ctrans(":name suggests :date", { name: task.eta_proposal.by_name, date: shortDate(task.eta_proposal.due_at) }) }}
+                </p>
+                <p class="mt-0.5 text-xs text-amber-700">
+                    {{ task.eta_proposal.previous_due_at ? ctrans("Was :date", { date: shortDate(task.eta_proposal.previous_due_at) }) : ctrans("No due date before") }}
+                </p>
+                <p class="mt-1.5 whitespace-pre-line text-gray-700">{{ task.eta_proposal.reason }}</p>
+                <div v-if="canSetDue" class="mt-2 flex gap-2">
+                    <Button size="small" :label="ctrans('Accept')" :loading="isPending('eta:accept')" @click="decideEta('accept')" />
+                    <Button size="small" text severity="secondary" :label="ctrans('Decline')" :loading="isPending('eta:decline')" @click="decideEta('decline')" />
+                </div>
+                <p v-else class="mt-1.5 text-xs text-amber-700">{{ ctrans("Waiting for :name to answer", { name: task.requester?.name ?? ctrans("the requester") }) }}</p>
             </div>
             <Popover v-if="canEdit" ref="priorityPopover" @show="isPriorityPickerOpen = true" @hide="isPriorityPickerOpen = false">
                 <Listbox :model-value="task.priority" :options="options.priorities" option-label="label" option-value="value" class="border-0" @update:model-value="choosePriority">
@@ -274,12 +332,39 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                     </template>
                 </Listbox>
             </Popover>
-            <Popover v-if="canEdit" ref="duePopover" @show="isDuePickerOpen = true" @hide="isDuePickerOpen = false">
-                <div class="space-y-2">
-                    <DatePicker :modelValue="dueDate" inline @update:modelValue="chooseDueDate" />
-                    <button v-if="task.due_at" type="button" class="w-full rounded px-2 py-1 text-sm text-gray-500 transition duration-200 hover:bg-gray-100 active:!bg-gray-200" @click="chooseDueDate(null)">
-                        {{ ctrans("Remove due date") }}
-                    </button>
+            <Popover v-if="canSetDue" ref="duePopover" :pt="{ content: { class: '!p-0' } }" @show="isDuePickerOpen = true" @hide="isDuePickerOpen = false">
+                <div class="w-72 text-sm">
+                    <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2">
+                        <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Due date") }}</span>
+                        <span v-if="task.due_at" class="text-xs text-gray-500">{{ useFormatTime(task.due_at, { formatTime: "d MMM yyyy" }) }}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 px-3 pt-2.5">
+                        <button
+                            v-for="pick in quickDuePicks"
+                            :key="pick.label"
+                            type="button"
+                            class="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs text-gray-600 transition duration-200 hover:border-gray-300 hover:bg-gray-50 active:!bg-gray-100"
+                            @click="chooseDueDate(pick.date)">
+                            {{ pick.label }}
+                        </button>
+                    </div>
+                    <DatePicker
+                        :modelValue="dueDate"
+                        inline
+                        :minDate="startOfToday"
+                        :pt="{
+                            panel: { class: '!min-w-0 !border-0 !p-3 !shadow-none' },
+                            header: { class: '!px-0 !pt-0 !pb-2' },
+                            tableHeaderCell: { class: '!p-0 !text-[11px] !font-medium !text-gray-400' },
+                            dayCell: { class: '!p-0.5' },
+                            day: { class: '!h-8 !w-8 !text-sm' },
+                        }"
+                        @update:modelValue="chooseDueDate" />
+                    <div v-if="task.due_at" class="border-t border-gray-100 px-3 py-2">
+                        <button type="button" class="rounded px-2 py-1 text-xs text-red-600 transition duration-200 hover:bg-red-50 active:!bg-red-100" @click="chooseDueDate(null)">
+                            {{ ctrans("Remove due date") }}
+                        </button>
+                    </div>
                 </div>
             </Popover>
         </div>
@@ -290,6 +375,8 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
             {{ ctrans("Notify me about this task") }}
             <FontAwesomeIcon v-if="isPending('subscription')" icon="fal fa-spinner" spin fixed-width class="text-gray-400" />
         </label>
+
+        <StaffTaskEtaDialog v-model:visible="etaDialogOpen" :task="task" @suggested="emit('updated')" />
 
         <Dialog
             v-model:visible="cancelNoteOpen"

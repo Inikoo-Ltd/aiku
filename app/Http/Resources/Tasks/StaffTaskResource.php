@@ -48,6 +48,7 @@ class StaffTaskResource extends JsonResource
             'collaborators'     => $this->relationLoaded('collaborators') ? $this->collaborators->map(fn (User $user) => $this->person($user))->values()->all() : [],
             'subtasks'          => $this->data['subtasks'] ?? [],
             'due_at'            => $this->due_at?->toDateString(),
+            'eta_proposal'      => $this->data['eta_proposal'] ?? null,
             'is_overdue'        => $this->due_at && $this->status->isOpen() && $this->due_at->isPast(),
             'model_type'        => $this->model_type,
             'model_id'          => $this->model_id,

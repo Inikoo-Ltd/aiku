@@ -17,6 +17,7 @@ import { useStaffMessaging } from "@/Stores/staff-messaging"
 import Icon from "@/Components/Icon.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
+import type { StaffTaskDueAccess } from "@/types/StaffTaskEta"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import StaffTaskControls from "@/Components/Tasks/StaffTaskControls.vue"
@@ -36,6 +37,8 @@ type QuickLookData = {
     task: any
     linked_url: string | null
     can_edit: boolean
+    due_access: StaffTaskDueAccess
+    can_remove_collaborators: boolean
     options: { statuses: any[]; priorities: any[] }
     messages: { id: number; user_id: number; user_name: string; body: string | null; gif_url: string | null; image: any; created_at: string }[] | null
     message_count: number
@@ -165,7 +168,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             </span>
                         </div>
                         <TicketControlPanel v-if="!isDesktop && panelSummary" :ticket="panelSummary" storage-key="staff_task_quick_look_controls_open" :default-open="false">
-                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :options="data!.options" @updated="reload" />
+                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :options="data!.options" @updated="reload" />
                         </TicketControlPanel>
                     </div>
 
@@ -173,7 +176,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                         <div class="flex min-h-full flex-col">
                             <TicketBody v-if="shown.description" :text="shown.description" />
                             <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
-                            <TicketAttachmentList v-if="shown.attachments?.length" :files="shown.attachments" compact />
+                            <TicketAttachmentList v-if="shown.attachments?.length" :files="shown.attachments" compact class="mt-3" />
 
                             <StaffTaskSubtasks ref="subtasksBox" :reference="shown.reference" :subtasks="shown.subtasks" :can-edit="data!.can_edit" />
 
@@ -225,7 +228,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                 </div>
 
                 <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :options="data!.options" @updated="reload" />
+                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :options="data!.options" @updated="reload" />
                 </aside>
             </div>
         </div>

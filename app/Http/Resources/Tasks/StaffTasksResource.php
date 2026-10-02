@@ -50,7 +50,7 @@ class StaffTasksResource extends JsonResource
             'assignee_avatar'    => $this->avatar($this->assignee),
             'collaborators'      => $this->relationLoaded('collaborators') ? $this->collaborators->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()])->values()->all() : [],
             'department_label'   => $this->department ? StaffTask::departmentLabel($this->department) : null,
-            'due_at'             => $this->due_at,
+            'due_at'             => $this->due_at?->toDateString(),
             'is_overdue'         => $this->due_at && $this->status->isOpen() && $this->due_at->isPast(),
             'created_at'         => $this->created_at,
             'closed_at'          => $this->closed_at,

@@ -29,10 +29,9 @@ trait WithStaffTasksScope
     }
 
     /**
-     * @return array{name: string, parameters: array<int, string>}
-     */
-    /**
      * @param  array<int, string>  $extraParameters
+     *
+     * @return array{name: string, parameters: array<int, string>}
      */
     protected function tasksRoute(string $suffix, array $extraParameters = []): array
     {

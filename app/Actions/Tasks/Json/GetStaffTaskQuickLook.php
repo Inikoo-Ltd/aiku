@@ -39,6 +39,8 @@ class GetStaffTaskQuickLook
             'task'          => StaffTaskResource::make($task)->resolve(),
             'linked_url'    => $show->linkedRecordUrl($task),
             'can_edit'      => $task->isWorkedOnBy($request->user()),
+            'due_access'    => $task->dueAccessFor($request->user()),
+            'can_remove_collaborators' => $task->canRemoveCollaboratorsBy($request->user()),
             'options'       => StaffTask::editOptions(),
             'messages'      => $canReadChat
                 ? StaffMessageResource::collection(

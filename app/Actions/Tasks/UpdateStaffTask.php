@@ -93,7 +93,13 @@ class UpdateStaffTask
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffTask')->isVisibleTo($request->user());
+        $task = $request->route('staffTask');
+
+        if ($request->has('due_at') && !$task->canSetDueDate($request->user())) {
+            return false;
+        }
+
+        return $task->isVisibleTo($request->user());
     }
 
     public function rules(): array

@@ -360,6 +360,15 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
+                        'label' => __('ETA map'),
+                        'icon'  => ['fal', 'fa-calendar-alt'],
+                        'root'  => 'grp.org.tasks.eta_map',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.eta_map',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
                         'label' => __('Reports'),
                         'icon'  => ['fal', 'fa-chart-line'],
                         'root'  => 'grp.org.tasks.reports',

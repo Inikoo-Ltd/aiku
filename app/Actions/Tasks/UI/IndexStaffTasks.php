@@ -128,7 +128,6 @@ class IndexStaffTasks extends OrgAction
                 ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
                 ->column(key: 'due_at', label: __('Due'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
-                ->column(key: 'closed_at', label: __('Closed'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->defaultSort('-created_at');
         };
     }

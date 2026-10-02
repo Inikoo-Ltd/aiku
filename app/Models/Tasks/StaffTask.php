@@ -173,6 +173,11 @@ class StaffTask extends Model implements Auditable, HasMedia
         return $query->whereIn('status', [StaffTaskStatusEnum::TODO, StaffTaskStatusEnum::IN_PROGRESS]);
     }
 
+    public function isOpen(): bool
+    {
+        return $this->status->isOpen();
+    }
+
     /**
      * An organisation's tasks are the ones its staff raised, own or help on, so a task between two countries shows in both.
      */
@@ -240,6 +245,45 @@ class StaffTask extends Model implements Auditable, HasMedia
     public function isWorkedOnBy(User $user): bool
     {
         return $this->assignee_id === $user->id || $this->collaborators->contains('id', $user->id);
+    }
+
+    public function canRemoveCollaboratorsBy(User $user): bool
+    {
+        return $this->assignee_id === $user->id || $this->canSetDueDate($user);
+    }
+
+    public function canChangeCollaboratorsBy(User $user): bool
+    {
+        return $this->canRemoveCollaboratorsBy($user) || $this->isWorkedOnBy($user);
+    }
+
+    /**
+     * The task maker sets the due date. A supervisor can too, unless they are working on the task
+     * themselves: then, like any assignee or collaborator, they ask for a new ETA instead.
+     */
+    public function canSetDueDate(User $user): bool
+    {
+        if ($this->requester_id === $user->id) {
+            return true;
+        }
+
+        return $this->group_id === $user->group_id && !$this->isWorkedOnBy($user) && self::isSupervisor($user);
+    }
+
+    public function canSuggestEta(User $user): bool
+    {
+        return $this->isOpen() && $this->isWorkedOnBy($user) && $this->requester_id !== $user->id;
+    }
+
+    /**
+     * @return array{can_set: bool, can_suggest: bool}
+     */
+    public function dueAccessFor(User $user): array
+    {
+        return [
+            'can_set'     => $this->canSetDueDate($user),
+            'can_suggest' => $this->canSuggestEta($user),
+        ];
     }
 
     public static function departmentLabel(string $department): string

@@ -18,6 +18,7 @@ import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTasksSummary from "@/Components/Tasks/StaffTasksSummary.vue"
+import StaffTaskDueBadge from "@/Components/Tasks/StaffTaskDueBadge.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -189,14 +190,11 @@ const readOnlyCellClass = "inline-flex items-center gap-1 p-2"
                 </div>
             </template>
             <template #cell(due_at)="{ item }">
-                <span :class="item.is_overdue && 'font-medium text-red-600'">{{ item.due_at ? useFormatTime(item.due_at, { formatTime: "mdy" }) : "-" }}</span>
+                <StaffTaskDueBadge v-if="item.due_at" :dueAt="item.due_at" :priority="item.priority" :status="item.status" />
+                <span v-else class="text-gray-300">-</span>
             </template>
             <template #cell(created_at)="{ item }">
                 <span :title="useFormatTime(item.created_at, { formatTime: 'hm' })">{{ useFormatTime(item.created_at, { formatTime: "d MMM HH:mm" }) }}</span>
-            </template>
-            <template #cell(closed_at)="{ item }">
-                <span v-if="item.closed_at" :title="useFormatTime(item.closed_at, { formatTime: 'hm' })">{{ useFormatTime(item.closed_at, { formatTime: "d MMM HH:mm" }) }}</span>
-                <span v-else class="text-gray-300">-</span>
             </template>
         </Table>
     </div>

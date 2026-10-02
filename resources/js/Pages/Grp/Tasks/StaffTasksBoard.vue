@@ -16,6 +16,7 @@ import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
+import StaffTaskDueBadge from "@/Components/Tasks/StaffTaskDueBadge.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -410,9 +411,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
 
                                 <div class="mt-2 flex items-end justify-between gap-2 text-xs">
                                     <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-500">
-                                        <span v-if="task.due_at" class="inline-flex items-center gap-0.5" :class="task.is_overdue && 'font-medium text-red-600'">
-                                            <FontAwesomeIcon icon="fal fa-calendar" fixed-width />{{ shortDate(task.due_at) }}
-                                        </span>
+                                        <StaffTaskDueBadge v-if="task.due_at" :dueAt="task.due_at" :priority="task.priority" :status="task.status" />
                                         <span v-if="subtaskSummary(task)" v-tooltip="{ content: ctrans('Sub tasks done'), delay: 0 }" class="inline-flex items-center gap-0.5 tabular-nums">
                                             <FontAwesomeIcon icon="fal fa-check" fixed-width class="text-green-600" />{{ subtaskSummary(task) }}
                                         </span>
