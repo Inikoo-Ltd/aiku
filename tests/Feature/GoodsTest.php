@@ -762,11 +762,40 @@ test("UI Edit Stock in Group", function () {
                 ],
             ])->etc())
             ->has('formData.blueprint.1.fields.composition.route')
+            ->where('formData.blueprint.0.fields.is_cosmetic.value', false)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
             );
     });
+});
+
+test('a group stock can be marked as cosmetic', function () {
+    $stock = Stock::first();
+
+    \Pest\Laravel\patchJson(route('grp.models.stock.update', [$stock->id]), ['is_cosmetic' => true])->assertOk();
+    expect($stock->refresh()->is_cosmetic)->toBeTrue();
+
+    \Pest\Laravel\patchJson(route('grp.models.stock.update', [$stock->id]), ['is_cosmetic' => false])->assertOk();
+    expect($stock->refresh()->is_cosmetic)->toBeFalse();
+});
+
+test('stocks with a CPNP numbered trade unit are marked as cosmetic', function () {
+    Stock::query()->update(['is_cosmetic' => false]);
+    [$cosmetic, $other] = createStocks($this->group);
+    $cosmetic->tradeUnits()->first()->update(['cpnp_number' => 'CPNP-1234']);
+    $other->tradeUnits()->update(['cpnp_number' => null]);
+
+    $this->artisan('stocks:mark_cosmetic_from_cpnp')->assertSuccessful();
+    expect($cosmetic->refresh()->is_cosmetic)->toBeFalse();
+
+    $this->artisan('stocks:mark_cosmetic_from_cpnp --apply')->assertSuccessful();
+    expect($cosmetic->refresh()->is_cosmetic)->toBeTrue()
+        ->and($other->refresh()->is_cosmetic)->toBeFalse();
+
+    $other->update(['is_cosmetic' => true]);
+    $this->artisan('stocks:mark_cosmetic_from_cpnp --apply')->assertSuccessful();
+    expect($other->refresh()->is_cosmetic)->toBeTrue();
 });
 
 test("UI Create Stock in Stock Family Group", function () {

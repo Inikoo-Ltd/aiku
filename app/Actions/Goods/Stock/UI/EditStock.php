@@ -88,6 +88,12 @@ class EditStock extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $stock->name
                                 ],
+                                'is_cosmetic' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Cosmetic product'),
+                                    'information' => __('Cosmetic products are kept apart from the rest when partner orders are prepared'),
+                                    'value'       => $stock->is_cosmetic,
+                                ],
                             ],
                         ],
                         [

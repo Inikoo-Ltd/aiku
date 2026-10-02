@@ -334,7 +334,7 @@ class SendChatMessage
             'file'           => [
                 'sometimes',
                 'nullable',
-                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip'])
                     ->max(20 * 1024)
             ],
             'attachments'    => [
