@@ -10,6 +10,9 @@ namespace App\Actions\Tasks;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Events\BroadcastStaffTaskChanged;
+use App\Notifications\StaffTaskNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Resources\Tasks\StaffTaskResource;
 use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessage;
@@ -49,6 +52,12 @@ class StoreStaffTask
                 'model_type'   => $modelData['model_type'] ?? $sourceMessage?->conversation->context_type,
                 'model_id'     => $modelData['model_id'] ?? $sourceMessage?->conversation->context_id,
                 'assigned_at'  => isset($modelData['assignee_id']) ? now() : null,
+                'data'         => [
+                    'subtasks' => collect($modelData['subtasks'] ?? [])->map(fn (array $subtask) => [
+                        'title'  => trim($subtask['title']),
+                        'status' => $subtask['status'] ?? 'todo',
+                    ])->values()->all(),
+                ],
             ]);
 
             // ponytail: a department task starts with the requester alone in the thread, members see it in their queue and join when they claim it; a department has 10 to 30 supervisors in prod, attaching them all would flood the chat
@@ -75,6 +84,13 @@ class StoreStaffTask
                 SyncStaffTaskCollaborators::run($task, $modelData['collaborator_ids'], $requester);
             }
 
+            if ($task->assignee_id && $task->assignee_id !== $requester->id) {
+                Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
+            }
+
+            BroadcastStaffTaskChanged::dispatch($task);
+            SendStaffTaskBadgeUpdateToUsers::run($task->involvedUserIds());
+
             return $task;
         });
     }
@@ -95,6 +111,9 @@ class StoreStaffTask
             'model_type'        => ['sometimes', 'nullable', Rule::in(StaffTask::LINKABLE_MODELS)],
             'model_id'          => ['required_with:model_type', 'nullable', 'integer'],
             'source_message_id' => ['sometimes', 'nullable', 'integer', 'exists:staff_messages,id'],
+            'subtasks'          => ['sometimes', 'array'],
+            'subtasks.*.title'  => ['required', 'string', 'max:255'],
+            'subtasks.*.status' => ['sometimes', Rule::in(StaffTask::SUBTASK_STATUSES)],
         ];
     }
 

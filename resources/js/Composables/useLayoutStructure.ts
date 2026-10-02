@@ -1,4 +1,5 @@
 import type { TicketBadges } from '@/types/TicketBadges'
+import type { TaskBadges } from '@/types/TaskBadges'
 import { useColorTheme } from '@/Composables/useStockList'
 
 import { OrganisationsData, Group, OrganisationState, StackedComponent, Shop } from '@/types/LayoutRules'
@@ -87,6 +88,7 @@ export const layoutStructure = {
     } | null,
 
     ticket_badges: null as TicketBadges | null,
+    task_badges: null as TaskBadges | null,
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,

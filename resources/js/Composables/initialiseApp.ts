@@ -269,6 +269,10 @@ export const initialiseApp = () => {
             layout.ticket_badges = usePage().props.ticket_badges as any
         }
 
+        if (usePage().props.task_badges !== undefined) {
+            layout.task_badges = usePage().props.task_badges as any
+        }
+
         if (usePage().props.dispatching_waiting_count !== undefined) {
             layout.dispatching_waiting_count = usePage().props.dispatching_waiting_count as number
         }

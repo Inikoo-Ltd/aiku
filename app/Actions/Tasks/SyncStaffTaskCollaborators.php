@@ -9,6 +9,9 @@
 namespace App\Actions\Tasks;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
+use App\Events\BroadcastStaffTaskChanged;
+use App\Notifications\StaffTaskNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Resources\Tasks\StaffTaskResource;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
@@ -55,6 +58,14 @@ class SyncStaffTaskCollaborators
             $removedIds ? __('No longer working on this: :names', ['names' => $names($removedIds)]) : null,
         ]);
         SendStaffMessage::run($conversation, $actor, ['body' => implode("\n", $lines)]);
+
+        $newcomers = User::whereIn('id', array_diff($addedIds, [$actor->id]))->get();
+        if ($newcomers->isNotEmpty()) {
+            Notification::send($newcomers, new StaffTaskNotification($task, __('You are working on :reference too', ['reference' => $task->reference]), $task->subject));
+        }
+
+        BroadcastStaffTaskChanged::dispatch($task);
+        SendStaffTaskBadgeUpdateToUsers::run([...$task->involvedUserIds(), ...$removedIds]);
 
         return $task;
     }

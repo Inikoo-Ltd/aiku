@@ -10,6 +10,7 @@ namespace App\Actions\UI\Grp;
 
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
+use App\Actions\Tasks\GetStaffTaskBadgeData;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireSkippedBadgeData;
 use App\Actions\Catalogue\Product\GetProductsNeedReviewBadgeData;
@@ -63,6 +64,7 @@ class GetFirstLoadProps
 
         data_set($props, 'notifications', $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null);
         data_set($props, 'ticket_badges', $user ? GetTicketBadgeData::run($user) : null);
+        data_set($props, 'task_badges', $user ? GetStaffTaskBadgeData::run($user) : null);
         data_set($props, 'dispatching_waiting_count', $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_waiting_count', $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_return_count', $user ? GetCrmReturnedBadgeData::make()->totalCount($user) : 0);

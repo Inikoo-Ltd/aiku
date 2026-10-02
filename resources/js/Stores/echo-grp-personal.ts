@@ -5,6 +5,7 @@
  */
 
 import type { TicketBadges } from '@/types/TicketBadges'
+import type { TaskBadges } from '@/types/TaskBadges'
 import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
@@ -118,6 +119,9 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 const layout = useLayoutStore()
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
                 layout.crm_waiting_count = eventData.crm_waiting_count
+            })
+            .listen('.task-badges-update', (eventData: { task_badges: TaskBadges }) => {
+                useLayoutStore().task_badges = eventData.task_badges
             })
             .listen('.ticket-badges-update', (eventData: { ticket_badges: TicketBadges; notification: { title: string; body: string; route: string; reason?: string } | null }) => {
                 const layout = useLayoutStore()

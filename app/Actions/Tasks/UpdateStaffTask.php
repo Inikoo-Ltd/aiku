@@ -11,10 +11,13 @@ namespace App\Actions\Tasks;
 use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Events\BroadcastStaffTaskChanged;
 use App\Http\Resources\Tasks\StaffTaskResource;
 use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
+use App\Notifications\StaffTaskNotification;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,8 +28,9 @@ class UpdateStaffTask
 
     public function handle(StaffTask $task, User $actor, array $modelData): StaffTask
     {
-        $note = Arr::pull($modelData, 'note');
-        $lines = [];
+        $note               = Arr::pull($modelData, 'note');
+        $lines              = [];
+        $previousAssigneeId = $task->assignee_id;
 
         if (array_key_exists('assignee_id', $modelData) && $modelData['assignee_id'] !== $task->assignee_id) {
             $modelData['assigned_at'] = $modelData['assignee_id'] ? now() : null;
@@ -64,7 +68,27 @@ class UpdateStaffTask
             SendStaffMessage::run($task->conversation, $actor, ['body' => implode(': ', $lines)]);
         }
 
+        $this->notify($task, $actor);
+
+        BroadcastStaffTaskChanged::dispatch($task);
+        SendStaffTaskBadgeUpdateToUsers::run([...$task->involvedUserIds(), $previousAssigneeId]);
+
         return $task;
+    }
+
+    private function notify(StaffTask $task, User $actor): void
+    {
+        if ($task->wasChanged('assignee_id') && $task->assignee_id && $task->assignee_id !== $actor->id) {
+            Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
+        }
+
+        if ($task->wasChanged('status') && !$task->status->isOpen() && $task->requester_id !== $actor->id) {
+            $title = $task->status === StaffTaskStatusEnum::DONE
+                ? __(':reference is done', ['reference' => $task->reference])
+                : __(':reference can\'t be done', ['reference' => $task->reference]);
+
+            Notification::send($task->requester, new StaffTaskNotification($task, $title, $task->subject));
+        }
     }
 
     public function authorize(ActionRequest $request): bool
