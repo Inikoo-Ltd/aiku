@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import { onClickOutside } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,6 +23,9 @@ const emit = defineEmits<{
 }>()
 
 const isOpen = ref(false)
+const panel = ref<HTMLElement | null>(null)
+
+onClickOutside(panel, () => (isOpen.value = false))
 
 const toggle = () => {
     isOpen.value = !isOpen.value
@@ -39,7 +43,7 @@ const statuses = computed(() => ({
 </script>
 
 <template>
-    <div class="shrink-0 border-b border-gray-200 bg-white text-xs">
+    <div ref="panel" class="relative z-10 shrink-0 border-b border-gray-200 bg-white text-xs">
         <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition duration-200 hover:bg-gray-50" :aria-expanded="isOpen" @click="toggle">
             <span class="w-9 shrink-0 font-semibold tabular-nums" :class="progress === 100 ? 'text-green-600' : 'text-gray-700'">{{ progress }}%</span>
             <span class="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100">
@@ -51,7 +55,8 @@ const statuses = computed(() => ({
             </span>
             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="shrink-0 text-gray-400 transition-transform duration-200" :class="!isOpen && '-rotate-90'" />
         </button>
-        <ol v-show="isOpen" class="max-h-48 divide-y divide-gray-100 overflow-y-auto border-t border-gray-100">
+        <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="-translate-y-1 opacity-0" leave-active-class="transition duration-100 ease-in" leave-to-class="-translate-y-1 opacity-0">
+        <ol v-show="isOpen" class="absolute inset-x-0 top-full max-h-48 divide-y divide-gray-100 overflow-y-auto border-y border-gray-200 bg-white shadow-lg">
             <li v-for="(subtask, index) in subtasks" :key="index" class="flex items-center gap-2 px-3 py-1.5">
                 <span class="w-5 shrink-0 text-right tabular-nums text-gray-400">{{ index + 1 }}.</span>
                 <span class="min-w-0 flex-1 truncate" :class="subtask.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-800'" :title="subtask.title">{{ subtask.title }}</span>
@@ -61,5 +66,6 @@ const statuses = computed(() => ({
                 </span>
             </li>
         </ol>
+        </Transition>
     </div>
 </template>
