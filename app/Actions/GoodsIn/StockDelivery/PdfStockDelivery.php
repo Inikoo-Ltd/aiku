@@ -11,6 +11,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Mpdf\MpdfException;
 use Symfony\Component\HttpFoundation\Response;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 class PdfStockDelivery extends OrgAction
 {
@@ -37,7 +38,7 @@ class PdfStockDelivery extends OrgAction
 
     public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): Response
     {
-        abort_unless($stockDelivery->organisation_id === $organisation->id, 404);
+        abort_unless($stockDelivery->organisation_id === $organisation->id || $organisation->type === OrganisationTypeEnum::AGENT, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($stockDelivery);

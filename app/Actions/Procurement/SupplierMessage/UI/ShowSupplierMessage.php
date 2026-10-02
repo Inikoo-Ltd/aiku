@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 class ShowSupplierMessage extends OrgAction
 {
@@ -36,7 +37,7 @@ class ShowSupplierMessage extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        abort_unless($supplierMessage->organisation_id === $organisation->id, 404);
+        abort_unless($supplierMessage->organisation_id === $organisation->id || $organisation->type === OrganisationTypeEnum::AGENT, 404);
 
         return $supplierMessage;
     }

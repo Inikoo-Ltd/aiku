@@ -215,7 +215,7 @@ class ShowStockDelivery extends OrgAction
             'route'     => [
                 'name'       => 'grp.org.procurement.purchase_orders.show',
                 'parameters' => [
-                    'organisation'  => $stockDelivery->organisation->slug,
+                    'organisation'  => (request()->route('organisation') ?? $stockDelivery->organisation)->slug,
                     'purchaseOrder' => $purchaseOrder->slug,
                 ],
             ],
@@ -329,7 +329,7 @@ class ShowStockDelivery extends OrgAction
             'route'  => [
                 'name'       => 'grp.org.procurement.stock_deliveries.pdf',
                 'parameters' => [
-                    'organisation'  => $stockDelivery->organisation->slug,
+                    'organisation'  => (request()->route('organisation') ?? $stockDelivery->organisation)->slug,
                     'stockDelivery' => $stockDelivery->slug,
                 ],
             ],

@@ -152,7 +152,7 @@ class StockDeliveryItemResource extends JsonResource
             'has_picking_location'  => $locations->contains(fn ($location) => $location->default_wholesale_picking_location || $location->default_dropshipping_picking_location),
             'warehouse_area'        => $warehouseArea,
             'warehouse_slug'        => $locations->first()?->warehouse_slug,
-            'searchLocationsRoute'  => $warehouse ? [
+            'searchLocationsRoute'  => $warehouse && (request()->route('organisation')?->id ?? $item->organisation_id) === $item->organisation_id ? [
                 'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
                 'parameters' => [
                     'organisation' => $item->organisation->slug,

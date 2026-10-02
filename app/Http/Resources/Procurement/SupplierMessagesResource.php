@@ -38,7 +38,7 @@ class SupplierMessagesResource extends JsonResource
             'number_attachments' => count($email->attachments ?? []),
             'route'         => [
                 'name'       => 'grp.org.procurement.supplier_messages.show',
-                'parameters' => [$email->organisation_slug, $email->id],
+                'parameters' => [request()->route('organisation')?->slug ?? $email->organisation_slug, $email->id],
             ],
         ];
     }

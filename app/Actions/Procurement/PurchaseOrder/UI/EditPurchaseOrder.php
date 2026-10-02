@@ -53,7 +53,7 @@ class EditPurchaseOrder extends OrgAction
                             'style' => 'exitEdit',
                             'route' => [
                                 'name'       => 'grp.org.procurement.purchase_orders.show',
-                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug]
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug]
                             ]
                         ]
                     ],

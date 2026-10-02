@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed, inject } from "vue"
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBoxOpen,
@@ -140,24 +140,24 @@ const money = (value: number | null) =>
     value === null || value === undefined ? "-" : locale.currencyFormat(props.data.costs.currency_code, value)
 
 const costRows = computed(() => [
-    { label: trans("Unit cost"), value: money(props.data.costs.unit_cost), strong: true },
-    { label: trans("Extra costs"), value: `${locale.number(props.data.costs.extra_costs_percentage)} %` },
-    { label: trans("Delivered unit cost"), value: money(props.data.costs.delivered_unit_cost), strong: true },
-    { label: trans("Delivered pack cost"), value: money(props.data.costs.pack_cost) },
-    { label: trans("Delivered carton cost"), value: money(props.data.costs.carton_cost) },
+    { label: ctrans("Unit cost"), value: money(props.data.costs.unit_cost), strong: true },
+    { label: ctrans("Extra costs"), value: `${locale.number(props.data.costs.extra_costs_percentage)} %` },
+    { label: ctrans("Delivered unit cost"), value: money(props.data.costs.delivered_unit_cost), strong: true },
+    { label: ctrans("Delivered pack cost"), value: money(props.data.costs.pack_cost) },
+    { label: ctrans("Delivered carton cost"), value: money(props.data.costs.carton_cost) },
 ])
 
 const packagingRows = computed(() => [
     {
-        label: trans("Units per pack"),
+        label: ctrans("Units per pack"),
         value: props.data.packaging.units_per_pack ? locale.number(props.data.packaging.units_per_pack) : "-",
     },
     {
-        label: trans("Units per carton"),
+        label: ctrans("Units per carton"),
         value: props.data.packaging.units_per_carton ? locale.number(props.data.packaging.units_per_carton) : "-",
     },
     {
-        label: trans("Carton volume"),
+        label: ctrans("Carton volume"),
         value: props.data.packaging.cbm ? `${locale.number(props.data.packaging.cbm)} m³` : "-",
     },
 ])
@@ -172,32 +172,32 @@ const supplyingRows = computed(() => {
     return [
         {
             key: "minimum_carton_order",
-            label: trans("Minimum order"),
-            value: info.minimum_carton_order ? trans(":count cartons", { count: info.minimum_carton_order }) : null,
+            label: ctrans("Minimum order"),
+            value: info.minimum_carton_order ? ctrans(":count cartons", { count: info.minimum_carton_order }) : null,
         },
         {
             key: "delivery_time",
-            label: trans("Delivery time"),
-            value: info.delivery_time ? trans(":days days", { days: info.delivery_time }) : null,
+            label: ctrans("Delivery time"),
+            value: info.delivery_time ? ctrans(":days days", { days: info.delivery_time }) : null,
         },
         {
             key: "unit_expense",
-            label: trans("Unit expense"),
+            label: ctrans("Unit expense"),
             value: info.unit_expense ? money(info.unit_expense) : null,
         },
         {
             key: "barcode",
-            label: trans("Barcode"),
+            label: ctrans("Barcode"),
             value: info.barcode,
         },
         {
             key: "net_weight",
-            label: trans("Net weight"),
+            label: ctrans("Net weight"),
             value: info.net_weight ? `${locale.number(info.net_weight)} g` : null,
         },
         {
             key: "gross_weight",
-            label: trans("Gross weight"),
+            label: ctrans("Gross weight"),
             value: info.gross_weight ? `${locale.number(info.gross_weight)} g` : null,
         },
     ].filter((row) => row.value)
@@ -205,8 +205,8 @@ const supplyingRows = computed(() => {
 
 const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
-        ? { label: trans("Available"), class: "bg-green-50 text-green-700 ring-green-600/20" }
-        : { label: trans("Not available"), class: "bg-red-50 text-red-700 ring-red-600/20" }
+        ? { label: ctrans("Available"), class: "bg-green-50 text-green-700 ring-green-600/20" }
+        : { label: ctrans("Not available"), class: "bg-red-50 text-red-700 ring-red-600/20" }
 </script>
 
 <template>
@@ -240,7 +240,7 @@ const availabilityBadge = (isAvailable: boolean) =>
 
             <div v-if="data.organisation" class="mt-4 border-t border-gray-100 pt-3">
                 <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {{ trans("In") }} {{ data.organisation.name }}
+                    {{ ctrans("In") }} {{ data.organisation.name }}
                 </div>
                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                     <span
@@ -258,14 +258,14 @@ const availabilityBadge = (isAvailable: boolean) =>
             <Link v-if="data.product.route" :href="route(data.product.route.name, data.product.route.parameters)"
                 class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-700">
                 <Icon :data="{ icon: 'fal fa-external-link' }" />
-                {{ trans("Supplier product in supply chain") }}
+                {{ ctrans("Supplier product in supply chain") }}
             </Link>
         </section>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-money-bill' }" />
-                {{ trans("Costs") }}
+                {{ ctrans("Costs") }}
             </h3>
             <dl class="divide-y divide-gray-100">
                 <div v-for="row in costRows" :key="row.label" class="flex items-baseline justify-between py-2">
@@ -280,7 +280,7 @@ const availabilityBadge = (isAvailable: boolean) =>
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-pallet' }" />
-                {{ trans("Packaging") }}
+                {{ ctrans("Packaging") }}
             </h3>
             <dl class="divide-y divide-gray-100">
                 <div v-for="row in packagingRows" :key="row.label" class="flex items-baseline justify-between py-2">
@@ -292,7 +292,7 @@ const availabilityBadge = (isAvailable: boolean) =>
             <template v-if="supplyingRows.length">
                 <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <Icon :data="{ icon: 'fal fa-truck-container' }" />
-                    {{ trans("Supplying") }}
+                    {{ ctrans("Supplying") }}
                 </h3>
                 <dl class="divide-y divide-gray-100">
                     <div v-for="row in supplyingRows" :key="row.key" class="flex items-baseline justify-between py-2">
@@ -305,11 +305,11 @@ const availabilityBadge = (isAvailable: boolean) =>
             <template v-if="data.parties.length">
                 <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <Icon :data="{ icon: 'fal fa-person-dolly' }" />
-                    {{ trans("Provided by") }}
+                    {{ ctrans("Provided by") }}
                 </h3>
                 <div class="flex flex-col gap-2">
-                    <Link v-for="party in data.parties" :key="party.label"
-                        :href="route(party.route.name, party.route.parameters)"
+                    <component :is="party.route ? Link : 'div'" v-for="party in data.parties" :key="party.label"
+                        :href="party.route ? route(party.route.name, party.route.parameters) : undefined"
                         class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
                         <Image v-if="party.image" :src="party.image" class="h-8 w-8 shrink-0" />
                         <Icon v-else :data="{ icon: party.icon }" class="w-8 shrink-0 text-center text-gray-400" />
@@ -318,7 +318,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                             <div class="truncate text-sm font-medium text-gray-700">{{ party.name }}</div>
                         </div>
                         <span class="ml-auto text-xs tabular-nums text-gray-400">{{ party.code }}</span>
-                    </Link>
+                    </component>
                 </div>
             </template>
         </section>
@@ -326,11 +326,11 @@ const availabilityBadge = (isAvailable: boolean) =>
         <section v-if="data.trade_units.length" class="md:col-span-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-cubes' }" />
-                {{ trans("Trade units") }}
+                {{ ctrans("Trade units") }}
             </h3>
             <div class="grid gap-3 sm:grid-cols-2">
-                <Link v-for="tradeUnit in data.trade_units" :key="tradeUnit.slug"
-                    :href="route(tradeUnit.route.name, tradeUnit.route.parameters)"
+                <component :is="tradeUnit.route ? Link : 'div'" v-for="tradeUnit in data.trade_units" :key="tradeUnit.slug"
+                    :href="tradeUnit.route ? route(tradeUnit.route.name, tradeUnit.route.parameters) : undefined"
                     class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
                     <Image v-if="tradeUnit.image" :src="tradeUnit.image" class="h-12 w-12 shrink-0" />
                     <Icon v-else :data="{ icon: 'fal fa-cube' }" class="w-12 shrink-0 text-center text-gray-300" />
@@ -339,7 +339,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                         <div class="truncate text-xs text-gray-400">{{ tradeUnit.code }}</div>
                     </div>
                     <ProductUnitLabel :units="tradeUnit.units" :unit="tradeUnit.unit ?? undefined" />
-                </Link>
+                </component>
             </div>
         </section>
 
@@ -347,23 +347,23 @@ const availabilityBadge = (isAvailable: boolean) =>
         <section v-if="data.composition.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-cubes' }" />
-                {{ trans("Composition") }}
+                {{ ctrans("Composition") }}
             </h3>
             <div class="flex flex-col gap-4">
                 <div v-for="tradeUnit in data.composition" :key="tradeUnit.slug">
-                    <Link :href="route(tradeUnit.route.name, tradeUnit.route.parameters)"
+                    <component :is="tradeUnit.route ? Link : 'div'" :href="tradeUnit.route ? route(tradeUnit.route.name, tradeUnit.route.parameters) : undefined"
                         class="text-sm font-medium text-gray-700 hover:text-indigo-600">
                         {{ tradeUnit.code }} <span class="text-gray-400 font-normal">{{ tradeUnit.name }}</span>
-                    </Link>
+                    </component>
                     <div v-if="tradeUnit.org_stocks.length" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <Link v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
-                            :href="route(orgStock.route.name, orgStock.route.parameters)"
+                        <component :is="orgStock.route ? Link : 'div'" v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
+                            :href="orgStock.route ? route(orgStock.route.name, orgStock.route.parameters) : undefined"
                             class="flex items-baseline justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-xs transition hover:border-gray-300 hover:bg-gray-50">
                             <span class="truncate text-gray-700">{{ orgStock.code }}</span>
                             <span class="shrink-0 text-gray-400">{{ orgStock.organisation.code }}</span>
-                        </Link>
+                        </component>
                     </div>
-                    <p v-else class="mt-1 text-xs text-gray-400">{{ trans("No org stock linked") }}</p>
+                    <p v-else class="mt-1 text-xs text-gray-400">{{ ctrans("No org stock linked") }}</p>
                 </div>
             </div>
         </section>
@@ -371,21 +371,21 @@ const availabilityBadge = (isAvailable: boolean) =>
         <section v-if="data.stocks.length" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-box-open' }" />
-                {{ trans("SKUs") }}
+                {{ ctrans("SKUs") }}
             </h3>
             <div class="flex flex-col divide-y divide-gray-100">
-                <Link v-for="stock in data.stocks" :key="stock.slug"
-                    :href="route(stock.route.name, stock.route.parameters)"
+                <component :is="stock.route ? Link : 'div'" v-for="stock in data.stocks" :key="stock.slug"
+                    :href="stock.route ? route(stock.route.name, stock.route.parameters) : undefined"
                     class="flex items-baseline justify-between gap-3 py-2 hover:text-indigo-600">
                     <span class="truncate text-sm text-gray-700">{{ stock.name }}</span>
                     <span class="shrink-0 text-xs tabular-nums text-gray-400">{{ stock.code }}</span>
-                </Link>
+                </component>
             </div>
         </section>
 
         <section v-if="data.stats.length" class="md:col-span-3">
             <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                {{ trans("Statistics") }}
+                {{ ctrans("Statistics") }}
             </h3>
             <BoxDisplay :data="data.stats" />
         </section>

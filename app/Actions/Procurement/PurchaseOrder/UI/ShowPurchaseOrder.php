@@ -124,7 +124,7 @@ class ShowPurchaseOrder extends OrgAction
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($purchaseOrder->parent)->toArray($request);
-            $productListRoute = [
+            $productListRoute = !$this->canEdit ? [] : [
                 'method'     => 'get',
                 'name'       => 'grp.json.org-agent.org-supplier-products',
                 'parameters' => [
@@ -178,7 +178,7 @@ class ShowPurchaseOrder extends OrgAction
                             'label' => __('Edit'),
                             'route' => [
                                 'name'       => 'grp.org.procurement.purchase_orders.edit',
-                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
                             ],
                         ] : false,
                         [
@@ -190,7 +190,7 @@ class ShowPurchaseOrder extends OrgAction
                             'key'    => 'pdf',
                             'route'  => [
                                 'name'       => 'grp.org.procurement.purchase_orders.pdf',
-                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
                             ],
                         ],
                         ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),
@@ -344,7 +344,7 @@ class ShowPurchaseOrder extends OrgAction
             'key'     => 'excel',
             'route'   => [
                 'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
-                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
             ],
         ];
     }
@@ -384,7 +384,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                     'download' => [
                         'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
-                        'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                        'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
                     ],
                 ],
             ],
@@ -412,7 +412,7 @@ class ShowPurchaseOrder extends OrgAction
                 'icon'    => 'fal fa-envelope',
                 'key'     => 'email_to_supplier',
                 'mailto'  => $email ? 'mailto:'.$email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($body) : null,
-                'pdfUrl'  => route('grp.org.procurement.purchase_orders.pdf', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]),
+                'pdfUrl'  => route('grp.org.procurement.purchase_orders.pdf', [$this->organisation->slug, $purchaseOrder->slug]),
             ]
         ];
     }
@@ -728,7 +728,7 @@ class ShowPurchaseOrder extends OrgAction
             'route'      => [
                 'name'       => 'grp.org.procurement.stock_deliveries.show',
                 'parameters' => [
-                    'organisation'  => $purchaseOrder->organisation->slug,
+                    'organisation'  => $this->organisation->slug,
                     'stockDelivery' => $stockDelivery->slug,
                 ],
             ],
@@ -751,7 +751,10 @@ class ShowPurchaseOrder extends OrgAction
 
     private function siblingPurchaseOrders(PurchaseOrder $purchaseOrder, ActionRequest $request): Builder
     {
-        $query = PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id);
+        $organisationAgent = $this->getOrganisationAgent($this->organisation);
+        $query             = $organisationAgent
+            ? PurchaseOrder::where('agent_id', $organisationAgent->id)
+            : PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id);
 
         if ($request->route()->getName() !== 'grp.org.procurement.purchase_orders.show') {
             $query->where('parent_type', $purchaseOrder->parent_type)->where('parent_id', $purchaseOrder->parent_id);
@@ -772,7 +775,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
                 ],
@@ -782,7 +785,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgAgent'      => $purchaseOrder->parent->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
@@ -793,7 +796,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgSupplier'   => $purchaseOrder->parent->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
@@ -804,7 +807,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgPartner'    => $purchaseOrder->parent->id,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],

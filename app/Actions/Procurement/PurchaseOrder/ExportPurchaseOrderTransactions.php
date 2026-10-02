@@ -16,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 class ExportPurchaseOrderTransactions extends OrgAction
 {
@@ -31,7 +32,7 @@ class ExportPurchaseOrderTransactions extends OrgAction
 
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): BinaryFileResponse
     {
-        abort_unless($purchaseOrder->organisation_id === $organisation->id, 404);
+        abort_unless($purchaseOrder->organisation_id === $organisation->id || $organisation->type === OrganisationTypeEnum::AGENT, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($purchaseOrder);
