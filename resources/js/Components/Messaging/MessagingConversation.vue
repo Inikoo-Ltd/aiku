@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -47,6 +48,22 @@ const myLanguageId = computed(() => usePage().props?.auth?.user?.language_id ?? 
 const participants = computed<StaffParticipant[]>(() => props.conversation?.participants ?? [])
 
 const messages = computed(() => store.messagesByUlid[props.conversation.ulid] ?? [])
+
+const isGroupChat = computed(() => props.conversation.type === "group")
+const RUN_GAP_MS = 5 * 60 * 1000
+
+const isSameRun = (previous: StaffMessage | undefined, message: StaffMessage | undefined) =>
+    !!previous && !!message && previous.user_id === message.user_id
+    && new Date(message.created_at).getTime() - new Date(previous.created_at).getTime() < RUN_GAP_MS
+
+const startsRun = (index: number) => !isSameRun(messages.value[index - 1], messages.value[index])
+const endsRun = (index: number) => !isSameRun(messages.value[index], messages.value[index + 1])
+
+const participantById = computed(() => new Map(participants.value.map((participant) => [participant.id, participant])))
+const senderAvatar = (message: StaffMessage) => participantById.value.get(message.user_id)?.avatar ?? null
+
+const SENDER_NAME_COLOURS = ["text-teal-700", "text-violet-700", "text-orange-700", "text-sky-700", "text-rose-700", "text-emerald-700", "text-fuchsia-700", "text-amber-700"]
+const senderNameClass = (userId: number) => SENDER_NAME_COLOURS[userId % SENDER_NAME_COLOURS.length]
 const isOnline = computed(() =>
     participants.value.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
 )
@@ -434,11 +451,26 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
         <StaffTaskSubtaskProgress v-if="taskInfo?.subtasks.length && !embedded" :subtasks="taskInfo.subtasks" @opened="refreshTaskInfo" />
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-2" @scroll="onScroll">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2" @scroll="onScroll">
             <div
                 v-for="(message, messageIndex) in messages"
                 :key="message.id"
-                class="group flex flex-col"
+                class="flex"
+                :class="[
+                    message.user_id === myId ? 'justify-end' : 'justify-start',
+                    messageIndex === 0 ? '' : isGroupChat && !startsRun(messageIndex) ? 'mt-0.5' : 'mt-2.5',
+                ]"
+            >
+            <div v-if="isGroupChat && message.user_id !== myId" class="mr-1.5 w-7 shrink-0">
+                <TicketUserAvatar
+                    v-if="startsRun(messageIndex)"
+                    v-tooltip="message.user_name"
+                    :name="message.user_name"
+                    :avatar="senderAvatar(message)"
+                    size="md" />
+            </div>
+            <div
+                class="group flex min-w-0 flex-1 flex-col"
                 :class="message.user_id === myId ? 'items-end' : 'items-start'"
             >
                 <div v-if="parentById(message.parent_id)" class="max-w-[80%] mb-0.5 px-2 py-1 rounded bg-gray-100 text-xxs text-gray-500 border-l-2 border-gray-300">
@@ -449,12 +481,17 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="flex items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
                     <div
                         class="relative max-w-[80%] rounded-lg text-sm"
-                        :class="[message.gif_url ? 'p-1' : 'px-3 py-2', message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900']"
+                        :class="[
+                            message.gif_url ? 'p-1' : 'px-3 py-2',
+                            message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900',
+                            isGroupChat && startsRun(messageIndex) && (message.user_id === myId ? 'rounded-tr-sm' : 'rounded-tl-sm'),
+                        ]"
+                        v-tooltip="isGroupChat && !endsRun(messageIndex) ? { content: useFormatTime(message.created_at, { formatTime: 'hm' }), placement: message.user_id === myId ? 'left' : 'right' } : undefined"
                         @mouseenter="reactsOnHover && (activeReactionFor = message.id)"
                         @mouseleave="reactsOnHover && (activeReactionFor = null)"
                         @click="!reactsOnHover && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
                     >
-                        <div v-if="conversation.type === 'group' && message.user_id !== myId" class="text-xxs opacity-70 mb-0.5">
+                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium" :class="senderNameClass(message.user_id)">
                             {{ message.user_name }}
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
@@ -495,7 +532,8 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     </span>
                 </div>
 
-                <div class="text-xxs text-gray-400 mt-0.5">{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</div>
+                <div v-if="!isGroupChat || endsRun(messageIndex)" class="text-xxs text-gray-400 mt-0.5">{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</div>
+            </div>
             </div>
 
             <div
