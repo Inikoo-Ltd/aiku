@@ -7972,6 +7972,36 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Carbon::setTestNow();
 });
 
+test('oldest first reads the mailbox a calendar month at a time from the oldest, and a run whose mark left the cache carries on', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    $mailbox = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::class;
+    \Illuminate\Support\Carbon::setTestNow('2026-10-15 12:00:00');
+    \Illuminate\Support\Facades\Cache::forget($mailbox::cursorKey($this->shop, 3, false, true));
+    \Illuminate\Support\Facades\Cache::forget($mailbox::runKey($this->shop));
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => []]),
+    ]);
+
+    $july   = \Illuminate\Support\Carbon::parse('2026-07-01')->timestamp;
+    $august = \Illuminate\Support\Carbon::parse('2026-08-01')->timestamp;
+    expect($mailbox::monthByMonth(\Illuminate\Support\Carbon::parse('2026-07-20')))->toHaveCount(4)->and($mailbox::monthByMonth(now())[0])->toStartWith('after:'.now()->startOfMonth()->timestamp);
+
+    $mailbox::make()->asJob($this->shop, 3, 'a-run-whose-mark-was-cleared', false, true);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), "after:$july before:$august"));
+    expect(\Illuminate\Support\Facades\Cache::get($mailbox::cursorKey($this->shop, 3, false, true)))->toMatchArray(['search' => 1, 'page' => null, 'from' => $july]);
+    $mailbox::assertPushed(1);
+
+    $mailbox::make()->asJob($this->shop, 3, 'a-run-whose-mark-was-cleared', false, true);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), "after:$august before:"));
+
+    \Illuminate\Support\Facades\Cache::forget($mailbox::cursorKey($this->shop, 3, false, true));
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
 test('the best customers have all their mail archived, searched by their addresses with no date limit', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];
