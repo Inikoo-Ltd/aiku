@@ -18,6 +18,7 @@ const props = defineProps({
 	organisationStockLevels: { type: Array, default: null },
 	cards: { type: Array, default: () => [] },
 	storageKey: { type: String, required: true },
+	reloadProps: { type: Array, default: () => ["stockOuts", "stockLevels", "stockLevelsByOrganisation"] },
 })
 
 const organisationColors = ["#2563eb", "#db2777", "#059669", "#7c3aed", "#ea580c", "#0891b2", "#65a30d", "#9333ea"]
@@ -69,6 +70,7 @@ const sourceOptions = computed(() => {
 const selectSource = (source) => {
 	router.reload({
 		data: { source: source ?? "" },
+		only: props.reloadProps,
 		preserveScroll: true,
 		onStart: () => (loadingSource.value = source ?? "all"),
 		onFinish: () => (loadingSource.value = null),
@@ -381,6 +383,7 @@ const arrivalsTooltip = (arrivals) =>
 								label=""
 								param="period"
 								:storageKey="`${storageKey}-period`"
+								:only="reloadProps"
 								compact
 								class="absolute right-0 top-full z-20 mt-1 w-max shadow-md"
 								@click="isPeriodOpen = false" />

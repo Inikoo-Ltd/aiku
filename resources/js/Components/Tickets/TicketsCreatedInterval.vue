@@ -12,8 +12,9 @@ const props = withDefaults(
 		label?: string
 		param?: string
 		compact?: boolean
+		only?: string[]
 	}>(),
-	{ storageKey: "tickets-created-interval", label: "Created", param: "created" }
+	{ storageKey: "tickets-created-interval", label: "Created", param: "created", only: () => [] }
 )
 
 const storageKey = props.storageKey
@@ -25,6 +26,7 @@ const select = (interval: string) => {
 	} catch {}
 	router.reload({
 		data: { [props.param]: interval, page: 1 },
+		only: props.only,
 		preserveScroll: true,
 		onStart: () => (loadingInterval.value = interval),
 		onFinish: () => (loadingInterval.value = null),
@@ -43,7 +45,7 @@ onMounted(() => {
 		remembered = localStorage.getItem(storageKey)
 	} catch {}
 	if (remembered && remembered !== props.selected && remembered in props.options) {
-		router.reload({ data: { [props.param]: remembered, page: 1 }, preserveScroll: true })
+		router.reload({ data: { [props.param]: remembered, page: 1 }, only: props.only, preserveScroll: true })
 	}
 })
 </script>

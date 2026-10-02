@@ -19,7 +19,6 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -40,31 +39,53 @@ class ShowSupplyChainDashboard extends OrgAction
         $this->initialisationFromGroup(app('group'), $request);
     }
 
-    private function getStockLevelsByOrganisation(?string $source): array
+    /**
+     * One pass per organisation reads every SKO's bucket and source, so all source bubbles come
+     * from the same rows and inbound lines and are cached together.
+     *
+     * @return array<string, array<int, array{slug: string, levels: array<int, array<string, mixed>>}>>
+     */
+    private function getStockLevelsByOrganisationAndSource(): array
     {
-        $organisations = GetStockOutsHistory::make()->organisations($this->group);
-        $pipelines     = $organisations->mapWithKeys(fn (Organisation $organisation) => [$organisation->id => GetStockOutsPipeline::run($organisation, $source)])->all();
+        $coverBuckets = GetOrganisationStockCoverBuckets::make();
+        $pipeline     = GetStockOutsPipeline::make();
+        $sources      = ['all', ...array_keys(GetOrganisationStockCoverBuckets::SOURCES)];
+        $bySource     = array_fill_keys($sources, []);
 
-        return $organisations
-            ->map(fn (Organisation $organisation) => [
-                'slug'     => $organisation->slug,
-                'levels'   => collect(GetOrganisationStockCoverBuckets::run($organisation, null, $source))
-                    ->map(fn (array $bucket) => [
-                        'bucket' => $bucket['bucket'],
-                        'label'  => $bucket['label'],
-                        'description' => $bucket['description'],
-                        'tone'   => $bucket['tone'],
-                        'count'  => $bucket['count'],
-                        ...($pipelines[$organisation->id][$bucket['bucket']] ?? ['in_transit' => 0, 'arrivals' => []]),
-                        'route'  => [
-                            'name'       => 'grp.org.procurement.stock_cover.index',
-                            'parameters' => [
-                                'organisation' => $organisation->slug,
-                                '_query'       => ['elements[cover]' => $bucket['bucket']],
+        foreach (GetStockOutsHistory::make()->organisations($this->group) as $organisation) {
+            $orgStocks = $coverBuckets->scope(DB::table('org_stocks'), $organisation)
+                ->selectRaw('org_stocks.id, '.$coverBuckets->bucketExpression().' as bucket, '.$coverBuckets->sourceExpression().' as source')
+                ->get();
+            $lines = $pipeline->inboundLines($orgStocks->pluck('id')->all());
+
+            foreach ($sources as $source) {
+                $bucketOf  = ($source === 'all' ? $orgStocks : $orgStocks->where('source', $source))->pluck('bucket', 'id')->all();
+                $counts    = array_count_values($bucketOf);
+                $pipelines = $pipeline->summarise($bucketOf, $lines);
+
+                $bySource[$source][] = [
+                    'slug'   => $organisation->slug,
+                    'levels' => collect(GetOrganisationStockCoverBuckets::BUCKETS)
+                        ->map(fn (array $meta, string $bucket) => [
+                            'bucket'      => $bucket,
+                            'label'       => $coverBuckets->bucketLabel($bucket),
+                            'description' => $coverBuckets->bucketDescription($bucket),
+                            'tone'        => $meta['tone'],
+                            'count'       => $counts[$bucket] ?? 0,
+                            ...($pipelines[$bucket] ?? ['in_transit' => 0, 'arrivals' => []]),
+                            'route'       => [
+                                'name'       => 'grp.org.procurement.stock_cover.index',
+                                'parameters' => [
+                                    'organisation' => $organisation->slug,
+                                    '_query'       => ['elements[cover]' => $bucket],
+                                ],
                             ],
-                        ],
-                    ])->values()->all(),
-            ])->values()->all();
+                        ])->values()->all(),
+                ];
+            }
+        }
+
+        return $bySource;
     }
 
     private function getPurchaseOrderJourneySummary(ActionRequest $request): array
@@ -320,7 +341,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
                 'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')), $source)),
-                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v5:{$this->group->id}:".($source ?? 'all'), self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisation($source))),
+                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v6:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisationAndSource())[$source ?? 'all']),
                 'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),

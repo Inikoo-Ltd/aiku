@@ -10,6 +10,7 @@ namespace App\Actions\Procurement;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -34,11 +35,33 @@ class GetStockOutsPipeline
             ->pluck('bucket', 'id')
             ->all();
 
+        return $this->summarise($bucketOf, $this->inboundLines(array_keys($bucketOf)));
+    }
+
+    /**
+     * @param  array<int, int>  $orgStockIds
+     * @return Collection<int, array{org_stock_id: int, document: string, quantity: float, eta: string|null, is_late: bool}>
+     */
+    public function inboundLines(array $orgStockIds): Collection
+    {
         $goods = ShowGoodsDashboard::make();
-        $lines = collect(array_merge($goods->stockDeliveryInboundLines(array_keys($bucketOf)), $goods->purchaseOrderInboundLines(array_keys($bucketOf))));
+
+        return collect(array_merge($goods->stockDeliveryInboundLines($orgStockIds), $goods->purchaseOrderInboundLines($orgStockIds)));
+    }
+
+    /**
+     * Lines of org stocks missing from $bucketOf are ignored, so one fetch of inbound lines can be
+     * summarised for several subsets of an organisation's SKOs.
+     *
+     * @param  array<int, string>  $bucketOf
+     * @return array<string, array{in_transit: int, late: int, purchase_orders: int, stock_deliveries: int, days_min: int|null, days_max: int|null, arrivals: array<string, int>}>
+     */
+    public function summarise(array $bucketOf, Collection $lines): array
+    {
         $today = today();
 
-        return $lines->groupBy(fn (array $line) => $bucketOf[$line['org_stock_id']])
+        return $lines->filter(fn (array $line) => isset($bucketOf[$line['org_stock_id']]))
+            ->groupBy(fn (array $line) => $bucketOf[$line['org_stock_id']])
             ->map(function ($bucketLines) use ($today) {
                 $byOrgStock    = $bucketLines->groupBy('org_stock_id');
                 $onSchedule    = $byOrgStock->map(fn ($orgStockLines) => $orgStockLines->reject(fn (array $line) => $line['is_late'] ?? false))->filter->isNotEmpty();
