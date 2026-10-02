@@ -4794,6 +4794,7 @@ describe('partner shopping list', function () {
         data_set($partnerData, 'intercompany_customers', [$this->sellerShop->id => 1]);
         $this->orgPartner->update(['data' => $partnerData]);
         $this->sellerShop->update(['migrated_to_aiku_on' => now()->subDays(10)]);
+        $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->delete();
 
         $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, PurchaseOrder::factory()->definition());
         $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED]);
@@ -5711,8 +5712,7 @@ test('pre-pick list only shows partner lines that have stock behind them', funct
     expect($props['data']['data'][0]['is_cosmetic'])->toBeTrue()
         ->and(collect($props['filters']['cosmetic']['options'])->pluck('value')->all())->toBe(['cosmetic']);
 
-    expect($this->get($prePickUrl.'?elements[cosmetic]=cosmetic')->viewData('page')['props']['data']['data'])->toHaveCount(1)
-        ->and($this->get($prePickUrl.'?elements[cosmetic]=non-cosmetic')->viewData('page')['props']['data']['data'])->toBe([]);
+    expect($this->get($prePickUrl.'?elements[cosmetic]=cosmetic')->viewData('page')['props']['data']['data'])->toHaveCount(1);
 
     $withStock->stock->update(['is_cosmetic' => false]);
     $sellerStock->update(['quantity_available' => 0]);

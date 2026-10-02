@@ -683,8 +683,8 @@ test('a fulfilment order stuck on a non-current aiku location is flagged, a thir
     FetchShopifyOrdersFromApi::run($shopifyUser);
 
     Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6070') && str_contains($message, 'Location/9990') && str_contains($message, 'UNSUBMITTED'))->once();
-    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6071'))->never();
-    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6072'))->never();
+    Log::shouldNotHaveReceived('warning', fn (string $message) => str_contains($message, 'FulfillmentOrder/6071'));
+    Log::shouldNotHaveReceived('warning', fn (string $message) => str_contains($message, 'FulfillmentOrder/6072'));
 });
 
 test('a request aw already holds an order for is only accepted, never split or declined, and left alone once staff cancelled it', function () {
