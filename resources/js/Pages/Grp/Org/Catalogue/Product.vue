@@ -36,7 +36,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
-import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import { ctrans } from "@/Composables/useTrans"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
@@ -179,7 +179,7 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
-        attachments: AttachmentManagement,
+        attachments: TradeUnitDocuments,
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,
         content: ProductContent,

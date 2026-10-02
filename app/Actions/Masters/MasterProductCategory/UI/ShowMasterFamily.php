@@ -10,6 +10,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Models\Goods\TradeUnit;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
@@ -154,6 +156,10 @@ class ShowMasterFamily extends OrgAction
             MasterFamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => GetRelatedMasterProducts::run($masterFamily)
                 : Inertia::optional(fn () => GetRelatedMasterProducts::run($masterFamily)),
+
+            MasterFamilyTabsEnum::ATTACHMENTS->value => $this->tab == MasterFamilyTabsEnum::ATTACHMENTS->value ?
+                fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('masterAssets', fn ($query) => $query->where('master_assets.master_family_id', $masterFamily->id))->get())]
+                : Inertia::optional(fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('masterAssets', fn ($query) => $query->where('master_assets.master_family_id', $masterFamily->id))->get())]),
 
             MasterFamilyTabsEnum::HISTORY->value => $this->tab == MasterFamilyTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($masterFamily, $request)))

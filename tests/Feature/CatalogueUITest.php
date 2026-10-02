@@ -323,6 +323,14 @@ test('UI show family in department', function () {
     });
 });
 
+
+test('UI show family attachments tab lists trade unit documents read only', function () {
+    get(route('grp.org.shops.show.catalogue.departments.show.families.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->family->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Catalogue/Family')
+            ->has('attachments.documents'));
+});
+
 test('UI show family sales analysis tab', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.show.families.show', [
         $this->organisation->slug,

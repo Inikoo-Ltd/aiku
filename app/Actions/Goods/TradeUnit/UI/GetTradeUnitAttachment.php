@@ -40,7 +40,8 @@ class GetTradeUnitAttachment
                 ],
                 'method'     => 'delete'
             ],
-            'attachments'   => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))->resolve()
+            'attachments'   => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))->resolve(),
+            'family_documents' => GetTradeUnitDocuments::make()->forTradeUnitFamilyOf($tradeUnit),
         ];
     }
 }

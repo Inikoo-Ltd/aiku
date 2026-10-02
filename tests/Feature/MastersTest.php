@@ -582,6 +582,17 @@ test('UI Show Master Family history tab, all scope', function (MasterProductCate
     });
 })->depends('create master family');
 
+
+test('UI Show Master Family attachments tab lists trade unit documents read only', function (MasterProductCategory $masterFamily) {
+    get(route('grp.masters.master_departments.show.master_families.show', [
+        'masterDepartment' => $masterFamily->masterDepartment->slug,
+        'masterFamily'     => $masterFamily->slug,
+        'tab'              => MasterFamilyTabsEnum::ATTACHMENTS->value,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Masters/MasterFamily')
+        ->has('attachments.documents'));
+})->depends('create master family');
+
 test('UI Show Master Family sales analysis tab', function (MasterProductCategory $masterFamily) {
     $response = get(
         route('grp.masters.master_departments.show.master_families.show', [
@@ -1668,6 +1679,17 @@ test('UI Show Master Product sales analysis tab', function (MasterAsset $masterA
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset));
 
     expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create master asset');
+
+
+test('UI Show Master Product attachments tab lists trade unit documents read only', function (MasterAsset $masterAsset) {
+    get(route('grp.masters.master_shops.show.master_products.show', [
+        'masterShop'    => $masterAsset->masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+        'tab'           => MasterAssetTabsEnum::ATTACHMENTS->value,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Masters/MasterProduct')
+        ->has('attachments.documents'));
 })->depends('create master asset');
 
 test('UI Index Master Products bulk edit tab lists products with their tax preset', function () {

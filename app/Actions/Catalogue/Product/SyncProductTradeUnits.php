@@ -67,6 +67,7 @@ class SyncProductTradeUnits
             }
         }
         CloneProductImagesFromTradeUnits::run($product);
+        CloneProductAttachmentsFromTradeUnits::run($product);
         $product->refresh();
         SyncProductOrgStocksFromTradeUnits::run($product);
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
@@ -243,6 +244,9 @@ class UpdateTradeUnit extends OrgAction
                 TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
             TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);
+            foreach ($tradeUnit->products as $product) {
+                CloneProductAttachmentsFromTradeUnits::dispatch($product);
+            }
         }
 
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();

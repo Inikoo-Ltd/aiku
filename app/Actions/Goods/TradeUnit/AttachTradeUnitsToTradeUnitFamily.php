@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Models\Catalogue\Product;
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -28,6 +30,10 @@ class AttachTradeUnitsToTradeUnitFamily extends OrgAction
         $tradeUnitFamily->refresh();
 
         TradeUnitFamilyHydrateTradeUnits::run($tradeUnitFamily);
+
+        foreach (Product::whereHas('tradeUnits', fn ($query) => $query->whereIn('trade_units.id', Arr::get($modelData, 'trade_units')))->get() as $product) {
+            CloneProductAttachmentsFromTradeUnits::dispatch($product);
+        }
     }
 
     public function rules(): array

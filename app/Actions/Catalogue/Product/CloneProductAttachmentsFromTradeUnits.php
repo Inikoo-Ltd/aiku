@@ -32,7 +32,10 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 
         $attachments        = [];
         $processedChecksums = [];
-        $tradeUnit          = $product->tradeUnits->first();
+        $tradeUnit          = $product->tradeUnits()->first();
+        if (!$tradeUnit) {
+            return;
+        }
         /** @var \App\Models\Helpers\Media $publicAttachments */
         $publicAttachments = $tradeUnit->attachments()
             ->wherePivotIn('scope', TradeAttachmentScopeEnum::publicScopes())

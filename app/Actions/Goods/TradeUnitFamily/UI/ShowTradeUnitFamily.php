@@ -235,16 +235,14 @@ class ShowTradeUnitFamily extends OrgAction
         }
 
 
-        return match ($routeName) {
-            'grp.trade_units.families.show' => [
-                'label' => $tradeUnitFamily->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'tradeUnitFamily' => $tradeUnitFamily->slug
-                    ]
+        return [
+            'label' => $tradeUnitFamily->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnitFamily->slug
                 ]
-            ],
-        };
+            ]
+        ];
     }
 }
