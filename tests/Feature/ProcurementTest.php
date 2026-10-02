@@ -3876,6 +3876,42 @@ describe('stock delivery costing checklist', function () {
             ->and((float) $item->refresh()->cost_items)->toBe(134.64)
             ->and($item->is_costed)->toBeTrue();
     });
+
+    test('a partner line marked not received by mistake can be checked after the delivery costed itself', function () {
+        [$placedStock, $missingStock] = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->limit(2)->get();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-NOT-RECEIVED-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::CHECKED,
+        ], strict: false);
+        StoreStockDeliveryItem::make()->action($stockDelivery, null, $placedStock, [
+            'unit_quantity'         => 10,
+            'unit_quantity_checked' => 10,
+            'unit_quantity_placed'  => 10,
+            'state'                 => StockDeliveryItemStateEnum::PLACED,
+        ], strict: false);
+        $missing = StoreStockDeliveryItem::make()->action($stockDelivery, null, $missingStock, [
+            'unit_quantity' => 160,
+            'state'         => StockDeliveryItemStateEnum::RECEIVED,
+        ], strict: false);
+
+        $missing = SetStockDeliveryItemCheckedQuantity::make()->action($missing, ['unit_quantity_checked' => 0]);
+
+        expect($missing->state)->toBe(StockDeliveryItemStateEnum::NOT_RECEIVED)
+            ->and($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::PLACED)
+            ->and($stockDelivery->is_costed)->toBeTrue()
+            ->and($missing->canBeReceivedAfterAll())->toBeTrue();
+
+        $missing = SetStockDeliveryItemAsChecked::make()->action($missing);
+
+        $stockDelivery->refresh();
+        expect($missing->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+            ->and((float) $missing->unit_quantity_checked)->toBe(160.0)
+            ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::BOOKING_IN)
+            ->and($stockDelivery->is_costed)->toBeFalse()
+            ->and($stockDelivery->placed_at)->toBeNull()
+            ->and($stockDelivery->booked_in_at)->toBeNull();
+    });
 });
 
 describe('supplier deposits', function () {

@@ -140,6 +140,11 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
+            'receivedAfterAllRoute' => $item->canBeReceivedAfterAll() ? [
+                'name'       => 'grp.models.stock-delivery-item.set-all-checked',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
             'placement_remaining'   => round(max(0, $checked - $placed) / $unitsPerSko, 4),
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
