@@ -1378,3 +1378,20 @@ test('customer downloads the signed letter of authorisation from account setting
     $this->get(route('retina.sysadmin.settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'retina.sysadmin.letter_of_authorisation.pdf'));
 });
+
+test('an ebay match that crashes marks its upload log failed instead of leaving it processing', function () {
+    Http::fake(fn ($request) => str_contains($request->url(), 'oauth2/token')
+        ? Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200])
+        : Http::response([]));
+
+    $ebayUser  = storeConnectedEbayUser($this->customer, 'test-ebay-match-crash');
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    CheckEbayPortfolio::shouldRun()->andThrow(new RuntimeException('eBay match crashed'));
+
+    expect(fn () => \App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct::run($portfolio, ['platform_product_id' => 'abc-1']))
+        ->toThrow(RuntimeException::class, 'eBay match crashed');
+
+    $log = \App\Models\Dropshipping\PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->first();
+    expect($log->status)->toBe(\App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum::FAIL)
+        ->and($log->response)->toContain('eBay match crashed');
+});
