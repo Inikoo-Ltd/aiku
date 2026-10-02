@@ -87,7 +87,7 @@ import { irisVariable } from "@/Composables/variableList"
 import { uniqueId } from "lodash-es"
 import { ulid } from "ulid"
 
-const fontFamilies = fontsForCurrentShop()
+const fontFamilies = computed(() => fontsForCurrentShop())
 
 
 const props = withDefaults(defineProps<{

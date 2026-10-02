@@ -1,4 +1,5 @@
 import { getActivePinia } from "pinia"
+import { usePage } from "@inertiajs/vue3"
 
 export const useFontFamilyList: { label: string, value: string, slug: string, notFor: string[] }[] = [
     {
@@ -108,5 +109,17 @@ export const useFontFamilyList: { label: string, value: string, slug: string, no
 export const fontsFor = (languageCode?: string | null) =>
     languageCode ? useFontFamilyList.filter((font) => !font.notFor.includes(languageCode)) : useFontFamilyList
 
+const languageOfShopInUrl = (): string | undefined => {
+    const params = route().params
+    if (!params?.shop) {
+        return undefined
+    }
+
+    return (usePage().props.layout as Record<string, any> | undefined)?.organisations?.data
+        ?.find((organisation: { slug: string }) => organisation.slug === params.organisation)
+        ?.authorised_shops?.find((shop: { slug: string }) => shop.slug === params.shop)
+        ?.language
+}
+
 export const fontsForCurrentShop = () =>
-    fontsFor((getActivePinia()?.state.value as Record<string, any> | undefined)?.layout?.shopState?.language)
+    fontsFor((getActivePinia()?.state.value as Record<string, any> | undefined)?.layout?.shopState?.language ?? languageOfShopInUrl())

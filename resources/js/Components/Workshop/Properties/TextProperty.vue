@@ -43,7 +43,7 @@ const localModel = computed<TextProperty>({
     }
 })
 
-const fontFamilies = fontsForCurrentShop()
+const fontFamilies = computed(() => fontsForCurrentShop())
 
 
 const fontStyleOptions = [
