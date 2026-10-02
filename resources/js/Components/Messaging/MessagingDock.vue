@@ -18,6 +18,7 @@ import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, bubblesStorageKey, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
 library.add(faComments, faSearch, faUser, faChevronLeft, faTimes)
 
@@ -109,7 +110,6 @@ const otherOnline = (conversation: any) => isCoworkerOnline(others(conversation)
 
 const unreadOf = (ulid: string) => store.conversationByUlid(ulid)?.unread_count ?? 0
 
-const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
 
 const MAX_SINGLE_BUBBLES = 3
 const OVERFLOW_LEAVE_GRACE_MS = 150
@@ -169,9 +169,12 @@ const clusterPosition = ref<{ x: number; y: number } | null>(readClusterPosition
 const clusterElement = ref<HTMLElement | null>(null)
 const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
 
+const isDockShown = computed(() => orderedBubbles.value.length > 0 && !(isCompact.value && (mobilePanelOpen.value || visibleConversationWindows.value.length > 0)))
+const hasDockButton = computed(() => isMobile.value && !mobilePanelOpen.value && !visibleConversationWindows.value.length)
+
 const clusterStyle = computed(() => clusterPosition.value
     ? { left: `${clusterPosition.value.x}px`, top: `${clusterPosition.value.y}px`, right: "auto", bottom: "auto" }
-    : { bottom: "4.5rem" })
+    : { bottom: isMobile.value ? "3rem" : "4.5rem" })
 
 const onClusterPointerDown = (event: PointerEvent) => {
     if (!clusterElement.value) return
@@ -248,7 +251,7 @@ onUnmounted(() => {
         <!-- Mobile: floating button + full-screen panel sheet -->
         <template v-if="isMobile">
             <button
-                v-if="!mobilePanelOpen && !visibleConversationWindows.length"
+                v-if="!mobilePanelOpen && !visibleConversationWindows.length && !orderedBubbles.length"
                 class="fixed bottom-12 right-3 z-40 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center"
                 @click="mobilePanelOpen = true"
             >
@@ -328,10 +331,10 @@ onUnmounted(() => {
 
         <!-- Minimised chat-head bubbles: up to three, the rest folded into one; the whole row drags -->
         <div
-            v-if="orderedBubbles.length"
+            v-if="isDockShown"
             ref="clusterElement"
-            class="fixed z-[30] flex touch-none items-center"
-            :class="clusterPosition ? '' : desktopAnchor"
+            class="fixed z-[40] flex touch-none select-none items-center rounded-full border border-gray-200/80 bg-white/95 py-1 pl-1.5 shadow-[0_6px_24px_rgba(15,23,42,0.18)] backdrop-blur"
+            :class="[clusterPosition ? '' : isMobile ? 'right-3' : desktopAnchor, hasDockButton ? 'pr-1' : 'pr-1.5']"
             :style="clusterStyle"
             @pointerdown="onClusterPointerDown"
             @pointermove="onClusterPointerMove"
@@ -342,29 +345,25 @@ onUnmounted(() => {
                 :key="w.ulid"
                 :data-bubble-ulid="w.ulid"
                 v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'top' }"
-                class="group/bubble relative h-12 w-12 shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-0.5"
-                :class="bubbleIndex > 0 && '-ml-3'"
+                class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
+                :class="bubbleIndex > 0 && '-ml-2'"
             >
-                <div
-                    class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shadow-lg"
-                    :class="unreadOf(w.ulid) ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-white'"
-                >
-                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-lg text-indigo-600">
+                <div class="rounded-full ring-2" :class="unreadOf(w.ulid) ? 'ring-red-500' : 'ring-white'">
+                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </span>
-                    <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
-                    <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
+                    <TicketUserAvatar v-else :name="otherName(store.conversationByUlid(w.ulid))" :avatar="otherAvatar(store.conversationByUlid(w.ulid))" size="xl" />
                 </div>
                 <span
                     v-if="unreadOf(w.ulid)"
-                    class="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+                    class="pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white"
                 >
                     {{ unreadOf(w.ulid) > 99 ? "99+" : unreadOf(w.ulid) }}
                 </span>
                 <button
                     type="button"
                     :aria-label="ctrans('Dismiss')"
-                    class="absolute -left-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-gray-700 text-[10px] text-white shadow group-hover/bubble:flex"
+                    class="absolute -left-1 -top-1 hidden h-[18px] w-[18px] items-center justify-center rounded-full bg-gray-800 text-[9px] text-white ring-2 ring-white group-hover/bubble:flex"
                     @pointerdown.stop
                     @pointerup.stop
                     @click.stop="store.dismissWindow(w.ulid)"
@@ -376,7 +375,7 @@ onUnmounted(() => {
             <div
                 v-if="overflowBubbles.length"
                 ref="overflowElement"
-                class="relative -ml-3 shrink-0"
+                class="relative -ml-2 shrink-0"
                 @mouseenter="onOverflowEnter"
                 @mouseleave="onOverflowLeave"
             >
@@ -384,8 +383,8 @@ onUnmounted(() => {
                     type="button"
                     :aria-label="ctrans(':count more chats', { count: String(overflowBubbles.length) })"
                     :aria-expanded="isOverflowListOpen"
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-semibold text-gray-700 shadow-lg transition duration-200 hover:-translate-y-0.5"
-                    :class="overflowUnread ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-gray-200'"
+                    class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700 ring-2 transition duration-200 hover:-translate-y-1 hover:bg-gray-200"
+                    :class="[overflowUnread ? 'ring-red-500' : 'ring-white', isOverflowListOpen && '!bg-gray-200']"
                     @pointerdown.stop
                     @pointerup.stop
                     @click.stop="isOverflowPinned ? closeOverflowList() : (isOverflowPinned = true)"
@@ -394,7 +393,7 @@ onUnmounted(() => {
                 </button>
                 <span
                     v-if="overflowUnread"
-                    class="pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xxs font-semibold text-white ring-2 ring-white"
+                    class="pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white"
                 >
                     {{ overflowUnread > 99 ? "99+" : overflowUnread }}
                 </span>
@@ -411,12 +410,11 @@ onUnmounted(() => {
                         <ul class="max-h-80 divide-y divide-gray-50 overflow-y-auto">
                             <li v-for="w in overflowBubbles" :key="w.ulid" class="group/row flex items-center">
                                 <button type="button" class="flex min-w-0 flex-1 items-center gap-x-2.5 px-3 py-2 text-left transition duration-200 hover:bg-gray-50 active:!bg-gray-100" @click="openBubble(w.ulid)">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full" :class="unreadOf(w.ulid) ? 'ring-2 ring-red-500' : ''">
-                                        <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-full w-full items-center justify-center bg-indigo-100 text-indigo-600">
+                                    <span class="shrink-0 rounded-full" :class="unreadOf(w.ulid) ? 'ring-2 ring-red-500' : ''">
+                                        <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                                             <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                                         </span>
-                                        <Image v-else-if="otherAvatar(store.conversationByUlid(w.ulid))" :src="otherAvatar(store.conversationByUlid(w.ulid))" alt="" image-cover />
-                                        <span v-else class="flex h-full w-full items-center justify-center bg-gray-200 text-xs font-medium text-gray-600">{{ initialsOf(otherName(store.conversationByUlid(w.ulid))) }}</span>
+                                        <TicketUserAvatar v-else :name="otherName(store.conversationByUlid(w.ulid))" :avatar="otherAvatar(store.conversationByUlid(w.ulid))" size="lg" />
                                     </span>
                                     <span class="min-w-0 flex-1">
                                         <span class="block truncate text-sm" :class="unreadOf(w.ulid) ? 'font-semibold text-gray-900' : 'text-gray-700'">{{ otherName(store.conversationByUlid(w.ulid)) }}</span>
@@ -439,6 +437,21 @@ onUnmounted(() => {
                     </div>
                 </Transition>
             </div>
+
+            <template v-if="hasDockButton">
+                <span class="mx-1.5 h-7 w-px shrink-0 bg-gray-200" aria-hidden="true" />
+                <button
+                    type="button"
+                    :aria-label="ctrans('Messages')"
+                    class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md transition duration-200 hover:bg-indigo-700 active:!bg-indigo-800"
+                    @pointerdown.stop
+                    @pointerup.stop
+                    @click.stop="mobilePanelOpen = true"
+                >
+                    <FontAwesomeIcon icon="fal fa-comments" class="text-lg" fixed-width aria-hidden="true" />
+                    <span v-if="store.totalUnread > 0" class="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">{{ store.totalUnread > 99 ? "99+" : store.totalUnread }}</span>
+                </button>
+            </template>
         </div>
         </Teleport>
     </div>
