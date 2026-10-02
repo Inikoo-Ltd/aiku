@@ -45,7 +45,6 @@ defineProps<{
         v-tooltip="title ? title : data.tooltip"
         :class="['aspect-square h-4', data.class]"
         :alt="data.tooltip ?? ''"
-        :responsiveEnabled="false"
     />
 
     <img

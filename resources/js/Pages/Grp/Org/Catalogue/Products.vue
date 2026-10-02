@@ -24,7 +24,7 @@ import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import { notify } from '@kyvg/vue3-notification'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
-import { faCube } from "@fal"
+import { faCube, faPlay } from "@fal"
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools, faCube)
 
@@ -58,6 +58,7 @@ const props = defineProps<{
         fields: { key: string; label: string }[]
         download_route: { xlsx: routeType; csv: routeType }
     }
+    bulk_set_active_route?: routeType | null
     step_discount_shop_data?: {
         id: number
         slug: string
@@ -117,6 +118,42 @@ const selectedProducts = computed(() =>
         .map((productId) => loadedProductsById.get(productId))
         .filter((product) => !!product)
 )
+
+const isBulkSetActiveAvailable = computed(() => currentTab.value === 'index' && !!props.bulk_set_active_route)
+const isSettingProductsActive = ref(false)
+
+const setSelectedProductsActive = () => {
+    if (!props.bulk_set_active_route) {
+        return
+    }
+
+    const productsToActivate = compSelectedProductsId.value
+
+    router.patch(
+        route(props.bulk_set_active_route.name, props.bulk_set_active_route.parameters),
+        { products: productsToActivate },
+        {
+            preserveScroll: true,
+            onStart: () => isSettingProductsActive.value = true,
+            onSuccess: () => {
+                selectedProductsId.clear()
+                notify({
+                    title: ctrans("Success!"),
+                    text: ctrans(":count products set as active", { count: String(productsToActivate.length) }),
+                    type: "success"
+                })
+            },
+            onError: (errors) => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: Object.values(errors)[0] || ctrans("Failed to set products as active"),
+                    type: "error"
+                })
+            },
+            onFinish: () => isSettingProductsActive.value = false
+        }
+    )
+}
 
 const loadingField = ref<string | null>(null)
 const rowErrors = ref<Record<string, any>>({})
@@ -266,6 +303,16 @@ const replaceProps = (updatedData) => {
             <Button v-if="mismatch_trade_unit_with_master && currentTab !== 'index_ordering'" :icon="faTools" :label="ctrans('Repair trade units')" v-tooltip="ctrans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
         <template #otherBefore>
+            <Button
+                v-if="isBulkSetActiveAvailable"
+                :icon="faPlay"
+                :label="ctrans('Set :count active', { count: String(compSelectedProductsId.length) })"
+                type="secondary"
+                :disabled="compSelectedProductsId.length === 0"
+                :loading="isSettingProductsActive"
+                v-tooltip="compSelectedProductsId.length === 0 ? ctrans('Select products with the checkboxes first') : ''"
+                @click="setSelectedProductsActive"
+            />
             <div
                 v-if="isStepDiscountAvailable"
                 v-tooltip="compSelectedProductsId.length === 0 ? ctrans('Select products with the checkboxes first') : ''"
@@ -311,7 +358,7 @@ const replaceProps = (updatedData) => {
         :tab="currentTab"
         :data="localData[currentTab]"
         v-bind="currentTab === 'index_ordering' ? { pasteLookupRoute: { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } } : {}"
-        :isCheckboxProducts="currentTab === 'bulk_unit' || isStepDiscountAvailable"
+        :isCheckboxProducts="currentTab === 'bulk_unit' || isStepDiscountAvailable || isBulkSetActiveAvailable"
         :selectedProductsId="selectedProductsId"
         :variantSlugs="variantSlugs"
         :productsExport="currentTab === 'index' ? products_export : undefined"

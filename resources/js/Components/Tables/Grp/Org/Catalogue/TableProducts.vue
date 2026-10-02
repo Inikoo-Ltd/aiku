@@ -38,6 +38,7 @@ import Popover from "primevue/popover"
 import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
 import TableRowSelectCheckbox from "@/Components/Table/TableRowSelectCheckbox.vue"
+import TableSelectAllCheckbox from "@/Components/Table/TableSelectAllCheckbox.vue"
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -62,6 +63,18 @@ const props = defineProps<{
         download_route: { xlsx: routeType; csv: routeType }
     }
 }>()
+
+const productRowIds = computed<number[]>(() => ((props.data as { data?: { id: number }[] })?.data ?? []).map(product => product.id))
+
+const onToggleSelectAllProducts = (selectAll: boolean) => {
+    for (const productId of productRowIds.value) {
+        if (selectAll) {
+            props.selectedProductsId?.add(productId)
+        } else {
+            props.selectedProductsId?.delete(productId)
+        }
+    }
+}
 
 const exportPanel = ref()
 const exportFields = computed(() => props.productsExport?.fields ?? [])
@@ -1214,7 +1227,13 @@ const familyRoute = (item) => {
 
 
         <template #header-checkbox>
-            <div></div>
+            <TableSelectAllCheckbox
+                v-if="selectedProductsId"
+                :rowKeys="productRowIds"
+                :selection="selectedProductsId"
+                @toggle="onToggleSelectAllProducts"
+            />
+            <div v-else></div>
         </template>
 
         <template #cell(family_code)="{ item }">

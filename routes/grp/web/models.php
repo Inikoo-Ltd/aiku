@@ -47,6 +47,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
+use App\Actions\Catalogue\Product\SetBulkProductsActive;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -974,6 +975,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/{product:id}/translate-from-master', [TranslateFromMaster::class, 'inProduct'])->name('translate_from_master');
     Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
+    Route::patch('/{shop:id}/bulk-set-active', SetBulkProductsActive::class)->name('bulk_set_active');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');

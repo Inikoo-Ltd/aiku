@@ -10,14 +10,6 @@ import type { Image as ImageProxy } from '@/types/Image'
 import { expandGallery } from '@/Common/Composables/useCompactImage'
 
 const fallbackPath = '/fallback/fallback.svg'
-const DEFAULT_ASPECT_RATIO = 16 / 9
-const MAX_DPR = 2
-
-type ResponsiveSize = {
-  mobile?: number
-  tablet?: number
-  desktop?: number
-}
 
 const props = withDefaults(defineProps<{
   src?: ImageProxy | null
@@ -29,8 +21,6 @@ const props = withDefaults(defineProps<{
   width?: string
   height?: string
 
-  responsive?: ResponsiveSize
-  responsiveEnabled?: boolean
   sizes?: string
   srcset?: { original?: string; avif?: string; webp?: string }
 
@@ -43,7 +33,6 @@ const props = withDefaults(defineProps<{
   }
 }>(), {
   src: () => ({ original: fallbackPath }),
-  responsiveEnabled: true,
   preload: false,
   imgAttributes: () => ({
     loading: 'lazy',
@@ -59,12 +48,6 @@ const emits = defineEmits<{
 const imageSrc = computed(() => expandGallery(props.src) as ImageProxy | null)
 
 
-const dpr =
-  typeof window !== 'undefined'
-    ? Math.min(window.devicePixelRatio || 1, MAX_DPR)
-    : 1
-
-
 const parsePx = (value?: string): number | undefined => {
   if (!value) return undefined
   if (value.endsWith('px')) return Number(value.replace('px', ''))
@@ -76,110 +59,17 @@ const baseWidth = computed(() => parsePx(props.width))
 const baseHeight = computed(() => parsePx(props.height))
 
 
-const responsiveWidths = computed<ResponsiveSize>(() => {
-  if (props.responsive) return props.responsive
-
-  if (baseWidth.value) {
-    return {
-      mobile: Math.min(baseWidth.value, 360),
-      tablet: baseWidth.value,
-      desktop: Math.round(baseWidth.value * dpr),
-    }
-  }
-
-  if (baseHeight.value) {
-    const w = Math.round(baseHeight.value * DEFAULT_ASPECT_RATIO)
-    return {
-      mobile: Math.min(w, 360),
-      tablet: w,
-      desktop: Math.round(w * dpr),
-    }
-  }
-
-  return {
-    mobile: 360,
-    tablet: 768,
-    desktop: Math.round(1280 * dpr),
-  }
-})
-
-
-const responsiveHeights = computed(() => {
-  const ratio =
-    baseWidth.value && baseHeight.value
-      ? baseWidth.value / baseHeight.value
-      : DEFAULT_ASPECT_RATIO
-
-  return Object.fromEntries(
-    Object.entries(responsiveWidths.value).map(([k, w]) => [
-      k,
-      Math.round(w! / ratio),
-    ])
-  )
-})
-
-
-const buildCFUrl = (url: string, width?: number, height?: number) => {
-  const params = new URLSearchParams()
-
-  if (width) params.set('width', String(width))
-  if (height) params.set('height', String(height))
-
-  params.set('fit', props.imageCover ? 'cover' : 'contain')
-  params.set('format', 'auto')
-
-  return `${url}?${params.toString()}`
-}
-
-
-
-const buildSrcSet = (url?: string, url2x?: string) => {
+const buildDensitySrcSet = (url?: string, url2x?: string) => {
   if (!url) return undefined
 
-  if (url2x) {
-    return `${url} 1x, ${url2x} 2x`
-  }
-
-  if (!props.responsiveEnabled) return undefined
-
-  return Object.keys(responsiveWidths.value)
-    .map(key => {
-      const w = responsiveWidths.value[key as keyof ResponsiveSize]
-      const h = responsiveHeights.value[key]
-      return `${buildCFUrl(url, w, h)} ${w}w`
-    })
-    .join(', ')
+  return url2x ? `${url} 1x, ${url2x} 2x` : url
 }
 
-const avif = computed(() => props.srcset?.avif ?? buildSrcSet(imageSrc.value?.avif, imageSrc.value?.avif_2x))
-const webp = computed(() => props.srcset?.webp ?? buildSrcSet(imageSrc.value?.webp, imageSrc.value?.webp_2x))
-const original = computed(() => props.srcset?.original ?? buildSrcSet(imageSrc.value?.original, imageSrc.value?.original_2x))
+const avif = computed(() => props.srcset?.avif ?? buildDensitySrcSet(imageSrc.value?.avif, imageSrc.value?.avif_2x))
+const webp = computed(() => props.srcset?.webp ?? buildDensitySrcSet(imageSrc.value?.webp, imageSrc.value?.webp_2x))
+const original = computed(() => props.srcset?.original ?? buildDensitySrcSet(imageSrc.value?.original, imageSrc.value?.original_2x))
 
-
-
-const defaultSrc = computed(() => {
-  const w = responsiveWidths.value.desktop
-  const h = responsiveHeights.value.desktop
-
-  return buildCFUrl(
-    imageSrc.value?.original || fallbackPath,
-    props.responsiveEnabled ? w : undefined,
-    props.responsiveEnabled ? h : undefined
-  )
-})
-
-
-const sizes = computed(() => {
-  if (props.sizes) return props.sizes
-
-  if (props.srcset || !props.responsiveEnabled) return undefined
-
-  return `
-    (max-width: 640px) 100vw,
-    (max-width: 1024px) 80vw,
-    ${responsiveWidths.value.tablet}px
-  `.trim()
-})
+const defaultSrc = computed(() => imageSrc.value?.original || fallbackPath)
 </script>
 
 <template>
