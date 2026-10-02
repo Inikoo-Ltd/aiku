@@ -587,7 +587,6 @@ test("UI show trade unit navigation stays in the bucket and the group", function
             'name'     => $code.' name',
             'status'   => $status,
         ]);
-        $tradeUnit->stats()->create();
 
         return $tradeUnit;
     };

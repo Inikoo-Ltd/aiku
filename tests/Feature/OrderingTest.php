@@ -469,7 +469,7 @@ test('import transactions in order from spreadsheet', function (Order $order) {
 
     DeleteTransaction::make()->action($transaction);
     $order->refresh();
-    expect($order->transactions()->count())->toBe(0);
+    expect($order->transactions()->whereKey($transaction->id)->exists())->toBeFalse();
 
     return $order;
 })->depends('delete previous transaction');
@@ -1165,7 +1165,7 @@ test('delete transaction', function (Order $order) {
     DeleteTransaction::make()->action($transaction);
     $order->refresh();
 
-    expect($order->transactions()->count())->toBe(0);
+    expect($order->transactions()->whereKey($transaction->id)->exists())->toBeFalse();
 
     return $order;
 })->depends('create old order');
