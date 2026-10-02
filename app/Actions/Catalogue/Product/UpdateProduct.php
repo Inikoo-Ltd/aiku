@@ -534,7 +534,7 @@ class UpdateProduct extends OrgAction
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
             'webpage_title'                 => ['sometimes', 'string'],
-            'webpage_description'           => ['sometimes', 'string'],
+            'webpage_description'           => ['sometimes', 'nullable', 'string'],
             'webpage_breadcrumb_label'      => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
