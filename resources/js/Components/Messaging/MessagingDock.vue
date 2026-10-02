@@ -15,7 +15,7 @@ import { faComments, faSearch, faUser, faChevronLeft, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, bubblesStorageKey, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 
@@ -112,7 +112,7 @@ const unreadOf = (ulid: string) => store.conversationByUlid(ulid)?.unread_count 
 const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
 
 const MAX_SINGLE_BUBBLES = 3
-const OVERFLOW_LIST_CLOSE_MS = 5000
+const OVERFLOW_LEAVE_GRACE_MS = 150
 const CLUSTER_POSITION_KEY = "staff-chat-bubble-cluster"
 
 const orderedBubbles = computed(() => [...store.openWindowsMinimised].reverse().sort((a, b) => Number(unreadOf(b.ulid) > 0) - Number(unreadOf(a.ulid) > 0)))
@@ -120,26 +120,40 @@ const singleBubbles = computed(() => orderedBubbles.value.slice(0, MAX_SINGLE_BU
 const overflowBubbles = computed(() => orderedBubbles.value.slice(MAX_SINGLE_BUBBLES))
 const overflowUnread = computed(() => overflowBubbles.value.reduce((total, w) => total + unreadOf(w.ulid), 0))
 
-const isOverflowListOpen = ref(false)
-let overflowCloseTimer: ReturnType<typeof setTimeout> | null = null
+const isHoveringOverflow = ref(false)
+const isOverflowPinned = ref(false)
+const overflowElement = ref<HTMLElement | null>(null)
+const isOverflowListOpen = computed(() => isHoveringOverflow.value || isOverflowPinned.value)
+let overflowLeaveTimer: ReturnType<typeof setTimeout> | null = null
 
-const keepOverflowListOpen = () => {
-    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
-    overflowCloseTimer = null
-    isOverflowListOpen.value = true
+const onOverflowEnter = () => {
+    if (overflowLeaveTimer) clearTimeout(overflowLeaveTimer)
+    overflowLeaveTimer = null
+    isHoveringOverflow.value = true
 }
 
-const closeOverflowListSoon = () => {
-    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
-    overflowCloseTimer = setTimeout(() => (isOverflowListOpen.value = false), OVERFLOW_LIST_CLOSE_MS)
+const onOverflowLeave = () => {
+    if (overflowLeaveTimer) clearTimeout(overflowLeaveTimer)
+    overflowLeaveTimer = setTimeout(() => (isHoveringOverflow.value = false), OVERFLOW_LEAVE_GRACE_MS)
+}
+
+const closeOverflowList = () => {
+    isHoveringOverflow.value = false
+    isOverflowPinned.value = false
+}
+
+const onDocumentPointerDown = (event: PointerEvent) => {
+    if (isOverflowPinned.value && !overflowElement.value?.contains(event.target as Node)) {
+        closeOverflowList()
+    }
 }
 
 watch(() => overflowBubbles.value.length, (count) => {
-    if (!count) isOverflowListOpen.value = false
+    if (!count) closeOverflowList()
 })
 
 const openBubble = (ulid: string) => {
-    isOverflowListOpen.value = false
+    closeOverflowList()
     store.minimiseConversation(ulid, false)
 }
 
@@ -192,17 +206,37 @@ const onClusterPointerUp = (event: PointerEvent) => {
     if (ulid) openBubble(ulid)
 }
 
-onMounted(() => {
+const bubbleUlidsKey = computed(() => store.openWindowsMinimised.map((w) => w.ulid).join(","))
+let areBubblesRestored = false
+
+watch(bubbleUlidsKey, () => {
+    if (areBubblesRestored) store.persistBubbles()
+})
+
+const onStorageChange = (event: StorageEvent) => {
+    if (event.key === bubblesStorageKey()) store.restoreBubbles()
+}
+
+onMounted(async () => {
+    document.addEventListener("pointerdown", onDocumentPointerDown, true)
+    window.addEventListener("storage", onStorageChange)
     store.maxVisible = maxVisible.value
     window.addEventListener("resize", onResize)
     window.visualViewport?.addEventListener("resize", syncSheetToViewport)
     window.visualViewport?.addEventListener("scroll", syncSheetToViewport)
-    store.fetchConversations()
     fetchCoworkers("")
+    try {
+        await store.fetchConversations()
+    } finally {
+        store.restoreBubbles()
+        areBubblesRestored = true
+    }
 })
 
 onUnmounted(() => {
-    if (overflowCloseTimer) clearTimeout(overflowCloseTimer)
+    if (overflowLeaveTimer) clearTimeout(overflowLeaveTimer)
+    document.removeEventListener("pointerdown", onDocumentPointerDown, true)
+    window.removeEventListener("storage", onStorageChange)
     window.removeEventListener("resize", onResize)
     window.visualViewport?.removeEventListener("resize", syncSheetToViewport)
     window.visualViewport?.removeEventListener("scroll", syncSheetToViewport)
@@ -341,9 +375,10 @@ onUnmounted(() => {
 
             <div
                 v-if="overflowBubbles.length"
+                ref="overflowElement"
                 class="relative -ml-3 shrink-0"
-                @mouseenter="keepOverflowListOpen"
-                @mouseleave="closeOverflowListSoon"
+                @mouseenter="onOverflowEnter"
+                @mouseleave="onOverflowLeave"
             >
                 <button
                     type="button"
@@ -353,7 +388,7 @@ onUnmounted(() => {
                     :class="overflowUnread ? 'ring-[3px] ring-red-500 ring-offset-2 ring-offset-white' : 'border-2 border-gray-200'"
                     @pointerdown.stop
                     @pointerup.stop
-                    @click.stop="isOverflowListOpen ? (isOverflowListOpen = false) : keepOverflowListOpen()"
+                    @click.stop="isOverflowPinned ? closeOverflowList() : (isOverflowPinned = true)"
                 >
                     +{{ overflowBubbles.length }}
                 </button>
@@ -367,10 +402,11 @@ onUnmounted(() => {
                 <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="translate-y-1 opacity-0" leave-active-class="transition duration-100 ease-in" leave-to-class="translate-y-1 opacity-0">
                     <div
                         v-if="isOverflowListOpen"
-                        class="absolute bottom-full right-0 mb-3 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-900 shadow-xl"
+                        class="absolute bottom-full right-0 w-72 pb-3"
                         @pointerdown.stop
                         @pointerup.stop
                     >
+                    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-900 shadow-xl">
                         <p class="border-b border-gray-100 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("More chats") }}</p>
                         <ul class="max-h-80 divide-y divide-gray-50 overflow-y-auto">
                             <li v-for="w in overflowBubbles" :key="w.ulid" class="group/row flex items-center">
@@ -399,6 +435,7 @@ onUnmounted(() => {
                                 </button>
                             </li>
                         </ul>
+                    </div>
                     </div>
                 </Transition>
             </div>

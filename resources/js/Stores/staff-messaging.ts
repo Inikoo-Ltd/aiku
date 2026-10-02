@@ -89,6 +89,17 @@ interface ArchivedNote {
 
 const MAX_BUBBLES = 12
 
+export const bubblesStorageKey = () => `staff-chat-bubbles:${usePage().props?.auth?.user?.id ?? "guest"}`
+
+const readStoredBubbles = (): string[] => {
+    try {
+        const stored = JSON.parse(localStorage.getItem(bubblesStorageKey()) ?? "[]")
+        return Array.isArray(stored) ? stored.filter((ulid): ulid is string => typeof ulid === "string") : []
+    } catch {
+        return []
+    }
+}
+
 export const isWorkThread = (conversation: StaffConversation) => !!conversation.context_type
 
 export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
@@ -215,6 +226,22 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 this.conversations.splice(index, 1)
             }
             delete this.messagesByUlid[ulid]
+        },
+
+        persistBubbles() {
+            try {
+                localStorage.setItem(bubblesStorageKey(), JSON.stringify(this.openWindows.filter((w) => w.minimised).map((w) => w.ulid)))
+            } catch { }
+        },
+
+        restoreBubbles() {
+            const storedUlids = readStoredBubbles().filter((ulid) => !!this.conversationByUlid(ulid))
+            const openUlids = new Set(this.openWindows.filter((w) => !w.minimised).map((w) => w.ulid))
+
+            this.openWindows = [
+                ...this.openWindows.filter((w) => !w.minimised),
+                ...storedUlids.filter((ulid) => !openUlids.has(ulid)).slice(-MAX_BUBBLES).map((ulid) => ({ ulid, minimised: true })),
+            ]
         },
 
         showAsBubble(ulid: string) {
