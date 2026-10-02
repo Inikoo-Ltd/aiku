@@ -9,6 +9,7 @@
 namespace App\Exports\Procurement;
 
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -18,9 +19,13 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
+    public function __construct(public Organisation $organisation)
+    {
+    }
+
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|StockDelivery|Builder
     {
-        return StockDelivery::query();
+        return StockDelivery::query()->where('organisation_id', $this->organisation->id);
     }
 
     /** @var StockDelivery $row */
@@ -29,14 +34,13 @@ class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, W
         return [
             $row->id,
             $row->slug,
-            $row->status,
-            $row->state,
+            $row->reference,
+            $row->state->value,
             $row->date,
-            $row->creating_at,
             $row->dispatched_at,
             $row->received_at,
             $row->checked_at,
-            $row->settled_at,
+            $row->placed_at,
             $row->cancelled_at,
 
             $row->number_stock_delivery_items,
@@ -59,14 +63,13 @@ class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, W
         return [
             '#',
             'Slug',
-            'Status',
+            'Reference',
             'State',
             'Date',
-            'Creating At',
             'Dispatched At',
             'Received At',
             'Checked At',
-            'Settled At',
+            'Placed At',
             'Cancelled At',
 
             'Number of Items',

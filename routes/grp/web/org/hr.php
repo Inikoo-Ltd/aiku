@@ -187,10 +187,9 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('{clockingMachine}/qr-codes/{clockingMachineQRCode:id}/edit', EditClockingMachineQRCode::class)->name('show.qr_codes.edit');
 });
 
-Route::get('/clocking', IndexClockings::class)->name('clockings.index');
-Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');
-Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
-Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
+Route::get('/clocking', [IndexClockings::class, 'inOrganisation'])->name('clockings.index');
+Route::get('/clocking/{clocking}', [ShowClocking::class, 'inOrganisation'])->name('clockings.show');
+Route::get('/clocking/{clocking}/edit', [EditClocking::class, 'inOrganisation'])->name('clockings.edit');
 
 Route::get('/overtime/dashboard', DashboardOvertime::class)->name('overtime.dashboard');
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');

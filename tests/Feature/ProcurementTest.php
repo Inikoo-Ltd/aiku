@@ -8333,3 +8333,17 @@ describe('HELP-3519 buyer adds a new supplier and assigns an existing SKO to it'
         ])->assertSessionHasErrors('org_supplier_id');
     });
 });
+
+test('stock deliveries export downloads only the deliveries of the organisation', function () {
+    $otherOrganisation = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    $otherOrgSupplier = OrgSupplier::where('organisation_id', $otherOrganisation->id)->where('supplier_id', $this->supplier->id)->first()
+        ?? StoreOrgSupplier::make()->action($otherOrganisation, $this->supplier);
+    $otherDelivery = StoreStockDelivery::make()->action($otherOrgSupplier, ['reference' => 'other-org-export', 'date' => date('Y-m-d')], strict: false);
+
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.export', [$this->organisation->slug, 'type' => 'csv']))->assertOk();
+
+    expect(file_get_contents($response->baseResponse->getFile()->getPathname()))
+        ->toContain($this->stockDelivery->slug)
+        ->not->toContain($otherDelivery->slug);
+});

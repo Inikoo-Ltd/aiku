@@ -3290,3 +3290,31 @@ test('the new employee form shows login errors on its own fields', function () {
         ->assertSessionHasNoErrors();
     expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->firstOrFail()->getUser()->username)->toBe('bicky');
 });
+
+test('a human resources supervisor can open the organisation clockings and employee analytics pages', function () {
+    config(['employee-analytics.enabled' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $user->forgetWildcardPermissionIndex();
+    actingAs($user);
+
+    $employee = StoreEmployee::make()->action($this->organisation, array_merge(Employee::factory()->make()->toArray(), [
+        'worker_number'   => 'analytics-1',
+        'alias'           => 'analytics-1',
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'state'           => EmployeeStateEnum::WORKING,
+    ]));
+    $contract = StoreEmployeeContract::make()->action($employee, [
+        'start_date'        => now()->subMonth()->toDateString(),
+        'annual_leave_days' => 20,
+    ]);
+    EmployeeLeaveBalance::updateOrCreate(['employee_id' => $employee->id, 'employee_contract_id' => $contract->id], ['annual_used' => 3]);
+
+    get(route('grp.org.hr.clockings.index', $this->organisation->slug))->assertOk();
+    get(route('grp.org.hr.analytics.show', [$this->organisation->slug, $employee->slug]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('analytics.leave.leave_balance.annual_remaining', 17));
+});
