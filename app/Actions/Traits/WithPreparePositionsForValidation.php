@@ -19,7 +19,7 @@ trait WithPreparePositionsForValidation
             $newData = [];
 
             foreach ($this->get('permissions') as $jobPositionCode => $position) {
-                if ($jobPositionCode == 'shop-admin') {
+                if (in_array($jobPositionCode, ['shop-admin', 'acc-o'])) {
                     $newData[] = [
                         'code'   => $jobPositionCode,
                         'scopes' => array_map(function ($scope) {

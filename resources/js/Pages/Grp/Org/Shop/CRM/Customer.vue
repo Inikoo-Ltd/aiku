@@ -281,7 +281,7 @@ const layout = inject('layout')
         </div>
     </Modal>
 
-    <Modal :isOpen="isOrderModalOpen" @onClose="isOrderModalOpen = false" width="w-full max-w-5xl">
+    <Modal :isOpen="isOrderModalOpen" @onClose="isOrderModalOpen = false; orderForm.clearErrors()" width="w-full max-w-5xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
@@ -289,6 +289,9 @@ const layout = inject('layout')
             <div class="mt-6">
                 <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
                     @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
+            </div>
+            <div v-if="orderForm.hasErrors" class="mt-4 rounded bg-red-500 p-3 text-sm text-white">
+                <p v-for="message in Object.values(orderForm.errors)" :key="message">{{ message }}</p>
             </div>
         </div>
     </Modal>

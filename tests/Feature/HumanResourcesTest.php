@@ -3206,6 +3206,28 @@ test('an admin holds no other position below them, so a customer service positio
         ->not->toContain("customer-service-supervisor-$shop->id");
 });
 
+test('only accounting staff given the accounts orders position on a shop can create orders there', function () {
+    [$organisation, , $shop] = createShop();
+    setPermissionsTeamId($organisation->group_id);
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions::run($shop);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($organisation);
+
+    $employee = Employee::factory()->create(['organisation_id' => $organisation->id, 'group_id' => $organisation->group_id]);
+    $user     = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+
+    \App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions::make()->action($user, $organisation, ['permissions' => ['acc-m' => []]]);
+    expect($user->fresh()->authTo("orders.$shop->id.edit"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions::make()->action($user, $organisation, ['permissions' => ['acc-m' => [], 'acc-o' => ['shops' => [$shop->slug]]]]);
+    $user = $user->fresh();
+
+    expect($employee->fresh()->jobPositions()->where('code', 'acc-o')->first()->pivot->scopes)->toBe(['Shop' => [$shop->id]])
+        ->and($user->roles()->pluck('name'))->toContain(RolesEnum::getRoleName(RolesEnum::ACCOUNTING_ORDERS->value, $shop))
+        ->and($user->authTo("orders.$shop->id.edit"))->toBeTrue()
+        ->and($user->authTo("chat.$shop->id"))->toBeFalse();
+});
+
 test('staff attachment downloads need permission on what the file is attached to', function () {
     Storage::fake('local');
     setPermissionsTeamId($this->group->id);
