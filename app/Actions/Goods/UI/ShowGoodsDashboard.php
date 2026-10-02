@@ -402,14 +402,7 @@ class ShowGoodsDashboard extends OrgAction
         $covers = GetOrganisationStockCoverBuckets::make();
         $sales  = $this->salesSubquery();
 
-        $isForSale = DB::table('product_has_org_stocks')
-            ->join('products', 'products.id', 'product_has_org_stocks.product_id')
-            ->join('shops', 'shops.id', 'products.shop_id')
-            ->whereColumn('product_has_org_stocks.org_stock_id', 'org_stocks.id')
-            ->where('products.is_for_sale', true)
-            ->whereNull('products.deleted_at')
-            ->where('shops.state', 'open')
-            ->selectRaw('1');
+        $isForSale = $covers->forSaleProducts();
 
         $isRawMaterial = DB::table('raw_materials')
             ->whereColumn('raw_materials.org_stock_id', 'org_stocks.id')
@@ -466,7 +459,7 @@ class ShowGoodsDashboard extends OrgAction
      * @param  array<int, int>  $orgStockIds
      * @return array<int, array{quantity: float, eta: string|null}>
      */
-    private function inboundByOrgStock(array $orgStockIds): array
+    public function inboundByOrgStock(array $orgStockIds): array
     {
         if (!$orgStockIds) {
             return [];

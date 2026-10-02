@@ -202,6 +202,8 @@ use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
@@ -1991,12 +1993,8 @@ test('UI show procurement dashboard', function () {
                     ->where('title', 'Procurement')
                     ->etc()
             )
-            ->where('tabs.current', 'stock_outs')
             ->missing('search_demand');
     });
-
-    get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'tab' => 'search_demand']))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('search_demand'));
 });
 
 test('UI Index org suppliers', function () {
@@ -5981,6 +5979,32 @@ test('agent misplaced shopping list cleanup only accepts non-orderable buckets',
         ->toBeInt();
 });
 
+function orgStockOnSaleAndReceived(OrgStock $orgStock): OrgStock
+{
+    $shop = StoreShop::run($orgStock->organisation, Shop::factory()->definition());
+    $shop->update(['state' => ShopStateEnum::OPEN]);
+    [, $product] = createProduct($shop);
+    $product->update(['is_for_sale' => true]);
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+    DB::table('org_stock_movements')->insert([
+        'group_id'        => $orgStock->group_id,
+        'organisation_id' => $orgStock->organisation_id,
+        'warehouse_id'    => ($orgStock->organisation->warehouses()->oldest('id')->first() ?? createWarehouse())->id,
+        'org_stock_id'    => $orgStock->id,
+        'date'            => now()->subYear(),
+        'class'           => OrgStockMovementClassEnum::MOVEMENT->value,
+        'type'            => OrgStockMovementTypeEnum::PURCHASE->value,
+        'flow'            => OrgStockMovementFlowEnum::IN->value,
+        'quantity'        => 1,
+        'org_amount'      => 0,
+        'grp_amount'      => 0,
+        'data'            => '{}',
+    ]);
+
+    return $orgStock;
+}
+
 function independentOrgSupplierFixture($test): array
 {
     $supplier = StoreSupplier::make()->action(
@@ -6085,6 +6109,9 @@ test('organisation stock cover buckets judge each active sko against its lead ti
         ->and($bucketFor(['days_of_cover' => null, 'predicted_daily_usage' => 0, 'stock_value' => 100]))->toBe('dead');
 
     $orgStock->update(['quantity_available' => 0]);
+    expect($buckets->bucketOf($orgStock->fresh()))->toBeNull();
+
+    orgStockOnSaleAndReceived($orgStock);
     expect($buckets->bucketOf($orgStock->fresh()))->toBe('out');
 
     $counts = collect(App\Actions\Procurement\GetOrganisationStockCoverBuckets::run($this->organisation))->pluck('count', 'bucket');
@@ -6093,7 +6120,7 @@ test('organisation stock cover buckets judge each active sko against its lead ti
 });
 
 test('UI organisation stock cover items index', function () {
-    $orgStock = $this->orgStocks[0];
+    $orgStock = orgStockOnSaleAndReceived($this->orgStocks[0]);
     $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
 
     $response = $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out']));
@@ -6111,7 +6138,7 @@ test('UI organisation stock cover items index', function () {
 });
 
 test('organisation stock cover export downloads the filtered buckets as csv', function () {
-    $orgStock = $this->orgStocks[0];
+    $orgStock = orgStockOnSaleAndReceived($this->orgStocks[0]);
     $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
 
     $response = $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'out,w1']));
@@ -6160,23 +6187,44 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
             ->etc());
 
     $hydrator = App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateOutOfStock::make();
-    $hydrator->handle($organisationStockHistoryId);
 
     $aliveOrgStockIds      = $hydrator->aliveOrgStockIds($this->organisation->id, today());
     $inStockOrgStockIds    = DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->where('quantity_in_locations', '>=', 1)->pluck('org_stock_id')->all();
     $outOfStockOrgStockIds = array_values(array_diff($aliveOrgStockIds, $inStockOrgStockIds));
+    expect($outOfStockOrgStockIds)->not->toBeEmpty();
+
+    $stockOutIds = $hydrator->stockOutOrgStockIds($outOfStockOrgStockIds, today());
+    $onSaleOrgStock = orgStockOnSaleAndReceived(App\Models\Inventory\OrgStock::whereIn('id', array_diff($outOfStockOrgStockIds, $stockOutIds))->firstOrFail());
+    $stockOutIds[] = $onSaleOrgStock->id;
+    $hydrator->handle($organisationStockHistoryId);
     $organisationStockHistory = DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->first();
 
-    expect($outOfStockOrgStockIds)->not->toBeEmpty()
-        ->and($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(count($outOfStockOrgStockIds))
-        ->and($organisationStockHistory->number_org_stocks)->toBe(count($aliveOrgStockIds))
+    expect($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(count($stockOutIds))
+        ->and($organisationStockHistory->number_org_stocks)->toBe(count($aliveOrgStockIds) - count($outOfStockOrgStockIds) + count($stockOutIds))
         ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
 
-    $freshOrgStock = App\Models\Inventory\OrgStock::whereIn('id', $outOfStockOrgStockIds)->first();
-    $freshOrgStock->update(['is_fresh' => true]);
+    $sourceRows = DB::table('organisation_stock_history_sources')->where('organisation_stock_history_id', $organisationStockHistoryId)->get();
+    expect($sourceRows->pluck('source')->sort()->values()->all())->toBe(collect(array_keys(App\Actions\Procurement\GetOrganisationStockCoverBuckets::SOURCES))->sort()->values()->all())
+        ->and((int) $sourceRows->sum('number_out_of_stock_org_stocks'))->toBe(count($stockOutIds))
+        ->and((int) $sourceRows->sum('number_org_stocks'))->toBe($organisationStockHistory->number_org_stocks);
+
+    $source = $hydrator->sourceByOrgStockId($this->organisation->id)[$onSaleOrgStock->id];
+    $onSaleOrgStock->update(['quantity_available' => 0]);
+
+    $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'period' => '1m', 'source' => $source]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stockOuts.source', $source)
+            ->where('stockOuts.now.out_of_stock', $sourceRows->firstWhere('source', $source)->number_out_of_stock_org_stocks)
+            ->where('stockOutPipeline.out_of_stock', fn ($outOfStock) => $outOfStock >= 1)
+            ->where('stockOutPipeline', fn ($pipeline) => $pipeline['in_transit'] + $pipeline['not_ordered'] === $pipeline['out_of_stock'])
+            ->etc());
+
+    $onSaleOrgStock->update(['is_fresh' => true]);
     $hydrator->handle($organisationStockHistoryId);
 
-    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe(count($outOfStockOrgStockIds) - 1);
+    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe(count($stockOutIds) - 1);
+
+    $freshOrgStock = $onSaleOrgStock;
 
     $freshOrgStock->update(['is_fresh' => false]);
 

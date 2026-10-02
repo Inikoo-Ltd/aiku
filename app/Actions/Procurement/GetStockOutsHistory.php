@@ -58,7 +58,7 @@ class GetStockOutsHistory
     /**
      * Daily rows per shop organisation, lost revenue converted to the parent's currency at today's rate.
      */
-    private function dailyRows(Group|Organisation $parent, Collection $organisations, ?Carbon $from): Collection
+    private function dailyRows(Group|Organisation $parent, Collection $organisations, ?Carbon $from, ?string $source): Collection
     {
         if ($organisations->isEmpty()) {
             return collect();
@@ -72,8 +72,9 @@ class GetStockOutsHistory
             return "when $organisation->id then estimated_lost_revenue_org_currency * $rate";
         })->implode(' ');
 
-        return DB::table('organisation_stock_histories')
+        return DB::table($source ? 'organisation_stock_history_sources' : 'organisation_stock_histories')
             ->whereIn('organisation_id', $organisations->pluck('id'))
+            ->when($source, fn ($query) => $query->where('source', $source))
             ->where('number_org_stocks', '>', 0)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
             ->orderBy('date')
@@ -144,7 +145,7 @@ class GetStockOutsHistory
     /**
      * @return array<string, mixed>
      */
-    public function handle(Group|Organisation $parent, string $period): array
+    public function handle(Group|Organisation $parent, string $period, ?string $source = null): array
     {
         $today = today();
         $from  = match ($period) {
@@ -157,9 +158,9 @@ class GetStockOutsHistory
         };
 
         $organisations = $this->organisations($parent);
-        $orgRows       = $this->dailyRows($parent, $organisations, $from);
+        $orgRows       = $this->dailyRows($parent, $organisations, $from, $source);
         if ($orgRows->isEmpty()) {
-            $orgRows = $this->dailyRows($parent, $organisations, null)->groupBy('date')->last() ?? collect();
+            $orgRows = $this->dailyRows($parent, $organisations, null, $source)->groupBy('date')->last() ?? collect();
         }
         $rows   = $this->sumByDate($orgRows);
         $latest = $rows->last();
@@ -177,6 +178,8 @@ class GetStockOutsHistory
         $result = [
             'period'     => $period,
             'periods'    => $this->periodOptions(),
+            'source'     => $source,
+            'sources'    => GetOrganisationStockCoverBuckets::make()->sourceOptions(),
             'unit'       => $unit,
             'currency'   => $parent->currency->code,
             'lost_total' => $total['lost_total'],

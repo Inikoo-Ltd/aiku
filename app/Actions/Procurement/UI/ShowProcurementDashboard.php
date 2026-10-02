@@ -15,12 +15,11 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Enums\UI\Procurement\ProcurementDashboardTabsEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
@@ -44,7 +43,7 @@ class ShowProcurementDashboard extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
     {
-        $this->initialisation($organisation, $request)->withTab(ProcurementDashboardTabsEnum::values());
+        $this->initialisation($organisation, $request);
 
         return $request;
     }
@@ -188,12 +187,13 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
-    private function getStockLevels(): array
+    private function getStockLevels(?string $source): array
     {
-        return collect(GetOrganisationStockCoverBuckets::run($this->organisation))
+        return collect(GetOrganisationStockCoverBuckets::run($this->organisation, null, $source))
             ->map(fn (array $bucket) => [
                 'bucket' => $bucket['bucket'],
                 'label'  => $bucket['label'],
+                'description' => $bucket['description'],
                 'tone'   => $bucket['tone'],
                 'count'  => $bucket['count'],
                 'route'  => $this->dashboardRoute('grp.org.procurement.stock_cover.index', ['elements[cover]' => $bucket['bucket']]),
@@ -247,6 +247,7 @@ class ShowProcurementDashboard extends OrgAction
     public function htmlResponse(ActionRequest $request): Response
     {
         $numbers = $this->getDashboardNumbers();
+        $source  = GetOrganisationStockCoverBuckets::make()->source($request->input('source'));
 
         return Inertia::render(
             'Procurement/ProcurementDashboard',
@@ -266,16 +267,10 @@ class ShowProcurementDashboard extends OrgAction
                 ],
 
                 'shippers' => Shipper::query()->get(),
-                'tabs'     => [
-                    'current'    => $this->tab,
-                    'navigation' => ProcurementDashboardTabsEnum::navigation(),
-                ],
-                ProcurementDashboardTabsEnum::SEARCH_DEMAND->value => $this->tab == ProcurementDashboardTabsEnum::SEARCH_DEMAND->value
-                    ? fn () => GetSearchDemandOpportunities::run($this->group, $this->organisation)
-                    : Inertia::optional(fn () => GetSearchDemandOpportunities::run($this->group, $this->organisation)),
                 'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
-                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
-                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period'))) : null,
+                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels($source) : [],
+                'stockOutPipeline' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsPipeline::run($this->organisation, $source) : null,
+                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period')), $source) : null,
 
             ]
         );

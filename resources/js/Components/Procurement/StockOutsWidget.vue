@@ -5,17 +5,19 @@ import { ctrans } from "@/Composables/useTrans"
 import { computed, inject, ref } from "vue"
 import Chart from "primevue/chart"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxOpen, faPercentage, faCoins, faChartLine, faChartPie } from "@fal"
+import { faBoxOpen, faPercentage, faCoins, faChartLine, faChartPie, faArrowDown } from "@fal"
 
-library.add(faBoxOpen, faPercentage, faCoins, faChartLine, faChartPie)
+library.add(faBoxOpen, faPercentage, faCoins, faChartLine, faChartPie, faArrowDown)
 
 const props = defineProps({
 	stockOuts: { type: Object, required: true },
 	stockLevels: { type: Array, default: () => [] },
 	organisationStockLevels: { type: Array, default: null },
+	stockOutPipeline: { type: Object, default: null },
 	storageKey: { type: String, required: true },
 })
 
@@ -49,6 +51,17 @@ const selectOnly = (slug) => {
 
 const selectAll = () => {
 	selectedSlugs.value = new Set(organisations.value.map((organisation) => organisation.slug))
+}
+
+const loadingSource = ref(null)
+
+const selectSource = (source) => {
+	router.reload({
+		data: { source: source ?? "" },
+		preserveScroll: true,
+		onStart: () => (loadingSource.value = source ?? "all"),
+		onFinish: () => (loadingSource.value = null),
+	})
 }
 
 const metrics = [
@@ -217,30 +230,58 @@ const visibleLevels = computed(() => coverLevels.value.filter((level) => level.c
 
 const coverTotal = computed(() => coverLevels.value.reduce((sum, level) => sum + level.count, 0))
 
-const coverChart = computed(() => ({
-	labels: coverLevels.value.map((level) => level.label),
-	datasets: [{ data: coverLevels.value.map((level) => level.count), backgroundColor: coverLevels.value.map((level) => toneColor[level.tone] ?? "#9ca3af") }],
-}))
+const pipeline = computed(() => {
+	if (!props.organisationStockLevels) {
+		return props.stockOutPipeline
+	}
+	const selected = props.organisationStockLevels.filter((organisation) => selectedSlugs.value.has(organisation.slug) && organisation.pipeline)
+	if (!selected.length) {
+		return null
+	}
+	const arrivals = {}
+	selected.forEach((organisation) => Object.entries(organisation.pipeline.arrivals).forEach(([month, count]) => (arrivals[month] = (arrivals[month] ?? 0) + count)))
+	return {
+		out_of_stock: selected.reduce((sum, organisation) => sum + organisation.pipeline.out_of_stock, 0),
+		in_transit: selected.reduce((sum, organisation) => sum + organisation.pipeline.in_transit, 0),
+		not_ordered: selected.reduce((sum, organisation) => sum + organisation.pipeline.not_ordered, 0),
+		arrivals,
+	}
+})
 
-const coverOptions = computed(() => ({
-	responsive: true,
-	maintainAspectRatio: false,
-	cutout: "70%",
-	hoverOffset: 6,
-	onHover: (_event, activeElements, chart) => {
-		chart.canvas.style.cursor = activeElements.length && coverLevels.value[activeElements[0].index]?.route ? "pointer" : "default"
-	},
-	onClick: (_event, activeElements) => {
-		const level = coverLevels.value[activeElements[0]?.index]
-		if (level?.route) router.visit(route(level.route.name, level.route.parameters))
-	},
-	plugins: { legend: { display: false } },
-}))
+const arrivalMonths = computed(() =>
+	Object.entries(pipeline.value?.arrivals ?? {})
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([month, count]) => ({
+			month,
+			label: month === "unknown" ? ctrans("No date") : new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
+			count,
+		}))
+)
+
+const arrivalRange = computed(() => {
+	const dated = arrivalMonths.value.filter((arrival) => arrival.month !== "unknown")
+	if (!dated.length) return null
+	return dated.length === 1 ? dated[0].label : `${dated[0].label} – ${dated.at(-1).label}`
+})
 </script>
 
 <template>
 	<div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
 		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div class="flex flex-wrap items-center gap-2 text-sm">
+				<button
+					v-for="(sourceLabel, source) in { all: ctrans('All sources'), ...(stockOuts.sources ?? {}) }"
+					:key="source"
+					type="button"
+					:aria-pressed="(stockOuts.source ?? 'all') === source"
+					:disabled="loadingSource !== null"
+					class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[--app-accent]"
+					:class="(stockOuts.source ?? 'all') === source ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+					@click="selectSource(source === 'all' ? null : source)">
+					<LoadingIcon v-if="loadingSource === source" />
+					{{ sourceLabel }}
+				</button>
+			</div>
 			<TicketsCreatedInterval :options="stockOuts.periods" :selected="stockOuts.period" label="Stock outs" param="period" :storageKey="`${storageKey}-period`" />
 			<div class="flex flex-wrap gap-3 text-sm tabular-nums">
 				<component
@@ -325,12 +366,23 @@ const coverOptions = computed(() => ({
 						{{ ctrans("Stock cover now") }}
 						<span class="text-xs font-normal text-gray-400">{{ ctrans("Active SKOs") }}</span>
 					</p>
-					<div class="flex flex-wrap items-center gap-4 sm:flex-nowrap">
-						<div class="relative h-40 w-40 shrink-0">
-							<Chart type="doughnut" :data="coverChart" :options="coverOptions" class="relative z-10 h-full" />
-							<div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
-								<span class="text-2xl font-bold tabular-nums">{{ locale.number(coverTotal) }}</span>
-								<span class="text-xs text-gray-500">{{ ctrans("SKOs") }}</span>
+					<div class="flex flex-wrap items-start gap-5 sm:flex-nowrap">
+						<div v-if="pipeline" class="flex w-44 shrink-0 flex-col gap-1.5 text-[13px] tabular-nums">
+							<div class="rounded-md bg-red-50 px-2.5 py-1.5">
+								<div class="text-lg font-bold leading-tight text-red-700">{{ locale.number(pipeline.out_of_stock) }}</div>
+								<div class="text-xs text-red-700/80">{{ ctrans("Out of stock") }}</div>
+							</div>
+							<FontAwesomeIcon icon="fal fa-arrow-down" class="self-center text-gray-300" aria-hidden="true" />
+							<div v-tooltip="arrivalMonths.map((arrival) => arrival.label + ': ' + arrival.count).join(' · ')" class="rounded-md bg-blue-50 px-2.5 py-1.5">
+								<div class="text-lg font-bold leading-tight text-blue-700">{{ locale.number(pipeline.in_transit) }}</div>
+								<div class="text-xs text-blue-700/80">
+									{{ ctrans("On the way") }}<template v-if="arrivalRange"> · {{ arrivalRange }}</template>
+								</div>
+							</div>
+							<FontAwesomeIcon icon="fal fa-arrow-down" class="self-center text-gray-300" aria-hidden="true" />
+							<div class="rounded-md bg-amber-50 px-2.5 py-1.5">
+								<div class="text-lg font-bold leading-tight text-amber-700">{{ locale.number(pipeline.not_ordered) }}</div>
+								<div class="text-xs text-amber-700/80">{{ ctrans("Not ordered yet") }}</div>
 							</div>
 						</div>
 						<table class="w-full min-w-0 text-[13px] tabular-nums">
@@ -339,6 +391,7 @@ const coverOptions = computed(() => ({
 									<td class="rounded-l-md py-1 pl-1.5 pr-2 leading-snug" :class="{ 'group-hover:bg-[--app-accent-soft]': level.route }">
 										<component
 											:is="level.route ? Link : 'span'"
+											v-tooltip="level.description"
 											:href="level.route ? route(level.route.name, level.route.parameters) : undefined"
 											class="flex items-center gap-1.5"
 											:class="{ 'group-hover:text-[--app-accent-strong]': level.route }">
@@ -356,6 +409,7 @@ const coverOptions = computed(() => ({
 					</div>
 				</div>
 			</div>
+			<p class="mt-3 text-right text-xs text-gray-400">{{ ctrans("Only SKOs of products on sale · new SKOs not yet received are left out") }}</p>
 		</DashboardWidgetBox>
 	</div>
 </template>
