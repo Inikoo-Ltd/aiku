@@ -18,9 +18,12 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class MatchPortfolioToCurrentEbayProduct extends OrgAction
 {
@@ -37,6 +40,20 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
 
+        try {
+            $this->matchToListing($portfolio, $modelData, $ebayUser, $product, $logs);
+        } catch (Throwable $e) {
+            UpdatePlatformPortfolioLog::run($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function matchToListing(Portfolio $portfolio, array $modelData, EbayUser $ebayUser, Product $product, PlatformPortfolioLogs $logs): void
+    {
         $ebayProductId = Arr::get($modelData, 'platform_product_id');
 
         $listing = $ebayUser->getOffers([

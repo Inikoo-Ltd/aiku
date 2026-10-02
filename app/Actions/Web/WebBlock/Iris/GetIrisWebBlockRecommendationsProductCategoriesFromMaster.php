@@ -10,7 +10,9 @@
 namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Catalogue\Product\Json\GetIrisProductCategoriesInRecommendation;
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Helpers\Media;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
@@ -19,6 +21,9 @@ use Illuminate\Support\Arr;
 class GetIrisWebBlockRecommendationsProductCategoriesFromMaster
 {
     use AsObject;
+    use WithIrisImageVariants;
+
+    public const array SRCSET_WIDTHS = [360, 720, 1440];
 
     public function handle(Webpage $webpage, array $webBlock): ?array
     {
@@ -32,12 +37,26 @@ class GetIrisWebBlockRecommendationsProductCategoriesFromMaster
             data_get($webpage, 'website.settings.recommender_product_category_web_block', [])
         );
 
+        $recommendedProductCategories = GetIrisProductCategoriesInRecommendation::run($webpage->model)->values();
+
+        $mainImagesById = Media::whereIn('id', $recommendedProductCategories->pluck('image_id')->filter())
+            ->get()
+            ->keyBy('id');
+
+        $recommendedProductCategoriesData = WebBlockFamiliesResource::collection($recommendedProductCategories)->resolve();
+
+        foreach ($recommendedProductCategories as $index => $recommendedProductCategory) {
+            $mainImage = $mainImagesById->get($recommendedProductCategory->image_id);
+
+            $recommendedProductCategoriesData[$index]['srcset'] = $mainImage
+                ? $this->getWidthSrcSets($mainImage, self::SRCSET_WIDTHS)
+                : null;
+        }
+
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.product_category_recommended',
-            WebBlockFamiliesResource::collection(
-                GetIrisProductCategoriesInRecommendation::run($webpage->model)
-            )->resolve()
+            $recommendedProductCategoriesData
         );
 
         return [
