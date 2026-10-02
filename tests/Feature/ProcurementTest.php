@@ -8354,3 +8354,18 @@ test('stock deliveries export downloads only the deliveries of the organisation'
         ->toContain($this->stockDelivery->slug)
         ->not->toContain($otherDelivery->slug);
 });
+
+test('purchase orders export downloads only the purchase orders of the organisation', function () {
+    $otherOrganisation = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    $otherOrgSupplier = OrgSupplier::where('organisation_id', $otherOrganisation->id)->where('supplier_id', $this->supplier->id)->first()
+        ?? StoreOrgSupplier::make()->action($otherOrganisation, $this->supplier);
+    $ownPurchaseOrder   = StorePurchaseOrder::make()->action($this->orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'own-org-po-export']), strict: false);
+    $otherPurchaseOrder = StorePurchaseOrder::make()->action($otherOrgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'other-org-po-export']), strict: false);
+
+    $response = $this->get(route('grp.org.procurement.purchase_orders.export', [$this->organisation->slug, 'type' => 'csv']))->assertOk();
+
+    expect(file_get_contents($response->baseResponse->getFile()->getPathname()))
+        ->toContain($ownPurchaseOrder->slug)
+        ->not->toContain($otherPurchaseOrder->slug);
+});
