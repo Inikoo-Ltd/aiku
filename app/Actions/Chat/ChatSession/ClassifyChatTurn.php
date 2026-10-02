@@ -14,6 +14,7 @@ use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Iris\Docs\ShowIrisDocs;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -522,6 +523,13 @@ class ClassifyChatTurn
      */
     public static function suggestions(ChatSession|MetaChatSession $chatSession): ?array
     {
+        // A closed session answers nothing: a cached next_step of "close" would otherwise keep
+        // surfacing the close quick-action on every revisit, since closing is a system message
+        // and never counts as the agent having answered since the turn was classified.
+        if ($chatSession->status === ChatSessionStatusEnum::CLOSED) {
+            return null;
+        }
+
         $turn = data_get($chatSession->metadata, self::KEY);
 
         if (!is_array($turn) || empty($turn['at']) || (empty($turn['guides']) && empty($turn['engineer']) && empty($turn['facts']) && empty($turn['next_step']))) {

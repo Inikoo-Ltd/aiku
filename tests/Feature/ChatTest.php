@@ -723,6 +723,68 @@ test('can close chat session by agent from active assignment', function (): void
         ->and($assignment->resolved_at)->not->toBeNull();
 });
 
+test('closing an already-closed chat session is a no-op, not a second close', function (): void {
+    $group = createGroup();
+
+    $guest = createAdminGuest($group);
+    $user  = $guest->getUser();
+
+    $agent = ChatAgent::updateOrCreate(
+        ['user_id' => $user->id],
+        [
+            'is_online'            => true,
+            'max_concurrent_chats' => 100,
+            'current_chat_count'   => 0,
+            'deleted_at'           => null,
+        ]
+    );
+
+    $chatSession = ChatSession::create([
+        'ulid'             => Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'guest_identifier' => 'guest_double_close_test',
+        'language_id'      => 68,
+        'shop_id'          => $this->shop->id,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+        'created_at'       => now(),
+        'updated_at'       => now(),
+    ]);
+
+    ChatAssignment::create([
+        'chat_session_id' => $chatSession->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    actingAs($user);
+
+    $firstClose = $this->closeChatAction->handle($chatSession, $agent->id);
+
+    expect($firstClose->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($firstClose->closed_at)->not->toBeNull();
+
+    $closedAt = $firstClose->closed_at;
+
+    // Whatever triggers it a second time — a second click, a stale suggestion, anything —
+    // closing a session that is already closed must do nothing: no second system message,
+    // no second close event, no re-resolved assignment with a fresh timestamp.
+    $secondClose = $this->closeChatAction->handle($firstClose->fresh(), $agent->id);
+
+    expect($secondClose->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($secondClose->closed_at->eq($closedAt))->toBeTrue();
+
+    expect(ChatMessage::where('chat_session_id', $chatSession->id)
+        ->where('message_text', 'Chat session has been closed by agent')
+        ->count())->toBe(1);
+
+    expect(ChatEvent::where('chat_session_id', $chatSession->id)
+        ->where('event_type', \App\Enums\CRM\Livechat\ChatEventTypeEnum::CLOSE)
+        ->count())->toBe(1);
+});
+
 
 // AGENT ACTIONS TESTS
 
@@ -11129,6 +11191,28 @@ test('a thanks gets the end chat card with no goodbye written until staff ask, a
     $session->messages()->create(['message_text' => 'I am out of the office until Monday', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::USER, 'metadata' => ['auto_reply' => true]]);
     expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($session->refresh()))->toBeNull()
         ->and($jevCalls)->toBe(0);
+});
+
+test('a close suggestion does not outlive the close: once the session is closed, the AI draft box has nothing to suggest', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn([
+        'wants_something' => ['type' => 'noul', 'noul' => 0.05],
+        'act'              => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.8]],
+    ]);
+
+    $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::EMAIL, 'shop_id' => $this->shop->id]);
+    $session->messages()->create(['message_text' => 'Thank you so much, all sorted', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::USER, 'created_at' => now()->subMinutes(2)]);
+
+    \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($session);
+
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh())['next_step']['kind'])->toBe('close');
+
+    // No new agent message in between — only the close itself — which is exactly the state a
+    // revisited, already-closed conversation is left in. The stale "close" suggestion must not
+    // survive it, or the quick-action button resurfaces and can close the session a second time.
+    $session->update(['status' => ChatSessionStatusEnum::CLOSED->value, 'closed_at' => now()]);
+
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBeNull();
 });
 
 test('jev works out what the customer wants in rounds, and only a clear single question can be drafted', function () {
