@@ -91,6 +91,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
         $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
+        $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();
         $schedule->command('mailbox:fetch')->everyMinute()->onOneServer()->withoutOverlapping();

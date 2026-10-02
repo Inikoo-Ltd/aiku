@@ -3789,6 +3789,67 @@ test('whoever works on a task suggests a new ETA and the requester accepts or de
         ->assertUnprocessable();
 });
 
+test('the requester or assignee hands a task to someone else, who is told, while a helper cannot', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $newAssignee  = $newColleague();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Recount bay 7', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+
+    expect($task->canReassignBy($this->user))->toBeTrue()
+        ->and($task->canReassignBy($assignee))->toBeTrue()
+        ->and($task->canReassignBy($helper))->toBeFalse();
+
+    actingAs($helper)->patchJson(route('grp.tasks.update', $task->reference), ['assignee_id' => $newAssignee->id])->assertForbidden();
+
+    actingAs($assignee)->patchJson(route('grp.tasks.update', $task->reference), ['assignee_id' => $newAssignee->id])->assertOk();
+
+    expect($task->refresh()->assignee_id)->toBe($newAssignee->id)
+        ->and($newAssignee->notifications()->where('data', 'like', '%'.$task->reference.' is for you%')->exists())->toBeTrue();
+});
+
+test('a task sent to a department tells the people in it', function () {
+    $groupPosition = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->user->group_id)->whereNull('organisation_id')->whereNotNull('department')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->first();
+    $member        = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $member->id, 'job_position_id' => $groupPosition->id, 'group_id' => $member->group_id, 'scopes' => '{}']);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Someone please check the new range', 'department' => $groupPosition->department]);
+
+    expect($member->notifications()->where('data', 'like', '%'.$task->reference.' is waiting for someone from%')->exists())->toBeTrue();
+});
+
+test('open tasks are reminded the day before they are due and once they are late, once per due date', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Ship the samples', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);
+    $notified = fn (\App\Models\SysAdmin\User $user, string $text) => $user->notifications()->where('data', 'like', '%'.$task->reference.' '.$text.'%')->count();
+
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    expect($notified($worker, 'is due tomorrow'))->toBe(1);
+
+    $task->refresh()->update(['due_at' => now()->subDay()->toDateString()]);
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+
+    expect($notified($worker, 'is overdue'))->toBe(1)
+        ->and($notified($this->user, 'is overdue'))->toBe(1);
+});
+
+test('whoever works on a task can ask for help and the requester hears why', function () {
+    $worker   = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Fix the label printer', 'assignee_id' => $worker->id]);
+
+    actingAs($outsider)->postJson(route('grp.tasks.help.store', $task->reference), ['note' => 'not mine'])->assertForbidden();
+
+    actingAs($worker)->postJson(route('grp.tasks.help.store', $task->reference), ['note' => 'The printer needs a part I cannot order'])->assertOk();
+
+    expect($this->user->notifications()->where('data', 'like', '%needs help with '.$task->reference.'%')->exists())->toBeTrue()
+        ->and($task->conversation->messages()->latest('id')->first()->body)->toContain('The printer needs a part I cannot order')
+        ->and($task->refresh()->data['help_requested']['by_id'])->toBe($worker->id);
+});
+
 test('a supervisor working on a task asks for a new ETA while a supervisor outside it sets the date', function () {
     $newSupervisor = function () {
         $user     = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();

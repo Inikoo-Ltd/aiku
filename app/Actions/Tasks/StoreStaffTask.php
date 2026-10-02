@@ -91,6 +91,8 @@ class StoreStaffTask
                 Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
             }
 
+            NotifyStaffTaskDepartment::run($task, $requester);
+
             BroadcastStaffTaskChanged::dispatch($task);
             SendStaffTaskBadgeUpdateToUsers::run($task->involvedUserIds());
 

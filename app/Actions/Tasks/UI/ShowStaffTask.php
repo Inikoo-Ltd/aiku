@@ -145,6 +145,8 @@ class ShowStaffTask extends OrgAction
             'can_edit'     => $staffTask->isWorkedOnBy($viewer),
             'due_access'   => $staffTask->dueAccessFor($viewer),
             'can_remove_collaborators' => $staffTask->canRemoveCollaboratorsBy($viewer),
+            'can_reassign' => $staffTask->canReassignBy($viewer),
+            'can_ask_for_help' => $staffTask->canAskForHelpBy($viewer),
             'timeline'     => $this->timeline($staffTask),
             'options'      => $this->staffTaskEditOptions(),
             'listRoute'    => $this->tasksRoute('list_all'),

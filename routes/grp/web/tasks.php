@@ -13,6 +13,7 @@ use App\Actions\Tasks\Json\GetStaffTaskQuickLook;
 use App\Actions\Tasks\Json\GetStaffTasks;
 use App\Actions\Tasks\DecideStaffTaskEta;
 use App\Actions\Tasks\ProposeStaffTaskEta;
+use App\Actions\Tasks\RequestStaffTaskHelp;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Actions\Tasks\StoreStaffTasksFromList;
 use App\Actions\Tasks\SyncStaffTaskCollaborators;
@@ -45,6 +46,7 @@ Route::patch('/{staffTask}/collaborators', SyncStaffTaskCollaborators::class)->n
 Route::patch('/{staffTask}/subtasks', UpdateStaffTaskSubtasks::class)->name('subtasks.update');
 Route::post('/{staffTask}/eta-proposal', ProposeStaffTaskEta::class)->name('eta_proposal.store');
 Route::post('/{staffTask}/eta-proposal/decision', DecideStaffTaskEta::class)->name('eta_proposal.decide');
+Route::post('/{staffTask}/help', RequestStaffTaskHelp::class)->name('help.store');
 Route::post('/{staffTask}/subscription', ToggleStaffTaskSubscription::class)->name('subscription.toggle');
 Route::get('/{staffTask}/quick-look', GetStaffTaskQuickLook::class)->name('quick_look');
 Route::get('/{staffTask}', ShowStaffTask::class)->name('show');

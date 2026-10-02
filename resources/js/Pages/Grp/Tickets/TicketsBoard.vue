@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { ticketRoute, ticketsRoute } from "@/Composables/useTicketsRoute"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
@@ -25,16 +26,7 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 
 library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
 
-const kindIcons: Record<string, string> = {
-	bug: "fal fa-bug",
-	feature: "fal fa-lightbulb",
-	escalation: "fal fa-level-up",
-	task: "fal fa-tasks",
-	qa: "fal fa-vial",
-	documentation: "fal fa-books",
-	data_integrity: "fal fa-database",
-	support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const cardPeople = (ticket: { assignee?: string | null; assignee_avatar?: any; collaborators?: { id: number; name: string; avatar?: any }[] }) => [
 	...(ticket.assignee ? [{ key: "assignee", name: ticket.assignee, avatar: ticket.assignee_avatar }] : []),

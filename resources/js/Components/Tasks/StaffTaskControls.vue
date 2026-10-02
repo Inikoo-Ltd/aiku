@@ -21,8 +21,8 @@ import { useStaffMessaging } from "@/Stores/staff-messaging"
 import type { StaffTaskDueAccess, StaffTaskEtaProposal } from "@/types/StaffTaskEta"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan } from "@fal"
-library.add(faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan)
+import { faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping } from "@fal"
+library.add(faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping)
 
 type Person = { id: number; name: string; avatar: any }
 type Option = { label: string; value: string; icon: any }
@@ -49,6 +49,8 @@ const props = defineProps<{
     }
     canEdit: boolean
     canRemoveCollaborators?: boolean
+    canReassign?: boolean
+    canAskForHelp?: boolean
     dueAccess?: StaffTaskDueAccess
     options: { statuses: Option[]; priorities: Option[] }
 }>()
@@ -221,12 +223,50 @@ const toggleSubscription = () => send("subscription", async () => {
     await store.fetchConversations()
 })
 
-onMounted(() => {
-    if (props.canEdit) loadCoworkers()
+const assigneePopover = ref()
+const isAssigneePickerOpen = ref(false)
+const assigneeQuery = ref("")
+
+const assigneeCandidates = computed(() => {
+    const search = assigneeQuery.value.trim().toLowerCase()
+    return coworkers.value.filter((person) => person.id !== props.task.assignee?.id && (!search || person.name.toLowerCase().includes(search)))
 })
 
-watch(() => props.canEdit, (canEdit) => {
-    if (canEdit && !coworkers.value.length) loadCoworkers()
+const openAssigneePicker = (event: Event) => {
+    if (!coworkers.value.length) loadCoworkers()
+    assigneePopover.value?.toggle(event)
+}
+
+const onAssigneePickerHide = () => {
+    isAssigneePickerOpen.value = false
+    assigneeQuery.value = ""
+}
+
+const reassignTo = (personId: number) => {
+    assigneePopover.value?.hide()
+    patchTask("assignee", { assignee_id: personId })
+}
+
+const helpDialogOpen = ref(false)
+const helpNote = ref("")
+
+const openHelpDialog = () => {
+    helpNote.value = ""
+    helpDialogOpen.value = true
+}
+
+const askForHelp = () => {
+    helpDialogOpen.value = false
+    send("help", () => axios.post(route("grp.tasks.help.store", props.task.reference), { note: helpNote.value.trim() || null }))
+        .then(() => notify({ title: ctrans("Help is on its way"), text: ctrans(":name and the supervisors were told", { name: props.task.requester?.name ?? ctrans("The requester") }), type: "success" }))
+}
+
+onMounted(() => {
+    if (props.canEdit || props.canReassign) loadCoworkers()
+})
+
+watch(() => props.canEdit || props.canReassign, (canPickPeople) => {
+    if (canPickPeople && !coworkers.value.length) loadCoworkers()
 })
 
 onBeforeUnmount(saveCollaborators)
@@ -242,13 +282,37 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
     <div class="space-y-4" :class="isBusy && 'pointer-events-none'" :aria-busy="isBusy">
         <div>
             <p :class="sectionLabelClass">{{ ctrans("Assignee") }}</p>
-            <div class="flex items-center gap-2 p-2">
+            <component
+                :is="canReassign ? 'button' : 'div'"
+                :type="canReassign ? 'button' : undefined"
+                v-tooltip="canReassign ? ctrans('Hand this task to someone else') : undefined"
+                class="flex w-full items-center gap-2 rounded-md p-2 text-left"
+                :class="[canReassign && 'transition duration-200 hover:bg-gray-100 active:!bg-gray-200', isAssigneePickerOpen && '!bg-gray-200']"
+                @click="canReassign && openAssigneePicker($event)">
                 <TicketUserAvatar v-if="task.assignee" :name="task.assignee.name" :avatar="task.assignee.avatar" />
                 <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                     <FontAwesomeIcon :icon="task.department_label ? 'fal fa-building' : 'fal fa-user'" fixed-width />
                 </span>
-                <span :class="task.assignee || task.department_label ? 'text-gray-800' : 'text-gray-400'">{{ task.assignee?.name ?? task.department_label ?? ctrans("Unassigned") }}</span>
-            </div>
+                <span class="min-w-0 flex-1 truncate" :class="task.assignee || task.department_label ? 'text-gray-800' : 'text-gray-400'">{{ task.assignee?.name ?? task.department_label ?? ctrans("Unassigned") }}</span>
+                <FontAwesomeIcon v-if="canReassign" :icon="isPending('assignee') ? 'fal fa-spinner' : 'fal fa-exchange-alt'" :spin="isPending('assignee')" class="shrink-0 text-xs text-gray-400" fixed-width aria-hidden="true" />
+            </component>
+            <Popover v-if="canReassign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="onAssigneePickerHide">
+                <div class="w-64 space-y-2 text-sm">
+                    <input v-model="assigneeQuery" type="text" class="w-full rounded border-gray-300 text-sm" :placeholder="ctrans('Search colleague…')" />
+                    <div class="flex max-h-72 flex-col overflow-y-auto">
+                        <button
+                            v-for="person in assigneeCandidates"
+                            :key="person.id"
+                            type="button"
+                            class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                            @click="reassignTo(person.id)">
+                            <TicketUserAvatar :name="person.name" :avatar="person.avatar" size="sm" />
+                            <span class="truncate">{{ person.name }}</span>
+                        </button>
+                        <p v-if="!assigneeCandidates.length" class="p-2 text-gray-400">{{ ctrans("No colleague found") }}</p>
+                    </div>
+                </div>
+            </Popover>
         </div>
 
         <div v-if="task.collaborators.length || canManagePeople">
@@ -284,6 +348,15 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                     </button>
                 </template>
             </div>
+            <button
+                v-if="canAskForHelp"
+                type="button"
+                class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 transition duration-200 hover:bg-amber-100 active:!bg-amber-200"
+                v-tooltip="ctrans('Stuck? Let the requester and the supervisors know')"
+                @click="openHelpDialog">
+                <FontAwesomeIcon :icon="isPending('help') ? 'fal fa-spinner' : 'fal fa-hands-helping'" :spin="isPending('help')" fixed-width aria-hidden="true" />
+                {{ ctrans("Ask for help") }}
+            </button>
         </div>
 
         <div>
@@ -377,6 +450,23 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
         </label>
 
         <StaffTaskEtaDialog v-model:visible="etaDialogOpen" :task="task" @suggested="emit('updated')" />
+
+        <Dialog
+            v-model:visible="helpDialogOpen"
+            modal
+            dismissableMask
+            :header="ctrans('Ask for help with :reference', { reference: task.reference })"
+            :style="{ width: '28rem' }"
+            :breakpoints="{ '640px': '95vw' }">
+            <form class="space-y-3" @submit.prevent="askForHelp">
+                <p class="text-sm text-gray-600">{{ ctrans(":name and the supervisors will be told. Say what is stopping you, if you can.", { name: task.requester?.name ?? ctrans("The requester") }) }}</p>
+                <Textarea v-model="helpNote" rows="3" maxlength="500" autofocus autoResize fluid :placeholder="ctrans('What is stopping you? (optional)')" />
+                <div class="flex justify-end gap-x-2">
+                    <Button type="button" text severity="secondary" :label="ctrans('Back')" @click="helpDialogOpen = false" />
+                    <Button type="submit" :label="ctrans('Ask for help')" />
+                </div>
+            </form>
+        </Dialog>
 
         <Dialog
             v-model:visible="cancelNoteOpen"
