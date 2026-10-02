@@ -13,7 +13,7 @@ export const setColorStyleRoot = (themeColors: string[]) => {
     }
 
     const root = document.documentElement
-    if (root) {        
+    if (root) {
         root.style.setProperty('--theme-color-0', themeColors?.[0])  // var(--theme-color-0)
         root.style.setProperty('--theme-color-1', themeColors?.[1])
         root.style.setProperty('--theme-color-2', themeColors?.[2])
@@ -31,7 +31,7 @@ export const setColorStyleRootByEl = (
   if (!el || !themeColors.length) return
 
 
-   if (el) {        
+   if (el) {
         el.style.setProperty('--theme-color-0', themeColors?.[0])
         el.style.setProperty('--theme-color-1', themeColors?.[1])
         el.style.setProperty('--theme-color-2', themeColors?.[2])

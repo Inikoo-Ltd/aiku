@@ -30,7 +30,7 @@
 /public/aiku-public/manifest.json
 /public/shopify/manifest.json
 /public/pupil/manifest.json
-
+/public/chat-widget
 /storage/*.key
 /vendor
 .env

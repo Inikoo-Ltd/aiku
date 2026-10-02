@@ -90,10 +90,25 @@ interface ContactOption {
     url: string
 }
 
-const props = defineProps<{
-    docked?: boolean
-    active?: boolean
-}>()
+/*
+ * The widget also runs outside Iris, in the Shopify embedded app, where there is no website
+ * layout to read the shop from and sessions are opened through a route that knows the
+ * merchant. Both are passed in there; everywhere else they keep coming from Iris.
+ */
+const props = withDefaults(
+    defineProps<{
+        shopId?: number | null
+        createSessionUrl?: string | null
+        docked?: boolean
+        active?: boolean
+    }>(),
+    {
+        shopId: null,
+        createSessionUrl: null,
+        docked: false,
+        active: false,
+    }
+)
 
 const emit = defineEmits<{
     (e: "unread", count: number): void
@@ -102,6 +117,8 @@ const emit = defineEmits<{
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const shopId = computed(() => props.shopId ?? layout?.iris?.shop?.id)
 
 const isClient = typeof window !== "undefined"
 
@@ -266,14 +283,17 @@ const createSession = async (): Promise<ChatSessionData | null> => {
         const payload: any = {
             language_id: 68,
             priority: "normal",
-            shop_id: layout?.iris?.shop?.id,
+            shop_id: shopId.value,
         }
 
         if (isLoggedIn.value && layout.user?.id) {
             payload.web_user_id = layout.user?.id
         }
 
-        const res = await axios.post(`${baseUrl}/app/api/chats/sessions`, payload)
+        const res = await axios.post(
+            props.createSessionUrl ?? `${baseUrl}/app/api/chats/sessions`,
+            payload
+        )
         if (res.data?.data?.ulid) {
             saveChatSession(res.data.data)
             chatSession.value = res.data.data
@@ -691,7 +711,7 @@ const checkChatStatus = async (sessionUlid: string, isRetry = false) => {
     try {
         const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
             params: {
-                shop_id: layout?.iris?.shop?.id,
+                shop_id: shopId.value,
                 ulid: sessionUlid
             },
         })
@@ -802,12 +822,23 @@ onMounted(() => {
 
     handleChatFromUrl()
 
+    /*
+     * Composed path rather than the target: when the widget runs inside a shadow root the event
+     * is retargeted to the host by the time it reaches the document, so every click on the panel
+     * reads as a click outside it and shuts the panel the moment anyone tries to type.
+     */
+    const isInside = (element: HTMLElement | null | undefined, event: Event): boolean => {
+        if (!element) {
+            return false
+        }
+
+        const path = typeof event.composedPath === "function" ? event.composedPath() : []
+
+        return path.length ? path.includes(element) : element.contains(event.target as Node)
+    }
+
     document.addEventListener("mousedown", (e) => {
-        if (
-            isMenuOpen.value &&
-            menuRef.value &&
-            !menuRef.value.contains(e.target as Node)
-        ) {
+        if (isMenuOpen.value && menuRef.value && !isInside(menuRef.value, e)) {
             isMenuOpen.value = false
         }
 
@@ -815,8 +846,8 @@ onMounted(() => {
             !props.docked &&
             open.value &&
             panelRef.value &&
-            !panelRef.value.contains(e.target as Node) &&
-            !buttonRef.value?.contains(e.target as Node)
+            !isInside(panelRef.value, e) &&
+            !isInside(buttonRef.value, e)
         ) {
             open.value = false
         }
@@ -1062,7 +1093,7 @@ if (isClient) {
 
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
                         :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
-                        @session-created="handleOfflineSession" />
+                        :shopId="shopId" @session-created="handleOfflineSession" />
 
                     <div v-if="activeMenu === 'history'" :class="isFullHeight
                         ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'

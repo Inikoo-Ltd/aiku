@@ -29,11 +29,16 @@ use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
-use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use App\Actions\Pupil\Chat\GetPupilChatShop;
+use App\Actions\Pupil\Chat\StorePupilChatSession;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Models\CRM\WebUser;
+use Lorisleiva\Actions\ActionRequest;
 use Osiset\ShopifyApp\Actions\AuthenticateShop;
 use Osiset\ShopifyApp\Objects\Values\ShopId;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\PlatformOutboundGuard;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
@@ -1823,6 +1828,83 @@ test('the borrowed sku repair gives an unlinked portfolio its own sku back and l
     expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
         ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
         ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
+});
+
+test('a shopify merchant opens a chat session bound to their web user', function () {
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'chat-shop']);
+
+    $webUser = WebUser::factory()->create([
+        'customer_id'     => $customer->id,
+        'group_id'        => $customer->group_id,
+        'organisation_id' => $customer->organisation_id,
+        'website_id'      => $customer->shop->website?->id,
+        'status'          => true,
+    ]);
+
+    $chatSession = StorePupilChatSession::make()->handle($shopifyUser->refresh());
+
+    expect($chatSession->shop_id)->toBe($this->shop->id)
+        ->and($chatSession->web_user_id)->toBe($webUser->id)
+        ->and($chatSession->guest_identifier)->toBeNull()
+        ->and($chatSession->channel)->toBe(ChatChannelEnum::WEBSITE);
+});
+
+test('a shopify merchant without a linked customer still opens a chat session as a guest', function () {
+    $shopifyUser = StoreShopifyUser::make()->handle(
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition()),
+        ['name' => 'chat-shop-unlinked']
+    );
+    $shopifyUser->update(['customer_id' => null]);
+
+    $chatSession = StorePupilChatSession::make()->handle($shopifyUser->refresh());
+
+    expect($chatSession->web_user_id)->toBeNull()
+        ->and($chatSession->guest_identifier)->toBe('shopify_'.$shopifyUser->id)
+        ->and($chatSession->shop_id)->not->toBeNull();
+});
+
+test('a shopify merchant on a shop with chat switched off gets no chat session', function () {
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'chat-shop-disabled']);
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
+
+    try {
+        StorePupilChatSession::make()->handle($shopifyUser->refresh());
+        $this->fail('Expected the disabled shop to refuse a chat session');
+    } catch (HttpException $e) {
+        expect($e->getStatusCode())->toBe(403);
+    } finally {
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    }
+});
+
+test('an unlinked shopify merchant chats with the shop speaking their language', function () {
+    $shopifyUser = StoreShopifyUser::make()->handle(
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition()),
+        ['name' => 'chat-shop-language']
+    );
+    $shopifyUser->update(['customer_id' => null, 'language_id' => $this->shop->language_id]);
+
+    $shop = GetPupilChatShop::run($shopifyUser->refresh());
+
+    expect($shop)->not->toBeNull()
+        ->and($shop->language_id)->toBe($this->shop->language_id);
+
+    $chatSession = StorePupilChatSession::make()->handle($shopifyUser);
+
+    expect($chatSession->shop_id)->toBe($shop->id)
+        ->and($chatSession->web_user_id)->toBeNull()
+        ->and($chatSession->guest_identifier)->toBe('shopify_'.$shopifyUser->id);
+});
+
+test('a linked merchant keeps their own shop regardless of language', function () {
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'chat-shop-linked-language']);
+    $shopifyUser->update(['language_id' => $this->shop->language_id + 1]);
+
+    expect(GetPupilChatShop::run($shopifyUser->refresh())?->id)->toBe($this->shop->id);
 });
 
 test('a sync of a channel whose portfolios were never uploaded reports it has nothing to send', function () {

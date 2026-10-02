@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\Web\WebsiteVisitor;
@@ -29,18 +30,14 @@ class GetChatStatus
             || !empty($chatSession->metadata['email'] ?? null);
 
 
-        if (!$website) {
-            return [
-                'is_online'    => false,
-                'schedule'     => null,
-                'offline_info' => null,
-                'session'      => $chatSession,
-                'is_user'      => $isUser,
-                'is_metadata'  => $isMetadata,
-            ];
-        }
-
-        $chatConfig = GetChatConfig::run($website);
+        /*
+         * An external shop has no website of ours, so its availability is read off the shop
+         * itself rather than off a website that will never exist. Without this it is permanently
+         * offline and the widget can only ever offer the leave-a-message form.
+         */
+        $chatConfig = $website
+            ? GetChatConfig::run($website)
+            : GetChatConfig::make()->forShop($shop, ShopPermissionsEnum::shopHasChat($shop));
 
         return [
             'is_online'    => $chatConfig['is_online'],
