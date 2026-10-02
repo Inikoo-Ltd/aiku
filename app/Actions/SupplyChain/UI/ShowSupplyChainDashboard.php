@@ -341,7 +341,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
                 'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')), $source)),
-                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v6:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisationAndSource())[$source ?? 'all']),
+                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v7:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisationAndSource())[$source ?? 'all']),
                 'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
