@@ -2992,6 +2992,42 @@ describe('staff messaging archive', function () {
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull();
     });
 
+    test('the key a browser encrypts its saved chats with is personal, stable and never cached', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $response = actingAs($this->user)->getJson(route('grp.chat.staff.cache_key'))->assertOk();
+        $key      = $response->json('key');
+
+        expect(strlen(base64_decode($key)))->toBe(32)
+            ->and($response->headers->get('Cache-Control'))->toContain('no-store')
+            ->and(actingAs($this->user)->getJson(route('grp.chat.staff.cache_key'))->json('key'))->toBe($key)
+            ->and(actingAs($other)->getJson(route('grp.chat.staff.cache_key'))->json('key'))->not->toBe($key);
+    });
+
+    test('reading a conversation tells the other participants when, for their read ticks', function () {
+        Event::fake([\App\Events\StaffMessageSent::class, \App\Events\StaffConversationRead::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'can you check the pallet?']);
+
+        actingAs($other)->postJson(route('grp.chat.staff.conversations.read', $conversation))->assertOk();
+
+        Event::assertDispatched(\App\Events\StaffConversationRead::class, function (\App\Events\StaffConversationRead $event) use ($conversation, $other) {
+            $channels = collect($event->broadcastOn())->map(fn ($channel) => $channel->name)->all();
+
+            return $event->conversation->is($conversation)
+                && $event->broadcastWith()['user_id'] === $other->id
+                && $channels === ['private-grp.personal.'.$this->user->id];
+        });
+
+        $participants = collect((new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()->load('participants')))->resolve()['participants']);
+
+        expect($participants->firstWhere('id', $other->id)['last_read_at'])->not->toBeNull();
+    });
+
     test('a task chat cannot be archived while the task is open and lives on the task page', function () {
         $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the blue mugs', 'department' => 'warehouse']);
         $conversation = $task->conversation;
@@ -3939,7 +3975,8 @@ test('people can hide right panel badges from the narrow bar', function () {
     actingAs($this->user);
 
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks', 'crm_waiting']])->assertSessionHasNoErrors();
-    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting']);
+    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting'])
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting']);
 
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['not_a_badge']])->assertSessionHasErrors('rail_hidden_badges.0');
 
