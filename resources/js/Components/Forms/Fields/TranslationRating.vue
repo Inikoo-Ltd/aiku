@@ -36,7 +36,8 @@ const rate = async (stars: number) => {
 
 <template>
     <div class="flex items-center gap-2 text-xs text-gray-500">
-        <span>{{ rating ? ctrans("Thanks, your edits to this translation are kept to teach the translator") : ctrans("How good is this machine translation?") }}</span>
+        <span v-if="rating" class="text-green-500 italic opacity-70">{{ ctrans("Thanks, your edits to this translation are kept to teach the translator") }}</span>
+        <span v-else>{{ ctrans("How good is this machine translation?") }}</span>
         <div class="flex items-center" @mouseleave="hovered = 0">
             <button
                 v-for="star in 5"
