@@ -25,6 +25,12 @@ class GetPartnerStockCoverBuckets
 {
     use AsObject;
 
+    public const int MINIMUM_LINE_VALUE = 10;
+
+    public const int MINIMUM_COVER_DAYS = 30;
+
+    public const int MAXIMUM_COVER_DAYS = 180;
+
     public const BUCKETS = [
         'out'    => ['label' => 'Out of stock', 'tone' => 'red-deep'],
         'w1'     => ['label' => 'Doomed: gone before any delivery lands', 'tone' => 'red'],
@@ -153,7 +159,7 @@ class GetPartnerStockCoverBuckets
         $leadTime = GetPartnerLeadTime::run($orgPartner);
         [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadTime['days']);
 
-        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'])} * {$this->partnerSkoPrice($orgPartner)}";
+        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice($orgPartner)}";
         $inOrder = $this->inRescueOrder();
 
         $counts = $query
@@ -191,7 +197,7 @@ class GetPartnerStockCoverBuckets
         [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadDays);
 
         return $query
-            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays)} as quantity, s.days_of_cover, s.projected_lost_revenue")
+            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays, $orgPartner)} as quantity, s.days_of_cover, s.projected_lost_revenue")
             ->orderByRaw('s.projected_lost_revenue desc nulls last')
             ->orderBy('os.health_rank')
             ->orderByRaw("case $expression when 'out' then 1 when 'w1' then 2 else 3 end")
@@ -237,7 +243,7 @@ class GetPartnerStockCoverBuckets
 
     private function inRescueOrder(): string
     {
-        return "(s.projected_lost_revenue > 0 or os.health_rank in ('A', 'B'))";
+        return "(os.quantity_available <= 0 or s.projected_lost_revenue > 0 or os.health_rank in ('A', 'B'))";
     }
 
     /**
@@ -259,11 +265,26 @@ class GetPartnerStockCoverBuckets
     }
 
     /**
-     * Enough to cover our critical threshold, at least one SKO, never more than the partner can spare.
+     * Enough to cover our critical threshold and at least a month of sales, raised to a line worth
+     * picking (MINIMUM_LINE_VALUE) as long as that is no more than six months of sales, and never more
+     * than the partner can spare. Picking it at the partner and putting it away here takes 3 to 4
+     * minutes, about 0.70 at 12 an hour (80 s a pick on average, Oct 2026), so a 10 line keeps handling
+     * under a tenth of what it brings.
      */
-    private function rescueQuantity(string $spare, int $leadDays): string
+    private function rescueQuantity(string $spare, int $leadDays, OrgPartner $orgPartner): string
     {
-        return "least($spare, greatest(1, ceil(s.predicted_daily_usage * {$this->criticalDays($leadDays)} - greatest(os.quantity_available, 0))))";
+        $need     = "ceil(s.predicted_daily_usage * {$this->criticalDays($leadDays)} - greatest(os.quantity_available, 0))";
+        $forValue = 'least(coalesce(ceil('.self::MINIMUM_LINE_VALUE.' / nullif('.$this->orgSkoPrice($orgPartner).', 0)), 0), ceil(s.predicted_daily_usage * '.self::MAXIMUM_COVER_DAYS.'))';
+
+        return "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
+    }
+
+    /**
+     * The partner's price for one SKO in our organisation's currency.
+     */
+    private function orgSkoPrice(OrgPartner $orgPartner): string
+    {
+        return '('.$this->partnerSkoPrice($orgPartner).' * '.(float) $orgPartner->exchangeToOrgCurrency().')';
     }
 
     private function criticalDays(int $leadDays): string
@@ -303,7 +324,9 @@ class GetPartnerStockCoverBuckets
     /**
      * Our selling SKOs that are out, doomed or critical with nothing on order, that the partner can
      * spare: it keeps what its own demand needs over the same critical threshold. Without a demand
-     * forecast for the partner's SKO we cannot tell what it needs, so nothing is spare.
+     * forecast for the partner's SKO we cannot tell what it needs, so nothing is spare. A line that
+     * cannot reach MINIMUM_LINE_VALUE (in our currency) is left out unless the SKO is an A or B
+     * bestseller; so is one the partner has no price for.
      *
      * @return array{0: Builder, 1: string, 2: string} query, bucket expression, spare expression
      */
@@ -317,7 +340,8 @@ class GetPartnerStockCoverBuckets
             ->whereRaw("$spare >= 1")
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
-            ->whereRaw("$expression in ('out', 'w1', 'w2')");
+            ->whereRaw("$expression in ('out', 'w1', 'w2')")
+            ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');
 
         return [$query, $expression, $spare];
     }

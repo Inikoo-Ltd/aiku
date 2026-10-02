@@ -2634,6 +2634,18 @@ test('rescue page and rescue order refuse the manufacturing hub', function () {
     }
 });
 
+test('a rescue line orders at least a month of sales, never more than the partner can spare', function () {
+    $buckets  = GetPartnerStockCoverBuckets::make();
+    $quantity = fn (string $spare) => DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
+        from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os,
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id) p, (select null::jsonb as data) stock_families'
+    )->quantity;
+
+    expect((int) $quantity('500'))->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
+        ->and((int) $quantity('12'))->toBe(12);
+});
+
 test('rescue order creates nothing when a sister company has nothing to rescue', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;
