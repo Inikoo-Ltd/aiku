@@ -157,6 +157,7 @@ const stockOutChart = computed(() => {
 		datasets: [
 			{ label: ctrans("Out of stock"), data: series.map((row) => row.out_of_stock), borderColor: "#dc2626", backgroundColor: "#dc2626", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "y" },
 			{ label: ctrans("Estimated lost revenue per day"), data: series.map((row) => row.lost_per_day), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius, yAxisID: "money" },
+			{ label: ctrans("% out of stock"), data: series.map((row) => row.percentage), borderColor: "#7c3aed", backgroundColor: "#7c3aed", tension: 0, borderWidth: 1.5, borderDash: [4, 3], pointRadius, yAxisID: "percent" },
 		],
 	}
 })
@@ -207,6 +208,7 @@ const stockOutOptions = computed(() => {
 			x,
 			y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: ctrans("SKOs out of stock") } },
 			money: { beginAtZero: true, position: "right", grid: { display: false }, ticks: { callback: (value) => money(value) } },
+			percent: { beginAtZero: true, position: "right", grid: { display: false }, ticks: { callback: (value) => `${value}%` } },
 		},
 	}
 })
@@ -238,34 +240,36 @@ const coverOptions = computed(() => ({
 
 <template>
 	<div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-		<TicketsCreatedInterval :options="stockOuts.periods" :selected="stockOuts.period" label="Stock outs" param="period" :storageKey="`${storageKey}-period`" />
-		<div class="flex flex-wrap gap-3 text-sm tabular-nums">
-			<component
-				:is="outOfStockRoute ? Link : 'span'"
-				v-tooltip="ctrans('SKOs out of stock') + (headline.now ? ' · ' + headline.now.date : '')"
-				:href="outOfStockRoute ? route(outOfStockRoute.name, outOfStockRoute.parameters) : undefined"
-				class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm"
-				:class="{ 'hover:bg-gray-50': outOfStockRoute }">
-				<FontAwesomeIcon icon="fal fa-box-open" class="text-red-600" fixed-width aria-hidden="true" />
-				{{ headline.now ? locale.number(headline.now.out_of_stock) : "-" }}
-				<span class="font-normal text-gray-400">{{ ctrans("out of stock") }}</span>
-			</component>
-			<span v-tooltip="ctrans('Share of SKOs out of stock')" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
-				<FontAwesomeIcon icon="fal fa-percentage" class="text-red-600" fixed-width aria-hidden="true" />
-				{{ headline.now ? headline.now.percentage + "%" : "-" }}
-			</span>
-			<span
-				v-tooltip="ctrans('Estimated lost revenue per day: what the SKOs out of stock sold per day on average over the 6 months before')"
-				class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
-				<FontAwesomeIcon icon="fal fa-coins" class="text-amber-600" fixed-width aria-hidden="true" />
-				{{ money(headline.now?.lost_per_day) }}
-				<span class="font-normal text-gray-400">/ {{ ctrans("day") }}</span>
-			</span>
-			<span v-tooltip="ctrans('Estimated lost revenue in this period')" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
-				<FontAwesomeIcon icon="fal fa-coins" class="text-amber-600" fixed-width aria-hidden="true" />
-				{{ money(headline.lostTotal) }}
-				<span class="font-normal text-gray-400">{{ ctrans("lost in period") }}</span>
-			</span>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<TicketsCreatedInterval :options="stockOuts.periods" :selected="stockOuts.period" label="Stock outs" param="period" :storageKey="`${storageKey}-period`" />
+			<div class="flex flex-wrap gap-3 text-sm tabular-nums">
+				<component
+					:is="outOfStockRoute ? Link : 'span'"
+					v-tooltip="ctrans('SKOs out of stock') + (headline.now ? ' · ' + headline.now.date : '')"
+					:href="outOfStockRoute ? route(outOfStockRoute.name, outOfStockRoute.parameters) : undefined"
+					class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm"
+					:class="{ 'hover:bg-gray-50': outOfStockRoute }">
+					<FontAwesomeIcon icon="fal fa-box-open" class="text-red-600" fixed-width aria-hidden="true" />
+					{{ headline.now ? locale.number(headline.now.out_of_stock) : "-" }}
+					<span class="font-normal text-gray-400">{{ ctrans("out of stock") }}</span>
+				</component>
+				<span v-tooltip="ctrans('Share of SKOs out of stock')" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
+					<FontAwesomeIcon icon="fal fa-percentage" class="text-red-600" fixed-width aria-hidden="true" />
+					{{ headline.now ? headline.now.percentage + "%" : "-" }}
+				</span>
+				<span
+					v-tooltip="ctrans('Estimated lost revenue per day: what the SKOs out of stock sold per day on average over the 6 months before')"
+					class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
+					<FontAwesomeIcon icon="fal fa-coins" class="text-amber-600" fixed-width aria-hidden="true" />
+					{{ money(headline.now?.lost_per_day) }}
+					<span class="font-normal text-gray-400">/ {{ ctrans("day") }}</span>
+				</span>
+				<span v-tooltip="ctrans('Estimated lost revenue in this period')" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 shadow-sm">
+					<FontAwesomeIcon icon="fal fa-coins" class="text-amber-600" fixed-width aria-hidden="true" />
+					{{ money(headline.lostTotal) }}
+					<span class="font-normal text-gray-400">{{ ctrans("lost in period") }}</span>
+				</span>
+			</div>
 		</div>
 		<div v-if="isComparing" class="flex flex-wrap items-center gap-2 text-sm">
 			<button

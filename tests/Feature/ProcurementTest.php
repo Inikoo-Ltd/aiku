@@ -1991,8 +1991,12 @@ test('UI show procurement dashboard', function () {
                     ->where('title', 'Procurement')
                     ->etc()
             )
-            ->has('shoppingLists');
+            ->where('tabs.current', 'stock_outs')
+            ->missing('search_demand');
     });
+
+    get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'tab' => 'search_demand']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('search_demand'));
 });
 
 test('UI Index org suppliers', function () {
