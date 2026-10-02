@@ -4995,6 +4995,20 @@ test('order transactions only show the batch code column once a picking carries 
     expect($columnKeys())->toContain('batch_codes');
 });
 
+test('order transactions show the UN number of dangerous goods (HELP-3658)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order       = $deliveryNote->orders->first();
+    $transaction = $order->transactions()->where('model_type', 'Product')->first();
+    $tradeUnit   = $transaction->model->tradeUnits()->first();
+    $tradeUnit->update(['un_number' => '1197', 'proper_shipping_name' => 'EXTRACTS, LIQUID']);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $row = \App\Http\Resources\Ordering\TransactionsResource::collection(\App\Actions\Ordering\Transaction\UI\IndexTransactions::make()->handle($order))
+        ->resolve()[0];
+
+    expect(collect($row['un_numbers'])->first())->toMatchArray(['number' => '1197', 'shipping_name' => 'EXTRACTS, LIQUID']);
+});
+
 test('finishing a return only marks the still unhandled quantity as not returned (HELP-3194)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
