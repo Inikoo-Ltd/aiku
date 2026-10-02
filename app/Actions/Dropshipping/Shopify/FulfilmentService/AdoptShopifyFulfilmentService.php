@@ -91,9 +91,13 @@ class AdoptShopifyFulfilmentService
     }
 
     /**
+     * Renames the service for the channel and points its callback at the live login. Also called on
+     * its own for a reconnect that reuses the channel: there the old service's name still matches,
+     * but its callback holds the retired login's id, so requests sent to it would die unanswered.
+     *
      * @return array{0: bool, 1: string}
      */
-    private function retarget(CustomerSalesChannel $customerSalesChannel, string $fulfilmentServiceId): array
+    public function retarget(CustomerSalesChannel $customerSalesChannel, string $fulfilmentServiceId): array
     {
         $shopifyUser = $customerSalesChannel->user;
         $client      = $shopifyUser->getShopifyClient();

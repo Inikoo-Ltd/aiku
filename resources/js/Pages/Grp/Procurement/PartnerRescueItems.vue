@@ -34,6 +34,8 @@ const props = defineProps<{
 	title: string
 	currency_code: string
 	orgPartner: { id: number; name: string }
+	rescueOrder: { lines: number; cost: number }
+	draftReference: string | null
 	items: {
 		data: RescueItem[]
 		total: number
@@ -66,7 +68,13 @@ const bucketClass = {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #other>
-			<RescueOrderButton :orgPartnerId="orgPartner.id" :partnerName="orgPartner.name" />
+			<RescueOrderButton
+				:orgPartnerId="orgPartner.id"
+				:partnerName="orgPartner.name"
+				:currencyCode="currency_code"
+				:draftReference="draftReference"
+				:estimatedLines="rescueOrder.lines"
+				:estimatedCost="rescueOrder.cost" />
 		</template>
 	</PageHeading>
 

@@ -2591,7 +2591,7 @@ test('UI partner rescue items for a sister company', function () {
     }
 });
 
-test('new purchase order to a sister company redirects to it', function () {
+test('new purchase order to a sister company opens it, or the one already being prepared', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;
     $partner->update(['is_manufacturing_hub' => false]);
@@ -2601,11 +2601,18 @@ test('new purchase order to a sister company redirects to it', function () {
 
         $purchaseOrder = $this->orgPartner->purchaseOrders()->latest('id')->first();
 
-        $response->assertRedirect(route('grp.org.procurement.org_partners.show.purchase-orders.show', [
+        $purchaseOrderUrl = route('grp.org.procurement.org_partners.show.purchase-orders.show', [
             $this->organisation->slug,
             $this->orgPartner->id,
             $purchaseOrder->slug,
-        ]));
+        ]);
+        $response->assertRedirect($purchaseOrderUrl);
+
+        $count = $this->orgPartner->purchaseOrders()->count();
+        $this->post(route('grp.models.org-partner.purchase-order.store', ['orgPartner' => $this->orgPartner->id]))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect($purchaseOrderUrl);
+        expect($this->orgPartner->purchaseOrders()->count())->toBe($count);
     } finally {
         $partner->update(['is_manufacturing_hub' => $wasHub]);
     }

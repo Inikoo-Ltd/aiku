@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -16,6 +17,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -144,20 +146,29 @@ class GetPartnerStockCoverBuckets
      * needs over its critical threshold (same edge that would flag it critical), so a rescue never
      * puts the partner itself at risk.
      *
-     * @return array{buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float}>, top: array<int, array<string, mixed>>}
+     * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float}>, top: array<int, array<string, mixed>>}
      */
     public function rescuable(OrgPartner $orgPartner, int $topLimit = 20): array
     {
         $leadTime = GetPartnerLeadTime::run($orgPartner);
-        [$query, $expression] = $this->rescuableQuery($orgPartner, $leadTime['days']);
+        [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadTime['days']);
+
+        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'])} * {$this->partnerSkoPrice($orgPartner)}";
+        $inOrder = $this->inRescueOrder();
 
         $counts = $query
-            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost")
+            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost, coalesce(sum($cost), 0) as cost, coalesce(sum($cost) filter (where $inOrder), 0) as order_cost, count(*) filter (where $inOrder) as order_lines")
             ->groupByRaw($expression)
             ->get()
             ->keyBy('bucket');
 
+        $exchange = $orgPartner->exchangeToOrgCurrency();
+
         return [
+            'order'   => [
+                'lines' => (int) $counts->sum('order_lines'),
+                'cost'  => round((float) $counts->sum('order_cost') * $exchange, 2),
+            ],
             'buckets' => collect(['out', 'w1', 'w2'])->map(fn (string $bucket) => [
                 'bucket'      => $bucket,
                 'label'       => $bucket === 'out' ? __(self::BUCKETS['out']['label']) : $this->bucketLabel($bucket, $leadTime['days']),
@@ -165,6 +176,7 @@ class GetPartnerStockCoverBuckets
                 'count'       => (int) ($counts->get($bucket)->total ?? 0),
                 'bestsellers' => (int) ($counts->get($bucket)->bestsellers ?? 0),
                 'lost'        => (float) ($counts->get($bucket)->lost ?? 0),
+                'cost'        => round((float) ($counts->get($bucket)->cost ?? 0) * $exchange, 2),
             ])->all(),
             'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
         ];
@@ -208,17 +220,42 @@ class GetPartnerStockCoverBuckets
     }
 
     /**
-     * What to order to rescue every SKO that would lose sales, plus any A/B bestseller.
+     * What to order to rescue every SKO that would lose sales, plus any A/B bestseller. Purchase order
+     * quantities are units, so the SKOs to order are multiplied by the units in each SKO.
      *
      * @return array<int, array{org_stock_id: int, quantity: int}>
      */
     public function rescueLines(OrgPartner $orgPartner): array
     {
         return $this->rescueItems($orgPartner)
-            ->where(fn ($query) => $query->where('s.projected_lost_revenue', '>', 0)->orWhereIn('os.health_rank', ['A', 'B']))
+            ->whereRaw($this->inRescueOrder())
+            ->addSelect('os.packed_in')
             ->get()
-            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'quantity' => (int) $row->quantity])
+            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'quantity' => (int) $row->quantity * max(1, (int) $row->packed_in)])
             ->all();
+    }
+
+    private function inRescueOrder(): string
+    {
+        return "(s.projected_lost_revenue > 0 or os.health_rank in ('A', 'B'))";
+    }
+
+    /**
+     * What the partner charges for one SKO in its own currency, from the product it sells it alone
+     * with in the shop it sells to the other companies from: the same product GetPartnerSellingProduct
+     * prices a purchase order line with.
+     */
+    private function partnerSkoPrice(OrgPartner $orgPartner): string
+    {
+        $shopId = (int) Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
+
+        return "coalesce((select pr.price / nullif(phos.quantity, 0)
+            from product_has_org_stocks phos
+            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id = $shopId
+            where phos.org_stock_id = p.id
+                and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
+            order by phos.quantity, pr.price
+            limit 1), 0)";
     }
 
     /**
