@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
@@ -316,19 +317,6 @@ const railCandidates = computed(() => [
     ...railOfflineWithConversation.value.map((coworker) => ({ coworker, online: false })),
 ])
 
-const sortedConversations = computed(() => {
-    return [...store.conversations].sort((a, b) => {
-        if (a.unread_count !== b.unread_count) {
-            return b.unread_count - a.unread_count
-        }
-        return conversationTitle(a).localeCompare(conversationTitle(b))
-    })
-})
-
-const directConversations = computed(() => sortedConversations.value.filter((conversation) => !isWorkThread(conversation)))
-const workThreads = computed(() => sortedConversations.value.filter(isWorkThread))
-const workThreadsUnread = computed(() => workThreads.value.reduce((sum, conversation) => sum + (conversation.unread_count || 0), 0))
-const workThreadsOpen = ref(false)
 
 const unreadBadgeClass = (conversation: any) =>
     conversation.has_mention ? 'bg-[var(--chat-accent)] text-white' : (isAlerting(conversation) ? 'bg-[var(--chat-red)] text-white' : 'bg-[var(--chat-line)] text-[var(--chat-text)]')
@@ -341,6 +329,27 @@ const railOrdered = computed(() => {
     const rest = railCandidates.value.filter((item) => !withUnreadIds.has(item.coworker.id))
     return [...withUnread, ...rest]
 })
+
+const WORK_THREAD_LABELS: Record<string, string> = {
+    StaffTask: ctrans("Task"),
+    Order: ctrans("Order"),
+    DeliveryNote: ctrans("Delivery"),
+    PickingSession: ctrans("Picking"),
+    ChatSession: ctrans("CRM"),
+}
+
+const lastMessagePreview = (conversation: any) => {
+    if (conversation.last_message) return useTruncate(conversation.last_message, 26)
+    return conversation.last_message_at ? ctrans("Photo") : ctrans("No messages yet")
+}
+
+const workThreadLabel = (conversation: any) => (isWorkThread(conversation) ? WORK_THREAD_LABELS[conversation.context_type] ?? ctrans("Work") : null)
+
+const RAIL_NEWEST_CHATS = 3
+
+const newestConversationsAll = computed(() => [...store.conversations].sort((a, b) => Date.parse(b.last_message_at ?? "") - Date.parse(a.last_message_at ?? "") || 0))
+const newestConversations = computed(() => newestConversationsAll.value.slice(0, RAIL_NEWEST_CHATS))
+const newerConversationsHidden = computed(() => Math.max(0, newestConversationsAll.value.length - RAIL_NEWEST_CHATS))
 
 const RAIL_AVATAR_LIMIT = 8
 const railOverflowCount = computed(() => Math.max(0, railOrdered.value.length - RAIL_AVATAR_LIMIT))
@@ -503,25 +512,40 @@ onUnmounted(() => {
 
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex-1 shrink-0 flex flex-col items-center gap-y-3 pt-4 pb-2">
+            <template v-if="!store.fetched">
+                <span v-for="placeholder in RAIL_NEWEST_CHATS" :key="'rail-chat-skeleton-' + placeholder" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[var(--chat-line)]" aria-hidden="true" />
+            </template>
             <button
-                v-for="item in railVisible"
-                :key="'rail-' + item.coworker.id"
-                class="relative h-7 w-7 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0"
-                :class="item.online ? '' : 'opacity-40'"
-                :title="getTooltipName(item.coworker.name, item.coworker.id)"
-                v-tooltip
-                @click="openUser(item.coworker.id)">
-                <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(item.coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(item.coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(item.coworker) === 'idle' ? ctrans('Idle') : ''" />
-                <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
+                v-for="conversation in newestConversations"
+                :key="'rail-chat-' + conversation.ulid"
+                type="button"
+                v-tooltip="{ content: conversationTitle(conversation), placement: 'left' }"
+                :aria-label="conversationTitle(conversation)"
+                class="relative shrink-0 rounded-full transition duration-200 hover:-translate-y-0.5"
+                @click="store.openConversation(conversation.ulid)">
+                <span class="block rounded-full ring-2 ring-offset-1 ring-offset-[var(--chat-bg)]" :class="conversation.unread_count > 0 ? 'ring-[var(--chat-red)]' : 'ring-transparent'">
+                    <span v-if="conversation.type === 'group'" class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--chat-line)] text-[var(--chat-accent)]">
+                        <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                    </span>
+                    <TicketUserAvatar v-else :name="conversationTitle(conversation)" :avatar="conversationAvatar(conversation)" size="md" />
+                </span>
+                <span
+                    v-if="conversation.type !== 'group'"
+                    class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[var(--chat-bg)]"
+                    :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
+                <span
+                    v-if="conversation.unread_count > 0"
+                    class="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[var(--chat-red)] px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[var(--chat-bg)]">
+                    {{ conversation.unread_count > 99 ? "99+" : conversation.unread_count }}
+                </span>
             </button>
             <button
-                v-if="railOverflowCount > 0"
+                v-if="newerConversationsHidden > 0"
+                type="button"
                 class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
                 v-tooltip="ctrans('Show all')"
                 @click="expandSidebar">
-                +{{ railOverflowCount }}
+                +{{ newerConversationsHidden }}
             </button>
             <button
                 class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[var(--chat-muted)] shrink-0 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:border-[var(--chat-text)]"
@@ -589,26 +613,32 @@ onUnmounted(() => {
                     <span>{{ tabHeader }}</span>
                 </div>
                 <button
-                    v-for="conversation in directConversations"
+                    v-for="conversation in newestConversationsAll"
                     :key="'conv-' + conversation.ulid"
                     class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
                     @click="store.openConversation(conversation.ulid)">
                     <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
                         <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
                     </div>
-                    <div v-else class="relative">
-                        <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
-                            <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
-                            <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                        </div>
+                    <div v-else class="relative shrink-0">
+                        <TicketUserAvatar :name="conversationTitle(conversation)" :avatar="conversationAvatar(conversation)" size="sm" />
                         <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
-                        <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
+                        <div class="text-xs truncate" :class="conversation.unread_count > 0 ? 'font-semibold text-white' : 'text-[var(--chat-text)]'">{{ conversationTitle(conversation) }}</div>
+                        <div class="flex min-w-0 items-center gap-1 text-xxs text-[var(--chat-muted)]">
+                            <span
+                                v-if="workThreadLabel(conversation)"
+                                v-tooltip="ctrans('Rings only when you are mentioned')"
+                                class="shrink-0 rounded bg-[var(--chat-line)] px-1 text-[9px] uppercase tracking-wide text-[var(--chat-label)]">
+                                {{ workThreadLabel(conversation) }}
+                            </span>
+                            <span class="truncate" :class="!conversation.last_message && 'italic opacity-70'">{{ lastMessagePreview(conversation) }}</span>
+                        </div>
                     </div>
                     <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>
                     <span
+                        v-if="canArchiveConversation(conversation)"
                         role="button" tabindex="0"
                         class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
                         v-tooltip="ctrans('Archive chat')"
@@ -616,48 +646,16 @@ onUnmounted(() => {
                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </span>
                 </button>
-                <template v-if="workThreads.length">
-                    <button
-                        class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
-                        v-tooltip="ctrans('Order, delivery and task threads. They ring only when you are mentioned.')"
-                        @click="workThreadsOpen = !workThreadsOpen">
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[var(--chat-muted)] text-xxs transition-transform" :class="workThreadsOpen ? '-rotate-90' : 'rotate-180'" fixed-width aria-hidden="true" />
-                        <span class="flex-1 text-xs truncate text-[var(--chat-label)]">{{ ctrans('Work threads') }} ({{ workThreads.length }})</span>
-                        <span v-if="workThreadsUnread > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0 bg-[var(--chat-line)] text-[var(--chat-text)]">{{ workThreadsUnread }}</span>
-                    </button>
-                    <template v-if="workThreadsOpen">
-                    <button
-                        v-for="conversation in workThreads"
-                        :key="'thread-' + conversation.ulid"
-                        class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
-                        @click="store.openConversation(conversation.ulid)">
-                        <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
-                            <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
-                        </div>
-                        <div v-else class="relative">
-                            <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
-                                <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
-                                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                            </div>
-                            <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
-                            <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
-                        </div>
-                        <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>
-                        <span
-                            v-if="canArchiveConversation(conversation)"
-                            role="button" tabindex="0"
-                            class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                            v-tooltip="ctrans('Archive chat')"
-                            @click.stop="store.closeConversation(conversation.ulid)">
-                            <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                <div v-if="!store.fetched" class="space-y-1 px-3 py-1" :aria-label="ctrans('Loading…')" aria-busy="true">
+                    <div v-for="row in 3" :key="'chat-skeleton-' + row" class="flex items-center gap-x-2 py-1">
+                        <span class="h-6 w-6 shrink-0 animate-pulse rounded-full bg-[var(--chat-line)]" />
+                        <span class="flex-1 space-y-1">
+                            <span class="block h-2.5 animate-pulse rounded bg-[var(--chat-line)]" :class="row === 2 ? 'w-2/3' : 'w-4/5'" />
+                            <span class="block h-2 w-1/2 animate-pulse rounded bg-[var(--chat-line)] opacity-60" />
                         </span>
-                    </button>
-                    </template>
-                </template>
-                <div v-if="!sortedConversations.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ ctrans('No conversations yet') }}</div>
+                    </div>
+                </div>
+                <div v-else-if="!newestConversationsAll.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ ctrans('No conversations yet') }}</div>
             </template>
 
             <!-- PEOPLE views: all / org / team -->
