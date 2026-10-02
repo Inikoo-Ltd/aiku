@@ -64,6 +64,8 @@ class ShowGoodsDashboard extends OrgAction
 
     public const int DEFAULT_LEAD_TIME_DAYS = 14;
 
+    public const int DISPATCHED_DAYS_AT_SEA = 60;
+
     private const int ID_CHUNK_SIZE = 10000;
 
     public const array PERIODS = ['30d', '90d', 'quarter', 'year'];
@@ -479,9 +481,9 @@ class ShowGoodsDashboard extends OrgAction
 
     /**
      * @param  array<int, int>  $orgStockIds
-     * @return array<int, array{org_stock_id: int, quantity: float, eta: string}>
+     * @return array<int, array{org_stock_id: int, document: string, quantity: float, eta: string, is_late: bool}>
      */
-    private function stockDeliveryInboundLines(array $orgStockIds): array
+    public function stockDeliveryInboundLines(array $orgStockIds): array
     {
         $lines = [];
 
@@ -494,15 +496,28 @@ class ShowGoodsDashboard extends OrgAction
                 ->whereIn('stock_deliveries.state', array_keys(self::DELIVERY_DAYS_TO_ARRIVE))
                 ->select([
                     'stock_delivery_items.org_stock_id',
+                    'stock_delivery_items.stock_delivery_id',
                     'stock_deliveries.state',
+                    DB::raw("case stock_deliveries.state
+                        when 'confirmed' then stock_deliveries.confirmed_at
+                        when 'ready_to_ship' then stock_deliveries.ready_to_ship_at
+                        when 'dispatched' then stock_deliveries.dispatched_at
+                        when 'received' then stock_deliveries.received_at
+                        when 'checked' then stock_deliveries.checked_at
+                        when 'booking_in' then stock_deliveries.booking_in_at
+                        end as state_entered_at"),
+                    'stock_deliveries.date as delivery_date',
+                    DB::raw('(select max(purchase_orders.estimated_received_at) from purchase_order_stock_delivery join purchase_orders on purchase_orders.id = purchase_order_stock_delivery.purchase_order_id where purchase_order_stock_delivery.stock_delivery_id = stock_deliveries.id) as purchase_order_eta'),
                     DB::raw('(stock_delivery_items.unit_quantity - coalesce(stock_delivery_items.unit_quantity_placed, 0)) as quantity'),
                 ])
                 ->get()
                 ->filter(fn ($row) => $row->quantity > 0)
                 ->map(fn ($row) => [
                     'org_stock_id' => $row->org_stock_id,
+                    'document'     => 'sd:'.$row->stock_delivery_id,
                     'quantity'     => (float) $row->quantity,
-                    'eta'          => now()->addDays(self::DELIVERY_DAYS_TO_ARRIVE[$row->state])->toDateString(),
+                    'eta'          => $this->stockDeliveryExpectedArrival($row)->max(now()->addDay())->toDateString(),
+                    'is_late'      => $this->stockDeliveryExpectedArrival($row)->lt(today()),
                 ])
                 ->all());
         }
@@ -516,9 +531,9 @@ class ShowGoodsDashboard extends OrgAction
      * same organisation, so nothing already counted above is counted twice.
      *
      * @param  array<int, int>  $orgStockIds
-     * @return array<int, array{org_stock_id: int, quantity: float, eta: string|null}>
+     * @return array<int, array{org_stock_id: int, document: string, quantity: float, eta: string|null, is_late: bool}>
      */
-    private function purchaseOrderInboundLines(array $orgStockIds): array
+    public function purchaseOrderInboundLines(array $orgStockIds): array
     {
         $lines = [];
 
@@ -564,6 +579,7 @@ class ShowGoodsDashboard extends OrgAction
                 })
                 ->select([
                     'purchase_order_transactions.org_stock_id',
+                    'purchase_order_transactions.purchase_order_id',
                     'purchase_orders.submitted_at',
                     'purchase_orders.estimated_received_at',
                     'org_stocks.measured_lead_time_days',
@@ -573,13 +589,43 @@ class ShowGoodsDashboard extends OrgAction
                 ->filter(fn ($row) => $row->quantity > 0)
                 ->map(fn ($row) => [
                     'org_stock_id' => $row->org_stock_id,
+                    'document'     => 'po:'.$row->purchase_order_id,
                     'quantity'     => (float) $row->quantity,
                     'eta'          => $this->purchaseOrderEta($row),
+                    'is_late'      => $this->isPurchaseOrderLate($row),
                 ])
                 ->all());
         }
 
         return $lines;
+    }
+
+    /**
+     * A delivery is expected when its purchase order says, else the usual number of days after it
+     * entered its current state; a dispatched one is given the time a container takes at sea.
+     */
+    private function stockDeliveryExpectedArrival(object $row): \Illuminate\Support\Carbon
+    {
+        if ($row->purchase_order_eta) {
+            return \Illuminate\Support\Carbon::parse($row->purchase_order_eta);
+        }
+
+        $enteredAt = \Illuminate\Support\Carbon::parse($row->state_entered_at ?? $row->delivery_date ?? now());
+        $days      = $row->state === StockDeliveryStateEnum::DISPATCHED->value ? self::DISPATCHED_DAYS_AT_SEA : self::DELIVERY_DAYS_TO_ARRIVE[$row->state];
+
+        return $enteredAt->addDays($days);
+    }
+
+    /**
+     * A purchase order whose expected arrival has passed: its eta is pushed to tomorrow, but it is late.
+     */
+    private function isPurchaseOrderLate(object $row): bool
+    {
+        $expected = $row->estimated_received_at
+            ? \Illuminate\Support\Carbon::parse($row->estimated_received_at)
+            : ($row->submitted_at ? \Illuminate\Support\Carbon::parse($row->submitted_at)->addDays((int) ($row->measured_lead_time_days ?? self::DEFAULT_LEAD_TIME_DAYS)) : null);
+
+        return $expected !== null && $expected->lt(today());
     }
 
     private function purchaseOrderEta(object $row): ?string

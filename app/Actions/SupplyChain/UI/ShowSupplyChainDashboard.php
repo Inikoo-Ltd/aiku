@@ -42,10 +42,12 @@ class ShowSupplyChainDashboard extends OrgAction
 
     private function getStockLevelsByOrganisation(?string $source): array
     {
-        return GetStockOutsHistory::make()->organisations($this->group)
+        $organisations = GetStockOutsHistory::make()->organisations($this->group);
+        $pipelines     = $organisations->mapWithKeys(fn (Organisation $organisation) => [$organisation->id => GetStockOutsPipeline::run($organisation, $source)])->all();
+
+        return $organisations
             ->map(fn (Organisation $organisation) => [
                 'slug'     => $organisation->slug,
-                'pipeline' => GetStockOutsPipeline::run($organisation, $source),
                 'levels'   => collect(GetOrganisationStockCoverBuckets::run($organisation, null, $source))
                     ->map(fn (array $bucket) => [
                         'bucket' => $bucket['bucket'],
@@ -53,6 +55,7 @@ class ShowSupplyChainDashboard extends OrgAction
                         'description' => $bucket['description'],
                         'tone'   => $bucket['tone'],
                         'count'  => $bucket['count'],
+                        ...($pipelines[$organisation->id][$bucket['bucket']] ?? ['in_transit' => 0, 'arrivals' => []]),
                         'route'  => [
                             'name'       => 'grp.org.procurement.stock_cover.index',
                             'parameters' => [
@@ -317,7 +320,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
                 'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')), $source)),
-                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v3:{$this->group->id}:".($source ?? 'all'), self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisation($source))),
+                'stockLevelsByOrganisation' => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels-by-organisation:v5:{$this->group->id}:".($source ?? 'all'), self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevelsByOrganisation($source))),
                 'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),

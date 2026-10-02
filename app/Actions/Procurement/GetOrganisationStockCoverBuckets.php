@@ -47,11 +47,18 @@ class GetOrganisationStockCoverBuckets
     ];
 
     /**
+     * The manufacturing hub is named after the hub organisations themselves.
+     *
      * @return array<string, string>
      */
-    public function sourceOptions(): array
+    public function sourceOptions(int $groupId): array
     {
-        return array_map(fn (string $label) => __($label), self::SOURCES);
+        $hubNames = Organisation::where('group_id', $groupId)->where('is_manufacturing_hub', true)->orderBy('id')->pluck('name');
+
+        return array_merge(
+            array_map(fn (string $label) => __($label), self::SOURCES),
+            $hubNames->isEmpty() ? [] : ['hub' => $hubNames->implode(', ')]
+        );
     }
 
     public function source(?string $source): ?string

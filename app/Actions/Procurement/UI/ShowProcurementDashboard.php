@@ -111,46 +111,12 @@ class ShowProcurementDashboard extends OrgAction
             + $stats->number_stock_deliveries_state_dispatched
             + $receivingDeliveries;
 
-        return [
+        $preOrdersWaiting = PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count();
+
+        return array_filter([
             $this->dashboardCard(
-                __('Agents'),
-                __('Active purchasing agents'),
-                'fal fa-people-arrows',
-                $stats->number_active_org_agents,
-                'violet',
-                'grp.org.procurement.org_agents.index',
-                [
-                    $this->dashboardMetric(
-                        __('Agent Suppliers'),
-                        $stats->number_active_org_suppliers_in_agents,
-                        'grp.org.procurement.org_agent_suppliers.index'
-                    ),
-                ]
-            ),
-            $this->dashboardCard(
-                __('Suppliers'),
-                __('Active free suppliers'),
-                'fal fa-person-dolly',
-                $stats->number_active_independent_org_suppliers,
-                'emerald',
-                'grp.org.procurement.org_suppliers.index'
-            ),
-            $this->dashboardCard(
-                __('Supplier Products'),
-                __('Current supplier products'),
-                'fal fa-box-usd',
-                $stats->number_current_org_supplier_products,
-                'amber',
-                'grp.org.procurement.org_supplier_products.index',
-                [
-                    $this->dashboardMetric(__('Active'), $stats->number_org_supplier_products_state_active, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'active']),
-                    $this->dashboardMetric(__('Discontinuing'), $stats->number_org_supplier_products_state_discontinuing, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'discontinuing']),
-                ],
-                ['elements[state]' => 'active,discontinuing']
-            ),
-            $this->dashboardCard(
-                __('Purchase Orders'),
                 __('Open purchase orders'),
+                __('Purchase orders in process, submitted or confirmed'),
                 'fal fa-clipboard-list',
                 $openPurchaseOrders,
                 'indigo',
@@ -163,8 +129,8 @@ class ShowProcurementDashboard extends OrgAction
                 ['elements[state]' => 'in_process,submitted,confirmed']
             ),
             $this->dashboardCard(
-                __('Stock Deliveries'),
                 __('Deliveries in progress'),
+                __('Stock deliveries from preparing to booked in'),
                 'fal fa-truck-container',
                 $activeDeliveries,
                 'sky',
@@ -176,19 +142,21 @@ class ShowProcurementDashboard extends OrgAction
                 ],
                 ['elements[state]' => 'in_process,confirmed,ready_to_ship,dispatched,received,checked,booking_in,booked_in']
             ),
-            $this->dashboardCard(
+            $preOrdersWaiting ? $this->dashboardCard(
                 __('Pre-orders'),
                 __('Customer pre-orders waiting for goods, by supplier'),
                 'fal fa-hourglass-half',
-                PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count(),
+                $preOrdersWaiting,
                 'amber',
                 'grp.org.procurement.pre_orders.index'
-            ),
-        ];
+            ) : null,
+        ]);
     }
 
     private function getStockLevels(?string $source): array
     {
+        $pipeline = GetStockOutsPipeline::run($this->organisation, $source);
+
         return collect(GetOrganisationStockCoverBuckets::run($this->organisation, null, $source))
             ->map(fn (array $bucket) => [
                 'bucket' => $bucket['bucket'],
@@ -196,6 +164,7 @@ class ShowProcurementDashboard extends OrgAction
                 'description' => $bucket['description'],
                 'tone'   => $bucket['tone'],
                 'count'  => $bucket['count'],
+                ...($pipeline[$bucket['bucket']] ?? ['in_transit' => 0, 'arrivals' => []]),
                 'route'  => $this->dashboardRoute('grp.org.procurement.stock_cover.index', ['elements[cover]' => $bucket['bucket']]),
             ])->values()->all();
     }
@@ -269,7 +238,6 @@ class ShowProcurementDashboard extends OrgAction
                 'shippers' => Shipper::query()->get(),
                 'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels($source) : [],
-                'stockOutPipeline' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsPipeline::run($this->organisation, $source) : null,
                 'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period')), $source) : null,
 
             ]

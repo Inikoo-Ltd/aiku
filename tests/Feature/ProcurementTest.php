@@ -1993,6 +1993,8 @@ test('UI show procurement dashboard', function () {
                     ->where('title', 'Procurement')
                     ->etc()
             )
+            ->where('dashboardCards', fn ($cards) => collect($cards)->pluck('label')->intersect(['Agents', 'Suppliers', 'Supplier Products'])->isEmpty()
+                && collect($cards)->pluck('label')->contains('Open purchase orders'))
             ->missing('search_demand');
     });
 });
@@ -6214,9 +6216,13 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
     $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'period' => '1m', 'source' => $source]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('stockOuts.source', $source)
+            ->where('stockOuts.sources.agent.label', 'Agents')
+            ->where("stockOuts.sources.$source.out_of_stock", $sourceRows->firstWhere('source', $source)->number_out_of_stock_org_stocks)
             ->where('stockOuts.now.out_of_stock', $sourceRows->firstWhere('source', $source)->number_out_of_stock_org_stocks)
-            ->where('stockOutPipeline.out_of_stock', fn ($outOfStock) => $outOfStock >= 1)
-            ->where('stockOutPipeline', fn ($pipeline) => $pipeline['in_transit'] + $pipeline['not_ordered'] === $pipeline['out_of_stock'])
+            ->where('stockLevels.0.bucket', 'out')
+            ->where('stockLevels.0.count', fn ($count) => $count >= 1)
+            ->where('stockLevels.0.in_transit', fn ($inTransit) => $inTransit >= 0)
+            ->has('stockLevels.0.arrivals')
             ->etc());
 
     $onSaleOrgStock->update(['is_fresh' => true]);

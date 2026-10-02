@@ -11,6 +11,7 @@ const props = withDefaults(
 		storageKey?: string
 		label?: string
 		param?: string
+		compact?: boolean
 	}>(),
 	{ storageKey: "tickets-created-interval", label: "Created", param: "created" }
 )
@@ -49,20 +50,22 @@ onMounted(() => {
 
 <template>
 	<div
-		class="flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
-		<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{
+		class="flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white"
+		:class="compact ? 'px-1 py-0.5 text-xs' : 'px-2 py-1.5 text-sm'">
+		<span v-if="label" class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{
 			ctrans(label)
 		}}</span>
 		<button
 			v-for="(optionLabel, interval) in options"
 			:key="interval"
 			type="button"
-			class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 transition"
-			:class="
+			class="inline-flex items-center gap-1.5 rounded-md transition"
+			:class="[
+				compact ? 'px-2 py-0.5' : 'px-3 py-1',
 				interval === selected
 					? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 					: 'text-gray-600 hover:bg-gray-100'
-			"
+			]"
 			:disabled="loadingInterval !== null"
 			@click="select(interval)">
 			<LoadingIcon v-if="loadingInterval === interval" />

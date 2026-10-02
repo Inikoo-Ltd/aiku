@@ -143,6 +143,25 @@ class GetStockOutsHistory
     }
 
     /**
+     * Each source with its SKOs out of stock on the latest day of every organisation.
+     *
+     * @return array<string, array{label: string, out_of_stock: int}>
+     */
+    private function sources(Group|Organisation $parent, Collection $organisations): array
+    {
+        $outOfStock = DB::table('organisation_stock_history_sources as sources')
+            ->whereIn('sources.organisation_id', $organisations->pluck('id'))
+            ->whereRaw('sources.date = (select max(latest.date) from organisation_stock_history_sources as latest where latest.organisation_id = sources.organisation_id)')
+            ->groupBy('sources.source')
+            ->selectRaw('sources.source, sum(sources.number_out_of_stock_org_stocks) as out_of_stock')
+            ->pluck('out_of_stock', 'source');
+
+        return collect(GetOrganisationStockCoverBuckets::make()->sourceOptions($parent instanceof Group ? $parent->id : $parent->group_id))
+            ->map(fn (string $label, string $source) => ['label' => $label, 'out_of_stock' => (int) ($outOfStock[$source] ?? 0)])
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function handle(Group|Organisation $parent, string $period, ?string $source = null): array
@@ -179,7 +198,7 @@ class GetStockOutsHistory
             'period'     => $period,
             'periods'    => $this->periodOptions(),
             'source'     => $source,
-            'sources'    => GetOrganisationStockCoverBuckets::make()->sourceOptions(),
+            'sources'    => $this->sources($parent, $organisations),
             'unit'       => $unit,
             'currency'   => $parent->currency->code,
             'lost_total' => $total['lost_total'],

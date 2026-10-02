@@ -12,19 +12,19 @@ import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/P
 import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle } from "@fal"
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf } from "@fal"
 import { faChartNetwork } from "@fal"
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faChartNetwork)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faChartNetwork)
 
-defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts", "stockOutPipeline"])
+defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts"])
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
-	<StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :stockLevels="stockLevels" :stockOutPipeline="stockOutPipeline" storageKey="procurement-dashboard-stock-outs" class="mx-4 mt-3" />
-	<div class="mx-4 mt-3 flex flex-wrap gap-3">
+	<StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :stockLevels="stockLevels" :cards="dashboardCards" storageKey="procurement-dashboard-stock-outs" class="mx-4 mt-3" />
+	<div v-else class="mx-4 mt-3 flex flex-wrap gap-3">
 		<ProcurementOverviewPill v-for="card in dashboardCards" :key="card.label" :card="card" />
 	</div>
 </template>
