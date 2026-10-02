@@ -20,6 +20,7 @@ import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
 import TaskBadgeList from './TaskBadgeList.vue';
+import CreatedTaskBadgeList from './CreatedTaskBadgeList.vue';
 import RailBadgeVisibilityToggle from './RailBadgeVisibilityToggle.vue';
 import axios from 'axios'
 import { faTasks } from '@fal'
@@ -81,6 +82,9 @@ const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo',
 const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
 const myTasksUnread = computed(() => (layout.task_badges?.recent ?? []).filter((update) => !update.read).length)
 const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0))
+const createdTasks = computed(() => layout.task_badges?.created ?? null)
+const myTasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
+const createdTasksOnRail = computed(() => (createdTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_created', true))
 const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
 const ticketsOnRail = computed(() => shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue)) || shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0))))
@@ -103,7 +107,7 @@ const catalogueCount = computed(() => (layout?.master_updated_count ?? 0) + (lay
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
 
-const tasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
+const tasksOnRail = computed(() => myTasksOnRail.value || createdTasksOnRail.value)
 const ordersSectionShown = computed(() => (isFolded('orders') ? ordersCount.value > 0 : ordersOnRail.value))
 const catalogueSectionShown = computed(() => (isFolded('catalogue') ? catalogueCount.value > 0 : catalogueOnRail.value))
 
@@ -228,11 +232,11 @@ onBeforeUnmount(clearCollapseTimer)
             <div class="shrink-0" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
                 <FontAwesomeIcon :icon="faTasks" class="w-4 shrink-0 text-center text-xs text-white" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Tasks')" aria-hidden="true" />
                 <!-- Badge: My tasks -->
-                <div class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks')">
+                <div v-if="myTasksOnRail" class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks')">
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks')" @toggle="toggleBadge('tasks')" />
                     <Popover width="w-72" position="right-full mr-2 top-0">
                         <template #button>
-                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-cyan-200 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100">
+                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-300 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100" :class="!layout.messagingSidebar.show && createdTasksOnRail ? 'rounded-t-xl' : 'rounded-xl'">
                                 <Transition name="spin-to-right"><span :key="myTasksCount"><span :class="myTasksCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTasksCount > 99 ? '99+' : myTasksCount }}</span></span></Transition>
                                 <FontAwesomeIcon v-if="myTasksOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-red-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon v-else-if="myTasksUnread" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-cyan-400" fixed-width aria-hidden="true" />
@@ -240,6 +244,27 @@ onBeforeUnmount(clearCollapseTimer)
                         </template>
                         <template #content="{ close }">
                             <TaskBadgeList :badges="layout.task_badges!" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+                <!-- Badge: Tasks I created -->
+                <div v-if="createdTasksOnRail && createdTasks" class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks_created')">
+                    <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks_created')" @toggle="toggleBadge('tasks_created')" />
+                    <Popover width="w-80" position="right-full mr-2 top-0">
+                        <template #button>
+                            <div
+                                v-tooltip="createdTasks.needs_answer ? ctrans('Tasks I created · :count waiting for your answer', { count: String(createdTasks.needs_answer) }) : ctrans('Tasks I created')"
+                                class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-100 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100"
+                                :class="!layout.messagingSidebar.show && myTasksOnRail ? 'rounded-b-xl' : 'rounded-xl'">
+                                <Transition name="spin-to-right"><span :key="createdTasks.open"><span :class="createdTasks.open > 99 ? 'text-xxs' : 'text-xs'">{{ createdTasks.open > 99 ? '99+' : createdTasks.open }}</span></span></Transition>
+                                <template v-if="createdTasks.needs_answer">
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-amber-500" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-[5px] text-amber-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <CreatedTaskBadgeList :created="createdTasks" :myId="layout.user?.id" :close="close" />
                         </template>
                     </Popover>
                 </div>

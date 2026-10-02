@@ -33,7 +33,7 @@ class UpdateProfile extends OrgAction
 
     private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting', 'ticket'];
 
-    public const array RAIL_BADGES = ['tickets_queue', 'tickets_mine', 'tasks', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
+    public const array RAIL_BADGES = ['tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
 
     public function handle(User $user, array $modelData): User
     {

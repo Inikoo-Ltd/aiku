@@ -44,12 +44,48 @@ class GetStaffTaskBadgeData
         }
 
         return [
-            'mine'   => $rows,
-            'today'  => [
+            'mine'    => $rows,
+            'today'   => [
                 'done' => $mine()->where('status', StaffTaskStatusEnum::DONE)->where('closed_at', '>=', now()->startOfDay())->count(),
                 'open' => $mine()->open()->count(),
             ],
-            'recent' => $this->recentUpdates($user),
+            'created' => $this->createdTasks($user),
+            'recent'  => $this->recentUpdates($user),
+        ];
+    }
+
+    /**
+     * The open tasks a person raised, the ones waiting for their answer (a new ETA to accept, a call for help) first.
+     *
+     * @return array{open: int, needs_answer: int, tasks: array<int, array<string, mixed>>}
+     */
+    private function createdTasks(User $user): array
+    {
+        $created     = fn () => StaffTask::query()->where('group_id', $user->group_id)->open()->where('requester_id', $user->id);
+        $needsAnswer = fn (Builder $query) => $query->where(fn (Builder $waiting) => $waiting->whereNotNull('data->eta_proposal')->orWhereNotNull('data->help_requested'));
+
+        return [
+            'open'         => $created()->count(),
+            'needs_answer' => $needsAnswer($created())->count(),
+            'tasks'        => $created()
+                ->with('assignee')
+                ->orderByRaw("(data->'eta_proposal') is null, (data->'help_requested') is null, due_at asc nulls last, id desc")
+                ->limit(6)
+                ->get()
+                ->map(fn (StaffTask $task) => [
+                    'id'               => $task->id,
+                    'reference'        => $task->reference,
+                    'subject'          => $task->subject,
+                    'status'           => $task->status->value,
+                    'status_icon'      => StaffTaskStatusEnum::stateIcon()[$task->status->value],
+                    'due_at'           => $task->due_at?->toDateString(),
+                    'assignee'         => $task->assignee?->chatName() ?? ($task->department ? StaffTask::departmentLabel($task->department) : null),
+                    'has_eta_proposal' => isset($task->data['eta_proposal']),
+                    'asked_for_help'   => isset($task->data['help_requested']),
+                    'route'            => route('grp.tasks.show', $task->reference),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 
