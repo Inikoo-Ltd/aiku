@@ -3717,6 +3717,58 @@ test('engineers and qa see staff tasks but cannot be assigned one', function () 
     \Pest\Laravel\postJson(route('grp.tasks.store'), ['subject' => 'Fix the bug', 'assignee_id' => $engineer->id])->assertUnprocessable();
 });
 
+test('staff task can be raised with attachments that only people who see the task can open', function () {
+    $assignee = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert([
+        'user_id'         => $outsider->id,
+        'job_position_id' => \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->organisation->group_id)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'),
+        'group_id'        => $this->organisation->group_id,
+        'scopes'          => '{}',
+    ]);
+
+    actingAs($this->user);
+    $response = \Pest\Laravel\post(route('grp.tasks.store'), [
+        'subject'     => 'Repack the damaged boxes',
+        'description' => 'See the photo',
+        'assignee_id' => $assignee->id,
+        'images'      => [
+            \Illuminate\Http\UploadedFile::fake()->image('damage.png', 400, 300),
+            \Illuminate\Http\UploadedFile::fake()->createWithContent('packing-list.pdf', "%PDF-1.4\n%%EOF\n"),
+        ],
+    ], ['Accept' => 'application/json'])->assertCreated();
+
+    $task = \App\Models\Tasks\StaffTask::where('reference', $response->json('data.reference'))->firstOrFail();
+
+    expect($task->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($task->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and(collect($response->json('data.attachments'))->pluck('name')->all())->toBe(['damage.png', 'packing-list.pdf'])
+        ->and($response->json('data.attachments.0.thumbnail'))->not->toBeNull();
+
+    $pdf = $task->getMedia('ticket_attachments')->first();
+
+    actingAs($assignee);
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $pdf->ulid]))->assertOk();
+    \Pest\Laravel\getJson(route('grp.tasks.details', $task->reference))->assertOk()
+        ->assertJsonPath('data.reference', $task->reference)
+        ->assertJsonCount(2, 'data.attachments');
+
+    $otherTask  = \App\Actions\Tasks\StoreStaffTask::run($assignee, ['subject' => 'Other task', 'assignee_id' => $assignee->id, 'images' => [\Illuminate\Http\UploadedFile::fake()->image('other.png')]]);
+    $otherMedia = $otherTask->getMedia('ticket_images')->first();
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $otherMedia->ulid]))->assertNotFound();
+
+    actingAs($outsider);
+    get(route('grp.tasks.attachments.show', ['staffTask' => $task->reference, 'media' => $pdf->ulid]))->assertForbidden();
+    \Pest\Laravel\getJson(route('grp.tasks.details', $task->reference))->assertForbidden();
+
+    actingAs($this->user);
+    \Pest\Laravel\postJson(route('grp.tasks.store'), [
+        'subject'     => 'Too many files',
+        'assignee_id' => $assignee->id,
+        'images'      => array_map(fn (int $index) => \Illuminate\Http\UploadedFile::fake()->image("shot-$index.png"), range(1, 6)),
+    ])->assertUnprocessable()->assertJsonValidationErrors('images');
+});
+
 test('staff tasks are raised from a pasted list with people, departments and due dates', function () {
     $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $department = \App\Models\Tasks\StaffTask::departments($this->organisation->group_id)[0];
