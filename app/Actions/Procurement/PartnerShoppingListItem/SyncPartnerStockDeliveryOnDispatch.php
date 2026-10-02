@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -31,7 +32,7 @@ class SyncPartnerStockDeliveryOnDispatch
         }
 
         $order   = $deliveryNote->orders()->first();
-        $invoice = $order?->invoices()->latest('id')->first();
+        $invoice = $order?->invoices()->where('type', InvoiceTypeEnum::INVOICE)->latest('id')->first();
 
         $stockDelivery->update([
             'state'         => StockDeliveryStateEnum::DISPATCHED,

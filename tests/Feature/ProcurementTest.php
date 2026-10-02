@@ -5441,6 +5441,46 @@ describe('partner shopping list', function () {
 
         $planning()->assertSee('"shelf_life_days":10,"shelf_life_recorded":true,"max_order_before_expiry":10,"suggested_quantity":10');
     });
+
+    test('partner delivery costing mirrors the refunds the partner makes for goods that did not arrive', function () {
+        $customer = createCustomer($this->sellerShop);
+        $invoiceData = [
+            'group_id'        => $customer->group_id,
+            'organisation_id' => $customer->organisation_id,
+            'shop_id'         => $customer->shop_id,
+            'customer_id'     => $customer->id,
+            'tax_category_id' => \App\Models\Helpers\TaxCategory::first()->id,
+            'in_process'      => false,
+        ];
+
+        [$receivedStock, $missingStock] = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->limit(2)->get();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-REFUND-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::PLACED,
+        ], strict: false);
+        $invoiceData['currency_id'] = $stockDelivery->currency_id;
+        $invoice = \App\Models\Accounting\Invoice::factory()->create([...$invoiceData, 'net_amount' => 300]);
+        $stockDelivery->update(['invoice_id' => $invoice->id]);
+        StoreStockDeliveryItem::make()->action($stockDelivery, null, $receivedStock, [
+            'unit_quantity' => 10, 'unit_quantity_checked' => 10, 'net_amount' => 100, 'state' => StockDeliveryItemStateEnum::PLACED,
+        ], strict: false);
+        StoreStockDeliveryItem::make()->action($stockDelivery, null, $missingStock, [
+            'unit_quantity' => 50, 'unit_quantity_checked' => 0, 'net_amount' => 200, 'state' => StockDeliveryItemStateEnum::NOT_RECEIVED,
+        ], strict: false);
+
+        $partnerInvoice = fn () => $this->get(route('grp.org.procurement.stock_deliveries.show', [$stockDelivery->organisation->slug, $stockDelivery->slug]))
+            ->assertOk()
+            ->inertiaProps('costing.partner_invoice');
+
+        expect($partnerInvoice())->toMatchArray(['reference' => $invoice->reference, 'refunded' => 0, 'missing_amount' => 200, 'to_refund' => 200]);
+
+        \App\Models\Accounting\Invoice::factory()->create([...$invoiceData, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND, 'original_invoice_id' => $invoice->id, 'net_amount' => -150]);
+        \App\Models\Accounting\Invoice::factory()->create([...$invoiceData, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND, 'original_invoice_id' => $invoice->id, 'net_amount' => -999, 'in_process' => true]);
+
+        expect($partnerInvoice())->toMatchArray(['refunded' => 150, 'to_refund' => 50])
+            ->and($partnerInvoice()['refunds'])->toHaveCount(1);
+    });
 });
 
 describe('partner browse', function () {

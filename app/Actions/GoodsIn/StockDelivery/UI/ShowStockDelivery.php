@@ -35,6 +35,8 @@ use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Http\Resources\Procurement\StockDeliveryUnderOverDeliveredItemResource;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Currency;
@@ -46,6 +48,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -715,6 +718,55 @@ class ShowStockDelivery extends OrgAction
                 'method'     => 'patch',
             ] : null,
             'deposits'                    => $this->getDepositSettlement($stockDelivery, $applications, $agentInvoiceAmount, $depositsTotal),
+            'partner_invoice'             => $this->getPartnerInvoice($stockDelivery),
+        ];
+    }
+
+    /**
+     * The seller's invoice for a partner delivery with the refunds the seller has made on it, read live so a
+     * refund shows here as soon as the partner finalises it, against what did not arrive.
+     *
+     * @return array{reference: string, net_amount: float, refunds: array<int, array{reference: string, date: mixed, net_amount: float}>, refunded: float, missing_amount: float, to_refund: float}|null
+     */
+    private function getPartnerInvoice(StockDelivery $stockDelivery): ?array
+    {
+        if ($stockDelivery->parent_type !== 'OrgPartner' || !$stockDelivery->invoice_id) {
+            return null;
+        }
+
+        $invoice = Invoice::where('id', $stockDelivery->invoice_id)
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->where('currency_id', $stockDelivery->currency_id)
+            ->first();
+        if (!$invoice) {
+            return null;
+        }
+
+        $refunds = Invoice::where('original_invoice_id', $invoice->id)
+            ->where('type', InvoiceTypeEnum::REFUND)
+            ->where('in_process', false)
+            ->orderBy('date')
+            ->get(['reference', 'date', 'net_amount']);
+
+        $refunded = round(-(float) $refunds->sum('net_amount'), 2);
+
+        $missingAmount = round((float) $stockDelivery->items()
+            ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::IN_PROCESS, StockDeliveryItemStateEnum::CONFIRMED, StockDeliveryItemStateEnum::READY_TO_SHIP, StockDeliveryItemStateEnum::DISPATCHED, StockDeliveryItemStateEnum::RECEIVED])
+            ->where('unit_quantity', '>', 0)
+            ->whereColumn('unit_quantity_checked', '<', 'unit_quantity')
+            ->sum(DB::raw('net_amount * (unit_quantity - unit_quantity_checked) / unit_quantity')), 2);
+
+        return [
+            'reference'      => $invoice->reference,
+            'net_amount'     => (float) $invoice->net_amount,
+            'refunds'        => $refunds->map(fn (Invoice $refund) => [
+                'reference'  => $refund->reference,
+                'date'       => $refund->date,
+                'net_amount' => -(float) $refund->net_amount,
+            ])->all(),
+            'refunded'       => $refunded,
+            'missing_amount' => $missingAmount,
+            'to_refund'      => max(0, round($missingAmount - $refunded, 2)),
         ];
     }
 
