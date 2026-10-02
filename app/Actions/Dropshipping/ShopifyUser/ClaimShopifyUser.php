@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -42,7 +43,20 @@ class ClaimShopifyUser extends RetinaAction
         $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => Str::before($shopDomain, '.'.config('shopify-app.my_shopify_domain'))]);
 
         CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
-        StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
+
+        /**
+         * CheckShopifyChannel already matched an exact service name to this channel, so the
+         * reused channel's own earlier service is already in place; nothing more to do. Only
+         * when nothing matched do we look for an aiku service left on the store under a
+         * different name (an earlier channel generation) to adopt, so stock and open fulfilment
+         * orders on it stay put; a store with no earlier aiku service at all gets a brand new one.
+         */
+        if (!$shopifyUser->refresh()->shopify_fulfilment_service_id) {
+            [$adopted] = AdoptShopifyFulfilmentService::run($shopifyUser->customerSalesChannel);
+            if (!$adopted) {
+                StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
+            }
+        }
 
         return $shopifyUser;
     }
