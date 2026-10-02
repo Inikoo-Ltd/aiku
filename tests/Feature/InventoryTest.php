@@ -4284,7 +4284,9 @@ describe('out of stock forecast', function () {
     });
 
     test('an empty SKO is a stock out only once it feeds a product on sale and has received stock', function () {
-        $orgStock = $this->product->orgStocks()->firstOrFail();
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        [$orgStock] = createOrgStocks($this->shop->organisation, [$stock]);
+        $this->product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
         $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
         $this->shop->update(['state' => ShopStateEnum::OPEN]);
         $this->product->update(['is_for_sale' => true]);

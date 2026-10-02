@@ -135,7 +135,8 @@ class GetOrganisationStockCoverBuckets
             ->where('products.is_for_sale', true)
             ->whereNull('products.deleted_at')
             ->where('shops.state', ShopStateEnum::OPEN->value)
-            ->selectRaw('1');
+            ->selectRaw('1')
+            ->limit(1);
     }
 
     public function stockReceived(?Carbon $before = null): Builder
@@ -144,12 +145,22 @@ class GetOrganisationStockCoverBuckets
             ->whereColumn('org_stock_movements.org_stock_id', 'org_stocks.id')
             ->where('org_stock_movements.flow', OrgStockMovementFlowEnum::IN->value)
             ->when($before, fn ($query) => $query->where('org_stock_movements.date', '<', $before))
-            ->selectRaw('1');
+            ->selectRaw('1')
+            ->limit(1);
     }
 
+    /**
+     * Scalar subqueries so each empty SKO is looked up through its own indexes; as EXISTS inside an OR
+     * the planner hashes every product on sale first.
+     */
     public function whereCountsAsStockOut(Builder|EloquentBuilder $query, ?Carbon $before = null): Builder|EloquentBuilder
     {
-        return $query->whereExists($this->forSaleProducts())->whereExists($this->stockReceived($before));
+        $forSale  = $this->forSaleProducts();
+        $received = $this->stockReceived($before);
+
+        return $query
+            ->whereRaw('('.$forSale->toSql().') is not null', $forSale->getBindings())
+            ->whereRaw('('.$received->toSql().') is not null', $received->getBindings());
     }
 
     public function leadTimeExpression(): string
