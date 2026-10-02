@@ -86,12 +86,31 @@ const isCoworkerOnline = (id: number) => !!useLiveUsers().liveUsers[id]
 
 const lastMessagePreview = (text: string | null) => (text ? useTruncate(text, 40) : "")
 
+const isChatOpenedFromPanel = ref(false)
+
 const openConversationFromList = (ulid: string) => {
     store.openConversation(ulid)
 }
 
 const openCoworker = async (userId: number) => {
     await store.openWithUser(userId)
+}
+
+const openFromPanel = (open: () => unknown) => {
+    isChatOpenedFromPanel.value = true
+    mobilePanelOpen.value = false
+    open()
+}
+
+const goBackFromChat = (ulid: string) => {
+    store.minimiseConversation(ulid, true)
+    if (isMobile.value && isChatOpenedFromPanel.value) mobilePanelOpen.value = true
+    isChatOpenedFromPanel.value = false
+}
+
+const closeChat = (ulid: string) => {
+    isChatOpenedFromPanel.value = false
+    store.dismissWindow(ulid)
 }
 
 const myId = computed(() => usePage().props?.auth?.user?.id)
@@ -304,7 +323,7 @@ onUnmounted(() => {
                 <div class="flex-1 overflow-y-auto">
                     <button v-if="!search" v-for="conversation in store.conversations" :key="conversation.ulid"
                         class="w-full flex items-center gap-x-3 px-4 py-3 hover:bg-gray-50 text-left"
-                        @click="openConversationFromList(conversation.ulid); mobilePanelOpen = false">
+                        @click="openFromPanel(() => openConversationFromList(conversation.ulid))">
                         <div class="relative h-10 w-10 rounded-full overflow-hidden bg-gray-200 shrink-0">
                             <Image v-if="otherAvatar(conversation)" :src="otherAvatar(conversation)" :alt="otherName(conversation)" image-cover />
                             <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-gray-500" fixed-width aria-hidden="true" />
@@ -319,7 +338,7 @@ onUnmounted(() => {
                     <div class="px-4 pt-3 pb-1 text-sm text-gray-400">{{ ctrans('Coworkers') }}</div>
                     <button v-for="coworker in visibleCoworkers" :key="coworker.id"
                         class="w-full flex items-center gap-x-3 px-4 py-3 hover:bg-gray-50 text-left"
-                        @click="openCoworker(coworker.id); mobilePanelOpen = false">
+                        @click="openFromPanel(() => openCoworker(coworker.id))">
                         <div class="relative h-10 w-10 rounded-full overflow-hidden bg-gray-200 shrink-0">
                             <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                             <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-gray-500" fixed-width aria-hidden="true" />
@@ -342,8 +361,8 @@ onUnmounted(() => {
                 <MessagingConversation
                     :conversation="visibleConversationWindows[0].conversation"
                     full-screen
-                    @back="store.minimiseConversation(visibleConversationWindows[0].ulid, true)"
-                    @close="store.dismissWindow(visibleConversationWindows[0].ulid)"
+                    @back="goBackFromChat(visibleConversationWindows[0].ulid)"
+                    @close="closeChat(visibleConversationWindows[0].ulid)"
                     @minimise="store.minimiseConversation(visibleConversationWindows[0].ulid, true)"
                 />
             </div>
