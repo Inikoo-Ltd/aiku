@@ -128,7 +128,10 @@ const refreshTaskInfo = async () => {
     if (!taskInfo.value) return
     const { data } = await axios.get(route("grp.tasks.conversation", taskInfo.value.reference))
     freshTaskInfo.value = data.data.task ?? null
+    store.mergeConversation(data.data)
 }
+
+const leftAt = computed(() => props.conversation.my_left_at ?? null)
 
 useLiveStaffTasks(refreshTaskInfo, (event) => !props.embedded && event.reference === taskInfo.value?.reference)
 
@@ -660,8 +663,13 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </div>
         </Popover>
 
+        <div v-if="leftAt" class="shrink-0 border-t border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs text-gray-500" :style="fullScreen ? { paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' } : {}">
+            <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
+            {{ ctrans("You were taken off this on :date. You can read the chat up to then; you will see everything again if you are added back.", { date: useFormatTime(leftAt, { formatTime: 'hm' }) }) }}
+        </div>
+
         <!-- Composer -->
-        <div class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
+        <div v-else class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
             <div v-if="parentMessage" class="flex items-center justify-between px-2 py-1 mb-1 rounded bg-gray-100 text-xs text-gray-600">
                 <span class="truncate">{{ ctrans('Replying to') }}: {{ parentMessage.body }}</span>
                 <button class="ml-2 shrink-0" @click="clearReply">

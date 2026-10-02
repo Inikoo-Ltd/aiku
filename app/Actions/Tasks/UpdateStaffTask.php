@@ -36,7 +36,7 @@ class UpdateStaffTask
             $modelData['assigned_at'] = $modelData['assignee_id'] ? now() : null;
             if ($modelData['assignee_id']) {
                 $assignee = User::find($modelData['assignee_id']);
-                $task->conversation?->participants()->syncWithoutDetaching([$assignee->id]);
+                $task->conversation?->addParticipants([$assignee->id]);
                 $lines[] = $assignee->id === $actor->id ? __('I will take this one') : __('Assigned to :name', ['name' => $assignee->chatName()]);
             }
         }
@@ -60,11 +60,22 @@ class UpdateStaffTask
             $task->collaborators()->detach($task->assignee_id);
         }
 
+        if ($task->wasChanged('assignee_id') && $previousAssigneeId && $task->conversation) {
+            $stillInvolved = $previousAssigneeId === $task->requester_id
+                || $task->collaborators()->where('users.id', $previousAssigneeId)->exists();
+
+            if (!$stillInvolved) {
+                $task->conversation->removeParticipants([$previousAssigneeId]);
+            }
+        }
+
         if ($note) {
             $lines[] = $note;
         }
         if ($lines && $task->conversation) {
-            $task->conversation->participants()->syncWithoutDetaching([$actor->id]);
+            if (!$task->conversation->hasParticipant($actor)) {
+                $task->conversation->addParticipants([$actor->id]);
+            }
             SendStaffMessage::run($task->conversation, $actor, ['body' => implode(': ', $lines)]);
         }
 

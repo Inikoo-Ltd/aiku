@@ -22,8 +22,8 @@ class ToggleStaffTaskSubscription
     {
         $conversation = $task->conversation;
 
-        if (!$conversation->hasParticipant($user)) {
-            $conversation->participants()->syncWithoutDetaching([$user->id]);
+        if (!$conversation->isActiveParticipant($user)) {
+            $conversation->addParticipants([$user->id]);
         } elseif (!in_array($user->id, array_merge([$task->requester_id, $task->assignee_id], $task->collaborators()->pluck('users.id')->all()), true)) {
             $conversation->participants()->detach($user->id);
         }

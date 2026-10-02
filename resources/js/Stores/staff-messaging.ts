@@ -59,6 +59,7 @@ export interface StaffConversation {
     context_label?: string | null
     context_url?: string | null
     task?: StaffConversationTask | null
+    my_left_at?: string | null
 }
 
 export interface StaffConversationTask {
@@ -450,6 +451,12 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const list = this.messagesByUlid[message.conversation_ulid]
             if (!list) return
             this.messagesByUlid[message.conversation_ulid] = list.filter((m) => m.client_key !== message.client_key)
+        },
+
+        mergeConversation(fresh: StaffConversation) {
+            const existing = this.conversationByUlid(fresh.ulid)
+            if (!existing) return
+            Object.assign(existing, { participants: fresh.participants, my_left_at: fresh.my_left_at ?? null, task: fresh.task ?? existing.task, name: fresh.name })
         },
 
         handleRead(e: { conversation_ulid: string; user_id: number; last_read_at: string }) {

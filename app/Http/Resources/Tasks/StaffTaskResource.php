@@ -55,7 +55,7 @@ class StaffTaskResource extends JsonResource
             'model_label'       => $this->model?->reference ?? $this->model?->code ?? $this->model?->name,
             'attachments'       => $this->attachmentGallery(),
             'conversation_ulid' => $this->conversation?->ulid,
-            'is_subscribed'     => $this->conversation?->relationLoaded('participants') ? $this->conversation->participants->contains('id', $request->user()?->id) : null,
+            'is_subscribed'     => $this->conversation?->relationLoaded('participants') ? $this->conversation->participants->contains(fn ($participant) => $participant->id === $request->user()?->id && !$participant->pivot?->left_at) : null,
             'started_at'        => $this->started_at,
             'closed_at'         => $this->closed_at,
             'created_at'        => $this->created_at,

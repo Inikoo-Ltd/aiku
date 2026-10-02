@@ -3789,6 +3789,59 @@ test('whoever works on a task suggests a new ETA and the requester accepts or de
         ->assertUnprocessable();
 });
 
+test('someone taken off a task keeps the chat history up to then, cannot write, and sees everything again when added back', function () {
+    Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $nextAssignee = $newColleague();
+
+    $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Sort the returns', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+    $conversation = $task->conversation;
+    $bodies       = fn (\App\Models\SysAdmin\User $user) => collect(actingAs($user)->getJson(route('grp.chat.staff.conversations.messages.index', $conversation))->assertOk()->json('data'))->pluck('body');
+
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'before the change']);
+    expect($conversation->isActiveParticipant($helper))->toBeTrue();
+
+    \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task, [], $this->user);
+    $this->travel(2)->seconds();
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'after the change']);
+
+    expect($conversation->isActiveParticipant($helper))->toBeFalse()
+        ->and($conversation->hasParticipant($helper))->toBeTrue()
+        ->and($bodies($helper))->toContain('before the change')
+        ->and($bodies($helper))->not->toContain('after the change');
+    actingAs($helper)->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'can I still write?'])->assertForbidden();
+
+    \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task->refresh(), [$helper->id], $this->user);
+    expect($conversation->isActiveParticipant($helper))->toBeTrue()
+        ->and($bodies($helper))->toContain('after the change');
+
+    \App\Actions\Tasks\UpdateStaffTask::run($task->refresh(), $this->user, ['assignee_id' => $nextAssignee->id]);
+    expect($conversation->isActiveParticipant($nextAssignee))->toBeTrue()
+        ->and($conversation->isActiveParticipant($assignee))->toBeFalse();
+});
+
+test('the tasks a person created are counted apart, with the ones waiting for their answer first', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    \App\Models\Tasks\StaffTask::query()->where('requester_id', $this->user->id)->open()->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+
+    $quiet   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Order more tape', 'assignee_id' => $worker->id]);
+    $waiting = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Repaint the dock', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);
+    \App\Actions\Tasks\ProposeStaffTaskEta::run($waiting, $worker, ['due_at' => now()->addDays(5)->toDateString(), 'reason' => 'Paint is late']);
+
+    $created = \App\Actions\Tasks\GetStaffTaskBadgeData::make()->handle($this->user)['created'];
+
+    expect($created['open'])->toBe(2)
+        ->and($created['needs_answer'])->toBe(1)
+        ->and($created['tasks'][0]['reference'])->toBe($waiting->reference)
+        ->and($created['tasks'][0]['has_eta_proposal'])->toBeTrue()
+        ->and(collect($created['tasks'])->pluck('reference'))->toContain($quiet->reference);
+
+    actingAs($this->user);
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks_created']])->assertSessionHasNoErrors();
+});
+
 test('the requester or assignee hands a task to someone else, who is told, while a helper cannot', function () {
     $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $assignee     = $newColleague();
@@ -4607,7 +4660,7 @@ test('staff task collaborators join the thread and see the task as theirs', func
         ->assertOk()
         ->assertJsonPath('data.collaborators', []);
 
-    expect($task->conversation->hasParticipant($helper))->toBeFalse()
+    expect($task->conversation->isActiveParticipant($helper))->toBeFalse()
         ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($helper, 'mine'))->toBeEmpty();
 
     \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task, [$helper->id], $requester);
