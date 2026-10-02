@@ -1,8 +1,8 @@
 ---
 title: Cumpărarea de la un partener
 summary: Ghidul cumpărătorului - pornește de la dashboard-ul de cumpărături, completează lista manual, din catalogul partenerului sau cu auto-completare, și recepționează marfa la sosire.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -52,6 +52,16 @@ Auto-fill poate fi deschis și deja limitat: **+ fill** pe o placă de risc din 
 
 Un obicei bun: lucrează plăcile din dashboard de la cel mai rău caz în jos, apoi rulează Auto-fill o dată pe ciclu de reaprovizionare pentru ce a rămas, citește motivele, debifează ce nu ești de acord și adaugă restul.
 
+## Cere asistentului tău AI să adauge linii
+
+Dacă contul tău este înrolat, asistentul AI pe care îl conectezi la aiku poate pune linii pe listă în locul tău. Planifică în propriul asistent — întreabă-l ce se termină, parcurgeți împreună cifrele — iar când ești mulțumit, spune-i: *"ok, adaugă-le pe lista de cumpărături"*. Îți arată mai întâi codurile SKO și cantitățile și adaugă abia după ce confirmi.
+
+- Cantitățile sunt în SKO-uri și **setează** linia: un SKO aflat deja pe listă primește noua cantitate, nu una în plus.
+- Se aplică aceleași reguli ca la adăugarea manuală: verificările de buget, de spațiu în depozit și de pachete de mai jos. O linie pe care lista o refuză revine cu motivul, iar restul intră oricum.
+- Doar adaugă și schimbă cantități; prioritățile și ștergerea liniilor rămân în tabelul listei de cumpărături.
+- Fiecare modificare este înregistrată împreună cu cererea ta și poate fi anulată: cere asistentului să o revină, sau un administrator o poate anula din jurnalul AI changes.
+- Înrolarea este un comutator pe contul tău de utilizator, pe care îl activează un administrator, și îți trebuie și permisiunea de a edita procurement pentru organizația ta.
+
 ## Când lista spune nu
 
 Adăugările sunt refuzate în trei cazuri, intenționat: lista a atins **budget**-ul (bugetul) pentru acest partener (articolele de rang A și cele fără stoc sunt scutite — o urgență încape întotdeauna), depozitul e sub 5% locații libere, sau acest partener a revendicat deja cota lui echitabilă din sloturile libere cu produse pe care nu le-ai stocat niciodată. Rezolvă mesajul în loc să cauți altă cale de intrare — aceeași gardă acoperă adăugările manuale, cele în bloc și Auto-fill. [Articolul despre dashboard](/docs/reading-the-partner-shopping-dashboard-ro) explică de unde vin acele limite.
@@ -66,6 +76,7 @@ Odată ce partenerul [trimite o expediere către depozitul lui](/docs/fulfilling
 <li><b>Adaugă pe listă:</b> <b>Shopping list</b> → <b>Add stocks</b>, sau <b>Browse</b> și setează cantități pe fișele de produs, sau <b>Auto-fill</b> (sau <b>+ fill</b> pe o placă din dashboard) pentru o propunere.</li>
 <li><b>Comandă în loturi întregi:</b> butonul de lângă <i>full batches every N SKO</i> pe linie sau pe fișa produsului.</li>
 <li><b>Ajustează liniile deschise:</b> schimbă prioritatea sau șterge linii în tabelul listei de cumpărături; schimbă cantități din fișele de produs în <b>Browse</b>.</li>
+<li><b>Lasă pe cineva să completeze lista prin asistentul lui AI (administratori):</b> <b>Sysadmin → Users</b> → deschide utilizatorul → <b>Edit</b> → <b>Access</b> → activează <b>Can connect AI assistant</b>, apoi <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Ține un articol în afara auto-completării:</b> organizația ta → <b>Warehouse → Inventory</b> → deschide SKO-ul → <b>Edit SKO</b> → activează <b>Do not auto order</b>.</li>
 <li><b>Urmărește și recepționează expedierea:</b> aceeași pagină de partener → <b>Stock deliveries</b> → când marfa ajunge, <b>Receive</b> → verifică → plasează în locații.</li>
 </ul>

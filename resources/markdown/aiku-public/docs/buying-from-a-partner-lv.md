@@ -1,8 +1,8 @@
 ---
 title: Pirkšana no partnera
 summary: Pircēja rokasgrāmata - sāc no iepirkumu paneļa, aizpildi sarakstu ar roku, no partnera kataloga vai ar automātisku aizpildi, un saņem preci, kad tā pienāk.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -52,6 +52,16 @@ Automātisko aizpildi var atvērt arī jau iezīmētu: **+ fill** (+ aizpildīt)
 
 Laba paraža: strādā ar paneļa kartītēm no sliktākā uz labāko, tad palaid automātisko aizpildi vienreiz papildināšanas ciklā tam, kas atlicis, izlasi iemeslus, noņem atzīmi no tā, kam nepiekrīti, un pievieno pārējo.
 
+## Mākslīgā intelekta asistenta lūgšana pievienot rindas
+
+Ja tavs konts ir pieteikts šai iespējai, mākslīgā intelekta asistents, ko savieno ar aiku, var tavā vietā ielikt rindas sarakstā. Plānošanu veic savā asistentā — pajautā, kam drīz beigsies, kopā izej cauri skaitļiem — un, kad esi apmierināts, pasaki: *"labi, pievieno šos iepirkumu sarakstam"*. Tas vispirms parāda SKO kodus un daudzumus un pievieno tos tikai pēc tava apstiprinājuma.
+
+- Daudzumi ir SKO vienībās un rindu **iestata**: SKO, kas jau ir sarakstā, saņem jauno daudzumu, nevis papildu daudzumu.
+- Ir spēkā tie paši noteikumi, kas pievienojot ar roku: zemāk aprakstītās budžeta, noliktavas vietas un iepakojuma pārbaudes. Rinda, ko saraksts noraida, atnāk atpakaļ kopā ar iemeslu, un pārējās tik un tā tiek pievienotas.
+- Tas tikai pievieno un maina daudzumus; prioritātes un rindu noņemšana paliek iepirkumu saraksta tabulā.
+- Katra izmaiņa tiek reģistrēta kopā ar tavu pieprasījumu, un to var atcelt: palūdz asistentam to atsaukt, vai administrators to var izdarīt no AI izmaiņu žurnāla (AI changes log).
+- Pieteikšana ir slēdzis tava lietotāja kontā, ko ieslēdz administrators, un tev ir vajadzīga arī atļauja rediģēt iepirkumu tavai organizācijai.
+
 ## Kad saraksts saka nē
 
 Pievienošana tiek atteikta trīs gadījumos, un tas ir ar nolūku: saraksts sasniedzis **budžeta** griestus šim partnerim (A ranga un nulles atlikuma preces ir atbrīvotas — ārkārtas gadījums vienmēr iederas), noliktavai palikuši mazāk par 5% brīvu vietu, vai šis partneris jau ir izmantojis savu taisnīgo daļu no brīvajām vietām ar produktiem, ko tu nekad neesi turējis krājumā. Risini ziņojumu, nevis meklē citu ceļu — tas pats slēdzis darbojas manuālai pievienošanai, masveida pievienošanai un automātiskajai aizpildei. [Paneļa raksts](/docs/reading-the-partner-shopping-dashboard-lv) izskaidro, no kurienes šie limiti nāk.
@@ -66,6 +76,7 @@ Tiklīdz partneris [nosūta piegādi savai noliktavai](/docs/fulfilling-partner-
 <li><b>Pievienot sarakstam:</b> <b>Shopping list</b> → <b>Add stocks</b>, vai <b>Browse</b> un iestati daudzumus uz produktu kartītēm, vai <b>Auto-fill</b> (vai <b>+ fill</b> uz paneļa kartītes) priekšlikumam.</li>
 <li><b>Pasūtīt pilnās partijās:</b> poga blakus <i>full batches every N SKO</i> uz rindas vai produkta kartītes.</li>
 <li><b>Pielāgot atklātās rindas:</b> maini prioritāti vai dzēs rindas iepirkumu saraksta tabulā; maini daudzumus no produktu kartītēm sadaļā <b>Browse</b>.</li>
+<li><b>Ļaut kādam aizpildīt sarakstu ar sava mākslīgā intelekta asistenta palīdzību (administratoriem):</b> <b>Sysadmin → Users</b> → atver lietotāju → <b>Edit</b> → <b>Access</b> → ieslēdz <b>Can connect AI assistant</b>, tad <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Izslēgt vienību no automātiskās aizpildes:</b> tava organizācija → <b>Warehouse → Inventory</b> → atver SKO → <b>Edit SKO</b> → ieslēdz <b>Do not auto order</b>.</li>
 <li><b>Sekot un saņemt piegādi:</b> tā pati partnera lapa → <b>Stock deliveries</b> → kad prece pienāk, <b>Receive</b> → pārbaudi → novieto vietās.</li>
 </ul>

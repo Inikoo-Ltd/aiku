@@ -5218,6 +5218,35 @@ describe('partner shopping list', function () {
         expect($order->transactions()->count())->toBe(2);
     });
 
+    test('the ai assistant fills the hub shopping list only when enrolled, logged and revertible', function () {
+        $user = $this->adminGuest->getUser();
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => false]);
+        $arguments = [
+            'organisation' => $this->orgPartner->organisation->slug,
+            'lines'        => [['sko' => strtolower($this->buyerOrgStock->code), 'quantity' => 4]],
+            'request_text' => 'ok add it to the shopping list',
+        ];
+        $openLine = fn () => PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->first();
+
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, $arguments)
+            ->assertHasErrors(['not enabled for this user']);
+        expect($openLine())->toBeNull();
+
+        $user->update(['can_use_mcp_procurement' => true]);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, $arguments)
+            ->assertOk()->assertSee('change_log_id');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect((float) $openLine()->quantity)->toBe(4.0)
+            ->and($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PARTNER_SHOPPING_LIST)
+            ->and($mcpChange->data['after_text'])->toBe($this->buyerOrgStock->stock->code.': 4');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $user);
+        expect($openLine())->toBeNull();
+
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, [...$arguments, 'lines' => [['sko' => 'NOPE-999', 'quantity' => 1]]])
+            ->assertHasErrors(['NOPE-999']);
+    });
 });
 
 describe('partner browse', function () {

@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -52,6 +52,16 @@ Auto-fill można też otworzyć od razu zawężone: **+ fill** na kafelku ryzyka
 
 Dobry nawyk: pracuj nad kafelkami pulpitu od najgorszych, potem raz na cykl uzupełnienia uruchom Auto-fill dla tego, co zostało, przeczytaj powody, odznacz to, z czym się nie zgadzasz, i dodaj resztę.
 
+## Poproś swojego asystenta AI o dodanie pozycji
+
+Jeśli Twoje konto jest włączone do tej funkcji, asystent AI, którego podłączysz do aiku, może dodawać pozycje do listy za Ciebie. Planowanie zrób w swoim asystencie - zapytaj, co się kończy, i przejrzyjcie razem liczby - a gdy będziesz zadowolony, powiedz mu: *"ok, dodaj to do listy zakupowej"*. Najpierw pokaże Ci kody SKO i ilości, a doda je dopiero po Twoim potwierdzeniu.
+
+- Ilości są w SKO i **ustawiają** pozycję: SKO, które już jest na liście, dostaje nową ilość, a nie dodatkową.
+- Obowiązują te same zasady co przy ręcznym dodawaniu: budżet, miejsce w magazynie i kontrole opakowań opisane poniżej. Pozycja odrzucona przez listę wraca z powodem, a pozostałe i tak zostają dodane.
+- Asystent tylko dodaje i zmienia ilości; priorytety i usuwanie pozycji pozostają w tabeli listy zakupowej.
+- Każda zmiana jest zapisywana razem z Twoją prośbą i można ją cofnąć: poproś asystenta o jej wycofanie albo zrobi to administrator z dziennika AI changes (zmian AI).
+- Włączenie to przełącznik na Twoim koncie użytkownika, który ustawia administrator; potrzebujesz też uprawnienia do edycji zakupów dla swojej organizacji.
+
 ## Kiedy lista mówi nie
 
 Dodawanie jest odrzucane celowo w trzech przypadkach: lista osiągnęła **budget** (budżet) dla tego partnera (pozycje rangi A i bez stanu magazynowego są zwolnione - awaria zawsze się zmieści), magazyn ma poniżej 5% wolnych lokalizacji, albo ten partner wykorzystał już swój sprawiedliwy udział w wolnych slotach produktami, których nigdy nie magazynowałeś. Zajmij się komunikatem zamiast szukać obejścia: ta sama blokada obejmuje dodawanie ręczne, hurtowe i Auto-fill. [Artykuł o pulpicie](/docs/reading-the-partner-shopping-dashboard-pl) wyjaśnia, skąd biorą się te limity.
@@ -66,6 +76,7 @@ Gdy partner [wyśle przesyłkę do swojego magazynu](/docs/fulfilling-partner-or
 <li><b>Dodaj do listy:</b> <b>Shopping list</b> (Lista zakupowa) → <b>Add stocks</b> (Dodaj towary), albo <b>Browse</b> (Przeglądaj) i ustaw ilości na kartach produktów, albo <b>Auto-fill</b> (lub <b>+ fill</b> na kafelku pulpitu) po propozycję.</li>
 <li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
+<li><b>Pozwól komuś uzupełniać listę przez jego asystenta AI (administratorzy):</b> <b>Sysadmin → Users</b> (Administracja systemu → Użytkownicy) → otwórz użytkownika → <b>Edit</b> → <b>Access</b> → włącz <b>Can connect AI assistant</b>, a potem <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Wyłącz pozycję z auto-fill:</b> Twoja organizacja → <b>Warehouse → Inventory</b> (Magazyn → Zapasy) → otwórz SKO → <b>Edit SKO</b> (Edytuj SKO) → włącz <b>Do not auto order</b> (Nie zamawiaj automatycznie).</li>
 <li><b>Śledź i przyjmij przesyłkę:</b> ta sama strona partnera → <b>Stock deliveries</b> (Dostawy towaru) → gdy towar dotrze, <b>Receive</b> (Przyjmij) → sprawdź → rozmieść na lokalizacjach.</li>
 </ul>

@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-09-09
+date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -52,6 +52,16 @@ Auto-fill can also be opened already scoped: **+ fill** on a risk tile on the da
 
 A good habit: work the dashboard tiles worst-first, then run Auto-fill once a replenishment cycle for whatever is left, read the reasons, untick what you disagree with, and add the rest.
 
+## Asking your AI assistant to add lines
+
+If your account is enrolled, the AI assistant you connect to aiku can put lines on the list for you. Do the planning in your own assistant — ask it what is running low, go through the numbers together — and when you are happy, tell it: *"ok, add these to the shopping list"*. It shows you the SKO codes and quantities first and only adds them after you confirm.
+
+- Quantities are in SKOs and **set** the line: a SKO already on the list gets the new quantity, not an extra one.
+- The same rules apply as when you add by hand: the budget, warehouse space and pack checks below. A line the list refuses comes back with the reason, and the rest still go in.
+- It only adds and changes quantities; priorities and removing lines stay in the shopping list table.
+- Every change is logged with your request and can be undone: ask the assistant to revert it, or an administrator can do it from the AI changes log.
+- Enrolment is a switch on your user account that an administrator turns on, and you also need permission to edit procurement for your organisation.
+
 ## When the list says no
 
 Adds are refused in three cases, on purpose: the list has reached the **budget** for this partner (A-rank and out-of-stock items are exempt — an emergency always fits), the warehouse is under 5% free locations, or this partner has already claimed its fair share of the free slots with products you have never stocked. Deal with the message rather than looking for another way in: the same guard covers manual adds, bulk adds and Auto-fill. The [dashboard article](/docs/reading-the-partner-shopping-dashboard) explains where those limits come from.
@@ -66,6 +76,7 @@ Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-
 <li><b>Add to the list:</b> <b>Shopping list</b> → <b>Add stocks</b>, or <b>Browse</b> and set quantities on the product cards, or <b>Auto-fill</b> (or <b>+ fill</b> on a dashboard tile) for a proposal.</li>
 <li><b>Order in whole batches:</b> the button beside <i>full batches every N SKO</i> on the line or the product card.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
+<li><b>Let someone fill the list through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can connect AI assistant</b>, then <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Keep an item out of auto-fill:</b> your organisation → <b>Warehouse → Inventory</b> → open the SKO → <b>Edit SKO</b> → switch on <b>Do not auto order</b>.</li>
 <li><b>Watch and receive the shipment:</b> same partner page → <b>Stock deliveries</b> → when the goods arrive, <b>Receive</b> → check → place into locations.</li>
 </ul>

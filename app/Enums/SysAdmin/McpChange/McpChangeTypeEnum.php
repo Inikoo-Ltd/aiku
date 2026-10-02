@@ -16,12 +16,14 @@ enum McpChangeTypeEnum: string
 
     case RELATED_PRODUCTS = 'related_products';
     case ORG_STOCK_STATE = 'org_stock_state';
+    case PARTNER_SHOPPING_LIST = 'partner_shopping_list';
 
     public static function labels(): array
     {
         return [
             'related_products' => __('Related products'),
-            'org_stock_state'  => __('SKO state'),
+            'org_stock_state'       => __('SKO state'),
+            'partner_shopping_list' => __('Hub shopping list'),
         ];
     }
 
@@ -33,6 +35,7 @@ enum McpChangeTypeEnum: string
         return match ($this) {
             McpChangeTypeEnum::RELATED_PRODUCTS => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE  => 'can_use_mcp_discontinue',
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST => 'can_use_mcp_procurement',
         };
     }
 }
