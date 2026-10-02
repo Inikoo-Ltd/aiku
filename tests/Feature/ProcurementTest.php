@@ -5247,6 +5247,25 @@ describe('partner shopping list', function () {
         App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, [...$arguments, 'lines' => [['sko' => 'NOPE-999', 'quantity' => 1]]])
             ->assertHasErrors(['NOPE-999']);
     });
+
+    test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {
+        $user = $this->adminGuest->getUser();
+        $this->buyerOrgStock->update(['quantity_available' => 10]);
+        $this->buyerOrgStock->stats()->update(['predicted_daily_usage' => 2, 'days_of_cover' => 5, 'recommended_order_quantity' => 30]);
+        $planning = fn () => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubOrderPlanningTool::class, [
+            'organisation' => $this->orgPartner->organisation->slug,
+            'codes'        => [$this->buyerOrgStock->code],
+        ])->assertOk();
+
+        $planning()->assertSee(['"days_until_out_of_stock":5', '"shelf_life_days":365,"shelf_life_recorded":false,"max_order_before_expiry":720,"suggested_quantity":30']);
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $sellerOrgStock->organisation_id)->first()
+            ?? StoreProduction::make()->action($sellerOrgStock->organisation, ['code' => 'PLNP', 'name' => 'Planning factory']);
+        StoreArtefact::make()->action($production, ['code' => 'PLN-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id, 'shelf_life_days' => 10]);
+
+        $planning()->assertSee('"shelf_life_days":10,"shelf_life_recorded":true,"max_order_before_expiry":10,"suggested_quantity":10');
+    });
 });
 
 describe('partner browse', function () {

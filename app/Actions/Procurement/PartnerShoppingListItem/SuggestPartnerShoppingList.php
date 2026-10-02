@@ -23,6 +23,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -142,7 +143,30 @@ class SuggestPartnerShoppingList extends OrgAction
      */
     protected function candidates(OrgPartner $orgPartner): array
     {
-        $rows = DB::table('org_stocks')
+        $rows = $this->candidatesQuery($orgPartner)
+            ->whereNull('partner_shopping_list_items.id')
+            ->where('org_stocks.quantity_available', '>', 0)
+            ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        $exchange = $this->exchange($orgPartner);
+
+        return $rows->map(fn ($row) => $this->candidate($row, $exchange))->all();
+    }
+
+    public function exchange(OrgPartner $orgPartner): float
+    {
+        return $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+    }
+
+    /**
+     * Every active SKO the partner sells, with our side of it: stock, forecast and the open list line.
+     */
+    public function candidatesQuery(OrgPartner $orgPartner): Builder
+    {
+        return DB::table('org_stocks')
             ->leftJoin('org_stocks as buyer_org_stocks', function ($join) use ($orgPartner) {
                 $join->on('buyer_org_stocks.stock_id', 'org_stocks.stock_id')
                     ->where('buyer_org_stocks.organisation_id', $orgPartner->organisation_id);
@@ -158,10 +182,7 @@ class SuggestPartnerShoppingList extends OrgAction
             })
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE->value)
-            ->whereNull('partner_shopping_list_items.id')
-            ->where('org_stocks.quantity_available', '>', 0)
             ->whereRaw('coalesce(buyer_org_stocks.is_on_demand, false) = false')
-            ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
             ->select([
                 'org_stocks.id',
                 'org_stocks.stock_id',
@@ -179,33 +200,32 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.packed_in',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
-            ->get()
-            ->unique('id')
-            ->values();
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query));
+    }
 
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+    /**
+     * @return array<string, mixed>
+     */
+    public function candidate(object $row, float $exchange): array
+    {
+        $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
 
-        return $rows->map(function ($row) use ($exchange) {
-            $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
-
-            return [
-                'org_stock_id'      => $row->id,
-                'stock_id'          => (int) $row->stock_id,
-                'code'              => $row->code,
-                'name'              => $row->name,
-                'partner_available' => (float) $row->partner_available,
-                'buyer_available'   => (float) ($row->buyer_available ?? 0),
-                'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
-                'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
-                'health_rank'       => $row->buyer_health_rank,
-                'never_stocked'     => $row->buyer_org_stock_id === null,
-                'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
-                'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
-                'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
-                'order_quantum'     => BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size),
-            ];
-        })->all();
+        return [
+            'org_stock_id'      => $row->id,
+            'stock_id'          => (int) $row->stock_id,
+            'code'              => $row->code,
+            'name'              => $row->name,
+            'partner_available' => (float) $row->partner_available,
+            'buyer_available'   => (float) ($row->buyer_available ?? 0),
+            'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
+            'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
+            'health_rank'       => $row->buyer_health_rank,
+            'never_stocked'     => $row->buyer_org_stock_id === null,
+            'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
+            'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
+            'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
+            'order_quantum'     => BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size),
+        ];
     }
 
     /**

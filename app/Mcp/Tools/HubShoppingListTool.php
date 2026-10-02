@@ -28,7 +28,7 @@ use Laravel\Mcp\Server\Tool;
  * the procurement edit permission the same change needs in the UI. Lines go through the same
  * action as the shopping list page, so warehouse space and packed-in guards still apply.
  */
-#[Description('Shows or fills the shopping list an organisation sends to the manufacturing hub. Without lines it only shows the open list. With lines it sets the quantity (in SKOs) of each SKO code on the list: a SKO already on the list gets the new quantity, not an extra one. Lines the hub cannot take are reported as skipped with the reason. Only write after the user confirmed the codes and quantities in their own words, passing their request text. Only for users enrolled to fill the hub shopping list through their assistant.')]
+#[Description('Shows or fills the shopping list an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines it only shows the open list. With lines it sets the quantity (in SKOs) of each SKO code on the list: a SKO already on the list gets the new quantity, not an extra one. Lines the hub cannot take are reported as skipped with the reason. Only write after the user confirmed the codes and quantities in their own words, passing their request text. Only for users enrolled to fill the hub shopping list through their assistant.')]
 class HubShoppingListTool extends Tool
 {
     use WithMcpPermissions;
@@ -58,7 +58,7 @@ class HubShoppingListTool extends Tool
         $orgPartner = OrgPartner::where('organisation_id', $organisation->id)
             ->where('status', true)
             ->whereHas('partner', fn ($query) => $query->where('is_manufacturing_hub', true))
-            ->with('partner:id,code,name')
+            ->with('partner')
             ->first();
         if (!$orgPartner) {
             return Response::error("{$organisation->code} does not buy from a manufacturing hub.");

@@ -56,6 +56,7 @@ Un obicei bun: lucrează plăcile din dashboard de la cel mai rău caz în jos, 
 
 Dacă contul tău este înrolat, asistentul AI pe care îl conectezi la aiku poate pune linii pe listă în locul tău. Planifică în propriul asistent — întreabă-l ce se termină, parcurgeți împreună cifrele — iar când ești mulțumit, spune-i: *"ok, adaugă-le pe lista de cumpărături"*. Îți arată mai întâi codurile SKO și cantitățile și adaugă abia după ce confirmi.
 
+- Pentru a planifica, asistentul citește aceleași cifre pe care le vezi tu: stocul, vânzările, zilele până rămânem fără stoc, cantitatea din prognoză, **order step** (pasul de comandă) și **shelf life** (termenul de valabilitate). Nu propune niciodată mai mult decât se vinde înainte să expire; un produs fără termen de valabilitate înregistrat încă este planificat ca valabil un an.
 - Cantitățile sunt în SKO-uri și **setează** linia: un SKO aflat deja pe listă primește noua cantitate, nu una în plus.
 - Se aplică aceleași reguli ca la adăugarea manuală: verificările de buget, de spațiu în depozit și de pachete de mai jos. O linie pe care lista o refuză revine cu motivul, iar restul intră oricum.
 - Doar adaugă și schimbă cantități; prioritățile și ștergerea liniilor rămân în tabelul listei de cumpărături.

@@ -56,6 +56,7 @@ Un buen hábito: trabaja las casillas del panel empezando por las peores, luego 
 
 Si tu cuenta está habilitada, el asistente de IA que conectas a aiku puede poner líneas en la lista por ti. Haz la planificación en tu propio asistente — pregúntale qué se está agotando, repasad los números juntos — y cuando estés conforme, dile: *"vale, añade esto a la lista de la compra"*. Primero te muestra los códigos de SKO y las cantidades, y solo los añade cuando lo confirmas.
 
+- Para planificar, el asistente lee los mismos números que ves tú: stock, ventas, días hasta que nos quedemos sin él, la cantidad del pronóstico, el order step y el shelf life. Nunca propone más de lo que se vende antes de que caduque; un artículo sin shelf life registrado todavía se planifica como si durara un año.
 - Las cantidades están en SKOs y **fijan** la línea: un SKO que ya está en la lista recibe la nueva cantidad, no una más.
 - Se aplican las mismas reglas que al añadir a mano: las comprobaciones de budget, espacio de almacén y packs que verás más abajo. Una línea que la lista rechaza vuelve con su motivo, y el resto se añade igualmente.
 - Solo añade y cambia cantidades; las prioridades y eliminar líneas se quedan en la tabla de la lista de la compra.

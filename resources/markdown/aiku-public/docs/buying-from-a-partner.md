@@ -56,6 +56,7 @@ A good habit: work the dashboard tiles worst-first, then run Auto-fill once a re
 
 If your account is enrolled, the AI assistant you connect to aiku can put lines on the list for you. Do the planning in your own assistant — ask it what is running low, go through the numbers together — and when you are happy, tell it: *"ok, add these to the shopping list"*. It shows you the SKO codes and quantities first and only adds them after you confirm.
 
+- To plan, the assistant reads the same numbers you see: stock, sales, days until we run out, the forecast quantity, the order step and the shelf life. It never proposes more than sells before it expires; a product with no shelf life recorded yet is planned as lasting one year.
 - Quantities are in SKOs and **set** the line: a SKO already on the list gets the new quantity, not an extra one.
 - The same rules apply as when you add by hand: the budget, warehouse space and pack checks below. A line the list refuses comes back with the reason, and the rest still go in.
 - It only adds and changes quantities; priorities and removing lines stay in the shopping list table.

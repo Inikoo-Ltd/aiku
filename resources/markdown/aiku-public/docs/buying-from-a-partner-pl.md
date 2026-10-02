@@ -56,6 +56,7 @@ Dobry nawyk: pracuj nad kafelkami pulpitu od najgorszych, potem raz na cykl uzup
 
 Jeśli Twoje konto jest włączone do tej funkcji, asystent AI, którego podłączysz do aiku, może dodawać pozycje do listy za Ciebie. Planowanie zrób w swoim asystencie - zapytaj, co się kończy, i przejrzyjcie razem liczby - a gdy będziesz zadowolony, powiedz mu: *"ok, dodaj to do listy zakupowej"*. Najpierw pokaże Ci kody SKO i ilości, a doda je dopiero po Twoim potwierdzeniu.
 
+- Do planowania asystent czyta te same liczby, które widzisz Ty: stan, sprzedaż, dni do wyczerpania zapasu, prognozowaną ilość, krok zamówienia (order step) i trwałość (shelf life). Nigdy nie proponuje więcej, niż się sprzeda przed upływem terminu przydatności; produkt, dla którego nie zapisano jeszcze trwałości, jest planowany tak, jakby miał ją równą jednemu rokowi.
 - Ilości są w SKO i **ustawiają** pozycję: SKO, które już jest na liście, dostaje nową ilość, a nie dodatkową.
 - Obowiązują te same zasady co przy ręcznym dodawaniu: budżet, miejsce w magazynie i kontrole opakowań opisane poniżej. Pozycja odrzucona przez listę wraca z powodem, a pozostałe i tak zostają dodane.
 - Asystent tylko dodaje i zmienia ilości; priorytety i usuwanie pozycji pozostają w tabeli listy zakupowej.

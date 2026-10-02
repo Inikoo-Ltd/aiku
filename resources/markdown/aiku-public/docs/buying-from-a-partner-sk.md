@@ -56,6 +56,7 @@ Dobrý zvyk: prechádzajte dlaždice na paneli od najhoršej, potom raz za cyklu
 
 Ak je váš účet zapísaný, AI asistent, ktorého pripojíte k aiku, vám vie dávať riadky do zoznamu. Plánovanie robte vo vlastnom asistentovi — spýtajte sa ho, čo dochádza, a prejdite si čísla spolu — a keď ste spokojní, povedzte mu: *„ok, pridaj toto do nákupného zoznamu"*. Najprv vám ukáže kódy SKO a množstvá a pridá ich až po vašom potvrdení.
 
+- Pri plánovaní asistent číta rovnaké čísla, aké vidíte vy: sklad, predaj, dni do vypredania, predpokladané množstvo, order step a dobu spotreby (shelf life). Nikdy nenavrhne viac, než sa predá pred uplynutím spotreby; produkt, ktorý ešte nemá zaznamenanú dobu spotreby, plánuje ako produkt s trvanlivosťou jeden rok.
 - Množstvá sú v SKO a riadok **nastavujú**: SKO, ktoré už je v zozname, dostane nové množstvo, nie ďalšie navyše.
 - Platia rovnaké pravidlá ako pri ručnom pridávaní: kontroly rozpočtu, skladového priestoru a balení uvedené nižšie. Riadok, ktorý zoznam odmietne, sa vráti s dôvodom a ostatné sa pridajú aj tak.
 - Iba pridáva a mení množstvá; priority a odstraňovanie riadkov zostávajú v tabuľke nákupného zoznamu.

@@ -56,6 +56,7 @@ Dobrý zvyk: projděte dlaždice dashboardu od nejhoršího, pak jednou za dopl�
 
 Pokud je váš účet zapojen, může vám AI asistent, kterého k aiku připojíte, řádky na seznam přidat. Plánování udělejte ve svém vlastním asistentovi — zeptejte se ho, čeho se blíží nedostatek, a projděte čísla společně — a až budete spokojeni, řekněte mu: *„dobře, přidej to na nákupní seznam"*. Nejdřív vám ukáže kódy SKO a množství a přidá je teprve po vašem potvrzení.
 
+- Při plánování asistent čte stejná čísla, která vidíte vy: sklad, prodeje, dny do vyprodání, prognózované množství, krok objednávky (order step) a dobu použitelnosti (shelf life). Nikdy nenavrhne víc, než se prodá před vypršením doby použitelnosti; produkt, u kterého zatím není doba použitelnosti zaznamenána, se plánuje jako by vydržel jeden rok.
 - Množství jsou v SKO a řádek **nastavují**: SKO, které už na seznamu je, dostane nové množství, ne další navíc.
 - Platí stejná pravidla jako při ručním přidání: kontroly rozpočtu, skladového prostoru a balení uvedené níže. Řádek, který seznam odmítne, se vrátí s důvodem a ostatní se přidají.
 - Asistent pouze přidává a mění množství; priority a odstraňování řádků zůstávají v tabulce nákupního seznamu.

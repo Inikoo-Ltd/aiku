@@ -56,6 +56,7 @@ Laba paraža: strādā ar paneļa kartītēm no sliktākā uz labāko, tad palai
 
 Ja tavs konts ir pieteikts šai iespējai, mākslīgā intelekta asistents, ko savieno ar aiku, var tavā vietā ielikt rindas sarakstā. Plānošanu veic savā asistentā — pajautā, kam drīz beigsies, kopā izej cauri skaitļiem — un, kad esi apmierināts, pasaki: *"labi, pievieno šos iepirkumu sarakstam"*. Tas vispirms parāda SKO kodus un daudzumus un pievieno tos tikai pēc tava apstiprinājuma.
 
+- Plānojot asistents izmanto tos pašus skaitļus, ko redzi tu: krājumu, pārdošanu, dienas līdz brīdim, kad mums beigsies, prognozēto daudzumu, pasūtījuma soli un glabāšanas laiku (*shelf life*). Tas nekad nepiedāvā vairāk, nekā tiek pārdots pirms derīguma termiņa beigām; produkts, kuram glabāšanas laiks vēl nav ierakstīts, tiek plānots kā tāds, kas derīgs vienu gadu.
 - Daudzumi ir SKO vienībās un rindu **iestata**: SKO, kas jau ir sarakstā, saņem jauno daudzumu, nevis papildu daudzumu.
 - Ir spēkā tie paši noteikumi, kas pievienojot ar roku: zemāk aprakstītās budžeta, noliktavas vietas un iepakojuma pārbaudes. Rinda, ko saraksts noraida, atnāk atpakaļ kopā ar iemeslu, un pārējās tik un tā tiek pievienotas.
 - Tas tikai pievieno un maina daudzumus; prioritātes un rindu noņemšana paliek iepirkumu saraksta tabulā.
