@@ -17,6 +17,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -173,8 +174,9 @@ class CreateSupplier extends OrgAction
                         'type'      => 'input',
                         'label'     => __('Code'),
                         'value'     => '',
-                        'uppercase' => true,
-                        'required'  => true,
+                        'uppercase'   => true,
+                        'required'    => true,
+                        'takenValues' => $this->getTakenCodes(),
                     ],
                     'name'            => [
                         'type'     => 'input',
@@ -298,6 +300,14 @@ class CreateSupplier extends OrgAction
                 ],
             ],
         ]));
+    }
+
+    protected function getTakenCodes(): array
+    {
+        return Supplier::withTrashed()->where('group_id', $this->group->id)
+            ->get(['code', 'name'])
+            ->mapWithKeys(fn (Supplier $supplier) => [strtolower($supplier->code) => $supplier->name ?: $supplier->code])
+            ->all();
     }
 
     protected function getStoreRoute(Group|Agent $parent): array

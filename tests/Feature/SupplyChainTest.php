@@ -680,14 +680,16 @@ test('majordomo redirect supplier product link', function () {
 
 test('UI create supplier', function () {
     $this->withoutExceptionHandling();
+    $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.suppliers.create'));
 
-    $response->assertInertia(function (AssertableInertia $page) {
+    $response->assertInertia(function (AssertableInertia $page) use ($supplier) {
         $page
             ->component('CreateModel')
             ->has('title')
             ->has('pageHead')
             ->has('formData')
+            ->where('formData.blueprint.2.fields.code.takenValues.'.strtolower($supplier->code), $supplier->name ?: $supplier->code)
             ->has('breadcrumbs', 4);
     });
 });
