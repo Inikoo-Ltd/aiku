@@ -50,6 +50,7 @@ class StaffTaskResource extends JsonResource
             'model_type'        => $this->model_type,
             'model_id'          => $this->model_id,
             'model_label'       => $this->model?->reference ?? $this->model?->code ?? $this->model?->name,
+            'attachments'       => $this->attachmentGallery(),
             'conversation_ulid' => $this->conversation?->ulid,
             'is_subscribed'     => $this->conversation?->relationLoaded('participants') ? $this->conversation->participants->contains('id', $request->user()?->id) : null,
             'closed_at'         => $this->closed_at,

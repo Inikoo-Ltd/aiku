@@ -33,7 +33,7 @@ class GetStaffTasks
             ->when($view === 'requested', fn (Builder $query) => $query->where('requester_id', $user->id))
             ->when($view === 'model', fn (Builder $query) => $query->where('model_type', $modelType)->where('model_id', $modelId))
             ->when($closed, fn (Builder $query) => $query->whereNotNull('closed_at')->orderByDesc('closed_at'), fn (Builder $query) => $query->open()->orderByRaw('due_at asc nulls last, id asc'))
-            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model', 'media'])
             ->limit(200)
             ->get();
     }

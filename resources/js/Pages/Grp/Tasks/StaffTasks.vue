@@ -9,9 +9,8 @@ import { computed, onMounted, ref, watch } from "vue"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList } from "@fal"
+import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList, faPaperclip } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -19,10 +18,12 @@ import Image from "@/Common/Components/Image.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import StaffTaskImportDialog from "@/Components/Tasks/StaffTaskImportDialog.vue"
 import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
+import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useStaffTaskActions } from "@/Composables/useStaffTaskActions"
 
-library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList)
+library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList, faPaperclip)
 
 const props = defineProps<{
     title: string
@@ -46,6 +47,22 @@ const dialogOpen = ref(false)
 const importOpen = ref(false)
 const cancelNoteFor = ref<any | null>(null)
 const cancelNote = ref("")
+const quickLook = ref<any | null>(null)
+
+const onTaskUpdated = (updated: any) => {
+    const index = tasks.value.findIndex((t) => t.id === updated.id)
+    if (index === -1) return
+    if (!showClosed.value && ["done", "cancelled"].includes(updated.status)) {
+        tasks.value.splice(index, 1)
+    } else {
+        tasks.value[index] = updated
+    }
+}
+
+const { update, claim, syncCollaborators, toggleSubscription } = useStaffTaskActions((updated) => {
+    onTaskUpdated(updated)
+    if (quickLook.value?.id === updated.id) quickLook.value = updated
+})
 
 const load = async () => {
     loading.value = true
@@ -56,30 +73,6 @@ const load = async () => {
 
 watch([view, showClosed], load)
 
-const update = async (task: any, payload: Record<string, unknown>) => {
-    try {
-        const { data } = await axios.patch(route("grp.tasks.update", task.reference), payload)
-        const index = tasks.value.findIndex((t) => t.id === task.id)
-        if (index !== -1) tasks.value[index] = data.data
-        if (!showClosed.value && ["done", "cancelled"].includes(data.data.status)) {
-            tasks.value.splice(index, 1)
-        }
-    } catch (error: any) {
-        notify({ title: ctrans("Could not update task"), text: error.response?.data?.message, type: "error" })
-    }
-}
-
-const syncCollaborators = async (task: any, people: any[]) => {
-    try {
-        const { data } = await axios.patch(route("grp.tasks.collaborators.update", task.reference), { collaborator_ids: people.map((person) => person.id) })
-        const index = tasks.value.findIndex((t) => t.id === task.id)
-        if (index !== -1) tasks.value[index] = data.data
-    } catch (error: any) {
-        notify({ title: ctrans("Could not update task"), text: error.response?.data?.message, type: "error" })
-    }
-}
-
-const claim = (task: any) => update(task, { assignee_id: myId.value, status: "in_progress" })
 const done = (task: any) => update(task, { status: "done" })
 const askCancel = (task: any) => { cancelNoteFor.value = task; cancelNote.value = "" }
 const confirmCancel = async () => {
@@ -89,13 +82,6 @@ const confirmCancel = async () => {
 }
 
 const openThread = (task: any) => store.openTaskThread(task)
-
-const toggleSubscription = async (task: any) => {
-    const { data } = await axios.post(route("grp.tasks.subscription.toggle", task.reference))
-    const index = tasks.value.findIndex((t) => t.id === task.id)
-    if (index !== -1) tasks.value[index] = data.data
-    await store.fetchConversations()
-}
 
 const onCreated = (task: any) => {
     if (view.value === "requested" || task.assignee?.id === myId.value) tasks.value.unshift(task)
@@ -113,7 +99,7 @@ onMounted(async () => {
     await load()
     if (props.selected_task) {
         const task = tasks.value.find((t) => t.reference === props.selected_task)
-        if (task) openThread(task)
+        if (task) quickLook.value = task
     }
 })
 </script>
@@ -155,7 +141,7 @@ onMounted(async () => {
         <div v-else-if="!tasks.length" class="py-10 text-center text-sm text-gray-400">{{ ctrans('Nothing here') }}</div>
 
         <ul v-else class="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
-            <li v-for="task in tasks" :key="task.id" class="flex items-start gap-x-3 px-4 py-3">
+            <li v-for="task in tasks" :key="task.id" class="flex items-start gap-x-3 px-4 py-3 cursor-pointer hover:bg-gray-50" @click="quickLook = task">
                 <FontAwesomeIcon :icon="task.status_icon.icon" :class="task.status_icon.class" class="mt-1" fixed-width v-tooltip="task.status_label" aria-hidden="true" />
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-x-2">
@@ -171,19 +157,25 @@ onMounted(async () => {
                             <span class="text-gray-300">→</span>
                             {{ task.assignee?.name ?? task.department_label ?? '—' }}
                         </span>
-                        <StaffTaskCollaborators
-                            :model-value="task.collaborators"
-                            :exclude-ids="task.assignee ? [task.assignee.id] : []"
-                            compact
-                            @update:model-value="(people) => syncCollaborators(task, people)" />
+                        <span @click.stop>
+                            <StaffTaskCollaborators
+                                :model-value="task.collaborators"
+                                :exclude-ids="task.assignee ? [task.assignee.id] : []"
+                                compact
+                                @update:model-value="(people) => syncCollaborators(task, people)" />
+                        </span>
                         <span v-if="task.due_at" class="flex items-center gap-x-1" :class="task.is_overdue ? 'text-red-600' : ''">
                             <FontAwesomeIcon icon="fal fa-calendar" fixed-width aria-hidden="true" />
                             {{ useFormatTime(task.due_at) }}
                         </span>
                         <span>{{ useFormatTime(task.created_at, { formatTime: 'hm' }) }}</span>
+                        <span v-if="task.attachments?.length" v-tooltip="ctrans('Attachments')" class="flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                            {{ task.attachments.length }}
+                        </span>
                     </div>
                 </div>
-                <div class="flex items-center gap-x-1 shrink-0">
+                <div class="flex items-center gap-x-1 shrink-0" @click.stop>
                     <button v-tooltip="ctrans('Open thread')" class="p-1.5 text-gray-400 hover:text-[--app-accent]" @click="openThread(task)">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </button>
@@ -210,8 +202,9 @@ onMounted(async () => {
 
     <StaffTaskDialog :is-open="dialogOpen" @close="dialogOpen = false" @created="onCreated" />
     <StaffTaskImportDialog :is-open="importOpen" @close="importOpen = false" @created="onImported" />
+    <StaffTaskQuickLook v-model:task="quickLook" @updated="onTaskUpdated" />
 
-    <div v-if="cancelNoteFor" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40" @click.self="cancelNoteFor = null">
+    <div v-if="cancelNoteFor" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="cancelNoteFor = null">
         <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
             <h3 class="text-sm font-semibold text-gray-900">{{ ctrans(`Why can't :reference be done?`, { reference: cancelNoteFor.reference }) }}</h3>
             <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
