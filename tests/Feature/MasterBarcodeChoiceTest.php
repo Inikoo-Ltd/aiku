@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcod
 use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
 use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
 use App\Actions\Goods\Barcode\StoreBarcode;
+use App\Actions\Goods\Barcode\SyncBarcodeToTradeUnit;
 use App\Actions\Maintenance\Goods\RepairBarcodesStatus;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -34,7 +35,9 @@ use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -377,4 +380,48 @@ test('a master barcode already on another listing in one of its shops is refused
     expect(fn () => UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->lampBarcode]))
         ->toThrow(Illuminate\Validation\ValidationException::class)
         ->and($this->product->refresh()->barcode)->not->toBe($this->lampBarcode);
+});
+
+test('a barcode printed on a product is added, linked to its trade unit and never handed out from the pool', function () {
+    $tradeUnit = StoreTradeUnit::make()->action(group(), array_merge(TradeUnit::factory()->definition(), [
+        'code' => 'Ext-'.substr(uniqid(), -6),
+        'name' => 'Incense with the maker barcode',
+    ]));
+
+    $digits = '890'.str_pad((string)random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
+    $number = collect(range(0, 9))->map(fn ($digit) => $digits.$digit)->first(fn ($candidate) => StoreBarcode::make()->hasValidCheckDigit($candidate));
+
+    get(route('grp.trade_units.barcodes.create'))->assertOk();
+
+    post(route('grp.models.barcodes.store'), [
+        'number'     => $number,
+        'trade_unit' => $tradeUnit->id,
+    ])->assertRedirect();
+
+    $barcode = Barcode::where('group_id', $this->group->id)->where('number', $number)->firstOrFail();
+
+    expect($tradeUnit->refresh()->barcode)->toBe($number)
+        ->and($barcode->status)->toBe(BarcodeStatusEnum::USED)
+        ->and($barcode->data['external'])->toBeTrue();
+
+    SyncBarcodeToTradeUnit::make()->action($barcode, null);
+    RepairBarcodesStatus::make()->handle($this->group, true);
+
+    expect($barcode->refresh()->status)->toBe(BarcodeStatusEnum::AVAILABLE)
+        ->and(Barcode::where('id', $barcode->id)->free()->exists())->toBeFalse();
+});
+
+test('a mistyped or already known barcode is refused', function () {
+    $tradeUnit = StoreTradeUnit::make()->action(group(), array_merge(TradeUnit::factory()->definition(), [
+        'code' => 'Ext-'.substr(uniqid(), -6),
+        'name' => 'Incense with a typo',
+    ]));
+
+    post(route('grp.models.barcodes.store'), ['number' => '8906006498571', 'trade_unit' => $tradeUnit->id])
+        ->assertSessionHasErrors('number');
+
+    post(route('grp.models.barcodes.store'), ['number' => $this->lampBarcode, 'trade_unit' => $tradeUnit->id])
+        ->assertSessionHasErrors('number');
+
+    expect($tradeUnit->refresh()->barcode)->toBeNull();
 });
