@@ -72,7 +72,21 @@ class SyncStaffTaskCollaborators
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffTask')->isVisibleTo($request->user());
+        $task = $request->route('staffTask');
+        $user = $request->user();
+
+        if (!$task->isVisibleTo($user) || !$task->canChangeCollaboratorsBy($user)) {
+            return false;
+        }
+
+        if ($task->canRemoveCollaboratorsBy($user)) {
+            return true;
+        }
+
+        $wantedIds  = collect($request->input('collaborator_ids', []))->map(fn ($id) => (int) $id)->all();
+        $removedIds = $task->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->diff($wantedIds);
+
+        return $removedIds->reject(fn (int $id) => $id === $user->id)->isEmpty();
     }
 
     public function rules(): array

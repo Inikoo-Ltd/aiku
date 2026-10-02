@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { Popover, Listbox, Dialog } from "primevue"
@@ -17,6 +17,7 @@ import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialo
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketPersonChip from "@/Components/Tickets/TicketPersonChip.vue"
 import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import TicketAttachmentPreview, { attachmentIconFor, isPreviewableAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
@@ -279,6 +280,20 @@ const onCollaboratorPickerHide = () => {
     saveCollaborators()
 }
 
+const canEditCollaborators = computed(() => !!props.can_manage_collaborators && !isClosed.value && props.ticket.status !== "pending_deploy")
+const removingCollaboratorId = ref<number | null>(null)
+
+const removeCollaborator = (userId: number) => {
+    if (isPending("collaborators") || !canEditCollaborators.value) return
+    removingCollaboratorId.value = userId
+    draftCollaboratorIds.value = collaboratorIds.value.filter((id) => id !== userId)
+    saveCollaborators()
+}
+
+watch(() => pendingAction.value, (action) => {
+    if (action !== "collaborators") removingCollaboratorId.value = null
+})
+
 onBeforeUnmount(saveCollaborators)
 
 const me = computed(() => props.options.assignees.find((engineer: any) => engineer.is_me))
@@ -397,15 +412,20 @@ const saveDeployComment = () => {
                     </button>
                 </Popover>
             </div>
-            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy')">
+            <div v-if="ticket.collaborators?.length || canEditCollaborators">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Collaborators") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span v-for="collaborator in ticket.collaborators" :key="collaborator.id" v-tooltip="collaborator.name" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-1 pl-1 pr-2.5 text-xs text-gray-700">
-                        <TicketUserAvatar :name="collaborator.name" :avatar="collaborator.avatar" size="xs" />
-                        {{ collaborator.short }}
-                    </span>
+                    <TicketPersonChip
+                        v-for="collaborator in ticket.collaborators"
+                        :key="collaborator.id"
+                        :name="collaborator.name"
+                        :short="collaborator.short"
+                        :avatar="collaborator.avatar"
+                        :removable="canEditCollaborators && !isCollaboratorPickerOpen && !isPending('collaborators')"
+                        :removing="removingCollaboratorId === collaborator.id"
+                        @remove="removeCollaborator(collaborator.id)" />
                     <button
-                        v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'"
+                        v-if="canEditCollaborators"
                         v-tooltip="ctrans('Add or remove collaborators')"
                         type="button"
                         class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-[--app-accent] hover:text-[--app-accent-strong] active:!border-[--app-accent] active:!text-[--app-accent-strong]"
@@ -414,7 +434,7 @@ const saveDeployComment = () => {
                         <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
                     </button>
                 </div>
-                <Popover v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
+                <Popover v-if="canEditCollaborators" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
                     <div class="flex max-h-72 w-60 flex-col overflow-y-auto text-sm">
                         <button
                             v-for="person in collaboratorCandidates"
