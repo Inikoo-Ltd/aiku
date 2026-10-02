@@ -305,7 +305,6 @@ const deployCommentDraft = ref("")
 const deployCommentImages = ref<File[]>([])
 const deployCommentRemovedFiles = ref<string[]>([])
 const deployCommentError = ref("")
-const deployCommentPreview = ref(false)
 
 type DeployCommentFile = { ulid: string; name: string; url: string; is_image: boolean }
 const keptDeployCommentFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter((file: DeployCommentFile) => !deployCommentRemovedFiles.value.includes(file.ulid)))
@@ -325,7 +324,6 @@ const startEditDeployComment = () => {
     deployCommentImages.value = []
     deployCommentRemovedFiles.value = []
     deployCommentError.value = ""
-    deployCommentPreview.value = false
     isEditingDeployComment.value = true
 }
 
@@ -502,15 +500,7 @@ const saveDeployComment = () => {
                     </div>
 
                     <template v-if="isEditingDeployComment">
-                        <div class="mt-2 flex items-center gap-3 text-xs">
-                            <button type="button" class="pb-0.5" :class="!deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = false">{{ ctrans("Write") }}</button>
-                            <button type="button" class="pb-0.5" :class="deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = true">{{ ctrans("Preview") }}</button>
-                        </div>
-                        <TicketComposer v-if="!deployCommentPreview" v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :max-images="deployCommentMaxImages" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
-                        <div v-else class="rounded border border-green-200 bg-white px-3 py-2 min-h-[4.5rem]">
-                            <TicketBody v-if="deployCommentDraft.trim()" :text="deployCommentDraft" />
-                            <p v-else class="text-sm italic text-gray-400">{{ ctrans("Nothing to preview") }}</p>
-                        </div>
+                        <TicketComposer class="mt-2" v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :max-images="deployCommentMaxImages" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
                         <div v-if="keptDeployCommentFiles.length" class="mt-2 flex flex-wrap gap-1.5">
                             <span v-for="file in keptDeployCommentFiles" :key="file.ulid" class="relative">
                                 <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover" />

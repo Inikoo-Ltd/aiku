@@ -79,7 +79,7 @@ onUnmounted(holdPeek)
 </script>
 
 <template>
-    <div class="relative w-full flex flex-col items-center">
+    <div class="relative w-full flex flex-col items-center empty:hidden">
         <Transition
             enter-active-class="transition duration-300 ease-out"
             enter-from-class="scale-x-0 opacity-0"
@@ -136,7 +136,8 @@ onUnmounted(holdPeek)
 
         <button
             v-else-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"
-            class="h-8 w-8 flex items-center justify-center text-xs"
+            v-tooltip="desktopAlerts === 'default' ? ctrans('Turn on desktop alerts') : ctrans('Desktop alerts are blocked in this browser')"
+            class="h-5 w-5 flex items-center justify-center text-xs"
             :class="desktopAlerts === 'default' ? 'text-amber-300 hover:text-white' : 'text-[var(--chat-muted)]'"
             @click="enableDesktopAlerts">
             <FontAwesomeIcon :icon="desktopAlerts === 'default' ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />

@@ -28,7 +28,7 @@ class StaffConversationRead implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return $this->conversation->participants
+        return $this->conversation->activeParticipants
             ->reject(fn (User $participant) => $participant->id === $this->reader->id)
             ->map(fn (User $participant) => new PrivateChannel('grp.personal.'.$participant->id))
             ->values()

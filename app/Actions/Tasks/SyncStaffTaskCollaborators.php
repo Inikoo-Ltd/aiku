@@ -49,8 +49,8 @@ class SyncStaffTaskCollaborators
         $task->collaborators()->attach(collect($addedIds)->mapWithKeys(fn (int $id) => [$id => ['added_by_id' => $actor->id]])->all());
 
         $conversation = $task->conversation;
-        $conversation->participants()->syncWithoutDetaching(array_merge($addedIds, [$actor->id]));
-        $conversation->participants()->detach(array_diff($removedIds, [$task->requester_id, $task->assignee_id, $actor->id]));
+        $conversation->addParticipants(array_merge($addedIds, [$actor->id]));
+        $conversation->removeParticipants(array_values(array_diff($removedIds, [$task->requester_id, $task->assignee_id, $actor->id])));
 
         $names = fn (array $ids) => User::whereIn('id', $ids)->get()->map(fn (User $user) => $user->chatName())->implode(', ');
         $lines = array_filter([

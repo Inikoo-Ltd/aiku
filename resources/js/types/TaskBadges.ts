@@ -14,8 +14,22 @@ export interface TaskRecentUpdate {
     created_at: string
 }
 
+export interface CreatedTask {
+    id: number
+    reference: string
+    subject: string
+    status: string
+    status_icon: any
+    due_at: string | null
+    assignee: string | null
+    has_eta_proposal: boolean
+    asked_for_help: boolean
+    route: string
+}
+
 export interface TaskBadges {
     mine: Record<string, TaskBadgeRow>
     today: { done: number; open: number }
+    created?: { open: number; needs_answer: number; tasks: CreatedTask[] }
     recent: TaskRecentUpdate[]
 }
