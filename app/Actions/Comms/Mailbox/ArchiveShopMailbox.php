@@ -50,12 +50,18 @@ use Throwable;
  * invoiced at least TOP_MIN_INVOICES times in TOP_MONTHS who are in the shop's top TOP_SHARE by
  * sales over that time. Gmail is searched by their addresses, TOP_ADDRESSES_PER_SEARCH at a time,
  * in a chain of its own beside the one by months; running it again starts those searches over.
+ *
+ * With --oldest-first the months are read one calendar month at a time from the oldest, so the
+ * mail not yet archived comes first and the recent months, already read, come last.
+ *
+ * A job only steps aside for a newer run of its mailbox: a run whose mark has gone from the cache
+ * carries on.
  */
 class ArchiveShopMailbox
 {
     use AsAction;
 
-    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--queue : Run every mailbox side by side on the queue} {--top : Only the best customers, all their mail however old}';
+    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--queue : Run every mailbox side by side on the queue} {--top : Only the best customers, all their mail however old} {--oldest-first : Read month by month from the oldest}';
 
     private const int TEXT_LIMIT = 20000;
 
@@ -101,12 +107,12 @@ class ArchiveShopMailbox
      *
      * @return array{read: int, archived: int, skipped: int, failed: int, done: bool}
      */
-    public function handle(Shop $shop, int $months = 12, ?int $limit = null, bool $top = false): array
+    public function handle(Shop $shop, int $months = 12, ?int $limit = null, bool $top = false, bool $oldestFirst = false): array
     {
         $total = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false];
 
         do {
-            $page = $this->archivePage($shop, $months, $top);
+            $page = $this->archivePage($shop, $months, $top, $oldestFirst);
 
             foreach (['read', 'archived', 'skipped', 'failed'] as $key) {
                 $total[$key] += $page[$key];
@@ -126,21 +132,23 @@ class ArchiveShopMailbox
      * long and a restarted worker carries on from the page reached. A job of a chain the command
      * has since replaced does nothing.
      */
-    public function asJob(Shop $shop, int $months = 12, ?string $run = null, bool $top = false): void
+    public function asJob(Shop $shop, int $months = 12, ?string $run = null, bool $top = false, bool $oldestFirst = false): void
     {
-        if (Cache::get(self::runKey($shop, $top)) !== $run) {
+        $current = Cache::get(self::runKey($shop, $top));
+
+        if ($current !== null && $current !== $run) {
             return;
         }
 
-        $page = $this->archivePage($shop, $months, $top);
+        $page = $this->archivePage($shop, $months, $top, $oldestFirst);
 
         if ($page['done'] || $page['stopped']) {
             return;
         }
 
         $page['rate_limited']
-            ? static::dispatch($shop, $months, $run, $top)->delay(now()->addSeconds($page['pause']))
-            : static::dispatch($shop, $months, $run, $top);
+            ? static::dispatch($shop, $months, $run, $top, $oldestFirst)->delay(now()->addSeconds($page['pause']))
+            : static::dispatch($shop, $months, $run, $top, $oldestFirst);
     }
 
     /**
@@ -151,7 +159,7 @@ class ArchiveShopMailbox
      *
      * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool, pause: int}
      */
-    public function archivePage(Shop $shop, int $months, bool $top = false): array
+    public function archivePage(Shop $shop, int $months, bool $top = false, bool $oldestFirst = false): array
     {
         $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false, 'pause' => 0];
         $client  = GmailClient::forShop($shop);
@@ -171,9 +179,15 @@ class ArchiveShopMailbox
             return ['rate_limited' => true, 'pause' => (int) now()->diffInSeconds(now()->addHour()->startOfHour()) + 1] + $result;
         }
 
-        $cursorKey = self::cursorKey($shop, $months, $top);
-        $cursor    = $top ? Cache::get($cursorKey, ['search' => 0, 'page' => null]) : ['search' => 0, 'page' => Cache::get($cursorKey)];
-        $searches  = $top ? array_chunk(self::topAddresses($shop), self::TOP_ADDRESSES_PER_SEARCH) : [["newer_than:{$months}m"]];
+        $cursorKey = self::cursorKey($shop, $months, $top, $oldestFirst);
+        $cursor    = $top || $oldestFirst
+            ? Cache::get($cursorKey, ['search' => 0, 'page' => null, 'from' => now()->subMonths($months)->startOfMonth()->timestamp])
+            : ['search' => 0, 'page' => Cache::get($cursorKey)];
+        $searches  = match (true) {
+            $top         => array_map(fn (array $addresses) => '{'.collect($addresses)->map(fn (string $address) => "from:$address to:$address cc:$address")->join(' ').'}', array_chunk(self::topAddresses($shop), self::TOP_ADDRESSES_PER_SEARCH)),
+            $oldestFirst => self::monthByMonth(Carbon::createFromTimestamp($cursor['from'])),
+            default      => ["newer_than:{$months}m"],
+        };
 
         if (!isset($searches[$cursor['search']])) {
             Cache::forget($cursorKey);
@@ -181,9 +195,7 @@ class ArchiveShopMailbox
             return ['done' => true] + $result;
         }
 
-        $search = $top
-            ? '{'.collect($searches[$cursor['search']])->map(fn (string $address) => "from:$address to:$address cc:$address")->join(' ').'}'
-            : $searches[0][0];
+        $search = $searches[$cursor['search']];
         $page   = retry(4, fn () => $client->listMessageIds($search.' '.self::LEAVE_OUT, $cursor['page'], self::PAGE_SIZE), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
         $new       = array_values(array_diff($page['ids'], EmailArchiveMessage::where('shop_id', $shop->id)->whereIn('gmail_message_id', $page['ids'])->pluck('gmail_message_id')->all()));
         $worth     = [];
@@ -234,13 +246,13 @@ class ArchiveShopMailbox
         Cache::forget(self::rateLimitedKey($shop));
 
         $next = match (true) {
-            (bool) $page['next']                    => ['search' => $cursor['search'], 'page' => $page['next']],
-            isset($searches[$cursor['search'] + 1]) => ['search' => $cursor['search'] + 1, 'page' => null],
+            (bool) $page['next']                    => ['search' => $cursor['search'], 'page' => $page['next']] + $cursor,
+            isset($searches[$cursor['search'] + 1]) => ['search' => $cursor['search'] + 1, 'page' => null] + $cursor,
             default                                 => null,
         };
 
         if ($next) {
-            Cache::put($cursorKey, $top ? $next : $next['page'], now()->addDays(7));
+            Cache::put($cursorKey, $top || $oldestFirst ? $next : $next['page'], now()->addDays(7));
         } else {
             Cache::forget($cursorKey);
             $result['done'] = true;
@@ -249,9 +261,26 @@ class ArchiveShopMailbox
         return $result;
     }
 
-    public static function cursorKey(Shop $shop, int $months, bool $top = false): string
+    public static function cursorKey(Shop $shop, int $months, bool $top = false, bool $oldestFirst = false): string
     {
-        return $top ? "mailbox-archive:{$shop->id}:top" : "mailbox-archive:{$shop->id}:{$months}";
+        return $top ? "mailbox-archive:{$shop->id}:top" : "mailbox-archive:{$shop->id}:{$months}".($oldestFirst ? ':oldest-first' : '');
+    }
+
+    /**
+     * One Gmail search per calendar month from the given one to this one, oldest first. The
+     * first month is kept in the cursor, so the list stays the same when a run crosses a month.
+     *
+     * @return array<int, string>
+     */
+    public static function monthByMonth(Carbon $from): array
+    {
+        $searches = [];
+
+        for ($month = $from->copy()->startOfMonth(); $month->lte(now()); $month->addMonth()) {
+            $searches[] = 'after:'.$month->timestamp.' before:'.$month->copy()->addMonth()->timestamp;
+        }
+
+        return $searches;
     }
 
     public static function runKey(Shop $shop, bool $top = false): string
@@ -438,7 +467,8 @@ class ArchiveShopMailbox
         $slug  = $command->argument('shop');
         $shops = $slug ? Shop::where('slug', $slug)->get() : Shop::whereNotNull('settings->gmail->refresh_token')->get();
 
-        $top = (bool) $command->option('top');
+        $top         = (bool) $command->option('top');
+        $oldestFirst = (bool) $command->option('oldest-first');
 
         foreach ($shops as $shop) {
             $run = (string) Str::uuid();
@@ -446,7 +476,7 @@ class ArchiveShopMailbox
 
             if ($command->option('fresh')) {
                 EmailArchiveMessage::where('shop_id', $shop->id)->delete();
-                Cache::forget(self::cursorKey($shop, (int) $command->option('months'), $top));
+                Cache::forget(self::cursorKey($shop, (int) $command->option('months'), $top, $oldestFirst));
             }
 
             if ($top) {
@@ -456,13 +486,13 @@ class ArchiveShopMailbox
             }
 
             if ($command->option('queue')) {
-                static::dispatch($shop, (int) $command->option('months'), $run, $top);
+                static::dispatch($shop, (int) $command->option('months'), $run, $top, $oldestFirst);
                 $command->info("{$shop->slug}: queued");
 
                 continue;
             }
 
-            $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null, $top);
+            $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null, $top, $oldestFirst);
             $command->info("{$shop->slug}: {$result['archived']} archived, {$result['skipped']} left out, {$result['failed']} failed of {$result['read']} read".($result['done'] ? '' : ' (run again to continue)'));
         }
 

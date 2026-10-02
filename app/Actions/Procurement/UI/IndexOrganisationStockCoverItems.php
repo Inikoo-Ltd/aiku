@@ -96,11 +96,12 @@ class IndexOrganisationStockCoverItems extends OrgAction
                 'org_stock_stats.stock_value',
                 'org_stock_stats.on_the_way_po_count',
                 'org_stock_stats.recommended_order_quantity',
+                'org_stock_stats.projected_lost_revenue',
                 'sp.supplier_code',
             ])
             ->selectRaw($buckets->leadTimeExpression().' as lead_time_days')
             ->selectRaw($buckets->bucketExpression().' as bucket')
-            ->allowedSorts(['code', 'name', 'family_code', 'health_rank', 'quantity_available', 'days_of_cover', 'lead_time_days', 'supplier_code', 'stock_value'])
+            ->allowedSorts(['code', 'name', 'family_code', 'health_rank', 'quantity_available', 'days_of_cover', 'lead_time_days', 'supplier_code', 'stock_value', 'projected_lost_revenue'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -138,6 +139,7 @@ class IndexOrganisationStockCoverItems extends OrgAction
                 ->column(key: 'lead_time_days', label: __('Lead time'), sortable: true, align: 'right')
                 ->column(key: 'supplier_code', label: __('Supplier'), sortable: true)
                 ->column(key: 'recommended_quantity', label: __('Suggested order'), align: 'right')
+                ->column(key: 'projected_lost_revenue', label: __('Lost if not ordered'), tooltip: __('Sales lost over the lead time and a month after, if nothing more is ordered'), sortable: true, align: 'right')
                 ->column(key: 'stock_value', label: __('Stock value'), sortable: true, align: 'right');
         };
     }

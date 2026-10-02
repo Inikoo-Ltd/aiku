@@ -15,23 +15,19 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
-use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\GoodsIn\StockDelivery;
-use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Models\Procurement\OrgAgent;
-use App\Models\Procurement\ShoppingListItem;
-use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -43,6 +39,8 @@ class ShowProcurementDashboard extends OrgAction
     use AsAction;
     use WithInertia;
     use WithAgentOrganisation;
+
+    private const array STOCK_LEVELS_FRESH_AND_STALE_SECONDS = [120, 600];
 
 
 
@@ -116,46 +114,12 @@ class ShowProcurementDashboard extends OrgAction
             + $stats->number_stock_deliveries_state_dispatched
             + $receivingDeliveries;
 
-        return [
+        $preOrdersWaiting = PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count();
+
+        return array_filter([
             $this->dashboardCard(
-                __('Agents'),
-                __('Active purchasing agents'),
-                'fal fa-people-arrows',
-                $stats->number_active_org_agents,
-                'violet',
-                'grp.org.procurement.org_agents.index',
-                [
-                    $this->dashboardMetric(
-                        __('Agent Suppliers'),
-                        $stats->number_active_org_suppliers_in_agents,
-                        'grp.org.procurement.org_agent_suppliers.index'
-                    ),
-                ]
-            ),
-            $this->dashboardCard(
-                __('Suppliers'),
-                __('Active free suppliers'),
-                'fal fa-person-dolly',
-                $stats->number_active_independent_org_suppliers,
-                'emerald',
-                'grp.org.procurement.org_suppliers.index'
-            ),
-            $this->dashboardCard(
-                __('Supplier Products'),
-                __('Current supplier products'),
-                'fal fa-box-usd',
-                $stats->number_current_org_supplier_products,
-                'amber',
-                'grp.org.procurement.org_supplier_products.index',
-                [
-                    $this->dashboardMetric(__('Active'), $stats->number_org_supplier_products_state_active, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'active']),
-                    $this->dashboardMetric(__('Discontinuing'), $stats->number_org_supplier_products_state_discontinuing, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'discontinuing']),
-                ],
-                ['elements[state]' => 'active,discontinuing']
-            ),
-            $this->dashboardCard(
-                __('Purchase Orders'),
                 __('Open purchase orders'),
+                __('Purchase orders in process, submitted or confirmed'),
                 'fal fa-clipboard-list',
                 $openPurchaseOrders,
                 'indigo',
@@ -168,8 +132,8 @@ class ShowProcurementDashboard extends OrgAction
                 ['elements[state]' => 'in_process,submitted,confirmed']
             ),
             $this->dashboardCard(
-                __('Stock Deliveries'),
                 __('Deliveries in progress'),
+                __('Stock deliveries from preparing to booked in'),
                 'fal fa-truck-container',
                 $activeDeliveries,
                 'sky',
@@ -181,98 +145,31 @@ class ShowProcurementDashboard extends OrgAction
                 ],
                 ['elements[state]' => 'in_process,confirmed,ready_to_ship,dispatched,received,checked,booking_in,booked_in']
             ),
-            $this->dashboardCard(
+            $preOrdersWaiting ? $this->dashboardCard(
                 __('Pre-orders'),
                 __('Customer pre-orders waiting for goods, by supplier'),
                 'fal fa-hourglass-half',
-                PreOrder::where('organisation_id', $organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count(),
+                $preOrdersWaiting,
                 'amber',
                 'grp.org.procurement.pre_orders.index'
-            ),
-        ];
+            ) : null,
+        ]);
     }
 
-    private function getStockLevels(): array
+    private function getStockLevels(?string $source): array
     {
-        return collect(GetOrganisationStockCoverBuckets::run($this->organisation))
+        $pipeline = GetStockOutsPipeline::run($this->organisation, $source);
+
+        return collect(GetOrganisationStockCoverBuckets::run($this->organisation, null, $source))
             ->map(fn (array $bucket) => [
                 'bucket' => $bucket['bucket'],
                 'label'  => $bucket['label'],
+                'description' => $bucket['description'],
                 'tone'   => $bucket['tone'],
                 'count'  => $bucket['count'],
+                ...($pipeline[$bucket['bucket']] ?? ['in_transit' => 0, 'arrivals' => []]),
                 'route'  => $this->dashboardRoute('grp.org.procurement.stock_cover.index', ['elements[cover]' => $bucket['bucket']]),
             ])->values()->all();
-    }
-
-    private function getShoppingLists(): array
-    {
-        $withItems = [];
-        $empty     = [];
-
-        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->whereRelation('partner', 'is_manufacturing_hub', true)->get() as $orgPartner) {
-            $miniCart = GetPartnerMiniCart::run($orgPartner);
-
-            if ($miniCart['count'] > 0) {
-                $withItems[] = $miniCart;
-
-                continue;
-            }
-
-            $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
-
-            $empty[] = [
-                'name'  => $miniCart['partner_name'],
-                'route' => [
-                    'name'       => $shopId ? 'grp.org.procurement.org_partners.show.browse.index' : 'grp.org.procurement.org_partners.show.shopping_list.index',
-                    'parameters' => [$this->organisation->slug, $orgPartner->id],
-                ],
-            ];
-        }
-
-        foreach (OrgAgent::where('organisation_id', $this->organisation->id)->where('status', true)->with('agent')->get() as $orgAgent) {
-            $openItems = ShoppingListItem::query()
-                ->join('supplier_products', 'supplier_products.id', 'shopping_list_items.supplier_product_id')
-                ->where('shopping_list_items.organisation_id', $this->organisation->id)
-                ->where('shopping_list_items.agent_id', $orgAgent->agent_id)
-                ->where('shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
-                ->select([
-                    'shopping_list_items.id',
-                    'shopping_list_items.quantity_units',
-                    'supplier_products.code',
-                    'supplier_products.name',
-                ])
-                ->orderByDesc('shopping_list_items.created_at')
-                ->get();
-
-            if ($openItems->isEmpty()) {
-                $empty[] = [
-                    'name'  => $orgAgent->agent->name,
-                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
-                ];
-
-                continue;
-            }
-
-            $withItems[] = [
-                'partner_name' => $orgAgent->agent->name,
-                'count'        => $openItems->count(),
-                'total'        => 0,
-                'currency'     => $this->organisation->currency->code,
-                'items'        => $openItems->take(10)->map(fn (ShoppingListItem $item) => [
-                    'id'             => $item->id,
-                    'quantity'       => $item->quantity_units,
-                    'org_stock_code' => $item->code,
-                    'org_stock_name' => $item->name,
-                    'family_name'    => null,
-                ])->values()->all(),
-                'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
-            ];
-        }
-
-        return [
-            'withItems' => $withItems,
-            'empty'     => $empty,
-        ];
     }
 
     private function dashboardCard(
@@ -322,6 +219,7 @@ class ShowProcurementDashboard extends OrgAction
     public function htmlResponse(ActionRequest $request): Response
     {
         $numbers = $this->getDashboardNumbers();
+        $source  = GetOrganisationStockCoverBuckets::make()->source($request->input('source'));
 
         return Inertia::render(
             'Procurement/ProcurementDashboard',
@@ -341,11 +239,11 @@ class ShowProcurementDashboard extends OrgAction
                 ],
 
                 'shippers' => Shipper::query()->get(),
-                'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
                 'dashboardCards' => array_values(array_filter([GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
-                'shoppingLists' => $this->getShoppingLists(),
-                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
-                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period'))) : null,
+                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
+                    ? Cache::flexible("procurement-dashboard:stock-levels:{$this->organisation->id}:".($source ?? 'all'), self::STOCK_LEVELS_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels($source))
+                    : [],
+                'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period')), $source) : null,
 
             ]
         );

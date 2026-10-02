@@ -10,7 +10,6 @@ import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue"
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
@@ -113,11 +112,8 @@ const shoppingListTotalItems = computed(() =>
             <div class="mx-4 mt-3 h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
         </template>
 
-        <StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :organisationStockLevels="stockLevelsByOrganisation ?? []" storageKey="supply-chain-overview-stock-outs" class="mx-4 mt-3" />
+        <StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :organisationStockLevels="stockLevelsByOrganisation ?? []" :cards="dashboardCards" storageKey="supply-chain-overview-stock-outs" class="mx-4 mt-3" />
     </Deferred>
-    <div class="mx-4 mt-3 flex flex-wrap gap-3">
-        <ProcurementOverviewPill v-for="card in dashboardCards" :key="card.label" :card="card" />
-    </div>
 
     <div class="mx-4 mt-4 flex flex-col gap-4">
         <Deferred data="poJourney">

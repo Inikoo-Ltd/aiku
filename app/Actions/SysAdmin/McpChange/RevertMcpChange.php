@@ -11,11 +11,14 @@ namespace App\Actions\SysAdmin\McpChange;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\McpChange;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -49,6 +52,7 @@ class RevertMcpChange
         match ($mcpChange->type) {
             McpChangeTypeEnum::RELATED_PRODUCTS => $this->revertRelatedProducts($target, $mcpChange->before),
             McpChangeTypeEnum::ORG_STOCK_STATE  => $this->revertOrgStockStates($mcpChange->before),
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
         };
 
         $mcpChange->update([
@@ -68,6 +72,20 @@ class RevertMcpChange
         }
 
         SyncProductCategoryRelatedProducts::make()->action(ProductCategory::findOrFail($target['id']), ['product_ids' => $before['ids']]);
+    }
+
+    private function revertPartnerShoppingList(array $before, array $after): void
+    {
+        foreach ($after['lines'] as $stockId => $line) {
+            $item     = PartnerShoppingListItem::findOrFail($line['id']);
+            $previous = $before['lines'][$stockId] ?? null;
+
+            if ($previous) {
+                UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => $previous['quantity'], 'notes' => $previous['notes']]);
+            } else {
+                DeletePartnerShoppingListItem::make()->action($item);
+            }
+        }
     }
 
     private function revertOrgStockStates(array $before): void

@@ -12,6 +12,9 @@ use App\Actions\Helpers\Redirects\RedirectSupplierLink;
 use App\Models\SysAdmin\User;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
@@ -771,6 +774,28 @@ test('UI supply chain overview', function () {
                 ->has('poJourney.summary.overdue')
                 ->has('poJourney.blockages'));
     });
+});
+
+test('UI supply chain overview stock levels match the stock cover buckets and pipeline for every source', function () {
+    $this->withoutExceptionHandling();
+    $organisations = GetStockOutsHistory::make()->organisations(group());
+
+    foreach ([null, ...array_keys(GetOrganisationStockCoverBuckets::SOURCES)] as $source) {
+        $this->get(route('grp.supply-chain.overview', ['source' => $source]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps(function (AssertableInertia $reload) use ($organisations, $source) {
+                $reload->has('stockLevelsByOrganisation', $organisations->count());
+
+                foreach ($organisations->values() as $index => $organisation) {
+                    $pipeline = GetStockOutsPipeline::run($organisation, $source);
+                    $reload->where("stockLevelsByOrganisation.$index.slug", $organisation->slug);
+
+                    foreach (GetOrganisationStockCoverBuckets::run($organisation, null, $source) as $bucketIndex => $bucket) {
+                        $reload->where("stockLevelsByOrganisation.$index.levels.$bucketIndex.count", $bucket['count'])
+                            ->where("stockLevelsByOrganisation.$index.levels.$bucketIndex.in_transit", $pipeline[$bucket['bucket']]['in_transit'] ?? 0);
+                    }
+                }
+            }));
+    }
 });
 
 test('supply chain navigation separates agent suppliers from free suppliers', function () {

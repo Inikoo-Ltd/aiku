@@ -2,7 +2,7 @@
     "private": true,
     "scripts": {
         "dev": "npx concurrently -c \"#06b6d4,#6366f1,#a3e635,#fdba74\" \"npm run dev.aiku-public\" \"npm run dev.grp\" \"npm run dev.iris\" \"npm run dev.retina\" --names=public,grp,iris,retina",
-        "build": "npm run build.grp && npm run build.aiku-public && npm run build.iris && npm run build.retina && npm run build.pupil",
+        "build": "npm run build.grp && npm run build.aiku-public && npm run build.iris && npm run build.retina && npm run build.pupil && npm run build.chat-widget",
         "dev.grp": "vite --config vite.grp.config.mjs",
         "build.grp": "vite build --config vite.grp.config.mjs",
         "dev.aiku-public": "vite --config vite.aiku-public.config.js",
@@ -12,6 +12,7 @@
         "build.iris.ssr": "vite build --config vite.iris.config.mjs --ssr",
         "dev.retina": "vite --config vite.retina.config.mjs",
         "build.retina": "vite build --config vite.retina.config.mjs",
+        "build.chat-widget": "vite build --config vite.chat-widget.config.mjs",
         "dev.pupil": "vite --config vite.pupil.config.mjs",
         "build.pupil": "vite build --config vite.pupil.config.mjs",
         "postinstall": "patch-package",

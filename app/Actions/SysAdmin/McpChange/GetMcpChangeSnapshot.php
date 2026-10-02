@@ -9,8 +9,10 @@
 namespace App\Actions\SysAdmin\McpChange;
 
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -28,6 +30,7 @@ class GetMcpChangeSnapshot
         return match ($type) {
             McpChangeTypeEnum::RELATED_PRODUCTS => $this->relatedProducts($target),
             McpChangeTypeEnum::ORG_STOCK_STATE  => $this->orgStockStates($target),
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->partnerShoppingList($target),
         };
     }
 
@@ -36,6 +39,14 @@ class GetMcpChangeSnapshot
         if ($type === McpChangeTypeEnum::ORG_STOCK_STATE) {
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.$orgStock['state'].($orgStock['scheduled'] ? ' (scheduled '.$orgStock['scheduled']['to_state'].')' : ''))
+                ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::PARTNER_SHOPPING_LIST) {
+            $codes = DB::table('stocks')->whereIn('id', $target['stock_ids'])->pluck('code', 'id');
+
+            return collect($target['stock_ids'])
+                ->map(fn ($stockId) => ($codes[$stockId] ?? '#'.$stockId).': '.($snapshot['lines'][$stockId]['quantity'] ?? 'not on list'))
                 ->implode(', ');
         }
 
@@ -53,6 +64,27 @@ class GetMcpChangeSnapshot
             : DB::table('product_category_has_related_products')->where('product_category_id', $target['id'])->select('product_id as id');
 
         return ['ids' => $query->orderBy('position')->pluck('id')->map(fn ($id) => (int) $id)->all()];
+    }
+
+    private function partnerShoppingList(array $target): array
+    {
+        return [
+            'lines' => PartnerShoppingListItem::where('org_partner_id', $target['org_partner_id'])
+                ->whereIn('stock_id', $target['stock_ids'])
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereNull('job_order_id')
+                ->whereNull('pre_picked_at')
+                ->orderBy('stock_id')
+                ->get()
+                ->mapWithKeys(fn (PartnerShoppingListItem $item) => [
+                    $item->stock_id => [
+                        'id'       => $item->id,
+                        'quantity' => (float) $item->quantity,
+                        'notes'    => $item->notes,
+                    ],
+                ])
+                ->all(),
+        ];
     }
 
     private function orgStockStates(array $target): array

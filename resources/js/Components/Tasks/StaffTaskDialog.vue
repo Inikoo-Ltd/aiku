@@ -5,12 +5,13 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Common/Components/Image.vue"
 import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import type { StaffCoworker } from "@/Stores/staff-messaging"
 
 const props = defineProps<{
@@ -30,11 +31,12 @@ const emit = defineEmits<{
 const layout: any = inject("layout", {})
 const departments = ref<{ value: string; label: string }[]>([])
 const priorities = ref<{ value: string; label: string }[]>([])
-const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, collaborators: [] as any[], priority: "normal", due_at: "" })
+const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, collaborators: [] as any[], priority: "normal", due_at: "", images: [] as File[] })
 const assigneeQuery = ref("")
 const assigneeResults = ref<StaffCoworker[]>([])
 const saving = ref(false)
 const errors = ref<Record<string, string[]>>({})
+const imageError = computed(() => Object.entries(errors.value).find(([field]) => field === "description" || field.startsWith("images"))?.[1]?.[0])
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const loadOptions = async () => {
@@ -46,7 +48,7 @@ const loadOptions = async () => {
 
 watch(() => props.isOpen, (open) => {
     if (!open) return
-    form.value = { subject: props.subject ?? "", description: "", department: "", assignee: null, collaborators: [], priority: "normal", due_at: "" }
+    form.value = { subject: props.subject ?? "", description: "", department: "", assignee: null, collaborators: [], priority: "normal", due_at: "", images: [] }
     errors.value = {}
     assigneeQuery.value = ""
     assigneeResults.value = []
@@ -79,7 +81,7 @@ const submit = async () => {
     saving.value = true
     errors.value = {}
     try {
-        const { data } = await axios.post(props.storeUrl ?? route("grp.tasks.store"), {
+        const { data } = await axios.postForm(props.storeUrl ?? route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
             department: form.value.assignee ? null : form.value.department || null,
@@ -90,6 +92,7 @@ const submit = async () => {
             model_type: props.modelType ?? null,
             model_id: props.modelId ?? null,
             source_message_id: props.sourceMessageId ?? null,
+            images: form.value.images,
         })
         emit("close")
         emit("created", data.data)
@@ -158,12 +161,10 @@ const submit = async () => {
                     <StaffTaskCollaborators v-model="form.collaborators" :exclude-ids="form.assignee ? [form.assignee.id] : []" />
                 </div>
 
-                <textarea
-                    v-model="form.description"
-                    rows="3"
-                    maxlength="5000"
-                    :placeholder="ctrans('Details (optional)')"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
+                <div>
+                    <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="3" :placeholder="ctrans('Details (optional). Paste a screenshot or drop files here.')" />
+                    <p v-if="imageError" class="text-xs text-red-600 mt-1">{{ imageError }}</p>
+                </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
