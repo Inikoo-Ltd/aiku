@@ -336,7 +336,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
         </div>
 
         <div class="-mx-4 overflow-x-auto px-4 pb-2">
-            <div class="flex gap-3">
+            <div class="flex w-max min-w-full gap-3">
                 <div v-for="column in columns" :key="column.status" class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2" :class="columnClasses[column.color] ?? columnClasses.gray">
                     <div class="flex flex-nowrap items-center gap-1.5 whitespace-nowrap px-1 pb-2">
                         <Icon :data="column.icon" />
