@@ -26,16 +26,32 @@ class GetStaffTasks
 
     public function handle(User $user, string $view = 'mine', bool $closed = false, ?string $modelType = null, ?int $modelId = null): Collection
     {
+        return $this->query($user, $view, $closed, $modelType, $modelId)
+            ->when($closed, fn (Builder $query) => $query->orderByDesc('closed_at'), fn (Builder $query) => $query->orderByRaw('due_at asc nulls last, id asc'))
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
+            ->limit(200)
+            ->get();
+    }
+
+    public function query(User $user, string $view, bool $closed, ?string $modelType = null, ?int $modelId = null): Builder
+    {
         return StaffTask::query()
             ->where('group_id', $user->group_id)
             ->when($view === 'mine', fn (Builder $query) => $query->where(fn (Builder $mine) => $mine->where('assignee_id', $user->id)->orWhereHas('collaborators', fn (Builder $collaborators) => $collaborators->where('users.id', $user->id))))
             ->when($view === 'department', fn (Builder $query) => $query->whereIn('department', StaffTask::departmentsOf($user)))
             ->when($view === 'requested', fn (Builder $query) => $query->where('requester_id', $user->id))
             ->when($view === 'model', fn (Builder $query) => $query->where('model_type', $modelType)->where('model_id', $modelId))
-            ->when($closed, fn (Builder $query) => $query->whereNotNull('closed_at')->orderByDesc('closed_at'), fn (Builder $query) => $query->open()->orderByRaw('due_at asc nulls last, id asc'))
-            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
-            ->limit(200)
-            ->get();
+            ->when($closed, fn (Builder $query) => $query->whereNotNull('closed_at'), fn (Builder $query) => $query->open());
+    }
+
+    /**
+     * @return array{mine: int, department: int, requested: int}
+     */
+    public function counts(User $user, bool $closed): array
+    {
+        return collect(['mine', 'department', 'requested'])
+            ->mapWithKeys(fn (string $view) => [$view => $this->query($user, $view, $closed)->count()])
+            ->all();
     }
 
     public function rules(): array
@@ -50,6 +66,10 @@ class GetStaffTasks
 
     public function asController(ActionRequest $request): AnonymousResourceCollection
     {
-        return StaffTaskResource::collection($this->handle($request->user(), $request->validated('view', 'mine'), (bool) $request->validated('closed', false), $request->validated('model_type'), $request->validated('model_id')));
+        $view   = $request->validated('view', 'mine');
+        $closed = (bool) $request->validated('closed', false);
+
+        return StaffTaskResource::collection($this->handle($request->user(), $view, $closed, $request->validated('model_type'), $request->validated('model_id')))
+            ->additional($view === 'model' ? [] : ['counts' => $this->counts($request->user(), $closed)]);
     }
 }

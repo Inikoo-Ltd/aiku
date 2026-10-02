@@ -37,6 +37,7 @@ class ShowStaffTasksBoard extends OrgAction
             'status' => $status->value,
             'label'  => StaffTaskStatusEnum::labels()[$status->value],
             'color'  => StaffTaskStatusEnum::stateIcon()[$status->value]['color'],
+            'icon'   => StaffTaskStatusEnum::stateIcon()[$status->value],
             'tasks'  => StaffTaskResource::collection($tasks->get($status->value, collect()))->resolve(),
         ])->values()->all();
     }
@@ -79,6 +80,7 @@ class ShowStaffTasksBoard extends OrgAction
             'title'       => $title,
             'pageHead'    => ['title' => $title, 'icon' => ['icon' => ['fal', 'fa-columns'], 'title' => $title]],
             'columns'     => $columns,
+            'showRoute'   => $this->tasksRoute('show'),
             'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
             'createdInterval'  => $this->createdInterval(),
             'can_manage'  => StaffTask::isSupervisor($request->user()),
