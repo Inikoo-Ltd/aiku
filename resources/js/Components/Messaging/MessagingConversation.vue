@@ -64,6 +64,11 @@ const senderAvatar = (message: StaffMessage) => participantById.value.get(messag
 
 const SENDER_NAME_COLOURS = ["text-teal-700", "text-violet-700", "text-orange-700", "text-sky-700", "text-rose-700", "text-emerald-700", "text-fuchsia-700", "text-amber-700"]
 const senderNameClass = (userId: number) => SENDER_NAME_COLOURS[userId % SENDER_NAME_COLOURS.length]
+
+const shortSenderName = (name: string) => {
+    const [firstName, ...otherNames] = name.trim().split(/\s+/)
+    return otherNames.length ? `${firstName} ${otherNames.map((part) => `${part.charAt(0).toUpperCase()}.`).join("")}` : firstName
+}
 const isOnline = computed(() =>
     participants.value.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
 )
@@ -491,8 +496,8 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         @mouseleave="reactsOnHover && (activeReactionFor = null)"
                         @click="!reactsOnHover && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
                     >
-                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium" :class="senderNameClass(message.user_id)">
-                            {{ message.user_name }}
+                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium whitespace-nowrap" :class="senderNameClass(message.user_id)">
+                            <span v-tooltip="message.user_name" class="cursor-default">{{ shortSenderName(message.user_name) }}</span>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
                         <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
