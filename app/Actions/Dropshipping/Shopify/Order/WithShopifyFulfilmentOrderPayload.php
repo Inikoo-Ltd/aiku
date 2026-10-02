@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -52,6 +53,7 @@ trait WithShopifyFulfilmentOrderPayload
                         assignedLocation {
                             location {
                                 id
+                                name
                             }
                         }
                         destination {
@@ -105,10 +107,12 @@ trait WithShopifyFulfilmentOrderPayload
      */
     protected function buildFulfilmentOrderPayloads(ShopifyUser $shopifyUser, array $order): array
     {
-        [$tooLong, $fulfilmentOrders] = collect(data_get($order, 'fulfillmentOrders.edges', []))
-            ->pluck('node')
-            ->filter(fn ($fulfilmentOrder) => $fulfilmentOrder
-                && data_get($fulfilmentOrder, 'assignedLocation.location.id') === $shopifyUser->shopify_location_id
+        $rawFulfilmentOrders = collect(data_get($order, 'fulfillmentOrders.edges', []))->pluck('node')->filter();
+
+        $this->alertIfAssignedToAnotherAikuLocation($shopifyUser, $order, $rawFulfilmentOrders);
+
+        [$tooLong, $fulfilmentOrders] = $rawFulfilmentOrders
+            ->filter(fn ($fulfilmentOrder) => data_get($fulfilmentOrder, 'assignedLocation.location.id') === $shopifyUser->shopify_location_id
                 && in_array(data_get($fulfilmentOrder, 'requestStatus'), ['SUBMITTED', 'ACCEPTED'], true)
                 && in_array(data_get($fulfilmentOrder, 'status'), ['OPEN', 'IN_PROGRESS'], true)
                 && data_get($fulfilmentOrder, 'destination'))
@@ -125,5 +129,39 @@ trait WithShopifyFulfilmentOrderPayload
             ]))
             ->values()
             ->all();
+    }
+
+    /**
+     * A fulfilment request assigned to an aiku location that is not the current one is never seen
+     * by the webhook, since its callback points at whatever shopify_user created that location
+     * (often one we long since soft-deleted): the order is otherwise lost silently until a customer
+     * notices it missing. This is the only place that still sees it, so it is where it gets flagged.
+     */
+    private function alertIfAssignedToAnotherAikuLocation(ShopifyUser $shopifyUser, array $order, Collection $fulfilmentOrders): void
+    {
+        foreach ($fulfilmentOrders as $fulfilmentOrder) {
+            $location = data_get($fulfilmentOrder, 'assignedLocation.location');
+
+            if (!$location
+                || $location['id'] === $shopifyUser->shopify_location_id
+                || !str_starts_with((string) data_get($location, 'name'), 'aiku-')
+                || !in_array(data_get($fulfilmentOrder, 'status'), ['OPEN', 'IN_PROGRESS'], true)) {
+                continue;
+            }
+
+            $message = sprintf(
+                'Shopify order %s (%s) has a fulfilment order %s assigned to a non-current aiku location %s (%s) of shopify_user %d; requestStatus %s.',
+                data_get($order, 'id'),
+                data_get($order, 'name'),
+                data_get($fulfilmentOrder, 'id'),
+                $location['id'],
+                data_get($location, 'name'),
+                $shopifyUser->id,
+                data_get($fulfilmentOrder, 'requestStatus')
+            );
+
+            Log::warning($message);
+            \Sentry::captureMessage($message);
+        }
     }
 }

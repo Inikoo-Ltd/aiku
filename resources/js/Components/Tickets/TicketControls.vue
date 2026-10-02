@@ -186,7 +186,6 @@ const sendQaVerdict = () => {
 }
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
-const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
 const canGiveQaVerdict = computed(() => props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
 const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
 
@@ -198,7 +197,7 @@ const qaVerdictCopy = computed(() => ({
 
 const showQaTarget = computed(() => props.ticket.qa_status === "requested" || Boolean(props.ticket.qa_user))
 
-const canAskQa = computed(() => props.can_request_qa && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => props.can_request_qa && props.ticket.qa_status !== "requested")
 
 // Asking for a check is a question, and a question with nothing said about what changed makes
 // QA guess. The note is optional, since sometimes the ticket already says it.

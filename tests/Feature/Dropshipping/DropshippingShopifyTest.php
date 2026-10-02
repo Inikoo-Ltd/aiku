@@ -323,8 +323,10 @@ test('a store is linked only when the customer who asked for it completes shopif
     expect($proofUrl)->toStartWith('https://'.$website->domain.'/app/dropshipping/platform/shopify-user/claim?proof=')
         ->and($row->fresh()->customer_id)->toBeNull();
 
+    Queue::fake();
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
     CheckShopifyChannel::mock()->shouldReceive('handle')->andReturnUsing(fn ($channel) => $channel);
+    AdoptShopifyFulfilmentService::mock()->shouldReceive('handle')->andReturn([false, 'No earlier aiku fulfilment service on the store to adopt']);
     StoreFulfilmentService::mock()->shouldReceive('handle');
 
     actingAs(StoreWebUser::make()->action($other, ['username' => 'other-'.Str::random(6), 'email' => Str::random(6).'@testmail.com', 'password' => 'test']), 'retina');
