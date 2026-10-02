@@ -30,7 +30,7 @@ class IndexTopSoldProductsInCountry extends OrgAction
                 DB::raw("'" . $shop->currency->code . "' as currency_code")
             )
             ->join('assets', function ($join) {
-                $join->on('invoice_transactions.model_id', '=', 'assets.id')
+                $join->on('invoice_transactions.asset_id', '=', 'assets.id')
                     ->where('invoice_transactions.model_type', '=', 'Product');
             })
             ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')

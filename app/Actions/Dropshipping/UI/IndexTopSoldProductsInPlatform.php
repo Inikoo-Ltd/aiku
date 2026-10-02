@@ -45,12 +45,16 @@ class IndexTopSoldProductsInPlatform extends OrgAction
                 DB::raw("'" . $parent->currency->code . "' as currency_code")
             )
             ->join('assets', function ($join) {
-                $join->on('invoice_transactions.model_id', '=', 'assets.id')
+                $join->on('invoice_transactions.asset_id', '=', 'assets.id')
                     ->where('invoice_transactions.model_type', '=', 'Product');
             })
             ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
-            ->join('customer_sales_channels', 'invoices.customer_id', '=', 'customer_sales_channels.customer_id')
-            ->where('customer_sales_channels.platform_id', $platform->id)
+            ->whereExists(function ($query) use ($platform) {
+                $query->selectRaw('1')
+                    ->from('customer_sales_channels')
+                    ->whereColumn('customer_sales_channels.customer_id', 'invoices.customer_id')
+                    ->where('customer_sales_channels.platform_id', $platform->id);
+            })
             ->where('assets.type', 'product')
             ->whereNull('invoice_transactions.deleted_at')
             ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
