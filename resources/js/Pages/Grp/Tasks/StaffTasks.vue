@@ -28,6 +28,7 @@ import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import StaffTaskDueBadge from "@/Components/Tasks/StaffTaskDueBadge.vue"
+import Icon from "@/Components/Icon.vue"
 
 library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList, faPaperclip, faClock, faCalendarEdit)
 
@@ -257,7 +258,9 @@ onMounted(async () => {
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-x-2">
                         <Link :href="route('grp.tasks.show', task.reference)" class="primaryLink font-mono text-xs">{{ task.reference }}</Link>
-                        <span v-if="task.priority !== 'normal'" class="text-xxs px-1.5 rounded-full" :class="task.priority === 'low' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'">{{ task.priority }}</span>
+                        <span v-if="task.priority_icon" v-tooltip="ctrans(':priority priority', { priority: task.priority_label })" class="inline-flex cursor-default text-xs">
+                            <Icon :data="task.priority_icon" />
+                        </span>
                         <a v-if="task.model_label" class="text-xxs text-[--app-accent]">{{ task.model_label }}</a>
                     </div>
                     <div class="text-sm text-gray-900">{{ task.subject }}</div>
