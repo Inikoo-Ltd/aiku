@@ -25,6 +25,7 @@ use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentShoppingDashboard;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerRescueItems;
 use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
@@ -190,6 +191,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
             Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
         });
+        Route::get('rescue', IndexPartnerRescueItems::class)->name('.rescue.index');
         Route::middleware(EnsurePartnerIsManufacturingHub::class)->group(function () {
             Route::prefix('shopping')->as('.shopping.')->group(function () {
                 Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');

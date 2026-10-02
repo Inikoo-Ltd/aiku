@@ -70,6 +70,7 @@ use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
+use App\Actions\Procurement\OrgPartner\StoreRescuePurchaseOrder;
 use App\Actions\Procurement\OrgPartner\UI\GetOrgPartnerShowcase;
 use App\Models\CRM\Customer;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -2556,8 +2557,92 @@ test('UI Index org partners', function () {
         $page
             ->component('Org/Procurement/Partners')
             ->has('title')
-            ->has('breadcrumbs', 3);
+            ->has('breadcrumbs', 3)
+            ->where('currency_code', $this->organisation->currency->code)
+            ->has('partners.0', fn (AssertableInertia $card) => $card
+                ->where('id', $this->orgPartner->id)
+                ->where('name', $this->orgPartner->partner->name)
+                ->where('is_hub', $this->orgPartner->partner->is_manufacturing_hub)
+                ->has('stats', fn (AssertableInertia $stats) => $this->orgPartner->partner->is_manufacturing_hub
+                    ? $stats->has('open_shopping_list_items')->etc()
+                    : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.top')->etc())
+                ->etc());
     });
+});
+
+test('UI partner rescue items for a sister company', function () {
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    $partner->update(['is_manufacturing_hub' => false]);
+
+    try {
+        $response = $this->get(route('grp.org.procurement.org_partners.show.rescue.index', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerRescueItems')
+                ->has('title')
+                ->has('items.data')
+                ->where('orgPartner.id', $this->orgPartner->id)
+                ->where('currency_code', $this->organisation->currency->code);
+        });
+    } finally {
+        $partner->update(['is_manufacturing_hub' => $wasHub]);
+    }
+});
+
+test('new purchase order to a sister company redirects to it', function () {
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    $partner->update(['is_manufacturing_hub' => false]);
+
+    try {
+        $response = $this->post(route('grp.models.org-partner.purchase-order.store', ['orgPartner' => $this->orgPartner->id]));
+
+        $purchaseOrder = $this->orgPartner->purchaseOrders()->latest('id')->first();
+
+        $response->assertRedirect(route('grp.org.procurement.org_partners.show.purchase-orders.show', [
+            $this->organisation->slug,
+            $this->orgPartner->id,
+            $purchaseOrder->slug,
+        ]));
+    } finally {
+        $partner->update(['is_manufacturing_hub' => $wasHub]);
+    }
+});
+
+test('rescue page and rescue order refuse the manufacturing hub', function () {
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    $partner->update(['is_manufacturing_hub' => true]);
+
+    try {
+        $this->get(route('grp.org.procurement.org_partners.show.rescue.index', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertNotFound();
+
+        expect(fn () => StoreRescuePurchaseOrder::make()->handle($this->orgPartner->refresh()))
+            ->toThrow(ValidationException::class);
+    } finally {
+        $partner->update(['is_manufacturing_hub' => $wasHub]);
+    }
+});
+
+test('rescue order creates nothing when a sister company has nothing to rescue', function () {
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    $partner->update(['is_manufacturing_hub' => false]);
+
+    try {
+        $orgPartner = $this->orgPartner->refresh();
+        $before     = $orgPartner->purchaseOrders()->count();
+
+        expect(GetPartnerStockCoverBuckets::make()->rescueLines($orgPartner))->toBe([])
+            ->and(fn () => StoreRescuePurchaseOrder::make()->handle($orgPartner))->toThrow(ValidationException::class)
+            ->and($orgPartner->purchaseOrders()->count())->toBe($before)
+            ->and($orgPartner->purchaseOrders()->where('is_partner_rescue', true)->exists())->toBeFalse();
+    } finally {
+        $partner->update(['is_manufacturing_hub' => $wasHub]);
+    }
 });
 
 test('UI show org partners', function () {
@@ -6282,6 +6367,15 @@ test('stock outs are projected eight weeks ahead from forecast demand, each sko 
         ->and(collect($history['projection'])->pluck('date')->min())->toBeGreaterThan(collect($history['series'])->pluck('date')->max() ?? '');
 
     $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'sort' => '-projected_lost_revenue']))->assertOk();
+
+    $onDemandStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $onDemand      = orgStockOnSaleAndReceived(createOrgStocks($this->organisation, [$onDemandStock])[0]);
+    $onDemand->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0, 'is_on_demand' => true]);
+    $hydrator = App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateOutOfStock::make();
+
+    expect($hydrator->stockOutOrgStockIds([$onDemand->id], today()))->toBe([]);
+    $onDemand->update(['is_on_demand' => false]);
+    expect($hydrator->stockOutOrgStockIds([$onDemand->id], today()))->toBe([$onDemand->id]);
 });
 
 test('procurement dashboard charts stock outs and their estimated lost revenue', function () {

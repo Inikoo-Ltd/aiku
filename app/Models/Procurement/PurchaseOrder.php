@@ -87,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
  * @property bool $is_costed
+ * @property bool $is_partner_rescue
  * @property array<array-key, mixed> $cost_data
  * @property numeric|null $cost_items
  * @property numeric|null $cost_extra
@@ -160,6 +161,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     protected $casts = [
         'data'            => 'array',
         'cost_data'       => 'array',
+        'is_partner_rescue' => 'boolean',
         'state'           => PurchaseOrderStateEnum::class,
         'delivery_state' => PurchaseOrderDeliveryStateEnum::class,
         'date'            => 'datetime',

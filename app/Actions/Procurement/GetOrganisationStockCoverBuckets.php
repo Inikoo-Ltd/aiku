@@ -151,7 +151,8 @@ class GetOrganisationStockCoverBuckets
 
     /**
      * Scalar subqueries so each empty SKO is looked up through its own indexes; as EXISTS inside an OR
-     * the planner hashes every product on sale first.
+     * the planner hashes every product on sale first. An on demand SKO is made or bought when ordered,
+     * so an empty shelf is its normal state, never a stock out.
      */
     public function whereCountsAsStockOut(Builder|EloquentBuilder $query, ?Carbon $before = null): Builder|EloquentBuilder
     {
@@ -159,6 +160,7 @@ class GetOrganisationStockCoverBuckets
         $received = $this->stockReceived($before);
 
         return $query
+            ->whereRaw('coalesce(org_stocks.is_on_demand, false) = false')
             ->whereRaw('('.$forSale->toSql().') is not null', $forSale->getBindings())
             ->whereRaw('('.$received->toSql().') is not null', $received->getBindings());
     }

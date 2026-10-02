@@ -9,7 +9,10 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
@@ -133,6 +136,153 @@ class GetPartnerStockCoverBuckets
             'lead_time' => $leadTime,
             'buckets'   => $buckets,
         ];
+    }
+
+    /**
+     * Our selling SKOs that are out, doomed or critical, nothing on order, that this partner can spare:
+     * what an emergency order to a sister company can rescue. The partner keeps what its own demand
+     * needs over its critical threshold (same edge that would flag it critical), so a rescue never
+     * puts the partner itself at risk.
+     *
+     * @return array{buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float}>, top: array<int, array<string, mixed>>}
+     */
+    public function rescuable(OrgPartner $orgPartner, int $topLimit = 20): array
+    {
+        $leadTime = GetPartnerLeadTime::run($orgPartner);
+        [$query, $expression] = $this->rescuableQuery($orgPartner, $leadTime['days']);
+
+        $counts = $query
+            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost")
+            ->groupByRaw($expression)
+            ->get()
+            ->keyBy('bucket');
+
+        return [
+            'buckets' => collect(['out', 'w1', 'w2'])->map(fn (string $bucket) => [
+                'bucket'      => $bucket,
+                'label'       => $bucket === 'out' ? __(self::BUCKETS['out']['label']) : $this->bucketLabel($bucket, $leadTime['days']),
+                'tone'        => self::BUCKETS[$bucket]['tone'],
+                'count'       => (int) ($counts->get($bucket)->total ?? 0),
+                'bestsellers' => (int) ($counts->get($bucket)->bestsellers ?? 0),
+                'lost'        => (float) ($counts->get($bucket)->lost ?? 0),
+            ])->all(),
+            'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
+        ];
+    }
+
+    /**
+     * Every rescuable SKO, worst offenders first: biggest lost sales, then rank, then how out it is.
+     */
+    public function rescueItems(OrgPartner $orgPartner, ?int $leadDays = null): Builder
+    {
+        $leadDays ??= GetPartnerLeadTime::run($orgPartner)['days'];
+        [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadDays);
+
+        return $query
+            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays)} as quantity, s.days_of_cover, s.projected_lost_revenue")
+            ->orderByRaw('s.projected_lost_revenue desc nulls last')
+            ->orderBy('os.health_rank')
+            ->orderByRaw("case $expression when 'out' then 1 when 'w1' then 2 else 3 end")
+            ->orderByRaw('s.days_of_cover nulls first')
+            ->orderBy('os.id');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rescueItem(object $row): array
+    {
+        return [
+            'org_stock_id'  => (int) $row->org_stock_id,
+            'slug'          => $row->slug,
+            'code'          => $row->code,
+            'name'          => $row->name,
+            'rank'          => $row->health_rank,
+            'bucket'        => $row->bucket,
+            'our_stock'     => (float) $row->our_stock,
+            'spare'         => (int) $row->spare,
+            'quantity'      => (int) $row->quantity,
+            'days_of_cover' => $row->days_of_cover === null ? null : (float) $row->days_of_cover,
+            'lost'          => $row->projected_lost_revenue === null ? null : (float) $row->projected_lost_revenue,
+        ];
+    }
+
+    /**
+     * What to order to rescue every SKO that would lose sales, plus any A/B bestseller.
+     *
+     * @return array<int, array{org_stock_id: int, quantity: int}>
+     */
+    public function rescueLines(OrgPartner $orgPartner): array
+    {
+        return $this->rescueItems($orgPartner)
+            ->where(fn ($query) => $query->where('s.projected_lost_revenue', '>', 0)->orWhereIn('os.health_rank', ['A', 'B']))
+            ->get()
+            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'quantity' => (int) $row->quantity])
+            ->all();
+    }
+
+    /**
+     * Enough to cover our critical threshold, at least one SKO, never more than the partner can spare.
+     */
+    private function rescueQuantity(string $spare, int $leadDays): string
+    {
+        return "least($spare, greatest(1, ceil(s.predicted_daily_usage * {$this->criticalDays($leadDays)} - greatest(os.quantity_available, 0))))";
+    }
+
+    private function criticalDays(int $leadDays): string
+    {
+        return "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
+    }
+
+    /**
+     * Our SKO is already being sorted: on an open purchase order to anyone, on the order being
+     * prepared for this partner, in a stock delivery not yet put away, or on the hub shopping list.
+     */
+    private function alreadyComingExpression(OrgPartner $orgPartner): string
+    {
+        return "(exists (select 1 from purchase_order_transactions pot
+                join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
+                where pot.org_stock_id = os.id and pot.deleted_at is null
+                    and po.state not in ('".PurchaseOrderStateEnum::CANCELLED->value."', '".PurchaseOrderStateEnum::NOT_RECEIVED->value."')
+                    and (po.state in ('".PurchaseOrderStateEnum::SUBMITTED->value."', '".PurchaseOrderStateEnum::CONFIRMED->value."')
+                        or po.delivery_state in ('".PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value."', '".PurchaseOrderDeliveryStateEnum::DISPATCHED->value."')
+                        or (po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."' and po.parent_type = 'OrgPartner' and po.parent_id = ".(int) $orgPartner->id.")))
+            or exists (select 1 from stock_delivery_items sdi
+                join stock_deliveries sd on sd.id = sdi.stock_delivery_id and sd.deleted_at is null
+                where sdi.org_stock_id = os.id and sdi.deleted_at is null
+                    and sd.state in ('".implode("', '", [
+            StockDeliveryStateEnum::CONFIRMED->value,
+            StockDeliveryStateEnum::READY_TO_SHIP->value,
+            StockDeliveryStateEnum::DISPATCHED->value,
+            StockDeliveryStateEnum::RECEIVED->value,
+            StockDeliveryStateEnum::CHECKED->value,
+            StockDeliveryStateEnum::BOOKING_IN->value,
+        ])."'))
+            or exists (select 1 from partner_shopping_list_items sli
+                where sli.org_stock_id = os.id and sli.deleted_at is null
+                    and sli.state in ('".ShoppingListItemStateEnum::OPEN->value."', '".ShoppingListItemStateEnum::ORDERED->value."')))";
+    }
+
+    /**
+     * Our selling SKOs that are out, doomed or critical with nothing on order, that the partner can
+     * spare: it keeps what its own demand needs over the same critical threshold. Without a demand
+     * forecast for the partner's SKO we cannot tell what it needs, so nothing is spare.
+     *
+     * @return array{0: Builder, 1: string, 2: string} query, bucket expression, spare expression
+     */
+    private function rescuableQuery(OrgPartner $orgPartner, int $leadDays): array
+    {
+        $expression = $this->bucketExpression($leadDays);
+        $spare      = "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
+
+        $query = $this->scopedQuery($orgPartner)
+            ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
+            ->whereRaw("$spare >= 1")
+            ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
+            ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
+            ->whereRaw("$expression in ('out', 'w1', 'w2')");
+
+        return [$query, $expression, $spare];
     }
 
     /**
