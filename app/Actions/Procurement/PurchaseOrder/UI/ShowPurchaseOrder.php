@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
@@ -558,9 +559,9 @@ class ShowPurchaseOrder extends OrgAction
                         'parameters' => ['purchaseOrder' => $purchaseOrder->id],
                     ],
                 ],
-                $this->hasActiveStockDelivery($purchaseOrder) ? [] : [
-                    'label'   => __('New Delivery'),
-                    'tooltip' => __('Create Stock Delivery from this Purchase Order'),
+                !StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)->exists() ? [] : [
+                    'label'   => $this->hasActiveStockDelivery($purchaseOrder) ? __('Deliver remaining items') : __('New Delivery'),
+                    'tooltip' => $this->hasActiveStockDelivery($purchaseOrder) ? __('Create a stock delivery with the items still to come') : __('Create Stock Delivery from this Purchase Order'),
                     'type'    => 'button',
                     'style'   => 'create',
                     'icon'    => 'fal fa-plus',

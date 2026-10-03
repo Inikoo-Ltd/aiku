@@ -80,7 +80,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
-            'cancelRoute'          => $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED ? [
+            'cancelRoute'          => in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true) ? [
                 'name'       => 'grp.models.purchase-order.transaction.cancel',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,

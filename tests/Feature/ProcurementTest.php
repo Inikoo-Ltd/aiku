@@ -93,6 +93,8 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
@@ -1915,6 +1917,58 @@ test('create stock delivery from purchase order', function () {
             ->where('stock_delivery_timelines.0.timeline.received.timestamp', '2026-08-31'));
 
     return $stockDelivery;
+});
+
+test('purchase order delivered in two parts stays open for the remaining items', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'SPLIT-PO',
+        'name'             => 'Split delivery',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $firstLine     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $secondLine    = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 20]));
+    $thirdLine     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[2], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 30]));
+
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $place = function (StockDelivery $stockDelivery): void {
+        $stockDelivery->items()->update(['state' => StockDeliveryItemStateEnum::PLACED]);
+        $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+        UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    };
+
+    $firstDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), ['purchase_order_transaction_ids' => [$firstLine->id]]);
+
+    expect(StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)->pluck('id')->all())->toEqualCanonicalizing([$secondLine->id, $thirdLine->id]);
+
+    $place($firstDelivery);
+
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($firstLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+        ->and($secondLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
+
+    $secondDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), ['purchase_order_transaction_ids' => [$secondLine->id]]);
+
+    expect($secondDelivery->items()->pluck('org_stock_id')->all())->toBe([$this->orgStocks[1]->id])
+        ->and(fn () => CancelPurchaseOrderTransaction::make()->action($secondLine->refresh()))->toThrow(HttpException::class);
+
+    $place($secondDelivery);
+
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+
+    CancelPurchaseOrderTransaction::make()->action($thirdLine->refresh());
+
+    expect($thirdLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
 });
 
 test('purchase order with an open aurora stock delivery refuses a second one', function (StockDelivery $stockDelivery) {

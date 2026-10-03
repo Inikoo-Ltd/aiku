@@ -22,6 +22,8 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -65,8 +67,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ]);
         }
 
-        $purchaseOrderTransactionsQuery = $purchaseOrder->purchaseOrderTransactions()
-            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+        $purchaseOrderTransactionsQuery = self::transactionsAwaitingDelivery($purchaseOrder)
             ->with(['historicSupplierProduct', 'orgStock']);
 
         if (array_key_exists('purchase_order_transaction_ids', $modelData)) {
@@ -128,6 +129,30 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         StockDeliveriesHydrateItems::dispatch($stockDelivery);
 
         return $stockDelivery->refresh();
+    }
+
+    public static function transactionsAwaitingDelivery(PurchaseOrder $purchaseOrder): HasMany
+    {
+        return $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+            ->whereNotExists(
+                fn (Builder $items) => self::deliveryItemsOfTransaction($items)
+                    ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.stock_delivery_id', 'stock_delivery_items.stock_delivery_id')
+                    ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
+                    ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
+            );
+    }
+
+    public static function deliveryItemsOfTransaction(Builder $items): Builder
+    {
+        return $items->from('stock_delivery_items')
+            ->where(function (Builder $match) {
+                $match->whereRaw("(stock_delivery_items.data->>'purchase_order_transaction_id')::bigint = purchase_order_transactions.id")
+                    ->orWhere(function (Builder $legacy) {
+                        $legacy->whereRaw("stock_delivery_items.data->>'purchase_order_transaction_id' is null")
+                            ->whereColumn('stock_delivery_items.org_stock_id', 'purchase_order_transactions.org_stock_id');
+                    });
+            });
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): StockDelivery

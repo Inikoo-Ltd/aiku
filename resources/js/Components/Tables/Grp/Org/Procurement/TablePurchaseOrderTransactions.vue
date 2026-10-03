@@ -511,7 +511,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <Button
-                    v-if="state === 'submitted' && item.cancelRoute"
+                    v-if="(state === 'submitted' || state === 'confirmed') && item.cancelRoute"
                     :label="ctrans('Cancel')"
                     :tooltip="ctrans('Cancel this item')"
                     icon="fas fa-minus-circle"
