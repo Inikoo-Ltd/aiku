@@ -169,14 +169,17 @@ class PartnerShoppingListItem extends Model
 
     /**
      * Current seller price per SKO in the partner currency, as a correlated SQL subquery.
+     *
+     * @param  array<int, int>  $shopIds  the seller's shops in order of preference (GetPartnerSellingShopIds)
      */
-    public static function pricePerSkoSql(): string
+    public static function pricePerSkoSql(array $shopIds): string
     {
         return PartnerSkoPrice::pricePerSkoSql(
             "(select sos.id from org_stocks sos
                 where sos.stock_id = partner_shopping_list_items.stock_id
                     and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-                limit 1)"
+                limit 1)",
+            $shopIds
         );
     }
 }
