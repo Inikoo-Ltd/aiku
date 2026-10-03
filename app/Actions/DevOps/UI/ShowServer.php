@@ -8,6 +8,7 @@
 
 namespace App\Actions\DevOps\UI;
 
+use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Models\DevOps\Server;
@@ -82,6 +83,7 @@ class ShowServer extends OrgAction
                     'icon'  => ['icon' => ['fal', 'fa-server'], 'title' => __('Server')],
                 ],
                 'server' => ShowDevopsDashboard::make()->getServerSummaries()->firstWhere('slug', $server->slug),
+                'liveReadings' => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)],
                 'range'  => $this->range,
                 'ranges' => self::RANGES,
                 'series' => $this->getSeries($server, $this->range),

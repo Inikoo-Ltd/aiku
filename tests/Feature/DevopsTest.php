@@ -514,11 +514,21 @@ it('records server usage samples, rolls them into hours and shows them on the de
         ->and($hour->tcp_connections_max)->toBe(2300)
         ->and((float) $hour->net_rx_avg)->toBe(10.0);
 
+    Event::fake([App\Events\BroadcastServerLiveMetrics::class]);
+    $live = ['cpu_percent' => 12.5, 'iowait_percent' => 0.4, 'memory_percent' => 60, 'net_rx_mbps' => 1.2, 'net_tx_mbps' => 0.8];
+    $this->postJson(route('devops.host.metrics.live.store', ['serverSlug' => 'metrics-box']), $live)->assertForbidden();
+    $this->postJson(route('devops.host.metrics.live.store', ['serverSlug' => 'metrics-box']), $live, ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();
+    $this->postJson(route('devops.host.metrics.live.store', ['serverSlug' => 'metrics-box']), [...$live, 'cpu_percent' => 30], ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();
+    Event::assertDispatched(App\Events\BroadcastServerLiveMetrics::class, fn ($event) => $event->slug === 'metrics-box' && $event->broadcastWith()['cpu_percent'] === 30.0);
+    expect(App\Actions\DevOps\Server\StoreServerLiveMetric::recentReadings('metrics-box'))->toHaveCount(2)
+        ->and(App\Models\DevOps\ServerMetric::where('server_id', $server->id)->count())->toBe(2);
+
     $this->actingAs(createAdminGuest(createGroup())->getUser())
         ->get(route('grp.devops.dashboard'))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
             ->component('Devops/Dashboard', false)
-            ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0)));
+            ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0))
+            ->has('liveReadings.metrics-box', 2));
 
     $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Devops/Server', false)->where('range', '24h')->has('series', 2));

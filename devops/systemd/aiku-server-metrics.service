@@ -1,0 +1,31 @@
+# Server usage sampler for the DevOps dashboard: a live reading every 5 seconds,
+# the stored reading every minute. Install on every box (boro, litio, helio, neon):
+#
+#     install -m 755 devops/server-metrics.sh /usr/local/bin/aiku-server-metrics
+#     install -m 644 devops/systemd/aiku-server-metrics.service /etc/systemd/system/
+#     printf 'SERVER_METRICS_TOKEN=<DEVOPS_TOKEN of prod .env>\n' > /etc/aiku-server-metrics.env
+#     chmod 600 /etc/aiku-server-metrics.env
+#     /usr/local/bin/aiku-server-metrics --dry-run
+#     systemctl daemon-reload && systemctl enable --now aiku-server-metrics
+#
+# Optional in that env file: SERVER_METRICS_SLUG (defaults to short hostname),
+# SERVER_METRICS_URL (defaults to https://aiku.io/devops), SERVER_METRICS_INTERVAL (seconds, default 5).
+[Unit]
+Description=aiku server usage sampler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/aiku-server-metrics
+Restart=always
+RestartSec=10
+Nice=19
+CPUWeight=10
+MemoryMax=64M
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

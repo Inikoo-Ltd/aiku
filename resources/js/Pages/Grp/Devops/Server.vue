@@ -8,6 +8,7 @@ import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
+import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
 
@@ -15,11 +16,14 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     server: ServerSummary
+    liveReadings: Record<string, LiveServerReading[]>
     range: string
     ranges: string[]
     series: { t: string, cpu: number, cpu_max: number, memory: number, memory_max: number, swap: number | null, disk: number, load: number | null, iowait: number | null, iowait_max: number | null, inode: number | null,
         net_rx: number | null, net_tx: number | null, disk_read: number | null, disk_write: number | null, processes: number | null, tcp_connections: number | null }[]
 }>()
+
+const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
 
 const isAggregated = computed(() => props.range !== "24h")
 
@@ -90,7 +94,7 @@ const options = (max?: number) => ({
 
     <div class="space-y-4 p-4">
         <div class="max-w-sm">
-            <ServerUsageCard :server="server" />
+            <ServerUsageCard :server="server" :live="liveReadings[server.slug]" />
         </div>
 
         <div class="flex gap-2 text-xs">

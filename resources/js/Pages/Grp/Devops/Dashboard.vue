@@ -15,6 +15,7 @@ import { faDatabase, faServer } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed } from "vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
+import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
 library.add(faDatabase, faServer)
 
@@ -28,7 +29,10 @@ const props = defineProps<{
         top_referrer: string | null
     }
     servers: ServerSummary[]
+    liveReadings: Record<string, LiveServerReading[]>
 }>()
+
+const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
 
 const sparklinePoints = computed(() => {
     const daily = props.publicSiteVisits.daily
@@ -48,7 +52,7 @@ const sparklinePoints = computed(() => {
         <h3 class="mb-2 text-sm font-semibold">{{ ctrans("Servers") }}</h3>
         <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link v-for="server in servers" :key="server.slug" :href="route('grp.devops.servers.show', [server.slug])" class="block hover:shadow">
-                <ServerUsageCard :server="server" />
+                <ServerUsageCard :server="server" :live="liveReadings[server.slug]" />
             </Link>
         </div>
         <div class="w-64 rounded-lg border border-gray-200 p-4">

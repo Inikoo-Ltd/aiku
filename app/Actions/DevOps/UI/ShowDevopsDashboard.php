@@ -8,6 +8,7 @@
 
 namespace App\Actions\DevOps\UI;
 
+use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -57,7 +58,8 @@ class ShowDevopsDashboard extends OrgAction
                     ],
                 ],
                 'publicSiteVisits' => $this->getPublicSiteVisits(),
-                'servers'          => $this->getServerSummaries(),
+                'servers'          => $servers = $this->getServerSummaries(),
+                'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
 
             ]
         );
