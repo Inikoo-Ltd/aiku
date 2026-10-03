@@ -8,7 +8,7 @@
 #     /usr/local/bin/aiku-server-metrics --dry-run
 #
 # Optional in that env file: SERVER_METRICS_SLUG (defaults to short hostname),
-# SERVER_METRICS_URL (defaults to https://app.aiku.io/devops).
+# SERVER_METRICS_URL (defaults to https://aiku.io/devops).
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 * * * * * root /usr/local/bin/aiku-server-metrics

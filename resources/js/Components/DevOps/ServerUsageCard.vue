@@ -42,7 +42,7 @@ const meters = computed(() => [
     { label: ctrans("Inodes"), value: props.server.inode_percent, peak: null },
 ])
 
-const barColour = (value: number | null) => value === null ? "bg-gray-200" : value >= 90 ? "bg-red-500" : value >= 75 ? "bg-amber-500" : "bg-emerald-500"
+const barColour = (value: number | null | undefined) => value == null ? "bg-gray-200" : value >= 90 ? "bg-red-500" : value >= 75 ? "bg-amber-500" : "bg-emerald-500"
 </script>
 
 <template>
@@ -58,8 +58,8 @@ const barColour = (value: number | null) => value === null ? "bg-gray-200" : val
                 <div class="flex justify-between text-xs">
                     <span class="text-gray-600">{{ meter.label }}</span>
                     <span class="tabular-nums">
-                        {{ meter.value === null ? "-" : `${Number(meter.value).toFixed(0)}%` }}
-                        <span v-if="meter.peak !== null" class="text-gray-400">· {{ ctrans("24h peak") }} {{ Number(meter.peak).toFixed(0) }}%</span>
+                        {{ meter.value == null ? "-" : `${Number(meter.value).toFixed(0)}%` }}
+                        <span v-if="meter.peak != null" class="text-gray-400">· {{ ctrans("24h peak") }} {{ Number(meter.peak).toFixed(0) }}%</span>
                     </span>
                 </div>
                 <div class="mt-0.5 h-1.5 rounded bg-gray-100">
@@ -68,10 +68,10 @@ const barColour = (value: number | null) => value === null ? "bg-gray-200" : val
             </div>
         </div>
         <div class="mt-3 text-xs text-gray-500">
-            <span v-if="server.load_1 !== null">{{ ctrans("Load") }} {{ server.load_1 }} / {{ server.cpu_cores }} {{ ctrans("cores") }}</span>
+            <span v-if="server.load_1 != null">{{ ctrans("Load") }} {{ server.load_1 }} / {{ server.cpu_cores }} {{ ctrans("cores") }}</span>
             <span v-if="server.memory_total_mb"> · {{ (server.memory_total_mb / 1024).toFixed(0) }} GB RAM</span>
         </div>
-        <div v-if="server.net_rx_mbps !== null" class="mt-1 grid grid-cols-2 gap-x-2 text-xs text-gray-500 tabular-nums">
+        <div v-if="server.net_rx_mbps != null" class="mt-1 grid grid-cols-2 gap-x-2 text-xs text-gray-500 tabular-nums">
             <span>{{ ctrans("Net") }} ↓{{ server.net_rx_mbps }} ↑{{ server.net_tx_mbps }} MB/s</span>
             <span>{{ ctrans("Disk") }} R{{ server.disk_read_mbps }} W{{ server.disk_write_mbps }} MB/s</span>
             <span>{{ server.processes }} {{ ctrans("processes") }}</span>
@@ -80,7 +80,7 @@ const barColour = (value: number | null) => value === null ? "bg-gray-200" : val
         <div v-if="disks.length > 1" class="mt-1 space-y-0.5 text-xs text-gray-500">
             <div v-for="disk in disks" :key="disk.mount" class="flex justify-between">
                 <span class="truncate">{{ disk.mount }}</span>
-                <span class="tabular-nums">{{ disk.percent }}% of {{ disk.size_gb }} GB<template v-if="disk.inode_percent !== null"> · {{ ctrans("inodes") }} {{ disk.inode_percent }}%</template></span>
+                <span class="tabular-nums">{{ disk.percent }}% of {{ disk.size_gb }} GB<template v-if="disk.inode_percent != null"> · {{ ctrans("inodes") }} {{ disk.inode_percent }}%</template></span>
             </div>
         </div>
     </div>

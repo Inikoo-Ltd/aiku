@@ -12,7 +12,7 @@ set -uo pipefail
 CONFIG=${SERVER_METRICS_CONFIG:-/etc/aiku-server-metrics.env}
 [ -r "$CONFIG" ] && . "$CONFIG"
 
-URL=${SERVER_METRICS_URL:-https://app.aiku.io/devops}
+URL=${SERVER_METRICS_URL:-https://aiku.io/devops}
 SLUG=${SERVER_METRICS_SLUG:-$(hostname -s | tr 'A-Z' 'a-z')}
 TOKEN=${SERVER_METRICS_TOKEN:-}
 
@@ -62,7 +62,7 @@ payload=$(printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swa
     "$cpu" "$iowait" "$mem_pct" "$swap_pct" "$load1" "$cores" "$mem_total" "$net_rx" "$net_tx" "$disk_read" "$disk_write" "$processes" "$tcp_connections" "$disks")
 
 if [ "${1:-}" = "--dry-run" ]; then
-    printf 'POST %s/server/%s/metrics\n%s\n' "$URL" "$SLUG" "$payload"
+    printf 'POST %s/metrics/%s\n%s\n' "$URL" "$SLUG" "$payload"
     exit 0
 fi
 
@@ -70,6 +70,6 @@ fi
 
 code=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' -X POST \
     -H 'Content-Type: application/json' -H 'Accept: application/json' -H "X-DEVOPS-TOKEN: $TOKEN" \
-    --data "$payload" "$URL/server/$SLUG/metrics" 2>&1)
+    --data "$payload" "$URL/metrics/$SLUG" 2>&1)
 
 [ "$code" = 200 ] || logger -t aiku-server-metrics "post failed: $code"
