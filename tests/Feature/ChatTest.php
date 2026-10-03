@@ -7914,6 +7914,21 @@ test('a question about an order gets a draft written from that customer\'s order
 
     expect($copied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
 
+    expect(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Please enter Ancient Wisdom Marketing Ltd as the warehouse name in TikTok Shop.', 'Hi, if you use Ancient Wisdom Marketing Ltd as the warehouse name in TikTok Shop.'))->toBeGreaterThan(0.6)->toBeLessThan(0.9)
+        ->and(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Your order [[which order?]] ships today.', 'Hello Ann, your order ships today. Carmen'))->toBe(1.0)
+        ->and(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Your order ships today.', 'It is with APC.'))->toBe(0.0);
+
+    // Retyped with their own greeting and name, without pressing Use: still sent as written.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Hi again, where is my order?');
+    $retyped = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    $typed   = $ask($session, 'Hello! '.$retyped->text.' Carmen', ChatSenderTypeEnum::AGENT);
+    $typed->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $typed);
+
+    expect($retyped->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
+
     // Answering a question we asked them ("yes", "please") gets no draft: what they want is in our question.
     $this->travel(1)->minutes();
     $ourQuestion = $ask($session, 'Do you mean the orders still with us?', ChatSenderTypeEnum::AGENT);
@@ -8704,6 +8719,50 @@ test('what agents keep telling different customers is learned and put to staff o
 
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
+});
+
+test('order facts follow a replacement sent lately for an older order, and products named in words are found by the shop search', function () {
+    $customer = createOwnCustomer($this->shop, 'facts-replacement');
+    $order    = fn (string $reference, string $date) => \App\Models\Ordering\Order::find(\Illuminate\Support\Facades\DB::table('orders')->insertGetId([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+        'currency_id' => $this->shop->currency_id, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id, 'slug' => 'ord-'.uniqid(), 'reference' => $reference,
+        'state' => 'dispatched', 'net_amount' => 100, 'org_net_amount' => 100, 'grp_net_amount' => 100, 'status' => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data' => '{}', 'data' => '{}', 'date' => $date, 'submitted_at' => $date, 'dispatched_at' => $date, 'created_at' => $date, 'updated_at' => $date,
+    ]));
+    $older = $order('REPL'.random_int(100000, 999999), now()->subDays(20)->toDateTimeString());
+    $newer = $order('NEWR'.random_int(100000, 999999), now()->subDays(5)->toDateTimeString());
+
+    expect(\App\Actions\Chat\ChatSession\GetChatOrderFacts::run($customer, 'When will it be sent?')['order']['reference'])->toBe($newer->reference);
+
+    $deliveryNoteId = \Illuminate\Support\Facades\DB::table('delivery_notes')->insertGetId([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+        'warehouse_id' => \App\Models\Inventory\Warehouse::where('organisation_id', $this->shop->organisation_id)->firstOrFail()->id, 'slug' => 'dn-'.uniqid(),
+        'reference' => $older->reference, 'type' => 'replacement', 'state' => 'handling', 'date' => now(), 'data' => '{}', 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->insert(['delivery_note_id' => $deliveryNoteId, 'order_id' => $older->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $facts = \App\Actions\Chat\ChatSession\GetChatOrderFacts::run($customer, 'When will it be sent?');
+    expect($facts['order']['reference'])->toBe($older->reference)
+        ->and($facts['order']['replacements'][0]['status'])->toBe(\App\Actions\Chat\ChatSession\GetChatOrderFacts::STATE_MEANING['handling'])
+        ->and($facts['order'])->not->toHaveKey('parcels')
+        ->and(collect($facts['other_recent_orders'])->pluck('reference'))->toContain($newer->reference);
+
+    config(['scout.driver' => 'collection']);
+    $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+    $product->update(['name' => 'Tropical Paradise Soap Loaf - Papaya', 'is_in_website' => true, 'is_for_sale' => true]);
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"names": ["Soap Loaf"]}');
+
+    $found = \App\Actions\Chat\ChatSession\GetChatProductFactsByName::run($this->shop, 'The soap loafs, what is a good starting order?');
+    expect(collect($found)->pluck('code'))->toContain($product->code)
+        ->and($found[0]['found_by_name'])->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\GetChatProductFactsByName::run($this->shop, 'Is TPSoap-03 in stock?'))->toBe([]);
+
+    expect(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::isGoodEnough(['answers' => 1.0, 'invents' => 0.0, 'claims_done' => 0.6, 'staff_like' => 1.0, 'send_as_is' => 1.0]))->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::whatToFix(['answers' => 1.0, 'invents' => 0.0, 'claims_done' => 0.6, 'staff_like' => 1.0, 'send_as_is' => 1.0])[0])->toContain('already did something');
+
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->where('delivery_note_id', $deliveryNoteId)->delete();
+    \Illuminate\Support\Facades\DB::table('delivery_notes')->where('id', $deliveryNoteId)->delete();
+    \Illuminate\Support\Facades\DB::table('orders')->whereIn('id', [$older->id, $newer->id])->delete();
 });
 
 test('a general question is answered from the knowledge base entry jev picks, and only when the quote is really in it', function () {
