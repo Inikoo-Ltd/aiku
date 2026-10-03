@@ -17,7 +17,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\AuroraOrganisationService;
 use App\Transfers\SourceOrganisationService;
-use App\Transfers\WowsbarOrganisationService;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -45,7 +44,7 @@ class FetchAction implements ShouldBeUnique
     protected int $number_no_changes = 0;
     protected int $number_errors = 0;
 
-    protected AuroraOrganisationService|WowsbarOrganisationService|SourceOrganisationService|null $organisationSource = null;
+    protected AuroraOrganisationService|SourceOrganisationService|null $organisationSource = null;
 
     protected int $hydratorsDelay = 5;
 

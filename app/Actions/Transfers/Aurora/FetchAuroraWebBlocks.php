@@ -36,7 +36,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
 use App\Transfers\AuroraOrganisationService;
-use App\Transfers\WowsbarOrganisationService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +58,7 @@ class FetchAuroraWebBlocks
     use WithFetchDepartmentWebBlock;
 
 
-    protected AuroraOrganisationService|WowsbarOrganisationService|SourceOrganisationService|null $organisationSource = null;
+    protected AuroraOrganisationService|SourceOrganisationService|null $organisationSource = null;
 
     private string $dbSuffix;
 

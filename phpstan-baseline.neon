@@ -12019,48 +12019,6 @@ parameters:
 			path: app/Transfers/Aurora/FetchAuroraEmailRunFromCampaignType.php
 
 		-
-			message: '#^Array has 2 duplicate keys with value ''employment_type'' \(''employment_type'', ''employment_type''\)\.$#'
-			identifier: array.duplicateKey
-			count: 1
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Â'' \(''Â'', ''Â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Î'' \(''Î'', ''Î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''â'' \(''â'', ''â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''î'' \(''î'', ''î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''ý'' \(''ý'', ''ý''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
-			message: '#^Variable \$sourceData might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: app/Transfers/Aurora/FetchAuroraEmployee.php
-
-		-
 			message: '#^Called ''pluck'' on Laravel collection, but could have been retrieved as a query\.$#'
 			identifier: larastan.noUnnecessaryCollectionCall
 			count: 1
@@ -12197,42 +12155,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: app/Transfers/Aurora/FetchAuroraSupplierProduct.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Â'' \(''Â'', ''Â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Î'' \(''Î'', ''Î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''â'' \(''â'', ''â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''î'' \(''î'', ''î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''ý'' \(''ý'', ''ý''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
-
-		-
-			message: '#^Variable \$sourceData might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: app/Transfers/Aurora/FetchAuroraTimesheet.php
 
 		-
 			message: '#^Array has 2 duplicate keys with value ''Â'' \(''Â'', ''Â''\)\.$#'
