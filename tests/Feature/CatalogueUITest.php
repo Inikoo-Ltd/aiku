@@ -1394,10 +1394,15 @@ test('shop year sales target compares the same days last year, January included,
         ->and($block['chart']['this_year'])->toBe([1100.0, 3200.0, 3800.0])
         ->and($block['chart']['weekly_versus_last_year'])->toHaveCount(10)
         ->and(last($block['chart']['weekly_versus_last_year']))->toBe(['x' => 2.323, 'y' => 20.0])
+        ->and($block['children'])->toBe([])
         ->and($block['expected'])->toBe(round(3800 + 6500 * (3800 / 3500), 2))
         ->and($block['target']['amount'])->toEqualWithDelta(10000 * (1 + $growth), 0.05)
         ->and($block['target']['is_default'])->toBeTrue()
         ->and($block['can_edit'])->toBeFalse();
+
+    $organisationYear = GetShopYearSalesTarget::run($shop->organisation, null, $today);
+    expect(collect($organisationYear['children'])->firstWhere('key', (string) $shop->id))
+        ->toMatchArray(['name' => $shop->name, 'sales_so_far' => 3800.0, 'children' => []]);
 
     UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 5000, 'month' => '2031-02']);
 
@@ -1617,7 +1622,12 @@ test('a shop selling under several invoice categories targets their sum, partner
 
     actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['shop_target_category_'.$shop->id => (string) $partners->id]])->assertSuccessful();
 
-    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id);
+    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_child'])->toBe((string) $partners->id)
+        ->and(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today)['selected_period'])->toBe('month');
+
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['settings' => ['sales_target_period' => 'year']])->assertSuccessful();
+
+    expect(GetShopMonthSalesTarget::run($shop, $this->user->fresh(), $today))->toMatchArray(['selected_period' => 'year', 'selected_child' => (string) $partners->id]);
 
     $movedToOwnShop = $category('Faire '.uniqid());
     DB::table('invoice_categories')->where('id', $movedToOwnShop->id)->update(['settings' => json_encode(['shop_ids' => [$shop->id + 1000]])]);

@@ -39,6 +39,7 @@ interface PeriodTarget {
     children_label?: string
     selection_setting?: string
     selected_child?: string
+    selected_period?: "month" | "year"
     can_edit: boolean
     update_route: { name: string, parameters: Record<string, number> } | null
 }
@@ -55,15 +56,28 @@ const props = defineProps<{
     yearTarget?: PeriodTarget
 }>()
 
-const activePeriod = ref<"month" | "year">("month")
+const activePeriod = ref<"month" | "year">(props.monthTarget.selected_period === "year" && props.yearTarget ? "year" : "month")
 const children = computed(() => props.monthTarget.children ?? [])
 const selectedChildKey = ref(children.value.some((child) => child.key === props.monthTarget.selected_child) ? props.monthTarget.selected_child! : "all")
 const selectedChild = computed(() => children.value.find((child) => child.key === selectedChildKey.value) ?? null)
 const showAllCategories = ref(false)
 
+const yearChild = computed(() => props.yearTarget?.children?.find((child) => child.key === selectedChildKey.value) ?? null)
+
+const isYearView = computed(() => activePeriod.value === "year" && !!props.yearTarget)
+
+const chips = computed(() => [
+    { key: "all", name: ctrans("All"), block: (isYearView.value ? props.yearTarget : props.monthTarget) as PeriodTarget },
+    ...children.value.map((child) => ({
+        key: child.key,
+        name: child.name,
+        block: (isYearView.value ? props.yearTarget?.children?.find((yearChild) => yearChild.key === child.key) ?? child : child) as PeriodTarget,
+    })),
+])
+
 const periodData = computed<PeriodTarget>(() => {
     if (activePeriod.value === "year" && props.yearTarget) {
-        return props.yearTarget
+        return selectedChildKey.value === "all" ? props.yearTarget : yearChild.value ?? props.yearTarget
     }
     return selectedChild.value ?? props.monthTarget
 })
@@ -110,11 +124,14 @@ const canEditTarget = computed(() => periodData.value.can_edit && !periodData.va
 const selectPeriod = (period: "month" | "year") => {
     isEditing.value = false
     activePeriod.value = period
+    axios.patch(route("grp.models.profile.update"), { settings: { sales_target_period: period } })
 }
 
 const selectChild = (key: string) => {
     isEditing.value = false
-    activePeriod.value = "month"
+    if (!props.yearTarget?.children?.some((child) => child.key === key)) {
+        activePeriod.value = "month"
+    }
     selectedChildKey.value = key
     if (props.monthTarget.selection_setting) {
         axios.patch(route("grp.models.profile.update"), { settings: { [props.monthTarget.selection_setting]: key } })
@@ -337,7 +354,7 @@ const donutOptions = {
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                 <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-[var(--theme-color-4)]" fixed-width aria-hidden="true" />
                 {{ ctrans(":month target", { month: periodData.month_label }) }}
-                <span v-if="selectedChild && activePeriod === 'month'" class="font-normal text-gray-500">· {{ selectedChild.name }}</span>
+                <span v-if="selectedChild && (activePeriod === 'month' || yearChild)" class="font-normal text-gray-500">· {{ selectedChild.name }}</span>
                 <Link v-if="selectedChild?.link && activePeriod === 'month'" :href="route(selectedChild.link.name, selectedChild.link.parameters)" class="text-xs font-normal text-gray-400 hover:text-gray-700" :aria-label="ctrans('Open dashboard')" @click.stop>
                     <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
                 </Link>
@@ -372,16 +389,16 @@ const donutOptions = {
         <div v-if="children.length" class="mb-4 flex flex-wrap items-center gap-1.5 text-sm">
             <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ monthTarget.children_label }}</span>
             <button
-                v-for="chip in [{ key: 'all', name: ctrans('All'), block: monthTarget as PeriodTarget }, ...children.map((child) => ({ key: child.key, name: child.name, block: child as PeriodTarget }))]"
+                v-for="chip in chips"
                 :key="chip.key"
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="selectedChildKey === chip.key && activePeriod === 'month'
+                :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild)
                     ? 'border-[var(--theme-color-4)] bg-[var(--theme-color-4)] text-[var(--theme-color-5)] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="selectChild(chip.key)">
                 <span>{{ chip.name }}</span>
-                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && activePeriod === 'month' ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
+                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
             </button>
         </div>
 

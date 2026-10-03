@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\SalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasOrdersPipeline;
 use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasSalesForecast;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
 use App\Models\SysAdmin\Group;
@@ -32,7 +33,7 @@ class GetShopYearSalesTarget
     use HasOrdersPipeline;
     use HasSalesForecast;
 
-    public function handle(Shop|Organisation|Group $parent, ?User $user = null, ?Carbon $today = null): array
+    public function handle(Shop|Organisation|Group $parent, ?User $user = null, ?Carbon $today = null, bool $withChildren = true): array
     {
         $today         = ($today ?? now('UTC'))->copy()->startOfDay();
         $yearStart     = $today->copy()->startOfYear();
@@ -108,6 +109,7 @@ class GetShopYearSalesTarget
                 'weekly_versus_last_year' => $this->weeklyVersusLastYear($shopIds, $yearStart, $today, $salesExpression),
                 'forecast'  => $restOfYear !== null ? $this->yearForecastLine($salesSoFar, $thisYearMonthly[$monthOfYear], $monthOfYear, $restOfYear) : null,
             ],
+            'children'          => $withChildren ? $this->childBlocks($parent, $user, $today) : [],
             'granularity'       => 'year',
             'can_edit'          => false,
             'update_route'      => null,
@@ -196,6 +198,26 @@ class GetShopYearSalesTarget
             ->whereIn('shop_time_series.shop_id', $shopIds)
             ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
             ->whereBetween('shop_time_series_records.period', [$yearStart->format('Y-m'), $yearStart->copy()->endOfYear()->format('Y-m')]);
+    }
+
+    /**
+     * The year of each open shop of an organisation, or of each organisation of a group, keyed like the month's children.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function childBlocks(Shop|Organisation|Group $parent, ?User $user, Carbon $today): array
+    {
+        $children = match (true) {
+            $parent instanceof Organisation => Shop::whereIn('id', $this->targetShopIds($parent))->get(),
+            $parent instanceof Group        => $parent->organisations()->whereHas('shops', fn ($query) => $query->where('state', '!=', ShopStateEnum::CLOSED))->get(),
+            default                         => collect(),
+        };
+
+        return $children->map(fn (Shop|Organisation $child) => [
+            ...$this->handle($child, $user, $today, false),
+            'key'  => (string) $child->id,
+            'name' => $child->name,
+        ])->values()->all();
     }
 
     /**
