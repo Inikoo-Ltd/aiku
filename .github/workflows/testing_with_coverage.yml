@@ -54,7 +54,9 @@ jobs:
         run: |
           MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
           if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
-            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            DB_HOST=$(sed -n 's/^DB_HOST=//p' .env.testing)
+            DB_PORT=$(sed -n 's/^DB_PORT=//p' .env.testing)
+            ./generate_testing_db_dumps.sh php8.4 aiku_test "${DB_HOST:-localhost}" "${DB_PORT:-5432}"
             cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/aiku.dump.tmp
             mv ../../../../artifacts/aiku.dump.tmp ../../../../artifacts/aiku.dump
             echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
@@ -68,13 +70,16 @@ jobs:
       - name: Run tests with coverage
         run: |
           COVERAGE=""
+          mkdir -p "$RUNNER_TEMP/php-coverage"
+          echo "zend_extension=xdebug.so" > "$RUNNER_TEMP/php-coverage/xdebug.ini"
+          export PHP_INI_SCAN_DIR=":$RUNNER_TEMP/php-coverage"
           if php8.4 -m | grep -qiE '^(pcov|xdebug)$'; then
             COVERAGE="--coverage-clover clover.xml"
           else
             echo "::warning::No coverage driver (pcov/xdebug) for php8.4 on this runner, running tests without coverage"
           fi
           sed 's/name="memory_limit" value="5120M"/name="memory_limit" value="-1"/' phpunit.xml > phpunit.coverage.xml
-          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-8} $COVERAGE --log-junit junit.xml
+          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-4} $COVERAGE --log-junit junit.xml
       - name: Upload coverage to Codecov
         if: ${{ hashFiles('clover.xml') != '' }}
         uses: codecov/codecov-action@v5
