@@ -20,9 +20,9 @@ import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vu
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -83,12 +83,12 @@ const props = defineProps<{
 
 type TabKey = "overview" | "work" | "timeline" | "commits" | "activity"
 
-const tabs: { key: TabKey; label: string }[] = [
-    { key: "overview", label: ctrans("Overview") },
-    { key: "work", label: ctrans("Work") },
-    { key: "timeline", label: ctrans("Timeline") },
-    { key: "commits", label: ctrans("Commits") },
-    { key: "activity", label: ctrans("Activity") },
+const tabs: { key: TabKey; label: string; icon: string; alignRight?: boolean }[] = [
+    { key: "overview", label: ctrans("Overview"), icon: "fal fa-tachometer-alt" },
+    { key: "work", label: ctrans("Work"), icon: "fal fa-tasks" },
+    { key: "timeline", label: ctrans("Timeline"), icon: "fal fa-chart-line" },
+    { key: "activity", label: ctrans("Activity"), icon: "fal fa-history" },
+    { key: "commits", label: ctrans("Commits"), icon: "fal fa-code-commit", alignRight: true },
 ]
 
 const activeTab = ref<TabKey>("overview")
@@ -299,6 +299,24 @@ const attachForm = useForm({ references: "", ticket_project_milestone_id: null a
 const attachWork = () =>
     attachForm.post(route(props.routes.attach_work.name, props.routes.attach_work.parameters), { preserveScroll: true, onSuccess: () => attachForm.reset("references") })
 
+type MilestoneState = "done" | "late" | "active" | "upcoming"
+type TimelineRow = { milestone: Milestone; state: MilestoneState; kind: "bar" | "marker" | "none"; left: number; width: number; percent: number; when: string }
+
+const milestoneStateOf = (milestone: Milestone): MilestoneState => {
+    if (milestone.done_at) return "done"
+    if (isOverdue(milestone)) return "late"
+    const startsOn = milestone.start_date ?? milestone.due_date
+    if (startsOn && startsOn <= todayIso) return "active"
+    return "upcoming"
+}
+const milestoneStyles: Record<MilestoneState, { fill: string; track: string; icon: string; iconClass: string; label: string }> = {
+    done: { fill: "bg-green-500", track: "bg-green-100", icon: "fal fa-check-circle", iconClass: "text-green-600", label: ctrans("Done") },
+    active: { fill: "bg-blue-500", track: "bg-blue-100", icon: "fal fa-clock", iconClass: "text-blue-600", label: ctrans("In progress") },
+    late: { fill: "bg-red-500", track: "bg-red-100", icon: "fal fa-exclamation-triangle", iconClass: "text-red-600", label: ctrans("Late") },
+    upcoming: { fill: "bg-gray-400", track: "bg-gray-100", icon: "fal fa-circle", iconClass: "text-gray-400", label: ctrans("Upcoming") },
+}
+const timelineColumns = "grid grid-cols-[minmax(9rem,16rem)_minmax(0,1fr)]"
+
 const timeline = computed(() => {
     const start = parseDay(props.project.start_date)
     const dueTimes = props.milestones.filter((milestone) => milestone.due_date).map((milestone) => parseDay(milestone.due_date as string).getTime())
@@ -307,7 +325,7 @@ const timeline = computed(() => {
     if (endTime <= start.getTime()) {
         endTime = addDays(start, 56).getTime()
     }
-    const end = new Date(endTime)
+    const end = addDays(new Date(endTime), 3)
     const span = end.getTime() - start.getTime()
     const position = (date: Date) => Math.min(100, Math.max(0, ((date.getTime() - start.getTime()) / span) * 100))
 
@@ -318,25 +336,46 @@ const timeline = computed(() => {
         ticks.push({ left: position(day), label: shortDate(day) })
     }
 
-    let previousDue: string | null = null
-    const bars = props.milestones.map((milestone) => {
-        const barStart = milestone.start_date ?? previousDue ?? props.project.start_date
-        if (milestone.due_date) {
-            previousDue = milestone.due_date
-        }
+    const months: { left: number; width: number; label: string }[] = []
+    for (let month = new Date(start.getFullYear(), start.getMonth(), 1); month.getTime() <= end.getTime(); month = new Date(month.getFullYear(), month.getMonth() + 1, 1)) {
+        const left = position(month)
+        const width = position(new Date(month.getFullYear(), month.getMonth() + 1, 1)) - left
+        months.push({ left, width, label: month.toLocaleDateString(undefined, width > 12 ? { month: "long" } : { month: "short" }) })
+    }
+
+    const rows: TimelineRow[] = props.milestones.map((milestone) => {
+        const state = milestoneStateOf(milestone)
+        const percent = milestone.total ? percentOf(milestone.done, milestone.total) : (milestone.done_at ? 100 : 0)
         if (!milestone.due_date) {
-            return { milestone, left: 0, width: 0 }
+            return { milestone, state, kind: "none", left: 0, width: 0, percent, when: milestone.start_date ? shortDate(milestone.start_date) : "" }
         }
-        const left = position(parseDay(barStart < milestone.due_date ? barStart : milestone.due_date))
         const right = position(parseDay(milestone.due_date))
-        return { milestone, left, width: Math.max(1.2, right - left) }
+        if (!milestone.start_date) {
+            return { milestone, state, kind: "marker", left: right, width: 0, percent, when: shortDate(milestone.due_date) }
+        }
+        const left = position(parseDay(milestone.start_date < milestone.due_date ? milestone.start_date : milestone.due_date))
+        return { milestone, state, kind: "bar", left, width: Math.max(1.5, right - left), percent, when: `${shortDate(milestone.start_date)} – ${shortDate(milestone.due_date)}` }
     })
 
     const today = parseDay(todayIso)
     const todayLeft = today.getTime() >= start.getTime() && today.getTime() <= end.getTime() ? position(today) : null
+    const targetLeft = props.project.target_date ? position(parseDay(props.project.target_date)) : null
 
-    return { ticks, bars, todayLeft }
+    return { ticks, months, rows, todayLeft, targetLeft }
 })
+
+const expandedMilestones = ref<Record<number, boolean>>({})
+const toggleTimelineRow = (milestone: Milestone) => {
+    if (milestone.total) {
+        expandedMilestones.value[milestone.id as number] = !expandedMilestones.value[milestone.id as number]
+    }
+}
+const workOfMilestone = (milestone: Milestone) => props.work.filter((item) => item.milestone_id === milestone.id && item.state !== "cancelled")
+const openMilestoneInWork = (milestone: Milestone) => {
+    milestoneFilter.value = milestone.id as number
+    showClosed.value = true
+    selectTab("work")
+}
 
 const burnUpChart = computed(() => {
     const dates = props.burn_up.map((week) => week.date)
@@ -437,9 +476,10 @@ const burnUpOptions = {
         <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm"
-            :class="activeTab === tab.key ? 'border-[--app-accent-strong] font-medium text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'"
+            class="-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm"
+            :class="[activeTab === tab.key ? 'border-[--app-accent-strong] font-medium text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800', { 'ml-auto': tab.alignRight }]"
             @click="selectTab(tab.key)">
+            <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />
             {{ tab.label }}
         </button>
     </nav>
@@ -670,39 +710,121 @@ const burnUpOptions = {
 
     <div v-else-if="activeTab === 'timeline'" class="space-y-6 p-4">
         <section>
-            <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Milestones") }}</h2>
+            <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <h2 class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Milestones") }}</h2>
+                <ul class="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                    <li v-for="(style, state) in milestoneStyles" :key="state" class="flex items-center gap-1">
+                        <FontAwesomeIcon :icon="style.icon" :class="style.iconClass" fixed-width />
+                        {{ style.label }}
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="size-2 rotate-45 bg-gray-400" />
+                        {{ ctrans("Deadline") }}
+                    </li>
+                </ul>
+            </div>
             <p v-if="!milestones.length" class="text-sm text-gray-500">{{ ctrans("No milestones yet") }}</p>
             <div v-else class="overflow-x-auto rounded-md border border-gray-200">
-                <div class="min-w-[640px] p-3">
-                    <div class="flex">
-                        <div class="w-40 shrink-0" />
-                        <div class="relative h-5 flex-1 text-xs text-gray-400">
-                            <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute -translate-x-1/2 whitespace-nowrap" :style="{ left: tick.left + '%' }">{{ tick.label }}</span>
-                        </div>
-                    </div>
-                    <div v-for="bar in timeline.bars" :key="bar.milestone.id" class="flex items-center border-t border-gray-100">
-                        <div class="w-40 shrink-0 truncate pr-2 text-sm" v-tooltip="bar.milestone.name">
-                            {{ bar.milestone.name }}
-                            <span class="text-xs text-gray-400">{{ bar.milestone.done }}/{{ bar.milestone.total }}</span>
-                        </div>
-                        <div class="relative h-9 flex-1">
-                            <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute inset-y-0 border-l border-gray-100" :style="{ left: tick.left + '%' }" />
-                            <span v-if="timeline.todayLeft !== null" class="absolute inset-y-0 z-10 border-l-2 border-red-400" :style="{ left: timeline.todayLeft + '%' }" />
-                            <div
-                                v-if="bar.width"
-                                class="absolute top-2 h-5 overflow-hidden rounded px-1 text-xs leading-5 text-white"
-                                :class="bar.milestone.done_at ? 'bg-green-500' : isOverdue(bar.milestone) ? 'bg-red-500' : 'bg-blue-500'"
-                                :style="{ left: bar.left + '%', width: bar.width + '%' }"
-                                v-tooltip="`${bar.milestone.name} · ${bar.milestone.done}/${bar.milestone.total}`">
-                                <span class="whitespace-nowrap">{{ bar.milestone.name }} {{ bar.milestone.done }}/{{ bar.milestone.total }}</span>
+                <div class="min-w-[560px] sm:min-w-0">
+                    <div :class="timelineColumns" class="border-b border-gray-200 bg-gray-50 text-xs text-gray-600">
+                        <div class="self-end px-3 pb-1 font-medium">{{ ctrans("Milestone") }}</div>
+                        <div class="relative pr-3">
+                            <div class="relative h-6">
+                                <span
+                                    v-if="timeline.todayLeft !== null"
+                                    class="absolute top-1 z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-red-500 px-1.5 py-0.5 font-medium text-white"
+                                    :style="{ left: timeline.todayLeft + '%' }">
+                                    <FontAwesomeIcon icon="fal fa-calendar-day" fixed-width />
+                                    {{ ctrans("Today") }}
+                                </span>
+                                <span
+                                    v-if="timeline.targetLeft !== null"
+                                    v-tooltip="ctrans('Target :date', { date: useFormatTime(project.target_date ?? undefined, { formatTime: 'mdy' }) })"
+                                    class="absolute top-1 flex -translate-x-full items-center gap-1 whitespace-nowrap pr-1.5 font-medium text-gray-700"
+                                    :style="{ left: timeline.targetLeft + '%' }">
+                                    <FontAwesomeIcon icon="fal fa-flag-checkered" fixed-width />
+                                    {{ ctrans("Target") }}
+                                </span>
                             </div>
-                            <span v-else class="absolute left-1 top-2 text-xs text-gray-400">{{ ctrans("No due date") }}</span>
+                            <div class="relative h-5">
+                                <span v-for="month in timeline.months" :key="month.label + month.left" class="absolute inset-y-0 overflow-hidden truncate border-l border-gray-300 pl-1.5 font-medium leading-5" :style="{ left: month.left + '%', width: month.width + '%' }">
+                                    <template v-if="month.width > 5">{{ month.label }}</template>
+                                </span>
+                            </div>
+                            <div class="relative h-5 text-gray-500">
+                                <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute -translate-x-1/2 whitespace-nowrap tabular-nums leading-5" :style="{ left: tick.left + '%' }">{{ tick.label }}</span>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="timeline.todayLeft !== null" class="mt-1 flex">
-                        <div class="w-40 shrink-0" />
-                        <div class="relative h-4 flex-1 text-xs font-medium text-red-500">
-                            <span class="absolute -translate-x-1/2" :style="{ left: timeline.todayLeft + '%' }">{{ ctrans("Today") }}</span>
+
+                    <div v-for="row in timeline.rows" :key="row.milestone.id" class="border-b border-gray-100 last:border-b-0">
+                        <div
+                            :class="[timelineColumns, row.milestone.total ? 'cursor-pointer hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50' : '']"
+                            :role="row.milestone.total ? 'button' : undefined"
+                            :tabindex="row.milestone.total ? 0 : undefined"
+                            :aria-expanded="row.milestone.total ? !!expandedMilestones[row.milestone.id as number] : undefined"
+                            @click="toggleTimelineRow(row.milestone)"
+                            @keydown.enter.prevent="toggleTimelineRow(row.milestone)"
+                            @keydown.space.prevent="toggleTimelineRow(row.milestone)">
+                            <div class="flex items-start gap-1.5 py-2 pl-2 pr-3 text-sm">
+                                <FontAwesomeIcon :icon="expandedMilestones[row.milestone.id as number] ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="mt-1 text-gray-400" :class="!row.milestone.total && 'invisible'" fixed-width />
+                                <div class="min-w-0">
+                                    <p v-tooltip="row.milestone.name" class="line-clamp-2 text-gray-700" :class="row.state === 'done' && 'text-gray-500'">
+                                        <FontAwesomeIcon :icon="milestoneStyles[row.state].icon" :class="milestoneStyles[row.state].iconClass" fixed-width />
+                                        {{ row.milestone.name }}
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-gray-500" :class="row.state === 'late' && 'text-red-600'">
+                                        <template v-if="row.milestone.done_at">{{ ctrans("Done :date", { date: shortDate(row.milestone.done_at) }) }}</template>
+                                        <template v-else-if="row.kind === 'none'">{{ ctrans("No due date") }}</template>
+                                        <template v-else-if="row.state === 'late'">{{ ctrans("Overdue since :date", { date: shortDate(row.milestone.due_date as string) }) }}</template>
+                                        <template v-else>{{ row.when }}</template>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="relative min-h-[3.25rem] pr-3">
+                                <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute inset-y-0 border-l border-gray-100" :style="{ left: tick.left + '%' }" />
+                                <span v-if="timeline.targetLeft !== null" class="absolute inset-y-0 border-l border-dashed border-gray-400" :style="{ left: timeline.targetLeft + '%' }" />
+                                <span v-if="timeline.todayLeft !== null" class="absolute inset-y-0 z-10 border-l-2 border-red-400" :style="{ left: timeline.todayLeft + '%' }" />
+                                <template v-if="row.kind === 'bar'">
+                                    <div
+                                        v-tooltip="row.milestone.total ? `${row.milestone.name} · ${row.milestone.done}/${row.milestone.total}` : row.milestone.name"
+                                        class="absolute top-1/2 h-4 -translate-y-1/2 overflow-hidden rounded"
+                                        :class="row.milestone.total || row.milestone.done_at ? milestoneStyles[row.state].track : 'border border-dashed border-gray-300'"
+                                        :style="{ left: row.left + '%', width: row.width + '%' }">
+                                        <div v-if="row.milestone.total || row.milestone.done_at" class="h-full rounded" :class="milestoneStyles[row.state].fill" :style="{ width: row.percent + '%' }" />
+                                    </div>
+                                </template>
+                                <span
+                                    v-else-if="row.kind === 'marker'"
+                                    v-tooltip="row.milestone.name"
+                                    class="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-sm"
+                                    :class="row.milestone.total || row.milestone.done_at ? milestoneStyles[row.state].fill : 'border border-dashed border-gray-400 bg-white'"
+                                    :style="{ left: row.left + '%' }" />
+                                <span
+                                    v-if="row.kind !== 'none' && row.milestone.total"
+                                    class="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-gray-700"
+                                    :style="row.left + row.width <= 88 ? { left: `calc(${row.left + row.width}% + 8px)` } : { right: `calc(${100 - row.left}% + 8px)` }">
+                                    {{ row.milestone.done }}/{{ row.milestone.total }}
+                                </span>
+                            </div>
+                        </div>
+                        <div v-if="expandedMilestones[row.milestone.id as number]" class="border-t border-gray-100 bg-gray-50/60">
+                            <ul class="divide-y divide-gray-100">
+                                <li v-for="item in workOfMilestone(row.milestone)" :key="item.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-9 pr-3 text-sm" :class="item.state === 'done' && 'opacity-70'">
+                                    <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
+                                    <Link :href="item.url" class="min-w-0 flex-1 basis-60 truncate hover:underline">
+                                        <span class="mr-2 font-mono text-xs text-gray-500">{{ item.reference }}</span>
+                                        <span class="text-gray-700" :class="priorityClasses[item.priority]">{{ item.subject }}</span>
+                                    </Link>
+                                    <span class="text-xs text-gray-500">{{ item.status_label }}</span>
+                                    <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
+                                    <span v-else class="text-xs text-gray-500">{{ ctrans("Unassigned") }}</span>
+                                </li>
+                            </ul>
+                            <button class="flex items-center gap-1.5 py-1.5 pl-9 pr-3 text-xs text-gray-500 hover:text-gray-800" @click="openMilestoneInWork(row.milestone)">
+                                <FontAwesomeIcon icon="fal fa-tasks" fixed-width />
+                                {{ ctrans("Open in Work") }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -712,7 +834,7 @@ const burnUpOptions = {
         <section>
             <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Burn-up") }}</h2>
             <p v-if="!burn_up.length" class="text-sm text-gray-500">{{ ctrans("Not enough data yet") }}</p>
-            <div v-else class="h-72 rounded-md border border-gray-200 p-3">
+            <div v-else class="h-56 rounded-md border border-gray-200 p-3">
                 <Chart type="line" :data="burnUpChart" :options="burnUpOptions" class="h-full" />
             </div>
         </section>
