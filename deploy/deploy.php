@@ -328,7 +328,7 @@ task(
 
             run('sleep 2');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
-            if (currentHost()->get('environment') === 'production' && !in_array(currentHost()->getAlias(), ['aiku', 'aiku_litio'])) {
+            if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
                 run('sleep 2');
                 artisan('crawl --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
@@ -437,11 +437,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', function () {
-    // helio's horizon workers run with --max-time=0 and stay pinned to the release
-    // they started in, so 2 was deleting a release that was still live.
-    return currentHost()->getAlias() === 'aiku_helio' ? 4 : 20;
-});
+set('keep_releases', 20);
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -463,7 +459,7 @@ task('debug:writable', function () {
 $defaultWritableDirs = get('writable_dirs');
 
 set('writable_dirs', function () use ($defaultWritableDirs) {
-    if (in_array(currentHost()->getAlias(), ['aiku_helio', 'aiku_litio'])) {
+    if (currentHost()->getAlias() === 'aiku_litio') {
         return ['bootstrap/cache'];
     }
 
