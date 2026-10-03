@@ -58,6 +58,10 @@ El trabajo que no puedes ver no aparece; la página indica cuántos elementos co
 
 Las barras de progreso muestran cuánto del trabajo está hecho y cuánto hemos avanzado entre el inicio y la meta. La barra de trabajo se pone roja cuando va más de 10 puntos por detrás del tiempo. Pasada la fecha meta, cuenta los días de retraso. El trabajo cancelado no entra en los totales.
 
+## Con el asistente de IA
+
+También puedes pedírselo al asistente de IA conectado a Aiku, con tus palabras: "enséñame el proyecto", "pon HELP-123 y TASK-45 en el primer hito", "cambia la fecha del segundo hito al viernes que viene", "publica una novedad: en riesgo, el proveedor se retrasa". Actúa como tú, con los mismos permisos que tienes en la página.
+
 ## Quién puede cambiar qué
 
 El responsable, los miembros del equipo y los ingenieros que pueden asignar tickets pueden editar el proyecto (<b>Edit</b>, añadir o sacar trabajo, publicar novedades, cambiar hitos). Los demás solo pueden leerlo.

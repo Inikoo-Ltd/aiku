@@ -57,6 +57,10 @@ Work you are not allowed to see is not listed; the page says how many confidenti
 
 The progress bars show how much of the work is done and how far we are between start and target. The work bar turns red when it is more than 10 points behind the time. Past the target date it counts the days over. Cancelled work is left out of the totals.
 
+## Through the AI assistant
+
+You can also ask the AI assistant connected to Aiku to do it for you, in plain words: "show me the project", "put HELP-123 and TASK-45 under the first milestone", "move the date of the second milestone to next Friday", "post an update: at risk, the supplier is late". It acts as you, with the same rights you have on the page.
+
 ## Who can change what
 
 The owner, the team members, and engineers who can assign tickets can edit the project (<b>Edit</b>, add or remove work, post updates, change milestones). Everyone else can read it.

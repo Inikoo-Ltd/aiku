@@ -58,6 +58,10 @@ Práca, ktorú nesmiete vidieť, sa nezobrazí; stránka uvedie, koľko dôvern�
 
 Ukazovatele pokroku ukazujú, koľko práce je hotovej a ako ďaleko sme medzi začiatkom a cieľovým dátumom. Ukazovateľ práce zčervenie, keď je o viac ako 10 bodov za časom. Po cieľovom dátume počíta dni navyše. Zrušená práca sa do súčtov nepočíta.
 
+## Cez AI asistenta
+
+Môžete o to požiadať aj AI asistenta pripojeného k Aiku, vlastnými slovami: „ukáž mi projekt“, „daj HELP-123 a TASK-45 pod prvý míľnik“, „posuň termín druhého míľnika na budúci piatok“, „zverejni novinku: ohrozené, dodávateľ mešká“. Koná vo vašom mene, s rovnakými právami, aké máte na stránke.
+
 ## Kto môže čo meniť
 
 Vlastník, členovia tímu a inžinieri, ktorí môžu prideľovať tickety, môžu projekt upravovať (<b>Edit</b>, pridávať alebo vyberať prácu, zverejňovať novinky, meniť míľniky). Ostatní ho môžu len čítať.

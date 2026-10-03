@@ -3839,3 +3839,41 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
     post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
     patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
 });
+
+test('the project tools let a team member run a project through the AI assistant', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id, 'username' => 'projmember'.Str::random(4)]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Move the filling line']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Book the movers', 'department' => 'warehouse']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'create', 'name' => 'Factory move', 'goal' => 'Move production', 'start_date' => now()->subWeek()->toDateString(), 'target_date' => now()->addWeeks(11)->toDateString(), 'team' => $member->username])->assertOk()->assertSee('factory-move');
+    $project = TicketProject::where('slug', 'factory-move')->firstOrFail();
+    expect($project->owner_id)->toBe($member->id);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => now()->addWeeks(4)->toDateString()])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'Factory move', 'milestone' => 'Staff trained'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'staff trained', 'position' => 1, 'rename' => 'Staff ready'])->assertOk();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => "{$ticket->reference} {$task->reference}", 'milestone' => 'Line moved'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Staff ready'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Nope'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'Movers booked', 'health' => 'on_track'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Staff ready', 'done' => true])->assertOk();
+
+    expect($ticket->fresh()->milestone->name)->toBe('Line moved')
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready')
+        ->and($project->milestones()->where('name', 'Staff ready')->first()->done_at)->not->toBeNull();
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => 'factory-move'])->assertOk()->assertSee(['Movers booked', 'on_track', $ticket->reference, 'Staff ready']);
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, [])->assertOk()->assertSee('factory-move');
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'delete' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBe($project->id)->and($ticket->fresh()->ticket_project_milestone_id)->toBeNull();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $ticket->reference, 'remove' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBeNull();
+
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id);
+});
