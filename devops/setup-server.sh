@@ -147,6 +147,21 @@ else
   echo "  pg-freeze-sweep skipped (primary DB host only)"
 fi
 
+echo "redis queue:"
+if [[ $APP_HOST == boro ]]; then
+  place "$DEVOPS/redis/redis-queue.conf" /etc/redis/redis-queue.conf 640
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would chown redis:redis /etc/redis/redis-queue.conf, create /var/lib/redis/queue and enable redis-server@queue"
+  else
+    chown redis:redis /etc/redis/redis-queue.conf
+    install -d -o redis -g redis -m 750 /var/lib/redis/queue
+    systemctl enable --now redis-server@queue
+    echo "  -> redis-server@queue enabled (port 6380, queues + default connection)"
+  fi
+else
+  echo "  skipped (the queue Redis lives on boro)"
+fi
+
 echo "postgres:"
 case $APP_HOST in
   boro)  pg_conf="boro-production.conf" ;;
