@@ -8449,7 +8449,7 @@ test('the archive reads at most its hourly share of a mailbox, a hundred mails a
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
     $this->shop->update(['settings' => $settings]);
     \Illuminate\Support\Facades\Cache::flush();
-    $this->travelTo(now()->startOfHour()->addMinutes(50));
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-06 10:50', 'UTC'));
 
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
@@ -8548,6 +8548,22 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
 
     $reset();
     \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::runKey($this->shop));
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+test('the archive reads more of a mailbox an hour at night and at weekends, when customer service is not answering', function () {
+    $mailbox = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::class;
+    $at      = fn (string $when) => \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse($when, 'UTC'));
+
+    $at('2026-10-06 10:00');
+    expect($mailbox::readsPerHour())->toBe(600);
+    $at('2026-10-06 04:59');
+    expect($mailbox::readsPerHour())->toBe(3000);
+    $at('2026-10-06 18:00');
+    expect($mailbox::readsPerHour())->toBe(3000);
+    $at('2026-10-04 12:00');
+    expect($mailbox::readsPerHour())->toBe(3000);
+
     \Illuminate\Support\Carbon::setTestNow();
 });
 

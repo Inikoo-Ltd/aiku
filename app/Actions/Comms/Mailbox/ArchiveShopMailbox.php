@@ -40,8 +40,9 @@ use Throwable;
  * remembered, so a run that stops is continued by running it again. With --queue each mailbox is
  * read one page per job on the long-low-priority queue, three mailboxes at a time, a few mails
  * at a time. Gmail's allowance is per mailbox and the fetch of new customer mail needs it too, so
- * the archive reads at most MAX_READS_PER_HOUR mails of a mailbox an hour, PAGE_SIZE at a time,
- * and stands down while the fetch of that mailbox is being refused. A page Gmail refuses is read
+ * the archive reads at most MAX_READS_PER_HOUR mails of a mailbox an hour, PAGE_SIZE at a time
+ * (QUIET_READS_PER_HOUR at night and at weekends, QUIET_FROM to QUIET_UNTIL UTC, when customer
+ * service is not answering), and stands down while the fetch of that mailbox is being refused. A page Gmail refuses is read
  * again a minute later, then two, four and so on up to LONG_PAUSE, so Gmail holding a mailbox
  * back for a while never ends the run. Starting the command again replaces
  * the chain of jobs a mailbox already has, so two never read the same mailbox.
@@ -76,6 +77,12 @@ class ArchiveShopMailbox
     private const int PAGE_SIZE = 100;
 
     private const int MAX_READS_PER_HOUR = 600;
+
+    private const int QUIET_READS_PER_HOUR = 3000;
+
+    private const int QUIET_FROM = 18;
+
+    private const int QUIET_UNTIL = 5;
 
     private const int TOP_MONTHS = 24;
 
@@ -175,7 +182,7 @@ class ArchiveShopMailbox
             return ['rate_limited' => true, 'pause' => self::STAND_DOWN_PAUSE] + $result;
         }
 
-        if ((int) Cache::get(self::readsKey($shop)) >= self::MAX_READS_PER_HOUR) {
+        if ((int) Cache::get(self::readsKey($shop)) >= self::readsPerHour()) {
             return ['rate_limited' => true, 'pause' => (int) now()->diffInSeconds(now()->addHour()->startOfHour()) + 1] + $result;
         }
 
@@ -325,6 +332,13 @@ class ArchiveShopMailbox
                 ->values()
                 ->all();
         });
+    }
+
+    public static function readsPerHour(): int
+    {
+        $now = now('UTC');
+
+        return $now->isWeekend() || $now->hour >= self::QUIET_FROM || $now->hour < self::QUIET_UNTIL ? self::QUIET_READS_PER_HOUR : self::MAX_READS_PER_HOUR;
     }
 
     private static function readsKey(Shop $shop): string
