@@ -105,6 +105,7 @@ class GetShopYearSalesTarget
                 'days'      => range(1, 12),
                 'this_year' => $this->cumulative($thisYearMonthly, $monthOfYear),
                 'last_year' => $this->cumulative($lastYearMonthly, 12),
+                'weekly_versus_last_year' => $this->weeklyVersusLastYear($shopIds, $yearStart, $today, $salesExpression),
                 'forecast'  => $restOfYear !== null ? $this->yearForecastLine($salesSoFar, $thisYearMonthly[$monthOfYear], $monthOfYear, $restOfYear) : null,
             ],
             'granularity'       => 'year',
@@ -195,6 +196,50 @@ class GetShopYearSalesTarget
             ->whereIn('shop_time_series.shop_id', $shopIds)
             ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
             ->whereBetween('shop_time_series_records.period', [$yearStart->format('Y-m'), $yearStart->copy()->endOfYear()->format('Y-m')]);
+    }
+
+    /**
+     * Each week's year-to-date sales against the same days last year, ending today.
+     *
+     * @return array<int, array{x: float, y: float|null}> x is the position on the month axis (Jan ends at 1)
+     */
+    private function weeklyVersusLastYear(array $shopIds, Carbon $yearStart, Carbon $today, string $salesExpression): array
+    {
+        $thisYearDaily = $this->dailySales($shopIds, $yearStart, $today, $salesExpression);
+        $lastYearDaily = $this->dailySales($shopIds, $yearStart->copy()->subYear(), $today->copy()->subYear(), $salesExpression);
+
+        $points        = [];
+        $thisYearSoFar = 0.0;
+        $lastYearSoFar = 0.0;
+        for ($day = $yearStart->copy(); $day->lte($today); $day->addDay()) {
+            $thisYearSoFar += $thisYearDaily[$day->toDateString()] ?? 0;
+            $lastYearSoFar += $lastYearDaily[$day->copy()->subYear()->toDateString()] ?? 0;
+            if ($day->dayOfYear % 7 === 0 || $day->eq($today)) {
+                $points[] = [
+                    'x' => round($day->month - 1 + $day->day / $day->daysInMonth, 3),
+                    'y' => $lastYearSoFar > 0 ? round(($thisYearSoFar / $lastYearSoFar - 1) * 100, 1) : null,
+                ];
+            }
+        }
+
+        return $points;
+    }
+
+    /**
+     * @return array<string, float> date => invoiced sales
+     */
+    private function dailySales(array $shopIds, Carbon $from, Carbon $to, string $salesExpression): array
+    {
+        return DB::table('shop_time_series_records')
+            ->join('shop_time_series', 'shop_time_series.id', '=', 'shop_time_series_records.shop_time_series_id')
+            ->whereIn('shop_time_series.shop_id', $shopIds)
+            ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->whereBetween('shop_time_series_records.period', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('shop_time_series_records.period')
+            ->selectRaw("shop_time_series_records.period, sum($salesExpression) as sales")
+            ->pluck('sales', 'period')
+            ->map(fn ($sales) => (float) $sales)
+            ->all();
     }
 
     private function dailySalesTotal(array $shopIds, Carbon $from, Carbon $to, string $salesExpression): float

@@ -1392,6 +1392,8 @@ test('shop year sales target compares the same days last year, January included,
         ->and($block['last_year_total'])->toBe(10000.0)
         ->and($block['remaining_days'])->toBe(296)
         ->and($block['chart']['this_year'])->toBe([1100.0, 3200.0, 3800.0])
+        ->and($block['chart']['weekly_versus_last_year'])->toHaveCount(10)
+        ->and(last($block['chart']['weekly_versus_last_year']))->toBe(['x' => 2.323, 'y' => 20.0])
         ->and($block['expected'])->toBe(round(3800 + 6500 * (3800 / 3500), 2))
         ->and($block['target']['amount'])->toEqualWithDelta(10000 * (1 + $growth), 0.05)
         ->and($block['target']['is_default'])->toBeTrue()
