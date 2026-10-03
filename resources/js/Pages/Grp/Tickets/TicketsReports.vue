@@ -129,12 +129,20 @@ const DIMENSION_COLUMN: Record<FilterDimension, 1 | 2 | 3> = { module: 1, kind: 
 
 const MODULE_PALETTE = ["#3b82f6", "#c0399f", "#16a34a", "#f59e0b", "#8b5cf6", "#06b6d4", "#ef4444", "#84cc16", "#f97316", "#14b8a6", "#6366f1", "#a16207"]
 
-const groupBy = ref<Dimension>("module")
+type ReportTab = "overview" | "modules" | "kinds" | "reporters"
 
-const groupByTabs: { key: Dimension; label: string }[] = [
-    { key: "module", label: ctrans("Module") },
-    { key: "kind", label: ctrans("Kind") },
+const reportTabs: { key: ReportTab; label: string }[] = [
+    { key: "overview", label: ctrans("Overview") },
+    { key: "modules", label: ctrans("By module") },
+    { key: "kinds", label: ctrans("By kind") },
+    { key: "reporters", label: ctrans("By reporter") },
 ]
+
+const requestedTab = new URLSearchParams(window.location.search).get("tab")
+
+const reportTab = ref<ReportTab>(reportTabs.some((tab) => tab.key === requestedTab) ? (requestedTab as ReportTab) : "overview")
+
+const groupBy = computed<Dimension>(() => (reportTab.value === "kinds" ? "kind" : "module"))
 
 const dimensionOptions = (dimension: Dimension) => (dimension === "module" ? props.stats.modules : props.stats.kinds)
 
@@ -469,14 +477,6 @@ const engineerTotalFilter = (mode: "assignees" | "resolvers") =>
 
 const reporterFilter = (reporterKey: string) => ({ reporter: reporterKey, created_since: props.stats.from })
 
-type ReportTab = "overview" | "modules"
-
-const reportTabs: { key: ReportTab; label: string }[] = [
-    { key: "overview", label: ctrans("Overview") },
-    { key: "modules", label: ctrans("By module") },
-]
-
-const reportTab = ref<ReportTab>(new URLSearchParams(window.location.search).get("tab") === "modules" ? "modules" : "overview")
 
 const selectReportTab = (tab: ReportTab) => {
     reportTab.value = tab
@@ -598,28 +598,16 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </div>
         </DashboardWidgetBox>
 
-        <DashboardWidgetBox v-if="reportTab === 'modules'" storageKey="tickets_reports_by_module_collapsed">
+        <DashboardWidgetBox v-if="reportTab !== 'overview'" storageKey="tickets_reports_by_module_collapsed">
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon :icon="groupBy === 'module' ? 'fal fa-cubes' : 'fal fa-tags'" class="text-indigo-600" fixed-width aria-hidden="true" />
-                    {{ groupBy === "module" ? ctrans("Tickets by module") : ctrans("Tickets by kind") }}
+                    {{ reportTab === "reporters" ? ctrans("Tickets by reporter") : groupBy === "module" ? ctrans("Tickets by module") : ctrans("Tickets by kind") }}
                 </span>
                 <span class="text-xs text-gray-400">{{ dimensionOptions(groupBy).length }} {{ groupBy === "module" ? ctrans("modules") : ctrans("kinds") }}</span>
             </template>
             <div class="mb-3 flex flex-wrap items-center gap-1.5">
-                <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Group by") }}</span>
-                <span class="inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
-                    <button
-                        v-for="tab in groupByTabs"
-                        :key="tab.key"
-                        type="button"
-                        class="px-2.5 py-px transition duration-200"
-                        :class="groupBy === tab.key ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-50'"
-                        @click="groupBy = tab.key">
-                        {{ tab.label }}
-                    </button>
-                </span>
-                <span class="ml-auto inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
+                <span v-if="reportTab !== 'reporters'" class="ml-auto inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
                     <button
                         v-for="tab in moduleModeTabs"
                         :key="tab.key"
@@ -677,10 +665,10 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedStatuses = null">{{ ctrans("All") }}</button>
                 <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedStatuses = stats.by_status.filter((row) => !['resolved', 'cancelled'].includes(row.status)).map((row) => row.status)">{{ ctrans("Still open") }}</button>
             </div>
-            <div class="h-72">
+            <div v-if="reportTab !== 'reporters'" class="h-72">
                 <Chart type="bar" :data="moduleChart" :options="moduleOptions" class="h-full" />
             </div>
-            <p class="mb-2 mt-4 text-sm font-semibold text-gray-600">{{ ctrans("By reporter") }}</p>
+            <p v-if="reportTab !== 'reporters'" class="mb-2 mt-4 text-sm font-semibold text-gray-600">{{ ctrans("By reporter") }}</p>
             <div class="-mx-4 -mb-4 overflow-x-auto">
                 <table class="min-w-full text-sm tabular-nums">
                     <thead class="text-xs text-gray-500 text-left">
