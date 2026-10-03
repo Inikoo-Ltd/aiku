@@ -470,3 +470,59 @@ it('alerts discord once when the ai credit left drops below the threshold', func
     expect($alerts)->toHaveCount(1)
         ->and($alerts->first()[0]['content'])->toContain('$2.50');
 });
+
+it('records server usage samples, rolls them into hours and shows them on the devops dashboard', function () {
+    Config::set('app.devops_token', 'test-devops-token');
+
+    $sample = [
+        'cpu_percent'     => 42.5,
+        'memory_percent'  => 61.2,
+        'swap_percent'    => 3.1,
+        'load_1'          => 2.4,
+        'cpu_cores'       => 16,
+        'memory_total_mb' => 128000,
+        'iowait_percent'  => 1.5,
+        'net_rx_mbps'     => 10,
+        'net_tx_mbps'     => 12,
+        'disk_read_mbps'  => 0.5,
+        'disk_write_mbps' => 3,
+        'processes'       => 900,
+        'tcp_connections' => 2300,
+        'disks'           => [['mount' => '/', 'percent' => 71, 'size_gb' => 900, 'inode_percent' => 7], ['mount' => '/data', 'percent' => 88, 'size_gb' => 3500, 'inode_percent' => 2]],
+    ];
+
+    $this->postJson(route('devops.host.metrics.store', ['serverSlug' => 'metrics-box']), $sample)->assertForbidden();
+
+    $this->postJson(route('devops.host.metrics.store', ['serverSlug' => 'metrics-box']), $sample, ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();
+    $this->postJson(route('devops.host.metrics.store', ['serverSlug' => 'metrics-box']), [...$sample, 'cpu_percent' => 90], ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();
+    $this->postJson(route('devops.host.metrics.store', ['serverSlug' => 'metrics-box']), [...$sample, 'cpu_percent' => 140], ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertUnprocessable();
+
+    $server = App\Models\DevOps\Server::where('slug', 'metrics-box')->firstOrFail();
+    $first = App\Models\DevOps\ServerMetric::where('server_id', $server->id)->first();
+    expect((float) $first->disk_percent)->toBe(88.0)
+        ->and((float) $first->inode_percent)->toBe(7.0);
+
+    App\Models\DevOps\ServerMetric::create([...Illuminate\Support\Arr::except($sample, 'disks'), 'server_id' => $server->id, 'disk_percent' => 50, 'recorded_at' => now()->subDays(91)]);
+
+    $this->artisan('server-metrics:aggregate')->assertSuccessful();
+
+    expect(App\Models\DevOps\ServerMetric::where('server_id', $server->id)->count())->toBe(2);
+    $hour = DB::table('server_metric_hours')->where('server_id', $server->id)->first();
+    expect($hour->samples)->toBe(2)
+        ->and((float) $hour->cpu_avg)->toBe(66.25)
+        ->and((float) $hour->cpu_max)->toBe(90.0)
+        ->and($hour->tcp_connections_max)->toBe(2300)
+        ->and((float) $hour->net_rx_avg)->toBe(10.0);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser())
+        ->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Devops/Dashboard', false)
+            ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0)));
+
+    $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Devops/Server', false)->where('range', '24h')->has('series', 2));
+
+    $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box', 'range' => '30d']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('range', '30d')->has('series', 1)->where('series.0.cpu_max', fn ($value) => (float) $value === 90.0)->where('series.0.processes', 900));
+});

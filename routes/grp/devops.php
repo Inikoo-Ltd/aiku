@@ -8,6 +8,8 @@
 
 
 use App\Actions\DevOps\Server\GetServerInfo;
+use App\Actions\DevOps\Server\StoreServerMetric;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/server/{server}', GetServerInfo::class)->name('devops.host.info');
+Route::post('/server/{serverSlug}/metrics', StoreServerMetric::class)->name('devops.host.metrics.store');

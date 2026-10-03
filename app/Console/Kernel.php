@@ -89,6 +89,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
+        $schedule->command('server-metrics:aggregate')->hourlyAt(5)->onOneServer()->withoutOverlapping();
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
         $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
         $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();

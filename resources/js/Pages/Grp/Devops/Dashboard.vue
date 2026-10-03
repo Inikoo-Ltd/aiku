@@ -14,6 +14,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { faDatabase, faServer } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed } from "vue"
+import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 
 library.add(faDatabase, faServer)
 
@@ -26,6 +27,7 @@ const props = defineProps<{
         views: number
         top_referrer: string | null
     }
+    servers: ServerSummary[]
 }>()
 
 const sparklinePoints = computed(() => {
@@ -43,6 +45,12 @@ const sparklinePoints = computed(() => {
     <PageHeading :data="pageHead" />
 
     <div class="p-4">
+        <h3 class="mb-2 text-sm font-semibold">{{ ctrans("Servers") }}</h3>
+        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link v-for="server in servers" :key="server.slug" :href="route('grp.devops.servers.show', [server.slug])" class="block hover:shadow">
+                <ServerUsageCard :server="server" />
+            </Link>
+        </div>
         <div class="w-64 rounded-lg border border-gray-200 p-4">
             <div class="flex items-baseline justify-between">
                 <span class="text-sm font-medium">aiku.io</span>

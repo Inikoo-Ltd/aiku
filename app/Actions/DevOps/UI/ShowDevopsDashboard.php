@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -56,9 +57,41 @@ class ShowDevopsDashboard extends OrgAction
                     ],
                 ],
                 'publicSiteVisits' => $this->getPublicSiteVisits(),
+                'servers'          => $this->getServerSummaries(),
 
             ]
         );
+    }
+
+    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, disks: string|null, cpu_24h_max: float|null, memory_24h_max: float|null}> */
+    public function getServerSummaries(): Collection
+    {
+        return DB::table('servers')->where('active', true)
+            ->leftJoinLateral(
+                DB::table('server_metrics')->whereColumn('server_metrics.server_id', 'servers.id')->orderByDesc('recorded_at')->limit(1),
+                'latest'
+            )
+            ->leftJoinLateral(
+                DB::table('server_metric_hours')->whereColumn('server_metric_hours.server_id', 'servers.id')->where('hour', '>', now()->subDay())
+                    ->selectRaw('max(cpu_max) as cpu_24h_max, max(memory_max) as memory_24h_max'),
+                'day'
+            )
+            ->select(
+                'servers.slug',
+                'servers.name',
+                'latest.recorded_at',
+                'latest.cpu_percent',
+                'latest.memory_percent',
+                'latest.swap_percent',
+                'latest.disk_percent',
+                'latest.load_1',
+                'latest.cpu_cores',
+                'latest.memory_total_mb',
+                'latest.disks',
+                'day.cpu_24h_max',
+                'day.memory_24h_max'
+            )
+            ->orderBy('servers.name')->get();
     }
 
     /** @return array{daily: array<int, object>, visitors: int, views: int, top_referrer: string|null} */
