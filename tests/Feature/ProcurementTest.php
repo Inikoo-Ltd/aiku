@@ -2739,6 +2739,22 @@ test('a rescue line orders at least a month of sales, never more than the partne
         ->and((int) $quantity('12'))->toBe(12);
 });
 
+test('a sku on a rescue being prepared for another sister company is not offered again', function () {
+    $buckets       = GetPartnerStockCoverBuckets::make();
+    $isComing      = fn () => (bool) DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'alreadyComingExpression'))->invoke($buckets, $this->orgPartner).' as coming from org_stocks os where os.id = ?',
+        [$this->orgStocks[2]->id]
+    )->coming;
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'OTHER-PARTNER-DRAFT-'.PurchaseOrder::max('id')]), strict: false);
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $this->orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[2], PurchaseOrderTransaction::factory()->definition());
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'parent_type' => 'OrgPartner', 'parent_id' => $this->orgPartner->id + 1000]);
+    expect($isComing())->toBeTrue();
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
+    expect($isComing())->toBeFalse();
+});
+
 test('rescue order creates nothing when a sister company has nothing to rescue', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;

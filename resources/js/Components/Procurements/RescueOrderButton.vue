@@ -83,6 +83,8 @@ const estimate = computed(() =>
 			{ lines: 0, cost: 0 }
 		)
 )
+const isCappedByBudget = computed(() => !!budget.value && budget.value < estimate.value.cost)
+
 const skippedLines = computed(() =>
 	availableBuckets.value
 		.filter((bucket) => selectedBuckets.value.includes(bucket.bucket))
@@ -275,8 +277,8 @@ onBeforeUnmount(stopTimer)
 						</button>
 					</span>
 					<span class="flex items-baseline gap-2 tabular-nums">
-						<span class="text-xs text-gray-500">{{ ctrans(":lines lines", { lines: locale.number(estimate.lines) }) }}</span>
-						<span class="text-base font-semibold text-gray-900">≈ {{ wholeMoney(estimate.cost) }}</span>
+						<span class="text-xs text-gray-500">{{ ctrans(isCappedByBudget ? "up to :lines lines" : ":lines lines", { lines: locale.number(estimate.lines) }) }}</span>
+						<span class="text-base font-semibold text-gray-900">≈ {{ wholeMoney(isCappedByBudget ? budget : estimate.cost) }}</span>
 					</span>
 				</div>
 

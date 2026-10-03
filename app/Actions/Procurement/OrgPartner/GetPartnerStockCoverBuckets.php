@@ -364,7 +364,7 @@ class GetPartnerStockCoverBuckets
                     and po.state not in ('".PurchaseOrderStateEnum::CANCELLED->value."', '".PurchaseOrderStateEnum::NOT_RECEIVED->value."')
                     and (po.state in ('".PurchaseOrderStateEnum::SUBMITTED->value."', '".PurchaseOrderStateEnum::CONFIRMED->value."')
                         or po.delivery_state in ('".PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value."', '".PurchaseOrderDeliveryStateEnum::DISPATCHED->value."')
-                        or (po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."' and po.parent_type = 'OrgPartner' and po.parent_id = ".(int) $orgPartner->id.")))
+                        or (po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."' and po.parent_type = 'OrgPartner' and po.organisation_id = ".(int) $orgPartner->organisation_id.")))
             or exists (select 1 from stock_delivery_items sdi
                 join stock_deliveries sd on sd.id = sdi.stock_delivery_id and sd.deleted_at is null
                 where sdi.org_stock_id = os.id and sdi.deleted_at is null
