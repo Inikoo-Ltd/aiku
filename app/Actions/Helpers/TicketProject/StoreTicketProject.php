@@ -63,6 +63,6 @@ class StoreTicketProject extends OrgAction
 
     public function htmlResponse(TicketProject $project): RedirectResponse
     {
-        return redirect()->route('grp.tickets.projects.show', $project->slug);
+        return redirect()->route('grp.projects.show', $project->slug);
     }
 }

@@ -71,7 +71,7 @@ class ProjectsTool extends Tool
                 $project->done_tickets_count + $project->done_staff_tasks_count,
                 $project->cancelled_tickets_count + $project->cancelled_staff_tasks_count
             ),
-            'url'         => route('grp.tickets.projects.show', $project->slug),
+            'url'         => route('grp.projects.show', $project->slug),
         ])->values()->all();
     }
 
@@ -129,7 +129,7 @@ class ProjectsTool extends Tool
                 'done'        => $row['done'],
             ])->all(),
             'can_edit' => $project->canBeEditedBy($user),
-            'url'      => route('grp.tickets.projects.show', $project->slug),
+            'url'      => route('grp.projects.show', $project->slug),
         ];
     }
 

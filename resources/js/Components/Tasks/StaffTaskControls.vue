@@ -501,7 +501,7 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                     <FontAwesomeIcon :icon="isPending('ticket_project_milestone_id') ? 'fal fa-spinner' : 'fal fa-flag'" :spin="isPending('ticket_project_milestone_id')" fixed-width />
                     {{ task.milestone ?? ctrans("No milestone") }}
                 </span>
-                <a v-if="task.project" :href="route('grp.tickets.projects.show', task.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
+                <a v-if="task.project" :href="route('grp.projects.show', task.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
             </div>
             <Popover v-if="canPickProject" ref="projectPopover" @show="isProjectPickerOpen = true" @hide="isProjectPickerOpen = false">
                 <Listbox :model-value="task.ticket_project_id ?? null" :options="projectChoices" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="patchProject('ticket_project_id', $event)" />

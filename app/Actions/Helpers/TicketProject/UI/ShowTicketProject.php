@@ -228,10 +228,10 @@ class ShowTicketProject extends OrgAction
             'Tickets/TicketProject',
             [
                 'breadcrumbs' => array_merge(
-                    $this->ticketsBreadcrumbs(),
+                    $this->moduleScopeParentBreadcrumbs(),
                     [
-                        ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.projects.index'], 'label' => __('Projects')]],
-                        ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.projects.show', 'parameters' => [$project->slug]], 'label' => $project->name]],
+                        ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.index'], 'label' => __('Projects')]],
+                        ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.show', 'parameters' => [$project->slug]], 'label' => $project->name]],
                     ]
                 ),
                 'title'    => $project->name,

@@ -129,8 +129,8 @@ class IndexTicketProjects extends OrgAction
             'Tickets/TicketProjects',
             [
                 'breadcrumbs' => array_merge(
-                    $this->ticketsBreadcrumbs(),
-                    [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.projects.index'], 'label' => __('Projects')]]]
+                    $this->moduleScopeParentBreadcrumbs(),
+                    [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.index'], 'label' => __('Projects')]]]
                 ),
                 'title'    => __('Projects'),
                 'pageHead' => [

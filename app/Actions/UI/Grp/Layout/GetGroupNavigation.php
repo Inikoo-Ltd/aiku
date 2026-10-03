@@ -155,14 +155,6 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label' => __('Projects'),
-                        'icon'  => ['fal', 'fa-project-diagram'],
-                        'root'  => 'grp.tickets.projects.',
-                        'route' => [
-                            'name' => 'grp.tickets.projects.index',
-                        ],
-                    ],
-                    [
                         'label' => __('Reports'),
                         'icon'  => ['fal', 'fa-chart-line'],
                         'root'  => 'grp.tickets.reports',
@@ -170,6 +162,20 @@ class GetGroupNavigation
                             'name' => 'grp.tickets.reports',
                         ],
                     ],
+                ],
+            ],
+        ];
+
+        $groupNavigation['projects'] = [
+            'label'   => __('Projects'),
+            'icon'    => ['fal', 'fa-project-diagram'],
+            'root'    => 'grp.projects.',
+            'route'   => [
+                'name' => 'grp.projects.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    ['label' => __('Projects'), 'icon' => ['fal', 'fa-project-diagram'], 'root' => 'grp.projects.', 'route' => ['name' => 'grp.projects.index']],
                 ],
             ],
         ];
@@ -267,7 +273,7 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets'] : ['tickets']);
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets', 'projects'] : ['tickets', 'projects']);
         }
 
         return $groupNavigation;

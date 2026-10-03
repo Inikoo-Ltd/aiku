@@ -594,7 +594,7 @@ const saveDeployComment = () => {
                         <FontAwesomeIcon :icon="isPending('ticket_project_milestone_id') ? 'fal fa-spinner' : 'fal fa-flag'" :spin="isPending('ticket_project_milestone_id')" fixed-width />
                         {{ optionLabel(options.milestones, ticket.ticket_project_milestone_id) ?? ctrans("No milestone") }}
                     </span>
-                    <a v-if="ticket.project" :href="route('grp.tickets.projects.show', ticket.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
+                    <a v-if="ticket.project" :href="route('grp.projects.show', ticket.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
                 </div>
                 <Popover v-if="can_change_project" ref="projectPopover" @show="isProjectPickerOpen = true" @hide="isProjectPickerOpen = false">
                     <Listbox :model-value="ticket.ticket_project_id ?? null" :options="projectOptions" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="updateProject('ticket_project_id', $event); projectPopover.hide()" />

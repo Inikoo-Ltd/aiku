@@ -3774,7 +3774,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         'start_date'  => now()->subWeek()->toDateString(),
         'target_date' => now()->subWeek()->addMonths(3)->toDateString(),
         'member_ids'  => [$member->id, $this->user->id],
-    ])->assertRedirect(route('grp.tickets.projects.show', 'warehouse-move'));
+    ])->assertRedirect(route('grp.projects.show', 'warehouse-move'));
 
     $project = TicketProject::where('slug', 'warehouse-move')->firstOrFail();
 
@@ -3796,7 +3796,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->and($task->fresh()->ticket_project_milestone_id)->toBe($moved->id)
         ->and($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
 
-    get(route('grp.tickets.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Tickets/TicketProject')
         ->where('can_edit', true)
         ->where('project.health', 'at_risk')
@@ -3814,7 +3814,10 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->has('burn_up', 2)
         ->has('workload')
         ->has('activity'));
-    get(route('grp.tickets.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(str_replace('/projects', '/tickets/projects', route('grp.projects.show', $project->slug)))->assertRedirect(route('grp.projects.show', $project->slug))->assertStatus(301);
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['projects']['route']['name'])->toBe('grp.projects.index')
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['tickets']['topMenu']['subSections'])->pluck('label'))->not->toContain('Projects');
     get(route('grp.tickets.show', $first->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.project.slug', $project->slug)->where('can_change_project', true)->has('options.milestones', 2));
 
     $otherProject = StoreTicketProject::make()->action($this->group, ['name' => 'Other', 'start_date' => now()->toDateString()]);

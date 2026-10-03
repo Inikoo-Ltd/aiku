@@ -11,7 +11,7 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -21,7 +21,7 @@ import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot)
+library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram)
 
 const layout = inject("layout", layoutStructure)
 
@@ -92,6 +92,7 @@ const tasksRoute = computed(() => scopedModuleRoute("tasks"))
 const ticketsRoute = computed(() => scopedModuleRoute("tickets"))
 
 const bottomLinks = computed(() => [
+    { route: "grp.projects.index", parameters: {}, root: "grp.projects.", label: ctrans("Projects"), tooltip: ctrans("Projects: big pieces of work with milestones, tickets and tasks"), icon: "fal fa-project-diagram" },
     { route: tasksRoute.value.name, parameters: tasksRoute.value.parameters, root: tasksRoute.value.root, label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },

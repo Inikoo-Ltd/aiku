@@ -84,7 +84,7 @@ const healthClasses: Record<string, string> = {
             <Link
                 v-for="project in projects"
                 :key="project.slug"
-                :href="route('grp.tickets.projects.show', project.slug)"
+                :href="route('grp.projects.show', project.slug)"
                 class="block rounded-lg border border-gray-200 p-4 transition hover:border-gray-400 hover:shadow-sm">
                 <div class="flex items-start justify-between gap-2">
                     <h3 class="text-lg font-semibold text-gray-800">{{ project.name }}</h3>

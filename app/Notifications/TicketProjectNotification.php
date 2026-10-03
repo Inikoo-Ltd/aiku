@@ -60,6 +60,6 @@ class TicketProjectNotification extends Notification implements ShouldQueue
 
     private function projectUrl(): string
     {
-        return route('grp.tickets.projects.show', $this->project->slug);
+        return route('grp.projects.show', $this->project->slug);
     }
 }

@@ -83,7 +83,7 @@ class ProjectWriteTool extends Tool
             return Response::error(implode(' ', $exception->validator->errors()->all()));
         }
 
-        return Response::json(['created' => $project->slug, 'url' => route('grp.tickets.projects.show', $project->slug)]);
+        return Response::json(['created' => $project->slug, 'url' => route('grp.projects.show', $project->slug)]);
     }
 
     private function update(Request $request, User $user, TicketProject $project): Response

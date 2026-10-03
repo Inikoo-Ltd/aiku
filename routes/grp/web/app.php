@@ -219,6 +219,10 @@ Route::middleware(
         ->name("tasks.")
         ->group(__DIR__."/tasks.php");
 
+    Route::prefix("projects")
+        ->name("projects.")
+        ->group(__DIR__."/projects.php");
+
     Route::prefix("devops")
         ->name("devops.")
         ->group(__DIR__."/devops.php");
