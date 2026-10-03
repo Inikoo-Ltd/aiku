@@ -352,6 +352,26 @@ const engineerTotalFilter = (mode: "assignees" | "resolvers") =>
 
 const reporterFilter = (reporterKey: string) => ({ reporter: reporterKey, created_since: props.stats.from })
 
+type ReportTab = "overview" | "modules"
+
+const reportTabs: { key: ReportTab; label: string }[] = [
+    { key: "overview", label: ctrans("Overview") },
+    { key: "modules", label: ctrans("By module") },
+]
+
+const reportTab = ref<ReportTab>(new URLSearchParams(window.location.search).get("tab") === "modules" ? "modules" : "overview")
+
+const selectReportTab = (tab: ReportTab) => {
+    reportTab.value = tab
+    const url = new URL(window.location.href)
+    if (tab === "overview") {
+        url.searchParams.delete("tab")
+    } else {
+        url.searchParams.set("tab", tab)
+    }
+    window.history.replaceState(window.history.state, "", url)
+}
+
 const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["people"] as const) : (["people", "cleared"] as const)))
 </script>
 
@@ -384,7 +404,21 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </label>
         </div>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="flex gap-1 border-b border-gray-200" role="tablist">
+            <button
+                v-for="tab in reportTabs"
+                :key="tab.key"
+                type="button"
+                role="tab"
+                :aria-selected="reportTab === tab.key"
+                class="-mb-px border-b-2 px-3 py-2 text-sm font-medium transition duration-200"
+                :class="reportTab === tab.key ? 'border-[--app-accent] text-[--app-accent-strong]' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                @click="selectReportTab(tab.key)">
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <div v-if="reportTab === 'overview'" class="flex flex-wrap gap-3">
             <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
             <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
             <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
@@ -395,7 +429,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </Link>
         </div>
 
-        <DashboardWidgetBox storageKey="tickets_reports_created_vs_done_collapsed">
+        <DashboardWidgetBox v-if="reportTab === 'overview'" storageKey="tickets_reports_created_vs_done_collapsed">
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
@@ -447,7 +481,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </div>
         </DashboardWidgetBox>
 
-        <DashboardWidgetBox storageKey="tickets_reports_by_module_collapsed">
+        <DashboardWidgetBox v-if="reportTab === 'modules'" storageKey="tickets_reports_by_module_collapsed">
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-cubes" class="text-indigo-600" fixed-width aria-hidden="true" />
@@ -485,6 +519,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </div>
         </DashboardWidgetBox>
 
+        <template v-if="reportTab === 'overview'">
         <DashboardWidgetBox v-for="box in dashboardBoxes" :key="box" :storageKey="`tickets_reports_${box}_collapsed`">
             <template #header>
                 <template v-if="box === 'people'">
@@ -637,9 +672,10 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </table>
         </div>
         </DashboardWidgetBox>
+        </template>
         </div>
 
-        <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed" default-collapsed>
+        <DashboardWidgetBox v-if="reportTab === 'overview'" storageKey="tickets_reports_csat_collapsed" default-collapsed>
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
