@@ -9,8 +9,10 @@
 namespace App\Actions\GoodsIn\StockDeliveryItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -86,7 +88,10 @@ class IndexStockDeliveryItems extends OrgAction
             'supplierProduct.currency',
             'supplierProduct.supplier',
             'organisation.currency',
+            'organisation.warehouses',
+            'orgStock:id,packed_in',
             'stockDelivery.currency',
+            'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -100,7 +105,7 @@ class IndexStockDeliveryItems extends OrgAction
                 end
             ');
 
-        return $query
+        $paginator = $query
             ->defaultSort('org_stocks.code')
             ->select([
                 'stock_delivery_items.id',
@@ -145,6 +150,17 @@ class IndexStockDeliveryItems extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $locationsByOrgStock = StockDeliveryItemResource::locationsQuery()
+            ->whereIn('location_org_stocks.org_stock_id', $paginator->getCollection()->pluck('org_stock_id')->filter()->unique())
+            ->get()
+            ->groupBy('org_stock_id');
+
+        foreach ($paginator->getCollection() as $item) {
+            $item->setRelation('orgStockLocations', $locationsByOrgStock->get($item->org_stock_id, collect()));
+        }
+
+        return $paginator;
     }
 
     public function tableStructure(StockDelivery $stockDelivery, ?string $prefix = null): Closure

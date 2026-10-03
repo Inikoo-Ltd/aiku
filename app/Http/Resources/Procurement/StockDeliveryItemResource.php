@@ -12,6 +12,7 @@ use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 
@@ -24,33 +25,16 @@ class StockDeliveryItemResource extends JsonResource
 
         $supplierProduct = $item->supplierProduct;
 
-        $locations = DB::table('location_org_stocks')
-            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
-            ->leftJoin('warehouses', 'location_org_stocks.warehouse_id', '=', 'warehouses.id')
-            ->where('location_org_stocks.org_stock_id', $item->org_stock_id)
-            ->select([
-                'location_org_stocks.id',
-                'location_org_stocks.quantity',
-                'location_org_stocks.default_wholesale_picking_location',
-                'location_org_stocks.default_dropshipping_picking_location',
-                'locations.id as location_id',
-                'locations.code as location_code',
-                'locations.slug as location_slug',
-                'warehouses.slug as warehouse_slug',
-            ])
-            ->orderByDesc('location_org_stocks.default_wholesale_picking_location')
-            ->orderByDesc('location_org_stocks.default_dropshipping_picking_location')
-            ->orderBy('locations.code')
-            ->get();
+        $locations = $item->relationLoaded('orgStockLocations')
+            ? $item->getRelation('orgStockLocations')
+            : self::locationsQuery()->where('location_org_stocks.org_stock_id', $item->org_stock_id)->get();
 
         $warehouseSlugByLocation = $locations->pluck('warehouse_slug', 'location_id');
-        $warehouse               = $item->organisation?->warehouses()->first();
+        $warehouse               = $item->organisation?->warehouses->first();
 
-        $sowings = $item->sowings()
-            ->where('type', SowingTypeEnum::SOW)
-            ->with('location')
-            ->orderBy('id')
-            ->get()
+        $sowings = ($item->relationLoaded('sowings')
+            ? $item->sowings
+            : $item->sowings()->where('type', SowingTypeEnum::SOW)->with('location')->orderBy('id')->get())
             ->map(fn (Sowing $sowing) => [
                 'id'                => $sowing->id,
                 'type'              => $sowing->type,
@@ -175,5 +159,26 @@ class StockDeliveryItemResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
         ];
+    }
+
+    public static function locationsQuery(): Builder
+    {
+        return DB::table('location_org_stocks')
+            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->leftJoin('warehouses', 'location_org_stocks.warehouse_id', '=', 'warehouses.id')
+            ->select([
+                'location_org_stocks.id',
+                'location_org_stocks.org_stock_id',
+                'location_org_stocks.quantity',
+                'location_org_stocks.default_wholesale_picking_location',
+                'location_org_stocks.default_dropshipping_picking_location',
+                'locations.id as location_id',
+                'locations.code as location_code',
+                'locations.slug as location_slug',
+                'warehouses.slug as warehouse_slug',
+            ])
+            ->orderByDesc('location_org_stocks.default_wholesale_picking_location')
+            ->orderByDesc('location_org_stocks.default_dropshipping_picking_location')
+            ->orderBy('locations.code');
     }
 }

@@ -2973,6 +2973,27 @@ test('UI stock delivery items offer a search over every warehouse location', fun
     });
 });
 
+test('UI stock delivery items tab does not query per row', function () {
+    $this->withoutExceptionHandling();
+    $this->withoutVite();
+
+    $countQueries = function (StockDelivery $stockDelivery): int {
+        $url = route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value;
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->get($url)->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $queries;
+    };
+
+    $oneItem    = $countQueries(createStockDeliveryWithItems($this, 'NO-N-PLUS-ONE-1', [10]));
+    $threeItems = $countQueries(createStockDeliveryWithItems($this, 'NO-N-PLUS-ONE-3', [10, 10, 10]));
+
+    expect($threeItems - $oneItem)->toBeLessThan(2);
+});
+
 test('UI stock delivery items without a supplier product sort by the SKO code', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'SORT-BY-SKO-CODE', [10, 10]);
     $stockDelivery->items()->update(['supplier_product_id' => null]);
