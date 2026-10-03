@@ -55,12 +55,12 @@ class ShowTicketsReports extends OrgAction
         $openTickets = (clone $base)->where('created_at', '<', $from)->count() - (clone $base)->where('closed_at', '<', $from)->count();
 
         $createdByModule = (clone $base)->whereBetween('created_at', [$from, $to])
-            ->selectRaw("to_char(date_trunc('$bucket', created_at), 'YYYY-MM-DD') as day, coalesce(module, 'none') as module, count(*) as total")
-            ->groupBy('day', 'module')->toBase()->get();
+            ->selectRaw("to_char(date_trunc('$bucket', created_at), 'YYYY-MM-DD') as day, coalesce(module, 'none') as module, status, count(*) as total")
+            ->groupBy('day', 'module', 'status')->toBase()->get();
         $moduleLabels = TicketModuleEnum::labels() + ['none' => __('No module')];
         $modules      = $createdByModule->groupBy('module')->map(fn ($rows, $module) => ['module' => $module, 'label' => $moduleLabels[$module] ?? $module, 'total' => (int) $rows->sum('total')])
             ->sortByDesc('total')->values();
-        $modulesByDay = $createdByModule->groupBy('day')->map(fn ($rows) => $rows->pluck('total', 'module')->map(fn ($total) => (int) $total)->all());
+        $modulesByDay = $createdByModule->groupBy('day')->map(fn ($rows) => $rows->groupBy('module')->map(fn ($statuses) => $statuses->pluck('total', 'status')->map(fn ($total) => (int) $total)->all())->all());
 
         $daily  = collect();
         $cursor = $from->copy()->startOf($bucket);

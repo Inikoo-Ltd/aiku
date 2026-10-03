@@ -3745,8 +3745,8 @@ test('jev fills in the kind and module nobody set, only when sure, and the repor
     $stats = ShowTicketsReports::make()->handle($this->group, '1w');
     $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
 
-    expect($today['modules']['procurement'])->toBeGreaterThanOrEqual(1)
-        ->and($today['modules']['none'])->toBeGreaterThanOrEqual(1)
+    expect(array_sum($today['modules']['procurement']))->toBeGreaterThanOrEqual(1)
+        ->and($today['modules']['none']['open'])->toBeGreaterThanOrEqual(1)
         ->and(collect($stats['modules'])->firstWhere('module', 'chat')['label'])->toBe('Chat')
         ->and(collect($stats['modules'])->sum('total'))->toBe($stats['created']);
 

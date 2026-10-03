@@ -41,7 +41,7 @@ const props = defineProps<{
         oldest_open: { reference: string; age_days: number } | null
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
-        daily: { date: string; created: number; done: number; open: number; modules: Record<string, number> }[]
+        daily: { date: string; created: number; done: number; open: number; modules: Record<string, Record<string, number>> }[]
         modules: { module: string; label: string; total: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
         assignees: (Metrics & { name: string; username: string; short_name: string; avatar: any; collaborating?: Record<"assigned" | "in_progress" | "open" | "done", number> })[]
@@ -138,14 +138,28 @@ const toggleModule = (slug: string) => {
     selectedModules.value = current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]
 }
 
+const selectedStatuses = ref<string[] | null>(null)
+
+const isStatusSelected = (status: string) => selectedStatuses.value === null || selectedStatuses.value.includes(status)
+
+const toggleStatus = (status: string) => {
+    const current = selectedStatuses.value ?? props.stats.by_status.map((row) => row.status)
+    selectedStatuses.value = current.includes(status) ? current.filter((item) => item !== status) : [...current, status]
+}
+
+const moduleCount = (day: { modules: Record<string, Record<string, number>> }, module: string) =>
+    Object.entries(day.modules[module] ?? {}).reduce((sum, [status, total]) => sum + (isStatusSelected(status) ? total : 0), 0)
+
+const moduleTotals = computed(() => Object.fromEntries(props.stats.modules.map((row) => [row.module, props.stats.daily.reduce((sum, day) => sum + moduleCount(day, row.module), 0)])))
+
 const moduleChart = computed(() => ({
     labels: props.stats.daily.map((day) => bucketLabel(day.date)),
     datasets: activeModules.value.map((row) => ({
         label: row.label,
         data: props.stats.daily.map((day) => {
-            const count = day.modules[row.module] ?? 0
+            const count = moduleCount(day, row.module)
             if (moduleMode.value === "count") return count
-            const bucketTotal = activeModules.value.reduce((sum, active) => sum + (day.modules[active.module] ?? 0), 0)
+            const bucketTotal = activeModules.value.reduce((sum, active) => sum + moduleCount(day, active.module), 0)
             return bucketTotal ? (count / bucketTotal) * 100 : 0
         }),
         backgroundColor: moduleColor(row.module),
@@ -162,7 +176,7 @@ const moduleOptions = computed(() => ({
     },
     onClick: (_event: unknown, elements: { datasetIndex: number }[]) => {
         const slug = elements[0] ? activeModules.value[elements[0].datasetIndex]?.module : null
-        if (slug && slug !== "none") router.visit(listUrl({ filter: { created_since: props.stats.from }, elements: { module: slug } }))
+        if (slug && slug !== "none") router.visit(listUrl({ filter: { created_since: props.stats.from }, elements: { module: slug, ...(selectedStatuses.value ? { status: selectedStatuses.value.join(",") } : {}) } }))
     },
     plugins: {
         legend: { display: false },
@@ -498,7 +512,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     :class="isModuleSelected(row.module) ? 'border-[--app-accent] bg-[--app-accent-soft] text-[--app-accent-strong]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
                     @click="toggleModule(row.module)">
                     <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: moduleColor(row.module) }" />
-                    {{ row.label }} {{ row.total }}
+                    {{ row.label }} {{ moduleTotals[row.module] }}
                 </button>
                 <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedModules = null">{{ ctrans("All") }}</button>
                 <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedModules = []">{{ ctrans("None") }}</button>
@@ -513,6 +527,21 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         {{ tab.label }}
                     </button>
                 </span>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center gap-1.5">
+                <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</span>
+                <button
+                    v-for="row in stats.by_status"
+                    :key="row.status"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-px text-xs"
+                    :class="isStatusSelected(row.status) ? 'border-[--app-accent] bg-[--app-accent-soft] text-[--app-accent-strong]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                    @click="toggleStatus(row.status)">
+                    <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
+                    {{ row.label }}
+                </button>
+                <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedStatuses = null">{{ ctrans("All") }}</button>
+                <button type="button" class="px-1.5 text-xs text-gray-500 hover:text-gray-700" @click="selectedStatuses = stats.by_status.filter((row) => !['resolved', 'cancelled'].includes(row.status)).map((row) => row.status)">{{ ctrans("Still open") }}</button>
             </div>
             <div class="h-72">
                 <Chart type="bar" :data="moduleChart" :options="moduleOptions" class="h-full" />
