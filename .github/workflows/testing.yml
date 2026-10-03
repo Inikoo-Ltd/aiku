@@ -3,6 +3,12 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner label (helio is on trial until it has a green run)
+        type: choice
+        default: self-hosted
+        options: [ self-hosted, helio ]
 
 concurrency:
   group: backend_tests_${{ github.ref }}
@@ -14,7 +20,7 @@ env:
 jobs:
   laravel-tests:
     name: Run backend tests 🧪
-    runs-on: [ self-hosted ]
+    runs-on: ${{ inputs.runner || 'self-hosted' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -42,7 +48,9 @@ jobs:
         run: |
           MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
           if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
-            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            DB_HOST=$(sed -n 's/^DB_HOST=//p' .env.testing)
+            DB_PORT=$(sed -n 's/^DB_PORT=//p' .env.testing)
+            ./generate_testing_db_dumps.sh php8.4 aiku_test "${DB_HOST:-localhost}" "${DB_PORT:-5432}"
             cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/aiku.dump.tmp
             mv ../../../../artifacts/aiku.dump.tmp ../../../../artifacts/aiku.dump
             echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
@@ -52,7 +60,7 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=6 --log-junit junit.xml
+        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=${PEST_PROCESSES:-6} --log-junit junit.xml
       - name: Editorial translation audit
         if: ${{ !cancelled() }}
         continue-on-error: true

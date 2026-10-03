@@ -1,0 +1,11 @@
+[Unit]
+Description=tmpfs for the CI test Postgres cluster (empty after every reboot)
+
+[Mount]
+What=tmpfs
+Where=/var/lib/postgresql/18/ci
+Type=tmpfs
+Options=size=6G,mode=0700,nosuid,nodev,noexec
+
+[Install]
+WantedBy=local-fs.target

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Called by postgresql@18-ci: rebuild the tmpfs data dir after a reboot, then make sure
+# the aiku_test role exists (peer auth over the socket, no password anywhere).
+set -eu
+DATA=/var/lib/postgresql/18/ci
+SOCKET=/run/postgresql-ci
+
+case "$1" in
+pre)
+    install -d -o pgci -g pgci -m 2775 "$SOCKET"
+    chown pgci:pgci "$DATA"
+    chmod 700 "$DATA"
+    if [ ! -f "$DATA/PG_VERSION" ]; then
+        runuser -u pgci -- /usr/lib/postgresql/18/bin/initdb -D "$DATA" -U pgci --locale=C.UTF-8 --encoding=UTF8 >/dev/null
+    fi
+    ;;
+post)
+    runuser -u pgci -- psql -h "$SOCKET" -p 5433 -d postgres -v ON_ERROR_STOP=1 -qc \
+        "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'aiku_test') THEN CREATE ROLE aiku_test SUPERUSER LOGIN; END IF; END \$\$"
+    ;;
+esac
