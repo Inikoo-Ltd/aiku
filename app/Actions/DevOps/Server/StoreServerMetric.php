@@ -40,6 +40,7 @@ class StoreServerMetric
             'load_1'           => ['nullable', 'numeric', 'min:0'],
             'cpu_cores'        => ['nullable', 'integer', 'min:1'],
             'memory_total_mb'  => ['nullable', 'integer', 'min:0'],
+            'swap_total_mb'    => ['nullable', 'integer', 'min:0'],
             'iowait_percent'   => ['nullable', 'numeric', 'between:0,100'],
             'net_rx_mbps'      => ['nullable', 'numeric', 'min:0'],
             'net_tx_mbps'      => ['nullable', 'numeric', 'min:0'],

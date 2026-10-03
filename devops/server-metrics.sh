@@ -32,7 +32,7 @@ memory() {
     awk '{ v[$1] = $2 }
         END {
             mt = v["MemTotal:"]; ma = v["MemAvailable:"]; st = v["SwapTotal:"]; sf = v["SwapFree:"]
-            printf "%d %.2f %.2f\n", mt / 1024, (mt > 0 ? (1 - ma / mt) * 100 : 0), (st > 0 ? (1 - sf / st) * 100 : 0)
+            printf "%d %.2f %.2f %d\n", mt / 1024, (mt > 0 ? (1 - ma / mt) * 100 : 0), (st > 0 ? (1 - sf / st) * 100 : 0), st / 1024
         }' /proc/meminfo
 }
 
@@ -69,9 +69,9 @@ post() {
 
 # $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0)
 reading() {
-    local cpu iowait net_rx net_tx disk_read disk_write mem_total mem_pct swap_pct
+    local cpu iowait net_rx net_tx disk_read disk_write mem_total mem_pct swap_pct swap_total
     read -r cpu iowait net_rx net_tx disk_read disk_write < <(rates "$1" "$2" "$3")
-    read -r mem_total mem_pct swap_pct < <(memory)
+    read -r mem_total mem_pct swap_pct swap_total < <(memory)
 
     if [ "$4" = 0 ]; then
         printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"net_rx_mbps":%s,"net_tx_mbps":%s}' \
@@ -79,8 +79,8 @@ reading() {
         return
     fi
 
-    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s]}' \
-        "$cpu" "$iowait" "$mem_pct" "$swap_pct" "$(cut -d' ' -f1 /proc/loadavg)" "$(nproc)" "$mem_total" \
+    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"swap_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s]}' \
+        "$cpu" "$iowait" "$mem_pct" "$swap_pct" "$(cut -d' ' -f1 /proc/loadavg)" "$(nproc)" "$mem_total" "$swap_total" \
         "$net_rx" "$net_tx" "$disk_read" "$disk_write" \
         "$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)" "$(ss -Htn state established 2>/dev/null | wc -l)" "$(disks)"
 }

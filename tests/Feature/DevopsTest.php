@@ -481,6 +481,7 @@ it('records server usage samples, rolls them into hours and shows them on the de
         'load_1'          => 2.4,
         'cpu_cores'       => 16,
         'memory_total_mb' => 128000,
+        'swap_total_mb'   => 4096,
         'iowait_percent'  => 1.5,
         'net_rx_mbps'     => 10,
         'net_tx_mbps'     => 12,
@@ -528,7 +529,8 @@ it('records server usage samples, rolls them into hours and shows them on the de
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
             ->component('Devops/Dashboard', false)
             ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0))
-            ->has('liveReadings.metrics-box', 2));
+            ->has('liveReadings.metrics-box', 2)
+            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['swap_total_mb'] === 4096));
 
     $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Devops/Server', false)->where('range', '24h')->has('series', 2));
