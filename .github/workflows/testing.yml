@@ -3,12 +3,6 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      runner:
-        description: Runner label (helio is on trial until it has a green run)
-        type: choice
-        default: self-hosted
-        options: [ self-hosted, helio ]
 
 concurrency:
   group: backend_tests_${{ github.ref }}
@@ -20,7 +14,7 @@ env:
 jobs:
   laravel-tests:
     name: Run backend tests 🧪
-    runs-on: ${{ inputs.runner || 'self-hosted' }}
+    runs-on: [ self-hosted ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
