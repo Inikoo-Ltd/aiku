@@ -79,7 +79,7 @@ class ShowTicketProject extends OrgAction
             'milestone_id' => $ticket->ticket_project_milestone_id,
             'created_at'   => $ticket->created_at,
             'updated_at'   => $ticket->updated_at,
-            'done_at'      => $ticket->status === TicketStatusEnum::RESOLVED ? $ticket->resolved_at : null,
+            'done_at'      => $ticket->status === TicketStatusEnum::RESOLVED ? ($ticket->resolved_at ?? $ticket->updated_at) : null,
             'commits'      => data_get($ticket->data, 'commits', []),
             'project_route' => ['name' => 'grp.models.ticket.project.update', 'parameters' => ['ticket' => $ticket->id]],
         ]);
@@ -100,7 +100,7 @@ class ShowTicketProject extends OrgAction
             'milestone_id' => $task->ticket_project_milestone_id,
             'created_at'   => $task->created_at,
             'updated_at'   => $task->updated_at,
-            'done_at'      => $task->status === StaffTaskStatusEnum::DONE ? $task->closed_at : null,
+            'done_at'      => $task->status === StaffTaskStatusEnum::DONE ? ($task->closed_at ?? $task->updated_at) : null,
             'commits'      => [],
             'project_route' => ['name' => 'grp.tasks.project.update', 'parameters' => ['staffTask' => $task->reference]],
         ]);
@@ -117,7 +117,7 @@ class ShowTicketProject extends OrgAction
     public static function burnUp(TicketProject $project, Collection $work): array
     {
         $counted = $work->where('state', '!=', 'cancelled');
-        $end     = Carbon::today()->min($project->target_date ?? Carbon::today());
+        $end     = Carbon::today();
         $weeks   = [];
 
         for ($week = $project->start_date->copy()->startOfWeek(); $week->lte($end); $week->addWeek()) {

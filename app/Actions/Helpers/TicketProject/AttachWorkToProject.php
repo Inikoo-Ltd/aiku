@@ -15,6 +15,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -61,7 +62,7 @@ class AttachWorkToProject extends OrgAction
     {
         return [
             'references'                  => ['required', 'string', 'max:5000'],
-            'ticket_project_milestone_id' => ['sometimes', 'nullable', 'integer'],
+            'ticket_project_milestone_id' => ['sometimes', 'nullable', 'integer', Rule::exists('ticket_project_milestones', 'id')->where('ticket_project_id', request()->route('ticketProject')?->id)],
         ];
     }
 
@@ -69,10 +70,7 @@ class AttachWorkToProject extends OrgAction
     {
         $this->initialisationFromGroup($ticketProject->group, $request);
 
-        $milestoneId = $this->validatedData['ticket_project_milestone_id'] ?? null;
-        abort_if($milestoneId && !$ticketProject->milestones()->whereKey($milestoneId)->exists(), 422);
-
-        return $this->handle($ticketProject, $request->user(), $this->validatedData['references'], $milestoneId);
+        return $this->handle($ticketProject, $request->user(), $this->validatedData['references'], $this->validatedData['ticket_project_milestone_id'] ?? null);
     }
 
     public function htmlResponse(): RedirectResponse

@@ -163,7 +163,11 @@ const postUpdate = () =>
 const milestoneDraft = ref<Milestone[]>([])
 watch(() => props.milestones, (milestones) => (milestoneDraft.value = milestones.map((milestone) => ({ ...milestone }))), { immediate: true })
 
-const persistMilestones = () =>
+const isSavingMilestones = ref(false)
+const persistMilestones = () => {
+    if (isSavingMilestones.value) {
+        return
+    }
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
         {
@@ -178,17 +182,27 @@ const persistMilestones = () =>
                     done: !!milestone.done_at,
                 })),
         },
-        { preserveScroll: true }
+        { preserveScroll: true, onStart: () => (isSavingMilestones.value = true), onFinish: () => (isSavingMilestones.value = false) }
     )
+}
 const toggleMilestone = (milestone: Milestone) => {
+    if (isSavingMilestones.value) {
+        return
+    }
     milestone.done_at = milestone.done_at ? null : todayIso
     persistMilestones()
 }
 const removeMilestone = (index: number) => {
+    if (isSavingMilestones.value) {
+        return
+    }
     milestoneDraft.value.splice(index, 1)
     persistMilestones()
 }
 const moveMilestone = (index: number, step: number) => {
+    if (isSavingMilestones.value) {
+        return
+    }
     const target = index + step
     if (target < 0 || target >= milestoneDraft.value.length) {
         return
@@ -199,6 +213,9 @@ const moveMilestone = (index: number, step: number) => {
 }
 const newMilestone = ref({ name: "", due_date: "" })
 const addMilestone = () => {
+    if (isSavingMilestones.value) {
+        return
+    }
     if (!newMilestone.value.name.trim()) {
         return
     }

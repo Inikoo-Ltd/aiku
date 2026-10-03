@@ -15,6 +15,7 @@ use App\Models\Helpers\TicketProjectMilestone;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -118,5 +119,13 @@ class AssignWorkToProject extends OrgAction
     public function htmlResponse(): RedirectResponse
     {
         return back();
+    }
+
+    public function jsonResponse(Ticket|StaffTask $work): JsonResponse
+    {
+        return response()->json([
+            'ticket_project_id'           => $work->ticket_project_id,
+            'ticket_project_milestone_id' => $work->ticket_project_milestone_id,
+        ]);
     }
 }

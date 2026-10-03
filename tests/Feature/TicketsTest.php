@@ -3828,6 +3828,10 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
     expect($task->fresh()->ticket_project_id)->toBe($project->id)
         ->and($task->fresh()->ticket_project_milestone_id)->toBeNull();
 
+    patchJson(route('grp.tasks.project.update', $task->reference), ['ticket_project_milestone_id' => $trained->id])
+        ->assertOk()
+        ->assertJson(['ticket_project_id' => $project->id, 'ticket_project_milestone_id' => $trained->id]);
+
     actingAs($outsider);
     $otherProject->update(['owner_id' => $outsider->id]);
     post(route('grp.models.ticket_project.work.attach', $otherProject->id), ['references' => $first->reference])->assertSessionHasErrors('references');
