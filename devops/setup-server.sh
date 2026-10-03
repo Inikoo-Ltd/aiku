@@ -32,8 +32,10 @@ set -a; source "$ENV_FILE"; set +a
 : "${HAPROXY_STATS_USER:?set it in $ENV_FILE}"
 : "${HAPROXY_STATS_PASSWORD:?set it in $ENV_FILE}"
 : "${VARNISH_HOST_BORO:?set it in $ENV_FILE}"
-: "${VARNISH_HOST_HELIO:?set it in $ENV_FILE}"
-: "${APP_HOST:?set it in $ENV_FILE — boro or helio}"
+: "${VARNISH_HOST_LITIO:?set it in $ENV_FILE}"
+: "${VARNISH_PORT_LITIO:?set it in $ENV_FILE}"
+: "${NGINX_PORT:?set it in $ENV_FILE}"
+: "${APP_HOST:?set it in $ENV_FILE — boro, litio or helio}"
 : "${OCTANE_WORKERS:?set it in $ENV_FILE}"
 : "${OCTANE_MAX_REQUESTS:?set it in $ENV_FILE}"
 INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
@@ -148,6 +150,7 @@ fi
 echo "postgres:"
 case $APP_HOST in
   boro)  pg_conf="boro-production.conf" ;;
+  litio) pg_conf="litio-replica.conf" ;;
   helio) pg_conf="helio-replica.conf" ;;
   *)     pg_conf="" ;;
 esac
