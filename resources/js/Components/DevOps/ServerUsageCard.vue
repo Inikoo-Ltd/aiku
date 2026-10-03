@@ -41,17 +41,20 @@ const latestLive = computed(() => {
     return reading && now.value - reading.t < 30 * 1000 ? reading : null
 })
 
+const liveCpuCeiling = computed(() => Math.max(10, Math.ceil(Math.max(...(props.live ?? []).map(reading => Number(reading.cpu_percent))) / 10) * 10))
+
 const liveSparkline = computed(() => {
     const points = props.live ?? []
-    if (points.length < 2) return ""
-    return points.map((reading, index) => `${(index / (points.length - 1)) * 100},${30 - (Number(reading.cpu_percent) / 100) * 28}`).join(" ")
+    if (points.length < 2) return null
+    const line = points.map((reading, index) => `${(index / (points.length - 1)) * 100},${30 - (Number(reading.cpu_percent) / liveCpuCeiling.value) * 28}`).join(" ")
+    return { line, area: `0,30 ${line} 100,30` }
 })
 
 const isStale = computed(() => !latestLive.value && (!props.server.recorded_at || now.value - new Date(props.server.recorded_at).getTime() > 5 * 60 * 1000))
 
 const disks = computed<{ mount: string, percent: number, size_gb: number, inode_percent: number | null }[]>(() => props.server.disks ? JSON.parse(props.server.disks) : [])
 
-const mainDiskGb = computed(() => disks.value.reduce<{ percent: number, size_gb: number } | null>((main, disk) => !main || disk.percent > main.percent ? disk : main, null)?.size_gb ?? null)
+const mainDiskGb = computed(() => disks.value.filter(disk => !disk.mount.startsWith("/boot")).reduce<{ percent: number, size_gb: number } | null>((main, disk) => !main || disk.percent > main.percent ? disk : main, null)?.size_gb ?? null)
 
 const formatSize = (gb: number) => gb >= 1000 ? `${(gb / 1024).toFixed(1)} TB` : `${gb.toFixed(gb < 10 ? 1 : 0)} GB`
 
@@ -102,17 +105,22 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
                 {{ server.recorded_at ? useFormatTime(server.recorded_at, { formatTime: "hm" }) : ctrans("No data yet") }}
             </span>
         </div>
-        <svg v-if="liveSparkline" viewBox="0 0 100 30" class="mt-2 h-8 w-full" preserveAspectRatio="none">
-            <polyline :points="liveSparkline" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" class="text-indigo-500" />
-        </svg>
+        <div v-if="liveSparkline" class="relative mt-2">
+            <svg viewBox="0 0 100 30" class="h-10 w-full" preserveAspectRatio="none">
+                <polygon :points="liveSparkline.area" class="fill-emerald-500/15" />
+                <polyline :points="liveSparkline.line" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" class="text-emerald-600" />
+            </svg>
+            <span class="absolute right-0 top-0 text-[10px] leading-none text-gray-400">{{ liveCpuCeiling }}%</span>
+            <span class="absolute bottom-0 left-0 text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 5 min") }}</span>
+        </div>
         <div class="mt-3 space-y-2">
             <div v-for="meter in meters" :key="meter.label">
                 <div class="flex justify-between text-xs">
                     <span class="text-gray-600">{{ meter.label }}</span>
                     <span class="tabular-nums">
                         {{ meter.value == null ? "-" : `${Number(meter.value).toFixed(0)}%` }}
-                        <span v-if="meter.amount" class="text-gray-400">· {{ meter.amount }}</span>
-                        <span v-if="meter.peak != null" class="text-gray-400">· {{ ctrans("24h peak") }} {{ Number(meter.peak).toFixed(0) }}%</span>
+                        <span v-if="meter.amount" class="text-gray-400"> · {{ meter.amount }}</span>
+                        <span v-if="meter.peak != null" class="text-gray-400"> · {{ ctrans("24h peak") }} {{ Number(meter.peak).toFixed(0) }}%</span>
                     </span>
                 </div>
                 <div class="mt-0.5 h-1.5 rounded bg-gray-100">

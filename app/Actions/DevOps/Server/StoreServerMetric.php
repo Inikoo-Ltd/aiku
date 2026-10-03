@@ -20,13 +20,14 @@ class StoreServerMetric
 
     public function handle(Server $server, array $modelData): ServerMetric
     {
-        $disks = $modelData['disks'] ?? [];
+        $disks     = $modelData['disks'] ?? [];
+        $dataDisks = array_filter($disks, fn (array $disk) => !str_starts_with($disk['mount'], '/boot')) ?: $disks;
 
         return $server->hasMany(ServerMetric::class)->create([
             ...Arr::except($modelData, ['disks']),
             'recorded_at'  => now(),
-            'disk_percent'  => $disks ? max(array_column($disks, 'percent')) : 0,
-            'inode_percent' => $disks ? max(array_map(fn (array $disk) => $disk['inode_percent'] ?? 0, $disks)) : null,
+            'disk_percent'  => $dataDisks ? max(array_column($dataDisks, 'percent')) : 0,
+            'inode_percent' => $dataDisks ? max(array_map(fn (array $disk) => $disk['inode_percent'] ?? 0, $dataDisks)) : null,
             'disks'        => $disks,
         ]);
     }

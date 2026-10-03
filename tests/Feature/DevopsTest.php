@@ -489,7 +489,7 @@ it('records server usage samples, rolls them into hours and shows them on the de
         'disk_write_mbps' => 3,
         'processes'       => 900,
         'tcp_connections' => 2300,
-        'disks'           => [['mount' => '/', 'percent' => 71, 'size_gb' => 900, 'inode_percent' => 7], ['mount' => '/data', 'percent' => 88, 'size_gb' => 3500, 'inode_percent' => 2]],
+        'disks'           => [['mount' => '/', 'percent' => 71, 'size_gb' => 900, 'inode_percent' => 7], ['mount' => '/data', 'percent' => 88, 'size_gb' => 3500, 'inode_percent' => 2], ['mount' => '/boot', 'percent' => 95, 'size_gb' => 1, 'inode_percent' => 30]],
     ];
 
     $this->postJson(route('devops.host.metrics.store', ['serverSlug' => 'metrics-box']), $sample)->assertForbidden();
