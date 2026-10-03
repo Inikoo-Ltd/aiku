@@ -50,6 +50,8 @@ use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
+use App\Models\Helpers\TicketProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -3755,4 +3757,81 @@ test('jev fills in the kind and module nobody set, replaces a set one only when 
 
     expect($setByStaff->refresh()->kind)->toBe(TicketKindEnum::AURORA)
         ->and($setByStaff->module)->toBe(TicketModuleEnum::CHAT);
+});
+
+test('a project gathers tickets, tasks, milestones, commits and progress updates its team can edit', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $first    = StoreTicket::make()->action($this->group, ['subject' => 'Move moulds to the new unit']);
+    $second   = StoreTicket::make()->action($this->group, ['subject' => 'Train the new packers']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Label the new shelves', 'department' => 'warehouse']);
+    $first->update(['data' => [...$first->data, 'commits' => [['hash' => 'abc1234def', 'subject' => 'Moulds page', 'version' => 'v9.1.0', 'deployed_at' => now()->toIso8601String()]]]]);
+
+    actingAs($member);
+    post(route('grp.models.ticket_project.store'), [
+        'name'        => 'Warehouse move',
+        'description' => 'Move all production and reorganise the organisation',
+        'start_date'  => now()->subWeek()->toDateString(),
+        'target_date' => now()->subWeek()->addMonths(3)->toDateString(),
+        'member_ids'  => [$member->id, $this->user->id],
+    ])->assertRedirect(route('grp.tickets.projects.show', 'warehouse-move'));
+
+    $project = TicketProject::where('slug', 'warehouse-move')->firstOrFail();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['name' => 'Moulds moved', 'due_date' => now()->toDateString(), 'done' => true], ['name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    [$moved, $trained] = $project->milestones()->get()->all();
+
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => 'HELP-0'])->assertSessionHasErrors('references');
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => strtolower($first->reference).", {$second->reference} {$task->reference}", 'ticket_project_milestone_id' => $moved->id])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $trained->id])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::fake();
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'Moulds are in, packers next week', 'health' => 'at_risk'])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::assertSentTo($this->user, \App\Notifications\TicketProjectNotification::class, fn ($notification) => $notification->title === 'Warehouse move: At risk' && str_contains($notification->body, 'packers next week') && str_contains((string) $notification->toMail($this->user)->render(), 'Open the project'));
+    Notification::assertNotSentTo($member, \App\Notifications\TicketProjectNotification::class);
+    Notification::assertNotSentTo($outsider, \App\Notifications\TicketProjectNotification::class);
+    UpdateTicket::make()->action($first->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $moved->id, 'name' => 'Moulds moved', 'done' => true], ['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($moved->fresh()->done_at)->not->toBeNull()
+        ->and($task->fresh()->ticket_project_milestone_id)->toBe($moved->id)
+        ->and($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+
+    get(route('grp.tickets.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Tickets/TicketProject')
+        ->where('can_edit', true)
+        ->where('project.health', 'at_risk')
+        ->where('progress.total', 3)
+        ->where('progress.done', 1)
+        ->where('progress.percent', 33)
+        ->where('progress.week', 2)
+        ->has('work', 3)
+        ->where('milestones.0.total', 2)
+        ->where('milestones.0.done', 1)
+        ->where('milestones.1.total', 1)
+        ->where('commits.0.hash', 'abc1234def')
+        ->where('commits.0.reference', $first->reference)
+        ->where('updates.0.health', 'at_risk')
+        ->has('burn_up', 2)
+        ->has('workload')
+        ->has('activity'));
+    get(route('grp.tickets.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(route('grp.tickets.show', $first->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.project.slug', $project->slug)->where('can_change_project', true)->has('options.milestones', 2));
+
+    $otherProject = StoreTicketProject::make()->action($this->group, ['name' => 'Other', 'start_date' => now()->toDateString()]);
+    $otherMilestone = $otherProject->milestones()->create(['name' => 'Elsewhere']);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $otherMilestone->id])->assertSessionHasErrors('ticket_project_milestone_id');
+    expect($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_id' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect($second->fresh()->ticket_project_id)->toBeNull();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id)
+        ->and($task->fresh()->ticket_project_milestone_id)->toBeNull();
+
+    actingAs($outsider);
+    $otherProject->update(['owner_id' => $outsider->id]);
+    post(route('grp.models.ticket_project.work.attach', $otherProject->id), ['references' => $first->reference])->assertSessionHasErrors('references');
+    expect($first->fresh()->ticket_project_id)->toBe($project->id);
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
+    patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
 });

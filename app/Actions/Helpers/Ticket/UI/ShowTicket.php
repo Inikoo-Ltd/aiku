@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 use App\Actions\Helpers\Ticket\MarkTicketNotificationsAsRead;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\TicketProject\AssignWorkToProject;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -21,6 +22,8 @@ use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketProject;
+use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -85,6 +88,8 @@ class ShowTicket extends OrgAction
         $statuses    = TicketStatusEnum::labels();
         $statusIcons = TicketStatusEnum::stateIcon();
         $modules     = TicketModuleEnum::labels();
+        $projectIds  = $audits->flatMap(fn ($audit) => [$audit->new_values['ticket_project_id'] ?? null])->filter()->unique();
+        $projects    = TicketProject::withTrashed()->whereIn('id', $projectIds)->pluck('name', 'id');
 
         $events = [[
             'at'   => $ticket->created_at,
@@ -107,6 +112,7 @@ class ShowTicket extends OrgAction
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
                     'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
                     'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
+                    'ticket_project_id' => $value ? __('Added to project :name', ['name' => $projects[$value] ?? '?']) : __('Removed from its project'),
                     default           => null,
                 };
                 if ($text) {
@@ -117,6 +123,7 @@ class ShowTicket extends OrgAction
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
                             'collaborators' => 'fal fa-users',
                             'pull_request_url' => 'fal fa-code-branch',
+                            'ticket_project_id' => 'fal fa-project-diagram',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -218,13 +225,24 @@ class ShowTicket extends OrgAction
         $user = request()->user();
 
         return [
-            'ticket'  => array_merge(TicketResource::make($ticket)->toArray(request()), ['deploy_comment' => $this->deployCommentFor($ticket)]),
+            'ticket'  => array_merge(TicketResource::make($ticket)->toArray(request()), [
+                'deploy_comment'    => $this->deployCommentFor($ticket),
+                'ticket_project_id' => $ticket->ticket_project_id,
+                'ticket_project_milestone_id' => $ticket->ticket_project_milestone_id,
+                'project'           => $ticket->project ? ['name' => $ticket->project->name, 'slug' => $ticket->project->slug] : null,
+            ]),
             'options' => [
                 'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'tags'       => Ticket::knownTags($ticket->group_id),
                 'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'projects'   => TicketProject::where('group_id', $ticket->group_id)
+                    ->where(fn ($query) => $query->whereIn('status', [TicketProjectStatusEnum::ACTIVE, TicketProjectStatusEnum::ON_HOLD])->orWhere('id', $ticket->ticket_project_id))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn (TicketProject $project) => ['label' => $project->name, 'value' => $project->id]),
+                'milestones' => $ticket->project?->milestones()->get(['id', 'name'])->map(fn ($milestone) => ['label' => $milestone->name, 'value' => $milestone->id])->values() ?? [],
                 'qa_users'      => GetTicketBadgeData::qaUsers($ticket->group_id)
                     ->map(fn (User $person) => [
                         'label'  => strtok((string) ($person->contact_name ?: $person->username), ' '),
@@ -264,6 +282,7 @@ class ShowTicket extends OrgAction
             'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),
             'can_reopen_as_reporter' => $ticket->canBeReopenedByReporter($user),
             'can_change_kind_module' => $ticket->canChangeKindAndModuleBy($user),
+            'can_change_project'     => AssignWorkToProject::canAssign($ticket, $user, $ticket->ticket_project_id),
             'can_update'               => $ticket->canBeUpdatedBy($user),
             'can_contribute'           => $ticket->canContributeBy($user),
             'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
@@ -272,6 +291,7 @@ class ShowTicket extends OrgAction
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
+                'project'  => ['name' => 'grp.models.ticket.project.update', 'parameters' => ['ticket' => $ticket->id]],
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
                 'deploy_comment' => ['name' => 'grp.models.ticket.deploy_comment.update', 'parameters' => ['ticket' => $ticket->id]],
                 'pull_request' => ['name' => 'grp.json.ticket.pull_request', 'parameters' => ['ticket' => $ticket->id]],

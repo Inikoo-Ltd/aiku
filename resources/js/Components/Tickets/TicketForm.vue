@@ -10,10 +10,10 @@ import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash, faHistory } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash, faHistory, faProjectDiagram } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash, faHistory)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash, faHistory, faProjectDiagram)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -24,9 +24,10 @@ const props = defineProps<{
     kinds?: { label: string; value: string }[]
     types?: { label: string; value: string }[]
     modules?: { label: string; value: string }[]
+    project?: { id: number; name: string } | null
 }>()
 
-const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[]; reporter_muted: boolean }>({
+const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[]; reporter_muted: boolean; ticket_project_id: number | null }>({
     subject: "",
     description: "",
     reference_url: "",
@@ -36,6 +37,7 @@ const form = useForm<{ subject: string; description: string; reference_url: stri
     module: null,
     images: [],
     reporter_muted: false,
+    ticket_project_id: props.project?.id ?? null,
 })
 
 
@@ -80,6 +82,10 @@ const submit = () =>
     <form class="flex h-[calc(100vh-9rem-40px)] flex-col" @submit.prevent="submit">
         <div class="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div class="thinScrollbar space-y-4 overflow-y-auto pr-2">
+            <p v-if="project" class="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                <FontAwesomeIcon icon="fal fa-project-diagram" fixed-width class="mr-1 text-gray-400" />
+                {{ ctrans("This ticket goes into the project :name", { name: project.name }) }}
+            </p>
             <div>
                 <div class="flex items-center justify-between mb-1">
                     <label class="block text-xs text-gray-500">{{ ctrans("Subject") }}</label>

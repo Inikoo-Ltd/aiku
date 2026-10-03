@@ -34,6 +34,8 @@ const props = defineProps<{
     modelType?: string | null
     modelId?: number | null
     storeUrl?: string
+    ticketProjectId?: number | null
+    ticketProjectMilestoneId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -149,6 +151,8 @@ const submit = async () => {
             model_type: props.modelType ?? null,
             model_id: props.modelId ?? null,
             source_message_id: props.sourceMessageId ?? null,
+            ...(props.ticketProjectId ? { ticket_project_id: props.ticketProjectId } : {}),
+            ...(props.ticketProjectMilestoneId ? { ticket_project_milestone_id: props.ticketProjectMilestoneId } : {}),
             images: form.value.images,
         })
         emit("close")

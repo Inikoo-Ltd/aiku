@@ -59,6 +59,10 @@ const props = defineProps<{
         is_subscribed: boolean | null
         subtasks: Subtask[]
         eta_proposal: StaffTaskEtaProposal | null
+        ticket_project_id: number | null
+        ticket_project_milestone_id: number | null
+        project: { name: string; slug: string } | null
+        milestone: string | null
         closed_at: string | null
         created_at: string
     }
@@ -71,6 +75,10 @@ const props = defineProps<{
     can_ask_for_help: boolean
     timeline: { at: string; icon: string; text: string; by: string | null }[]
     options: { statuses: Option[]; priorities: Option[] }
+    project_options?: { label: string; value: number }[]
+    milestone_options?: { label: string; value: number }[]
+    can_change_project?: boolean
+    project_route?: { name: string; parameters: Record<string, unknown> }
 }>()
 
 const store = useStaffMessaging()
@@ -94,7 +102,7 @@ const daysAgo = (date: string) => {
 const controls = ref<InstanceType<typeof StaffTaskControls> | null>(null)
 const subtasksBox = ref<InstanceType<typeof StaffTaskSubtasks> | null>(null)
 
-const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "timeline"], preserveScroll: true })
+const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "timeline", "project_options", "milestone_options", "can_change_project", "project_route"], preserveScroll: true })
 
 const panelSummary = computed(() => ({
     assignee: props.task.assignee?.name ?? props.task.department_label,
@@ -248,7 +256,7 @@ onUnmounted(() => {
         <div class="w-full shrink-0 space-y-4 p-4 max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px)] lg:w-[26rem] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
             <Teleport defer to="#task-card-controls" :disabled="isDesktop">
             <TicketControlPanel :ticket="panelSummary" :storage-key="isDesktop ? 'staff-task-control-panel' : 'staff-task-control-panel-mobile'" :default-open="isDesktop" :embedded="!isDesktop">
-                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :can-reassign="can_reassign" :can-ask-for-help="can_ask_for_help" :options="options" @updated="reloadTask" />
+                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :can-reassign="can_reassign" :can-ask-for-help="can_ask_for_help" :options="options" :project-options="project_options" :milestone-options="milestone_options" :can-change-project="can_change_project" :project-route="project_route" @updated="reloadTask" />
             </TicketControlPanel>
             </Teleport>
 

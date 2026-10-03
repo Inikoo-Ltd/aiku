@@ -14,6 +14,8 @@ use App\Actions\Helpers\Ticket\UI\ShowTicketAttachment;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsBoard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
+use App\Actions\Helpers\TicketProject\UI\IndexTicketProjects;
+use App\Actions\Helpers\TicketProject\UI\ShowTicketProject;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowTicketsDashboard::class)->name('index');
@@ -22,5 +24,7 @@ Route::get('/qa-list', IndexQaTickets::class)->name('qa_list');
 Route::get('/board', ShowTicketsBoard::class)->name('board');
 Route::get('/reports', ShowTicketsReports::class)->name('reports');
 Route::get('/create', CreateTicket::class)->name('create');
+Route::get('/projects', IndexTicketProjects::class)->name('projects.index');
+Route::get('/projects/{ticketProject:slug}', ShowTicketProject::class)->name('projects.show');
 Route::get('/{ticket:reference}', ShowTicket::class)->name('show');
 Route::get('/{ticket:reference}/attachments/{media:ulid}', ShowTicketAttachment::class)->name('attachments.show')->withoutScopedBindings();

@@ -24,6 +24,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasTicketImages;
 use App\Models\Traits\InShop;
+use App\Models\Traits\InTicketProject;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,6 +62,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $reporter_type
  * @property int|null $reporter_id
  * @property int|null $assignee_id
+ * @property int|null $ticket_project_id
+ * @property int|null $ticket_project_milestone_id
  * @property \Illuminate\Support\Carbon|null $waiting_until
  * @property string|null $model_type
  * @property int|null $model_id
@@ -81,6 +84,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Customer|null $customer
  * @property-read Model|\Eloquent|null $model
  * @property-read Model|\Eloquent|null $reporter
+ * @property-read TicketProject|null $project
  * @mixin \Eloquent
  */
 class Ticket extends Model implements Auditable, HasMedia
@@ -90,6 +94,7 @@ class Ticket extends Model implements Auditable, HasMedia
     use InShop;
     use InteractsWithMedia;
     use HasTicketImages;
+    use InTicketProject;
 
     protected $guarded = [];
 
@@ -113,6 +118,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'reporter_muted',
         'qa_status',
         'pull_request_url',
+        'ticket_project_id',
     ];
 
     protected function casts(): array
@@ -210,7 +216,6 @@ class Ticket extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
-
     public function collaborators(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'ticket_collaborators')->withPivot('added_by_id')->withTimestamps();

@@ -428,6 +428,14 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
+                        'label' => __('Projects'),
+                        'icon'  => ['fal', 'fa-project-diagram'],
+                        'root'  => 'grp.tickets.projects.',
+                        'route' => [
+                            'name' => 'grp.tickets.projects.index',
+                        ],
+                    ],
+                    [
                         'label' => __('Reports'),
                         'icon'  => ['fal', 'fa-chart-line'],
                         'root'  => 'grp.org.tickets.reports',
