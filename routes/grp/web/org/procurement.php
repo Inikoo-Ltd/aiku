@@ -38,6 +38,8 @@ use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
+use App\Actions\Procurement\OrgPartner\UI\EditOrgPartner;
+use App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings;
 use App\Actions\Procurement\OrgSupplier\ExportOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
@@ -179,6 +181,8 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
     Route::get('', IndexOrgPartners::class)->name('index');
     Route::prefix('{orgPartner}')->as('show')->group(function () {
         Route::get('', ShowOrgPartner::class);
+        Route::get('edit', EditOrgPartner::class)->name('.edit');
+        Route::patch('cosmetic-settings', UpdateOrgPartnerCosmeticSettings::class)->name('.cosmetic_settings.update');
         Route::prefix('purchase-orders')->as('.purchase-orders.')->group(function () {
             Route::get('index', [IndexPurchaseOrders::class, 'inOrgPartner'])->name('index');
             Route::get('{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgPartner'])->name('show');

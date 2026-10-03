@@ -797,6 +797,18 @@ test('stocks with a CPNP numbered trade unit are marked as cosmetic', function (
     expect($other->refresh()->is_cosmetic)->toBeTrue();
 });
 
+test('setting or clearing a trade unit CPNP number follows on its stocks cosmetic flag', function () {
+    [$stock] = createStocks($this->group);
+    $tradeUnit = $stock->tradeUnits()->first();
+    $stock->update(['is_cosmetic' => false]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['cpnp_number' => 'CPNP-9876']);
+    expect($stock->refresh()->is_cosmetic)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['cpnp_number' => null]);
+    expect($stock->refresh()->is_cosmetic)->toBeFalse();
+});
+
 test("UI Create Stock in Stock Family Group", function () {
     $stockFamily = StockFamily::first();
     $response    = get(

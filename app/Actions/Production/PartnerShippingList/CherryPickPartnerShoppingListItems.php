@@ -59,6 +59,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         $skipped      = [];
         $picked       = 0;
         $touchedOrgPartners = [];
+        $splitByBuyer       = [];
 
         foreach ($lines as $line) {
             /** @var PartnerShoppingListItem|null $item */
@@ -85,9 +86,15 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $order = $orders[$customer->id] ?? $this->resolveOrder($customer);
+            $splitCosmetics = $splitByBuyer[$item->organisation_id] ??= (bool) OrgPartner::where('organisation_id', $seller->id)
+                ->where('partner_id', $item->organisation_id)
+                ->value('split_cosmetics');
+            $isCosmetic     = $splitCosmetics && $item->stock->is_cosmetic;
+            $orderKey       = $customer->id.($splitCosmetics ? ':'.(int) $isCosmetic : '');
 
-            $orders[$customer->id] = $order;
+            $order = $orders[$orderKey] ?? $this->resolveOrder($customer, $splitCosmetics, $isCosmetic);
+
+            $orders[$orderKey] = $order;
 
             $quantityRequested = (float) ($line['quantity'] ?? $item->quantity);
             $quantityPicked    = min($quantityRequested, (float) $item->quantity);
@@ -203,22 +210,29 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         return $customer;
     }
 
-    private function resolveOrder(Customer $customer): Order
+    private function resolveOrder(Customer $customer, bool $splitCosmetics, bool $isCosmetic): Order
     {
         $channel = $this->intercompanySalesChannel($customer->group_id);
 
         $order = $customer->orders()
             ->where('state', OrderStateEnum::CREATING)
             ->where('sales_channel_id', $channel->id)
+            ->when($splitCosmetics, fn ($query) => $query->whereRaw("coalesce((data->>'partner_cosmetic')::boolean, false) = ?", [$isCosmetic]))
             ->first();
 
         if ($order) {
             return $order;
         }
 
-        return StoreOrder::make()->action($customer, [
+        $order = StoreOrder::make()->action($customer, [
             'sales_channel_id' => $channel->id,
         ]);
+
+        if ($splitCosmetics) {
+            $order->update(['data' => array_replace($order->data ?? [], ['partner_cosmetic' => $isCosmetic])]);
+        }
+
+        return $order;
     }
 
     public function intercompanySalesChannel(int $groupId): SalesChannel

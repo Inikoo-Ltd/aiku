@@ -44,11 +44,12 @@ class GetFinishedProductionJobOrders
             ->orderBy('confirmed_at')
             ->get();
 
-        $partnersByLocation = OrgPartner::where('organisation_id', $warehouse->organisation_id)
-            ->whereNotNull('goods_out_location_id')
-            ->with('partner')
-            ->get()
-            ->keyBy('goods_out_location_id');
+        $partnersByLocation = collect();
+        foreach (OrgPartner::where('organisation_id', $warehouse->organisation_id)->whereNotNull('goods_out_location_id')->with('partner')->get() as $orgPartner) {
+            foreach ($orgPartner->bayIds() as $bayId) {
+                $partnersByLocation->put($bayId, $orgPartner);
+            }
+        }
 
         $locations = Location::whereIn('id', $partnersByLocation->keys())->pluck('code', 'id');
 

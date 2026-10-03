@@ -135,7 +135,7 @@ class GetPartnerOrdersInTheMaking
         $allocated = [];
         foreach ($partners as $buyerId => $partner) {
             $inTheBay = DB::table('location_org_stocks')
-                ->where('location_id', $partner->goods_out_location_id)
+                ->whereIn('location_id', $partner->bayIds())
                 ->where('quantity', '>', 0)
                 ->pluck('quantity', 'org_stock_id')
                 ->map(fn ($quantity) => (float) $quantity)

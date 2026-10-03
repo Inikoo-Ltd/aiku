@@ -50,7 +50,7 @@ class ReleasePartnerStagingTask extends OrgAction
                 ->lockForUpdate()
                 ->get();
 
-            $staged = (float) LocationOrgStock::where('location_id', $orgPartner->goods_out_location_id)
+            $staged = (float) LocationOrgStock::where('location_id', $orgPartner->bayIdFor((bool) $orgStock->stock->is_cosmetic))
                 ->where('org_stock_id', $orgStock->id)
                 ->sum('quantity');
 

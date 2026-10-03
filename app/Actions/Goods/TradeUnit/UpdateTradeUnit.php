@@ -21,6 +21,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromT
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Actions\Goods\Stock\SyncStockCosmeticFromCpnp;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -173,6 +174,10 @@ class UpdateTradeUnit extends OrgAction
 
         if (Arr::has($modelData, 'description')) {
             GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(10);
+        }
+
+        if ($tradeUnit->wasChanged('cpnp_number')) {
+            SyncStockCosmeticFromCpnp::run($tradeUnit);
         }
 
         if ($tradeUnit->wasChanged('type')) {

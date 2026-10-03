@@ -4850,6 +4850,104 @@ describe('partner shopping list', function () {
         }
     });
 
+    test('a partner can split cosmetics into their own orders and bay', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $warehouse = $seller->warehouses()->first();
+        $mainBay   = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $cosmeticBay = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $mainBay->update(['is_goods_out' => true]);
+        $cosmeticBay->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalSettings = $sellerPartner->only(['goods_out_location_id', 'split_cosmetics', 'cosmetic_goods_out_location_id']);
+
+        $listedLine = function (bool $isCosmetic) use ($seller) {
+            $stock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+            $stock->update(['is_cosmetic' => $isCosmetic]);
+            createOrgStocks($seller, [$stock]);
+            \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+                \App\Models\Catalogue\Product::factory()->definition(),
+                [
+                    'state'       => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                    'trade_units' => [['id' => $stock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+                ]
+            ));
+
+            return StorePartnerShoppingListItem::make()->action($this->orgPartner, createOrgStocks($this->orgPartner->organisation, [$stock])[0], ['quantity' => 2]);
+        };
+
+        try {
+            $sellerPartner->update(['goods_out_location_id' => $mainBay->id, 'split_cosmetics' => false, 'cosmetic_goods_out_location_id' => $cosmeticBay->id]);
+
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $listedLine(true)->id], ['id' => $listedLine(false)->id]]);
+            expect($result['orders'])->toHaveCount(1)
+                ->and($sellerPartner->refresh()->bayIdFor(true))->toBe($mainBay->id)
+                ->and($sellerPartner->bayIdFor(false))->toBe($mainBay->id);
+
+            $sellerPartner->update(['split_cosmetics' => true]);
+            expect($sellerPartner->refresh()->bayIdFor(true))->toBe($cosmeticBay->id)
+                ->and($sellerPartner->bayIdFor(false))->toBe($mainBay->id)
+                ->and($sellerPartner->bayFor(true)->id)->toBe($cosmeticBay->id)
+                ->and($sellerPartner->bayIds())->toBe([$mainBay->id, $cosmeticBay->id]);
+
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $listedLine(true)->id], ['id' => $listedLine(false)->id], ['id' => $listedLine(true)->id]]);
+            $orders = collect($result['orders']);
+            expect($result['picked'])->toBe(3)
+                ->and($orders)->toHaveCount(2)
+                ->and($orders->map(fn ($order) => (bool) data_get($order->refresh()->data, 'partner_cosmetic'))->sort()->values()->all())->toBe([false, true])
+                ->and($orders->firstWhere(fn ($order) => data_get($order->data, 'partner_cosmetic'))->transactions()->count())->toBe(2);
+
+            $sellerPartner->update(['cosmetic_goods_out_location_id' => null]);
+            expect($sellerPartner->refresh()->bayIdFor(true))->toBe($mainBay->id);
+        } finally {
+            $sellerPartner->update($originalSettings);
+        }
+    });
+
+    test('the cosmetic bay settings of a partner can be edited', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $bay     = \App\Actions\Inventory\Location\StoreLocation::make()->action($seller->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        $mainBay = \App\Actions\Inventory\Location\StoreLocation::make()->action($seller->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        $mainBay->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalSettings = $sellerPartner->only(['goods_out_location_id', 'split_cosmetics', 'cosmetic_goods_out_location_id']);
+
+        try {
+            $sellerPartner->update(['goods_out_location_id' => null, 'cosmetic_goods_out_location_id' => null]);
+            $bay->update(['is_goods_out' => true]);
+            expect(fn () => \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), ['cosmetic_goods_out_location_id' => $bay->id]))
+                ->toThrow(ValidationException::class, 'Set the partner goods out bay first');
+
+            $sellerPartner->update(['goods_out_location_id' => $mainBay->id]);
+            $bay->update(['is_goods_out' => false]);
+            expect(fn () => \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), ['cosmetic_goods_out_location_id' => $bay->id]))
+                ->toThrow(ValidationException::class)
+                ->and(fn () => \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), ['cosmetic_goods_out_location_id' => $mainBay->id]))
+                ->toThrow(ValidationException::class);
+
+            $bay->update(['is_goods_out' => true]);
+            \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), ['split_cosmetics' => true, 'cosmetic_goods_out_location_id' => $bay->id]);
+            \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), ['split_cosmetics' => true, 'cosmetic_goods_out_location_id' => $bay->id]);
+            expect($sellerPartner->refresh()->split_cosmetics)->toBeTrue()
+                ->and($sellerPartner->cosmetic_goods_out_location_id)->toBe($bay->id);
+        } finally {
+            $sellerPartner->update($originalSettings);
+        }
+    });
+
     test('send partner order to warehouse creates DN and mirror stock delivery in buyer org', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {

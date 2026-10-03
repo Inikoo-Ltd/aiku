@@ -55,7 +55,7 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
     {
         $seller     = $location->organisation;
         $bayPartner = OrgPartner::where('organisation_id', $seller->id)
-            ->where('goods_out_location_id', $location->id)
+            ->withBay($location->id)
             ->first();
         $buyerPartner = $bayPartner
             ? OrgPartner::where('organisation_id', $bayPartner->partner_id)->where('partner_id', $seller->id)->first()

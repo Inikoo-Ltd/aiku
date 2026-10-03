@@ -24,6 +24,7 @@ type PrePickItem = {
 	stock_name: string
 	is_cosmetic: boolean
 	buyer_code: string
+	to_location: string | null
 	priority: string
 }
 
