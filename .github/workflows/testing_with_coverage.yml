@@ -18,7 +18,7 @@ jobs:
   coverage:
     name: Coverage → Codecov 📊
     if: ${{ inputs.only == 'all' || inputs.only == 'coverage' || inputs.only == '' }}
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -63,7 +63,7 @@ jobs:
             echo "::warning::No coverage driver (pcov/xdebug) for php8.4 on this runner, running tests without coverage"
           fi
           sed 's/name="memory_limit" value="5120M"/name="memory_limit" value="-1"/' phpunit.xml > phpunit.coverage.xml
-          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --parallel --processes=8 $COVERAGE --log-junit junit.xml
+          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-8} $COVERAGE --log-junit junit.xml
       - name: Upload coverage to Codecov
         if: ${{ hashFiles('clover.xml') != '' }}
         uses: codecov/codecov-action@v5
@@ -94,7 +94,7 @@ jobs:
   bundle-analysis:
     name: Bundle analysis → Codecov 📦
     if: ${{ inputs.only == 'all' || inputs.only == 'bundle' || inputs.only == '' }}
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6

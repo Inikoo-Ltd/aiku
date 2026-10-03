@@ -14,7 +14,7 @@ env:
 jobs:
   laravel-tests:
     name: Run backend tests 🧪
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
