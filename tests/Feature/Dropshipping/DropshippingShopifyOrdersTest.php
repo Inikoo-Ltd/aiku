@@ -567,6 +567,12 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
     ]);
     expect(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class);
 
+    foreach ([402, 404] as $status) {
+        ShopifyFake::fake(['getUnfulfilledOrders' => Http::response(['errors' => 'Unavailable Shop'], $status)]);
+        expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
+            ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, "HTTP $status");
+    }
+
     ShopifyFake::fake([
         'getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderNode('gid://shopify/Order/5030', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6030', 'IN_PROGRESS')])]),
     ]);
