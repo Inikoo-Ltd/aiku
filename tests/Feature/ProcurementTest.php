@@ -607,6 +607,7 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.catalogue.show'))->assertForbidden();
     $this->get(route('grp.supply-chain.dashboard'))->assertForbidden();
     $this->get(route('grp.tickets.index'))->assertOk();
+    $this->get(route('grp.projects.index'))->assertForbidden();
 
     $orgAdmin    = JobPosition::where('organisation_id', $organisation->id)->where('code', 'org-admin')->firstOrFail();
     $agentClerk  = JobPosition::where('organisation_id', $organisation->id)->where('code', 'agt-c')->firstOrFail();
@@ -2751,7 +2752,7 @@ test('a sku on a rescue being prepared for another sister company is not offered
     $purchaseOrder = StorePurchaseOrder::make()->action($this->orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'OTHER-PARTNER-DRAFT-'.PurchaseOrder::max('id')]), strict: false);
     StorePurchaseOrderTransaction::make()->action($purchaseOrder, $this->orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[2], PurchaseOrderTransaction::factory()->definition());
 
-    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'parent_type' => 'OrgPartner', 'parent_id' => $this->orgPartner->id + 1000]);
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'parent_type' => 'OrgPartner', 'parent_id' => $this->orgPartner->id + 1000, 'organisation_id' => $this->orgPartner->organisation_id]);
     expect($isComing())->toBeTrue();
 
     $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);

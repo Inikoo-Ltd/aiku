@@ -29,7 +29,7 @@ class IndexTicketProjects extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user() !== null;
+        return $request->user() !== null && !$request->user()->worksOnlyForAgents();
     }
 
     public function handle(Group $group): Collection

@@ -273,7 +273,9 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets', 'projects'] : ['tickets', 'projects']);
+            $modules = $user->worksOnlyForAgents() ? ['tickets'] : ['tickets', 'projects'];
+
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', ...$modules] : $modules);
         }
 
         return $groupNavigation;

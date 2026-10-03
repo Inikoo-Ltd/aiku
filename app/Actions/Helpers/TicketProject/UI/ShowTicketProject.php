@@ -33,7 +33,7 @@ class ShowTicketProject extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user() !== null && $request->route('ticketProject')->group_id === $request->user()->group_id;
+        return $request->user() !== null && !$request->user()->worksOnlyForAgents() && $request->route('ticketProject')->group_id === $request->user()->group_id;
     }
 
     public function handle(TicketProject $ticketProject): TicketProject
