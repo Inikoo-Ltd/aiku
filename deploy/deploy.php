@@ -194,7 +194,7 @@ task('deploy:restart-owl', function () {
         return;
     }
 
-    run("bash -c 'sudo /usr/bin/supervisorctl restart aiku-owl || true'");
+    run("bash -c 'sudo /usr/bin/supervisorctl status aiku-owl | grep -q STOPPED || sudo /usr/bin/supervisorctl restart aiku-owl || true'");
 });
 
 desc('Stops inertia SSR server');
@@ -328,7 +328,7 @@ task(
 
             run('sleep 2');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
-            if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+            if (currentHost()->get('environment') === 'production' && !in_array(currentHost()->getAlias(), ['aiku', 'aiku_litio'])) {
                 run('sleep 2');
                 artisan('crawl --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
@@ -584,23 +584,6 @@ task('deploy', [
     'deploy:aiku-public:index-notes',
     'deploy:aiku-public:indexnow',
 ]);
-
-desc('Deploys code to a host that serves no traffic yet: build and publish only, nothing that restarts, crawls, purges or writes to shared services');
-task('deploy:cold', [
-    'deploy:unlock',
-    'deploy:prepare',
-    'deploy:vendors',
-    'artisan:storage:link',
-    'artisan:config:cache',
-    'artisan:route:cache',
-    'artisan:event:cache',
-    'deploy:check-fe-changes',
-    'deploy:build',
-    'deploy:save-ssr-checksums',
-    'deploy:publish',
-    'deploy:prune-node-modules',
-    'deploy:sync-octane-anchor',
-])->select('env=litio');
 
 // ponytail: same as the stock cleanup, plus two things it lacks. A release is
 // skipped while any process still has its cwd inside it -- horizon workers and
