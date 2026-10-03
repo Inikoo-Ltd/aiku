@@ -3743,12 +3743,13 @@ test('jev fills in the kind and module nobody set, only when sure, and the repor
     Http::assertSentCount(2);
 
     $stats = ShowTicketsReports::make()->handle($this->group, '1w');
-    $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
+    $rows  = collect($stats['breakdown']);
 
-    expect(array_sum($today['modules']['procurement']))->toBeGreaterThanOrEqual(1)
-        ->and($today['modules']['none']['open'])->toBeGreaterThanOrEqual(1)
-        ->and(collect($stats['modules'])->firstWhere('module', 'chat')['label'])->toBe('Chat')
-        ->and(collect($stats['modules'])->sum('total'))->toBe($stats['created']);
+    expect($rows->where(1, 'procurement')->where(2, 'feature')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and($rows->where(1, 'none')->where(3, 'open')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and(collect($stats['modules'])->firstWhere('value', 'chat')['label'])->toBe('Chat')
+        ->and(collect($stats['kinds'])->sum('total'))->toBe($stats['created'])
+        ->and($rows->sum(5))->toBe($stats['created']);
 
     ClassifyTicket::make()->handle($setByStaff, reclassify: true);
 
