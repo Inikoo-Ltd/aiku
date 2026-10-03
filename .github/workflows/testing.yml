@@ -60,7 +60,7 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=${PEST_PROCESSES:-6} --log-junit junit.xml
+        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-6} --log-junit junit.xml
       - name: Editorial translation audit
         if: ${{ !cancelled() }}
         continue-on-error: true
