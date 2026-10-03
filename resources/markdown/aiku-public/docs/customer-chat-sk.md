@@ -4,7 +4,7 @@ summary: Jedna schránka pre webový chat, WhatsApp aj e-mail obchodu - prevezmi
 date: 2026-10-01
 source_date: 2026-10-01
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 1
 ---

@@ -3,7 +3,7 @@ title: Overseeing chat
 summary: Supervision shows every conversation and every agent on the shops you run, lets you step into any conversation, and puts the shop's chat switches in your hands.
 date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 5
 ---

@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\DevOps\UI;
+namespace App\Actions\Docs\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\AikuPublic\BlogPosts;
@@ -45,7 +45,7 @@ class ShowAikuPublicAnalytics extends OrgAction
         $title = __('aiku.io analytics');
 
         return Inertia::render(
-            'Devops/AikuPublicAnalytics',
+            'Docs/AikuPublicAnalytics',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => $title,
@@ -262,13 +262,13 @@ class ShowAikuPublicAnalytics extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowDevopsDashboard::make()->getBreadcrumbs($routeParameters),
+            ShowDocsDashboard::make()->getBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.devops.aiku-public-analytics',
+                            'name'       => 'grp.docs.aiku-public-analytics',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('aiku.io analytics'),

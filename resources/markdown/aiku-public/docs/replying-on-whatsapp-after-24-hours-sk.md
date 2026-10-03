@@ -4,7 +4,7 @@ summary: Prečo sa okno na správu zamkne pri WhatsApp konverzácii, do ktorej z
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, whatsapp, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

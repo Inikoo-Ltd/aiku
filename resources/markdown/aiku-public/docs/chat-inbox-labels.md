@@ -3,7 +3,7 @@ title: What the labels in the chat inbox mean
 summary: Every list, count, colour and tag in the customer inbox in plain words - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise, the note on email taken out of Gmail spam, and the aiku folders in the shop's Gmail.
 date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

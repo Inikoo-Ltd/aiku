@@ -4,7 +4,7 @@ summary: Qué recoger de Meta, en cuál de las dos páginas de ajustes va cada v
 date: 2026-09-10
 source_date: 2026-09-10
 tags: marketing, whatsapp, shop
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 1
 ---

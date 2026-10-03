@@ -8,7 +8,8 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -72,7 +73,29 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
+const dailyChart = computed(() => {
+    const daily = props.overview?.daily ?? []
+    const line = (label: string, values: number[], color: string) => ({ label, data: values, borderColor: color, backgroundColor: color, tension: 0, borderWidth: 1.5, pointRadius: 2 })
+    return {
+        labels: daily.map(d => new Date(d.day as string).toLocaleDateString("en-GB", { day: "numeric", month: "short" })),
+        datasets: [
+            line(ctrans("Views"), daily.map(d => Number(d.views)), "#d97706"),
+            line(ctrans("Visitors"), daily.map(d => Number(d.visitors)), "#c0399f"),
+            line(ctrans("Suspect"), daily.map(d => Number(d.suspect ?? 0)), "#1f845a"),
+        ],
+    }
+})
+
+const dailyChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
+    scales: {
+        x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+        y: { beginAtZero: true, ticks: { precision: 0 } },
+    },
+}
 
 const sort = ref<Record<string, { column: string, desc: boolean }>>({ referrer: { column: "views", desc: true } })
 
@@ -102,11 +125,11 @@ const sortRows = (key: string, rows: StatRow[]) => {
 }
 
 const sections = computed(() => [
-    { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
-    { label: trans("Referrers"), key: "referrer", rows: props.overview?.referrers ?? [] },
-    { label: trans("Countries"), key: "country", rows: props.overview?.countries ?? [] },
-    { label: trans("Searches"), key: "query", rows: props.overview?.searches ?? [] },
-    { label: trans("Bots (excluded above)"), key: "user_agent", rows: props.overview?.bots ?? [] },
+    { label: ctrans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
+    { label: ctrans("Referrers"), key: "referrer", rows: props.overview?.referrers ?? [] },
+    { label: ctrans("Countries"), key: "country", rows: props.overview?.countries ?? [] },
+    { label: ctrans("Searches"), key: "query", rows: props.overview?.searches ?? [] },
+    { label: ctrans("Bots (excluded above)"), key: "user_agent", rows: props.overview?.bots ?? [] },
 ])
 </script>
 
@@ -146,16 +169,8 @@ const sections = computed(() => [
 
         <template v-if="currentTab === 'overview' && overview">
         <section>
-            <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
-            <div class="mt-2 flex h-32 items-end gap-1">
-                <div v-for="d in overview.daily" :key="d.day" class="group relative max-w-10 flex-1">
-                    <div class="w-full rounded-t bg-indigo-500/80"
-                        :style="{ height: `${(Number(d.views) / maxDailyViews) * 120}px` }" />
-                    <div class="pointer-events-none absolute bottom-full left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
-                        {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}, {{ d.suspect ?? 0 }} {{ trans("suspect") }}
-                    </div>
-                </div>
-            </div>
+            <h2 class="text-sm font-medium">{{ ctrans("Daily visits (last 30 days)") }}</h2>
+            <div class="mt-2 h-56"><Chart type="line" :data="dailyChart" :options="dailyChartOptions" class="h-full" /></div>
         </section>
 
         <div class="grid gap-8 lg:grid-cols-3">
@@ -165,9 +180,9 @@ const sections = computed(() => [
                     <thead>
                         <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
                             <th class="cursor-pointer select-none py-1 font-normal" @click="sortBy(section.key, section.key)">{{ section.label }}<span class="text-gray-400">{{ sortArrow(section.key, section.key) }}</span></th>
-                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'visitors')">{{ trans("Visitors") }}<span class="text-gray-400">{{ sortArrow(section.key, 'visitors') }}</span></th>
-                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'views')">{{ trans("Views") }}<span class="text-gray-400">{{ sortArrow(section.key, 'views') }}</span></th>
-                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'last_visited_at')">{{ trans("Last visit") }}<span class="text-gray-400">{{ sortArrow(section.key, 'last_visited_at') }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'visitors')">{{ ctrans("Visitors") }}<span class="text-gray-400">{{ sortArrow(section.key, 'visitors') }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'views')">{{ ctrans("Views") }}<span class="text-gray-400">{{ sortArrow(section.key, 'views') }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'last_visited_at')">{{ ctrans("Last visit") }}<span class="text-gray-400">{{ sortArrow(section.key, 'last_visited_at') }}</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -178,7 +193,7 @@ const sections = computed(() => [
                             <td class="whitespace-nowrap py-1 text-right font-mono text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
                         </tr>
                         <tr v-if="!section.rows.length">
-                            <td colspan="4" class="py-2 text-xs text-gray-500">{{ trans("No data yet") }}</td>
+                            <td colspan="4" class="py-2 text-xs text-gray-500">{{ ctrans("No data yet") }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -186,15 +201,15 @@ const sections = computed(() => [
         </div>
 
         <section>
-            <h2 class="text-sm font-medium">{{ trans("Referrers per article") }}</h2>
+            <h2 class="text-sm font-medium">{{ ctrans("Referrers per article") }}</h2>
             <table class="mt-2 w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-                        <th class="py-1 font-normal">{{ trans("Page") }}</th>
-                        <th class="py-1 font-normal">{{ trans("Referrer") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Visitors") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Views") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Last visit") }}</th>
+                        <th class="py-1 font-normal">{{ ctrans("Page") }}</th>
+                        <th class="py-1 font-normal">{{ ctrans("Referrer") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Visitors") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Views") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Last visit") }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -206,7 +221,7 @@ const sections = computed(() => [
                         <td class="whitespace-nowrap py-1 text-right font-mono text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
                     </tr>
                     <tr v-if="!overview.page_referrers.length">
-                        <td colspan="5" class="py-2 text-xs text-gray-500">{{ trans("No data yet") }}</td>
+                        <td colspan="5" class="py-2 text-xs text-gray-500">{{ ctrans("No data yet") }}</td>
                     </tr>
                 </tbody>
             </table>

@@ -3,7 +3,7 @@ title: Answering emails in Chat
 summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments. Real customers that Gmail put in spam come in too, with their files held back for safety.
 date: 2026-10-01
 tags: crm, chat, email
-category: crm
+category: help-desk
 series: Chat
 order: 3
 ---

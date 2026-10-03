@@ -13,7 +13,6 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faDatabase, faServer } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
@@ -22,26 +21,12 @@ library.add(faDatabase, faServer)
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    publicSiteVisits: {
-        daily: { day: string, views: number, visitors: number }[]
-        visitors: number
-        views: number
-        top_referrer: string | null
-    }
     servers: ServerSummary[]
     liveReadings: Record<string, LiveServerReading[]>
 }>()
 
 const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
 
-const sparklinePoints = computed(() => {
-    const daily = props.publicSiteVisits.daily
-    if (!daily.length) return ""
-    const max = Math.max(...daily.map(d => Number(d.views)), 1)
-    return daily.map((d, i) =>
-        `${(i / Math.max(daily.length - 1, 1)) * 100},${28 - (Number(d.views) / max) * 26}`
-    ).join(" ")
-})
 </script>
 
 <template>
@@ -53,25 +38,6 @@ const sparklinePoints = computed(() => {
         <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link v-for="server in servers" :key="server.slug" :href="route('grp.devops.servers.show', [server.slug])" class="block hover:shadow">
                 <ServerUsageCard :server="server" :live="liveReadings[server.slug]" />
-            </Link>
-        </div>
-        <div class="w-64 rounded-lg border border-gray-200 p-4">
-            <div class="flex items-baseline justify-between">
-                <span class="text-sm font-medium">aiku.io</span>
-                <span class="text-xs text-gray-500">{{ ctrans("Last 7 days") }}</span>
-            </div>
-            <div class="mt-2 flex items-baseline gap-3">
-                <span class="text-sm">{{ publicSiteVisits.visitors }} {{ ctrans("visitors") }}</span>
-                <span class="text-xs text-gray-500">{{ publicSiteVisits.views }} {{ ctrans("views") }}</span>
-            </div>
-            <svg v-if="sparklinePoints" viewBox="0 0 100 28" class="mt-2 h-7 w-full" preserveAspectRatio="none">
-                <polyline :points="sparklinePoints" fill="none" stroke="currentColor" stroke-width="1.5" class="text-indigo-500" />
-            </svg>
-            <div v-if="publicSiteVisits.top_referrer" class="mt-2 truncate text-xs text-gray-500">
-                {{ ctrans("Top referrer") }}: {{ publicSiteVisits.top_referrer }}
-            </div>
-            <Link :href="route('grp.devops.aiku-public-analytics')" class="mt-3 block text-xs text-indigo-600 hover:underline">
-                {{ ctrans("See more") }} →
             </Link>
         </div>
     </div>

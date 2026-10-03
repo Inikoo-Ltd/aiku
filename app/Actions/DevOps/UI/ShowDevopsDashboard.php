@@ -57,7 +57,6 @@ class ShowDevopsDashboard extends OrgAction
                         'title' => $title,
                     ],
                 ],
-                'publicSiteVisits' => $this->getPublicSiteVisits(),
                 'servers'          => $servers = $this->getServerSummaries(),
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
 
@@ -96,28 +95,6 @@ class ShowDevopsDashboard extends OrgAction
             )
             ->orderBy('servers.name')->get();
     }
-
-    /** @return array{daily: array<int, object>, visitors: int, views: int, top_referrer: string|null} */
-    public function getPublicSiteVisits(): array
-    {
-        $visits = fn (int $days) => DB::table('aiku_public_visits')->where('is_bot', false)
-            ->where('created_at', '>', now()->subDays($days))
-            ->where('path', 'not like', '/~search/%');
-
-        $lastWeek = $visits(7)->selectRaw('count(*) as views, count(distinct visitor_hash) as visitors')->first();
-
-        return [
-            'daily' => $visits(14)
-                ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
-                ->groupBy('day')->orderBy('day')->get()->all(),
-            'visitors'     => (int) $lastWeek->visitors,
-            'views'        => (int) $lastWeek->views,
-            'top_referrer' => $visits(7)->whereNotNull('referrer')
-                ->selectRaw('referrer, count(distinct visitor_hash) as visitors')
-                ->groupBy('referrer')->orderByDesc(DB::raw('count(distinct visitor_hash)'))->value('referrer'),
-        ];
-    }
-
 
     public function getBreadcrumbs(array $routeParameters): array
     {

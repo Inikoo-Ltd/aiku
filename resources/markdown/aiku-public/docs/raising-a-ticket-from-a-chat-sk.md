@@ -4,7 +4,7 @@ summary: Premeňte konverzáciu so zákazníkom na ticket bez prepisovania, drž
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, tickets, help desk
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

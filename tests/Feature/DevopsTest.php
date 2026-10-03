@@ -532,6 +532,9 @@ it('records server usage samples, rolls them into hours and shows them on the de
             ->has('liveReadings.metrics-box', 2)
             ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['swap_total_mb'] === 4096));
 
+    $this->get(route('grp.docs'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Docs/Dashboard', false)->has('publicSiteVisits.daily')->has('modules'));
+
     $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Devops/Server', false)->where('range', '24h')->has('series', 2));
 

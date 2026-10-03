@@ -4,7 +4,7 @@ summary: Supervision ukáže každú konverzáciu a každého agenta na obchodoc
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 5
 ---

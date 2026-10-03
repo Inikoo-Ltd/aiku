@@ -3,7 +3,7 @@ title: WhatsApp in Chat
 summary: Messages to the shop's WhatsApp number sit in the same inbox as the website chat and email, with one WhatsApp rule that changes how you answer: the 24-hour window.
 date: 2026-09-29
 tags: crm, chat, whatsapp
-category: crm
+category: help-desk
 series: Chat
 order: 4
 ---

@@ -4,7 +4,7 @@ summary: Cada lista, contador, color y etiqueta de la bandeja de clientes explic
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">
