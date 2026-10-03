@@ -401,6 +401,13 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getSupplierNavigation($this->parent);
+            $actions       = $this->parent->orgSuppliers()->with('organisation')->get()
+                ->filter(fn (OrgSupplier $orgSupplier) => $request->user()->authTo("procurement.$orgSupplier->organisation_id.edit"))
+                ->map(fn (OrgSupplier $orgSupplier) => array_merge($this->getOrgSupplierPurchaseOrderAction($orgSupplier), [
+                    'label' => __('Purchase order').' '.$orgSupplier->organisation->code,
+                ]))
+                ->values()
+                ->all();
         }
 
         return Inertia::render(
