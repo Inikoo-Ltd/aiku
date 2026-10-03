@@ -2744,13 +2744,15 @@ test('a rescue line orders at least a month of sales, never more than the partne
 });
 
 test('a sku on a rescue being prepared for another sister company is not offered again', function () {
+    $orgStock      = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])));
     $buckets       = GetPartnerStockCoverBuckets::make();
     $isComing      = fn () => (bool) DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'alreadyComingExpression'))->invoke($buckets, $this->orgPartner).' as coming from org_stocks os where os.id = ?',
-        [$this->orgStocks[2]->id]
+        [$orgStock->id]
     )->coming;
+    expect($isComing())->toBeFalse();
     $purchaseOrder = StorePurchaseOrder::make()->action($this->orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'OTHER-PARTNER-DRAFT-'.PurchaseOrder::max('id')]), strict: false);
-    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $this->orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[2], PurchaseOrderTransaction::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $this->orgSupplierProduct->supplierProduct->historicSupplierProduct, $orgStock, PurchaseOrderTransaction::factory()->definition());
 
     $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'parent_type' => 'OrgPartner', 'parent_id' => $this->orgPartner->id + 1000, 'organisation_id' => $this->orgPartner->organisation_id]);
     expect($isComing())->toBeTrue();
