@@ -97,6 +97,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	currency_code: string
+	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
 }>()
 
@@ -397,6 +398,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							</table>
 							<div class="flex items-center gap-3 border-t border-gray-100 pt-2">
 								<RescueOrderButton
+									v-if="can_create_purchase_orders"
 									:orgPartnerId="partner.id"
 									:partnerName="partner.name"
 									:draftReference="purchaseOrderInProcess(partner)?.reference"
@@ -513,7 +515,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" />
 				</Link>
 				<Button
-					v-else-if="!purchaseOrderInProcess(partner)"
+					v-else-if="can_create_purchase_orders && !purchaseOrderInProcess(partner)"
 					:label="ctrans('New purchase order')"
 					icon="fal fa-plus"
 					size="s"

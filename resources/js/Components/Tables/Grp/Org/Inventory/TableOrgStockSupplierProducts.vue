@@ -25,6 +25,8 @@ const props = defineProps<{
     data: object
     tab?: string
     org_stock_id?: number
+    can_link_supplier_products?: boolean
+    can_create_supplier_products?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -84,8 +86,8 @@ function setPreferred(supplierProduct: any) {
     <div>
         <Table :resource="data" :name="tab" class="mt-5">
             <template #add-on-button>
-                <div v-if="org_stock_id" class="flex items-center gap-2">
-                    <div class="w-72">
+                <div v-if="org_stock_id && (can_link_supplier_products || can_create_supplier_products)" class="flex items-center gap-2">
+                    <div v-if="can_link_supplier_products" class="w-72">
                         <PureMultiselectInfiniteScroll
                             mode="single"
                             v-model="orgSupplierProductToAttach"
@@ -96,6 +98,7 @@ function setPreferred(supplierProduct: any) {
                             :placeholder="ctrans('Search supplier product')" />
                     </div>
                     <Button
+                        v-if="can_link_supplier_products"
                         :label="ctrans('Attach supplier')"
                         icon="fal fa-link"
                         size="s"
@@ -103,6 +106,7 @@ function setPreferred(supplierProduct: any) {
                         :disabled="!orgSupplierProductToAttach"
                         @click="attachSupplierProduct" />
                     <Button
+                        v-if="can_create_supplier_products"
                         :label="ctrans('Add supplier')"
                         icon="fal fa-plus"
                         size="s"
@@ -157,7 +161,7 @@ function setPreferred(supplierProduct: any) {
 
             <template #cell(set_preferred)="{ item: supplierProduct }">
                 <button
-                    v-if="!supplierProduct.is_preferred"
+                    v-if="can_link_supplier_products && !supplierProduct.is_preferred"
                     type="button"
                     class="inline-flex items-center gap-1 text-gray-400 hover:text-amber-500"
                     v-tooltip="ctrans('Set as preferred supplier')"

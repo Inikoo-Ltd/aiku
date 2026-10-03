@@ -17,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteDeliveryAddress extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, array $modelData): void
     {
         $addressData = Arr::get($modelData, 'address', []);

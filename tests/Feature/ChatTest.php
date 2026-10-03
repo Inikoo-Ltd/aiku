@@ -4983,6 +4983,23 @@ test('customer service viewer gets no write access to chat', function () {
         ->and(ChatAgent::where('user_id', $viewer->id)->exists())->toBeFalse();
 });
 
+test('a customer service viewer sees the shop knowledge notes but not the controls to change them', function () {
+    actingAs($this->user);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+    $note       = \App\Models\Chat\ChatKnowledgeEntry::create(['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'kind' => 'note', 'title' => 'Shipping', 'body' => 'No shipping to Mars', 'source_type' => 'manual', 'is_manual' => true]);
+    $canEdit    = fn () => get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=policies')->viewData('page')['props']['policies']['can_edit'];
+
+    expect($canEdit())->toBeTrue();
+
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    expect($canEdit())->toBeFalse();
+    $this->delete(route('grp.org.shops.show.chat.settings.knowledge.delete', [...$parameters, $note->id]))->assertForbidden();
+    actingAsUserWithRoles($this->user, $originalRoles);
+
+    $note->delete();
+});
+
 test('a departed staff member is never a chat agent', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),

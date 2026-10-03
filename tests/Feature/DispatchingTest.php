@@ -2262,6 +2262,33 @@ test('only a dispatch supervisor can step a waiting delivery note back to pickin
     actingAs($user->refresh());
 });
 
+test('delivery note steps need dispatching, and undispatching needs a supervisor', function () {
+    [$deliveryNote] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $can           = fn () => [
+        $deliveryNote->canBeWorkedOnBy($user),
+        $deliveryNote->canBeCancelledBy($user),
+        \App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall::userCanCreateIn($user, $this->warehouse),
+    ];
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $this->warehouse)]);
+    expect($can())->toBe([false, false, false]);
+    patch(route('grp.models.delivery_note.update', $deliveryNote->id), [])->assertForbidden();
+    patch(route('grp.models.delivery_note.state.auto_finish_waiting', $deliveryNote->id))->assertForbidden();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    expect($can())->toBe([true, false, true]);
+    patch(route('grp.models.delivery_note.state.rollback', $deliveryNote->id))->assertForbidden();
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    expect($can())->toBe([true, true, true]);
+
+    actingAsUserWithRoles($user, $originalRoles);
+});
+
 test('over-picked item is trimmed back to required when picking is done', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

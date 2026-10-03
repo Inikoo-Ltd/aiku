@@ -2674,7 +2674,14 @@ test('UI refund action endpoints create tax finalise and delete', function () {
     $finalised = \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($refundA, []);
     expect($finalised->in_process)->toBeFalse();
 
-    // DeleteRefund (PATCH) on the tax refund of invoice B
+    // DeleteRefund (PATCH) on the tax refund of invoice B, refused without accounting edit
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('procurement-clerk', $this->organisation)]);
+    \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), ['deleted_note' => 'test delete'])->assertForbidden();
+    expect($taxRefund->refresh()->trashed())->toBeFalse();
+    actingAsUserWithRoles($user, $originalRoles);
+
     \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), [
         'deleted_note' => 'test delete',
     ])->assertRedirect();

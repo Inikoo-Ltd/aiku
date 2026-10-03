@@ -633,3 +633,17 @@ function createAttachedMedia(string $modelType, int $modelId, string $scope): \A
 
     return $media;
 }
+
+/**
+ * Logs the test in as $user holding only $roles; pass the roles it had before to restore them.
+ *
+ * @param array<int, string> $roles
+ */
+function actingAsUserWithRoles(\App\Models\SysAdmin\User $user, array $roles): void
+{
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($roles);
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    \Pest\Laravel\actingAs($user->refresh());
+}

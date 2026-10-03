@@ -33,6 +33,7 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
 	currency_code: string
+	can_create_purchase_orders?: boolean
 	orgPartner: { id: number; name: string }
 	rescueBuckets: {
 		bucket: "out" | "w1" | "w2"
@@ -76,6 +77,7 @@ const bucketClass = {
 	<PageHeading :data="pageHead">
 		<template #other>
 			<RescueOrderButton
+				v-if="can_create_purchase_orders"
 				:orgPartnerId="orgPartner.id"
 				:partnerName="orgPartner.name"
 				:currencyCode="currency_code"

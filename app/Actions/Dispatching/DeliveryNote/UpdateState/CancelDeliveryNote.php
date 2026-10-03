@@ -222,12 +222,7 @@ class CancelDeliveryNote extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            "supervisor-dispatching.$deliveryNote->warehouse_id",
-            "org-admin.$deliveryNote->organisation_id",
-            "orders.$deliveryNote->shop_id.edit",
-            "crm.$deliveryNote->shop_id.edit",
-        ]);
+        return $deliveryNote->canBeCancelledBy($request->user());
     }
 
     /**

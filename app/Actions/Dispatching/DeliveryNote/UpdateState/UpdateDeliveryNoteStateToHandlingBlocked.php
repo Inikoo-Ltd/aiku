@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandlingBlocked;
 use App\Actions\OrgAction;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
 

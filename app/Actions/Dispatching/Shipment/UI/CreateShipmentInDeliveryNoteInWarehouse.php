@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Shipment\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
@@ -19,6 +20,7 @@ use Illuminate\Validation\Rule;
 
 class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, array $modelData): Shipment
     {
         $shipper = Shipper::find($modelData['shipper_id']);

@@ -66,6 +66,7 @@ class IndexPartnerRescueItems extends OrgAction
                     'subNavigation' => $this->getOrgPartnerNavigation($this->orgPartner),
                 ],
                 'currency_code' => $this->orgPartner->organisation->currency->code,
+                'can_create_purchase_orders' => $this->canEdit,
                 'orgPartner'    => [
                     'id'   => $this->orgPartner->id,
                     'name' => $this->orgPartner->partner->name,

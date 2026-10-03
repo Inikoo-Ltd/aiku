@@ -39,6 +39,7 @@ const props = defineProps<{
     pallets?: {}
     showcase?: {}
     location_id: number
+    can_move_location_stock?: boolean
     transfer_reason?: {}
     create_order_route?: routeType | null
 }>()
@@ -64,5 +65,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="true" :location_id="location_id" :transfer_reason :create_order_route></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="can_move_location_stock" :location_id="location_id" :transfer_reason :create_order_route></component>
 </template>

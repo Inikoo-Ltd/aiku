@@ -181,6 +181,8 @@ class ShowOrgStock extends OrgAction
                     'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 ],
                 'org_stock_id'  => $orgStock->id,
+                'can_link_supplier_products'   => $request->user()->authTo("inventory.{$orgStock->organisation_id}.edit"),
+                'can_create_supplier_products' => $request->user()->authTo("procurement.{$orgStock->organisation_id}.edit"),
                 'discontinue_preview_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
                     'parameters' => [

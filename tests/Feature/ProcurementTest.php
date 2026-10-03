@@ -2586,6 +2586,7 @@ test('UI Index org partners', function () {
             ->has('title')
             ->has('breadcrumbs', 3)
             ->where('currency_code', $this->organisation->currency->code)
+            ->where('can_create_purchase_orders', true)
             ->has('partners.0', fn (AssertableInertia $card) => $card
                 ->where('id', $this->orgPartner->id)
                 ->where('name', $this->orgPartner->partner->name)
@@ -2595,6 +2596,14 @@ test('UI Index org partners', function () {
                     : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.buckets.0.left_out')->has('rescuable.top')->etc())
                 ->etc());
     });
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('accounting-clerk', $this->organisation)]);
+    $this->get(route('grp.org.procurement.org_partners.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_create_purchase_orders', false)->etc());
+    $this->post(route('grp.models.org-partner.purchase-order.store', [$this->orgPartner->id]))->assertForbidden();
+    actingAsUserWithRoles($user, $originalRoles);
 });
 
 test('UI partner rescue items for a sister company', function () {

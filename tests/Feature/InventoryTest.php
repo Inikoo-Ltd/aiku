@@ -4414,3 +4414,52 @@ describe('out of stock forecast', function () {
         expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
     });
 });
+
+test('move stock to other locations from the SKO page', function ($warehouseArea) {
+    $orgStock   = LocationOrgStock::first()->orgStock;
+    $newSlot    = fn () => StoreLocationOrgStock::make()->action(
+        $orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
+    $sourceSlot = $newSlot();
+    $targetSlot = $newSlot();
+    DB::table('location_org_stocks')->where('id', $sourceSlot->id)->update(['quantity' => 64]);
+    DB::table('location_org_stocks')->where('id', $targetSlot->id)->update(['quantity' => 30.996666]);
+
+    $this->withoutVite()->patch(route('grp.models.location_org_stock.multi_move', $sourceSlot->id), [
+        'targets' => [['location_org_stock_id' => $targetSlot->id, 'quantity' => 64]],
+    ])->assertSessionHasNoErrors();
+
+    expect((float) $sourceSlot->refresh()->quantity)->toBe(0.0)
+        ->and((float) $targetSlot->refresh()->quantity)->toBe(94.996666);
+
+    $warehouse = $warehouseArea->warehouse;
+    $user      = $this->guest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $skoUrl        = route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $sourceSlot->orgStock->slug]);
+    $locationUrl   = route('grp.org.warehouses.show.infrastructure.locations.show', [$this->organisation->slug, $warehouse->slug, $targetSlot->location->slug]);
+
+    $controlsShown = function () use ($skoUrl, $locationUrl) {
+        $skoPage = $this->get($skoUrl)->assertOk()->viewData('page')['props'];
+
+        return [
+            $skoPage['showcase']['stocks_management']['can_edit'],
+            $skoPage['can_move_stock'],
+            $skoPage['can_link_supplier_products'],
+            $skoPage['can_create_supplier_products'],
+            $this->get($locationUrl)->assertOk()->viewData('page')['props']['can_move_location_stock'],
+        ];
+    };
+
+    expect($controlsShown())->toBe([true, true, true, true, true]);
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    expect($controlsShown())->toBe([false, false, false, false, false]);
+    $this->patch(route('grp.models.location_org_stock.multi_move', $targetSlot->id), [
+        'targets' => [['location_org_stock_id' => $sourceSlot->id, 'quantity' => 1]],
+    ])->assertForbidden();
+
+    actingAsUserWithRoles($user, $originalRoles);
+})->depends('create warehouse area');
