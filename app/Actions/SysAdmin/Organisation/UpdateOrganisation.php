@@ -356,6 +356,13 @@ class UpdateOrganisation extends OrgAction
         return $rules;
     }
 
+    public function getValidationMessages(): array
+    {
+        return [
+            'procurement_shop_ids.*.exists' => __('Only this organisation\'s own shops can be listed, not external ones.'),
+        ];
+    }
+
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation($organisation, $request);

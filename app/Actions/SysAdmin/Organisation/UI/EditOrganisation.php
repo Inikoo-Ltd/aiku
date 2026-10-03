@@ -162,12 +162,11 @@ class EditOrganisation extends OrgAction
                                 "value"       => Arr::get($organisation->settings, "procurement.shop_id"),
                             ],
                             "procurement_shop_ids" => [
-                                "type"        => "multiselect-tags",
+                                "type"        => "ordered-select-list",
                                 "label"       => __("Shops partners buy from, in order"),
                                 "information" => __("Shops partner organisations buy from when ordering intercompany. For each SKO the first shop in this list that sells it is used, so put the shop that owns the product first. External shops are not allowed. Leave empty to use the procurement shop only."),
+                                "placeholder" => __("Add a shop"),
                                 "options"     => $sellingShopOptions,
-                                "labelProp"   => "name",
-                                "valueProp"   => "id",
                                 "value"       => Arr::get($organisation->settings, "procurement.shop_ids", []),
                             ],
                         ],
@@ -215,7 +214,7 @@ class EditOrganisation extends OrgAction
                 ],
                 "args" => [
                     "updateRoute" => [
-                        "name"       => "grp.models.organisation.update",
+                        "name"       => "grp.models.org.settings.update",
                         "parameters" => [$organisation->id],
                     ],
                 ],
