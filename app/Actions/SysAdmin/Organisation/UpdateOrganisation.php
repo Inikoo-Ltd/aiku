@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -107,6 +108,10 @@ class UpdateOrganisation extends OrgAction
 
         if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
             data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'procurement_shop_ids')) {
+            data_set($modelData, 'settings.procurement.shop_ids', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'procurement_shop_ids')))));
         }
 
         if (Arr::has($modelData, 'procurement_shop_id')) {
@@ -308,6 +313,8 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'default_shelf_life_days'               => ['sometimes', 'integer', 'min:1', 'max:3650'],
+            'procurement_shop_ids'                  => ['sometimes', 'array'],
+            'procurement_shop_ids.*'                => ['integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)->whereNot('type', ShopTypeEnum::EXTERNAL->value)],
             'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],

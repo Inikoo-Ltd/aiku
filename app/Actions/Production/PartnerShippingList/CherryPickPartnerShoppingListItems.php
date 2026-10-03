@@ -16,15 +16,13 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
-use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Procurement\OrgPartner;
@@ -70,9 +68,9 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $product = $this->resolveSellerProduct($seller, $item);
+            $product = GetPartnerSellingProduct::run($item->orgPartner, $item->stock_id);
             if (!$product) {
-                $skipped[] = ['id' => $item->id, 'reason' => 'no active product for this stock in the partner organisation'];
+                $skipped[] = ['id' => $item->id, 'reason' => 'no product for this stock in the shops the partner sells from'];
                 continue;
             }
 
@@ -166,21 +164,6 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             'picked'  => $picked,
             'skipped' => $skipped,
         ];
-    }
-
-    private function resolveSellerProduct(Organisation $seller, PartnerShoppingListItem $item): ?Product
-    {
-        $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)
-            ->where('stock_id', $item->stock_id)
-            ->first();
-
-        $products = $sellerOrgStock?->products();
-        if (!$products) {
-            return null;
-        }
-        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery());
-
-        return $products->first();
     }
 
     public function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer

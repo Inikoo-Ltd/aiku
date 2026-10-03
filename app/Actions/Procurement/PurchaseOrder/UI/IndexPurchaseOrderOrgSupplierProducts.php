@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -186,7 +187,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id');
+        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
 
         $paginator = QueryBuilder::for(OrgStock::class)
             ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {

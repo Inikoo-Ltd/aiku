@@ -17,7 +17,6 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -314,14 +313,14 @@ class GetPartnerStockCoverBuckets
      */
     private function partnerSkoPrice(OrgPartner $orgPartner): string
     {
-        $shopId = (int) Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
+        $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
 
         return "coalesce((select pr.price / nullif(phos.quantity, 0)
             from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id = $shopId
+            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', $shopIds).")
             where phos.org_stock_id = p.id
                 and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
-            order by phos.quantity, pr.price
+            order by ".PartnerSkoPrice::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, pr.price
             limit 1), 0)";
     }
 

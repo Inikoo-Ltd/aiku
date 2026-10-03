@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
@@ -107,7 +108,7 @@ class GetPartnerOrdersInTheMaking
                 DB::raw("(job_orders.id is not null and job_orders.state in ('in_process', 'submitted', 'confirmed')) as is_being_made"),
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
-                DB::raw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko'),
+                DB::raw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($seller)).' as price_per_sko'),
             ])
             ->groupBy('buyer_id');
 

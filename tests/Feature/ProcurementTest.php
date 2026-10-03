@@ -110,6 +110,8 @@ use App\Actions\Catalogue\UI\IndexCatalogueOnItsWay;
 use App\Actions\Maintenance\GoodsIn\RepairStockDeliveryPurchaseOrderLinks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\Artefact\StoreArtefact;
@@ -4385,7 +4387,7 @@ describe('partner shopping list', function () {
 
         $price = DB::table('partner_shopping_list_items')
             ->where('id', $item->id)
-            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql([$this->sellerShop->id]).' as price_per_sko')
             ->value('price_per_sko');
 
         expect(round((float) $price, 4))->toBe(round($basePrice, 4));
@@ -4732,6 +4734,83 @@ describe('partner shopping list', function () {
 
         $seller->update(['is_manufacturing_hub' => true]);
         expect(fn () => StorePurchaseOrder::make()->action($this->orgPartner, []))->toThrow(ValidationException::class);
+    });
+
+    function replicateSellerProductInNewShop(Organisation $seller, \App\Models\Catalogue\Product $product, float $price): \App\Models\Catalogue\Product
+    {
+        $otherShop = StoreShop::run($seller, Shop::factory()->definition());
+
+        $replica        = $product->replicate();
+        $replica->code  = 'REPL-'.$product->id.'-'.$otherShop->id;
+        $replica->slug  = 'repl-'.$product->id.'-'.$otherShop->id;
+        $replica->shop_id = $otherShop->id;
+        $replica->price = $price;
+        $replica->save();
+
+        $orgStock = $product->orgStocks()->first();
+        DB::table('product_has_org_stocks')->insert([
+            'product_id' => $replica->id, 'org_stock_id' => $orgStock->id, 'quantity' => $orgStock->pivot->quantity,
+        ]);
+
+        return $replica;
+    }
+
+    test('a partner sells a stock from the first listed shop that sells it, not the cheapest', function () {
+        $seller           = $this->orgPartner->partner;
+        $originalSettings = $seller->settings;
+
+        try {
+            $pricier = replicateSellerProductInNewShop($seller, $this->sellerProduct, (float) $this->sellerProduct->price + 5);
+            $stockId = $this->sellerProduct->orgStocks()->first()->stock_id;
+
+            $seller->update(['settings' => array_replace_recursive($seller->settings ?? [], ['procurement' => ['shop_ids' => [$pricier->shop_id, $this->sellerShop->id]]])]);
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $stockId)->id)->toBe($pricier->id);
+
+            $seller->update(['settings' => array_replace_recursive($seller->settings, ['procurement' => ['shop_ids' => [$this->sellerShop->id, $pricier->shop_id]]])]);
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $stockId)->id)->toBe($this->sellerProduct->id)
+                ->and(GetPartnerSellingProduct::run($this->orgPartner, $stockId, [$pricier->shop_id])->id)->toBe($pricier->id)
+                ->and(GetPartnerSellingProduct::run($this->orgPartner, $stockId, [0]))->toBeNull();
+        } finally {
+            $seller->update(['settings' => $originalSettings]);
+        }
+    });
+
+    test('a partner sells from its procurement shop when no list of shops is set', function () {
+        $seller           = $this->orgPartner->partner;
+        $originalSettings = $seller->settings;
+
+        try {
+            $pricier = replicateSellerProductInNewShop($seller, $this->sellerProduct, (float) $this->sellerProduct->price + 5);
+            $stockId = $this->sellerProduct->orgStocks()->first()->stock_id;
+
+            $seller->update(['settings' => Arr::except(array_replace_recursive($seller->settings ?? [], ['procurement' => ['shop_id' => $pricier->shop_id]]), 'procurement.shop_ids')]);
+
+            expect(GetPartnerSellingShopIds::run($seller->refresh()))->toBe([$pricier->shop_id])
+                ->and(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $stockId)->id)->toBe($pricier->id);
+        } finally {
+            $seller->update(['settings' => $originalSettings]);
+        }
+    });
+
+    test('cherry picking orders from the first listed shop even when a later one is cheaper', function () {
+        $seller           = $this->orgPartner->partner;
+        $originalSettings = $seller->settings;
+
+        try {
+            $cheaper = replicateSellerProductInNewShop($seller, $this->sellerProduct, 0.01);
+            $seller->update(['settings' => array_replace_recursive($seller->settings ?? [], ['procurement' => ['shop_ids' => [$this->sellerShop->id, $cheaper->shop_id]]])]);
+            if (!$seller->warehouses()->exists()) {
+                StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+            }
+
+            $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 20]);
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $item->id]]);
+
+            expect($result['picked'])->toBe(1)
+                ->and($result['orders'][0]->shop_id)->toBe($this->sellerShop->id);
+        } finally {
+            $seller->update(['settings' => $originalSettings]);
+        }
     });
 
     test('send partner order to warehouse creates DN and mirror stock delivery in buyer org', function () {

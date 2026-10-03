@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
@@ -94,7 +95,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
                     order by delivery_notes.id desc limit 1) as delivery_note_state"),
             ])
-            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])

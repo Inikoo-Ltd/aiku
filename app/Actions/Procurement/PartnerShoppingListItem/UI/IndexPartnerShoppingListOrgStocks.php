@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
@@ -70,7 +71,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'partner_shopping_list_items.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id').' as price_per_sko')
+            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,6 +50,12 @@ class EditOrganisation extends OrgAction
             ->orderBy('name')
             ->get(['id', 'name'])
             ->mapWithKeys(fn ($shop) => [$shop->id => ['id' => $shop->id, 'label' => $shop->name]]);
+
+        $sellingShopOptions = $organisation->shops()
+            ->where('type', '!=', ShopTypeEnum::EXTERNAL->value)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($shop) => ['id' => $shop->id, 'name' => $shop->name]);
 
         return Inertia::render("EditModel", [
             "title"       => __("Organisation"),
@@ -153,6 +160,15 @@ class EditOrganisation extends OrgAction
                                 "placeholder" => __("Select a shop"),
                                 "options"     => $shopOptions,
                                 "value"       => Arr::get($organisation->settings, "procurement.shop_id"),
+                            ],
+                            "procurement_shop_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Shops partners buy from, in order"),
+                                "information" => __("Shops partner organisations buy from when ordering intercompany. For each SKO the first shop in this list that sells it is used, so put the shop that owns the product first. External shops are not allowed. Leave empty to use the procurement shop only."),
+                                "options"     => $sellingShopOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "procurement.shop_ids", []),
                             ],
                         ],
                     ],
