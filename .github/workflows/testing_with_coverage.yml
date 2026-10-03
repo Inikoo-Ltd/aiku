@@ -21,7 +21,7 @@ env:
   REDIS_HORIZON_PORT: 0
   REDIS_CACHE_PORT: 0
   REDIS_SESSONS_PORT: 0
-  XDEBUG_MODE: coverage
+  XDEBUG_MODE: 'off'
 
 jobs:
   coverage:
@@ -71,7 +71,7 @@ jobs:
         run: |
           COVERAGE=""
           mkdir -p "$RUNNER_TEMP/php-coverage"
-          echo "zend_extension=xdebug.so" > "$RUNNER_TEMP/php-coverage/xdebug.ini"
+          printf 'extension=pcov.so\npcov.enabled=1\npcov.directory=app\n' > "$RUNNER_TEMP/php-coverage/pcov.ini"
           export PHP_INI_SCAN_DIR=":$RUNNER_TEMP/php-coverage"
           if php8.4 -m | grep -qiE '^(pcov|xdebug)$'; then
             COVERAGE="--coverage-clover clover.xml"
