@@ -463,7 +463,7 @@ task('debug:writable', function () {
 $defaultWritableDirs = get('writable_dirs');
 
 set('writable_dirs', function () use ($defaultWritableDirs) {
-    if (currentHost()->getAlias() === 'aiku_helio') {
+    if (in_array(currentHost()->getAlias(), ['aiku_helio', 'aiku_litio'])) {
         return ['bootstrap/cache'];
     }
 
