@@ -23,6 +23,12 @@ hosts:
     branch: production
     labels:
       env: prod
+  aiku_litio:
+    environment: 'production'
+    deploy_path: '~/aiku'
+    branch: production
+    labels:
+      env: litio
   staging:
     environment: 'staging'
     deploy_path: '~/aiku'

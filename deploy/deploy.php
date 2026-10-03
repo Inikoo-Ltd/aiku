@@ -585,6 +585,23 @@ task('deploy', [
     'deploy:aiku-public:indexnow',
 ]);
 
+desc('Deploys code to a host that serves no traffic yet: build and publish only, nothing that restarts, crawls, purges or writes to shared services');
+task('deploy:cold', [
+    'deploy:unlock',
+    'deploy:prepare',
+    'deploy:vendors',
+    'artisan:storage:link',
+    'artisan:config:cache',
+    'artisan:route:cache',
+    'artisan:event:cache',
+    'deploy:check-fe-changes',
+    'deploy:build',
+    'deploy:save-ssr-checksums',
+    'deploy:publish',
+    'deploy:prune-node-modules',
+    'deploy:sync-octane-anchor',
+])->select('env=litio');
+
 // ponytail: same as the stock cleanup, plus two things it lacks. A release is
 // skipped while any process still has its cwd inside it -- horizon workers and
 // crons keep running from the release they started in, and rm there deletes the
