@@ -115,6 +115,10 @@ class ProjectWriteTool extends Tool
 
     private function addWork(Request $request, User $user, TicketProject $project): Response
     {
+        if (!$request->filled('references')) {
+            return Response::error('Give the ticket and task references to add, e.g. "HELP-12, TASK-4".');
+        }
+
         $milestone = $this->milestoneFrom($project, $request->get('milestone'));
         if ($milestone === false) {
             return $this->noSuchMilestone($project, $request->get('milestone'));
@@ -136,6 +140,9 @@ class ProjectWriteTool extends Tool
         }
 
         $isRemoving = $request->boolean('remove');
+        if (!$isRemoving && !$request->filled('milestone')) {
+            return Response::error('Say where to move them: a milestone name or id, "none" for no milestone, or remove=true to take them out of the project.');
+        }
         $milestone  = $isRemoving ? null : $this->milestoneFrom($project, $request->get('milestone'));
         if ($milestone === false) {
             return $this->noSuchMilestone($project, $request->get('milestone'));
@@ -158,57 +165,85 @@ class ProjectWriteTool extends Tool
 
     private function milestone(Request $request, TicketProject $project): Response
     {
-        $milestones = $project->milestones()->get()->values();
-        $target     = $this->milestoneFrom($project, $request->get('milestone'));
-
-        $list = $milestones->map(fn (TicketProjectMilestone $milestone) => [
-            'id'          => $milestone->id,
-            'name'        => $milestone->name,
-            'description' => $milestone->description,
-            'start_date'  => $milestone->start_date?->toDateString(),
-            'due_date'    => $milestone->due_date?->toDateString(),
-            'done'        => $milestone->done_at !== null,
-        ]);
-
-        if (!$target) {
-            if (!$request->filled('milestone') || $request->boolean('delete')) {
-                return $this->noSuchMilestone($project, $request->get('milestone'));
+        $dates = [];
+        foreach (['start_date', 'due_date'] as $field) {
+            if ($request->has($field)) {
+                $value = trim((string) $request->get($field));
+                if (in_array(strtolower($value), ['', 'none'], true)) {
+                    $dates[$field] = null;
+                } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) && strtotime($value)) {
+                    $dates[$field] = $value;
+                } else {
+                    return Response::error("$field must be YYYY-MM-DD, or none to clear it.");
+                }
             }
-            $entry = ['name' => (string) $request->get('milestone'), 'start_date' => $request->get('start_date'), 'due_date' => $request->get('due_date'), 'done' => $request->boolean('done')];
-            $list  = $list->push($entry);
-            $index = $list->count() - 1;
-            $verb  = 'created';
-        } else {
-            $index = $list->search(fn (array $entry) => $entry['id'] === $target->id);
-            if ($request->boolean('delete')) {
-                $list = $list->forget($index)->values();
-                UpdateTicketProject::make()->action($project, ['milestones' => $list->all()]);
-
-                return Response::json(['deleted' => $target->name, 'note' => 'Its tickets and tasks stay in the project without a milestone.']);
-            }
-            $list = $list->put($index, array_merge($list[$index], array_filter([
-                'name'       => $request->get('rename'),
-                'start_date' => $request->get('start_date'),
-                'due_date'   => $request->get('due_date'),
-            ], fn ($value) => $value !== null && $value !== ''), $request->has('done') ? ['done' => $request->boolean('done')] : []));
-            $verb = 'updated';
         }
 
-        if ($request->filled('position')) {
-            $entry    = $list->pull($index);
-            $position = max(0, min($list->count(), (int) $request->get('position') - 1));
-            $list     = $list->values()->take($position)->push($entry)->concat($list->values()->slice($position))->values();
-        }
+        return DB::transaction(function () use ($request, $project, $dates) {
+            TicketProject::whereKey($project->id)->lockForUpdate()->first();
 
-        UpdateTicketProject::make()->action($project, ['milestones' => $list->values()->all()]);
+            $target     = $this->milestoneFrom($project, $request->get('milestone'));
+            $identifier = trim((string) $request->get('milestone'));
 
-        return Response::json([$verb => $request->get('rename') ?: ($target?->name ?? $request->get('milestone')), 'milestones' => $project->milestones()->pluck('name')->all()]);
+            $list = $project->milestones()->get()->values()->map(fn (TicketProjectMilestone $milestone) => [
+                'id'          => $milestone->id,
+                'name'        => $milestone->name,
+                'description' => $milestone->description,
+                'start_date'  => $milestone->start_date?->toDateString(),
+                'due_date'    => $milestone->due_date?->toDateString(),
+                'done'        => $milestone->done_at !== null,
+            ]);
+
+            if (!$target) {
+                $isCreatable = $identifier !== '' && strtolower($identifier) !== 'none' && !ctype_digit($identifier) && !$request->boolean('delete') && !$request->filled('rename');
+                if (!$isCreatable) {
+                    return $this->noSuchMilestone($project, $identifier);
+                }
+                $entry = ['name' => $identifier, 'start_date' => $dates['start_date'] ?? null, 'due_date' => $dates['due_date'] ?? null, 'done' => $request->boolean('done')];
+                $list  = $list->push($entry);
+                $index = $list->count() - 1;
+                $verb  = 'created';
+            } else {
+                $index = $list->search(fn (array $entry) => $entry['id'] === $target->id);
+                if ($request->boolean('delete')) {
+                    UpdateTicketProject::make()->action($project, ['milestones' => $list->forget($index)->values()->all()]);
+
+                    return Response::json(['deleted' => $target->name, 'note' => 'Its tickets and tasks stay in the project without a milestone.']);
+                }
+
+                $changes = [
+                    ...($request->filled('rename') ? ['name' => trim((string) $request->get('rename'))] : []),
+                    ...$dates,
+                    ...($request->has('done') ? ['done' => $request->boolean('done')] : []),
+                ];
+                if ($changes === [] && !$request->filled('position')) {
+                    return Response::error('Nothing to change on '.$target->name.': give rename, start_date, due_date, done, position or delete.');
+                }
+                $list = $list->put($index, array_merge($list[$index], $changes));
+                $verb = 'updated';
+            }
+
+            $edited = $list[$index];
+            if ($edited['start_date'] && $edited['due_date'] && $edited['due_date'] < $edited['start_date']) {
+                return Response::error('The due date '.$edited['due_date'].' is before the start date '.$edited['start_date'].'.');
+            }
+
+            if ($request->filled('position')) {
+                $entry    = $list->pull($index);
+                $position = max(0, min($list->count(), (int) $request->get('position') - 1));
+                $list     = $list->values()->take($position)->push($entry)->concat($list->values()->slice($position))->values();
+            }
+
+            UpdateTicketProject::make()->action($project, ['milestones' => $list->values()->all()]);
+
+            return Response::json([$verb => $edited['name'], 'milestones' => $project->milestones()->pluck('name')->all()]);
+        });
     }
 
     private function postUpdate(Request $request, User $user, TicketProject $project): Response
     {
-        if (!$request->filled('body')) {
-            return Response::error('Give the update text in body.');
+        if (!$request->filled('body') || mb_strlen((string) $request->get('body')) > 20000) {
+            return Response::error('Give the update text in body, up to 20000 characters.');
         }
         if ($request->filled('health') && !TicketProjectHealthEnum::tryFrom((string) $request->get('health'))) {
             return Response::error('health is one of: '.implode(', ', array_column(TicketProjectHealthEnum::cases(), 'value')).'.');

@@ -19,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTicketProject extends OrgAction
 {
+    private ?TicketProject $updatingProject = null;
+
     public function handle(TicketProject $project, array $modelData): TicketProject
     {
         if (Arr::exists($modelData, 'member_ids')) {
@@ -81,7 +83,7 @@ class UpdateTicketProject extends OrgAction
             'description'             => ['sometimes', 'nullable', 'string', 'max:20000'],
             'status'                  => ['sometimes', Rule::enum(TicketProjectStatusEnum::class)],
             'start_date'              => ['sometimes', 'date'],
-            'target_date'             => ['sometimes', 'nullable', 'date', 'after_or_equal:'.($this->get('start_date') ?? request()->route('ticketProject')?->start_date?->toDateString() ?? '1900-01-01')],
+            'target_date'             => ['sometimes', 'nullable', 'date', 'after_or_equal:'.($this->get('start_date') ?? ($this->updatingProject ?? request()->route('ticketProject'))?->start_date?->toDateString() ?? '1900-01-01')],
             'owner_id'                => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
             'member_ids'              => ['sometimes', 'nullable', 'array'],
             'member_ids.*'            => [Rule::exists('users', 'id')->where('group_id', $this->group->id)],
@@ -97,7 +99,8 @@ class UpdateTicketProject extends OrgAction
 
     public function action(TicketProject $project, array $modelData): TicketProject
     {
-        $this->asAction = true;
+        $this->asAction        = true;
+        $this->updatingProject = $project;
         $this->initialisationFromGroup($project->group, $modelData);
 
         return $this->handle($project, $this->validatedData);

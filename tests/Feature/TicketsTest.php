@@ -3858,6 +3858,18 @@ test('the project tools let a team member run a project through the AI assistant
     AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => "{$ticket->reference} {$task->reference}", 'milestone' => 'Line moved'])->assertOk();
     AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Staff ready'])->assertOk();
     AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Nope'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'none'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Ghost', 'rename' => 'Real'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'start_date' => now()->addWeeks(5)->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'next friday'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => 'factory-move', 'target_date' => now()->subMonth()->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => ' '])->assertHasErrors();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved'])
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready');
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'none'])->assertOk();
+    expect($project->milestones()->where('name', 'Line moved')->first()->due_date)->toBeNull();
     AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'Movers booked', 'health' => 'on_track'])->assertOk();
     AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Staff ready', 'done' => true])->assertOk();
 
