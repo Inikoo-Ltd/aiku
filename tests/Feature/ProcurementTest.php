@@ -192,6 +192,9 @@ use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Models\Helpers\CurrencyExchange;
+use App\Actions\Helpers\CurrencyExchange\FetchCurrencyExchange;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use Illuminate\Support\Carbon;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -2753,6 +2756,21 @@ test('a sku on a rescue being prepared for another sister company is not offered
 
     $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
     expect($isComing())->toBeFalse();
+});
+
+test('without a live exchange rate the latest stored one is used, never a rate of 1', function () {
+    $pound = Currency::where('code', 'GBP')->firstOrFail();
+    $euro  = Currency::where('code', 'EUR')->firstOrFail();
+    Cache::forget('current-currency-exchange:GBP-EUR');
+    FetchCurrencyExchange::shouldRun()->andThrow(new Exception('provider down'));
+
+    CurrencyExchange::updateOrCreate(['currency_id' => $euro->id, 'date' => '2001-01-02'], ['exchange' => 1.1]);
+    CurrencyExchange::updateOrCreate(['currency_id' => $euro->id, 'date' => '2001-01-03'], ['exchange' => 1.2]);
+
+    expect(GetCurrencyExchange::run($pound, $euro))->toBe(CurrencyExchange::where('currency_id', $euro->id)->latest('date')->value('exchange') / 1.0)
+        ->and(GetCurrencyExchange::run($pound, $euro))->not->toBe(1.0);
+
+    Cache::forget('current-currency-exchange:GBP-EUR');
 });
 
 test('rescue order creates nothing when a sister company has nothing to rescue', function () {

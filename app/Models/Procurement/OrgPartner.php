@@ -15,6 +15,7 @@ use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -98,7 +99,8 @@ class OrgPartner extends Model
      */
     public function exchangeToOrgCurrency(): float
     {
-        return GetCurrencyExchange::run($this->partner->currency, $this->organisation->currency) ?? 1;
+        return GetCurrencyExchange::run($this->partner->currency, $this->organisation->currency)
+            ?? throw new RuntimeException("No exchange rate from {$this->partner->currency->code} to {$this->organisation->currency->code}");
     }
 
 }

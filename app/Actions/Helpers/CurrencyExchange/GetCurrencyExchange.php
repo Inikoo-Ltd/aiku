@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\CurrencyExchange;
 
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\CurrencyExchange;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -36,8 +37,10 @@ class GetCurrencyExchange
                 $currencyExchange      = $exchangeData['exchange'] ?? null;
 
             } catch (Exception) {
-                return null;
+                $currencyExchange = null;
             }
+
+            $currencyExchange ??= $this->latestStoredExchange($baseCurrency, $targetCurrency);
 
             if ($currencyExchange) {
                 Cache::add($key, $currencyExchange, now()->addHours(6));
@@ -48,6 +51,20 @@ class GetCurrencyExchange
         return $currencyExchange;
     }
 
+
+    private function latestStoredExchange(Currency $baseCurrency, Currency $targetCurrency): ?float
+    {
+        $pivotCode = config('app.currency_exchange.pivot');
+
+        $againstPivot = fn (Currency $currency): ?float => $currency->code === $pivotCode
+            ? 1.0
+            : CurrencyExchange::where('currency_id', $currency->id)->latest('date')->value('exchange');
+
+        $baseExchange   = $againstPivot($baseCurrency);
+        $targetExchange = $againstPivot($targetCurrency);
+
+        return $baseExchange && $targetExchange ? (float) $targetExchange / (float) $baseExchange : null;
+    }
 
     public function asCommand(Command $command): int
     {
