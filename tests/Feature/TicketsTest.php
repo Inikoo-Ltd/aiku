@@ -3746,7 +3746,7 @@ test('jev fills in the kind and module nobody set, replaces a set one only when 
     $rows  = collect($stats['breakdown']);
 
     expect($rows->where(1, 'procurement')->where(2, 'feature')->sum(5))->toBeGreaterThanOrEqual(1)
-        ->and($rows->where(1, 'none')->where(3, 'open')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and($rows->where(1, 'crm')->where(3, 'open')->sum(5))->toBeGreaterThanOrEqual(1)
         ->and(collect($stats['modules'])->firstWhere('value', 'chat')['label'])->toBe('Chat')
         ->and(collect($stats['kinds'])->sum('total'))->toBe($stats['created'])
         ->and($rows->sum(5))->toBe($stats['created']);
