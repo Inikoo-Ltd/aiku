@@ -19,8 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Jev reads a ticket's subject and description and fills in its kind and module when nobody
  * did, so the reports can show which parts of aiku the tickets are about over time. What a
- * person set is only changed when every ticket is classified again on purpose (--all), and a
- * guess Jev is not sure of never replaces anything.
+ * person set is only changed when every ticket is classified again on purpose (--all), and only
+ * by an answer Jev is sure of; an empty one takes Jev's best guess.
  */
 class ClassifyTicket
 {
@@ -90,8 +90,8 @@ class ClassifyTicket
         $answers = AskJev::make()->handle($state, $questions);
 
         $changes = array_filter([
-            'kind'   => $this->confidentChoice($answers, 'kind'),
-            'module' => $this->confidentChoice($answers, 'module'),
+            'kind'   => $this->confidentChoice($answers, 'kind', $ticket->kind === null),
+            'module' => $this->confidentChoice($answers, 'module', $ticket->module === null),
         ]);
 
         if ($changes) {
@@ -109,12 +109,12 @@ class ClassifyTicket
         return $ticket->type === TicketTypeEnum::ENGINEER ? self::KINDS : Arr::except(self::KINDS, TicketKindEnum::internalValues());
     }
 
-    private function confidentChoice(?array $answers, string $question): ?string
+    private function confidentChoice(?array $answers, string $question, bool $isEmpty): ?string
     {
         $choice     = Arr::get($answers, "$question.choice");
         $confidence = Arr::get($answers, "$question.probabilities.$choice", Arr::get($answers, "$question.confidence"));
 
-        return $choice && is_numeric($confidence) && $confidence >= self::MIN_CONFIDENCE ? $choice : null;
+        return $choice && ($isEmpty || (is_numeric($confidence) && $confidence >= self::MIN_CONFIDENCE)) ? $choice : null;
     }
 
     public function asCommand(Command $command): int

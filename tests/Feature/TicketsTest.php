@@ -3718,7 +3718,7 @@ test('a ticket list refetches one changed row, and a confidential ticket is not 
     get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
 });
 
-test('jev fills in the kind and module nobody set, only when sure, and the reports chart tickets by module', function () {
+test('jev fills in the kind and module nobody set, replaces a set one only when sure, and the reports chart tickets by module', function () {
     config(['services.openrouter.api_key' => 'test-key']);
     Http::fake(['openrouter.ai/api/alpha/decisions' => Http::sequence()
         ->push(['answers' => [
@@ -3738,7 +3738,7 @@ test('jev fills in the kind and module nobody set, only when sure, and the repor
     expect($classified->refresh()->kind)->toBe(TicketKindEnum::FEATURE)
         ->and($classified->module)->toBe(TicketModuleEnum::PROCUREMENT)
         ->and($unsure->refresh()->kind)->toBe(TicketKindEnum::BUG)
-        ->and($unsure->module)->toBeNull()
+        ->and($unsure->module)->toBe(TicketModuleEnum::CRM)
         ->and($setByStaff->refresh()->module)->toBe(TicketModuleEnum::CHAT);
     Http::assertSentCount(2);
 
