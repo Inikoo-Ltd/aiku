@@ -8616,6 +8616,7 @@ test('the best customers have all their mail archived, searched by their address
 
 test('what agents keep telling different customers is learned and put to staff once enough customers heard it, and only a person turns it on', function () {
     $shop = $this->shop;
+    \App\Actions\Helpers\AI\EmbedTexts::mock()->shouldReceive('handle')->andReturnUsing(fn (array $texts) => array_map(fn (string $text) => array_pad(str_contains($text, 'VAT') ? [1.0, 0.0] : [0.0, 1.0], 1024, 0.0), $texts));
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     $customers = [];
     $thread    = function (string $question, string $reply, string $key, ?string $customerKey = null) use ($shop, &$customers) {
@@ -8657,6 +8658,7 @@ test('what agents keep telling different customers is learned and put to staff o
     $vat   = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->sole();
     expect($twice)->toMatchArray(['replies' => 2, 'rules' => 2, 'promoted' => 0])
         ->and($vat->only(['status', 'customers_count']))->toBe(['status' => 'candidate', 'customers_count' => 2])
+        ->and($vat->embedding)->toHaveCount(1024)
         ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->not->toContain($vat->id)
         ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(0);
 
@@ -8691,6 +8693,14 @@ test('what agents keep telling different customers is learned and put to staff o
     $thread('Do you ship to Spain?', 'Yes, we deliver to Spain within five working days of dispatch.', 'no-answer');
     expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['rules'])->toBe(0)
         ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-no-answer')->value('learned_at'))->toBeNull();
+
+    $rule = ['general' => true, 'title' => 'Missing items', 'note' => 'A missing item on a shipped order is credited to the account.', 'temporary' => false];
+    $thread('One candle is missing', 'Sorry about that, we have credited the missing candle to your account.', 'years-ago');
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'q-years-ago')->update(['sent_at' => now()->subYears(5)->subDay()]);
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-years-ago')->update(['sent_at' => now()->subYears(5)]);
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(1)
+        ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop, 0)['replies'])->toBe(1)
+        ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-years-ago')->value('learned_at'))->not->toBeNull();
 
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
