@@ -139,6 +139,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
@@ -4701,6 +4702,8 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->parent_id)->toBe($this->orgPartner->id)
             ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
+            ->and($stockDelivery->reference)->toBe($order->deliveryNotes()->first()->reference)
+            ->and(StorePartnerStockDeliveryFromDeliveryNote::make()->reference($order->deliveryNotes()->first(), $stockDelivery->organisation))->not->toBe($stockDelivery->reference)
             ->and($stockDelivery->items()->count())->toBe(1)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id)
             ->and((float) $stockDelivery->items()->first()->net_amount)->toBe((float) $order->deliveryNotes()->first()->deliveryNoteItems()->first()->transaction->net_amount);
