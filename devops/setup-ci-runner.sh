@@ -40,9 +40,16 @@ if [[ ! -d /etc/postgresql/18/ci ]]; then
   chown pgci:pgci /var/lib/postgresql/18/ci
   pg_createcluster 18 ci -p 5433 -u pgci -g pgci -d /var/lib/postgresql/18/ci -s /run/postgresql-ci --locale C.UTF-8
 fi
-install -D -o pgci -g pgci -m 644 "$DEVOPS/postgres/helio-ci.conf" /etc/postgresql/18/ci/conf.d/99-ci.conf
-systemctl enable postgresql@18-ci
-systemctl restart postgresql@18-ci
+# A restart drops every connection, so a running CI job would lose its test databases: only on a real change.
+ci_conf=/etc/postgresql/18/ci/conf.d/99-ci.conf
+if cmp -s "$DEVOPS/postgres/helio-ci.conf" "$ci_conf" && systemctl is-active -q postgresql@18-ci; then
+  systemctl enable -q postgresql@18-ci
+  echo "test postgres unchanged, not restarted"
+else
+  install -D -o pgci -g pgci -m 644 "$DEVOPS/postgres/helio-ci.conf" "$ci_conf"
+  systemctl enable postgresql@18-ci
+  systemctl restart postgresql@18-ci
+fi
 
 echo "fence checks:"
 fail=0
