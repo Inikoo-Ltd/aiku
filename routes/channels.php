@@ -122,6 +122,10 @@ Broadcast::channel('grp.{groupID}.general', function (User $user, int $groupID) 
     return $user->group_id === $groupID;
 });
 
+Broadcast::channel('grp.{groupID}.devops.ci', function (User $user, int $groupID) {
+    return $user->group_id === $groupID && $user->hasGroupAccess();
+});
+
 Broadcast::channel('grp.{groupID}.devops.servers', function (User $user, int $groupID) {
     return $user->group_id === $groupID && $user->hasGroupAccess();
 });

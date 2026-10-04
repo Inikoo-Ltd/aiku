@@ -543,3 +543,69 @@ it('records server usage samples, rolls them into hours and shows them on the de
     $this->get(route('grp.devops.servers.show', ['server' => 'metrics-box', 'range' => '30d']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('range', '30d')->has('series', 1)->where('series.0.cpu_max', fn ($value) => (float) $value === 90.0)->where('series.0.processes', 900));
 });
+
+it('records github workflow runs, jobs and deploy task progress and shows them on the devops dashboard', function () {
+    Config::set('services.github.webhook_secret', 'test-webhook-secret');
+    Config::set('app.devops_token', 'test-devops-token');
+    Event::fake([App\Events\BroadcastCiRunUpdated::class]);
+
+    $sendWebhook = function (string $event, array $payload, ?string $secret = 'test-webhook-secret') {
+        $body = json_encode($payload);
+
+        return $this->call('POST', route('webhooks.github'), [], [], [], [
+            'CONTENT_TYPE'             => 'application/json',
+            'HTTP_ACCEPT'              => 'application/json',
+            'HTTP_X_GITHUB_EVENT'      => $event,
+            'HTTP_X_HUB_SIGNATURE_256' => 'sha256='.hash_hmac('sha256', $body, (string) $secret),
+        ], $body);
+    };
+
+    $run = [
+        'id' => 9001, 'name' => 'Deploy Aiku', 'head_branch' => 'production', 'head_sha' => str_repeat('a', 40), 'run_attempt' => 1,
+        'head_commit' => ['message' => "📈 Server metrics\n\nmore detail"], 'actor' => ['login' => 'raul'],
+        'status' => 'in_progress', 'conclusion' => null, 'html_url' => 'https://github.com/x/y/actions/runs/9001',
+        'run_started_at' => now()->subMinutes(2)->toIso8601String(), 'updated_at' => now()->toIso8601String(),
+    ];
+
+    $sendWebhook('workflow_run', ['workflow_run' => $run], 'wrong-secret')->assertForbidden();
+    $sendWebhook('workflow_run', ['workflow_run' => $run])->assertOk();
+    $sendWebhook('workflow_job', ['workflow_job' => [
+        'id' => 77, 'run_id' => 9001, 'workflow_name' => 'Deploy Aiku', 'name' => 'Deploy aiku 🚀', 'status' => 'in_progress', 'conclusion' => null,
+        'started_at' => now()->subMinutes(2)->toIso8601String(), 'completed_at' => null, 'html_url' => null,
+        'steps' => [
+            ['number' => 1, 'name' => 'Checkout repo', 'status' => 'completed', 'conclusion' => 'success', 'started_at' => null, 'completed_at' => null],
+            ['number' => 2, 'name' => 'Launch 🚀', 'status' => 'in_progress', 'conclusion' => null, 'started_at' => null, 'completed_at' => null],
+        ],
+    ]])->assertOk();
+    $sendWebhook('ping', ['zen' => 'hi'])->assertOk();
+
+    $progress = fn (array $data) => $this->postJson(route('devops.deploy-progress.store'), ['run_id' => 9001, 'total' => 30, ...$data], ['X-DEVOPS-TOKEN' => 'test-devops-token']);
+    $this->postJson(route('devops.deploy-progress.store'), ['run_id' => 9001, 'task' => 'deploy:migrate', 'state' => 'start'])->assertForbidden();
+    $progress(['task' => 'deploy:prepare', 'state' => 'start', 'host' => 'aiku', 'index' => 1])->assertOk();
+    $progress(['task' => 'deploy:prepare', 'state' => 'start', 'host' => 'aiku_litio', 'index' => 1])->assertOk();
+    $progress(['task' => 'deploy:prepare', 'state' => 'done', 'host' => 'aiku', 'index' => 1])->assertOk();
+    $progress(['task' => 'deploy:prepare', 'state' => 'done', 'host' => 'aiku_litio', 'index' => 1])->assertOk();
+    $progress(['task' => 'deploy:migrate', 'state' => 'start', 'host' => 'aiku', 'index' => 2])->assertOk();
+    $progress(['task' => 'deploy:migrate', 'state' => 'sideways'])->assertUnprocessable();
+
+    Event::assertDispatchedTimes(App\Events\BroadcastCiRunUpdated::class, 7);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser())
+        ->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Devops/Dashboard', false)
+            ->where('ciRuns.deploy.github_run_id', 9001)
+            ->where('ciRuns.deploy.head_message', '📈 Server metrics')
+            ->where('ciRuns.deploy.jobs.0.steps.1.name', 'Launch 🚀')
+            ->where('ciRuns.deploy.deploy_total', 30)
+            ->where('ciRuns.deploy.deploy_done', 1)
+            ->where('ciRuns.deploy.deploy_tasks.0.hosts', ['aiku', 'aiku_litio'])
+            ->where('ciRuns.deploy.deploy_tasks.1.state', 'start'));
+
+    $sendWebhook('workflow_run', ['workflow_run' => [...$run, 'status' => 'completed', 'conclusion' => 'failure']])->assertOk();
+
+    $this->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('ciRuns.deploy.conclusion', 'failure')
+            ->where('ciRuns.deploy.deploy_tasks.1.state', 'failed'));
+});

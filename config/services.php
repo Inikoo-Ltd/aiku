@@ -157,6 +157,7 @@ return [
     'github' => [
         'token' => env('GITHUB_TOKEN'),
         'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
     ],
     'klipy' => [
         'key' => env('KLIPY_API_KEY'),

@@ -549,7 +549,7 @@ task('deploy:prune-node-modules', function () {
 });
 
 desc('Deploys your project');
-task('deploy', [
+$deploySteps = [
     'deploy:unlock',
     'debug:writable',
     'deploy:prepare',
@@ -579,7 +579,36 @@ task('deploy', [
     'deploy:translations:setup-guess-language',
     'deploy:aiku-public:index-notes',
     'deploy:aiku-public:indexnow',
-]);
+];
+
+task('deploy', $deploySteps);
+
+// ponytail: fire-and-forget, 3s cap, never fails the deploy. aiku reloads itself
+// mid-deploy, so a report sent while Octane restarts is simply lost; the GitHub
+// webhook still shows the run's real outcome.
+function reportDeployProgress(string $task, string $state, int $index, int $total): void
+{
+    $runId = getenv('GITHUB_RUN_ID');
+    $token = getenv('DEVOPS_TOKEN');
+    if (!$runId || !$token || currentHost()->get('environment') !== 'production') {
+        return;
+    }
+
+    @file_get_contents(getenv('DEPLOY_PROGRESS_URL') ?: 'https://aiku.io/devops/deploy-progress', false, stream_context_create([
+        'http' => [
+            'method'        => 'POST',
+            'header'        => "Content-Type: application/json\r\nAccept: application/json\r\nX-DEVOPS-TOKEN: $token\r\n",
+            'content'       => json_encode(['run_id' => (int) $runId, 'task' => $task, 'state' => $state, 'host' => currentHost()->getAlias(), 'index' => $index, 'total' => $total]),
+            'timeout'       => 3,
+            'ignore_errors' => true,
+        ],
+    ]));
+}
+
+foreach ($deploySteps as $position => $deployStep) {
+    before($deployStep, fn () => reportDeployProgress($deployStep, 'start', $position + 1, count($deploySteps)));
+    after($deployStep, fn () => reportDeployProgress($deployStep, 'done', $position + 1, count($deploySteps)));
+}
 
 // ponytail: same as the stock cleanup, plus two things it lacks. A release is
 // skipped while any process still has its cwd inside it -- horizon workers and

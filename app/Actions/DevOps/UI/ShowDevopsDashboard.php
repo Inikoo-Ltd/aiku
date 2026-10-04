@@ -10,6 +10,7 @@ namespace App\Actions\DevOps\UI;
 
 use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\OrgAction;
+use App\Models\DevOps\CiRun;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
@@ -66,6 +67,7 @@ class ShowDevopsDashboard extends OrgAction
                     ],
                 ],
                 'servers'          => $servers = $this->getServerSummaries(),
+                'ciRuns'           => $this->getCiRuns(),
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
 
             ]
@@ -118,6 +120,84 @@ class ShowDevopsDashboard extends OrgAction
             })
             ->sortBy(fn (object $server) => array_search($server->slug, array_keys(self::SERVER_ROLES)) === false ? PHP_INT_MAX : array_search($server->slug, array_keys(self::SERVER_ROLES)))
             ->values();
+    }
+
+    public const string DEPLOY_WORKFLOW = 'Deploy Aiku';
+
+    public const string TESTS_WORKFLOW = 'Backend Tests';
+
+    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null} */
+    public function getCiRuns(): array
+    {
+        $recent = fn (string $workflow) => CiRun::where('workflow', $workflow)->orderByDesc('github_run_id')->limit(6)->get();
+
+        $deploys = $recent(self::DEPLOY_WORKFLOW);
+        $tests   = CiRun::where('workflow', self::TESTS_WORKFLOW)->where('branch', 'main')->orderByDesc('github_run_id')->limit(6)->get();
+
+        $usualDeploySeconds = CiRun::where('workflow', self::DEPLOY_WORKFLOW)->where('conclusion', 'success')
+            ->whereNotNull('started_at')->whereNotNull('completed_at')
+            ->orderByDesc('github_run_id')->limit(10)
+            ->selectRaw('extract(epoch from completed_at - started_at) as seconds')->pluck('seconds')
+            ->sort()->values();
+
+        return [
+            'deploy'               => $deploys->first() ? $this->ciRunDetail($deploys->first()) : null,
+            'tests'                => $tests->first() ? $this->ciRunDetail($tests->first()) : null,
+            'recent_deploys'       => $deploys->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
+            'recent_tests'         => $tests->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
+            'usual_deploy_seconds' => $usualDeploySeconds->isEmpty() ? null : (int) $usualDeploySeconds[intdiv($usualDeploySeconds->count(), 2)],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function ciRunSummary(CiRun $ciRun): array
+    {
+        return [
+            'github_run_id' => $ciRun->github_run_id,
+            'workflow'      => $ciRun->workflow,
+            'branch'        => $ciRun->branch,
+            'head_sha'      => $ciRun->head_sha ? substr($ciRun->head_sha, 0, 10) : null,
+            'head_message'  => $ciRun->head_message ? strtok($ciRun->head_message, "\n") : null,
+            'actor'         => $ciRun->actor,
+            'status'        => $ciRun->status,
+            'conclusion'    => $ciRun->conclusion,
+            'html_url'      => $ciRun->html_url,
+            'started_at'    => $ciRun->started_at?->toIso8601String(),
+            'completed_at'  => $ciRun->completed_at?->toIso8601String(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function ciRunDetail(CiRun $ciRun): array
+    {
+        $tasks = [];
+        $total = null;
+        foreach ($ciRun->deploy_tasks as $event) {
+            $task          = $tasks[$event['task']] ?? ['task' => $event['task'], 'state' => 'start', 'started_at' => $event['at'], 'finished_at' => null, 'hosts' => [], 'running' => 0, 'failed' => false];
+            $task['hosts'] = array_values(array_unique(array_filter([...$task['hosts'], $event['host'] ?? null])));
+            if ($event['state'] === 'start') {
+                $task['running']++;
+            } else {
+                $task['running']     = max(0, $task['running'] - 1);
+                $task['failed']      = $task['failed'] || $event['state'] === 'failed';
+                $task['finished_at'] = $event['at'];
+            }
+            $task['state']         = $task['failed'] ? 'failed' : ($task['running'] > 0 ? 'start' : 'done');
+            $tasks[$event['task']] = $task;
+            $total                 = $event['total'] ?? $total;
+        }
+        $isFinished = $ciRun->status === 'completed';
+        $tasks      = array_map(fn (array $task) => [...array_diff_key($task, ['running' => true, 'failed' => true]), 'state' => $isFinished && $task['state'] === 'start' ? 'failed' : $task['state']], $tasks);
+
+        $jobs = collect($ciRun->jobs)->sortBy('started_at')->values()->all();
+
+        return [
+            ...$this->ciRunSummary($ciRun),
+            'jobs'         => $jobs,
+            'deploy_tasks' => array_values($tasks),
+            'deploy_total' => $total,
+            'deploy_done'  => count(array_filter($tasks, fn (array $task) => $task['state'] === 'done')),
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array

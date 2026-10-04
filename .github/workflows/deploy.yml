@@ -75,6 +75,8 @@ jobs:
           echo "GIT_HTTP_AUTH=$auth" >> "$GITHUB_ENV"
       - name: Launch 🚀
         uses: deployphp/action@v1
+        env:
+          DEVOPS_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
         with:
           dep: deploy
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG_V2 }}
