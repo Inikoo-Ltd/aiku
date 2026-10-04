@@ -609,3 +609,25 @@ it('records github workflow runs, jobs and deploy task progress and shows them o
             ->where('ciRuns.deploy.conclusion', 'failure')
             ->where('ciRuns.deploy.deploy_tasks.1.state', 'failed'));
 });
+
+it('imports recent github workflow runs with their jobs', function () {
+    Event::fake([App\Events\BroadcastCiRunUpdated::class]);
+    Http::fake([
+        'api.github.com/repos/*/actions/runs/9100/jobs*' => Http::response(['jobs' => [[
+            'id' => 501, 'run_id' => 9100, 'workflow_name' => 'Backend Tests', 'name' => 'tests', 'status' => 'completed', 'conclusion' => 'failure',
+            'started_at' => '2026-10-04T10:00:00Z', 'completed_at' => '2026-10-04T10:12:00Z', 'html_url' => null,
+            'steps' => [['number' => 1, 'name' => 'Run tests', 'status' => 'completed', 'conclusion' => 'failure', 'started_at' => null, 'completed_at' => null]],
+        ]]]),
+        'api.github.com/repos/*/actions/runs*' => Http::response(['workflow_runs' => [[
+            'id' => 9100, 'name' => 'Backend Tests', 'head_branch' => 'main', 'head_sha' => str_repeat('b', 40), 'run_attempt' => 1,
+            'head_commit' => ['message' => 'Fix things'], 'actor' => ['login' => 'raul'], 'status' => 'completed', 'conclusion' => 'failure',
+            'html_url' => null, 'run_started_at' => '2026-10-04T10:00:00Z', 'updated_at' => '2026-10-04T10:12:30Z',
+        ]]]),
+    ]);
+
+    $this->artisan('ci-runs:import', ['--runs' => 5])->assertSuccessful();
+
+    $ciRun = App\Models\DevOps\CiRun::where('github_run_id', 9100)->firstOrFail();
+    expect($ciRun->conclusion)->toBe('failure')
+        ->and($ciRun->jobs['501']['steps'][0]['name'])->toBe('Run tests');
+});
