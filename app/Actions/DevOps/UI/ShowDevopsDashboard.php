@@ -62,7 +62,7 @@ class ShowDevopsDashboard extends OrgAction
                 'pageHead'        => [
                     'title' => $title,
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-server'],
+                        'icon'  => ['fal', 'fa-tools'],
                         'title' => $title,
                     ],
                 ],

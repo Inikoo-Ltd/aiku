@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase, faFlask, faRocket, faServer, faSpinnerThird } from "@fal"
+import { faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -19,7 +19,7 @@ import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunC
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase, faFlask, faRocket, faServer, faSpinnerThird)
+library.add(faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools)
 
 const props = defineProps<{
     title: string
