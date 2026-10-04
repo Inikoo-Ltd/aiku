@@ -68,7 +68,9 @@ export interface TopProcess { name: string, cpu_percent: number, max_core_percen
 
 const topProcesses = computed<TopProcess[]>(() => props.server.top_processes ? JSON.parse(props.server.top_processes) : [])
 
-const formatCores = (percentOfCore: number) => percentOfCore >= 100 ? `${(percentOfCore / 100).toFixed(1)} ${ctrans("cores")}` : `${Math.round(percentOfCore)}% ${ctrans("of a core")}`
+const totalCores = (process: TopProcess) => props.server.cpu_cores ? (Number(process.cpu_percent) / 100) * props.server.cpu_cores : null
+
+const isPinned = (process: TopProcess) => process.max_core_percent >= 95 && process.max_core_percent <= 105
 
 const dataDisks = computed(() => disks.value.filter(disk => !disk.mount.startsWith("/boot")))
 
@@ -154,19 +156,22 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
             </tbody>
         </table>
         <table v-if="topProcesses.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
-            <colgroup><col><col class="w-14"><col class="w-28"></colgroup>
+            <colgroup><col><col class="w-16"><col class="w-14"></colgroup>
             <thead class="text-gray-400">
                 <tr>
                     <th class="pb-1 text-left font-normal">{{ ctrans("Busiest, last minute") }}</th>
-                    <th class="pb-1 text-right font-normal">{{ ctrans("CPU") }}</th>
-                    <th class="pb-1 text-right font-normal">{{ ctrans("Top process") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Server") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Cores") }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="process in topProcesses" :key="process.name">
-                    <td class="truncate py-1 text-gray-600" :title="process.name">{{ process.name }}<span v-if="process.processes > 1" class="text-gray-400"> ×{{ process.processes }}</span></td>
-                    <td class="py-1 text-right">{{ Number(process.cpu_percent).toFixed(1) }}%</td>
-                    <td class="py-1 text-right" :class="process.max_core_percent >= 95 ? 'text-red-600' : 'text-gray-500'">{{ formatCores(process.max_core_percent) }}</td>
+                    <td class="py-1 text-gray-600">
+                        <div class="truncate" :title="process.name">{{ process.name }}<span v-if="process.processes > 1" class="text-gray-400"> ×{{ process.processes }}</span></div>
+                        <div v-if="isPinned(process)" class="text-red-600">{{ ctrans("1 process at 100% of a core") }}</div>
+                    </td>
+                    <td class="py-1 text-right align-top">{{ Number(process.cpu_percent).toFixed(1) }}%</td>
+                    <td class="py-1 text-right align-top text-gray-500">{{ totalCores(process)?.toFixed(1) ?? "-" }}</td>
                 </tr>
             </tbody>
         </table>
