@@ -66,6 +66,11 @@ jobs:
         run: redis-server --port 0 --unixsocket "$REDIS_SOCKET" --unixsocketperm 700 --save '' --appendonly no --maxmemory 512mb --daemonize yes --pidfile /home/aiku_test/redis-ci.pid --logfile /home/aiku_test/redis-ci.log
       - name: Run test without coverage
         run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-6} --log-junit junit.xml
+      - name: Report test results to aiku
+        if: ${{ !cancelled() }}
+        env:
+          DEVOPS_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
+        run: /usr/bin/php8.4 devops/ci/report-test-results.php junit.xml
       - name: Editorial translation audit
         if: ${{ !cancelled() }}
         continue-on-error: true

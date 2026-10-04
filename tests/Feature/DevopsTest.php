@@ -647,3 +647,30 @@ it('imports recent github workflow runs with their jobs', function () {
         ->and($ciRun->jobs)->toHaveCount(1)
         ->and($ciRun->jobs['501']['steps'][0]['name'])->toBe('Run tests');
 });
+
+it('records backend test results and shows counts, failures and daily stats on the tests tab', function () {
+    Config::set('app.devops_token', 'test-devops-token');
+    Event::fake([App\Events\BroadcastCiRunUpdated::class]);
+
+    App\Models\DevOps\CiRun::create(['github_run_id' => 9201, 'workflow' => 'Backend Tests', 'branch' => 'main', 'status' => 'completed', 'conclusion' => 'failure', 'started_at' => now()->subMinutes(20), 'completed_at' => now()->subMinutes(8)]);
+    App\Models\DevOps\CiRun::create(['github_run_id' => 9200, 'workflow' => 'Backend Tests', 'branch' => 'main', 'status' => 'completed', 'conclusion' => 'success', 'started_at' => now()->subHours(3), 'completed_at' => now()->subHours(3)->addMinutes(10), 'test_results' => ['tests' => 5000, 'failures' => 0, 'errors' => 0, 'skipped' => 4]]);
+
+    $results = ['run_id' => 9201, 'tests' => 5003, 'assertions' => 20000, 'failures' => 2, 'errors' => 1, 'skipped' => 4, 'seconds' => 640.5, 'failed' => [['test' => 'Tests\Feature\OrderingTest › it submits', 'message' => 'Failed asserting that false is true.']]];
+    $this->postJson(route('devops.test-results.store'), $results)->assertForbidden();
+    $this->postJson(route('devops.test-results.store'), $results, ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();
+    Event::assertDispatched(App\Events\BroadcastCiRunUpdated::class);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser())
+        ->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Devops/Dashboard', false)
+            ->where('ciRuns.tests.github_run_id', 9201)
+            ->where('ciRuns.tests.test_counts', ['tests' => 5003, 'failed' => 3, 'skipped' => 4])
+            ->where('ciRuns.tests.failed_tests.0.test', 'Tests\Feature\OrderingTest › it submits')
+            ->where('ciRuns.recent_tests.0.test_counts.tests', 5000)
+            ->where('ciRuns.test_stats.runs', fn (int $runs) => $runs >= 2)
+            ->where('ciRuns.test_stats.pass_rate', fn ($rate) => $rate > 0 && $rate < 100)
+            ->where('ciRuns.test_stats.average_seconds', 600)
+            ->where('ciRuns.test_stats.average_tests', 5001)
+            ->has('ciRuns.test_stats.daily', 14));
+});

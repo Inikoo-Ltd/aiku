@@ -8,6 +8,7 @@
 
 
 use App\Actions\DevOps\CiRun\StoreDeployProgress;
+use App\Actions\DevOps\CiRun\StoreTestResults;
 use App\Actions\DevOps\Server\GetServerInfo;
 use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\DevOps\Server\StoreServerMetric;
@@ -18,3 +19,4 @@ Route::get('/server/{server}', GetServerInfo::class)->name('devops.host.info');
 Route::post('/metrics/{serverSlug}', StoreServerMetric::class)->name('devops.host.metrics.store');
 Route::post('/metrics/{serverSlug}/live', StoreServerLiveMetric::class)->name('devops.host.metrics.live.store')->middleware(Sample::rate(0.05));
 Route::post('/deploy-progress', StoreDeployProgress::class)->name('devops.deploy-progress.store');
+Route::post('/test-results', StoreTestResults::class)->name('devops.test-results.store');

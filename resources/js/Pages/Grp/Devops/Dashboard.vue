@@ -16,6 +16,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunCard.vue"
+import TestStats, { TestStatsData } from "@/Components/DevOps/TestStats.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
@@ -33,6 +34,7 @@ const props = defineProps<{
         recent_tests: CiRunSummary[]
         usual_deploy_seconds: number | null
         usual_tests_seconds: number | null
+        test_stats: TestStatsData
     }
 }>()
 
@@ -104,7 +106,8 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
         <div v-if="currentTab === 'deployments'" class="mb-6 max-w-4xl">
             <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
         </div>
-        <div v-if="currentTab === 'tests'" class="mb-6 max-w-4xl">
+        <div v-if="currentTab === 'tests'" class="mb-6 max-w-4xl space-y-4">
+            <TestStats :stats="ciRuns.test_stats" />
             <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" :usual-seconds="ciRuns.usual_tests_seconds" />
         </div>
 

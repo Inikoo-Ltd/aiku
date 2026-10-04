@@ -18,12 +18,14 @@ export interface CiRunSummary {
     html_url: string | null
     started_at: string | null
     completed_at: string | null
+    test_counts: { tests: number, failed: number, skipped: number } | null
 }
 export interface CiRunDetail extends CiRunSummary {
     jobs: CiJob[]
     deploy_tasks: DeployTask[]
     deploy_total: number | null
     deploy_done: number
+    failed_tests: { test: string, message: string | null }[]
 }
 
 const props = defineProps<{ title: string, run: CiRunDetail | null, recent: CiRunSummary[], usualSeconds?: number | null }>()
@@ -89,6 +91,10 @@ const stepColour = (status: string, conclusion: string | null) =>
     conclusion === "success" ? "text-emerald-600" : conclusion === "failure" ? "text-red-600" : status === "in_progress" ? "text-sky-600 animate-pulse" : "text-gray-300"
 
 const showAllTasks = ref(false)
+
+const formatCount = (count: number) => count.toLocaleString()
+
+const hasCounts = computed(() => props.recent.some(previous => previous.test_counts))
 </script>
 
 <template>
@@ -111,6 +117,19 @@ const showAllTasks = ref(false)
                 <span v-else>{{ ctrans("took") }} {{ formatDuration(elapsed) }}<template v-if="usualSeconds"> / {{ ctrans("usually") }} {{ formatDuration(usualSeconds) }}</template></span>
                 <span v-if="eta" :class="eta.late ? 'text-amber-600' : 'text-sky-700'">{{ eta.text }}</span>
             </div>
+
+            <div v-if="run.test_counts" class="mt-2 flex flex-wrap gap-x-3 text-sm tabular-nums">
+                <span class="text-emerald-700">{{ formatCount(run.test_counts.tests - run.test_counts.failed - run.test_counts.skipped) }} {{ ctrans("passed") }}</span>
+                <span v-if="run.test_counts.failed" class="font-medium text-red-700">{{ formatCount(run.test_counts.failed) }} {{ ctrans("failed") }}</span>
+                <span v-if="run.test_counts.skipped" class="text-gray-500">{{ formatCount(run.test_counts.skipped) }} {{ ctrans("skipped") }}</span>
+                <span class="text-gray-400">{{ ctrans("of") }} {{ formatCount(run.test_counts.tests) }}</span>
+            </div>
+            <ul v-if="run.failed_tests.length" class="mt-2 space-y-1 rounded bg-red-50 p-2 text-xs">
+                <li v-for="failed in run.failed_tests" :key="failed.test">
+                    <div class="font-medium text-red-800">✗ {{ failed.test }}</div>
+                    <div v-if="failed.message" class="truncate text-red-700" :title="failed.message">{{ failed.message }}</div>
+                </li>
+            </ul>
 
             <div v-if="progress !== null" class="mt-3">
                 <div class="h-1.5 rounded bg-gray-100">
@@ -157,15 +176,21 @@ const showAllTasks = ref(false)
         </template>
 
         <table v-if="recent.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
-            <colgroup><col class="w-4"><col><col class="w-24"><col class="w-16"></colgroup>
+            <colgroup><col class="w-4"><col><col v-if="hasCounts" class="w-28"><col class="w-24"><col class="w-16"></colgroup>
             <thead class="text-gray-400">
-                <tr><th colspan="4" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
+                <tr><th colspan="5" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="previous in recent" :key="previous.github_run_id">
                     <td class="w-4 py-1"><span class="inline-block h-1.5 w-1.5 rounded-full" :class="outcome(previous.status, previous.conclusion).dot" /></td>
                     <td class="truncate py-1 text-gray-600">
                         <a v-if="previous.html_url" :href="previous.html_url" target="_blank" rel="noopener" class="hover:underline">{{ previous.head_message ?? previous.head_sha }}</a>
+                    </td>
+                    <td v-if="hasCounts" class="py-1 text-right">
+                        <template v-if="previous.test_counts">
+                            <span v-if="previous.test_counts.failed" class="text-red-700">{{ formatCount(previous.test_counts.failed) }} {{ ctrans("failed") }}</span>
+                            <span v-else class="text-emerald-700">{{ formatCount(previous.test_counts.tests) }} ✓</span>
+                        </template>
                     </td>
                     <td class="py-1 text-right text-gray-500" :title="when(previous.started_at)">{{ ago(previous.started_at) }}</td>
                     <td class="py-1 text-right text-gray-500">{{ formatDuration(seconds(previous.started_at, previous.completed_at)) }}</td>

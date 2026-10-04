@@ -24,6 +24,7 @@ class CiRun extends Model
         return [
             'jobs'         => 'array',
             'deploy_tasks' => 'array',
+            'test_results' => 'array',
             'started_at'   => 'datetime',
             'completed_at' => 'datetime',
         ];

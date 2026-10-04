@@ -130,7 +130,7 @@ class ShowDevopsDashboard extends OrgAction
     /** @var array<string, string> */
     public const array DEPLOY_HOST_NAMES = ['aiku' => 'boro', 'aiku_litio' => 'litio'];
 
-    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null, usual_tests_seconds: int|null} */
+    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null, usual_tests_seconds: int|null, test_stats: array<string, mixed>} */
     public function getCiRuns(): array
     {
         $recent = fn (string $workflow) => CiRun::where('workflow', $workflow)->orderByDesc('github_run_id')->limit(6)->get();
@@ -145,6 +145,34 @@ class ShowDevopsDashboard extends OrgAction
             'recent_tests'         => $tests->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
             'usual_deploy_seconds' => $this->usualSeconds(self::DEPLOY_WORKFLOW),
             'usual_tests_seconds'  => $this->usualSeconds(self::TESTS_WORKFLOW, 'main'),
+            'test_stats'           => $this->getTestStats(),
+        ];
+    }
+
+    /** @return array{days: int, runs: int, runs_per_day: float, pass_rate: float|null, average_seconds: int|null, average_tests: int|null, daily: array<int, array{day: string, passed: int, failed: int}>} */
+    public function getTestStats(int $days = 14): array
+    {
+        $runs = CiRun::where('workflow', self::TESTS_WORKFLOW)->where('branch', 'main')
+            ->where('started_at', '>=', now()->subDays($days)->startOfDay())
+            ->where('status', 'completed')->whereIn('conclusion', ['success', 'failure'])
+            ->get(['started_at', 'completed_at', 'conclusion', 'test_results']);
+
+        $passed = $runs->where('conclusion', 'success');
+        $tests  = $runs->map(fn (CiRun $ciRun) => $ciRun->test_results['tests'] ?? null)->filter();
+
+        return [
+            'days'            => $days,
+            'runs'            => $runs->count(),
+            'runs_per_day'    => round($runs->count() / $days, 1),
+            'pass_rate'       => $runs->isEmpty() ? null : round($passed->count() / $runs->count() * 100, 1),
+            'average_seconds' => $passed->isEmpty() ? null : (int) $passed->avg(fn (CiRun $ciRun) => $ciRun->started_at && $ciRun->completed_at ? $ciRun->started_at->diffInSeconds($ciRun->completed_at) : null),
+            'average_tests'   => $tests->isEmpty() ? null : (int) $tests->avg(),
+            'daily'           => collect(range($days - 1, 0))->map(function (int $daysAgo) use ($runs) {
+                $day     = now()->subDays($daysAgo)->toDateString();
+                $dayRuns = $runs->filter(fn (CiRun $ciRun) => $ciRun->started_at->toDateString() === $day);
+
+                return ['day' => $day, 'passed' => $dayRuns->where('conclusion', 'success')->count(), 'failed' => $dayRuns->where('conclusion', 'failure')->count()];
+            })->all(),
         ];
     }
 
@@ -175,6 +203,11 @@ class ShowDevopsDashboard extends OrgAction
             'html_url'      => $ciRun->html_url,
             'started_at'    => $ciRun->started_at?->toIso8601String(),
             'completed_at'  => $ciRun->completed_at?->toIso8601String(),
+            'test_counts'   => $ciRun->test_results && !($ciRun->test_results['missing'] ?? false) ? [
+                'tests'   => $ciRun->test_results['tests'] ?? 0,
+                'failed'  => ($ciRun->test_results['failures'] ?? 0) + ($ciRun->test_results['errors'] ?? 0),
+                'skipped' => $ciRun->test_results['skipped'] ?? 0,
+            ] : null,
         ];
     }
 
@@ -208,6 +241,7 @@ class ShowDevopsDashboard extends OrgAction
             'jobs'         => $jobs,
             'deploy_tasks' => array_values($tasks),
             'deploy_total' => $total,
+            'failed_tests' => $ciRun->test_results['failed'] ?? [],
             'deploy_done'  => count(array_filter($tasks, fn (array $task) => $task['state'] === 'done')),
         ];
     }
