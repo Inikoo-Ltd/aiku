@@ -70,6 +70,7 @@ class ShowDevopsDashboard extends OrgAction
                 'ciRuns'           => $this->getCiRuns(),
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
                 'telemetry'        => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->overview(GetNightOwlTelemetry::range($request->query('range')))),
+                'telemetryException' => Inertia::optional(fn () => $request->filled('exception') ? app(GetNightOwlTelemetry::class)->exception((string) $request->query('exception'), $request->integer('occurrence') ?: null, $request->query('occurrence_at')) : null),
                 'telemetryTrace'   => Inertia::optional(fn () => $request->filled(['trace', 'id', 'at']) ? app(GetNightOwlTelemetry::class)->trace((string) $request->query('trace'), (int) $request->query('id'), (string) $request->query('at')) : null),
 
             ]

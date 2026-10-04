@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import SqlCode from "@/Components/DevOps/SqlCode.vue"
 import TraceWaterfall, { formatMicroseconds, Trace } from "@/Components/DevOps/TraceWaterfall.vue"
+import ExceptionDetail, { ExceptionDetailData, ExceptionOccurrence } from "@/Components/DevOps/ExceptionDetail.vue"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler)
 
@@ -15,7 +16,7 @@ type TopRow = { group_hash: string, label: string, calls: number, total_duration
 type SlowRequest = { id: number, created_at: string, url: string, status_code: number, duration: number, queries: number, cache_events: number, outgoing_requests: number, route_name: string | null, method: string | null }
 type SlowJob = { id: number, created_at: string, job_class: string | null, queue: string | null, status: string | null, attempt: number, duration: number, queries: number, cache_events: number, outgoing_requests: number }
 type SlowCommand = { id: number, created_at: string, name: string, command: string | null, exit_code: number | null, duration: number, queries: number, cache_events: number, outgoing_requests: number }
-type Issue = { id: number, type: string, status: string, priority: string | null, exception_class: string | null, exception_message: string | null, last_seen_at: string, occurrences_count: number, users_count: number }
+type ExceptionGroup = { fingerprint: string, occurrences: number, handled: number, unhandled: number, last_bucket: string, exception_class: string | null, exception_message: string | null, status: string | null, priority: string | null, last_seen_at: string | null, users_count: number | null }
 
 export type Telemetry = {
     range: string
@@ -30,13 +31,13 @@ export type Telemetry = {
     queries: TopRow[]
     outgoing: TopRow[]
     cache: { hits: number, misses: number, writes: number, fails: number }
-    issues: Issue[]
+    exceptionGroups: ExceptionGroup[]
     slowRequests: SlowRequest[]
     slowJobs: SlowJob[]
     slowCommands: SlowCommand[]
 }
 
-const props = defineProps<{ telemetry?: Telemetry | null, trace?: Trace | null }>()
+const props = defineProps<{ telemetry?: Telemetry | null, trace?: Trace | null, exception?: ExceptionDetailData | null }>()
 
 const loading = ref(false)
 const load = (range: string) => {
@@ -44,6 +45,16 @@ const load = (range: string) => {
     router.reload({ only: ["telemetry"], data: { range }, onFinish: () => loading.value = false })
 }
 onMounted(() => !props.telemetry && load(new URLSearchParams(window.location.search).get("range") ?? "24h"))
+
+const exceptionLoading = ref(false)
+const isExceptionOpen = ref(Boolean(props.exception))
+const openException = (fingerprint: string, occurrence?: ExceptionOccurrence) => {
+    exceptionLoading.value = true
+    router.reload({ only: ["telemetryException"], data: { exception: fingerprint, occurrence: occurrence?.id ?? null, occurrence_at: occurrence?.created_at ?? null }, onFinish: () => {
+        exceptionLoading.value = false
+        isExceptionOpen.value = true
+    } })
+}
 
 const traceLoading = ref(false)
 const isTraceOpen = ref(Boolean(props.trace))
@@ -113,7 +124,7 @@ const durationCards = computed(() => {
     ]
 })
 
-type TableKey = "slowRequests" | "slowJobs" | "slowCommands" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "issues"
+type TableKey = "slowRequests" | "slowJobs" | "slowCommands" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "exceptionGroups"
 const tables = computed<Record<TableKey, string>>(() => ({
     slowRequests: ctrans("Slowest requests (last hour)"),
     slowJobs: ctrans("Slowest jobs (last hour)"),
@@ -124,7 +135,7 @@ const tables = computed<Record<TableKey, string>>(() => ({
     commands: ctrans("Commands"),
     scheduledTasks: ctrans("Scheduled tasks"),
     outgoing: ctrans("Outgoing HTTP"),
-    issues: ctrans("Issues"),
+    exceptionGroups: ctrans("Exceptions"),
 }))
 const currentTable = ref<TableKey>("slowRequests")
 const sortKey = ref<"total_duration" | "calls" | "p95" | "max_duration">("total_duration")
@@ -136,7 +147,7 @@ const errorColumns: Partial<Record<TableKey, [string, string][]>> = {
     scheduledTasks: [["skipped", "Skipped"], ["failed", "Failed"]],
     outgoing: [["client_errors", "4xx"], ["server_errors", "5xx"]],
 }
-const isListTable = computed(() => ["slowRequests", "slowJobs", "slowCommands", "issues"].includes(currentTable.value))
+const isListTable = computed(() => ["slowRequests", "slowJobs", "slowCommands", "exceptionGroups"].includes(currentTable.value))
 const rows = computed(() => {
     const key = currentTable.value
     if (!props.telemetry || isListTable.value) {
@@ -211,6 +222,8 @@ const cacheHitRate = computed(() => {
                 </div>
             </div>
 
+            <ExceptionDetail v-if="exception && isExceptionOpen" :exception="exception" @close="isExceptionOpen = false"
+                @open-occurrence="occurrence => openException(exception!.fingerprint, occurrence)" @open-trace="openTrace" />
             <TraceWaterfall v-if="trace && isTraceOpen" :trace="trace" @close="isTraceOpen = false" />
 
             <div class="rounded border bg-white">
@@ -277,18 +290,21 @@ const cacheHitRate = computed(() => {
                         </tbody>
                     </table>
 
-                    <table v-else-if="currentTable === 'issues'" class="min-w-full text-sm">
+                    <table v-else-if="currentTable === 'exceptionGroups'" class="min-w-full text-sm">
                         <thead class="text-left text-xs text-gray-500"><tr>
-                            <th class="px-3 py-2">{{ ctrans("Issue") }}</th><th class="px-3 py-2">{{ ctrans("Status") }}</th>
-                            <th class="px-3 py-2 text-right">{{ ctrans("Occurrences") }}</th><th class="px-3 py-2 text-right">{{ ctrans("Users") }}</th><th class="px-3 py-2">{{ ctrans("Last seen (UTC)") }}</th>
+                            <th class="px-3 py-2">{{ ctrans("Exception") }}</th><th class="px-3 py-2">{{ ctrans("Status") }}</th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Occurrences") }}</th><th class="px-3 py-2 text-right">{{ ctrans("Handled") }}</th><th class="px-3 py-2 text-right">{{ ctrans("Unhandled") }}</th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Users") }}</th><th class="px-3 py-2">{{ ctrans("Last seen (UTC)") }}</th>
                         </tr></thead>
                         <tbody>
-                            <tr v-for="issue in telemetry.issues" :key="issue.id" class="border-t align-top">
-                                <td class="max-w-2xl px-3 py-1.5"><div class="font-mono text-xs font-semibold">{{ issue.exception_class ?? issue.type }}</div><div class="line-clamp-2 text-xs text-gray-600">{{ issue.exception_message }}</div></td>
-                                <td class="px-3 py-1.5 text-xs">{{ issue.status }}<template v-if="issue.priority"> · {{ issue.priority }}</template></td>
-                                <td class="px-3 py-1.5 text-right tabular-nums">{{ issue.occurrences_count }}</td>
-                                <td class="px-3 py-1.5 text-right tabular-nums">{{ issue.users_count }}</td>
-                                <td class="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">{{ issue.last_seen_at }}</td>
+                            <tr v-for="group in telemetry.exceptionGroups" :key="group.fingerprint" class="cursor-pointer border-t align-top hover:bg-indigo-50" @click="openException(group.fingerprint)">
+                                <td class="max-w-2xl px-3 py-1.5"><div class="font-mono text-xs font-semibold">{{ group.exception_class ?? group.fingerprint }}</div><div class="line-clamp-2 text-xs text-gray-600">{{ group.exception_message }}</div></td>
+                                <td class="px-3 py-1.5 text-xs">{{ group.status }}<template v-if="group.priority"> · {{ group.priority }}</template></td>
+                                <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(Number(group.occurrences)) }}</td>
+                                <td class="px-3 py-1.5 text-right tabular-nums text-gray-500">{{ compact(Number(group.handled)) }}</td>
+                                <td class="px-3 py-1.5 text-right tabular-nums" :class="Number(group.unhandled) ? 'text-rose-600' : 'text-gray-400'">{{ compact(Number(group.unhandled)) }}</td>
+                                <td class="px-3 py-1.5 text-right tabular-nums">{{ group.users_count }}</td>
+                                <td class="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">{{ group.last_seen_at ?? group.last_bucket }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -319,7 +335,7 @@ const cacheHitRate = computed(() => {
                             </template>
                         </tbody>
                     </table>
-                    <div v-if="traceLoading" class="border-t px-3 py-2 text-sm text-gray-500">{{ ctrans("Loading request") }}…</div>
+                    <div v-if="traceLoading || exceptionLoading" class="border-t px-3 py-2 text-sm text-gray-500">{{ ctrans("Loading") }}…</div>
                 </div>
             </div>
         </template>

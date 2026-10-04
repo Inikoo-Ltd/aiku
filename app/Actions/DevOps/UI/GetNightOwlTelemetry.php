@@ -64,8 +64,7 @@ class GetNightOwlTelemetry
             'outgoing'       => $this->top("nightowl_outgoing_request_$topSuffix", $topSince, 'min(host)', 'sum(client_error_count) as client_errors, sum(server_error_count) as server_errors'),
             'cache'          => $this->db()->table("nightowl_cache_$topSuffix")->where('bucket_start', '>=', $topSince)
                 ->selectRaw('coalesce(sum(hits), 0) as hits, coalesce(sum(misses), 0) as misses, coalesce(sum(writes), 0) as writes, coalesce(sum(fails), 0) as fails')->first(),
-            'issues'         => $this->db()->table('nightowl_issues')->where('status', '!=', 'resolved')->orderByDesc('last_seen_at')->limit(self::TOP)
-                ->get(['id', 'type', 'status', 'priority', 'exception_class', 'exception_message', 'first_seen_at', 'last_seen_at', 'occurrences_count', 'users_count'])->all(),
+            'exceptionGroups' => $this->exceptionGroups("nightowl_exception_$topSuffix", $topSince),
             'slowRequests'   => $this->slowRequests(),
             'slowJobs'       => $this->slowJobs(),
             'slowCommands'   => $this->slowCommands(),
@@ -288,5 +287,112 @@ class GetNightOwlTelemetry
             $command->trace_id,
             (int) $command->ts_us,
         ] : null;
+    }
+
+    /** @return list<object> */
+    public function exceptionGroups(string $table, string $since): array
+    {
+        return $this->db()->query()
+            ->fromSub(
+                $this->db()->table($table)->where('bucket_start', '>=', $since)->groupBy('fingerprint')
+                    ->selectRaw('fingerprint, sum(call_count) as occurrences, sum(handled_count) as handled, sum(unhandled_count) as unhandled, sum(authenticated_count) as authenticated, max(bucket_start) as last_bucket')
+                    ->orderByDesc('occurrences')->limit(self::TOP * 2),
+                'exception_group'
+            )
+            ->leftJoin('nightowl_issues as issue', fn ($join) => $join->on('issue.group_hash', '=', 'exception_group.fingerprint')->where('issue.type', 'exception'))
+            ->orderByDesc('exception_group.occurrences')
+            ->get([
+                'exception_group.fingerprint', 'exception_group.occurrences', 'exception_group.handled', 'exception_group.unhandled', 'exception_group.authenticated', 'exception_group.last_bucket',
+                'issue.exception_class', 'issue.exception_message', 'issue.status', 'issue.priority', 'issue.first_seen_at', 'issue.last_seen_at', 'issue.occurrences_count', 'issue.users_count',
+            ])->all();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function exception(string $fingerprint, ?int $occurrenceId = null, ?string $occurrenceAt = null): ?array
+    {
+        if (! preg_match('/^[0-9a-f]{32}$/', $fingerprint)) {
+            return null;
+        }
+
+        $since       = now()->subDays(7)->startOfHour()->toDateTimeString();
+        $occurrences = $this->db()->table('nightowl_exceptions_v2 as exception')
+            ->leftJoin('nightowl_dict_string as server', 'server.id', '=', 'exception.server_id')
+            ->leftJoin('nightowl_dict_string as source', 'source.id', '=', 'exception.execution_source_id')
+            ->whereRaw("exception.fingerprint = decode(?, 'hex')", [$fingerprint])
+            ->where('exception.created_at', '>=', $since)
+            ->orderByDesc('exception.created_at')->limit(self::TOP)
+            ->get(['exception.id', 'exception.created_at', 'exception.handled', 'exception.user_id', 'exception.execution_preview', 'server.value as server', 'source.value as source']);
+
+        $occurrence = $this->db()->table('nightowl_exceptions_v2 as exception')
+            ->leftJoin('nightowl_dict_string as server', 'server.id', '=', 'exception.server_id')
+            ->leftJoin('nightowl_dict_string as source', 'source.id', '=', 'exception.execution_source_id')
+            ->leftJoin('nightowl_dict_string as stage', 'stage.id', '=', 'exception.execution_stage_id')
+            ->leftJoin('nightowl_dict_trace as stack', 'stack.id', '=', 'exception.trace_ref')
+            ->whereRaw("exception.fingerprint = decode(?, 'hex')", [$fingerprint])
+            ->when(
+                $occurrenceId && $occurrenceAt,
+                fn ($query) => $query->where('exception.id', $occurrenceId)->where('exception.created_at', Carbon::parse($occurrenceAt)->toDateTimeString()),
+                fn ($query) => $query->where('exception.created_at', '>=', $since)->orderByDesc('exception.created_at')
+            )
+            ->first([
+                'exception.id', 'exception.created_at', 'exception.execution_id', 'exception.class', 'exception.message', 'exception.code', 'exception.file', 'exception.line',
+                'exception.handled', 'exception.user_id', 'exception.execution_preview', 'exception.php_version', 'exception.laravel_version',
+                'server.value as server', 'source.value as source', 'stage.value as stage', 'stack.trace_z',
+            ]);
+
+        $issue = $this->db()->table('nightowl_issues')->where('group_hash', $fingerprint)->where('type', 'exception')
+            ->first(['id', 'status', 'priority', 'exception_class', 'exception_message', 'first_seen_at', 'last_seen_at', 'occurrences_count', 'users_count', 'assigned_to']);
+
+        if (! $occurrence && ! $issue) {
+            return null;
+        }
+
+        return [
+            'fingerprint' => $fingerprint,
+            'issue'       => $issue,
+            'hourly'      => $this->db()->table('nightowl_exception_hourly_rollups')->where('fingerprint', $fingerprint)->where('bucket_start', '>=', $since)
+                ->groupBy('bucket_start')->orderBy('bucket_start')
+                ->selectRaw('bucket_start, sum(handled_count) as handled, sum(unhandled_count) as unhandled')->get()->all(),
+            'servers'     => $this->db()->table('nightowl_exception_server_hourly_rollups')->where('fingerprint', $fingerprint)->where('bucket_start', '>=', $since)
+                ->groupBy('server')->orderByRaw('sum(call_count) desc')
+                ->selectRaw('server, sum(call_count) as occurrences')->get()->all(),
+            'occurrences' => $occurrences->all(),
+            'occurrence'  => $occurrence ? [
+                ...array_diff_key((array) $occurrence, ['trace_z' => true, 'execution_id' => true]),
+                'frames'    => $this->stackFrames($occurrence->trace_z),
+                'execution' => $this->executionOf($occurrence),
+            ] : null,
+        ];
+    }
+
+    /** @return list<array{file: string, source: string, code: array<int|string, string>|null, is_vendor: bool}> */
+    public function stackFrames(mixed $compressed): array
+    {
+        $compressed = is_resource($compressed) ? stream_get_contents($compressed) : $compressed;
+        $json       = $compressed ? @gzinflate($compressed) : false;
+        $frames     = $json ? json_decode($json, true) : null;
+
+        return collect(is_array($frames) ? $frames : [])->map(fn (array $frame) => [
+            'file'      => (string) ($frame['file'] ?? ''),
+            'source'    => (string) ($frame['source'] ?? ''),
+            'code'      => is_array($frame['code'] ?? null) ? $frame['code'] : null,
+            'is_vendor' => str_starts_with((string) ($frame['file'] ?? ''), 'vendor/') || str_starts_with((string) ($frame['file'] ?? ''), '['),
+        ])->all();
+    }
+
+    /** @return array{kind: string, id: int, at: string}|null */
+    public function executionOf(object $occurrence): ?array
+    {
+        if (! $occurrence->execution_id || ! in_array($occurrence->source, ['request', 'command'], true)) {
+            return null;
+        }
+
+        $createdAt = Carbon::parse($occurrence->created_at);
+        $execution = $this->db()->table($occurrence->source === 'request' ? 'nightowl_requests_v2' : 'nightowl_commands_v2')
+            ->where('trace_id', $occurrence->execution_id)
+            ->whereBetween('created_at', [$createdAt->copy()->subHour()->toDateTimeString(), $createdAt->copy()->addMinutes(5)->toDateTimeString()])
+            ->first(['id', 'created_at']);
+
+        return $execution ? ['kind' => $occurrence->source, 'id' => (int) $execution->id, 'at' => $execution->created_at] : null;
     }
 }

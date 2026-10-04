@@ -19,6 +19,7 @@ import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunC
 import TestStats, { TestStatsData } from "@/Components/DevOps/TestStats.vue"
 import TelemetryPanel, { Telemetry } from "@/Components/DevOps/TelemetryPanel.vue"
 import { Trace } from "@/Components/DevOps/TraceWaterfall.vue"
+import { ExceptionDetailData } from "@/Components/DevOps/ExceptionDetail.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
@@ -40,6 +41,7 @@ const props = defineProps<{
     }
     telemetry?: Telemetry | null
     telemetryTrace?: Trace | null
+    telemetryException?: ExceptionDetailData | null
 }>()
 
 const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
@@ -115,6 +117,6 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
             <TestStats :stats="ciRuns.test_stats" />
             <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" :usual-seconds="ciRuns.usual_tests_seconds" />
         </div>
-        <TelemetryPanel v-if="currentTab === 'telemetry'" :telemetry="telemetry" :trace="telemetryTrace" />
+        <TelemetryPanel v-if="currentTab === 'telemetry'" :telemetry="telemetry" :trace="telemetryTrace" :exception="telemetryException" />
     </div>
 </template>

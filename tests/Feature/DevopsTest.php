@@ -675,17 +675,17 @@ it('records backend test results and shows counts, failures and daily stats on t
             ->has('ciRuns.test_stats.daily', 14));
 });
 
-it('shows nightowl telemetry graphs, top tables and request, job and command waterfalls on the devops dashboard', function () {
+it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls and exception stack traces on the devops dashboard', function () {
     $nightowl = DB::connection('nightowl');
     $nightowl->beginTransaction();
 
     $histogram = collect(NightOwl\Support\QueryHistogram::columns())->map(fn (string $column) => "$column bigint default 0")->implode(', ');
-    $counters  = collect(['call_count', 'success_count', 'client_error_count', 'server_error_count', 'processed_count', 'failed_count', 'released_count', 'unsuccessful_count', 'skipped_count', 'handled_count', 'unhandled_count', 'hits', 'misses', 'writes', 'fails', 'total_duration', 'min_duration', 'max_duration'])
+    $counters  = collect(['call_count', 'success_count', 'client_error_count', 'server_error_count', 'processed_count', 'failed_count', 'released_count', 'unsuccessful_count', 'skipped_count', 'handled_count', 'unhandled_count', 'authenticated_count', 'hits', 'misses', 'writes', 'fails', 'total_duration', 'min_duration', 'max_duration'])
         ->map(fn (string $column) => "$column bigint default 0")->implode(', ');
     foreach (['request', 'job', 'command', 'scheduled_task', 'query', 'outgoing_request', 'exception', 'cache'] as $type) {
-        $nightowl->statement("create temporary table nightowl_{$type}_hourly_rollups (group_hash varchar, bucket_start timestamp, environment varchar, route_methods text, route_path text, job_class text, queue text, command text, expression text, sql_query text, connection varchar, host text, $counters, $histogram)");
+        $nightowl->statement("create temporary table nightowl_{$type}_hourly_rollups (group_hash varchar, fingerprint varchar, bucket_start timestamp, environment varchar, route_methods text, route_path text, job_class text, queue text, command text, expression text, sql_query text, connection varchar, host text, $counters, $histogram)");
     }
-    $nightowl->statement('create temporary table nightowl_issues (id bigint, type varchar, status varchar, priority varchar, exception_class varchar, exception_message text, first_seen_at timestamp, last_seen_at timestamp, occurrences_count int, users_count int)');
+    $nightowl->statement('create temporary table nightowl_issues (id bigint, group_hash varchar, assigned_to varchar, type varchar, status varchar, priority varchar, exception_class varchar, exception_message text, first_seen_at timestamp, last_seen_at timestamp, occurrences_count int, users_count int)');
     $nightowl->statement('create temporary table nightowl_dict_route (id bigint, method varchar, path varchar, name varchar)');
     $nightowl->statement('create temporary table nightowl_dict_sql (id bigint, sql text, file varchar, line int)');
     $nightowl->statement('create temporary table nightowl_dict_string (id int, kind varchar, value varchar)');
@@ -696,7 +696,9 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
     $nightowl->statement("create temporary table nightowl_queries_v2 ($spanColumns, sql_id bigint)");
     $nightowl->statement("create temporary table nightowl_cache_events_v2 ($spanColumns, event_type_id int, key varchar)");
     $nightowl->statement("create temporary table nightowl_outgoing_requests_v2 ($spanColumns, method_id int, url text, status_code int)");
-    $nightowl->statement("create temporary table nightowl_exceptions_v2 ($spanColumns, class varchar, message text, file varchar, line int)");
+    $nightowl->statement("create temporary table nightowl_exceptions_v2 (id bigint, $spanColumns, fingerprint bytea, server_id int, execution_source_id int, execution_stage_id int, trace_ref bigint, handled boolean, user_id varchar, execution_preview varchar, class varchar, message text, code varchar, file varchar, line int, php_version varchar, laravel_version varchar)");
+    $nightowl->statement('create temporary table nightowl_dict_trace (id bigint, trace_z bytea)');
+    $nightowl->statement('create temporary table nightowl_exception_server_hourly_rollups (fingerprint varchar, server varchar, bucket_start timestamp, environment varchar, call_count bigint)');
 
     $hour = now()->startOfHour()->subHour()->toDateTimeString();
     $nightowl->table('nightowl_request_hourly_rollups')->insert([
@@ -705,9 +707,11 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
     ]);
     $nightowl->table('nightowl_job_hourly_rollups')->insert(['group_hash' => 'j', 'bucket_start' => $hour, 'job_class' => 'App\\Jobs\\Hydrate', 'queue' => 'default', 'call_count' => 7, 'processed_count' => 6, 'failed_count' => 1, 'total_duration' => 7_000_000, 'max_duration' => 2_000_000, 'hist_28' => 7]);
     $nightowl->table('nightowl_query_hourly_rollups')->insert(['group_hash' => 'q', 'bucket_start' => $hour, 'sql_query' => 'select * from "products" where "id" = ?', 'connection' => 'pgsql', 'call_count' => 500, 'total_duration' => 5_000_000, 'max_duration' => 80_000, 'hist_10' => 500]);
-    $nightowl->table('nightowl_exception_hourly_rollups')->insert(['group_hash' => 'e', 'bucket_start' => $hour, 'handled_count' => 2, 'unhandled_count' => 3]);
+    $fingerprint = 'fd7619e4eb885b9de0d7e97b4afaebd0';
+    $nightowl->table('nightowl_exception_hourly_rollups')->insert(['fingerprint' => $fingerprint, 'bucket_start' => $hour, 'handled_count' => 2, 'unhandled_count' => 3]);
+    $nightowl->table('nightowl_exception_server_hourly_rollups')->insert(['fingerprint' => $fingerprint, 'server' => 'litio', 'bucket_start' => $hour, 'call_count' => 5]);
     $nightowl->table('nightowl_cache_hourly_rollups')->insert(['group_hash' => 'c', 'bucket_start' => $hour, 'hits' => 90, 'misses' => 10]);
-    $nightowl->table('nightowl_issues')->insert(['id' => 1, 'type' => 'exception', 'status' => 'open', 'exception_class' => 'RuntimeException', 'exception_message' => 'Boom', 'first_seen_at' => $hour, 'last_seen_at' => $hour, 'occurrences_count' => 3, 'users_count' => 1]);
+    $nightowl->table('nightowl_issues')->insert(['id' => 1, 'group_hash' => $fingerprint, 'type' => 'exception', 'status' => 'open', 'exception_class' => 'RuntimeException', 'exception_message' => 'Boom', 'first_seen_at' => $hour, 'last_seen_at' => $hour, 'occurrences_count' => 3, 'users_count' => 1]);
 
     $traceId   = '210d444d-72fa-466d-a601-1421cd1e2c6c';
     $createdAt = now()->subMinutes(5)->startOfSecond();
@@ -719,7 +723,15 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
         ['id' => 805, 'kind' => 'job_class', 'value' => 'App\\Jobs\\Hydrate'],
         ['id' => 33, 'kind' => 'queue', 'value' => 'default'],
         ['id' => 48, 'kind' => 'status', 'value' => 'failed'],
+        ['id' => 2, 'kind' => 'server', 'value' => 'litio'],
+        ['id' => 7, 'kind' => 'execution_source', 'value' => 'request'],
     ]);
+    $frames = [
+        ['file' => 'app/Actions/ShowProducts.php:31', 'source' => '', 'code' => ['30' => '$products = load();', '31' => 'throw new RuntimeException("Boom");']],
+        ['file' => 'vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php:170', 'source' => 'App\\Actions\\ShowProducts->handle()', 'code' => null],
+    ];
+    $nightowl->insert("insert into nightowl_dict_trace (id, trace_z) values (1, decode(?, 'hex'))", [bin2hex(gzdeflate(json_encode($frames), 6))]);
+    $nightowl->insert("insert into nightowl_exceptions_v2 (id, created_at, ts_us, trace_id, execution_id, duration, fingerprint, server_id, execution_source_id, trace_ref, handled, class, message, file, line, php_version, laravel_version) values (99, ?, ?, null, ?, 0, decode(?, 'hex'), 2, 7, 1, false, 'RuntimeException', 'Boom', 'app/Actions/ShowProducts.php', 31, '8.4.21', '13.26.1')", [$createdAt, $startUs + 250_000, $traceId, $fingerprint]);
     $attemptId = '2667426f-2004-40c1-b4a4-125243439e26';
     $commandTraceId = 'f3d4b85a-5166-46f4-88ba-088c68aa8e83';
     $nightowl->table('nightowl_jobs_v2')->insert(['id' => 777, 'created_at' => $createdAt, 'ts_us' => $startUs, 'trace_id' => $traceId, 'attempt_id' => $attemptId, 'attempt' => 2, 'job_class_id' => 805, 'queue_id' => 33, 'status_id' => 48, 'duration' => 2_000_000, 'queries' => 1, 'cache_events' => 0, 'outgoing_requests' => 1, 'peak_memory_usage' => 80_000_000, 'exception_preview' => 'RuntimeException: Boom']);
@@ -756,7 +768,8 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
                     ->where('telemetry.queries.0.calls', 500)
                     ->where('telemetry.exceptions.0.unhandled', fn ($value) => (int) $value === 3)
                     ->where('telemetry.cache.hits', fn ($value) => (int) $value === 90)
-                    ->where('telemetry.issues.0.exception_class', 'RuntimeException')
+                    ->where('telemetry.exceptionGroups.0.exception_class', 'RuntimeException')
+                    ->where('telemetry.exceptionGroups.0.unhandled', fn ($value) => (int) $value === 3)
                     ->where('telemetry.slowRequests.0.route_name', 'products.index')
                     ->where('telemetry.slowJobs.0.job_class', 'App\\Jobs\\Hydrate')
                     ->where('telemetry.slowCommands.0.name', 'data_feeds:save'))
@@ -764,7 +777,8 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
                     ->where('telemetryTrace.summary.kind', 'request')
                     ->where('telemetryTrace.summary.subtitle', 'products.index')
                     ->where('telemetryTrace.stages.1.label', 'Controller')
-                    ->has('telemetryTrace.spans', 2)
+                    ->has('telemetryTrace.spans', 3)
+                    ->where('telemetryTrace.spans.2.type', 'exception')
                     ->where('telemetryTrace.spans.0.type', 'cache')
                     ->where('telemetryTrace.spans.0.label', 'hit website-1')
                     ->where('telemetryTrace.spans.1.type', 'query')
@@ -789,6 +803,24 @@ it('shows nightowl telemetry graphs, top tables and request, job and command wat
                     ->has('telemetryTrace.stages', 3)
                     ->has('telemetryTrace.spans', 1)
                     ->where('telemetryTrace.spans.0.offset', 5_000_000)));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'exception' => $fingerprint]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryException', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryException.issue.status', 'open')
+                    ->where('telemetryException.occurrence.class', 'RuntimeException')
+                    ->where('telemetryException.occurrence.server', 'litio')
+                    ->where('telemetryException.occurrence.frames.0.code.31', 'throw new RuntimeException("Boom");')
+                    ->where('telemetryException.occurrence.frames.0.is_vendor', false)
+                    ->where('telemetryException.occurrence.frames.1.is_vendor', true)
+                    ->where('telemetryException.occurrence.execution', ['kind' => 'request', 'id' => 555, 'at' => $createdAt->toDateTimeString()])
+                    ->has('telemetryException.occurrences', 1)
+                    ->where('telemetryException.servers.0.server', 'litio')
+                    ->where('telemetryException.hourly.0.unhandled', fn ($value) => (int) $value === 3)));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'exception' => 'not-a-fingerprint']))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryException', fn (Inertia\Testing\AssertableInertia $reload) => $reload->where('telemetryException', null)));
     } finally {
         $nightowl->rollBack();
         Cache::forget('devops-telemetry-24h');
