@@ -115,6 +115,47 @@ fi
 
 echo "varnish:"
 place "$DEVOPS/varnish/default.vcl" /etc/varnish/default.vcl
+# Installing the varnish package starts it with the package's example VCL and 256m;
+# restart varnish after the first install or it keeps serving that example.
+place "$DEVOPS/systemd/varnish.service" /etc/systemd/system/varnish.service
+
+# The edge host resizes product images (media.aiku.io). imgproxy runs from docker
+# (docker.io + docker-compose-v2), published on 127.0.0.1 only because docker-published
+# ports bypass ufw. Its signing key/salt must equal every earlier host's, or every
+# image URL already handed out (shops, exports, feeds) stops resolving.
+echo "imgproxy:"
+if [[ ${INSTALL_IMGPROXY:-0} == 1 ]]; then
+  for var in IMGPROXY_KEY IMGPROXY_SALT IMGPROXY_SECRET IMGPROXY_SOURCE_URL_ENCRYPTION_KEY IMGPROXY_PUBLISH IMGPROXY_NGINX_PORT; do
+    : "${!var:?set $var in $ENV_FILE}"
+  done
+  place "$DEVOPS/imgproxy/docker-compose.yml" /home/inikoo/docker/imgproxy/docker-compose.yml 600
+  place "$DEVOPS/nginx/imgproxy-aiku-production.conf" /etc/nginx/sites-available/imgproxy_aiku_production.conf
+  if [[ $DRY_RUN != 1 ]]; then
+    install -d -o www-data -g www-data /var/cache/nginx/imgproxy/production
+    ln -sfn /etc/nginx/sites-available/imgproxy_aiku_production.conf \
+            /etc/nginx/sites-enabled/imgproxy_aiku_production.conf
+    docker compose -p imgproxy -f /home/inikoo/docker/imgproxy/docker-compose.yml up -d
+  fi
+else
+  echo "  skipped (INSTALL_IMGPROXY=0 — imgproxy runs on the edge host only)"
+fi
+
+# Realtime websockets (soketi.aiku.io). Needs node 18 in /opt/node-v18.20.8-linux-x64 and
+# soketi 1.6.0 in /opt/soketi (npm install -g --prefix /opt/soketi @soketi/soketi@1.6.0);
+# its app keys must match PUSHER_APP_KEY/SECRET in every host's .env.
+echo "soketi:"
+if [[ ${INSTALL_SOKETI:-0} == 1 ]]; then
+  for var in SOKETI_AIKU_KEY SOKETI_AIKU_SECRET SOKETI_AIKU_STAGING_KEY SOKETI_AIKU_STAGING_SECRET SOKETI_AIKU_DEVEL_KEY SOKETI_AIKU_DEVEL_SECRET; do
+    : "${!var:?set $var in $ENV_FILE}"
+  done
+  place "$DEVOPS/soketi/soketi-conf.json" /home/aiku/soketi/soketi-conf.json 640
+  place "$DEVOPS/supervisor/soketi.conf" /etc/supervisor/conf.d/soketi.conf
+  if [[ $DRY_RUN != 1 ]]; then
+    chown aiku:aiku /home/aiku/soketi/soketi-conf.json
+  fi
+else
+  echo "  skipped (INSTALL_SOKETI=0 — soketi runs on the edge host only)"
+fi
 
 echo "sysctl:"
 place "$DEVOPS/sysctl/99-aiku.conf" /etc/sysctl.d/99-aiku.conf

@@ -11,7 +11,7 @@ No passwords, tokens or IP addresses belong on this page: the repo is public.
 | Server | Role |
 |---|---|
 | **boro** | Postgres primary. Queue Redis (own instance, never evicts). Database backups. The light, customer-facing Horizon queues, at low CPU priority so the database always comes first. The scheduler. The standby web node: HAProxy, Varnish, Octane and SSR stay installed and deployed, idling on a few workers. |
-| **litio** | Web: HAProxy, Varnish, Octane, Inertia SSR. Cache and session Redis. Postgres replica (the failover target, also serving web reads). The heavy Horizon queues, under a hard memory cap. The scheduler. Staging, with small caps, stopped whenever litio has to take over from boro. Aurora, until it is retired. |
+| **litio** | Web: HAProxy, Varnish, Octane, Inertia SSR. Product image resizing (imgproxy, `media.aiku.io`) and realtime websockets (soketi, `soketi.aiku.io`). Cache and session Redis. Postgres replica (the failover target, also serving web reads). The heavy Horizon queues, under a hard memory cap. The scheduler. Staging, with small caps, stopped whenever litio has to take over from boro. Aurora, until it is retired. |
 | **helio** | No production role. The CI runner, fenced off from everything else. NightOwl monitoring (its own Postgres, low disk priority). The WordPress sites. The forecast service (TimesFM), which the nightly forecasts call; it runs on litio until litio takes over the web. |
 
 litio and boro have the same processors and disks, which is why litio is the failover for the
@@ -49,11 +49,13 @@ scheduler from `current`.
 
 | Server | Queues |
 |---|---|
-| boro | `urgent`, `default`, `sales`, `stock-control`, `price_change`, `ses-send`, `search` |
-| litio | `long-*`, `analytics`, `*_historic`, `stock-history`, `hydrators-slave*`, `low-priority`, `dropshipping*`, `aurora`, `ses`, `ses-analytics`, `shopify-slave`, `translate*`, `cache-warming` |
+| boro | Everything that changes orders, stock, prices, payments or sends mail: `urgent`, `default`, `sales`, `stock-control`, `common`, `price_change*`, `dropshipping*`, `long-*`, `ses`, `ses-send`, `ses-low`, `search`, `low-priority`, `aurora` |
+| litio | Read-heavy counting only: `hydrators-slave*`, `translate*`, `sales_slave`, `*_historic`, `analytics`, `ses-analytics`, `stock-history`, `cache-warming`, `shopify-slave` |
 
 Worker counts are set per server with the `HORIZON_*_WORKERS` variables in that server's `.env`.
-Every job reads and writes the primary, never the replica, even when it runs on litio.
+On litio, Horizon reads the local replica (its supervisor program sets `PROCESS_DB_READ_HOSTS`) and writes
+the primary, which is why only counting queues run there. A queue that changes money, stock or orders
+never goes to litio. The website (Octane) reads and writes the primary on every server.
 Never put `long-*`, `aurora`, `analytics`, `*_historic`, `stock-history` or the bulk hydrators on
 boro, not even during an outage: the database box must not run out of memory.
 
@@ -105,8 +107,12 @@ The site is down for writes until litio is promoted. Target: back up in 15 minut
 
 The site is down until traffic reaches boro. Target: back up in 10 minutes.
 
-1. In Cloudflare, point the origin records for aiku.io, app.aiku.io and the customer domains at
-   boro. They are proxied, so the change is immediate.
+1. In Cloudflare, point the origin records for aiku.io, app.aiku.io, media.aiku.io and the customer
+   domains at boro. They are proxied, so the change is immediate; the move script used for the
+   migration does it zone by zone. boro's HAProxy and Varnish carry the same rules as litio's.
+   Product images keep working only while boro still runs its own imgproxy (same signing key);
+   realtime updates (soketi) have no standby and stay down until litio is back: pages still work,
+   they just stop updating live.
 2. On boro, start the standby cache Redis instance (capped, evicts old keys). Point `db-replica`
    and `redis-cache` at boro. Everyone gets logged out once: sessions lived in litio's Redis.
 3. Raise boro's Octane and SSR workers to full size.
