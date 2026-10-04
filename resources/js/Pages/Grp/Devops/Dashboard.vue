@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase, faRocket, faServer } from "@fal"
+import { faDatabase, faRocket, faServer, faSpinnerThird } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -19,7 +19,7 @@ import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunC
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase, faRocket, faServer)
+library.add(faDatabase, faRocket, faServer, faSpinnerThird)
 
 const props = defineProps<{
     title: string
@@ -51,10 +51,23 @@ onBeforeUnmount(() => {
     }
 })
 
-const tabs = {
+const runningDeploy = computed(() => {
+    const deploy = props.ciRuns.deploy
+    return deploy && deploy.status !== "completed" && !deploy.conclusion ? deploy : null
+})
+
+const tabs = computed(() => ({
     servers: { title: ctrans("Servers"), icon: "fal fa-server" },
-    deployments: { title: ctrans("Deployments"), icon: "fal fa-rocket" },
-}
+    deployments: runningDeploy.value
+        ? {
+            title: runningDeploy.value.deploy_total
+                ? `${ctrans("Deploying")} ${runningDeploy.value.deploy_done}/${runningDeploy.value.deploy_total}`
+                : ctrans("Deploying"),
+            icon: "fal fa-spinner-third",
+            iconClass: "animate-spin text-sky-500",
+        }
+        : { title: ctrans("Deployments"), icon: "fal fa-rocket" },
+}))
 const currentTab = ref<string>(new URLSearchParams(window.location.search).get("tab") === "deployments" ? "deployments" : "servers")
 const changeTab = (tab: string | number) => {
     currentTab.value = String(tab)
