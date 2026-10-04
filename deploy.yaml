@@ -28,6 +28,7 @@ hosts:
     environment: 'production'
     deploy_path: '~/aiku'
     branch: production
+    octane_replica_state_file: logs/litio-replica-octane-server-state.json
     labels:
       env: prod
   staging:

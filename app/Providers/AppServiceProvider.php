@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->useProcessReadHosts();
+        $this->useProcessOctaneStateFile();
 
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
@@ -107,6 +108,14 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(JobProcessing::class, fn () => DB::connection('aiku')->forgetRecordModificationState());
+    }
+
+    private function useProcessOctaneStateFile(): void
+    {
+        $stateFile = trim((string) getenv('PROCESS_OCTANE_STATE_FILE'));
+        if ($stateFile !== '') {
+            config(['octane.state_file' => storage_path($stateFile)]);
+        }
     }
 
 

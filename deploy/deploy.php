@@ -228,6 +228,13 @@ task('artisan:octane:reload', function () {
     } catch (\Throwable $e) {
         writeln('<comment>octane:reload skipped: '.$e->getMessage().'</comment>');
     }
+
+    if (has('octane_replica_state_file')) {
+        $stateFile = '{{deploy_path}}/shared/storage/{{octane_replica_state_file}}';
+        if (test("[ -f $stateFile ]")) {
+            run('cd {{release_or_current_path}} && PROCESS_OCTANE_STATE_FILE={{octane_replica_state_file}} {{bin/php}} artisan octane:reload');
+        }
+    }
 });
 
 desc('Save ssr checksums');

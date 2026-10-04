@@ -18,10 +18,13 @@ beforeEach(function () {
         'aiku'           => config('database.connections.aiku'),
         'aiku_no_sticky' => config('database.connections.aiku_no_sticky'),
     ];
+    $this->configuredOctaneStateFile = config('octane.state_file');
 });
 
 afterEach(function () {
     putenv('PROCESS_DB_READ_HOSTS');
+    putenv('PROCESS_OCTANE_STATE_FILE');
+    config(['octane.state_file' => $this->configuredOctaneStateFile]);
     foreach ($this->configuredConnections as $connection => $configuration) {
         config(["database.connections.$connection" => $configuration]);
     }
@@ -52,4 +55,18 @@ test('each queued job starts reading the replica again even after an earlier job
     event(new JobProcessing('redis', mock(Job::class)->shouldIgnoreMissing([])));
 
     expect(DB::connection('aiku')->hasModifiedRecords())->toBeFalse();
+});
+
+test('a second octane pool keeps its own state file from PROCESS_OCTANE_STATE_FILE', function () {
+    putenv('PROCESS_OCTANE_STATE_FILE=logs/octane-replica-state.json');
+
+    (new AppServiceProvider(app()))->register();
+
+    expect(config('octane.state_file'))->toBe(storage_path('logs/octane-replica-state.json'));
+});
+
+test('without PROCESS_OCTANE_STATE_FILE the octane state file stays as configured', function () {
+    (new AppServiceProvider(app()))->register();
+
+    expect(config('octane.state_file'))->toBe($this->configuredOctaneStateFile);
 });
