@@ -6,13 +6,15 @@ import { BarElement, CategoryScale, Chart as ChartJS, Filler, Legend, LinearScal
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import SqlCode from "@/Components/DevOps/SqlCode.vue"
-import RequestWaterfall, { formatMicroseconds, TraceRequest, TraceSpan } from "@/Components/DevOps/RequestWaterfall.vue"
+import TraceWaterfall, { formatMicroseconds, Trace } from "@/Components/DevOps/TraceWaterfall.vue"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler)
 
 type SeriesPoint = { bucket_start: string, calls: number, avg: number, p95: number, max_duration: number, [count: string]: number | string }
 type TopRow = { group_hash: string, label: string, calls: number, total_duration: number, avg: number, p95: number, max_duration: number, [extra: string]: number | string | null }
 type SlowRequest = { id: number, created_at: string, url: string, status_code: number, duration: number, queries: number, cache_events: number, outgoing_requests: number, route_name: string | null, method: string | null }
+type SlowJob = { id: number, created_at: string, job_class: string | null, queue: string | null, status: string | null, attempt: number, duration: number, queries: number, cache_events: number, outgoing_requests: number }
+type SlowCommand = { id: number, created_at: string, name: string, command: string | null, exit_code: number | null, duration: number, queries: number, cache_events: number, outgoing_requests: number }
 type Issue = { id: number, type: string, status: string, priority: string | null, exception_class: string | null, exception_message: string | null, last_seen_at: string, occurrences_count: number, users_count: number }
 
 export type Telemetry = {
@@ -30,9 +32,11 @@ export type Telemetry = {
     cache: { hits: number, misses: number, writes: number, fails: number }
     issues: Issue[]
     slowRequests: SlowRequest[]
+    slowJobs: SlowJob[]
+    slowCommands: SlowCommand[]
 }
 
-const props = defineProps<{ telemetry?: Telemetry | null, trace?: { request: TraceRequest, spans: TraceSpan[] } | null }>()
+const props = defineProps<{ telemetry?: Telemetry | null, trace?: Trace | null }>()
 
 const loading = ref(false)
 const load = (range: string) => {
@@ -43,9 +47,9 @@ onMounted(() => !props.telemetry && load(new URLSearchParams(window.location.sea
 
 const traceLoading = ref(false)
 const isTraceOpen = ref(Boolean(props.trace))
-const openRequest = (request: SlowRequest) => {
+const openTrace = (kind: Trace["summary"]["kind"], row: { id: number, created_at: string }) => {
     traceLoading.value = true
-    router.reload({ only: ["telemetryTrace"], data: { request: request.id, at: request.created_at }, onFinish: () => {
+    router.reload({ only: ["telemetryTrace"], data: { trace: kind, id: row.id, at: row.created_at }, onFinish: () => {
         traceLoading.value = false
         isTraceOpen.value = true
     } })
@@ -109,9 +113,11 @@ const durationCards = computed(() => {
     ]
 })
 
-type TableKey = "slowRequests" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "issues"
+type TableKey = "slowRequests" | "slowJobs" | "slowCommands" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "issues"
 const tables = computed<Record<TableKey, string>>(() => ({
     slowRequests: ctrans("Slowest requests (last hour)"),
+    slowJobs: ctrans("Slowest jobs (last hour)"),
+    slowCommands: ctrans("Slowest commands (last day)"),
     routes: ctrans("Routes"),
     queries: ctrans("Queries"),
     jobClasses: ctrans("Jobs"),
@@ -130,9 +136,10 @@ const errorColumns: Partial<Record<TableKey, [string, string][]>> = {
     scheduledTasks: [["skipped", "Skipped"], ["failed", "Failed"]],
     outgoing: [["client_errors", "4xx"], ["server_errors", "5xx"]],
 }
+const isListTable = computed(() => ["slowRequests", "slowJobs", "slowCommands", "issues"].includes(currentTable.value))
 const rows = computed(() => {
     const key = currentTable.value
-    if (!props.telemetry || key === "slowRequests" || key === "issues") {
+    if (!props.telemetry || isListTable.value) {
         return []
     }
     return [...props.telemetry[key]].sort((a, b) => Number(b[sortKey.value]) - Number(a[sortKey.value])).slice(0, 25)
@@ -204,7 +211,7 @@ const cacheHitRate = computed(() => {
                 </div>
             </div>
 
-            <RequestWaterfall v-if="trace && isTraceOpen" :trace="trace" @close="isTraceOpen = false" />
+            <TraceWaterfall v-if="trace && isTraceOpen" :trace="trace" @close="isTraceOpen = false" />
 
             <div class="rounded border bg-white">
                 <div class="flex flex-wrap items-center gap-1 border-b px-2 pt-2">
@@ -212,7 +219,7 @@ const cacheHitRate = computed(() => {
                         :class="currentTable === key ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-800'" @click="currentTable = key">
                         {{ title }}
                     </button>
-                    <div v-if="currentTable !== 'slowRequests' && currentTable !== 'issues'" class="ml-auto flex items-center gap-1 pb-2 text-xs text-gray-500">
+                    <div v-if="!isListTable" class="ml-auto flex items-center gap-1 pb-2 text-xs text-gray-500">
                         {{ ctrans("Sort by") }}
                         <button v-for="(title, key) in sortKeys" :key="key" class="rounded px-2 py-1" :class="sortKey === key ? 'bg-gray-800 text-white' : 'hover:bg-gray-100'" @click="sortKey = key">{{ title }}</button>
                     </div>
@@ -226,7 +233,7 @@ const cacheHitRate = computed(() => {
                             <th class="px-3 py-2 text-right">{{ ctrans("Duration") }}</th><th class="px-3 py-2">{{ ctrans("At (UTC)") }}</th>
                         </tr></thead>
                         <tbody>
-                            <tr v-for="request in telemetry.slowRequests" :key="request.id" class="cursor-pointer border-t hover:bg-indigo-50" @click="openRequest(request)">
+                            <tr v-for="request in telemetry.slowRequests" :key="request.id" class="cursor-pointer border-t hover:bg-indigo-50" @click="openTrace('request', request)">
                                 <td class="max-w-xl truncate px-3 py-1.5 font-mono text-xs" :title="request.url"><span class="font-semibold">{{ request.method }}</span> {{ request.url }}</td>
                                 <td class="px-3 py-1.5" :class="request.status_code >= 500 ? 'text-rose-600' : request.status_code >= 400 ? 'text-amber-600' : ''">{{ request.status_code }}</td>
                                 <td class="px-3 py-1.5 text-right tabular-nums">{{ request.queries }}</td>
@@ -235,6 +242,38 @@ const cacheHitRate = computed(() => {
                                 <td class="px-3 py-1.5 text-right font-mono">{{ formatMicroseconds(request.duration) }}</td>
                                 <td class="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">{{ request.created_at }}</td>
                             </tr>
+                        </tbody>
+                    </table>
+
+                    <table v-else-if="currentTable === 'slowJobs' || currentTable === 'slowCommands'" class="min-w-full text-sm">
+                        <thead class="text-left text-xs text-gray-500"><tr>
+                            <th class="px-3 py-2">{{ currentTable === 'slowJobs' ? ctrans("Job") : ctrans("Command") }}</th><th class="px-3 py-2">{{ ctrans("Status") }}</th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Queries") }}</th><th class="px-3 py-2 text-right">{{ ctrans("Cache") }}</th><th class="px-3 py-2 text-right">{{ ctrans("HTTP") }}</th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Duration") }}</th><th class="px-3 py-2">{{ ctrans("At (UTC)") }}</th>
+                        </tr></thead>
+                        <tbody>
+                            <template v-if="currentTable === 'slowJobs'">
+                                <tr v-for="job in telemetry.slowJobs" :key="job.id" class="cursor-pointer border-t hover:bg-indigo-50" @click="openTrace('job', job)">
+                                    <td class="max-w-xl px-3 py-1.5"><div class="truncate font-mono text-xs" :title="job.job_class ?? ''">{{ job.job_class }}</div><div class="text-xs text-gray-400">{{ job.queue }}<template v-if="job.attempt > 1"> · {{ ctrans("attempt") }} {{ job.attempt }}</template></div></td>
+                                    <td class="px-3 py-1.5 text-xs" :class="job.status === 'failed' ? 'text-rose-600' : job.status === 'released' ? 'text-amber-600' : ''">{{ job.status }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(job.queries) }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(job.cache_events) }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(job.outgoing_requests) }}</td>
+                                    <td class="px-3 py-1.5 text-right font-mono">{{ formatMicroseconds(job.duration) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">{{ job.created_at }}</td>
+                                </tr>
+                            </template>
+                            <template v-else>
+                                <tr v-for="command in telemetry.slowCommands" :key="command.id" class="cursor-pointer border-t hover:bg-indigo-50" @click="openTrace('command', command)">
+                                    <td class="max-w-xl truncate px-3 py-1.5 font-mono text-xs" :title="command.command ?? command.name">{{ command.command || command.name }}</td>
+                                    <td class="px-3 py-1.5 text-xs" :class="command.exit_code ? 'text-rose-600' : ''">{{ ctrans("exit") }} {{ command.exit_code }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(command.queries) }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(command.cache_events) }}</td>
+                                    <td class="px-3 py-1.5 text-right tabular-nums">{{ compact(command.outgoing_requests) }}</td>
+                                    <td class="px-3 py-1.5 text-right font-mono">{{ formatMicroseconds(command.duration) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">{{ command.created_at }}</td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
 

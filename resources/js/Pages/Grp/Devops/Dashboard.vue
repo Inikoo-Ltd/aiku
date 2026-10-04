@@ -18,7 +18,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunCard.vue"
 import TestStats, { TestStatsData } from "@/Components/DevOps/TestStats.vue"
 import TelemetryPanel, { Telemetry } from "@/Components/DevOps/TelemetryPanel.vue"
-import { TraceRequest, TraceSpan } from "@/Components/DevOps/RequestWaterfall.vue"
+import { Trace } from "@/Components/DevOps/TraceWaterfall.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
@@ -39,7 +39,7 @@ const props = defineProps<{
         test_stats: TestStatsData
     }
     telemetry?: Telemetry | null
-    telemetryTrace?: { request: TraceRequest, spans: TraceSpan[] } | null
+    telemetryTrace?: Trace | null
 }>()
 
 const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)

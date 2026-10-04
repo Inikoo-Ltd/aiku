@@ -675,7 +675,7 @@ it('records backend test results and shows counts, failures and daily stats on t
             ->has('ciRuns.test_stats.daily', 14));
 });
 
-it('shows nightowl telemetry graphs, top tables and a request waterfall on the devops dashboard', function () {
+it('shows nightowl telemetry graphs, top tables and request, job and command waterfalls on the devops dashboard', function () {
     $nightowl = DB::connection('nightowl');
     $nightowl->beginTransaction();
 
@@ -690,6 +690,8 @@ it('shows nightowl telemetry graphs, top tables and a request waterfall on the d
     $nightowl->statement('create temporary table nightowl_dict_sql (id bigint, sql text, file varchar, line int)');
     $nightowl->statement('create temporary table nightowl_dict_string (id int, kind varchar, value varchar)');
     $nightowl->statement('create temporary table nightowl_requests_v2 (id bigint, created_at timestamp, ts_us bigint, trace_id uuid, url text, status_code int, duration bigint, user_id varchar, route_id bigint, queries int, cache_events int, outgoing_requests int, bootstrap bigint, before_middleware bigint, action bigint, render bigint, after_middleware bigint, sending bigint, terminating bigint, peak_memory_usage bigint, exception_preview text)');
+    $nightowl->statement('create temporary table nightowl_jobs_v2 (id bigint, created_at timestamp, ts_us bigint, trace_id uuid, attempt_id uuid, attempt int, job_class_id int, queue_id int, status_id int, duration bigint, user_id varchar, queries int, cache_events int, outgoing_requests int, peak_memory_usage bigint, exception_preview text)');
+    $nightowl->statement('create temporary table nightowl_commands_v2 (id bigint, created_at timestamp, ts_us bigint, trace_id uuid, name varchar, command text, exit_code int, duration bigint, user_id varchar, bootstrap bigint, action bigint, terminating bigint, queries int, cache_events int, outgoing_requests int, peak_memory_usage bigint, exception_preview text)');
     $spanColumns = 'created_at timestamp, ts_us bigint, trace_id uuid, execution_id uuid, duration bigint';
     $nightowl->statement("create temporary table nightowl_queries_v2 ($spanColumns, sql_id bigint)");
     $nightowl->statement("create temporary table nightowl_cache_events_v2 ($spanColumns, event_type_id int, key varchar)");
@@ -712,17 +714,31 @@ it('shows nightowl telemetry graphs, top tables and a request waterfall on the d
     $startUs   = $createdAt->getTimestamp() * 1_000_000;
     $nightowl->table('nightowl_dict_route')->insert(['id' => 68, 'method' => 'GET', 'path' => '/products', 'name' => 'products.index']);
     $nightowl->table('nightowl_dict_sql')->insert(['id' => 9, 'sql' => 'select * from "products"', 'file' => 'app/Actions/ShowProducts.php', 'line' => 30]);
-    $nightowl->table('nightowl_dict_string')->insert(['id' => 101, 'kind' => 'event_type', 'value' => 'hit']);
+    $nightowl->table('nightowl_dict_string')->insert([
+        ['id' => 101, 'kind' => 'event_type', 'value' => 'hit'],
+        ['id' => 805, 'kind' => 'job_class', 'value' => 'App\\Jobs\\Hydrate'],
+        ['id' => 33, 'kind' => 'queue', 'value' => 'default'],
+        ['id' => 48, 'kind' => 'status', 'value' => 'failed'],
+    ]);
+    $attemptId = '2667426f-2004-40c1-b4a4-125243439e26';
+    $commandTraceId = 'f3d4b85a-5166-46f4-88ba-088c68aa8e83';
+    $nightowl->table('nightowl_jobs_v2')->insert(['id' => 777, 'created_at' => $createdAt, 'ts_us' => $startUs, 'trace_id' => $traceId, 'attempt_id' => $attemptId, 'attempt' => 2, 'job_class_id' => 805, 'queue_id' => 33, 'status_id' => 48, 'duration' => 2_000_000, 'queries' => 1, 'cache_events' => 0, 'outgoing_requests' => 1, 'peak_memory_usage' => 80_000_000, 'exception_preview' => 'RuntimeException: Boom']);
+    $nightowl->table('nightowl_commands_v2')->insert(['id' => 888, 'created_at' => $createdAt, 'ts_us' => $startUs, 'trace_id' => $commandTraceId, 'name' => 'data_feeds:save', 'command' => 'data_feeds:save --all', 'exit_code' => 1, 'duration' => 9_000_000, 'bootstrap' => 100_000, 'action' => 8_800_000, 'terminating' => 100_000, 'queries' => 1, 'cache_events' => 0, 'outgoing_requests' => 0, 'peak_memory_usage' => 90_000_000]);
+    $nightowl->table('nightowl_queries_v2')->insert([
+        ['created_at' => $createdAt, 'ts_us' => $startUs + 1_500_000, 'trace_id' => $traceId, 'execution_id' => $attemptId, 'duration' => 3_000, 'sql_id' => 9],
+        ['created_at' => $createdAt->copy()->addSeconds(5), 'ts_us' => $startUs + 5_000_000, 'trace_id' => null, 'execution_id' => $commandTraceId, 'duration' => 4_000, 'sql_id' => 9],
+    ]);
+    $nightowl->table('nightowl_outgoing_requests_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 100_000, 'trace_id' => $traceId, 'execution_id' => $attemptId, 'duration' => 900_000, 'method_id' => null, 'url' => 'https://api.shopify.test/products', 'status_code' => 429]);
     $nightowl->table('nightowl_requests_v2')->insert(['id' => 555, 'created_at' => $createdAt, 'ts_us' => $startUs, 'trace_id' => $traceId, 'url' => 'https://aiku.test/products', 'status_code' => 200, 'duration' => 300_000, 'route_id' => 68, 'queries' => 1, 'cache_events' => 1, 'outgoing_requests' => 0, 'bootstrap' => 0, 'before_middleware' => 10_000, 'action' => 280_000, 'render' => 5_000, 'after_middleware' => 2_000, 'sending' => 1_000, 'terminating' => 2_000, 'peak_memory_usage' => 50_000_000]);
     $nightowl->table('nightowl_queries_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 20_000, 'trace_id' => null, 'execution_id' => $traceId, 'duration' => 1_500, 'sql_id' => 9]);
-    $nightowl->table('nightowl_cache_events_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 5_000, 'trace_id' => $traceId, 'execution_id' => null, 'duration' => 70, 'event_type_id' => 101, 'key' => 'website-1']);
+    $nightowl->table('nightowl_cache_events_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 5_000, 'trace_id' => null, 'execution_id' => $traceId, 'duration' => 70, 'event_type_id' => 101, 'key' => 'website-1']);
 
     Cache::forget('devops-telemetry-24h');
     Config::set('inertia.testing.ensure_pages_exist', false);
 
     try {
         $this->actingAs(createAdminGuest(createGroup())->getUser())
-            ->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'range' => '24h', 'request' => 555, 'at' => $createdAt->toDateTimeString()]))
+            ->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'range' => '24h', 'trace' => 'request', 'id' => 555, 'at' => $createdAt->toDateTimeString()]))
             ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
                 ->component('Devops/Dashboard', false)
                 ->missing('telemetry')
@@ -741,15 +757,38 @@ it('shows nightowl telemetry graphs, top tables and a request waterfall on the d
                     ->where('telemetry.exceptions.0.unhandled', fn ($value) => (int) $value === 3)
                     ->where('telemetry.cache.hits', fn ($value) => (int) $value === 90)
                     ->where('telemetry.issues.0.exception_class', 'RuntimeException')
-                    ->where('telemetry.slowRequests.0.route_name', 'products.index'))
+                    ->where('telemetry.slowRequests.0.route_name', 'products.index')
+                    ->where('telemetry.slowJobs.0.job_class', 'App\\Jobs\\Hydrate')
+                    ->where('telemetry.slowCommands.0.name', 'data_feeds:save'))
                 ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload
-                    ->where('telemetryTrace.request.route_name', 'products.index')
+                    ->where('telemetryTrace.summary.kind', 'request')
+                    ->where('telemetryTrace.summary.subtitle', 'products.index')
+                    ->where('telemetryTrace.stages.1.label', 'Controller')
                     ->has('telemetryTrace.spans', 2)
                     ->where('telemetryTrace.spans.0.type', 'cache')
                     ->where('telemetryTrace.spans.0.label', 'hit website-1')
                     ->where('telemetryTrace.spans.1.type', 'query')
                     ->where('telemetryTrace.spans.1.offset', 20_000)
                     ->where('telemetryTrace.spans.1.file', 'app/Actions/ShowProducts.php')));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'trace' => 'job', 'id' => 777, 'at' => $createdAt->toDateTimeString()]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryTrace.summary.title', 'App\\Jobs\\Hydrate')
+                    ->where('telemetryTrace.summary.failed', true)
+                    ->has('telemetryTrace.spans', 2)
+                    ->where('telemetryTrace.spans.0.type', 'http')
+                    ->where('telemetryTrace.spans.0.label', ' https://api.shopify.test/products 429')
+                    ->where('telemetryTrace.spans.1.offset', 1_500_000)));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'trace' => 'command', 'id' => 888, 'at' => $createdAt->toDateTimeString()]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryTrace.summary.title', 'data_feeds:save --all')
+                    ->where('telemetryTrace.summary.failed', true)
+                    ->has('telemetryTrace.stages', 3)
+                    ->has('telemetryTrace.spans', 1)
+                    ->where('telemetryTrace.spans.0.offset', 5_000_000)));
     } finally {
         $nightowl->rollBack();
         Cache::forget('devops-telemetry-24h');
