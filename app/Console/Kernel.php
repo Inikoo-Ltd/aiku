@@ -417,6 +417,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('org_stocks:hydrate_top_customer_share')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->sentryMonitor(
+                    monitorSlug: 'OrgStockHydrateTopCustomerShare',
+                ),
+                name: 'OrgStockHydrateTopCustomerShare',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('hydrate:org-stock-demand-forecast')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->sentryMonitor(
                     monitorSlug: 'ForecastOrgStockDemand',
                 ),
