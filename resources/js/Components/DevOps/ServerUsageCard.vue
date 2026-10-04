@@ -45,6 +45,13 @@ const latestLive = computed(() => {
 
 const liveCpuCeiling = computed(() => Math.max(10, Math.ceil(Math.max(...(props.live ?? []).map(reading => Number(reading.cpu_percent))) / 10) * 10))
 
+const sparklineColours = computed(() => {
+    const cpu = Number(latestLive.value?.cpu_percent ?? props.server.cpu_percent ?? 0)
+    if (cpu >= 90) return { area: "fill-red-500/15", line: "text-red-500" }
+    if (cpu >= 75) return { area: "fill-amber-500/15", line: "text-amber-500" }
+    return { area: "fill-emerald-500/15", line: "text-emerald-600" }
+})
+
 const liveSparkline = computed(() => {
     const points = props.live ?? []
     if (points.length < 2) return null
@@ -109,14 +116,13 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
                 {{ server.recorded_at ? useFormatTime(server.recorded_at, { formatTime: "hm" }) : ctrans("No data yet") }}
             </span>
         </div>
-        <div v-if="liveSparkline" class="relative mt-2">
+        <div v-if="liveSparkline" class="mt-2">
             <svg viewBox="0 0 100 30" class="h-10 w-full" preserveAspectRatio="none">
-                <polygon :points="liveSparkline.area" class="fill-emerald-500/15" />
-                <polyline :points="liveSparkline.line" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" class="text-emerald-600" />
+                <polygon :points="liveSparkline.area" :class="sparklineColours.area" />
+                <polyline :points="liveSparkline.line" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" :class="sparklineColours.line" />
             </svg>
-            <span class="absolute right-0 top-0 text-[10px] leading-none text-gray-400">{{ liveCpuCeiling }}%</span>
         </div>
-        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 2 min") }}</div>
+        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 2 min") }} · {{ ctrans("scale") }} 0–{{ liveCpuCeiling }}%</div>
         <div class="mt-3 space-y-2">
             <div v-for="meter in meters" :key="meter.label">
                 <div class="flex justify-between text-xs">
