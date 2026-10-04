@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 export interface CiStep { number: number, name: string, status: string, conclusion: string | null, started_at: string | null, completed_at: string | null }
 export interface CiJob { name: string, status: string, conclusion: string | null, started_at: string | null, completed_at: string | null, html_url: string | null, steps: CiStep[] }
@@ -47,6 +48,17 @@ const outcome = (status: string | null, conclusion: string | null) => {
     return { label: "-", dot: "bg-gray-300", text: "text-gray-500" }
 }
 
+const ago = (iso: string | null) => {
+    if (!iso) return ""
+    const diff = Math.max(0, Math.round((now.value - new Date(iso).getTime()) / 1000))
+    if (diff < 60) return ctrans("just now")
+    if (diff < 3600) return ctrans(":count min ago", { count: String(Math.floor(diff / 60)) })
+    if (diff < 86400) return ctrans(":count h ago", { count: String(Math.floor(diff / 3600)) })
+    return ctrans(":count d ago", { count: String(Math.floor(diff / 86400)) })
+}
+
+const when = (iso: string | null) => iso ? useFormatTime(iso, { formatTime: "short-datetime" }) : ""
+
 const elapsed = computed(() => props.run ? seconds(props.run.started_at, props.run.completed_at) : null)
 
 const steps = computed(() => props.run?.jobs.flatMap(job => job.steps.map(step => ({ ...step, job: job.name }))) ?? [])
@@ -85,6 +97,7 @@ const showAllTasks = ref(false)
             <div class="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500 tabular-nums">
                 <span v-if="run.head_sha" class="font-mono">{{ run.head_sha }}</span>
                 <span v-if="run.actor">{{ run.actor }}</span>
+                <span v-if="run.started_at" :title="when(run.started_at)">{{ when(run.started_at) }} · {{ isRunning(run) ? ago(run.started_at) : ctrans("finished") + " " + ago(run.completed_at ?? run.started_at) }}</span>
                 <span>{{ formatDuration(elapsed) }}<template v-if="usualSeconds"> / {{ ctrans("usually") }} {{ formatDuration(usualSeconds) }}</template></span>
             </div>
 
@@ -133,9 +146,9 @@ const showAllTasks = ref(false)
         </template>
 
         <table v-if="recent.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
-            <colgroup><col class="w-4"><col><col class="w-16"></colgroup>
+            <colgroup><col class="w-4"><col><col class="w-24"><col class="w-16"></colgroup>
             <thead class="text-gray-400">
-                <tr><th colspan="3" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
+                <tr><th colspan="4" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="previous in recent" :key="previous.github_run_id">
@@ -143,7 +156,8 @@ const showAllTasks = ref(false)
                     <td class="truncate py-1 text-gray-600">
                         <a v-if="previous.html_url" :href="previous.html_url" target="_blank" rel="noopener" class="hover:underline">{{ previous.head_message ?? previous.head_sha }}</a>
                     </td>
-                    <td class="w-16 py-1 text-right text-gray-500">{{ formatDuration(seconds(previous.started_at, previous.completed_at)) }}</td>
+                    <td class="py-1 text-right text-gray-500" :title="when(previous.started_at)">{{ ago(previous.started_at) }}</td>
+                    <td class="py-1 text-right text-gray-500">{{ formatDuration(seconds(previous.started_at, previous.completed_at)) }}</td>
                 </tr>
             </tbody>
         </table>
