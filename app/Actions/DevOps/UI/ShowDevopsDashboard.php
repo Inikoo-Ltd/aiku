@@ -126,6 +126,9 @@ class ShowDevopsDashboard extends OrgAction
 
     public const string TESTS_WORKFLOW = 'Backend Tests';
 
+    /** @var array<string, string> */
+    public const array DEPLOY_HOST_NAMES = ['aiku' => 'boro', 'aiku_litio' => 'litio'];
+
     /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null} */
     public function getCiRuns(): array
     {
@@ -174,7 +177,8 @@ class ShowDevopsDashboard extends OrgAction
         $total = null;
         foreach ($ciRun->deploy_tasks as $event) {
             $task          = $tasks[$event['task']] ?? ['task' => $event['task'], 'state' => 'start', 'started_at' => $event['at'], 'finished_at' => null, 'hosts' => [], 'running' => 0, 'failed' => false];
-            $task['hosts'] = array_values(array_unique(array_filter([...$task['hosts'], $event['host'] ?? null])));
+            $host          = self::DEPLOY_HOST_NAMES[$event['host'] ?? ''] ?? ($event['host'] ?? null);
+            $task['hosts'] = collect([...$task['hosts'], $host])->filter()->unique()->sort()->values()->all();
             if ($event['state'] === 'start') {
                 $task['running']++;
             } else {

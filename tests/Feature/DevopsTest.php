@@ -599,7 +599,7 @@ it('records github workflow runs, jobs and deploy task progress and shows them o
             ->where('ciRuns.deploy.jobs.0.steps.1.name', 'Launch 🚀')
             ->where('ciRuns.deploy.deploy_total', 30)
             ->where('ciRuns.deploy.deploy_done', 1)
-            ->where('ciRuns.deploy.deploy_tasks.0.hosts', ['aiku', 'aiku_litio'])
+            ->where('ciRuns.deploy.deploy_tasks.0.hosts', ['boro', 'litio'])
             ->where('ciRuns.deploy.deploy_tasks.1.state', 'start'));
 
     $sendWebhook('workflow_run', ['workflow_run' => [...$run, 'status' => 'completed', 'conclusion' => 'failure']])->assertOk();

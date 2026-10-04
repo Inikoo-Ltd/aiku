@@ -101,12 +101,12 @@ const showAllTasks = ref(false)
                 </div>
             </div>
 
-            <table v-if="steps.length" class="mt-3 w-full text-xs tabular-nums">
+            <table v-if="steps.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
                 <tbody class="divide-y divide-gray-100">
                     <tr v-for="step in steps" :key="`${step.job}-${step.number}`">
                         <td class="w-4 py-1" :class="stepColour(step.status, step.conclusion)">{{ stepIcon(step.status, step.conclusion) }}</td>
-                        <td class="max-w-0 truncate py-1" :class="step.status === 'in_progress' ? 'font-medium' : 'text-gray-600'">{{ step.name }}</td>
-                        <td class="py-1 text-right text-gray-500">{{ step.started_at ? formatDuration(seconds(step.started_at, step.completed_at)) : "" }}</td>
+                        <td class="truncate py-1" :class="step.status === 'in_progress' ? 'font-medium' : 'text-gray-600'">{{ step.name }}</td>
+                        <td class="w-16 py-1 text-right text-gray-500">{{ step.started_at ? formatDuration(seconds(step.started_at, step.completed_at)) : "" }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -115,14 +115,14 @@ const showAllTasks = ref(false)
                 <button type="button" class="text-xs text-indigo-600 hover:underline" @click.prevent="showAllTasks = !showAllTasks">
                     {{ showAllTasks ? ctrans("Hide deploy tasks") : ctrans("Show deploy tasks") }}
                 </button>
-                <table v-if="showAllTasks" class="mt-1 w-full text-xs tabular-nums">
+                <table v-if="showAllTasks" class="mt-1 w-full table-fixed text-xs tabular-nums">
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="task in run.deploy_tasks" :key="task.task">
                             <td class="w-4 py-1" :class="task.state === 'done' ? 'text-emerald-600' : task.state === 'failed' ? 'text-red-600' : 'animate-pulse text-sky-600'">
                                 {{ task.state === "done" ? "✓" : task.state === "failed" ? "✗" : "●" }}
                             </td>
-                            <td class="max-w-0 truncate py-1 text-gray-600">{{ task.task }}</td>
-                            <td class="py-1 text-right text-gray-400">{{ task.hosts.join(", ") }}</td>
+                            <td class="truncate py-1 text-gray-600" :title="task.task">{{ task.task }}</td>
+                            <td class="w-28 truncate py-1 text-right text-gray-400">{{ task.hosts.join(", ") }}</td>
                             <td class="w-16 py-1 text-right text-gray-500">{{ formatDuration(seconds(task.started_at, task.finished_at)) }}</td>
                         </tr>
                     </tbody>
@@ -130,14 +130,14 @@ const showAllTasks = ref(false)
             </div>
         </template>
 
-        <table v-if="recent.length" class="mt-3 w-full text-xs tabular-nums">
+        <table v-if="recent.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
             <thead class="text-gray-400">
                 <tr><th colspan="3" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="previous in recent" :key="previous.github_run_id">
                     <td class="w-4 py-1"><span class="inline-block h-1.5 w-1.5 rounded-full" :class="outcome(previous.status, previous.conclusion).dot" /></td>
-                    <td class="max-w-0 truncate py-1 text-gray-600">
+                    <td class="truncate py-1 text-gray-600">
                         <a v-if="previous.html_url" :href="previous.html_url" target="_blank" rel="noopener" class="hover:underline">{{ previous.head_message ?? previous.head_sha }}</a>
                     </td>
                     <td class="w-16 py-1 text-right text-gray-500">{{ formatDuration(seconds(previous.started_at, previous.completed_at)) }}</td>
