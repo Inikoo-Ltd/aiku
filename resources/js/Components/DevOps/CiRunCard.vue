@@ -61,6 +61,15 @@ const when = (iso: string | null) => iso ? useFormatTime(iso, { formatTime: "sho
 
 const elapsed = computed(() => props.run ? seconds(props.run.started_at, props.run.completed_at) : null)
 
+const eta = computed(() => {
+    const run = props.run
+    if (!run || !isRunning(run) || !run.started_at || !props.usualSeconds || elapsed.value === null) return null
+    const remaining = props.usualSeconds - elapsed.value
+    if (remaining < 0) return { late: true, text: ctrans(":duration longer than usual", { duration: formatDuration(-remaining) }) }
+    const finishAt = new Date(new Date(run.started_at).getTime() + props.usualSeconds * 1000)
+    return { late: false, text: `${ctrans("about :duration left", { duration: formatDuration(remaining) })} · ${ctrans("done around :time", { time: finishAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })}` }
+})
+
 const steps = computed(() => props.run?.jobs.flatMap(job => job.steps.map(step => ({ ...step, job: job.name }))) ?? [])
 
 const currentTasks = computed(() => props.run?.deploy_tasks.filter(task => task.state === "start") ?? [])
@@ -98,7 +107,9 @@ const showAllTasks = ref(false)
                 <span v-if="run.head_sha" class="font-mono">{{ run.head_sha }}</span>
                 <span v-if="run.actor">{{ run.actor }}</span>
                 <span v-if="run.started_at" :title="when(run.started_at)">{{ when(run.started_at) }} · {{ isRunning(run) ? ago(run.started_at) : ctrans("finished") + " " + ago(run.completed_at ?? run.started_at) }}</span>
-                <span>{{ formatDuration(elapsed) }}<template v-if="usualSeconds"> / {{ ctrans("usually") }} {{ formatDuration(usualSeconds) }}</template></span>
+                <span v-if="isRunning(run)" class="text-gray-700">{{ ctrans("running") }} {{ formatDuration(elapsed) }}</span>
+                <span v-else>{{ ctrans("took") }} {{ formatDuration(elapsed) }}<template v-if="usualSeconds"> / {{ ctrans("usually") }} {{ formatDuration(usualSeconds) }}</template></span>
+                <span v-if="eta" :class="eta.late ? 'text-amber-600' : 'text-sky-700'">{{ eta.text }}</span>
             </div>
 
             <div v-if="progress !== null" class="mt-3">
