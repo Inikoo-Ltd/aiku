@@ -16,7 +16,7 @@ import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import SqlCode from "@/Components/DevOps/SqlCode.vue"
 
-export type TraceSpan = { type: "query" | "cache" | "http" | "exception", offset: number, duration: number, label: string, file: string | null, line: number | null }
+export type TraceSpan = { type: "query" | "cache" | "http" | "log" | "exception", offset: number, duration: number, label: string, file: string | null, line: number | null }
 export type Trace = {
     summary: { kind: "request" | "job" | "command", title: string, subtitle: string | null, status: string | null, failed: boolean, duration: number, created_at: string, user_id: string | null, peak_memory_usage: number, exception_preview: string | null }
     stages: { label: string, duration: number }[]
@@ -27,8 +27,8 @@ export type Trace = {
 const props = defineProps<{ trace: Trace }>()
 defineEmits<{ close: [] }>()
 
-const colours: Record<TraceSpan["type"], string> = { query: "bg-sky-500", cache: "bg-emerald-500", http: "bg-amber-500", exception: "bg-rose-600" }
-const typeLabels = computed<Record<TraceSpan["type"], string>>(() => ({ query: ctrans("Query"), cache: ctrans("Cache"), http: ctrans("HTTP"), exception: ctrans("Exception") }))
+const colours: Record<TraceSpan["type"], string> = { query: "bg-sky-500", cache: "bg-emerald-500", http: "bg-amber-500", log: "bg-slate-500", exception: "bg-rose-600" }
+const typeLabels = computed<Record<TraceSpan["type"], string>>(() => ({ query: ctrans("Query"), cache: ctrans("Cache"), http: ctrans("HTTP"), log: ctrans("Log"), exception: ctrans("Exception") }))
 const stageColours = ["bg-gray-400", "bg-indigo-300", "bg-indigo-500", "bg-violet-500", "bg-indigo-300", "bg-gray-400", "bg-gray-300"]
 
 const stages = computed(() => {

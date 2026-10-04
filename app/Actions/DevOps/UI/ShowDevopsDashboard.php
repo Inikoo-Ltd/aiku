@@ -71,7 +71,12 @@ class ShowDevopsDashboard extends OrgAction
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
                 'telemetry'        => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->overview(GetNightOwlTelemetry::range($request->query('range')))),
                 'telemetryException' => Inertia::optional(fn () => $request->filled('exception') ? app(GetNightOwlTelemetry::class)->exception((string) $request->query('exception'), $request->integer('occurrence') ?: null, $request->query('occurrence_at')) : null),
-                'telemetryTrace'   => Inertia::optional(fn () => $request->filled(['trace', 'id', 'at']) ? app(GetNightOwlTelemetry::class)->trace((string) $request->query('trace'), (int) $request->query('id'), (string) $request->query('at')) : null),
+                'telemetryTrace'   => Inertia::optional(fn () => match (true) {
+                    $request->filled(['trace', 'id', 'at'])        => app(GetNightOwlTelemetry::class)->trace((string) $request->query('trace'), (int) $request->query('id'), (string) $request->query('at')),
+                    $request->filled(['trace', 'execution', 'at']) => app(GetNightOwlTelemetry::class)->traceOfExecution((string) $request->query('trace'), (string) $request->query('execution'), (string) $request->query('at')),
+                    default                                        => null,
+                }),
+                'telemetryLogs'    => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->logs(GetNightOwlTelemetry::range($request->query('range')), $request->query('level'), $request->query('search'))),
 
             ]
         );

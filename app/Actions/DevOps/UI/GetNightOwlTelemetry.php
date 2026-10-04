@@ -180,6 +180,8 @@ class GetNightOwlTelemetry
                 ->selectRaw("'cache' as type, span.ts_us, span.duration, coalesce(event.value, '') || ' ' || span.key as label, null as file, null as line")->get(),
             $inTrace($this->db()->table('nightowl_outgoing_requests_v2 as span')->leftJoin('nightowl_dict_string as method', 'method.id', '=', 'span.method_id'))
                 ->selectRaw("'http' as type, span.ts_us, span.duration, coalesce(method.value, '') || ' ' || span.url || ' ' || span.status_code as label, null as file, null as line")->get(),
+            $inTrace($this->db()->table('nightowl_logs_v2 as span')->leftJoin('nightowl_dict_string as level', 'level.id', '=', 'span.level_id'))
+                ->selectRaw("'log' as type, span.ts_us, 0 as duration, upper(coalesce(level.value, '')) || ': ' || left(span.message, 300) as label, null as file, null as line")->get(),
             $inTrace($this->db()->table('nightowl_exceptions_v2 as span'))
                 ->selectRaw("'exception' as type, span.ts_us, 0 as duration, span.class || ': ' || left(span.message, 300) as label, span.file, span.line")->get(),
         ];
@@ -394,5 +396,63 @@ class GetNightOwlTelemetry
             ->first(['id', 'created_at']);
 
         return $execution ? ['kind' => $occurrence->source, 'id' => (int) $execution->id, 'at' => $execution->created_at] : null;
+    }
+
+    public const array LOG_LEVELS = ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug'];
+
+    /** @return array{range: string, level: string|null, search: string|null, series: list<object>, entries: list<array<string, mixed>>} */
+    public function logs(string $range, ?string $level, ?string $search): array
+    {
+        $minutes = self::RANGES[$range][2];
+        $level   = in_array($level, self::LOG_LEVELS, true) ? $level : null;
+        $search  = trim((string) $search) ?: null;
+        $bucket  = $range === '1h' ? 'minute' : 'hour';
+
+        $logs = fn () => $this->db()->table('nightowl_logs_v2 as log')
+            ->leftJoin('nightowl_dict_string as level', 'level.id', '=', 'log.level_id')
+            ->where('log.created_at', '>=', now()->subMinutes($minutes)->toDateTimeString())
+            ->when($level, fn ($query) => $query->where('level.value', $level))
+            ->when($search, fn ($query) => $query->where('log.message', 'ilike', '%'.addcslashes($search, '%_\\').'%'));
+
+        return [
+            'range'   => $range,
+            'level'   => $level,
+            'search'  => $search,
+            'series'  => $logs()->groupByRaw("date_trunc('$bucket', log.created_at), level.value")->orderByRaw('1')
+                ->selectRaw("date_trunc('$bucket', log.created_at) as bucket_start, coalesce(level.value, 'info') as level, count(*) as entries")->get()->all(),
+            'entries' => $logs()
+                ->leftJoin('nightowl_dict_string as channel', 'channel.id', '=', 'log.channel_id')
+                ->leftJoin('nightowl_dict_string as server', 'server.id', '=', 'log.server_id')
+                ->leftJoin('nightowl_dict_string as source', 'source.id', '=', 'log.execution_source_id')
+                ->orderByDesc('log.created_at')->orderByDesc('log.id')->limit(100)
+                ->get(['log.id', 'log.created_at', 'log.execution_id', 'log.user_id', 'log.execution_preview', 'log.message', 'log.context_z', 'level.value as level', 'channel.value as channel', 'server.value as server', 'source.value as source'])
+                ->map(fn (object $entry) => [
+                    ...array_diff_key((array) $entry, ['context_z' => true]),
+                    'context' => $this->inflateJson($entry->context_z),
+                ])->all(),
+        ];
+    }
+
+    public function inflateJson(mixed $compressed): ?string
+    {
+        $compressed = is_resource($compressed) ? stream_get_contents($compressed) : $compressed;
+        $json       = $compressed ? @gzinflate($compressed) : false;
+        if (! $json || in_array($json, ['[]', '{}', 'null'], true)) {
+            return null;
+        }
+
+        return json_encode(json_decode($json), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: $json;
+    }
+
+    /** @return array{summary: array<string, mixed>, stages: list<array{label: string, duration: int}>, spans: list<array<string, mixed>>, truncated: bool}|null */
+    public function traceOfExecution(string $kind, string $executionId, string $at): ?array
+    {
+        if (! in_array($kind, ['request', 'command'], true) || ! preg_match('/^[0-9a-f-]{36}$/', $executionId)) {
+            return null;
+        }
+
+        $execution = $this->executionOf((object) ['execution_id' => $executionId, 'source' => $kind, 'created_at' => $at]);
+
+        return $execution ? $this->trace($kind, $execution['id'], $execution['at']) : null;
     }
 }

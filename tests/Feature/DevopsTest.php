@@ -675,7 +675,7 @@ it('records backend test results and shows counts, failures and daily stats on t
             ->has('ciRuns.test_stats.daily', 14));
 });
 
-it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls and exception stack traces on the devops dashboard', function () {
+it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls, exception stack traces and logs on the devops dashboard', function () {
     $nightowl = DB::connection('nightowl');
     $nightowl->beginTransaction();
 
@@ -697,6 +697,7 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
     $nightowl->statement("create temporary table nightowl_cache_events_v2 ($spanColumns, event_type_id int, key varchar)");
     $nightowl->statement("create temporary table nightowl_outgoing_requests_v2 ($spanColumns, method_id int, url text, status_code int)");
     $nightowl->statement("create temporary table nightowl_exceptions_v2 (id bigint, $spanColumns, fingerprint bytea, server_id int, execution_source_id int, execution_stage_id int, trace_ref bigint, handled boolean, user_id varchar, execution_preview varchar, class varchar, message text, code varchar, file varchar, line int, php_version varchar, laravel_version varchar)");
+    $nightowl->statement("create temporary table nightowl_logs_v2 (id bigint, $spanColumns, server_id int, execution_source_id int, execution_preview varchar, user_id varchar, level_id int, channel_id int, message text, context_z bytea)");
     $nightowl->statement('create temporary table nightowl_dict_trace (id bigint, trace_z bytea)');
     $nightowl->statement('create temporary table nightowl_exception_server_hourly_rollups (fingerprint varchar, server varchar, bucket_start timestamp, environment varchar, call_count bigint)');
 
@@ -725,6 +726,12 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
         ['id' => 48, 'kind' => 'status', 'value' => 'failed'],
         ['id' => 2, 'kind' => 'server', 'value' => 'litio'],
         ['id' => 7, 'kind' => 'execution_source', 'value' => 'request'],
+        ['id' => 60, 'kind' => 'level', 'value' => 'warning'],
+        ['id' => 61, 'kind' => 'level', 'value' => 'error'],
+        ['id' => 1195, 'kind' => 'channel', 'value' => 'production'],
+    ]);
+    $nightowl->insert("insert into nightowl_logs_v2 (id, created_at, ts_us, trace_id, execution_id, duration, server_id, execution_source_id, level_id, channel_id, message, context_z) values (1, ?, ?, null, ?, 0, 2, 7, 60, 1195, 'Unverified Shopify webhook allowed', decode(?, 'hex')), (2, ?, ?, null, null, 0, 2, null, 61, 1195, 'No route to host', null)", [
+        $createdAt, $startUs + 30_000, $traceId, bin2hex(gzdeflate(json_encode(['reason' => 'signature']), 6)), $createdAt->copy()->addSecond(), $startUs + 1_000_000,
     ]);
     $frames = [
         ['file' => 'app/Actions/ShowProducts.php:31', 'source' => '', 'code' => ['30' => '$products = load();', '31' => 'throw new RuntimeException("Boom");']],
@@ -777,8 +784,10 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
                     ->where('telemetryTrace.summary.kind', 'request')
                     ->where('telemetryTrace.summary.subtitle', 'products.index')
                     ->where('telemetryTrace.stages.1.label', 'Controller')
-                    ->has('telemetryTrace.spans', 3)
-                    ->where('telemetryTrace.spans.2.type', 'exception')
+                    ->has('telemetryTrace.spans', 4)
+                    ->where('telemetryTrace.spans.2.type', 'log')
+                    ->where('telemetryTrace.spans.2.label', 'WARNING: Unverified Shopify webhook allowed')
+                    ->where('telemetryTrace.spans.3.type', 'exception')
                     ->where('telemetryTrace.spans.0.type', 'cache')
                     ->where('telemetryTrace.spans.0.label', 'hit website-1')
                     ->where('telemetryTrace.spans.1.type', 'query')
@@ -817,6 +826,26 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
                     ->has('telemetryException.occurrences', 1)
                     ->where('telemetryException.servers.0.server', 'litio')
                     ->where('telemetryException.hourly.0.unhandled', fn ($value) => (int) $value === 3)));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'range' => '24h']))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryLogs', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->has('telemetryLogs.entries', 2)
+                    ->where('telemetryLogs.entries.0.level', 'error')
+                    ->where('telemetryLogs.entries.1.channel', 'production')
+                    ->where('telemetryLogs.entries.1.context', "{\n    \"reason\": \"signature\"\n}")
+                    ->where('telemetryLogs.series', fn ($series) => collect($series)->sum('entries') === 2)));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'range' => '24h', 'level' => 'warning', 'search' => 'shopify']))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryLogs', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryLogs.level', 'warning')
+                    ->has('telemetryLogs.entries', 1)
+                    ->where('telemetryLogs.entries.0.message', 'Unverified Shopify webhook allowed')));
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'trace' => 'request', 'execution' => $traceId, 'at' => $createdAt->toDateTimeString()]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload->where('telemetryTrace.summary.subtitle', 'products.index')));
 
         $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'exception' => 'not-a-fingerprint']))
             ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page

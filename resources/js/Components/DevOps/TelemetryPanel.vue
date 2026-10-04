@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { router } from "@inertiajs/vue3"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { Bar, Line } from "vue-chartjs"
 import { BarElement, CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, Tooltip } from "chart.js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import SqlCode from "@/Components/DevOps/SqlCode.vue"
 import TraceWaterfall, { formatMicroseconds, Trace } from "@/Components/DevOps/TraceWaterfall.vue"
+import LogsView, { LogEntry, Logs } from "@/Components/DevOps/LogsView.vue"
 import ExceptionDetail, { ExceptionDetailData, ExceptionOccurrence } from "@/Components/DevOps/ExceptionDetail.vue"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler)
@@ -37,12 +38,12 @@ export type Telemetry = {
     slowCommands: SlowCommand[]
 }
 
-const props = defineProps<{ telemetry?: Telemetry | null, trace?: Trace | null, exception?: ExceptionDetailData | null }>()
+const props = defineProps<{ telemetry?: Telemetry | null, trace?: Trace | null, exception?: ExceptionDetailData | null, logs?: Logs | null }>()
 
 const loading = ref(false)
 const load = (range: string) => {
     loading.value = true
-    router.reload({ only: ["telemetry"], data: { range }, onFinish: () => loading.value = false })
+    router.reload({ only: currentTable.value === "logs" ? ["telemetry", "telemetryLogs"] : ["telemetry"], data: { range }, onFinish: () => loading.value = false })
 }
 onMounted(() => !props.telemetry && load(new URLSearchParams(window.location.search).get("range") ?? "24h"))
 
@@ -56,11 +57,24 @@ const openException = (fingerprint: string, occurrence?: ExceptionOccurrence) =>
     } })
 }
 
+const logsLoading = ref(false)
+const loadLogs = (filters: { level: string | null, search: string | null }) => {
+    logsLoading.value = true
+    router.reload({ only: ["telemetryLogs"], data: { range: props.telemetry?.range ?? "24h", ...filters }, onFinish: () => logsLoading.value = false })
+}
+const openLogExecution = (entry: LogEntry) => {
+    traceLoading.value = true
+    router.reload({ only: ["telemetryTrace"], data: { trace: entry.source, execution: entry.execution_id, id: null, at: entry.created_at }, onFinish: () => {
+        traceLoading.value = false
+        isTraceOpen.value = true
+    } })
+}
+
 const traceLoading = ref(false)
 const isTraceOpen = ref(Boolean(props.trace))
 const openTrace = (kind: Trace["summary"]["kind"], row: { id: number, created_at: string }) => {
     traceLoading.value = true
-    router.reload({ only: ["telemetryTrace"], data: { trace: kind, id: row.id, at: row.created_at }, onFinish: () => {
+    router.reload({ only: ["telemetryTrace"], data: { trace: kind, id: row.id, execution: null, at: row.created_at }, onFinish: () => {
         traceLoading.value = false
         isTraceOpen.value = true
     } })
@@ -124,7 +138,7 @@ const durationCards = computed(() => {
     ]
 })
 
-type TableKey = "slowRequests" | "slowJobs" | "slowCommands" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "exceptionGroups"
+type TableKey = "slowRequests" | "slowJobs" | "slowCommands" | "routes" | "queries" | "jobClasses" | "commands" | "scheduledTasks" | "outgoing" | "exceptionGroups" | "logs"
 const tables = computed<Record<TableKey, string>>(() => ({
     slowRequests: ctrans("Slowest requests (last hour)"),
     slowJobs: ctrans("Slowest jobs (last hour)"),
@@ -136,8 +150,10 @@ const tables = computed<Record<TableKey, string>>(() => ({
     scheduledTasks: ctrans("Scheduled tasks"),
     outgoing: ctrans("Outgoing HTTP"),
     exceptionGroups: ctrans("Exceptions"),
+    logs: ctrans("Logs"),
 }))
 const currentTable = ref<TableKey>("slowRequests")
+watch(currentTable, table => table === "logs" && (!props.logs || props.logs.range !== props.telemetry?.range) && loadLogs({ level: props.logs?.level ?? null, search: props.logs?.search ?? null }))
 const sortKey = ref<"total_duration" | "calls" | "p95" | "max_duration">("total_duration")
 const sortKeys = computed(() => ({ total_duration: ctrans("Total time"), calls: ctrans("Count"), p95: "P95", max_duration: ctrans("Slowest") }))
 const errorColumns: Partial<Record<TableKey, [string, string][]>> = {
@@ -147,7 +163,7 @@ const errorColumns: Partial<Record<TableKey, [string, string][]>> = {
     scheduledTasks: [["skipped", "Skipped"], ["failed", "Failed"]],
     outgoing: [["client_errors", "4xx"], ["server_errors", "5xx"]],
 }
-const isListTable = computed(() => ["slowRequests", "slowJobs", "slowCommands", "exceptionGroups"].includes(currentTable.value))
+const isListTable = computed(() => ["slowRequests", "slowJobs", "slowCommands", "exceptionGroups", "logs"].includes(currentTable.value))
 const rows = computed(() => {
     const key = currentTable.value
     if (!props.telemetry || isListTable.value) {
@@ -290,6 +306,10 @@ const cacheHitRate = computed(() => {
                         </tbody>
                     </table>
 
+                    <template v-else-if="currentTable === 'logs'">
+                        <LogsView v-if="logs" :logs="logs" @filter="loadLogs" @open-execution="openLogExecution" />
+                        <div v-else class="m-3 h-40 animate-pulse rounded bg-gray-100" />
+                    </template>
                     <table v-else-if="currentTable === 'exceptionGroups'" class="min-w-full text-sm">
                         <thead class="text-left text-xs text-gray-500"><tr>
                             <th class="px-3 py-2">{{ ctrans("Exception") }}</th><th class="px-3 py-2">{{ ctrans("Status") }}</th>
@@ -335,7 +355,7 @@ const cacheHitRate = computed(() => {
                             </template>
                         </tbody>
                     </table>
-                    <div v-if="traceLoading || exceptionLoading" class="border-t px-3 py-2 text-sm text-gray-500">{{ ctrans("Loading") }}…</div>
+                    <div v-if="traceLoading || exceptionLoading || logsLoading" class="border-t px-3 py-2 text-sm text-gray-500">{{ ctrans("Loading") }}…</div>
                 </div>
             </div>
         </template>
