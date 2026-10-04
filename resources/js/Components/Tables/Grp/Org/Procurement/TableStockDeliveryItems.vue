@@ -757,9 +757,10 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     />
                     <span v-else class="text-red-500 italic text-xs">{{ ctrans('No location yet') }}</span>
                     <Button
-                        v-tooltip="ctrans('Choose another location')"
+                        v-tooltip="ctrans('Book in to any location in the warehouse')"
+                        :label="item.locations?.length || selectedOtherLocation[item.id] ? ctrans('Other location') : ctrans('Choose location')"
                         icon="fal fa-inventory"
-                        type="tertiary"
+                        :type="item.locations?.length || selectedOtherLocation[item.id] ? 'tertiary' : 'secondary'"
                         size="xs"
                         @click="() => { isModalLocation = true; selectedItemValue = item }"
                     />
@@ -794,7 +795,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ overflow: 'visible' }"
-        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+        :header="ctrans('Where to put :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
     >
         <SelectPickingLocation
             v-if="selectedItemValue?.locations?.length"
@@ -804,7 +805,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             :ignoreNoQty="true"
         />
         <div v-if="selectedItemValue?.searchLocationsRoute" class="mt-4">
-            <div class="text-sm text-gray-500 mb-1">{{ ctrans('Or book in to any other location in the warehouse') }}</div>
+            <div class="text-sm text-gray-700 mb-1">{{ selectedItemValue?.locations?.length ? ctrans('Or book in to any other location in the warehouse') : ctrans('Book in to any location in the warehouse') }}</div>
             <PureMultiselectInfiniteScroll
                 :key="`other-location-${selectedItemValue?.id}`"
                 :modelValue="selectedOtherLocation[selectedItemValue?.id]?.id ?? null"
