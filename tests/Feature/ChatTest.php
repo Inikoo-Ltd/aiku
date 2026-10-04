@@ -8464,7 +8464,7 @@ test('the archive reads at most its hourly share of a mailbox, a hundred mails a
     expect($action->archivePage($this->shop, 12))->toMatchArray(['rate_limited' => false, 'read' => 4]);
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'users/me/messages?') && str_contains($request->url(), 'maxResults=100'));
 
-    \Illuminate\Support\Facades\Cache::increment('mailbox-archive-reads:'.$this->shop->id.':'.now()->format('YmdH'), 596);
+    \Illuminate\Support\Facades\Cache::increment('mailbox-archive-reads:'.$this->shop->id.':'.now()->format('YmdH'), 1996);
     $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
     $spent          = $action->archivePage($this->shop, 12);
 
@@ -8556,7 +8556,7 @@ test('the archive reads more of a mailbox an hour at night and at weekends, when
     $at      = fn (string $when) => \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse($when, 'UTC'));
 
     $at('2026-10-06 10:00');
-    expect($mailbox::readsPerHour())->toBe(600);
+    expect($mailbox::readsPerHour())->toBe(2000);
     $at('2026-10-06 04:59');
     expect($mailbox::readsPerHour())->toBe(10000);
     $at('2026-10-06 18:00');
