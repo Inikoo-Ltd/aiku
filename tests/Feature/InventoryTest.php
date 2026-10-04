@@ -4413,6 +4413,52 @@ describe('out of stock forecast', function () {
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
         expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
     });
+
+    test('an item that is almost never in stock cannot forecast more than twice its calendar dispatch rate', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $orgStock             = $deliveryNoteItem->orgStock;
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0]);
+        DB::table('delivery_note_items')->where('org_stock_id', $orgStock->id)->delete();
+
+        $movementBase = [
+            'group_id'        => $orgStock->group_id,
+            'organisation_id' => $orgStock->organisation_id,
+            'warehouse_id'    => $this->warehouse->id,
+            'org_stock_id'    => $orgStock->id,
+            'class'           => OrgStockMovementClassEnum::MOVEMENT->value,
+            'type'            => OrgStockMovementTypeEnum::PURCHASE->value,
+            'flow'            => OrgStockMovementFlowEnum::IN->value,
+            'quantity'        => 1,
+            'org_amount'      => 0,
+            'grp_amount'      => 0,
+            'data'            => '{}',
+        ];
+        DB::table('org_stock_movements')->insert([
+            [...$movementBase, 'date' => now()->subDays(60)->startOfDay()->addHours(8), 'running_quantity_org_stock' => 9000],
+            [...$movementBase, 'date' => now()->subDays(57)->startOfDay()->addHours(8), 'running_quantity_org_stock' => 0],
+        ]);
+        foreach ([60, 59, 58] as $daysAgo) {
+            DB::table('delivery_note_items')->insert([
+                'group_id'            => $deliveryNoteItem->group_id,
+                'organisation_id'     => $deliveryNoteItem->organisation_id,
+                'shop_id'             => $deliveryNoteItem->shop_id,
+                'delivery_note_id'    => $deliveryNoteItem->delivery_note_id,
+                'org_stock_id'        => $orgStock->id,
+                'quantity_required'   => 3000,
+                'quantity_dispatched' => 3000,
+                'data'                => '{}',
+                'created_at'          => now()->subDays($daysAgo)->startOfDay()->addHours(10),
+                'updated_at'          => now(),
+            ]);
+        }
+
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        $stats = $orgStock->stats->refresh();
+
+        $calendarRate = 9000 / 91;
+        expect($stats->forecast_source)->toBe('holt')
+            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta($calendarRate * 2, 0.01);
+    });
 });
 
 test('move stock to other locations from the SKO page', function ($warehouseArea) {
