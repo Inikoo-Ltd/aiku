@@ -20,7 +20,7 @@ class GroupHydratePortfolios implements ShouldBeUnique
     use WithEnumStats;
     use WithHydratePortfolios;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(Group $group): string
     {
