@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Server usage sampler for the DevOps dashboard. Runs as a service on every box
-# (boro, litio, helio, neon): every 5 seconds it posts a live reading (CPU,
+# (boro, litio, helio, neon): every second it posts a live reading (CPU,
 # I/O wait, memory, network) that aiku only pushes to open dashboards over
 # soketi, and every minute the full reading (plus swap, disks, inodes, disk I/O,
 # processes, connections) that aiku stores. Standalone bash, no PHP: runs on
@@ -18,7 +18,7 @@ CONFIG=${SERVER_METRICS_CONFIG:-/etc/aiku-server-metrics.env}
 URL=${SERVER_METRICS_URL:-https://aiku.io/devops}
 SLUG=${SERVER_METRICS_SLUG:-$(hostname -s | tr 'A-Z' 'a-z')}
 TOKEN=${SERVER_METRICS_TOKEN:-}
-INTERVAL=${SERVER_METRICS_INTERVAL:-5}
+INTERVAL=${SERVER_METRICS_INTERVAL:-1}
 FULL_EVERY=$((60 / INTERVAL))
 LOCAL_FS=(-x tmpfs -x devtmpfs -x squashfs -x efivarfs -x nfs -x nfs4 -x cifs -x overlay -x fuse.sshfs)
 
@@ -60,11 +60,11 @@ rates() {
 }
 
 post() {
-    local path=$1 payload=$2 code
-    code=$(curl -sS -m 4 -o /dev/null -w '%{http_code}' -X POST \
+    local path=$1 payload=$2 timeout=$3 code
+    code=$(curl -sS -m "$timeout" -o /dev/null -w '%{http_code}' -X POST \
         -H 'Content-Type: application/json' -H 'Accept: application/json' -H "X-DEVOPS-TOKEN: $TOKEN" \
         --data "$payload" "$URL/$path" 2>&1)
-    [ "$code" = 200 ] || logger -t aiku-server-metrics "post $path failed: $code"
+    [ "$code" = 200 ] || [ "$path" != "metrics/$SLUG" ] || logger -t aiku-server-metrics "post $path failed: $code"
 }
 
 # $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0)
@@ -94,19 +94,27 @@ fi
 
 [ -n "$TOKEN" ] || { logger -t aiku-server-metrics "no SERVER_METRICS_TOKEN in $CONFIG"; exit 1; }
 
+now_ms() { echo $(($(date +%s%N) / 1000000)); }
+seconds_since() { awk -v ms="$(( $(now_ms) - $1 ))" 'BEGIN { printf "%.3f", ms / 1000 }'; }
+
 previous=$(counters)
+previous_ms=$(now_ms)
 full_previous=$previous
+full_previous_ms=$previous_ms
 tick=0
 while true; do
     sleep "$INTERVAL"
     current=$(counters)
+    elapsed=$(seconds_since "$previous_ms")
+    previous_ms=$(now_ms)
     tick=$((tick + 1))
 
-    post "metrics/$SLUG/live" "$(reading "$previous" "$current" "$INTERVAL" 0)" &
+    post "metrics/$SLUG/live" "$(reading "$previous" "$current" "$elapsed" 0)" 1 &
 
     if [ "$tick" -ge "$FULL_EVERY" ]; then
-        post "metrics/$SLUG" "$(reading "$full_previous" "$current" $((tick * INTERVAL)) 1)" &
+        post "metrics/$SLUG" "$(reading "$full_previous" "$current" "$(seconds_since "$full_previous_ms")" 1)" 20 &
         full_previous=$current
+        full_previous_ms=$previous_ms
         tick=0
     fi
 

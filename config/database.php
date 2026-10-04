@@ -298,6 +298,14 @@ return [
             'port'     => env('REDIS_CACHE_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
         ],
+        'devops' => [
+            'url'      => env('REDIS_DEVOPS_URL'),
+            'host'     => env('REDIS_DEVOPS_HOST', env('REDIS_CACHE_HOST', '127.0.0.1')),
+            'username' => env('REDIS_DEVOPS_USERNAME'),
+            'password' => env('REDIS_DEVOPS_PASSWORD', env('REDIS_CACHE_PASSWORD')),
+            'port'     => env('REDIS_DEVOPS_PORT', env('REDIS_CACHE_PORT', '6379')),
+            'database' => env('REDIS_DEVOPS_DB', env('REDIS_CACHE_DB', '1')),
+        ],
         'sessions' => [
             'url'      => env('REDIS_SESSIONS_URL'),
             'host'     => env('REDIS_SESSIONS_HOST', '127.0.0.1'),

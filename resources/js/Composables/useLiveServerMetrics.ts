@@ -10,7 +10,7 @@ export interface LiveServerReading {
     net_tx_mbps: number | null
 }
 
-const KEEP_READINGS = 60
+const KEEP_READINGS = 120
 
 export const useLiveServerMetrics = (initial: Record<string, LiveServerReading[]>) => {
     const groupId = (usePage().props.layout as any)?.group?.id

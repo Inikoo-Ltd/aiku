@@ -516,6 +516,7 @@ it('records server usage samples, rolls them into hours and shows them on the de
         ->and((float) $hour->net_rx_avg)->toBe(10.0);
 
     Event::fake([App\Events\BroadcastServerLiveMetrics::class]);
+    Illuminate\Support\Facades\Redis::connection('devops')->del(App\Actions\DevOps\Server\StoreServerLiveMetric::cacheKey('metrics-box'));
     $live = ['cpu_percent' => 12.5, 'iowait_percent' => 0.4, 'memory_percent' => 60, 'net_rx_mbps' => 1.2, 'net_tx_mbps' => 0.8];
     $this->postJson(route('devops.host.metrics.live.store', ['serverSlug' => 'metrics-box']), $live)->assertForbidden();
     $this->postJson(route('devops.host.metrics.live.store', ['serverSlug' => 'metrics-box']), $live, ['X-DEVOPS-TOKEN' => 'test-devops-token'])->assertOk();

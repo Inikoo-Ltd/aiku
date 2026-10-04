@@ -35,12 +35,12 @@ const props = defineProps<{ server: ServerSummary, live?: LiveServerReading[] }>
 
 const now = ref(Date.now())
 let clock: ReturnType<typeof setInterval> | undefined
-onMounted(() => (clock = setInterval(() => (now.value = Date.now()), 5000)))
+onMounted(() => (clock = setInterval(() => (now.value = Date.now()), 2000)))
 onBeforeUnmount(() => clearInterval(clock))
 
 const latestLive = computed(() => {
     const reading = props.live?.at(-1)
-    return reading && now.value - reading.t < 30 * 1000 ? reading : null
+    return reading && now.value - reading.t < 15 * 1000 ? reading : null
 })
 
 const liveCpuCeiling = computed(() => Math.max(10, Math.ceil(Math.max(...(props.live ?? []).map(reading => Number(reading.cpu_percent))) / 10) * 10))
@@ -114,7 +114,7 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
             </svg>
             <span class="absolute right-0 top-0 text-[10px] leading-none text-gray-400">{{ liveCpuCeiling }}%</span>
         </div>
-        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 5 min") }}</div>
+        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 2 min") }}</div>
         <div class="mt-3 space-y-2">
             <div v-for="meter in meters" :key="meter.label">
                 <div class="flex justify-between text-xs">

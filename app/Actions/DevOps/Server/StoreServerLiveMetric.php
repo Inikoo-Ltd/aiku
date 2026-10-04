@@ -9,7 +9,7 @@
 namespace App\Actions\DevOps\Server;
 
 use App\Events\BroadcastServerLiveMetrics;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -17,7 +17,7 @@ class StoreServerLiveMetric
 {
     use AsAction;
 
-    public const int KEEP_READINGS = 60;
+    public const int KEEP_READINGS = 120;
 
     public static function cacheKey(string $slug): string
     {
@@ -27,15 +27,19 @@ class StoreServerLiveMetric
     /** @return array<int, array{t: int, cpu_percent: float, iowait_percent: float|null, memory_percent: float, net_rx_mbps: float|null, net_tx_mbps: float|null}> */
     public static function recentReadings(string $slug): array
     {
-        return Cache::get(self::cacheKey($slug), []);
+        return array_map(fn (string $reading) => json_decode($reading, true), Redis::connection('devops')->lrange(self::cacheKey($slug), 0, -1));
     }
 
     public function handle(string $slug, array $reading): void
     {
         $reading = ['t' => now()->getTimestampMs(), ...array_map('floatval', $reading)];
 
-        $readings = [...array_slice(self::recentReadings($slug), 1 - self::KEEP_READINGS), $reading];
-        Cache::put(self::cacheKey($slug), $readings, 600);
+        $key = self::cacheKey($slug);
+        Redis::connection('devops')->pipeline(function ($pipe) use ($key, $reading) {
+            $pipe->rpush($key, json_encode($reading));
+            $pipe->ltrim($key, -self::KEEP_READINGS, -1);
+            $pipe->expire($key, 600);
+        });
 
         BroadcastServerLiveMetrics::dispatch($slug, $reading);
     }

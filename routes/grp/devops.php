@@ -11,7 +11,8 @@ use App\Actions\DevOps\Server\GetServerInfo;
 use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\DevOps\Server\StoreServerMetric;
 use Illuminate\Support\Facades\Route;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('/server/{server}', GetServerInfo::class)->name('devops.host.info');
 Route::post('/metrics/{serverSlug}', StoreServerMetric::class)->name('devops.host.metrics.store');
-Route::post('/metrics/{serverSlug}/live', StoreServerLiveMetric::class)->name('devops.host.metrics.live.store');
+Route::post('/metrics/{serverSlug}/live', StoreServerLiveMetric::class)->name('devops.host.metrics.live.store')->middleware(Sample::rate(0.05));
