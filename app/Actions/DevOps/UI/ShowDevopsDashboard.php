@@ -74,7 +74,7 @@ class ShowDevopsDashboard extends OrgAction
         );
     }
 
-    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, swap_total_mb: int|null, disks: string|null, cpu_24h_max: float|null, memory_24h_max: float|null, group: string, role: string|null}> */
+    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, swap_total_mb: int|null, disks: string|null, top_processes: string|null, cpu_24h_max: float|null, memory_24h_max: float|null, group: string, role: string|null}> */
     public function getServerSummaries(): Collection
     {
         return DB::table('servers')->where('active', true)
@@ -108,6 +108,7 @@ class ShowDevopsDashboard extends OrgAction
                 'latest.memory_total_mb',
                 'latest.swap_total_mb',
                 'latest.disks',
+                'latest.top_processes',
                 'day.cpu_24h_max',
                 'day.memory_24h_max'
             )

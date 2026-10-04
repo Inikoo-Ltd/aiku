@@ -38,13 +38,13 @@ class ShowServer extends OrgAction
         return $server;
     }
 
-    /** @return array<int, object{t: string, cpu: float, cpu_max: float, memory: float, memory_max: float, swap: float|null, disk: float, load: float|null, iowait: float|null, iowait_max: float|null, inode: float|null, net_rx: float|null, net_tx: float|null, disk_read: float|null, disk_write: float|null, processes: int|null, tcp_connections: int|null}> */
+    /** @return array<int, object{t: string, cpu: float, cpu_max: float, memory: float, memory_max: float, swap: float|null, disk: float, load: float|null, iowait: float|null, iowait_max: float|null, inode: float|null, net_rx: float|null, net_tx: float|null, disk_read: float|null, disk_write: float|null, processes: int|null, tcp_connections: int|null, top_processes: string|null}> */
     public function getSeries(Server $server, string $range): array
     {
         if ($range === '24h') {
             return DB::table('server_metrics')->where('server_id', $server->id)
                 ->where('recorded_at', '>', now()->subDay())
-                ->selectRaw("to_char(recorded_at at time zone 'UTC', 'DD HH24:MI') as t, cpu_percent as cpu, cpu_percent as cpu_max, memory_percent as memory, memory_percent as memory_max, swap_percent as swap, disk_percent as disk, load_1 as load, iowait_percent as iowait, iowait_percent as iowait_max, inode_percent as inode, net_rx_mbps as net_rx, net_tx_mbps as net_tx, disk_read_mbps as disk_read, disk_write_mbps as disk_write, processes, tcp_connections")
+                ->selectRaw("to_char(recorded_at at time zone 'UTC', 'DD HH24:MI') as t, cpu_percent as cpu, cpu_percent as cpu_max, memory_percent as memory, memory_percent as memory_max, swap_percent as swap, disk_percent as disk, load_1 as load, iowait_percent as iowait, iowait_percent as iowait_max, inode_percent as inode, net_rx_mbps as net_rx, net_tx_mbps as net_tx, disk_read_mbps as disk_read, disk_write_mbps as disk_write, processes, tcp_connections, top_processes")
                 ->orderBy('recorded_at')->get()->all();
         }
 
@@ -64,7 +64,7 @@ class ShowServer extends OrgAction
                 sum(iowait_avg * samples) / sum(samples) as iowait, max(iowait_max) as iowait_max, max(inode_max) as inode,
                 sum(net_rx_avg * samples) / sum(samples) as net_rx, sum(net_tx_avg * samples) / sum(samples) as net_tx,
                 sum(disk_read_avg * samples) / sum(samples) as disk_read, sum(disk_write_avg * samples) / sum(samples) as disk_write,
-                max(processes_max) as processes, max(tcp_connections_max) as tcp_connections")
+                max(processes_max) as processes, max(tcp_connections_max) as tcp_connections, null as top_processes")
             ->groupBy('t')->orderBy('t')->get()->all();
     }
 

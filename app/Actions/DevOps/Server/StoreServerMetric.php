@@ -54,6 +54,11 @@ class StoreServerMetric
             'disks.*.percent'  => ['required', 'numeric', 'between:0,100'],
             'disks.*.size_gb'  => ['nullable', 'numeric', 'min:0'],
             'disks.*.inode_percent' => ['nullable', 'numeric', 'between:0,100'],
+            'top_processes'                    => ['sometimes', 'array', 'max:5'],
+            'top_processes.*.name'             => ['required', 'string', 'max:64'],
+            'top_processes.*.cpu_percent'      => ['required', 'numeric', 'min:0'],
+            'top_processes.*.max_core_percent' => ['required', 'numeric', 'min:0'],
+            'top_processes.*.processes'        => ['required', 'integer', 'min:1'],
         ];
     }
 

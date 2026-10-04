@@ -45,6 +45,40 @@ disks() {
         }' <(df -P -i "${LOCAL_FS[@]}" 2>/dev/null) <(df -P -k "${LOCAL_FS[@]}" 2>/dev/null)
 }
 
+CLK_TCK=$(getconf CLK_TCK)
+CORES=$(nproc)
+
+# One line per process: pid, name (kernel threads like kworker/3:1 grouped as kworker), CPU ticks used since it started
+process_ticks() {
+    cat /proc/[0-9]*/stat 2>/dev/null | awk '{
+        open = index($0, "("); match($0, /\) [A-Za-z] /)
+        if (!open || !RSTART) next
+        name = substr($0, open + 1, RSTART - open - 1); sub(/\/.*/, "", name); gsub(/[ "\\]/, "_", name)
+        split(substr($0, RSTART + 2), f, " ")
+        print $1, name, f[12] + f[13]
+    }'
+}
+
+# $1 = previous process_ticks, $2 = current process_ticks, $3 = seconds between them
+top_processes() {
+    awk -v s="$3" -v hz="$CLK_TCK" -v cores="$CORES" '
+        FNR == 1 { file++ }
+        file == 1 { before[$1] = $3; next }
+        {
+            used = $3 - ($1 in before ? before[$1] : 0)
+            if (used <= 0) next
+            total[$2] += used; count[$2]++
+            if (used > busiest[$2]) busiest[$2] = used
+        }
+        END {
+            for (name in total) printf "%s %s %s %s\n", total[name], name, busiest[name], count[name]
+        }' <(printf '%s\n' "$1") <(printf '%s\n' "$2") |
+    sort -rn | head -3 |
+    awk -v s="$3" -v hz="$CLK_TCK" -v cores="$CORES" '{
+        printf "%s{\"name\":\"%s\",\"cpu_percent\":%.2f,\"max_core_percent\":%.2f,\"processes\":%d}", (NR > 1 ? "," : ""), $2, $1 / (s * hz * cores) * 100, $3 / (s * hz) * 100, $4
+    }'
+}
+
 # $1 = previous counters, $2 = current counters, $3 = seconds between them
 rates() {
     awk -v a="$1" -v b="$2" -v s="$3" 'BEGIN {
@@ -67,7 +101,7 @@ post() {
     [ "$code" = 200 ] || [ "$path" != "metrics/$SLUG" ] || logger -t aiku-server-metrics "post $path failed: $code"
 }
 
-# $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0)
+# $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0), $5/$6 = previous/current process_ticks (full only)
 reading() {
     local cpu iowait net_rx net_tx disk_read disk_write mem_total mem_pct swap_pct swap_total
     read -r cpu iowait net_rx net_tx disk_read disk_write < <(rates "$1" "$2" "$3")
@@ -79,15 +113,16 @@ reading() {
         return
     fi
 
-    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"swap_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s]}' \
+    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"swap_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s],"top_processes":[%s]}' \
         "$cpu" "$iowait" "$mem_pct" "$swap_pct" "$(cut -d' ' -f1 /proc/loadavg)" "$(nproc)" "$mem_total" "$swap_total" \
         "$net_rx" "$net_tx" "$disk_read" "$disk_write" \
-        "$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)" "$(ss -Htn state established 2>/dev/null | wc -l)" "$(disks)"
+        "$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)" "$(ss -Htn state established 2>/dev/null | wc -l)" "$(disks)" \
+        "$( [ -n "${5:-}" ] && top_processes "$5" "$6" "$3")"
 }
 
 if [ "${1:-}" = "--dry-run" ]; then
-    before=$(counters); sleep 2; after=$(counters)
-    printf 'POST %s/metrics/%s\n%s\n' "$URL" "$SLUG" "$(reading "$before" "$after" 2 1)"
+    before=$(counters); before_processes=$(process_ticks); sleep 2; after=$(counters); after_processes=$(process_ticks)
+    printf 'POST %s/metrics/%s\n%s\n' "$URL" "$SLUG" "$(reading "$before" "$after" 2 1 "$before_processes" "$after_processes")"
     printf 'POST %s/metrics/%s/live (every %ss)\n%s\n' "$URL" "$SLUG" "$INTERVAL" "$(reading "$before" "$after" 2 0)"
     exit 0
 fi
@@ -101,6 +136,7 @@ previous=$(counters)
 previous_ms=$(now_ms)
 full_previous=$previous
 full_previous_ms=$previous_ms
+full_previous_processes=$(process_ticks)
 tick=0
 while true; do
     sleep "$INTERVAL"
@@ -112,8 +148,10 @@ while true; do
     post "metrics/$SLUG/live" "$(reading "$previous" "$current" "$elapsed" 0)" 1 &
 
     if [ "$tick" -ge "$FULL_EVERY" ]; then
-        post "metrics/$SLUG" "$(reading "$full_previous" "$current" "$(seconds_since "$full_previous_ms")" 1)" 20 &
+        current_processes=$(process_ticks)
+        post "metrics/$SLUG" "$(reading "$full_previous" "$current" "$(seconds_since "$full_previous_ms")" 1 "$full_previous_processes" "$current_processes")" 20 &
         full_previous=$current
+        full_previous_processes=$current_processes
         full_previous_ms=$previous_ms
         tick=0
     fi

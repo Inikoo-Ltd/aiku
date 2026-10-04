@@ -489,6 +489,7 @@ it('records server usage samples, rolls them into hours and shows them on the de
         'disk_write_mbps' => 3,
         'processes'       => 900,
         'tcp_connections' => 2300,
+        'top_processes'   => [['name' => 'php8.4', 'cpu_percent' => 40.5, 'max_core_percent' => 98, 'processes' => 14], ['name' => 'btop', 'cpu_percent' => 6.2, 'max_core_percent' => 100, 'processes' => 1]],
         'disks'           => [['mount' => '/', 'percent' => 71, 'size_gb' => 900, 'inode_percent' => 7], ['mount' => '/data', 'percent' => 88, 'size_gb' => 3500, 'inode_percent' => 2], ['mount' => '/boot', 'percent' => 95, 'size_gb' => 1, 'inode_percent' => 30]],
     ];
 
@@ -501,7 +502,8 @@ it('records server usage samples, rolls them into hours and shows them on the de
     $server = App\Models\DevOps\Server::where('slug', 'metrics-box')->firstOrFail();
     $first = App\Models\DevOps\ServerMetric::where('server_id', $server->id)->first();
     expect((float) $first->disk_percent)->toBe(88.0)
-        ->and((float) $first->inode_percent)->toBe(7.0);
+        ->and((float) $first->inode_percent)->toBe(7.0)
+        ->and($first->top_processes[1]['name'])->toBe('btop');
 
     App\Models\DevOps\ServerMetric::create([...Illuminate\Support\Arr::except($sample, 'disks'), 'server_id' => $server->id, 'disk_percent' => 50, 'recorded_at' => now()->subDays(91)]);
 
@@ -532,7 +534,8 @@ it('records server usage samples, rolls them into hours and shows them on the de
             ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0))
             ->has('liveReadings.metrics-box', 2)
             ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['swap_total_mb'] === 4096)
-            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['tcp_connections'] === 2300 && collect($servers)->firstWhere('slug', 'metrics-box')['group'] === 'Other'));
+            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['tcp_connections'] === 2300 && collect($servers)->firstWhere('slug', 'metrics-box')['group'] === 'Other')
+            ->where('servers', fn ($servers) => json_decode(collect($servers)->firstWhere('slug', 'metrics-box')['top_processes'], true)[0]['processes'] === 14));
 
     $this->get(route('grp.docs'))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Docs/Dashboard', false)->has('publicSiteVisits.daily')->has('modules'));

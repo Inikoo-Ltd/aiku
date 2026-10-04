@@ -21,7 +21,8 @@ class ServerMetric extends Model
     {
         return [
             'recorded_at' => 'datetime',
-            'disks'       => 'array',
+            'disks'         => 'array',
+            'top_processes' => 'array',
         ];
     }
 

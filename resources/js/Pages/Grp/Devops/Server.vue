@@ -20,7 +20,7 @@ const props = defineProps<{
     range: string
     ranges: string[]
     series: { t: string, cpu: number, cpu_max: number, memory: number, memory_max: number, swap: number | null, disk: number, load: number | null, iowait: number | null, iowait_max: number | null, inode: number | null,
-        net_rx: number | null, net_tx: number | null, disk_read: number | null, disk_write: number | null, processes: number | null, tcp_connections: number | null }[]
+        net_rx: number | null, net_tx: number | null, disk_read: number | null, disk_write: number | null, processes: number | null, tcp_connections: number | null, top_processes: string | null }[]
 }>()
 
 const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
@@ -79,11 +79,28 @@ const countsChart = computed(() => ({
     ],
 }))
 
+const busiestAt = (index: number) => {
+    const raw = props.series[index]?.top_processes
+    if (!raw) return []
+    return (JSON.parse(raw) as { name: string, cpu_percent: number, processes: number }[])
+        .map(process => `${process.name}${process.processes > 1 ? ` ×${process.processes}` : ""}  ${Number(process.cpu_percent).toFixed(1)}%`)
+}
+
 const options = (max?: number) => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: false as const,
     interaction: { mode: "index" as const, intersect: false },
+    plugins: {
+        tooltip: {
+            callbacks: {
+                footer: (items: { dataIndex: number }[]) => {
+                    const busiest = items.length ? busiestAt(items[0].dataIndex) : []
+                    return busiest.length ? [ctrans("Busiest:"), ...busiest] : []
+                },
+            },
+        },
+    },
     scales: { y: { min: 0, ...(max ? { max } : {}) }, x: { ticks: { maxTicksLimit: 12 } } },
 })
 </script>
