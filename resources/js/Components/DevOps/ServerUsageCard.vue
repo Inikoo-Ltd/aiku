@@ -56,7 +56,9 @@ const isStale = computed(() => !latestLive.value && (!props.server.recorded_at |
 
 const disks = computed<{ mount: string, percent: number, size_gb: number, inode_percent: number | null }[]>(() => props.server.disks ? JSON.parse(props.server.disks) : [])
 
-const mainDiskGb = computed(() => disks.value.filter(disk => !disk.mount.startsWith("/boot")).reduce<{ percent: number, size_gb: number } | null>((main, disk) => !main || disk.percent > main.percent ? disk : main, null)?.size_gb ?? null)
+const dataDisks = computed(() => disks.value.filter(disk => !disk.mount.startsWith("/boot")))
+
+const mainDiskGb = computed(() => dataDisks.value.reduce<{ percent: number, size_gb: number } | null>((main, disk) => !main || disk.percent > main.percent ? disk : main, null)?.size_gb ?? null)
 
 const formatSize = (gb: number) => gb >= 1000 ? `${(gb / 1024).toFixed(1)} TB` : `${gb.toFixed(gb < 10 ? 1 : 0)} GB`
 
@@ -138,19 +140,21 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
                 </tr>
             </tbody>
         </table>
-        <table v-if="disks.length" class="mt-3 w-full text-xs tabular-nums">
+        <table v-if="dataDisks.length" class="mt-3 w-full text-xs tabular-nums">
             <thead class="text-gray-400">
                 <tr>
                     <th class="pb-1 text-left font-normal">{{ ctrans("Mount") }}</th>
                     <th class="pb-1 text-right font-normal">{{ ctrans("Used") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Free") }}</th>
                     <th class="pb-1 text-right font-normal">{{ ctrans("Size") }}</th>
                     <th class="pb-1 text-right font-normal">{{ ctrans("Inodes") }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <tr v-for="disk in disks" :key="disk.mount">
+                <tr v-for="disk in dataDisks" :key="disk.mount">
                     <td class="max-w-0 truncate py-1 text-gray-500">{{ disk.mount }}</td>
                     <td class="py-1 text-right">{{ disk.percent }}%</td>
+                    <td class="py-1 text-right">{{ formatSize(disk.size_gb * (100 - disk.percent) / 100) }}</td>
                     <td class="py-1 text-right">{{ formatSize(disk.size_gb) }}</td>
                     <td class="py-1 text-right">{{ disk.inode_percent != null ? `${disk.inode_percent}%` : "-" }}</td>
                 </tr>
