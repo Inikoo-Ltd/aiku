@@ -78,7 +78,7 @@ class ArchiveShopMailbox
 
     private const int MAX_READS_PER_HOUR = 600;
 
-    private const int QUIET_READS_PER_HOUR = 3000;
+    private const int QUIET_READS_PER_HOUR = 10000;
 
     private const int QUIET_FROM = 18;
 

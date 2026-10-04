@@ -8558,11 +8558,11 @@ test('the archive reads more of a mailbox an hour at night and at weekends, when
     $at('2026-10-06 10:00');
     expect($mailbox::readsPerHour())->toBe(600);
     $at('2026-10-06 04:59');
-    expect($mailbox::readsPerHour())->toBe(3000);
+    expect($mailbox::readsPerHour())->toBe(10000);
     $at('2026-10-06 18:00');
-    expect($mailbox::readsPerHour())->toBe(3000);
+    expect($mailbox::readsPerHour())->toBe(10000);
     $at('2026-10-04 12:00');
-    expect($mailbox::readsPerHour())->toBe(3000);
+    expect($mailbox::readsPerHour())->toBe(10000);
 
     \Illuminate\Support\Carbon::setTestNow();
 });
