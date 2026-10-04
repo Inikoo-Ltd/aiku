@@ -11,16 +11,18 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools } from "@fal"
+import { faChartLine, faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunCard.vue"
 import TestStats, { TestStatsData } from "@/Components/DevOps/TestStats.vue"
+import TelemetryPanel, { Telemetry } from "@/Components/DevOps/TelemetryPanel.vue"
+import { TraceRequest, TraceSpan } from "@/Components/DevOps/RequestWaterfall.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools)
+library.add(faChartLine, faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools)
 
 const props = defineProps<{
     title: string
@@ -36,6 +38,8 @@ const props = defineProps<{
         usual_tests_seconds: number | null
         test_stats: TestStatsData
     }
+    telemetry?: Telemetry | null
+    telemetryTrace?: { request: TraceRequest, spans: TraceSpan[] } | null
 }>()
 
 const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
@@ -70,9 +74,10 @@ const tabs = computed(() => ({
         }
         : { title: ctrans("Deployments"), icon: "fal fa-rocket" },
     tests: runningTests.value ? { title: ctrans("Testing"), ...spinning } : { title: ctrans("Tests"), icon: "fal fa-flask" },
+    telemetry: { title: ctrans("Telemetry"), icon: "fal fa-chart-line" },
 }))
 const requestedTab = new URLSearchParams(window.location.search).get("tab") ?? ""
-const currentTab = ref<string>(["deployments", "tests"].includes(requestedTab) ? requestedTab : "servers")
+const currentTab = ref<string>(["deployments", "tests", "telemetry"].includes(requestedTab) ? requestedTab : "servers")
 const changeTab = (tab: string | number) => {
     currentTab.value = String(tab)
     const url = new URL(window.location.href)
@@ -110,6 +115,6 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
             <TestStats :stats="ciRuns.test_stats" />
             <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" :usual-seconds="ciRuns.usual_tests_seconds" />
         </div>
-
+        <TelemetryPanel v-if="currentTab === 'telemetry'" :telemetry="telemetry" :trace="telemetryTrace" />
     </div>
 </template>

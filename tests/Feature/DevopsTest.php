@@ -674,3 +674,84 @@ it('records backend test results and shows counts, failures and daily stats on t
             ->where('ciRuns.test_stats.average_tests', 5001)
             ->has('ciRuns.test_stats.daily', 14));
 });
+
+it('shows nightowl telemetry graphs, top tables and a request waterfall on the devops dashboard', function () {
+    $nightowl = DB::connection('nightowl');
+    $nightowl->beginTransaction();
+
+    $histogram = collect(NightOwl\Support\QueryHistogram::columns())->map(fn (string $column) => "$column bigint default 0")->implode(', ');
+    $counters  = collect(['call_count', 'success_count', 'client_error_count', 'server_error_count', 'processed_count', 'failed_count', 'released_count', 'unsuccessful_count', 'skipped_count', 'handled_count', 'unhandled_count', 'hits', 'misses', 'writes', 'fails', 'total_duration', 'min_duration', 'max_duration'])
+        ->map(fn (string $column) => "$column bigint default 0")->implode(', ');
+    foreach (['request', 'job', 'command', 'scheduled_task', 'query', 'outgoing_request', 'exception', 'cache'] as $type) {
+        $nightowl->statement("create temporary table nightowl_{$type}_hourly_rollups (group_hash varchar, bucket_start timestamp, environment varchar, route_methods text, route_path text, job_class text, queue text, command text, expression text, sql_query text, connection varchar, host text, $counters, $histogram)");
+    }
+    $nightowl->statement('create temporary table nightowl_issues (id bigint, type varchar, status varchar, priority varchar, exception_class varchar, exception_message text, first_seen_at timestamp, last_seen_at timestamp, occurrences_count int, users_count int)');
+    $nightowl->statement('create temporary table nightowl_dict_route (id bigint, method varchar, path varchar, name varchar)');
+    $nightowl->statement('create temporary table nightowl_dict_sql (id bigint, sql text, file varchar, line int)');
+    $nightowl->statement('create temporary table nightowl_dict_string (id int, kind varchar, value varchar)');
+    $nightowl->statement('create temporary table nightowl_requests_v2 (id bigint, created_at timestamp, ts_us bigint, trace_id uuid, url text, status_code int, duration bigint, user_id varchar, route_id bigint, queries int, cache_events int, outgoing_requests int, bootstrap bigint, before_middleware bigint, action bigint, render bigint, after_middleware bigint, sending bigint, terminating bigint, peak_memory_usage bigint, exception_preview text)');
+    $spanColumns = 'created_at timestamp, ts_us bigint, trace_id uuid, execution_id uuid, duration bigint';
+    $nightowl->statement("create temporary table nightowl_queries_v2 ($spanColumns, sql_id bigint)");
+    $nightowl->statement("create temporary table nightowl_cache_events_v2 ($spanColumns, event_type_id int, key varchar)");
+    $nightowl->statement("create temporary table nightowl_outgoing_requests_v2 ($spanColumns, method_id int, url text, status_code int)");
+    $nightowl->statement("create temporary table nightowl_exceptions_v2 ($spanColumns, class varchar, message text, file varchar, line int)");
+
+    $hour = now()->startOfHour()->subHour()->toDateTimeString();
+    $nightowl->table('nightowl_request_hourly_rollups')->insert([
+        ['group_hash' => 'a', 'bucket_start' => $hour, 'route_methods' => '["GET","HEAD"]', 'route_path' => '/products', 'call_count' => 100, 'success_count' => 95, 'client_error_count' => 4, 'server_error_count' => 1, 'total_duration' => 20_000_000, 'max_duration' => 900_000, 'hist_20' => 95, 'hist_26' => 5],
+        ['group_hash' => 'b', 'bucket_start' => $hour, 'route_methods' => '["POST"]', 'route_path' => '/basket', 'call_count' => 10, 'success_count' => 10, 'client_error_count' => 0, 'server_error_count' => 0, 'total_duration' => 1_000_000, 'max_duration' => 200_000, 'hist_20' => 10, 'hist_26' => 0],
+    ]);
+    $nightowl->table('nightowl_job_hourly_rollups')->insert(['group_hash' => 'j', 'bucket_start' => $hour, 'job_class' => 'App\\Jobs\\Hydrate', 'queue' => 'default', 'call_count' => 7, 'processed_count' => 6, 'failed_count' => 1, 'total_duration' => 7_000_000, 'max_duration' => 2_000_000, 'hist_28' => 7]);
+    $nightowl->table('nightowl_query_hourly_rollups')->insert(['group_hash' => 'q', 'bucket_start' => $hour, 'sql_query' => 'select * from "products" where "id" = ?', 'connection' => 'pgsql', 'call_count' => 500, 'total_duration' => 5_000_000, 'max_duration' => 80_000, 'hist_10' => 500]);
+    $nightowl->table('nightowl_exception_hourly_rollups')->insert(['group_hash' => 'e', 'bucket_start' => $hour, 'handled_count' => 2, 'unhandled_count' => 3]);
+    $nightowl->table('nightowl_cache_hourly_rollups')->insert(['group_hash' => 'c', 'bucket_start' => $hour, 'hits' => 90, 'misses' => 10]);
+    $nightowl->table('nightowl_issues')->insert(['id' => 1, 'type' => 'exception', 'status' => 'open', 'exception_class' => 'RuntimeException', 'exception_message' => 'Boom', 'first_seen_at' => $hour, 'last_seen_at' => $hour, 'occurrences_count' => 3, 'users_count' => 1]);
+
+    $traceId   = '210d444d-72fa-466d-a601-1421cd1e2c6c';
+    $createdAt = now()->subMinutes(5)->startOfSecond();
+    $startUs   = $createdAt->getTimestamp() * 1_000_000;
+    $nightowl->table('nightowl_dict_route')->insert(['id' => 68, 'method' => 'GET', 'path' => '/products', 'name' => 'products.index']);
+    $nightowl->table('nightowl_dict_sql')->insert(['id' => 9, 'sql' => 'select * from "products"', 'file' => 'app/Actions/ShowProducts.php', 'line' => 30]);
+    $nightowl->table('nightowl_dict_string')->insert(['id' => 101, 'kind' => 'event_type', 'value' => 'hit']);
+    $nightowl->table('nightowl_requests_v2')->insert(['id' => 555, 'created_at' => $createdAt, 'ts_us' => $startUs, 'trace_id' => $traceId, 'url' => 'https://aiku.test/products', 'status_code' => 200, 'duration' => 300_000, 'route_id' => 68, 'queries' => 1, 'cache_events' => 1, 'outgoing_requests' => 0, 'bootstrap' => 0, 'before_middleware' => 10_000, 'action' => 280_000, 'render' => 5_000, 'after_middleware' => 2_000, 'sending' => 1_000, 'terminating' => 2_000, 'peak_memory_usage' => 50_000_000]);
+    $nightowl->table('nightowl_queries_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 20_000, 'trace_id' => null, 'execution_id' => $traceId, 'duration' => 1_500, 'sql_id' => 9]);
+    $nightowl->table('nightowl_cache_events_v2')->insert(['created_at' => $createdAt, 'ts_us' => $startUs + 5_000, 'trace_id' => $traceId, 'execution_id' => null, 'duration' => 70, 'event_type_id' => 101, 'key' => 'website-1']);
+
+    Cache::forget('devops-telemetry-24h');
+    Config::set('inertia.testing.ensure_pages_exist', false);
+
+    try {
+        $this->actingAs(createAdminGuest(createGroup())->getUser())
+            ->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'range' => '24h', 'request' => 555, 'at' => $createdAt->toDateTimeString()]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Devops/Dashboard', false)
+                ->missing('telemetry')
+                ->missing('telemetryTrace')
+                ->reloadOnly('telemetry', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetry.range', '24h')
+                    ->where('telemetry.requests.0.calls', 110)
+                    ->where('telemetry.requests.0.server_errors', fn ($value) => (int) $value === 1)
+                    ->where('telemetry.requests.0.p95', fn ($value) => $value > 92_682 && $value <= 131_072)
+                    ->where('telemetry.routes.0.label', '["GET","HEAD"] /products')
+                    ->where('telemetry.routes.0.avg', 200_000)
+                    ->where('telemetry.jobs.0.failed', fn ($value) => (int) $value === 1)
+                    ->where('telemetry.jobClasses.0.label', 'App\\Jobs\\Hydrate')
+                    ->where('telemetry.queries.0.label', 'select * from "products" where "id" = ?')
+                    ->where('telemetry.queries.0.calls', 500)
+                    ->where('telemetry.exceptions.0.unhandled', fn ($value) => (int) $value === 3)
+                    ->where('telemetry.cache.hits', fn ($value) => (int) $value === 90)
+                    ->where('telemetry.issues.0.exception_class', 'RuntimeException')
+                    ->where('telemetry.slowRequests.0.route_name', 'products.index'))
+                ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryTrace.request.route_name', 'products.index')
+                    ->has('telemetryTrace.spans', 2)
+                    ->where('telemetryTrace.spans.0.type', 'cache')
+                    ->where('telemetryTrace.spans.0.label', 'hit website-1')
+                    ->where('telemetryTrace.spans.1.type', 'query')
+                    ->where('telemetryTrace.spans.1.offset', 20_000)
+                    ->where('telemetryTrace.spans.1.file', 'app/Actions/ShowProducts.php')));
+    } finally {
+        $nightowl->rollBack();
+        Cache::forget('devops-telemetry-24h');
+    }
+});

@@ -69,6 +69,8 @@ class ShowDevopsDashboard extends OrgAction
                 'servers'          => $servers = $this->getServerSummaries(),
                 'ciRuns'           => $this->getCiRuns(),
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
+                'telemetry'        => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->overview(GetNightOwlTelemetry::range($request->query('range')))),
+                'telemetryTrace'   => Inertia::optional(fn () => $request->filled(['request', 'at']) ? app(GetNightOwlTelemetry::class)->trace((int) $request->query('request'), (string) $request->query('at')) : null),
 
             ]
         );
