@@ -530,7 +530,8 @@ it('records server usage samples, rolls them into hours and shows them on the de
             ->component('Devops/Dashboard', false)
             ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0))
             ->has('liveReadings.metrics-box', 2)
-            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['swap_total_mb'] === 4096));
+            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['swap_total_mb'] === 4096)
+            ->where('servers', fn ($servers) => collect($servers)->firstWhere('slug', 'metrics-box')['tcp_connections'] === 2300 && collect($servers)->firstWhere('slug', 'metrics-box')['group'] === 'Other'));
 
     $this->get(route('grp.docs'))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('Docs/Dashboard', false)->has('publicSiteVisits.daily')->has('modules'));

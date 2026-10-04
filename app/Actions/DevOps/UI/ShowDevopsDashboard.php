@@ -23,6 +23,14 @@ class ShowDevopsDashboard extends OrgAction
 {
     use WithInertia;
 
+    /** @var array<string, array{0: string, 1: string}> */
+    public const array SERVER_ROLES = [
+        'boro'  => ['Production', 'Primary'],
+        'litio' => ['Production', 'Secondary'],
+        'helio' => ['Ops support', 'CI & replica'],
+        'neon'  => ['Ops support', 'Staging'],
+    ];
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->hasGroupAccess();
@@ -64,7 +72,7 @@ class ShowDevopsDashboard extends OrgAction
         );
     }
 
-    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, swap_total_mb: int|null, disks: string|null, cpu_24h_max: float|null, memory_24h_max: float|null}> */
+    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, swap_total_mb: int|null, disks: string|null, cpu_24h_max: float|null, memory_24h_max: float|null, group: string, role: string|null}> */
     public function getServerSummaries(): Collection
     {
         return DB::table('servers')->where('active', true)
@@ -86,6 +94,14 @@ class ShowDevopsDashboard extends OrgAction
                 'latest.swap_percent',
                 'latest.disk_percent',
                 'latest.load_1',
+                'latest.iowait_percent',
+                'latest.inode_percent',
+                'latest.net_rx_mbps',
+                'latest.net_tx_mbps',
+                'latest.disk_read_mbps',
+                'latest.disk_write_mbps',
+                'latest.processes',
+                'latest.tcp_connections',
                 'latest.cpu_cores',
                 'latest.memory_total_mb',
                 'latest.swap_total_mb',
@@ -93,7 +109,15 @@ class ShowDevopsDashboard extends OrgAction
                 'day.cpu_24h_max',
                 'day.memory_24h_max'
             )
-            ->orderBy('servers.name')->get();
+            ->get()
+            ->map(function (object $server) {
+                $server->group = self::SERVER_ROLES[$server->slug][0] ?? __('Other');
+                $server->role  = self::SERVER_ROLES[$server->slug][1] ?? null;
+
+                return $server;
+            })
+            ->sortBy(fn (object $server) => array_search($server->slug, array_keys(self::SERVER_ROLES)) === false ? PHP_INT_MAX : array_search($server->slug, array_keys(self::SERVER_ROLES)))
+            ->values();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

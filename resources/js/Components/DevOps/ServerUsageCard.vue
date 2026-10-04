@@ -27,6 +27,8 @@ export interface ServerSummary {
     disks: string | null
     cpu_24h_max: number | null
     memory_24h_max: number | null
+    group: string
+    role: string | null
 }
 
 const props = defineProps<{ server: ServerSummary, live?: LiveServerReading[] }>()
@@ -97,7 +99,7 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
 <template>
     <div class="rounded-lg border border-gray-200 p-4" :class="isStale ? 'opacity-60' : ''">
         <div class="flex items-baseline justify-between">
-            <span class="text-sm font-medium">{{ server.name }}</span>
+            <span class="text-sm font-medium">{{ server.name }}<span v-if="server.role" class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-600">{{ ctrans(server.role) }}</span></span>
             <span v-if="latestLive" class="flex items-center gap-1 text-xs text-emerald-600">
                 <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />{{ ctrans("Live") }}
             </span>
@@ -111,8 +113,8 @@ const barColour = (value: number | null | undefined) => value == null ? "bg-gray
                 <polyline :points="liveSparkline.line" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" class="text-emerald-600" />
             </svg>
             <span class="absolute right-0 top-0 text-[10px] leading-none text-gray-400">{{ liveCpuCeiling }}%</span>
-            <span class="absolute bottom-0 left-0 text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 5 min") }}</span>
         </div>
+        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 5 min") }}</div>
         <div class="mt-3 space-y-2">
             <div v-for="meter in meters" :key="meter.label">
                 <div class="flex justify-between text-xs">
