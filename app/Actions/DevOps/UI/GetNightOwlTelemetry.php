@@ -352,6 +352,8 @@ class GetNightOwlTelemetry
         return [
             'fingerprint' => $fingerprint,
             'issue'       => $issue,
+            'activity'    => $issue ? $this->db()->table('nightowl_issue_activity')->where('issue_id', $issue->id)->orderByDesc('id')->limit(10)
+                ->get(['action', 'old_value', 'new_value', 'user_name', 'actor_type', 'created_at'])->all() : [],
             'hourly'      => $this->db()->table('nightowl_exception_hourly_rollups')->where('fingerprint', $fingerprint)->where('bucket_start', '>=', $since)
                 ->groupBy('bucket_start')->orderBy('bucket_start')
                 ->selectRaw('bucket_start, sum(handled_count) as handled, sum(unhandled_count) as unhandled')->get()->all(),

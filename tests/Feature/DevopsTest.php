@@ -675,7 +675,7 @@ it('records backend test results and shows counts, failures and daily stats on t
             ->has('ciRuns.test_stats.daily', 14));
 });
 
-it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls, exception stack traces and logs on the devops dashboard', function () {
+it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls, exception stack traces with issue status changes and logs on the devops dashboard', function () {
     $nightowl = DB::connection('nightowl');
     $nightowl->beginTransaction();
 
@@ -685,7 +685,8 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
     foreach (['request', 'job', 'command', 'scheduled_task', 'query', 'outgoing_request', 'exception', 'cache'] as $type) {
         $nightowl->statement("create temporary table nightowl_{$type}_hourly_rollups (group_hash varchar, fingerprint varchar, bucket_start timestamp, environment varchar, route_methods text, route_path text, job_class text, queue text, command text, expression text, sql_query text, connection varchar, host text, $counters, $histogram)");
     }
-    $nightowl->statement('create temporary table nightowl_issues (id bigint, group_hash varchar, assigned_to varchar, type varchar, status varchar, priority varchar, exception_class varchar, exception_message text, first_seen_at timestamp, last_seen_at timestamp, occurrences_count int, users_count int)');
+    $nightowl->statement('create temporary table nightowl_issues (id bigint, group_hash varchar, assigned_to varchar, type varchar, status varchar, priority varchar, exception_class varchar, exception_message text, first_seen_at timestamp, last_seen_at timestamp, occurrences_count int, users_count int, updated_at timestamp)');
+    $nightowl->statement('create temporary table nightowl_issue_activity (id bigserial, issue_id bigint, user_id varchar, user_name varchar, action varchar, old_value varchar, new_value varchar, created_at timestamp, actor_type varchar)');
     $nightowl->statement('create temporary table nightowl_dict_route (id bigint, method varchar, path varchar, name varchar)');
     $nightowl->statement('create temporary table nightowl_dict_sql (id bigint, sql text, file varchar, line int)');
     $nightowl->statement('create temporary table nightowl_dict_string (id int, kind varchar, value varchar)');
@@ -846,6 +847,23 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
         $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'trace' => 'request', 'execution' => $traceId, 'at' => $createdAt->toDateTimeString()]))
             ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
                 ->reloadOnly('telemetryTrace', fn (Inertia\Testing\AssertableInertia $reload) => $reload->where('telemetryTrace.summary.subtitle', 'products.index')));
+
+        $this->patch(route('grp.devops.telemetry.issues.update', ['issueId' => 1]), ['status' => 'resolved', 'priority' => 'high'])->assertRedirect();
+        $this->patch(route('grp.devops.telemetry.issues.update', ['issueId' => 1]), ['status' => 'resolved'])->assertRedirect();
+        $this->patch(route('grp.devops.telemetry.issues.update', ['issueId' => 1]), ['status' => 'deleted'])->assertSessionHasErrors('status');
+        $this->patch(route('grp.devops.telemetry.issues.update', ['issueId' => 404]), ['status' => 'ignored'])->assertNotFound();
+
+        expect($nightowl->table('nightowl_issues')->where('id', 1)->first(['status', 'priority']))->toEqual((object) ['status' => 'resolved', 'priority' => 'high'])
+            ->and($nightowl->table('nightowl_issue_activity')->orderBy('action')->get(['action', 'old_value', 'new_value', 'actor_type'])->map(fn ($row) => (array) $row)->all())->toBe([
+                ['action' => 'priority_changed', 'old_value' => null, 'new_value' => 'high', 'actor_type' => 'user'],
+                ['action' => 'status_changed', 'old_value' => 'open', 'new_value' => 'resolved', 'actor_type' => 'user'],
+            ]);
+
+        $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'exception' => $fingerprint]))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->reloadOnly('telemetryException', fn (Inertia\Testing\AssertableInertia $reload) => $reload
+                    ->where('telemetryException.issue.status', 'resolved')
+                    ->has('telemetryException.activity', 2)));
 
         $this->get(route('grp.devops.dashboard', ['tab' => 'telemetry', 'exception' => 'not-a-fingerprint']))
             ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page

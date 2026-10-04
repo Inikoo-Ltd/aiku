@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import { Bar } from "vue-chartjs"
 import { ctrans } from "@/Composables/useTrans"
@@ -9,6 +10,7 @@ export type ExceptionDetailData = {
     fingerprint: string
     issue: { id: number, status: string, priority: string | null, exception_class: string | null, exception_message: string | null, first_seen_at: string, last_seen_at: string, occurrences_count: number, users_count: number, assigned_to: string | null } | null
     hourly: { bucket_start: string, handled: number, unhandled: number }[]
+    activity: { action: string, old_value: string | null, new_value: string | null, user_name: string | null, actor_type: string, created_at: string }[]
     servers: { server: string, occurrences: number }[]
     occurrences: ExceptionOccurrence[]
     occurrence: (ExceptionOccurrence & {
@@ -43,6 +45,27 @@ const chart = computed(() => ({
 }))
 const chartOptions = { responsive: true, maintainAspectRatio: false, animation: false as const, plugins: { legend: { display: false } }, scales: { x: { stacked: true, ticks: { maxTicksLimit: 6 }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }
 
+const saving = ref(false)
+const updateIssue = (changes: { status?: string, priority?: string | null }) => {
+    if (!props.exception.issue) {
+        return
+    }
+    saving.value = true
+    router.patch(route("grp.devops.telemetry.issues.update", [props.exception.issue.id]), changes, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["telemetryException", "telemetry"],
+        onFinish: () => saving.value = false,
+    })
+}
+const statuses = computed(() => ({ open: ctrans("Open"), resolved: ctrans("Resolved"), ignored: ctrans("Ignored") }))
+const statusClasses: Record<string, string> = { open: "bg-rose-600 text-white", resolved: "bg-emerald-600 text-white", ignored: "bg-gray-600 text-white" }
+const priorities = computed(() => ({ low: ctrans("Low"), medium: ctrans("Medium"), high: ctrans("High"), critical: ctrans("Critical") }))
+const activityText = (entry: ExceptionDetailData["activity"][number]) => {
+    const what = entry.action === "priority_changed" ? ctrans("priority") : ctrans("status")
+    return `${entry.actor_type === "user" ? entry.user_name ?? ctrans("Someone") : "NightOwl"}: ${what} ${entry.old_value ?? "—"} → ${entry.new_value ?? "—"}`
+}
+
 const title = computed(() => props.exception.occurrence?.class ?? props.exception.issue?.exception_class ?? ctrans("Exception"))
 const message = computed(() => props.exception.occurrence?.message ?? props.exception.issue?.exception_message)
 </script>
@@ -53,7 +76,6 @@ const message = computed(() => props.exception.occurrence?.message ?? props.exce
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="break-all font-mono text-sm font-semibold">{{ title }}</span>
-                    <span v-if="exception.issue" class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ exception.issue.status }}<template v-if="exception.issue.priority"> · {{ exception.issue.priority }}</template></span>
                     <span v-if="exception.occurrence" class="rounded px-2 py-0.5 text-xs" :class="exception.occurrence.handled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
                         {{ exception.occurrence.handled ? ctrans("Handled") : ctrans("Unhandled") }}
                     </span>
@@ -68,6 +90,30 @@ const message = computed(() => props.exception.occurrence?.message ?? props.exce
                 </div>
             </div>
             <button class="text-sm text-gray-500 hover:text-gray-800" @click="emit('close')">{{ ctrans("Close") }}</button>
+        </div>
+
+        <div v-if="exception.issue" class="mb-4 flex flex-wrap items-center gap-3 rounded bg-gray-50 px-3 py-2 text-xs">
+            <div class="flex overflow-hidden rounded border" role="group" :aria-label="ctrans('Status')">
+                <button v-for="(label, status) in statuses" :key="status" type="button" class="px-3 py-1" :disabled="saving"
+                    :class="exception.issue.status === status ? statusClasses[status] : 'bg-white text-gray-600 hover:bg-gray-100'"
+                    :aria-pressed="exception.issue.status === status" @click="exception.issue.status !== status && updateIssue({ status })">
+                    {{ label }}
+                </button>
+            </div>
+            <label class="flex items-center gap-1 text-gray-500">
+                {{ ctrans("Priority") }}
+                <select class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs" :disabled="saving" :value="exception.issue.priority ?? ''"
+                    @change="updateIssue({ priority: ($event.target as HTMLSelectElement).value || null })">
+                    <option value="">—</option>
+                    <option v-for="(label, priority) in priorities" :key="priority" :value="priority">{{ label }}</option>
+                </select>
+            </label>
+            <span v-if="exception.issue.status === 'resolved'" class="text-gray-500">{{ ctrans("Reopens by itself if it happens again") }}</span>
+            <span v-if="saving" class="text-gray-500">{{ ctrans("Saving") }}…</span>
+            <details v-if="exception.activity.length" class="ml-auto">
+                <summary class="cursor-pointer text-gray-500">{{ ctrans("History") }} ({{ exception.activity.length }})</summary>
+                <div v-for="(entry, index) in exception.activity" :key="index" class="mt-1 text-gray-600">{{ entry.created_at }} · {{ activityText(entry) }}</div>
+            </details>
         </div>
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
