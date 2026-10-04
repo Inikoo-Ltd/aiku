@@ -130,7 +130,7 @@ class ShowDevopsDashboard extends OrgAction
     /** @var array<string, string> */
     public const array DEPLOY_HOST_NAMES = ['aiku' => 'boro', 'aiku_litio' => 'litio'];
 
-    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null} */
+    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null, usual_tests_seconds: int|null} */
     public function getCiRuns(): array
     {
         $recent = fn (string $workflow) => CiRun::where('workflow', $workflow)->orderByDesc('github_run_id')->limit(6)->get();
@@ -138,19 +138,26 @@ class ShowDevopsDashboard extends OrgAction
         $deploys = $recent(self::DEPLOY_WORKFLOW);
         $tests   = CiRun::where('workflow', self::TESTS_WORKFLOW)->where('branch', 'main')->orderByDesc('github_run_id')->limit(6)->get();
 
-        $usualDeploySeconds = CiRun::where('workflow', self::DEPLOY_WORKFLOW)->where('conclusion', 'success')
-            ->whereNotNull('started_at')->whereNotNull('completed_at')
-            ->orderByDesc('github_run_id')->limit(10)
-            ->selectRaw('extract(epoch from completed_at - started_at) as seconds')->pluck('seconds')
-            ->sort()->values();
-
         return [
             'deploy'               => $deploys->first() ? $this->ciRunDetail($deploys->first()) : null,
             'tests'                => $tests->first() ? $this->ciRunDetail($tests->first()) : null,
             'recent_deploys'       => $deploys->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
             'recent_tests'         => $tests->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
-            'usual_deploy_seconds' => $usualDeploySeconds->isEmpty() ? null : (int) $usualDeploySeconds[intdiv($usualDeploySeconds->count(), 2)],
+            'usual_deploy_seconds' => $this->usualSeconds(self::DEPLOY_WORKFLOW),
+            'usual_tests_seconds'  => $this->usualSeconds(self::TESTS_WORKFLOW, 'main'),
         ];
+    }
+
+    public function usualSeconds(string $workflow, ?string $branch = null): ?int
+    {
+        $seconds = CiRun::where('workflow', $workflow)->where('conclusion', 'success')
+            ->when($branch, fn ($query) => $query->where('branch', $branch))
+            ->whereNotNull('started_at')->whereNotNull('completed_at')
+            ->orderByDesc('github_run_id')->limit(10)
+            ->selectRaw('extract(epoch from completed_at - started_at) as seconds')->pluck('seconds')
+            ->sort()->values();
+
+        return $seconds->isEmpty() ? null : (int) $seconds[intdiv($seconds->count(), 2)];
     }
 
     /** @return array<string, mixed> */

@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase, faRocket, faServer, faSpinnerThird } from "@fal"
+import { faDatabase, faFlask, faRocket, faServer, faSpinnerThird } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -19,7 +19,7 @@ import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunC
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase, faRocket, faServer, faSpinnerThird)
+library.add(faDatabase, faFlask, faRocket, faServer, faSpinnerThird)
 
 const props = defineProps<{
     title: string
@@ -32,6 +32,7 @@ const props = defineProps<{
         recent_deploys: CiRunSummary[]
         recent_tests: CiRunSummary[]
         usual_deploy_seconds: number | null
+        usual_tests_seconds: number | null
     }
 }>()
 
@@ -51,10 +52,10 @@ onBeforeUnmount(() => {
     }
 })
 
-const runningDeploy = computed(() => {
-    const deploy = props.ciRuns.deploy
-    return deploy && deploy.status !== "completed" && !deploy.conclusion ? deploy : null
-})
+const isRunning = (run: CiRunDetail | null) => run && run.status !== "completed" && !run.conclusion ? run : null
+const runningDeploy = computed(() => isRunning(props.ciRuns.deploy))
+const runningTests = computed(() => isRunning(props.ciRuns.tests))
+const spinning = { icon: "fal fa-spinner-third", iconClass: "animate-spin text-sky-500" }
 
 const tabs = computed(() => ({
     servers: { title: ctrans("Servers"), icon: "fal fa-server" },
@@ -63,12 +64,13 @@ const tabs = computed(() => ({
             title: runningDeploy.value.deploy_total
                 ? `${ctrans("Deploying")} ${runningDeploy.value.deploy_done}/${runningDeploy.value.deploy_total}`
                 : ctrans("Deploying"),
-            icon: "fal fa-spinner-third",
-            iconClass: "animate-spin text-sky-500",
+            ...spinning,
         }
         : { title: ctrans("Deployments"), icon: "fal fa-rocket" },
+    tests: runningTests.value ? { title: ctrans("Testing"), ...spinning } : { title: ctrans("Tests"), icon: "fal fa-flask" },
 }))
-const currentTab = ref<string>(new URLSearchParams(window.location.search).get("tab") === "deployments" ? "deployments" : "servers")
+const requestedTab = new URLSearchParams(window.location.search).get("tab") ?? ""
+const currentTab = ref<string>(["deployments", "tests"].includes(requestedTab) ? requestedTab : "servers")
 const changeTab = (tab: string | number) => {
     currentTab.value = String(tab)
     const url = new URL(window.location.href)
@@ -99,9 +101,11 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
                 </div>
             </section>
         </div>
-        <div v-if="currentTab === 'deployments'" class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div v-if="currentTab === 'deployments'" class="mb-6 max-w-4xl">
             <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
-            <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" />
+        </div>
+        <div v-if="currentTab === 'tests'" class="mb-6 max-w-4xl">
+            <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" :usual-seconds="ciRuns.usual_tests_seconds" />
         </div>
 
     </div>
