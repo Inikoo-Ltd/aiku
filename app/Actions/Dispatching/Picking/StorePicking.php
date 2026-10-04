@@ -96,10 +96,6 @@ class StorePicking extends OrgAction
         });
         $picking->refresh();
 
-        if (app()->environment('production')) {
-            SavePickingInAurora::dispatch($picking);
-        }
-
 
         if ($picking->type == PickingTypeEnum::PICK) {
             StorePickingOrgStockMovement::dispatch($picking->id, $this->user?->id)->afterCommit();

@@ -36,7 +36,7 @@ class UpdateProspect extends OrgAction
 
     private Prospect $prospect;
 
-    public function handle(Prospect $prospect, array $modelData, bool $updateAurora = true): Prospect
+    public function handle(Prospect $prospect, array $modelData): Prospect
     {
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
@@ -71,20 +71,6 @@ class UpdateProspect extends OrgAction
             OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
             ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
         }
-
-
-        if (Arr::hasAny($changes, [
-                'email',
-                'company_name',
-                'contact_name',
-                'state',
-                'success_status',
-                'fail_status'
-            ])
-            && $prospect->shop->is_aiku && $updateAurora) {
-            SaveProspectInAurora::run($prospect);
-        }
-
 
         return $prospect;
     }
