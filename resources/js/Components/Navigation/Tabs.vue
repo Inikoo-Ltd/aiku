@@ -156,7 +156,7 @@ const tabIconClass = function (
 	extraIconClass: string
 ) {
 	// console.log(isCurrent, type, align, extraIconClass)
-	let iconClass = "-ml-0.5 h-5 w-5   " + extraIconClass
+	let iconClass = "-ml-0.5 h-5 w-5 " + extraIconClass + " "
 	// iconClass += isCurrent ? 'text-indigo-500 ' : 'text-gray-400 group-hover:text-gray-500 ';
 	iconClass += type == "icon" && align == "right" ? "ml-2 " : "mr-2 "
 	return iconClass
