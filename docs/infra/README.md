@@ -56,6 +56,8 @@ Worker counts are set per server with the `HORIZON_*_WORKERS` variables in that 
 On litio, Horizon reads the local replica (its supervisor program sets `PROCESS_DB_READ_HOSTS`) and writes
 the primary, which is why only counting queues run there. A queue that changes money, stock or orders
 never goes to litio. The website (Octane) reads and writes the primary on every server.
+The one exception is a small second Octane pool on litio that reads the replica; HAProxy sends it
+only the Shopify stock feed, where a fraction of a second of staleness does not matter.
 Never put `long-*`, `aurora`, `analytics`, `*_historic`, `stock-history` or the bulk hydrators on
 boro, not even during an outage: the database box must not run out of memory.
 

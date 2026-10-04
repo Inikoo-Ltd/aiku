@@ -39,6 +39,8 @@ set -a; source "$ENV_FILE"; set +a
 : "${OCTANE_WORKERS:?set it in $ENV_FILE}"
 : "${OCTANE_MAX_REQUESTS:?set it in $ENV_FILE}"
 INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
+: "${HORIZON_DB_READ_HOSTS?set it in $ENV_FILE — empty on boro, 127.0.0.1 on litio}"
+export OCTANE_PORT="${OCTANE_PORT:-8000}"
 
 # place <src> <dst> [mode]
 # Substitutes every {{VAR}} from the environment (dies on an unset placeholder,
@@ -58,7 +60,11 @@ place() {
 }
 
 echo "haproxy:"
-place "$DEVOPS/haproxy/haproxy.cfg"        /etc/haproxy/haproxy.cfg
+# litio is the live edge and dispatches Aurora and soketi hosts too; boro keeps the plain
+# aiku edge as hot standby. Any other host gets boro's file.
+haproxy_cfg="$DEVOPS/haproxy/haproxy-$APP_HOST.cfg"
+[[ -f $haproxy_cfg ]] || haproxy_cfg="$DEVOPS/haproxy/haproxy.cfg"
+place "$haproxy_cfg"                       /etc/haproxy/haproxy.cfg
 place "$DEVOPS/haproxy/CF_ips.lst"         /etc/haproxy/CF_ips.lst
 place "$DEVOPS/haproxy/facebook-bots.lst"  /etc/haproxy/facebook-bots.lst
 # haproxy.cfg reads the stats credentials from the environment, so the tracked file is byte-identical to the live one;
@@ -89,6 +95,25 @@ place "$DEVOPS/nginx/aiku-octane-production.conf" /etc/nginx/sites-available/aik
 if [[ $DRY_RUN != 1 ]]; then
   ln -sfn /etc/nginx/sites-available/aiku-octane-production.conf \
           /etc/nginx/sites-enabled/aiku-octane-production.conf
+fi
+
+# Second, small Octane pool that reads this host's own database replica (PROCESS_DB_READ_HOSTS).
+# Only for requests where a fraction of a second of staleness is harmless (HAProxy routes the
+# Shopify stock feed to it); basket, checkout, payments, logins and every POST stay on the main pool.
+# Same nginx site rendered on 8091 -> Octane 8001; the deploy reloads this pool too.
+echo "octane replica pool:"
+if [[ ${INSTALL_OCTANE_REPLICA:-0} == 1 ]]; then
+  : "${OCTANE_REPLICA_WORKERS:?set it in $ENV_FILE}"
+  NGINX_PORT=8091 OCTANE_PORT=8001 place "$DEVOPS/nginx/aiku-octane-production.conf" /etc/nginx/sites-available/aiku-octane-replica-production.conf
+  place "$DEVOPS/supervisor/octane-replica.conf" /etc/supervisor/conf.d/aiku-production-octane-replica.conf
+  place "$DEVOPS/octane/rr-octane-replica.yaml" /home/aiku/rr-octane-replica.yaml
+  if [[ $DRY_RUN != 1 ]]; then
+    chown aiku:aiku /home/aiku/rr-octane-replica.yaml
+    ln -sfn /etc/nginx/sites-available/aiku-octane-replica-production.conf \
+            /etc/nginx/sites-enabled/aiku-octane-replica-production.conf
+  fi
+else
+  echo "  skipped (INSTALL_OCTANE_REPLICA=0 — only the host with the replica runs it)"
 fi
 
 echo "supervisor:"
