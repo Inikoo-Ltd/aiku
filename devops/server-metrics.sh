@@ -73,7 +73,7 @@ top_processes() {
         END {
             for (name in total) printf "%s %s %s %s\n", total[name], name, busiest[name], count[name]
         }' <(printf '%s\n' "$1") <(printf '%s\n' "$2") |
-    sort -rn | head -3 |
+    sort -rn | head -5 |
     awk -v s="$3" -v hz="$CLK_TCK" -v cores="$CORES" '{
         printf "%s{\"name\":\"%s\",\"cpu_percent\":%.2f,\"max_core_percent\":%.2f,\"processes\":%d}", (NR > 1 ? "," : ""), $2, $1 / (s * hz * cores) * 100, $3 / (s * hz) * 100, $4
     }'
