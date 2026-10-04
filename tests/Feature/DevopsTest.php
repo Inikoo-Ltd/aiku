@@ -577,6 +577,15 @@ it('records github workflow runs, jobs and deploy task progress and shows them o
             ['number' => 2, 'name' => 'Launch 🚀', 'status' => 'in_progress', 'conclusion' => null, 'started_at' => null, 'completed_at' => null],
         ],
     ]])->assertOk();
+    $sendWebhook('workflow_job', ['workflow_job' => [
+        'id' => 77, 'run_id' => 9001, 'workflow_name' => 'Deploy Aiku', 'name' => 'Deploy aiku 🚀', 'status' => 'in_progress', 'conclusion' => null,
+        'started_at' => now()->subMinutes(2)->toIso8601String(), 'completed_at' => null, 'html_url' => null,
+        'steps' => [
+            ['number' => 1, 'name' => 'Checkout repo', 'status' => 'completed', 'conclusion' => 'success', 'started_at' => null, 'completed_at' => null],
+            ['number' => 2, 'name' => 'Launch 🚀', 'status' => 'in_progress', 'conclusion' => null, 'started_at' => null, 'completed_at' => null],
+        ],
+    ]])->assertOk();
+    expect(App\Models\DevOps\CiRun::where('github_run_id', 9001)->first()->jobs)->toHaveCount(1)->toHaveKey('77');
     $sendWebhook('ping', ['zen' => 'hi'])->assertOk();
 
     $progress = fn (array $data) => $this->postJson(route('devops.deploy-progress.store'), ['run_id' => 9001, 'total' => 30, ...$data], ['X-DEVOPS-TOKEN' => 'test-devops-token']);
@@ -588,7 +597,7 @@ it('records github workflow runs, jobs and deploy task progress and shows them o
     $progress(['task' => 'deploy:migrate', 'state' => 'start', 'host' => 'aiku', 'index' => 2])->assertOk();
     $progress(['task' => 'deploy:migrate', 'state' => 'sideways'])->assertUnprocessable();
 
-    Event::assertDispatchedTimes(App\Events\BroadcastCiRunUpdated::class, 7);
+    Event::assertDispatchedTimes(App\Events\BroadcastCiRunUpdated::class, 8);
 
     $this->actingAs(createAdminGuest(createGroup())->getUser())
         ->get(route('grp.devops.dashboard'))
@@ -625,9 +634,12 @@ it('imports recent github workflow runs with their jobs', function () {
         ]]]),
     ]);
 
+    App\Models\DevOps\CiRun::create(['github_run_id' => 9100, 'jobs' => ['0' => ['name' => 'stale copy', 'steps' => []], '501' => ['name' => 'old', 'steps' => []]]]);
+
     $this->artisan('ci-runs:import', ['--runs' => 5])->assertSuccessful();
 
     $ciRun = App\Models\DevOps\CiRun::where('github_run_id', 9100)->firstOrFail();
     expect($ciRun->conclusion)->toBe('failure')
+        ->and($ciRun->jobs)->toHaveCount(1)
         ->and($ciRun->jobs['501']['steps'][0]['name'])->toBe('Run tests');
 });

@@ -58,20 +58,17 @@ class ReceiveGitHubWorkflowWebhook
 
             $ciRun = CiRun::where('github_run_id', $job['run_id'])->lockForUpdate()->firstOrFail();
 
-            $ciRun->update([
-                'jobs' => [
-                    ...$ciRun->jobs,
-                    (string) $job['id'] => [
-                        'name'         => $job['name'],
-                        'status'       => $job['status'],
-                        'conclusion'   => $job['conclusion'] ?? null,
-                        'started_at'   => $job['started_at'] ?? null,
-                        'completed_at' => $job['completed_at'] ?? null,
-                        'html_url'     => $job['html_url'] ?? null,
-                        'steps'        => array_map(fn (array $step) => Arr::only($step, ['number', 'name', 'status', 'conclusion', 'started_at', 'completed_at']), $job['steps'] ?? []),
-                    ],
-                ],
-            ]);
+            $jobs             = $ciRun->jobs;
+            $jobs[$job['id']] = [
+                'name'         => $job['name'],
+                'status'       => $job['status'],
+                'conclusion'   => $job['conclusion'] ?? null,
+                'started_at'   => $job['started_at'] ?? null,
+                'completed_at' => $job['completed_at'] ?? null,
+                'html_url'     => $job['html_url'] ?? null,
+                'steps'        => array_map(fn (array $step) => Arr::only($step, ['number', 'name', 'status', 'conclusion', 'started_at', 'completed_at']), $job['steps'] ?? []),
+            ];
+            $ciRun->update(['jobs' => $jobs]);
 
             return $ciRun;
         });

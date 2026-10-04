@@ -11,14 +11,15 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase, faServer } from "@fal"
+import { faDatabase, faRocket, faServer } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, onBeforeUnmount, onMounted } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunCard.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase, faServer)
+library.add(faDatabase, faRocket, faServer)
 
 const props = defineProps<{
     title: string
@@ -50,6 +51,18 @@ onBeforeUnmount(() => {
     }
 })
 
+const tabs = {
+    servers: { title: ctrans("Servers"), icon: "fal fa-server" },
+    deployments: { title: ctrans("Deployments"), icon: "fal fa-rocket" },
+}
+const currentTab = ref<string>(new URLSearchParams(window.location.search).get("tab") === "deployments" ? "deployments" : "servers")
+const changeTab = (tab: string | number) => {
+    currentTab.value = String(tab)
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", currentTab.value)
+    window.history.replaceState(window.history.state, "", url)
+}
+
 const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSummary[]>>((groups, server) => {
     (groups[server.group] ??= []).push(server)
     return groups
@@ -60,16 +73,10 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs" @update:tab="changeTab" />
 
     <div class="p-4">
-        <h3 class="mb-2 text-sm font-semibold">{{ ctrans("Deployments") }}</h3>
-        <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
-            <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" />
-        </div>
-
-        <h3 class="mb-2 text-sm font-semibold">{{ ctrans("Servers") }}</h3>
-        <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div v-if="currentTab === 'servers'" class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
             <section v-for="(groupServers, group) in serverGroups" :key="group">
                 <h4 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans(group) }}</h4>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -79,5 +86,10 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
                 </div>
             </section>
         </div>
+        <div v-if="currentTab === 'deployments'" class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
+            <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" />
+        </div>
+
     </div>
 </template>

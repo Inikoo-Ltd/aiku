@@ -27,7 +27,7 @@ class ImportGitHubWorkflowRuns
         $workflowRuns = $this->github()->get("https://api.github.com/repos/$repo/actions/runs", ['per_page' => min($runs, 100)])->throw()->json('workflow_runs', []);
 
         foreach ($workflowRuns as $workflowRun) {
-            ReceiveGitHubWorkflowWebhook::run('workflow_run', ['workflow_run' => $workflowRun]);
+            ReceiveGitHubWorkflowWebhook::run('workflow_run', ['workflow_run' => $workflowRun])?->update(['jobs' => []]);
 
             $jobs = $this->github()->get("https://api.github.com/repos/$repo/actions/runs/{$workflowRun['id']}/jobs", ['per_page' => 50])->throw()->json('jobs', []);
             foreach ($jobs as $job) {

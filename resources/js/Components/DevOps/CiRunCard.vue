@@ -102,6 +102,7 @@ const showAllTasks = ref(false)
             </div>
 
             <table v-if="steps.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
+                <colgroup><col class="w-4"><col><col class="w-16"></colgroup>
                 <tbody class="divide-y divide-gray-100">
                     <tr v-for="step in steps" :key="`${step.job}-${step.number}`">
                         <td class="w-4 py-1" :class="stepColour(step.status, step.conclusion)">{{ stepIcon(step.status, step.conclusion) }}</td>
@@ -116,6 +117,7 @@ const showAllTasks = ref(false)
                     {{ showAllTasks ? ctrans("Hide deploy tasks") : ctrans("Show deploy tasks") }}
                 </button>
                 <table v-if="showAllTasks" class="mt-1 w-full table-fixed text-xs tabular-nums">
+                    <colgroup><col class="w-4"><col><col class="w-28"><col class="w-16"></colgroup>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="task in run.deploy_tasks" :key="task.task">
                             <td class="w-4 py-1" :class="task.state === 'done' ? 'text-emerald-600' : task.state === 'failed' ? 'text-red-600' : 'animate-pulse text-sky-600'">
@@ -131,6 +133,7 @@ const showAllTasks = ref(false)
         </template>
 
         <table v-if="recent.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
+            <colgroup><col class="w-4"><col><col class="w-16"></colgroup>
             <thead class="text-gray-400">
                 <tr><th colspan="3" class="pb-1 text-left font-normal">{{ ctrans("Previous") }}</th></tr>
             </thead>
