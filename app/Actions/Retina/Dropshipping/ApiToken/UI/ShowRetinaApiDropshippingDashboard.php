@@ -103,6 +103,9 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     ],
                 ],
                 'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
+                ApiTokenRetinaTabsEnum::SHOWCASE->value => [
+                    'staging_url' => 'https://canary.'.$this->website->domain.'/app',
+                ],
 
                 ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
                     fn () => ApiTokensRetinaResource::collection($apiTokens)

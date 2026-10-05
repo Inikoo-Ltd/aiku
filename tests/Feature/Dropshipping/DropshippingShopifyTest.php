@@ -1324,7 +1324,8 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $ownLine   = $basketLine($ownChannel->customer);
     $otherLine = $basketLine($otherChannel->customer);
 
-    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $website = LaunchWebsite::make()->action(createWebsite($this->shop));
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
     $username = 'guard-'.Str::lower(Str::random(8));
     actingAs(StoreWebUser::make()->action($ownChannel->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
     MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->once();
@@ -1336,7 +1337,8 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($otherChannel->customer)->slug))->assertForbidden();
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $ownPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertSuccessful();
-    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk();
+    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('showcase.staging_url', 'https://canary.'.$website->domain.'/app'));
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();
     $this->getJson(route('retina.json.basket_transaction_product_data', $ownLine->id))->assertOk()->assertJsonPath('transaction_id', $ownLine->id);
 });
