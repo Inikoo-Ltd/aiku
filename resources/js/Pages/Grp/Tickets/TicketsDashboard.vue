@@ -88,48 +88,62 @@ const workTabs = computed(() => [
 const unreadUpdates = ref(0)
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${ctrans("days")}` : `${value} ${ctrans("h")}`)
+
+const ticketTiles = computed(() => [
+    { key: "open", label: ctrans("Open now"), value: props.stats.open, class: "text-gray-900", href: ticketListLink({ status: openStatuses }) },
+    { key: "raised", label: ctrans("Raised this week"), value: props.stats.created_week, class: "text-pink-600", href: ticketListLink({}, { created: "1w" }) },
+    { key: "done", label: ctrans("Done this week"), value: props.stats.done_week, class: "text-green-700", href: ticketListLink({}, { filter: { resolved_since: oneWeekAgo() } }) },
+    { key: "resolve", label: ctrans("Typical time to resolve"), value: hours(props.stats.median_hours), class: "text-gray-900", href: ticketsRoute("reports") },
+])
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3">
-            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Ticket Details") }}</p>
-            <div class="flex flex-wrap gap-x-6 gap-y-3">
-                <Link :href="ticketListLink({ status: openStatuses })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                    <p class="text-2xl font-bold">{{ stats.open }}</p>
-                    <p class="text-xs text-gray-600">{{ ctrans("Open now") }}</p>
-                </Link>
-                <Link :href="ticketListLink({}, { created: '1w' })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                    <p class="text-2xl font-bold text-pink-600">{{ stats.created_week }}</p>
-                    <p class="text-xs text-gray-600">{{ ctrans("Raised this week") }}</p>
-                </Link>
-                <Link :href="ticketListLink({}, { filter: { resolved_since: oneWeekAgo() } })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                    <p class="text-2xl font-bold text-green-700">{{ stats.done_week }}</p>
-                    <p class="text-xs text-gray-600">{{ ctrans("Done this week") }}</p>
-                </Link>
-                <Link :href="ticketsRoute('reports')" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                    <p class="text-2xl font-bold">{{ hours(stats.median_hours) }}</p>
-                    <p class="text-xs text-gray-600">{{ ctrans("Typical time to resolve") }}</p>
-                </Link>
-                <template v-if="by_status">
-                    <Link v-for="row in by_status" :key="row.status" :href="ticketListLink({ status: row.status })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                        <p class="text-2xl font-bold"><Icon :data="row.icon" class="text-lg" /> {{ row.total }}</p>
-                        <p class="text-xs text-gray-600">{{ row.label }}</p>
+        <div class="grid grid-cols-1 gap-4" :class="qaDetails.length && 'xl:grid-cols-3'">
+            <section class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm xl:col-span-2">
+                <h2 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Ticket Details") }}</h2>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <Link v-for="tile in ticketTiles" :key="tile.key" :href="tile.href" class="group rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2.5 transition duration-200 hover:border-gray-300 hover:bg-white hover:shadow-sm">
+                        <p class="text-xs text-gray-500">{{ tile.label }}</p>
+                        <p class="mt-0.5 text-2xl font-bold tabular-nums" :class="tile.class">{{ tile.value }}</p>
                     </Link>
-                </template>
-            </div>
-        </div>
+                </div>
+                <div v-if="by_status?.length" class="mt-3 border-t border-gray-100 pt-3">
+                    <p class="mb-2 text-xs text-gray-500">{{ ctrans("Open by status") }}</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <Link
+                            v-for="row in by_status"
+                            :key="row.status"
+                            :href="ticketListLink({ status: row.status })"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 py-1 pl-2 pr-1 text-xs text-gray-700 transition duration-200 hover:border-gray-300 hover:bg-gray-50"
+                            :class="!row.total && 'opacity-50'">
+                            <Icon :data="row.icon" />
+                            <span>{{ row.label }}</span>
+                            <span class="min-w-[1.5rem] rounded-full bg-gray-100 px-1.5 text-center font-semibold tabular-nums text-gray-800">{{ row.total }}</span>
+                        </Link>
+                    </div>
+                </div>
+            </section>
 
-        <div v-if="qaDetails.length" class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3">
-            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA Details") }}</p>
-            <div class="flex flex-wrap gap-x-6 gap-y-3">
-                <Link v-for="row in qaDetails" :key="row.key" :href="row.href" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
-                    <p class="text-2xl font-bold"><FontAwesomeIcon :icon="row.icon" :class="row.class" class="text-lg" fixed-width /> {{ row.total }}</p>
-                    <p class="text-xs text-gray-600">{{ row.label }}</p>
-                </Link>
-            </div>
+            <section v-if="qaDetails.length" class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
+                <h2 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA Details") }}</h2>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
+                    <Link
+                        v-for="row in qaDetails"
+                        :key="row.key"
+                        :href="row.href"
+                        class="rounded-lg border px-3 py-2.5 transition duration-200 hover:shadow-sm"
+                        :class="row.key === 'requested' && row.total > 0 ? 'border-amber-300 bg-amber-50 hover:bg-amber-100/60' : 'border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-white'">
+                        <p class="flex items-center gap-1.5 text-xs text-gray-500">
+                            <FontAwesomeIcon :icon="row.icon" :class="row.class" fixed-width aria-hidden="true" />
+                            {{ row.label }}
+                        </p>
+                        <p class="mt-0.5 text-2xl font-bold tabular-nums">{{ row.total }}</p>
+                    </Link>
+                </div>
+            </section>
         </div>
 
         <TicketTabsCard v-if="workTabs.length" :tabs="workTabs" storage-key="tickets_dashboard_tab">

@@ -1283,8 +1283,11 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
 
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
-    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
-    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id, 'qa_note' => 'Try it with a voucher', 'images' => [UploadedFile::fake()->image('voucher.png')]])->assertRedirect();
+    $requestComment = $ticket->comments()->latest('id')->first();
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id)
+        ->and($requestComment->body)->toBe('QA check requested: Try it with a voucher')
+        ->and($requestComment->getMedia('ticket_images'))->toHaveCount(1);
     actingAs($qa);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
     actingAs($engineer);
