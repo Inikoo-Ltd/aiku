@@ -3929,6 +3929,62 @@ test('a task sent to a department tells the people in it', function () {
     expect($member->notifications()->where('data', 'like', '%'.$task->reference.' is waiting for someone from%')->exists())->toBeTrue();
 });
 
+test('a task goes to a person and a department at once, and only the department takes itself off with a reason', function () {
+    $groupPosition = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->user->group_id)->whereNull('organisation_id')->whereNotNull('department')
+        ->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)
+        ->whereNotIn('department', \Illuminate\Support\Facades\DB::table('job_positions')->where('slug', 'group-admin')->select('department'))
+        ->first();
+    $newColleague  = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $member        = $newColleague();
+    $worker        = $newColleague();
+    $outsider      = $newColleague();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $member->id, 'job_position_id' => $groupPosition->id, 'group_id' => $member->group_id, 'scopes' => '{}']);
+    $departmentLabel = \App\Models\Tasks\StaffTask::departmentLabel($groupPosition->department);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, [
+        'subject'     => 'Check the new supplier contract',
+        'assignee_id' => $worker->id,
+        'department'  => $groupPosition->department,
+        'due_at'      => now()->addDays(3)->toDateString(),
+    ]);
+    $removal = route('grp.tasks.department.remove', $task->reference);
+
+    expect(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine')->pluck('id'))->toContain($task->id)
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($member, 'department')->pluck('id'))->toContain($task->id);
+
+    foreach ([$this->user, $worker, $outsider] as $notInTheDepartment) {
+        actingAs($notInTheDepartment);
+        \Pest\Laravel\postJson($removal, ['reason' => 'Not ours'])->assertForbidden();
+    }
+    actingAs($this->user);
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $task->reference), ['department' => null])->assertForbidden();
+
+    actingAs($member);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_remove_department', true));
+    \Pest\Laravel\postJson($removal, ['reason' => ''])->assertUnprocessable();
+    \Pest\Laravel\postJson($removal, ['reason' => 'Contracts go to legal, not to us'])->assertOk();
+
+    $task->refresh();
+    expect($task->department)->toBeNull()
+        ->and($task->assignee_id)->toBe($worker->id)
+        ->and($task->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::TODO)
+        ->and($task->due_at->toDateString())->toBe(now()->addDays(3)->toDateString())
+        ->and($this->user->notifications()->where('data', 'like', '%removed '.$departmentLabel.' from '.$task->reference.'%')->exists())->toBeTrue()
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine')->pluck('id'))->toContain($task->id);
+
+    actingAs($this->user);
+    $removed = collect(get(route('grp.tasks.show', $task->reference))->inertiaProps()['timeline'])->firstWhere('text', 'Removed from '.$departmentLabel.': Contracts go to legal, not to us');
+    expect($removed)->not->toBeNull()
+        ->and($removed['by'])->toBe($member->chatName());
+
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $task->reference), ['department' => $groupPosition->department])->assertOk();
+    expect($task->refresh()->department)->toBe($groupPosition->department);
+
+    $nobodysTask = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Department only', 'department' => $groupPosition->department]);
+    actingAs($member);
+    \Pest\Laravel\postJson(route('grp.tasks.department.remove', $nobodysTask->reference), ['reason' => 'Not ours'])->assertUnprocessable();
+});
+
 test('open tasks are reminded the day before they are due and once they are late, once per due date', function () {
     $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Ship the samples', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);

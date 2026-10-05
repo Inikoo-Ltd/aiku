@@ -270,6 +270,24 @@ class StaffTask extends Model implements Auditable, HasMedia
         return $this->requester_id === $user->id || ($this->group_id === $user->group_id && self::isSupervisor($user));
     }
 
+    /**
+     * A department can be included on an open task that has none yet, by whoever raised it, works on it, or supervises.
+     */
+    public function canAddDepartmentBy(User $user): bool
+    {
+        return $this->department === null && $this->isOpen() && ($this->canReassignBy($user) || $this->isWorkedOnBy($user));
+    }
+
+    /**
+     * Once included, only the department itself decides it is not theirs: a member of it, never the person who raised the task.
+     */
+    public function canRemoveDepartmentBy(User $user): bool
+    {
+        return $this->department !== null
+            && $this->requester_id !== $user->id
+            && in_array($this->department, self::departmentsOf($user), true);
+    }
+
     public function canAskForHelpBy(User $user): bool
     {
         return $this->isOpen() && $this->isWorkedOnBy($user);

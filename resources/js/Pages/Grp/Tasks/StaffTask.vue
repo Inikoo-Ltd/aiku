@@ -80,6 +80,9 @@ const props = defineProps<{
     can_reassign: boolean
     can_ask_for_help: boolean
     can_edit_content?: boolean
+    can_add_department?: boolean
+    can_remove_department?: boolean
+    department_options?: { value: string; label: string }[]
     timeline: { at: string; icon: string; text: string; by: string | null; change?: { label: string; from: string; to: string } | null }[]
     options: { statuses: Option[]; priorities: Option[] }
     project_options?: { label: string; value: number }[]
@@ -109,7 +112,7 @@ const daysAgo = (date: string) => {
 const controls = ref<InstanceType<typeof StaffTaskControls> | null>(null)
 const subtasksBox = ref<InstanceType<typeof StaffTaskSubtasks> | null>(null)
 
-const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "can_edit_content", "timeline", "project_options", "milestone_options", "can_change_project", "project_route"], preserveScroll: true })
+const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "can_edit_content", "can_add_department", "can_remove_department", "department_options", "timeline", "project_options", "milestone_options", "can_change_project", "project_route"], preserveScroll: true })
 
 const historyChangeEvent = ref<any | null>(null)
 
@@ -343,7 +346,7 @@ onUnmounted(() => {
         <div class="w-full shrink-0 space-y-4 p-4 max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px)] lg:w-[26rem] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
             <Teleport defer to="#task-card-controls" :disabled="isDesktop">
             <TicketControlPanel :ticket="panelSummary" :storage-key="isDesktop ? 'staff-task-control-panel' : 'staff-task-control-panel-mobile'" :default-open="isDesktop" :embedded="!isDesktop">
-                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :can-reassign="can_reassign" :can-ask-for-help="can_ask_for_help" :options="options" :project-options="project_options" :milestone-options="milestone_options" :can-change-project="can_change_project" :project-route="project_route" @updated="reloadTask" />
+                <StaffTaskControls ref="controls" :task="task" :can-edit="can_edit" :due-access="due_access" :can-remove-collaborators="can_remove_collaborators" :can-reassign="can_reassign" :can-ask-for-help="can_ask_for_help" :can-add-department="can_add_department" :can-remove-department="can_remove_department" :department-options="department_options" :options="options" :project-options="project_options" :milestone-options="milestone_options" :can-change-project="can_change_project" :project-route="project_route" @updated="reloadTask" />
             </TicketControlPanel>
             </Teleport>
 
