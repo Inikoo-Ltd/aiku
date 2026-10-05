@@ -9,6 +9,8 @@
 
 namespace App\Actions\Retina\Helpers\Upload;
 
+use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Dropshipping\CustomerSalesChannel\ExportRecentBulkPortfolioErrorUploads;
 use App\Models\Helpers\Upload;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,6 +19,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadRetinaUploads
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use AsAction;
     use WithAttributes;
 
@@ -27,8 +30,10 @@ class DownloadRetinaUploads
         return ExportRecentBulkPortfolioErrorUploads::run($upload);
     }
 
-    public function asController(Upload $upload): BinaryFileResponse
+    public function asController(Upload $upload, ActionRequest $request): BinaryFileResponse
     {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
         return $this->handle($upload);
     }
 }

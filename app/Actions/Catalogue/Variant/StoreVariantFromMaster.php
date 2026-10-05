@@ -128,6 +128,10 @@ class StoreVariantFromMaster extends OrgAction
             return $variant;
         });
 
+        if ($this->parent->label) {
+            TranslateVariantLabel::dispatch($variant, $this->parent->label);
+        }
+
         return $variant;
     }
 

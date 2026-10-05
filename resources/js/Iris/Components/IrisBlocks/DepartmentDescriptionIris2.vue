@@ -399,7 +399,6 @@ watch(
 										<Image
 											v-if="fieldValue.department.showcase_video_thumbnail"
 											:src="{ original: fieldValue.department.showcase_video_thumbnail }"
-											:responsiveEnabled="false"
 											:alt="fieldValue.department.name || ctrans('Department video')"
 											:imageCover="true"
 											class="absolute inset-0 w-full h-full" />
@@ -509,7 +508,6 @@ watch(
 					allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
 					referrerpolicy="strict-origin-when-cross-origin"
 					allowfullscreen
-					@load="console.log('iframe loaded')"
 					class="w-full h-full" />
 			</div>
 		</div>

@@ -63,7 +63,6 @@ const updateFormValue = (newValue) => {
     emits("update:form", target);
 };
 
-console.log(props)
 </script>
 <template>
     <div class="relative">

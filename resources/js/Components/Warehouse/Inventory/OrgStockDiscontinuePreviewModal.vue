@@ -20,7 +20,9 @@ interface Preview {
     id: number
     code: string
     name: string | null
+    state: string
     state_label: string
+    organisation: string
     updated_at: string | null
     organisations: Record<string, string>
     quantity: number
@@ -28,12 +30,15 @@ interface Preview {
     number_products: number
     purchase_orders: CountWithReferences
     stock_deliveries: CountWithReferences
+    restock_requests: number
     portfolios: { count: number; customers: number; by_platform: Record<string, number> }
     external_shops: { code: string; status: string; shop_code: string; shop_name: string }[]
     webpages: { count: number; urls: string[] }
     mailshots: { known: boolean; reason: string }
     orders: CountWithReferences & { quantity: number }
     is_exclusive: boolean
+    can_change_group: boolean
+    changeable_organisations: string[]
 }
 
 const props = defineProps<{
@@ -41,16 +46,20 @@ const props = defineProps<{
     orgStockIds: number[]
     previewRoute: routeType
     discontinueRoute?: routeType | null
+    initialState?: string
+    zIndex?: number
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void; (e: "onDone"): void }>()
 
-const stateOptions = computed(() => ({
-    discontinuing: ctrans("Discontinuing"),
-    discontinued: ctrans("Discontinued"),
-    suspended: ctrans("Suspended"),
-    active: ctrans("Active"),
-}))
+const stateOptions = computed(() => [
+    { value: "active", label: ctrans("Active"), meaning: ctrans("Normal ordering and selling") },
+    { value: "suspended", label: ctrans("Hold"), meaning: ctrans("Stops ordering; sells what is left") },
+    { value: "discontinuing", label: ctrans("Discontinued"), meaning: ctrans("No ordering; sells until stock runs out") },
+    { value: "discontinued", label: ctrans("Retired"), meaning: ctrans("Archived; not for sale") },
+])
+
+const stateLabel = (value: string) => stateOptions.value.find((option) => option.value === value)?.label ?? value
 
 const form = ref({
     state: "discontinuing",
@@ -67,6 +76,22 @@ const organisationCodes = computed(() => {
     return Array.from(codes).sort()
 })
 
+const canChangeGroup = computed(() => previews.value.length > 0 && previews.value.every((preview) => preview.can_change_group))
+const scope = computed(() => (canChangeGroup.value ? "group" : "organisation"))
+const homeOrganisation = computed(() => previews.value[0]?.organisation ?? "")
+
+const changeableOrganisationCodes = computed(() => {
+    if (!previews.value.length) return []
+    return organisationCodes.value.filter((code) => previews.value.every((preview) => preview.changeable_organisations.includes(code)))
+})
+
+const newStateFor = (preview: Preview) => {
+    if (scope.value === "organisation") return form.value.state
+    return form.value.organisation_states[preview.organisation] || form.value.state
+}
+
+const selectedMeaning = computed(() => stateOptions.value.find((option) => option.value === form.value.state)?.meaning ?? "")
+
 const canConfirm = computed(() =>
     !!props.discontinueRoute && previews.value.length > 0 && (form.value.state === "active" || form.value.reason.trim().length > 0)
 )
@@ -75,12 +100,15 @@ const onConfirm = () => {
     if (!props.discontinueRoute || !canConfirm.value) return
     isSubmitting.value = true
     submitError.value = null
-    const organisation_states = Object.fromEntries(Object.entries(form.value.organisation_states).filter(([, state]) => state))
+    const organisation_states = canChangeGroup.value
+        ? Object.fromEntries(Object.entries(form.value.organisation_states).filter(([, state]) => state))
+        : {}
     router.post(
         route(props.discontinueRoute.name, props.discontinueRoute.parameters),
         {
             org_stock_ids: props.orgStockIds,
             state: form.value.state,
+            scope: scope.value,
             reason: form.value.reason || null,
             effective_at: form.value.effective_at || null,
             organisation_states,
@@ -127,9 +155,10 @@ const loadPreview = async () => {
 
 watch(() => props.isOpen, (isOpen) => {
     if (isOpen) {
+        form.value.state = props.initialState ?? "discontinuing"
         loadPreview()
     }
-})
+}, { immediate: true })
 
 const references = (block: CountWithReferences) => block.references.join(", ")
 const platformSummary = (byPlatform: Record<string, number>) =>
@@ -137,7 +166,7 @@ const platformSummary = (byPlatform: Record<string, number>) =>
 </script>
 
 <template>
-    <Modal :isOpen="isOpen" @onClose="emits('onClose')" width="w-full max-w-5xl">
+    <Modal :isOpen="isOpen" :zIndex="zIndex" @onClose="emits('onClose')" width="w-full max-w-5xl">
         <div class="flex flex-col gap-4">
             <div>
                 <h3 class="text-lg font-semibold">{{ ctrans("Discontinue preview") }}</h3>
@@ -160,6 +189,7 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                             <th class="py-2 pr-3 text-right">{{ ctrans("Cover") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Purchase orders") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Deliveries") }}</th>
+                            <th class="py-2 pr-3" :title="ctrans('Open warehouse restock requests, removed when the SKO is discontinued')">{{ ctrans("Restock requests") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Portfolios") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Marketplaces") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Web pages") }}</th>
@@ -170,11 +200,12 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                     <tbody>
                         <tr v-for="preview in previews" :key="preview.id" class="border-b border-gray-100 align-top">
                             <td class="py-2 pr-3">
-                                <div class="font-medium">{{ preview.code }}</div>
-                                <div class="text-gray-500">{{ preview.name }}</div>
-                                <div class="text-gray-400">{{ preview.state_label }}</div>
+                                <div class="font-medium">{{ preview.code }} — {{ preview.name }}</div>
+                                <div class="text-gray-400">
+                                    {{ stateLabel(preview.state) }} → {{ stateLabel(newStateFor(preview)) }}
+                                </div>
                                 <div class="text-xs text-gray-400">
-                                    <span v-for="(state, organisation) in preview.organisations" :key="organisation" class="mr-2">{{ organisation }}: {{ state }}</span>
+                                    <span v-for="(state, organisation) in preview.organisations" :key="organisation" class="mr-2">{{ organisation }}: {{ stateLabel(state) }}</span>
                                 </div>
                             </td>
                             <td class="py-2 pr-3 text-right tabular-nums">{{ locale.number(preview.quantity) }}</td>
@@ -188,6 +219,10 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                             <td class="py-2 pr-3" :class="preview.stock_deliveries.count ? 'text-amber-700' : 'text-gray-400'">
                                 {{ preview.stock_deliveries.count }}
                                 <div v-if="preview.stock_deliveries.count" class="text-xs text-gray-500">{{ references(preview.stock_deliveries) }}</div>
+                            </td>
+                            <td class="py-2 pr-3" :class="preview.restock_requests ? 'text-amber-700' : 'text-gray-400'">
+                                {{ preview.restock_requests }}
+                                <div v-if="preview.restock_requests" class="text-xs text-gray-500">{{ ctrans("will be removed") }}</div>
                             </td>
                             <td class="py-2 pr-3" :class="preview.portfolios.count ? 'text-amber-700' : 'text-gray-400'">
                                 {{ preview.portfolios.count }}
@@ -223,23 +258,26 @@ const platformSummary = (byPlatform: Record<string, number>) =>
 
             <div v-if="discontinueRoute && !isLoading && previews.length" class="grid gap-3 border-t border-gray-200 pt-4 md:grid-cols-3">
                 <label class="text-sm">
-                    <span class="block text-gray-500 mb-1">{{ ctrans("New state, every organisation") }}</span>
+                    <span class="block text-gray-500 mb-1">{{ canChangeGroup ? ctrans("New state, every organisation") : ctrans("New state") }}</span>
                     <select v-model="form.state" class="w-full rounded-md border-gray-300 text-sm">
-                        <option v-for="(label, value) in stateOptions" :key="value" :value="value">{{ label }}</option>
+                        <option v-for="option in stateOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                     </select>
+                    <p class="text-xs text-gray-400 mt-1">{{ selectedMeaning }}</p>
                 </label>
                 <label class="text-sm">
                     <span class="block text-gray-500 mb-1">{{ ctrans("Effective from (empty = now)") }}</span>
                     <input v-model="form.effective_at" type="date" class="w-full rounded-md border-gray-300 text-sm" />
                 </label>
                 <div class="text-sm">
-                    <span class="block text-gray-500 mb-1">{{ ctrans("Exceptions per organisation") }}</span>
-                    <div class="flex flex-wrap gap-2">
-                        <label v-for="code in organisationCodes" :key="code" class="flex items-center gap-1">
+                    <span class="block text-gray-500 mb-1">
+                        {{ canChangeGroup ? ctrans("Applies to every organisation carrying this product") : ctrans("Applies to :organisation only", { organisation: homeOrganisation }) }}
+                    </span>
+                    <div v-if="canChangeGroup" class="flex flex-wrap gap-2">
+                        <label v-for="code in changeableOrganisationCodes" :key="code" class="flex items-center gap-1">
                             <span class="font-medium">{{ code }}</span>
                             <select v-model="form.organisation_states[code]" class="rounded-md border-gray-300 text-xs">
                                 <option value="">{{ ctrans("follow") }}</option>
-                                <option v-for="(label, value) in stateOptions" :key="value" :value="value">{{ label }}</option>
+                                <option v-for="option in stateOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                         </label>
                     </div>

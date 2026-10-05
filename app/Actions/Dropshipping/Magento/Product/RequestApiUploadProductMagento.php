@@ -38,10 +38,10 @@ class RequestApiUploadProductMagento extends RetinaAction
 
             $images = [];
 
-            foreach ($product->images as $key => $image) {
+            foreach ($product->orderedImages() as $key => $image) {
                 $imageUrl = match (app()->environment()) {
                     'local' => Arr::get($product->web_images, 'main.gallery.png'),
-                    default => GetImgProxyUrl::run($image->getImage()->extension('png'))
+                    default => GetImgProxyUrl::run($image->getImage()->extension('png')->resize(1600, 1600))
                 };
 
                 $images[] = [

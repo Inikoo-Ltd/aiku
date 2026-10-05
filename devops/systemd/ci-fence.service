@@ -1,0 +1,12 @@
+[Unit]
+Description=Firewall the CI runner (aiku_test) and test Postgres (pgci) away from production
+After=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/aiku/ci-fence.nft
+ExecStop=/usr/sbin/nft delete table inet ci_fence
+
+[Install]
+WantedBy=multi-user.target

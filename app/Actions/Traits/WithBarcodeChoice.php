@@ -19,10 +19,20 @@ use App\Models\Masters\MasterAsset;
 trait WithBarcodeChoice
 {
     /**
-     * @return array{options: list<array{value: string, code: string, name: string, proposed: bool}>, hasChoice: bool}
+     * @return array{options: list<array{value: string, code: string, name: string, proposed: bool}>, withoutBarcode: list<array{code: string, name: string}>, hasChoice: bool}
      */
     public function getBarcodeChoice(MasterAsset|Product $model): array
     {
+        $withoutBarcode = $model->tradeUnits
+            ->unique('id')
+            ->filter(fn (TradeUnit $tradeUnit) => blank($tradeUnit->barcode))
+            ->map(fn (TradeUnit $tradeUnit) => [
+                'code' => $tradeUnit->code,
+                'name' => $tradeUnit->name,
+            ])
+            ->values()
+            ->all();
+
         $tradeUnits = $model->tradeUnits
             ->unique('id')
             ->filter(fn (TradeUnit $tradeUnit) => filled($tradeUnit->barcode))
@@ -45,6 +55,7 @@ trait WithBarcodeChoice
                 'name'     => $tradeUnit->name,
                 'proposed' => $index == 0 && $isUnambiguous,
             ])->all(),
+            'withoutBarcode' => $withoutBarcode,
             'hasChoice' => $model->tradeUnits->unique('id')->count() > 1,
         ];
     }

@@ -9,10 +9,12 @@
 namespace App\Models\Helpers;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Events\BroadcastTicketUpdated;
 use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -22,11 +24,13 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasTicketImages;
 use App\Models\Traits\InShop;
+use App\Models\Traits\InTicketProject;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -47,15 +51,19 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property bool $is_confidential
  * @property bool $blocks_source
  * @property bool $closes_source
+ * @property bool $reporter_muted
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
  * @property ChatPriorityEnum $priority
  * @property string $subject
  * @property string|null $description
+ * @property string|null $pull_request_url
  * @property string|null $reporter_type
  * @property int|null $reporter_id
  * @property int|null $assignee_id
+ * @property int|null $ticket_project_id
+ * @property int|null $ticket_project_milestone_id
  * @property \Illuminate\Support\Carbon|null $waiting_until
  * @property string|null $model_type
  * @property int|null $model_id
@@ -76,6 +84,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Customer|null $customer
  * @property-read Model|\Eloquent|null $model
  * @property-read Model|\Eloquent|null $reporter
+ * @property-read TicketProject|null $project
  * @mixin \Eloquent
  */
 class Ticket extends Model implements Auditable, HasMedia
@@ -85,6 +94,7 @@ class Ticket extends Model implements Auditable, HasMedia
     use InShop;
     use InteractsWithMedia;
     use HasTicketImages;
+    use InTicketProject;
 
     protected $guarded = [];
 
@@ -105,7 +115,10 @@ class Ticket extends Model implements Auditable, HasMedia
         'is_confidential',
         'blocks_source',
         'closes_source',
+        'reporter_muted',
         'qa_status',
+        'pull_request_url',
+        'ticket_project_id',
     ];
 
     protected function casts(): array
@@ -122,6 +135,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'is_confidential' => 'boolean',
             'blocks_source' => 'boolean',
             'closes_source' => 'boolean',
+            'reporter_muted' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
             'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
@@ -141,7 +155,18 @@ class Ticket extends Model implements Auditable, HasMedia
             if ($ticket->wasRecentlyCreated || $ticket->wasChanged(['reference', 'subject', 'description', 'tags', 'reporter_id', 'assignee_id', 'customer_id'])) {
                 self::refreshSearchVectors($ticket->id);
             }
+
+            if ($ticket->wasChanged()) {
+                $ticket->broadcastUpdated();
+            }
         });
+
+        static::deleted(fn (Ticket $ticket) => $ticket->broadcastUpdated());
+    }
+
+    public function broadcastUpdated(): void
+    {
+        broadcast(new BroadcastTicketUpdated($this->id, $this->group_id))->toOthers();
     }
 
     /**
@@ -155,9 +180,9 @@ class Ticket extends Model implements Auditable, HasMedia
             "UPDATE tickets t SET
                 search_vector = setweight(to_tsvector('english', concat_ws(' ', t.reference, replace(t.reference, '-', ' '), t.subject)), 'A')
                     || setweight(to_tsvector('english', concat_ws(' ', t.description, (SELECT string_agg(tag, ' ') FROM jsonb_array_elements_text(t.tags) tag))), 'B')
-                    || setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND NOT c.is_internal), '')), 'C')
+                    || setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND c.type = 'comment' AND NOT c.is_internal), '')), 'C')
                     || setweight(to_tsvector('simple', concat_ws(' ', ru.username, ru.contact_name, au.username, au.contact_name, cu.name, cu.contact_name)), 'D'),
-                internal_search_vector = setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND c.is_internal), '')), 'C')
+                internal_search_vector = setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND c.type = 'comment' AND c.is_internal), '')), 'C')
             FROM tickets s
                 LEFT JOIN users ru ON s.reporter_type = 'User' AND ru.id = s.reporter_id
                 LEFT JOIN users au ON au.id = s.assignee_id
@@ -191,7 +216,6 @@ class Ticket extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
-
     public function collaborators(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'ticket_collaborators')->withPivot('added_by_id')->withTimestamps();
@@ -209,7 +233,12 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function comments(): HasMany
     {
-        return $this->hasMany(TicketComment::class);
+        return $this->hasMany(TicketComment::class)->whereIn('type', [TicketCommentTypeEnum::COMMENT, TicketCommentTypeEnum::POST_MORTEM]);
+    }
+
+    public function deployComment(): HasOne
+    {
+        return $this->hasOne(TicketComment::class)->where('type', TicketCommentTypeEnum::WAITING_FOR_DEPLOYMENT);
     }
 
     public const array PRESET_TAGS = ['not a bug', 'lack of training', 'not enough info', 'duplicate', 'user error', 'data fix', 'wont fix'];
@@ -229,6 +258,35 @@ class Ticket extends Model implements Auditable, HasMedia
     public static function canCheckQa(?User $user): bool
     {
         return $user !== null && ($user->authTo('help-desk.qa') || $user->authTo('help-desk.assign'));
+    }
+
+    public static function canGiveQaVerdict(?User $user): bool
+    {
+        return $user !== null && $user->authTo('help-desk.qa');
+    }
+
+    public function canBeClaimedForQaBy(?User $user): bool
+    {
+        if ($this->qa_status?->canBeCheckedAgain()) {
+            return self::canGiveQaVerdict($user);
+        }
+
+        return self::canGiveQaVerdict($user)
+            && !$this->qa_status?->isVerdict()
+            && $this->qa_status !== TicketQaStatusEnum::CHECKING
+            && ($this->qa_user_id === null || $this->qa_user_id === $user->id);
+    }
+
+    public function isQaHeldByAnotherThan(?User $user): bool
+    {
+        return in_array($this->qa_status, [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING], true)
+            && $this->qa_user_id !== null
+            && $this->qa_user_id !== $user?->id;
+    }
+
+    public function canRequestQaBy(?User $user): bool
+    {
+        return self::canBeAssignedBy($user) || $this->isAssignedTo($user) || $this->hasCollaborator($user);
     }
 
     public static function canBeRaisedBy(?User $user): bool
@@ -389,8 +447,15 @@ class Ticket extends Model implements Auditable, HasMedia
             return (int) $media->model_id === $this->id;
         }
 
-        return $media->model_type === (new TicketComment())->getMorphClass()
-            && $this->commentsVisibleTo($viewer)->whereKey($media->model_id)->exists();
+        if ($media->model_type !== (new TicketComment())->getMorphClass()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $this->deployComment()->whereKey($media->model_id)->exists()) {
+            return true;
+        }
+
+        return $this->commentsVisibleTo($viewer)->whereKey($media->model_id)->exists();
     }
 
     public function escalations(): HasMany

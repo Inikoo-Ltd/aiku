@@ -317,7 +317,7 @@ test('retina api dropshipping feeds expose product ingredients', function () {
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
     $response->assertOk();
-    expect($response->json('data.0.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['ingredients'])->toBe('Aqua, Glycerin, Parfum');
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
@@ -357,11 +357,17 @@ test('retina api dropshipping order transactions flow', function () {
         'data' => [['id', 'quantity_ordered']],
     ]);
 
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 10]);
     $response = patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
         'quantity_ordered' => 3,
     ]);
     $response->assertOk();
     expect($response->json('data.quantity_ordered'))->toBe(3);
+
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 0]);
+    patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
+        'quantity_ordered' => 4,
+    ])->assertUnprocessable();
 
     $response = deleteJson(route('retina.api.dropshipping.transaction.delete', $transactionId));
     $response->assertOk();
@@ -612,6 +618,43 @@ test('retina api images accept a portfolio id sent as a product', function () {
 
     getJson(route('retina.api.dropshipping.images.index', ['id' => $portfolio->id, 'type' => 'product']))
         ->assertOk();
+});
+
+test('retina api images link to the picture itself, not to its attachment row', function () {
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->group->id,
+        'ulid'                  => \Illuminate\Support\Str::ulid(),
+        'name'                  => 'product picture',
+        'is_animated'           => false,
+        'file_name'             => 'picture.jpg',
+        'disk'                  => 'media',
+        'collection_name'       => 'default',
+        'size'                  => 1,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    DB::table('model_has_media')->insert([
+        'id'              => DB::table('model_has_media')->max('id') + $media->id + 1000,
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->product->organisation_id,
+        'media_id'        => $media->id,
+        'model_type'      => 'Product',
+        'model_id'        => $this->product->id,
+        'scope'           => 'photo',
+        'data'            => '{}',
+    ]);
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    $image = collect(getJson(route('retina.api.dropshipping.images.index', ['id' => $this->product->id, 'type' => 'product']))
+        ->assertOk()
+        ->json('data'))->firstWhere('id', $media->id);
+
+    expect($image)->not->toBeNull()
+        ->and($image['source'])->toEqual(\App\Actions\Helpers\Images\GetPictureSources::run($media->getImage()));
 });
 
 test('retina api images are scoped to the calling customer', function () {

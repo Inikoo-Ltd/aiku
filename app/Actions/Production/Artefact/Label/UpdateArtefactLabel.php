@@ -11,6 +11,7 @@ namespace App\Actions\Production\Artefact\Label;
 use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Illuminate\Support\Arr;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateArtefactLabel extends OrgAction
 {
     use WithArtefactLabelLayout;
+    use WithArtefactLabelAuthorisation;
 
     public function handle(ArtefactLabel $artefactLabel, array $modelData): ArtefactLabel
     {
@@ -38,7 +40,7 @@ class UpdateArtefactLabel extends OrgAction
         }
 
         if ($artwork) {
-            $changes['artwork_id'] = $this->saveArtwork($artefactLabel->artefact, $artwork)->id;
+            $changes['artwork_id'] = $this->saveArtwork($artefactLabel->orgStock, $artwork)->id;
         } elseif ($removeArtwork) {
             $changes['artwork_id'] = null;
         }
@@ -66,13 +68,13 @@ class UpdateArtefactLabel extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+        return $this->canEditLabels($request);
     }
 
     public function action(ArtefactLabel $artefactLabel, array $modelData): ArtefactLabel
     {
         $this->asAction = true;
-        $this->initialisationFromProduction($artefactLabel->artefact->production, $modelData);
+        $this->initialisation($artefactLabel->organisation, $modelData);
 
         return $this->handle($artefactLabel, $this->validatedData);
     }
@@ -80,6 +82,14 @@ class UpdateArtefactLabel extends OrgAction
     public function asController(Artefact $artefact, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
     {
         $this->initialisationFromProduction($artefact->production, $request);
+
+        return $this->handle($label, $this->validatedData);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrgStock(OrgStock $orgStock, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
+    {
+        $this->initialisation($orgStock->organisation, $request);
 
         return $this->handle($label, $this->validatedData);
     }

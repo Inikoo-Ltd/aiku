@@ -13,6 +13,7 @@ use App\Actions\SysAdmin\Guest\UI\CreateGuest;
 use App\Actions\SysAdmin\Guest\UI\EditGuest;
 use App\Actions\SysAdmin\Guest\UI\IndexGuests;
 use App\Actions\SysAdmin\Guest\UI\ShowGuest;
+use App\Actions\SysAdmin\McpChange\UI\IndexMcpChanges;
 use App\Actions\SysAdmin\UI\IndexMcpRequests;
 use App\Actions\SysAdmin\UI\IndexStaffChatAnalytics;
 use App\Actions\SysAdmin\UI\IndexSysAdminScheduledTasks;
@@ -40,6 +41,7 @@ Route::prefix('analytics')->as('analytics.')->group(function () {
 });
 
 Route::get('mcp', IndexMcpRequests::class)->name('mcp.index');
+Route::get('mcp/changes', IndexMcpChanges::class)->name('mcp.changes.index');
 Route::get('staff-chat', IndexStaffChatAnalytics::class)->name('staff_chat.index');
 
 Route::prefix('users')->as('users.')->group(function () {

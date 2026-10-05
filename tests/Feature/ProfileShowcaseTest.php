@@ -49,5 +49,6 @@ test('a nickname saved from the profile card is returned by the showcase', funct
 test('profile tabs no longer list clocking', function () {
     expect(ProfileTabsEnum::navigation())
         ->not->toHaveKey('clocking')
-        ->toHaveKeys(['dashboard', 'notifications', 'timesheets']);
+        ->not->toHaveKey('dashboard')
+        ->toHaveKeys(['notifications', 'timesheets']);
 });

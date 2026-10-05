@@ -8,12 +8,9 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
-use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,6 +19,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithIrisProductsInWebpage
 {
+    use WithStepDiscountColumn;
+    use WithVariantColumns;
+
     public function getGlobalSearch(): AllowedFilter
     {
         return AllowedFilter::callback('global', function ($query, $value) {
@@ -131,27 +131,6 @@ trait WithIrisProductsInWebpage
         return $queryBuilder;
     }
 
-    public function getStepDiscountColumn(): Expression
-    {
-        $type  = OfferTypeEnum::PRODUCT_QUANTITY_ORDERED->value;
-        $state = OfferStateEnum::ACTIVE->value;
-
-        return DB::raw(
-            "(SELECT jsonb_build_object('label', COALESCE(offers.label, offers.name), 'steps', offer_allowances.data->'steps')
-                FROM offers
-                INNER JOIN offer_allowances ON offer_allowances.offer_id = offers.id
-                    AND offer_allowances.status = true
-                    AND offer_allowances.deleted_at IS NULL
-                WHERE offers.trigger_type = 'Product'
-                    AND offers.trigger_id = products.id
-                    AND offers.type = '$type'
-                    AND offers.state = '$state'
-                    AND offers.status = true
-                    AND offers.deleted_at IS NULL
-                LIMIT 1) as step_discount_data"
-        );
-    }
-
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
         return IrisAuthenticatedProductsInWebpageResource::collection($products);
@@ -203,6 +182,8 @@ trait WithIrisProductsInWebpage
             DB::raw("(SELECT brands.name FROM brands INNER JOIN model_has_brands ON brands.id = model_has_brands.brand_id WHERE model_has_brands.model_id = products.id AND model_has_brands.model_type = 'Product' LIMIT 1) as brand_name"),
             DB::raw("(SELECT product_categories.code FROM product_categories WHERE product_categories.id = products.family_id) as family_code"),
             $this->getStepDiscountColumn(),
+            $this->getVariantAxisLabelColumn(),
+            $this->getVariantTitleColumn(),
             ...$additionalColumns
         ];
 

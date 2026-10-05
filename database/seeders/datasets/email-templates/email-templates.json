@@ -515,6 +515,8 @@
     "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
+      "basket_on_offer",
+      "favourites_on_offer",
       "web_user_registration",
       "oos_in_order_notification",
       "review_reminder",
@@ -526,6 +528,7 @@
       "gold_reward_reminder_1",
       "gold_reward_reminder_2",
       "gold_reward_reminder_3",
+      "due_to_reorder",
       "prospect_convertion_1",
       "prospect_convertion_2",
       "prospect_convertion_3"
@@ -543,6 +546,17 @@
     ],
     "name": "Channel order on hold",
     "content": "channel_order_on_hold.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "order"
+    ]
+  },
+  {
+    "outboxes": [
+      "pre_order_update"
+    ],
+    "name": "Pre-order update",
+    "content": "pre_order_update.blade.php",
     "builder": "blade",
     "arguments": [
       "order"

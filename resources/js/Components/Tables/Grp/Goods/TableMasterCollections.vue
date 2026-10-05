@@ -14,7 +14,7 @@ import { faPlay,faTimesCircle, faCheckCircle  as fasCheckCircle, faTriangle, faE
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, inject } from 'vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -105,7 +105,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
     }
 }
 
-console.log('ssss',props)
 
 
 </script>
@@ -253,22 +252,22 @@ console.log('ssss',props)
                 <ModalConfirmationDelete
                     v-if="!hideDelete"
                     :routeDelete="item.delete_route"
-                    :title="trans('Are you sure you want to delete this master collection?')"
-                    :description="trans('Doing so would delete all of the collections and permanently delete their webpages in every single shop under this master collection 😥 .This action cannot be undone.')"
+                    :title="ctrans('Are you sure you want to delete this master collection?')"
+                    :description="ctrans('Doing so would delete all of the collections and permanently delete their webpages in every single shop under this master collection 😥 .This action cannot be undone.')"
                     isFullLoading
-                    :noLabel="trans('Delete')"
+                    :noLabel="ctrans('Delete')"
                     :noIcon="'fal fa-store-alt-slash'"
                 >
                     <template #beforeTitle>
                         <div class="text-center font-semibold text-xl mb-4">
-                            {{ trans('Deleting master collection :_masterCollection', {_masterCollection: item.name}) }} <br>
+                            {{ ctrans('Deleting master collection :_masterCollection', {_masterCollection: item.name}) }} <br>
                             {{ `(${item.code})` }}
                         </div>
                     </template>
 
                     <template #default="{ isOpenModal, changeModel }">
                         <Button
-                            v-tooltip="trans('Delete master collection')"
+                            v-tooltip="ctrans('Delete master collection')"
                             @click="changeModel()"
                             :type="'negative'"
                             icon="fal fa-trash"

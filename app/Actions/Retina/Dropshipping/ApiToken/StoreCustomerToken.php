@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class StoreCustomerToken extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     /**

@@ -9,15 +9,18 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithOrderSummaryPackaging;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Helpers\NaturalLanguage;
@@ -39,10 +42,12 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithOrderSummaryPackaging;
 
     public function handle(Order $order): Order
     {
@@ -52,12 +57,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id == $this->customer->id) {
-            return true;
-        }
-
-        return false;
+        return $this->retinaCustomerOwnsRouteModels($request);
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
@@ -76,6 +76,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $premiumDispatch = $charges['premium_dispatch'];
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
+        $giftMessage     = $charges['gift_message'];
 
         \Sentry\traceMetrics()->count('visit.basket.ds', 1, ['shop' => $this->shop->slug]);
 
@@ -200,17 +201,20 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                    'gift_message'    => $giftMessage ? ChargeResource::make($giftMessage)->toArray(request()) : null,
                 ],
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
                 'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
+                'packaging_panel' => GetRetinaOrderPackagingData::run($this->shop, $order->customer, $order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => RetinaDropshippingBasketResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
                 'balance'        => $order->customer?->balance,
                 'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
+                'pre_orders'     => $order->shop->hasPreOrders() ? GetBasketPreOrders::run($order) : null,
                 'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
@@ -241,6 +245,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
 
         $taxCategory = $order->taxCategory;
+
+
 
         return [
             'customer'         => array_merge(
@@ -291,18 +297,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
+                $this->buildChargesSummaryGroup($order),
                 [
                     [
                         'label'       => __('Net'),

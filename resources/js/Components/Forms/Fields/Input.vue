@@ -16,7 +16,7 @@ import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faLanguage)
 import { ref, watch, computed } from "vue"
 import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineOptions({ inheritAttrs: false })
 
@@ -38,6 +38,7 @@ const props = defineProps<{
         unitsPreview?: number
         /** Warning shown while editing, before the save confirmation is reached */
         cascadeNote?: string
+        takenValues?: Record<string, string>
     }
 }>()
 
@@ -83,7 +84,10 @@ watch(value, (newValue) => {
 
     // Update the form field value when the value ref changes
     updateFormValue(newValue);
-    props.form.errors[props.fieldName] = ''
+    const typedValue = String(newValue ?? '').trim().toLowerCase()
+    const takenValues = props.fieldData?.takenValues ?? {}
+    const takenBy = Object.hasOwn(takenValues, typedValue) ? takenValues[typedValue] : null
+    props.form.errors[props.fieldName] = takenBy ? ctrans('Already used by :name', { name: takenBy }) : ''
 });
 
 const isCollapsible = computed(() => !!props.fieldData?.collapsible || !!props.fieldData?.unitsPreview)
@@ -122,10 +126,10 @@ const updateFormValue = (newValue) => {
                 {{ collapsedValue }}
             </span>
             <span v-if="pendingUnits" class="font-medium text-amber-600">
-                → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ trans('after save') }})
+                → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ ctrans('after save') }})
             </span>
-            <button type="button" class="text-indigo-600 hover:underline" @click="isEditing = true">
-                {{ trans('Edit') }}
+            <button type="button" class="rounded text-[var(--app-accent)] underline-offset-2 transition-colors hover:text-[var(--app-accent-strong)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]" @click="isEditing = true">
+                {{ ctrans('Edit') }}
             </button>
         </div>
 
@@ -158,9 +162,9 @@ const updateFormValue = (newValue) => {
             <div v-if="isCollapsible" class="flex items-center gap-2 pt-2">
                 <!-- Only worth echoing when the preview adds something the input does not show -->
                 <span v-if="fieldData?.unitsPreview" class="text-gray-500 mr-1">{{ collapsedValue }}</span>
-                <Button :label="trans('Update')" type="save" size="xs"
+                <Button :label="ctrans('Update')" type="save" size="xs"
                     :disabled="form.processing" :loading="form.processing" @click="emits('submit')" />
-                <Button :label="trans('Cancel')" type="tertiary" size="xs" @click="cancelEdit" />
+                <Button :label="ctrans('Cancel')" type="tertiary" size="xs" @click="cancelEdit" />
             </div>
 
             <!-- Said before the click, not only in the confirmation dialog -->
@@ -177,9 +181,9 @@ const updateFormValue = (newValue) => {
         <!-- Counter: Letters and Words -->
         <div v-if="props.options?.counter"
             class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
-            <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+            <p class="">{{ ctrans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
             <p class="">
-                {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
+                {{ ctrans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
             </p>
         </div>
     </div>

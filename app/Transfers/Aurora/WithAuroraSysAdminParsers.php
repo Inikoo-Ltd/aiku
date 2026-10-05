@@ -8,8 +8,6 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Actions\Transfers\Aurora\FetchAuroraDeletedUsers;
-use App\Actions\Transfers\Aurora\FetchAuroraUsers;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -24,25 +22,10 @@ trait WithAuroraSysAdminParsers
             return $user;
         }
 
-        $user = User::withTrashed()
+        return User::withTrashed()
             ->where('group_id', $this->organisation->group_id)
             ->whereJsonContains('sources->users', $sourceId)
             ->first();
-
-
-        if ($user) {
-            return $user;
-        }
-
-
-        $sourceData = explode(':', $sourceId);
-        $user = FetchAuroraUsers::run($this->organisationSource, $sourceData[1]);
-
-        if (!$user) {
-            $user = FetchAuroraDeletedUsers::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $user;
     }
 
 

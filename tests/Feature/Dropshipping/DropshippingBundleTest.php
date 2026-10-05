@@ -417,3 +417,41 @@ test('a customer bundle stays out of the public shop data feed', function () {
 
     expect($feedProductIds)->not->toContain($bundle->bundleable_id);
 });
+
+test('editing a bundle keeps exactly the pictures chosen, so a replaced component no longer shows its old picture', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Picture Swap Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $storeImage = function (string $name) {
+        $path = tempnam(sys_get_temp_dir(), 'bundle').'.png';
+        $image = imagecreatetruecolor(2, 2);
+        imagepng($image, $path);
+
+        return \App\Actions\Helpers\Media\StoreMediaFromFile::run($this->product, [
+            'path'         => $path,
+            'originalName' => $name,
+            'extension'    => 'png',
+            'checksum'     => md5($name.md5_file($path)),
+        ], 'products', 'image');
+    };
+
+    $oldCandle = $storeImage('old-candle.png');
+    $newCandle = $storeImage('new-candle.png');
+
+    UpdateBundle::make()->action($bundle, ['images' => [['id' => $oldCandle->id, 'is_main' => true]]]);
+    UpdateBundle::make()->action($bundle, ['images' => [['id' => $oldCandle->id, 'is_main' => true]]]);
+
+    $bundleProduct = $bundle->bundleable->refresh();
+    expect($bundleProduct->images()->pluck('media.id')->all())->toBe([$oldCandle->id])
+        ->and($bundleProduct->image_id)->toBe($oldCandle->id);
+
+    UpdateBundle::make()->action($bundle, ['images' => [['id' => $newCandle->id, 'is_main' => true]]]);
+
+    $bundleProduct->refresh();
+    expect($bundleProduct->images()->pluck('media.id')->all())->toBe([$newCandle->id])
+        ->and($bundleProduct->image_id)->toBe($newCandle->id);
+});

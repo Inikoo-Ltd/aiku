@@ -27,7 +27,7 @@ class GetRetinaDropshippingHomeData
         $latestChannel = [];
         $metas         = [];
 
-        $customerChannels = $customer->customerSalesChannels()->with('platform:id,type')->get();
+        $customerChannels = $customer->customerSalesChannels()->with(['platform', 'user'])->get();
         $totalPlatforms   = $customerChannels->count();
         $manualPlatform   = Platform::where('type', PlatformTypeEnum::MANUAL->value)->first();
         foreach (PlatformTypeEnum::cases() as $platformType) {
@@ -49,10 +49,9 @@ class GetRetinaDropshippingHomeData
             ];
         }
 
-        $manuals = $customer->customerSalesChannels()
+        $manuals = $customerChannels
             ->where('platform_id', $manualPlatform->id)
-            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-            ->get();
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN);
         $manualSinglePlatformData = null;
         if ($manuals->count() == 1) {
             $manualSinglePlatformData = CustomerSalesChannelsResourceTOFIX::make($manuals->first())->resolve();

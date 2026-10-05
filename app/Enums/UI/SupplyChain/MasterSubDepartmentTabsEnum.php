@@ -20,6 +20,7 @@ enum MasterSubDepartmentTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case HISTORY  = 'history';
     case IMAGES    = 'images';
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
@@ -44,6 +45,10 @@ enum MasterSubDepartmentTabsEnum: string
             MasterSubDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterSubDepartmentTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             MasterSubDepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),

@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
@@ -61,9 +62,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'parameters' => []
                 ],
                 'connectRoute'       => $customer->shopifyUser ? [
-                    'url' => route('pupil.authenticate', [
-                        'shop' => $customer->shopifyUser?->name
-                    ])
+                    'url' => ClaimShopifyUser::make()->authenticateUrl($customer, $customer->shopifyUser->name)
                 ] : null,
                 'total_channels'     => [
                     'manual'      => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),

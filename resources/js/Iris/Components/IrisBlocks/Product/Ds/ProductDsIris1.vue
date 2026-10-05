@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCube, faLink, faEnvelope} from "@fal"
+import { faCube, faLink, faEnvelope } from "@fal"
 import { faCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -10,7 +10,7 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 import Image from "@common/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
+import { useExpectedBackInStockLabel } from "@/Composables/useOutOfStockLabel"
 import { Image as ImageTS } from "@/types/Image"
 import { getStyles } from "@/Composables/styles"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
@@ -20,6 +20,7 @@ import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { useBundle } from "@/Composables/useBundle"
+import PreOrderInfo from "@/Components/Iris/Products/PreOrderInfo.vue"
 import Button from "@/Iris/Components/IrisButton.vue"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
@@ -142,14 +143,19 @@ const openBundlePanel = (product:any) => {
                                                 ? ctrans("Unlimited quantity")
                                                 : product.stock > 0
                                                     ? ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)`
-                                        : useOutOfStockLabel(product)
+                                        : ctrans("Out of stock")
                                         }}
                                     </span>
+                                </div>
+                                <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order" class="mt-2" :preOrder="product.pre_order" :stock="product.stock" />
+                                <div v-else-if="layout?.iris?.is_logged_in && !product.stock && useExpectedBackInStockLabel(product)"
+                                    class="mt-0.5 pl-[18px] text-xs text-gray-500">
+                                    {{ useExpectedBackInStockLabel(product) }}
                                 </div>
                             </div>
 
                             <!-- RIGHT BUTTON -->
-                            <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+                            <button v-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state === 'active'"
                                 v-tooltip="product?.back_in_stock
                                     ? ctrans('You will be notify via email when the product back in stock')
                                     : ctrans('Click to be notified via email when the product back in stock')" 

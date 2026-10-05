@@ -16,7 +16,7 @@ class GetFormatedShopTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Shop $shop, $from_date = null, $to_date = null): array
+    public function handle(Shop $shop, $from_date = null, $to_date = null, bool $includePartners = false): array
     {
         $shop->load([
             'timeSeries' => function ($query) {
@@ -34,7 +34,7 @@ class GetFormatedShopTimeSeriesStats
             return [];
         }
 
-        $metricsMapping = [
+        $metricsMapping = CalculateTimeSeriesStats::withPartners([
             'sales_external'               => 'sales_external',
             'sales_org_currency_external'  => 'sales_org_currency_external',
             'sales_grp_currency_external'  => 'sales_grp_currency_external',
@@ -54,7 +54,7 @@ class GetFormatedShopTimeSeriesStats
             'registrations_with_orders'    => 'registrations_with_orders',
             'registrations_without_orders' => 'registrations_without_orders',
             'customers_invoiced'           => 'customers_invoiced',
-        ];
+        ], $includePartners);
 
         $rawStats = CalculateTimeSeriesStats::run(
             [$dailyTimeSeries->id],

@@ -3,7 +3,7 @@ title: Adding items to an order from a chat
 summary: A customer in chat forgot something. Add it to the order they already placed, or raise a follow-up order that travels in the same parcel, and send a payment link for the difference - all from the conversation.
 date: 2026-09-21
 tags: chat, orders, payments, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

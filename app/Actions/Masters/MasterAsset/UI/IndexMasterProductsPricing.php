@@ -8,19 +8,26 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
 use App\InertiaTable\InertiaTable;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterVariant;
 use App\Services\QueryBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 /**
  * Pricing tab of the master products index: lean listing scoped to a master product
@@ -31,7 +38,7 @@ class IndexMasterProductsPricing extends OrgAction
     use AsObject;
     use WithMastersAuthorisation;
 
-    public function handle(MasterProductCategory|MasterVariant $parent, $prefix = null): LengthAwarePaginator
+    public function handle(MasterShop|MasterProductCategory|MasterVariant $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -44,13 +51,39 @@ class IndexMasterProductsPricing extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $priceTipSort = AllowedSort::custom(
+            'price_tip',
+            new class () implements Sort {
+                public function __invoke(Builder $query, bool $descending, string $property): void
+                {
+                    $query->orderByRaw('master_asset_price_tips.confidence '.($descending ? 'desc' : 'asc').' nulls last')
+                        ->orderBy('master_assets.code');
+                }
+            }
+        )->defaultDirection('desc');
+
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
             ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
             ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
             ->leftJoin('master_asset_stats', 'master_asset_stats.master_asset_id', '=', 'master_assets.id')
+            ->leftJoin('master_asset_price_tips', fn ($join) => $join->on('master_asset_price_tips.master_asset_id', '=', 'master_assets.id')
+                ->where('master_asset_price_tips.status', MasterAssetPriceTipStatusEnum::OPEN->value))
+            ->leftJoin('master_product_categories as master_families', 'master_families.id', '=', 'master_assets.master_family_id')
+            ->leftJoin('master_product_categories as master_departments', 'master_departments.id', '=', 'master_assets.master_department_id')
+            ->when(
+                $parent instanceof MasterShop,
+                fn ($query) => $query
+                    ->where('master_assets.master_shop_id', $parent->id)
+                    ->where('master_assets.status', true)
+                    ->where('master_assets.is_main', true)
+                    ->whereNotNull('master_asset_price_tips.id')
+            )
             ->when(
                 $parent instanceof MasterVariant,
-                fn ($query) => $query->where('master_assets.master_variant_id', $parent->id),
+                fn ($query) => $query->where('master_assets.master_variant_id', $parent->id)
+            )
+            ->when(
+                $parent instanceof MasterProductCategory,
                 fn ($query) => $query
                     ->where('master_assets.status', true)
                     ->where('master_assets.is_main', true)
@@ -76,11 +109,20 @@ class IndexMasterProductsPricing extends OrgAction
                 'master_assets.master_prices',
                 'master_assets.master_rrps',
                 'master_assets.units_review',
+                'master_assets.price_review',
                 'master_assets.effective_cost',
                 'currencies.code as currency_code',
                 'master_asset_stats.number_current_assets as used_in',
                 'master_asset_stats.number_customers_who_favourited as favourites',
                 'master_asset_stats.total_products_rebel_prices as price_rebels',
+                'master_asset_price_tips.id as price_tip_id',
+                'master_asset_price_tips.change as price_tip_change',
+                'master_asset_price_tips.confidence as price_tip_confidence',
+                'master_asset_price_tips.reason as price_tip_reason',
+                'master_asset_stats.price_tip_check',
+                'master_families.code as master_family_code',
+                'master_families.slug as master_family_slug',
+                'master_departments.slug as master_department_slug',
             ])
             ->leftJoinLateral(
                 DB::query()
@@ -112,8 +154,15 @@ class IndexMasterProductsPricing extends OrgAction
                    and model_has_trade_units.model_id = master_assets.id",
                 'trade_units_label'
             )
-            ->defaultSort('code')
-            ->allowedSorts(['code', 'name', 'price', 'rrp'])
+            ->selectSub(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql(), 'family_unit_price_median')
+            ->defaultSort($priceTipSort)
+            ->allowedSorts([
+                'code',
+                'name',
+                'price',
+                'rrp',
+                $priceTipSort,
+            ])
             ->allowedFilters([$globalSearch]);
 
         $masterAssets = $queryBuilder
@@ -136,12 +185,29 @@ class IndexMasterProductsPricing extends OrgAction
             return $masterAsset;
         });
 
+        $masterShop = $parent instanceof MasterShop ? $parent : $parent->masterShop;
+        $isDropship = $masterShop->type == ShopTypeEnum::DROPSHIPPING;
+
+        $masterAssets->getCollection()->each(function (MasterAsset $masterAsset) use ($isDropship) {
+            $masterAsset->price_tip     = $masterAsset->price_tip_id ? [
+                'id'         => $masterAsset->price_tip_id,
+                'change'     => (int) $masterAsset->price_tip_change,
+                'confidence' => (int) round(100 * $masterAsset->price_tip_confidence),
+                'reason'     => $masterAsset->price_tip_reason,
+            ] : null;
+            $masterAsset->price_tip_note = $masterAsset->price_tip_id ? null : data_get(json_decode($masterAsset->price_tip_check ?? 'null', true), 'text');
+            $masterAsset->is_dropship   = $isDropship;
+            $masterAsset->price_outlier = GetMasterAssetPriceOutlier::run($masterAsset->price, $masterAsset->units, $masterAsset->family_unit_price_median);
+        });
+
         return $masterAssets;
     }
 
-    public function tableStructure(MasterProductCategory|MasterVariant $parent, $prefix = null): \Closure
+    public function tableStructure(MasterShop|MasterProductCategory|MasterVariant $parent, $prefix = null): \Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        $masterShop = $parent instanceof MasterShop ? $parent : $parent->masterShop;
+
+        return function (InertiaTable $table) use ($parent, $prefix, $masterShop) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -153,14 +219,21 @@ class IndexMasterProductsPricing extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => __('No master products found'),
-                        'count' => $parent instanceof MasterVariant ? null : $parent->stats->number_current_master_assets,
+                        'count' => $parent instanceof MasterProductCategory ? $parent->stats->number_current_master_assets : null,
                     ],
                 )
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Info'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Info'), sortable: true, searchable: true);
+
+            if ($parent instanceof MasterShop) {
+                $table->column(key: 'master_family_code', label: __('Family'));
+            }
+
+            $table
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP').'/'.__('Unit'), sortable: true, align: 'right')
-                ->defaultSort('code');
+                ->column(key: 'rrp', label: __('RRP').'/'.($masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right')
+                ->column(key: 'price_tip', label: __('Price tip'), sortable: true, align: 'right')
+                ->defaultSort('-price_tip');
         };
     }
 }

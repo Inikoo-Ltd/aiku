@@ -136,7 +136,7 @@ class GetPartnerOrderCapacity
             })
             ->where('dni.quantity_dispatched', '>', 0)
             ->where('dni.created_at', '>=', now()->subDays(90))
-            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id').', 0)) / 3, 0) as total')
+            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id', GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)) / 3, 0) as total')
             ->value('total'), 2);
     }
 
@@ -149,7 +149,7 @@ class GetPartnerOrderCapacity
             ->where('org_partner_id', $orgPartner->id)
             ->where('state', ShoppingListItemStateEnum::OPEN->value)
             ->whereNull('deleted_at')
-            ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery().', 0)), 0) as value')
+            ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery($orgPartner).', 0)), 0) as value')
             ->first();
 
         return [
@@ -158,9 +158,9 @@ class GetPartnerOrderCapacity
         ];
     }
 
-    public function pricePerSkoSubQuery(): string
+    public function pricePerSkoSubQuery(OrgPartner $orgPartner): string
     {
-        return PartnerShoppingListItem::pricePerSkoSql();
+        return PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner));
     }
 
     /**

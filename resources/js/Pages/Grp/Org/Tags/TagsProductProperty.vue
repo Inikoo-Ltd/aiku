@@ -10,11 +10,11 @@
     import Table from "@/Components/Table/Table.vue";
     import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
     import Button from "@/Components/Elements/Buttons/Button.vue";
-    import { trans } from "laravel-vue-i18n";
+    import { ctrans } from "@/Composables/useTrans";
     import { library } from "@fortawesome/fontawesome-svg-core";
-    import { faTrash, faPencil } from "@fal";
+    import { faTrash, faPencil, faTags } from "@fal";
 
-    library.add(faTrash, faPencil);
+    library.add(faTrash, faPencil, faTags);
 
     defineProps<{
         title: string;

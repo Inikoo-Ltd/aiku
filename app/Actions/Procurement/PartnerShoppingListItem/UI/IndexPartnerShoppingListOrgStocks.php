@@ -8,8 +8,12 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -67,13 +71,17 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'partner_shopping_list_items.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
+            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator(null, tableName: request()->route()->getName())
+            ->withPaginator(null, 25, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $paginator->getCollection()->transform(function ($row) {
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+
+        $paginator->getCollection()->transform(function ($row) use ($exchange) {
+            $row->price_per_sko        = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->order_quantum        = BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size);
             $row->buyer_days_of_cover  = $row->buyer_days_of_cover !== null ? (int) $row->buyer_days_of_cover : null;
 
@@ -113,19 +121,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             return;
         }
 
-        $usage = DB::table('delivery_note_items')
-            ->whereIn('org_stock_id', $buyerOrgStockIds)
-            ->where('quantity_dispatched', '>', 0)
-            ->where('created_at', '>=', now()->subMonths(12))
-            ->selectRaw("org_stock_id, to_char(date_trunc('quarter', created_at), 'YYYY\"Q\"Q') as period, sum(quantity_dispatched) as sales")
-            ->groupByRaw("org_stock_id, date_trunc('quarter', created_at)")
-            ->orderByRaw("date_trunc('quarter', created_at)")
-            ->get()
-            ->groupBy('org_stock_id')
-            ->map(fn ($records) => $records->take(-4)->values()->map(fn ($record) => [
-                'period' => $record->period,
-                'sales'  => round((float) $record->sales, 1),
-            ]));
+        $usage = GetOrgStocksQuarterlyUsage::run($buyerOrgStockIds);
 
         $paginator->getCollection()->transform(function ($row) use ($usage) {
             $row->buyer_quarterly_usage = $row->buyer_org_stock_id
@@ -189,6 +185,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
     {
         return [
             ...$orgStocks->toArray(),
+            'currency'            => $this->orgPartner->organisation->currency->code,
             'over_budget_message' => GetPartnerOrderCapacity::overBudgetMessage($this->orgPartner),
         ];
     }

@@ -14,18 +14,25 @@ use Illuminate\Support\Str;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
+use App\Actions\Helpers\Ticket\ClassifyTicket;
 use App\Actions\Helpers\Ticket\CloseTicketsAfterDeployment;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
 use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
+use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
+use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -43,6 +50,8 @@ use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
+use App\Models\Helpers\TicketProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -64,6 +73,7 @@ use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\WebPush;
 use Inertia\Testing\AssertableInertia;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -76,7 +86,13 @@ beforeAll(function () {
     loadDB();
 });
 
+/* Laravel writes datetimes as naive UTC strings, so a Postgres session on any other zone
+   stores them shifted and hands them back shifted: a waiting_at written a second ago reads
+   hours old, and a fixture written at 11:48 comes back at another time entirely. Pinned for
+   this file only, and put back afterwards so no other suite inherits it. */
 beforeEach(function () {
+    DB::statement("set time zone 'UTC'");
+
     list($this->organisation, $this->user, $this->shop) = createShop();
     $this->group    = $this->organisation->group;
     $this->website  = createWebsite($this->shop);
@@ -90,6 +106,10 @@ beforeEach(function () {
     $this->user->forgetWildcardPermissionIndex();
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
+});
+
+afterEach(function () {
+    DB::statement('set time zone default');
 });
 
 test('help ticket gets a HELP reference and defaults', function () {
@@ -184,7 +204,7 @@ test('staff and customers comment on the same public thread', function (Ticket $
 
 test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', true)->has('queue')->has('stats.open'));
-    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count())->where('searchHelp', \App\Actions\Helpers\Ticket\ApplyTicketSearch::HELP));
     get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5)->where('me', $this->user->username)->has('formerAssignees')->has('assignees'));
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
@@ -344,9 +364,41 @@ test('staff reporter is told of the question by email and slack as their profile
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
     $reporter->update(['settings' => ['notifications' => ['ticket_resolved' => ['email']]]]);
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $reporter->id && ($event->notification['reason'] ?? null) === 'resolved');
+
+    app()->detectEnvironment(fn () => 'production');
+    $mail = (new TicketNotification($ticket, 'Subject', ['Line'], 'View'))->toMail($reporter);
+    app()->detectEnvironment(fn () => 'testing');
+    expect($mail->mailer)->toBe('ses')
+        ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
+});
+
+test('a reporter mutes their own ticket and hears nothing more about it, but nobody else can mute it for them', function () {
+    Notification::fake();
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Mute me', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    $other = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    actingAs($other);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertForbidden();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => true])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeTrue();
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    Notification::assertNotSentTo($reporter, TicketNotification::class);
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['reporter_muted' => false])->assertRedirect();
+    expect($ticket->fresh()->reporter_muted)->toBeFalse();
 });
 
 test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
@@ -712,6 +764,26 @@ test('assistant raises an engineer ticket with the INI prefix through MCP', func
         ->and($ticket->reference)->toStartWith('INI-');
 });
 
+test('assistant asks a QA user to check a ticket through MCP, with the comment as the note', function () {
+    Notification::fake();
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pay button missing', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+
+    $notQa = User::factory()->create(['group_id' => $this->group->id]);
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $notQa->username])->assertHasErrors();
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->comments()->where('body', 'like', '%Pay an order in warehouse')->count())->toBe(1);
+
+    UpdateTicket::make()->action($ticket, ['qa_status' => null]);
+});
+
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
     $created = AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Picking screen freezes', 'module' => 'dispatching', 'priority' => 'high']);
     $created->assertOk();
@@ -871,7 +943,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     ]);
     Auth::logout();
 
-    $post = function (array $payload, string $signature = null) {
+    $post = function (array $payload, ?string $signature = null) {
         $body      = json_encode($payload);
         $timestamp = (string) time();
         $headers   = [
@@ -908,7 +980,8 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.3', 'text' => 'unrelated top level message']])->assertOk();
     $fromModal = StoreTicket::make()->action($this->group, ['subject' => 'Born in aiku', 'data' => ['slack_alert' => ['channel' => 'C9', 'ts' => '55.1']]]);
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C9', 'user' => 'U1', 'ts' => '55.2', 'thread_ts' => '55.1', 'text' => 'reply under the alert card']])->assertOk();
-    expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card']);
+    expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card'])
+        ->and(ReceiveSlackTicketReaction::run($this->group, 'C9', '55.1', 'U2')->id)->toBe($fromModal->id);
     StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], 'answer from aiku'));
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
@@ -1213,8 +1286,11 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
 
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
-    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
-    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id, 'qa_note' => 'Try it with a voucher', 'images' => [UploadedFile::fake()->image('voucher.png')]])->assertRedirect();
+    $requestComment = $ticket->comments()->latest('id')->first();
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id)
+        ->and($requestComment->body)->toBe('QA check requested: Try it with a voucher')
+        ->and($requestComment->getMedia('ticket_images'))->toHaveCount(1);
     actingAs($qa);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
     actingAs($engineer);
@@ -1222,6 +1298,308 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
     expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
         ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->comments()->where('body', 'QA passed')->exists())->toBeTrue();
+});
+
+test('QA gives a verdict without being asked, can only skip a ticket nobody asked about, and needs a new request to change a verdict', function () {
+    Notification::fake();
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    $stranger     = User::factory()->create(['group_id' => $this->group->id]);
+    $qa           = User::factory()->create(['group_id' => $this->group->id]);
+    $mentioned    = User::factory()->create(['group_id' => $this->group->id, 'username' => 'qamention'.strtolower(Str::random(6)), 'status' => true]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+    $stranger->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Copy tweak']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $ticket->collaborators()->attach($collaborator->id);
+    $update = route('grp.models.ticket.update', $ticket->id);
+
+    actingAs($engineer);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Nothing to test'])->assertForbidden();
+
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped'])->assertSessionHasErrors('qa_note');
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Copy change only'])->assertSessionHasNoErrors();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::SKIPPED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA skipped: Copy change only');
+
+    patch($update, ['qa_status' => 'passed'])->assertSessionHasErrors('qa_status');
+
+    actingAs($stranger);
+    patch($update, ['qa_status' => 'requested'])->assertForbidden();
+    actingAs($collaborator);
+    patch($update, ['qa_status' => 'requested'])->assertSessionHasNoErrors();
+
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Not needed'])->assertSessionHasErrors('qa_status');
+    post($update, [
+        '_method'   => 'patch',
+        'qa_status' => 'failed',
+        'qa_note'   => "Still wrong, @{$mentioned->username} have a look",
+        'images'    => [UploadedFile::fake()->image('still-wrong.png')],
+    ])->assertSessionHasNoErrors();
+
+    $verdict = $ticket->comments()->latest('id')->first();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::FAILED)
+        ->and($verdict->getMedia('ticket_images'))->toHaveCount(1);
+    Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'mentioned you'));
+
+    actingAs($engineer);
+    patch($update, ['qa_status' => 'requested'])->assertSessionHasNoErrors();
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Not needed'])->assertSessionHasErrors('qa_status');
+    patch($update, ['qa_status' => 'passed'])->assertSessionHasNoErrors();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED);
+});
+
+test('a done note carries its files and notifies the people it mentions, but not the reporter a second time', function () {
+    Notification::fake();
+    $reporter  = User::factory()->create(['group_id' => $this->group->id]);
+    $mentioned = User::factory()->create(['group_id' => $this->group->id, 'username' => 'donemention'.strtolower(Str::random(6)), 'status' => true]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals off', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($this->user);
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'        => 'patch',
+        'status'         => 'resolved',
+        'status_comment' => "Fixed the rounding, @{$mentioned->username} FYI",
+        'images'         => [UploadedFile::fake()->image('after.png')],
+    ])->assertSessionHasNoErrors();
+
+    $note = $ticket->comments()->where('body', 'like', 'Fixed the rounding%')->sole();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($note->getMedia('ticket_images'))->toHaveCount(1);
+    Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'mentioned you'));
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
+    Notification::assertNotSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
+});
+
+test('the held deploy comment keeps its files out of the thread until the deployment posts it', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ship with a screenshot']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'  => 'patch',
+        'status'   => 'pending_deploy',
+        'question' => 'Live after the deploy',
+        'images'   => [UploadedFile::fake()->image('fix.png')],
+    ])->assertSessionHasNoErrors();
+
+    $held = $ticket->deployComment()->sole();
+    expect($held->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($ticket->comments()->count())->toBe(0)
+        ->and($ticket->attachmentGalleryFor($this->user))->toBe([]);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment.body', 'Live after the deploy')->has('ticket.deploy_comment.files', 1));
+
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), [
+        'body'         => 'Live after the deploy',
+        'remove_media' => [$held->getFirstMedia('ticket_images')->ulid],
+        'images'       => [UploadedFile::fake()->image('better.png')],
+    ]);
+    expect($held->fresh()->getMedia('ticket_images')->pluck('name')->all())->toBe(['better.png']);
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->deployComment()->exists())->toBeFalse()
+        ->and($ticket->comments()->whereKey($held->id)->exists())->toBeTrue()
+        ->and($ticket->attachmentGalleryFor($this->user))->toHaveCount(1);
+});
+
+test('QA has its own ticket list, filtered first by QA assignee, and the ticket list no longer offers that filter', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $mine   = StoreTicket::make()->action($this->group, ['subject' => 'Checked by me']);
+    $anyone = StoreTicket::make()->action($this->group, ['subject' => 'Anyone in QA']);
+    Ticket::whereKey($mine->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($anyone->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null, 'status' => TicketStatusEnum::RESOLVED]);
+
+    $elementGroupKeys = fn (AssertableInertia $page) => array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+    $references       = fn (AssertableInertia $page) => collect($page->toArray()['props']['data']['data'])->pluck('reference')->all();
+    $subSections      = fn (User $user) => collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)['tickets']['topMenu']['subSections'])->pluck('label')->all();
+
+    expect($subSections($qa))->toContain('Ticket List', 'QA List')
+        ->and($subSections($engineer))->toContain('Ticket List')->not->toContain('QA List');
+
+    actingAs($engineer);
+    get(route('grp.tickets.qa_list'))->assertForbidden();
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => expect($elementGroupKeys($page))->toContain('mine')->not->toContain('qa_checker'));
+
+    actingAs($qa);
+    get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) use ($elementGroupKeys) {
+        $page->component('Tickets/Tickets')->where('title', 'QA List');
+        expect($elementGroupKeys($page)[0])->toBe('qa_checker')
+            ->and($elementGroupKeys($page))->not->toContain('mine');
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_checker' => 'mine'], 'perPage' => 1000]))
+        ->assertInertia(function (AssertableInertia $page) use ($references, $mine, $anyone, $qa) {
+            expect($references($page))->toContain($mine->reference)->not->toContain($anyone->reference)
+                ->and(collect($page->toArray()['props']['data']['data'])->firstWhere('reference', $mine->reference)['qa_user'])->toBe($qa->contact_name ?: $qa->username);
+        });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_checker' => 'anyone'], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($anyone->reference)->not->toContain($mine->reference));
+    $untouched = StoreTicket::make()->action($this->group, ['subject' => 'Nobody looked yet']);
+    $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Already passed']);
+    Ticket::whereKey($untouched->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
+
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertInertia(function (AssertableInertia $page) use ($references, $untouched, $mine, $passed) {
+        $page->where('listTip', fn ($tip) => str_contains($tip, 'no QA verdict'));
+        expect($references($page))->toContain($untouched->reference, $mine->reference)->not->toContain($passed->reference)
+            ->and(array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']['qa_status']['elements']))->toBe(['none', 'passed', 'failed', 'skipped']);
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => 'passed'], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($passed->reference, $mine->reference, $anyone->reference)->not->toContain($untouched->reference));
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertInertia(function (AssertableInertia $page) {
+        $isRequested = collect($page->toArray()['props']['data']['data'])->map(fn ($row) => $row['qa_status'] === 'requested')->values();
+        $firstNotRequested = $isRequested->search(false);
+        expect($firstNotRequested)->not->toBeFalse()
+            ->and($isRequested->slice($firstNotRequested)->contains(true))->toBeFalse();
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => ''], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($passed->reference, $untouched->reference));
+
+    get(route('grp.tickets.list', ['sort' => 'qa_status', 'perPage' => 1000]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('listTip', null)->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->firstWhere('key', 'qa_status')['sortable'] === true));
+});
+
+test('the QA list shows at a glance how far QA is behind on the tickets done', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    actingAs($qa);
+
+    $summary = fn () => get(route('grp.tickets.qa_list'))->viewData('page')['props']['listSummary'];
+    $before  = $summary();
+
+    $references = [];
+    foreach ([
+        'not_checked'  => [TicketStatusEnum::RESOLVED, null],
+        'passed'       => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::PASSED],
+        'failed'       => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::FAILED],
+        'skipped'      => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::SKIPPED],
+        'requested'    => [TicketStatusEnum::RESOLVED, TicketQaStatusEnum::REQUESTED],
+        'checking'     => [TicketStatusEnum::PENDING_DEPLOY, TicketQaStatusEnum::CHECKING],
+        'not_done_yet' => [TicketStatusEnum::IN_PROGRESS, TicketQaStatusEnum::CHECKING],
+    ] as $key => [$status, $qaStatus]) {
+        $ticket = StoreTicket::make()->action($this->group, ['subject' => 'QA summary '.$key]);
+        Ticket::whereKey($ticket->id)->update(['status' => $status, 'qa_status' => $qaStatus, 'qa_user_id' => $key === 'passed' ? $otherQa->id : null]);
+        $references[$key] = $ticket->reference;
+    }
+
+    $listedFor = fn (string $qaState) => collect(get(route('grp.tickets.qa_list', [
+        'filter'   => ['qa_state' => $qaState],
+        'elements' => ['qa_status' => '', 'qa_checker' => ''],
+        'perPage'  => 1000,
+    ]))->viewData('page')['props']['data']['data'])->pluck('reference')->intersect($references)->sort()->values()->all();
+
+    expect($listedFor('passed'))->toBe([$references['passed']])
+        ->and($listedFor('in_qa'))->toBe(collect([$references['requested'], $references['checking']])->sort()->values()->all())
+        ->and($listedFor('not_checked'))->toBe([$references['not_checked']]);
+
+    $after = $summary();
+
+    expect(collect($after)->map(fn (int $count, string $key) => $count - $before[$key])->all())->toBe([
+        'done'        => 6,
+        'passed'      => 1,
+        'failed'      => 1,
+        'skipped'     => 1,
+        'in_qa'       => 2,
+        'not_checked' => 1,
+    ]);
+
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->where('listSummary', null));
+});
+
+test('the dashboard shows QA details to QA, and the urgent check lands on requested tickets only', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $requested = StoreTicket::make()->action($this->group, ['subject' => 'Urgent check']);
+    $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Checked fine']);
+    $hidden    = StoreTicket::make()->action($this->group, ['subject' => 'Not for QA eyes']);
+    $stillOpen = StoreTicket::make()->action($this->group, ['subject' => 'Not finished yet']);
+    $deploying = StoreTicket::make()->action($this->group, ['subject' => 'Waiting on a deploy']);
+    Ticket::whereKey($deploying->id)->update(['status' => TicketStatusEnum::PENDING_DEPLOY]);
+    Ticket::whereKey($requested->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($hidden->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'status' => TicketStatusEnum::RESOLVED, 'is_confidential' => true]);
+    Ticket::whereKey($stillOpen->id)->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+
+    actingAs($engineer);
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->missing('qa_stats'));
+
+    actingAs($qa);
+    $visible = fn (): Builder => Ticket::where('group_id', $this->group->id)->visibleTo($qa);
+    $done    = fn (): Builder => $visible()->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+
+    expect($visible()->whereKey($hidden->id)->exists())->toBeFalse();
+
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('qa_stats.requested', $visible()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count())
+        ->where('qa_stats.passed', $done()->where('qa_status', TicketQaStatusEnum::PASSED)->count())
+        ->where('qa_stats.not_checked', $done()->whereNull('qa_status')->count()));
+
+    expect($done()->whereKey($stillOpen->id)->exists())->toBeFalse();
+
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => ''], 'filter' => ['qa_requested' => 1], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('qa_status')->unique()->values()->all())->toBe(['requested']));
+
+    $mine      = StoreTicket::make()->action($this->group, ['subject' => 'Asked of me']);
+    $unclaimed = StoreTicket::make()->action($this->group, ['subject' => 'Asked of anyone']);
+    $theirs    = StoreTicket::make()->action($this->group, ['subject' => 'Asked of another checker']);
+    $otherQa   = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa->assignRole('qa');
+    Ticket::whereKey($mine->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($unclaimed->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null]);
+    Ticket::whereKey($theirs->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $otherQa->id]);
+
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($mine, $unclaimed, $theirs) {
+            $ids = collect($page->toArray()['props']['data']['data'])->pluck('id');
+
+            expect($ids)->toContain($mine->id)
+                ->and($ids)->toContain($unclaimed->id)
+                ->and($ids)->not->toContain($theirs->id);
+        });
+
+    actingAs($otherQa);
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($mine, $theirs) {
+            $ids = collect($page->toArray()['props']['data']['data'])->pluck('id');
+
+            expect($ids)->toContain($theirs->id)
+                ->and($ids)->not->toContain($mine->id);
+        });
+
+    actingAs($qa);
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($stillOpen, $deploying) {
+            $rows = collect($page->toArray()['props']['data']['data']);
+
+            $verdicts = collect(TicketQaStatusEnum::cases())->filter->isVerdict()->map->value->all();
+
+            expect($rows->where('qa_status', '!=', TicketQaStatusEnum::CHECKING->value)->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
+                ->and($rows->pluck('qa_status')->intersect($verdicts)->all())->toBe([])
+                ->and($rows->pluck('id'))->toContain($deploying->id)
+                ->and($rows->pluck('id'))->not->toContain($stillOpen->id);
+        });
 });
 
 test('ticket badges count my tickets and the engineer queue, and engineers hear of new tickets in-app', function () {
@@ -1295,8 +1673,8 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     setPermissionsTeamId($this->group->id);
     $engineer->assignRole('help-desk-clerk');
 
-    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support'])
-        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support']);
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support', 'aurora'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support', 'aurora']);
 
     $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
 
@@ -1339,7 +1717,7 @@ test('ticket search ranks subject over description over comments, understands ke
         ->and($search('"marketing tool"')->pluck('reference')->all())->toBe([$byDescription->reference])
         ->and($search('email status:open reporter:me')->pluck('reference'))->toContain($bySubject->reference)
         ->and($search('email status:resolved'))->toBeEmpty()
-        ->and($search('email is:unassigned after:'.now()->toDateString())->count())->toBe(4)
+        ->and($search('email is:unassigned after:'.now()->toDateString())->pluck('reference')->all())->toContain($bySubject->reference, $byDescription->reference, $byComment->reference, $byInternal->reference)
         ->and($search('email before:'.now()->toDateString()))->toBeEmpty()
         ->and($search('email assignee:'.$this->user->username))->toBeEmpty();
 
@@ -1490,14 +1868,97 @@ test('the ticket write tool closes after next deployment and holds the comment u
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
         ->and($ticket->comments()->count())->toBe(0)
-        ->and(data_get($ticket->fresh()->data, 'deploy_comment.user_id'))->toBe($this->user->id);
+        ->and($ticket->deployComment()->sole()->author_id)->toBe($this->user->id);
 
-    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment', 'Fixed, live after the deploy'));
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment.body', 'Fixed, live after the deploy'));
 
     CloseTicketsAfterDeployment::run();
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_id)->toBe($this->user->id);
+});
+
+test('a deployment only closes a pending deploy ticket when it includes the fix commit', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pack weight']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'F194AFF213', 'comment' => 'Live now'])->assertOk();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213');
+
+    CloseTicketsAfterDeployment::run('910ba60751');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
+        ->and($ticket->comments()->count())->toBe(0);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Live now')->count())->toBe(1)
+        ->and(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
+test('the web ticket form records the fix commit when it sets the ticket to close on deployment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Commit from the dialog']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => 'not a hash'])->assertSessionHasErrors('deploy_commit');
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => ' F194AFF213 '])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213')
+        ->and($ticket->deployComment()->sole()->body)->toBe('Live now');
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now'])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
+test('the held deploy comment can be rewritten while the ticket waits for the deployment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Edit the held comment']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'First wording'])->assertOk();
+
+    actingAs($this->user);
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '  Second wording  ']);
+
+    expect($ticket->deployComment()->sole()->body)->toBe('Second wording')
+        ->and($ticket->comments()->count())->toBe(0);
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Second wording')->count())->toBe(1)
+        ->and($ticket->comments()->where('body', 'First wording')->count())->toBe(0);
+});
+
+test('clearing the held deploy comment closes the ticket on deployment without posting anything', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Drop the held comment']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Not wanted after all'])->assertOk();
+
+    actingAs($this->user);
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '']);
+
+    expect($ticket->deployComment()->exists())->toBeFalse();
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->count())->toBe(0);
+});
+
+test('the held deploy comment cannot be rewritten once the ticket has left pending deploy', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Too late to edit']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+
+    expect(fn () => UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => 'nope']))
+        ->toThrow(HttpException::class);
 });
 
 test('a mentioned user is notified on the channels they chose and the plain comment notice is not doubled', function () {
@@ -2392,15 +2853,17 @@ test('the ticket list offers ownership by role and QA filters', function () {
     UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
     UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
     $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
+    Ticket::whereIn('id', [$forAnyone->id, $forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
 
-    $references = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+    $references   = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+    $qaReferences = fn (array $elements) => collect(get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => '', ...$elements], 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
 
     get(route('grp.tickets.list'))->assertInertia(
         fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.elementGroups.mine.label', 'Ownership')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.assigned')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.unassigned')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
-            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+            ->missing('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
     actingAs($qa);
@@ -2409,7 +2872,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
             ->has('queryBuilderProps.default.elementGroups.mine.elements.reported')
             ->where('queryBuilderProps.default.elementGroups.mine.optional', true)
             ->where('queryBuilderProps.default.elementGroups.status.optional', false)
-            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+            ->missing('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
     actingAs($this->user);
@@ -2419,11 +2882,11 @@ test('the ticket list offers ownership by role and QA filters', function () {
 
     actingAs($qa);
     expect($references(['mine' => 'reported'])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
-        ->and($references(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'everyone'])->all())->toContain($forAnyone->reference, $forQa->reference, $failed->reference)->not->toContain($noQa->reference)
-        ->and($references(['qa_status' => 'failed'])->all())->toContain($failed->reference)->not->toContain($forQa->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'mine,anyone,everyone'])->all())->toContain($forAnyone->reference)->not->toContain($noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'everyone'])->all())->toContain($forAnyone->reference, $forQa->reference, $failed->reference)->not->toContain($noQa->reference)
+        ->and($references(['qa_status' => 'failed'])->all())->toContain($failed->reference, $forQa->reference)->not->toContain($noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'mine,anyone,everyone'])->all())->toContain($forAnyone->reference)->not->toContain($noQa->reference)
         ->and($references(['qa_status' => 'requested,failed,passed'])->all())->not->toContain($noQa->reference);
 
     patch(route('grp.models.profile.update'), ['tickets_list_mine' => 'reported'])->assertSessionHasNoErrors();
@@ -2435,7 +2898,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
         fn (AssertableInertia $page) => $page->missing('queryBuilderProps.default.elementGroups.qa_checker')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
     );
-    expect($references(['qa_status' => 'requested'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
+    expect($references(['qa_status' => 'none'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
 
     actingAs($this->user);
 });
@@ -2891,6 +3354,9 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Customer &amp; wants</w:t></w:r></w:p><w:p><w:r><w:t>a refund</w:t></w:r></w:p></w:body></w:document>');
     $docx->close();
     $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->setTitle('Products')->fromArray([['Code', 'Cost'], ['TROUSER-01', 4.5]]);
+    $spreadsheet->getActiveSheet()->setCellValue('B3', '=B2*2');
+    $spreadsheet->createSheet()->setTitle('Order')->setCellValue('A4', 'ES');
     (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save("$directory/stock.xlsx");
 
     $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Read my files', 'images' => [UploadedFile::fake()->createWithContent('invoice.pdf', $pdf->OutputBinaryData())]]);
@@ -2904,7 +3370,7 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $tool($this->user, $ticket->getMedia('ticket_attachments')->first()->ulid)->assertOk()->assertSee('invoice.pdf');
     $tool($this->user, 'notes.docx')->assertOk()->assertSee(json_encode("Customer & wants\na refund"));
     $tool($this->user, 'shot.png')->assertOk()->assertSee(base64_encode(Storage::disk($comment->getMedia('ticket_images')->first()->disk)->get($comment->getMedia('ticket_images')->first()->getPathRelativeToRoot())));
-    $tool($this->user, 'stock.xlsx')->assertHasErrors(['Cannot extract text from .xlsx files.']);
+    $tool($this->user, 'stock.xlsx')->assertOk()->assertSee(json_encode("## Sheet: Products\n1\tCode\tCost\n2\tTROUSER-01\t4.5\n3\t\t9\n\n## Sheet: Order\n4\tES"));
     $tool($this->user, 'missing.pdf')->assertHasErrors(['Attachment not found on this ticket.']);
 
     $qa = User::factory()->create(['group_id' => $this->group->id]);
@@ -2915,4 +3381,517 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $ticket->update(['is_confidential' => true]);
     $tool($qa, 'invoice.pdf')->assertHasErrors(['Ticket not found or not visible to you.']);
     expect($stock)->toBeInstanceOf(TicketComment::class);
+});
+
+test('a failed QA verdict reopens a ticket that was already done, and every verdict marks its own comment', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals wrong again', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+    expect($ticket->refresh()->comments()->latest('id')->value('has_qa_verdict'))->toBeNull();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->resolved_at)->not->toBeNull()
+        ->and($ticket->closed_at)->not->toBeNull();
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'The voucher total is still wrong'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->resolved_at)->toBeNull()
+        ->and($ticket->closed_at)->toBeNull()
+        ->and($ticket->started_at)->not->toBeNull()
+        ->and($ticket->assignee_id)->toBe($engineer->id)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBe(TicketQaStatusEnum::FAILED);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBe(TicketQaStatusEnum::PASSED);
+});
+
+test('a failed QA verdict leaves a ticket that is still being worked on exactly where it is', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Still in flight', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::WAITING->value]);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Not there yet'])->assertRedirect();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::WAITING);
+});
+
+test('QA can fail a done ticket without reopening it by unticking Reopen ticket back', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Fail but keep done']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Minor, follow up separately', 'reopen' => false])->assertRedirect();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->qa_status)->toBe(TicketQaStatusEnum::FAILED);
+});
+
+test('any checker can pick up a failed or passed QA check again, whoever gave the verdict, but not a skipped one', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Check me again']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Still broken'])->assertRedirect();
+
+    actingAs($otherQa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($otherQa->id);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED);
+
+    actingAs($qa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($qa->id);
+
+    $skipped = StoreTicket::make()->action($this->group, ['subject' => 'Nothing to test']);
+    Ticket::whereKey($skipped->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::SKIPPED]);
+
+    get(route('grp.tickets.show', $skipped->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false));
+    patch(route('grp.models.ticket.update', $skipped->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+});
+
+test('a checker claims a ticket, it leaves every other checker\'s QA list, and only they can give its verdict', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Claim me']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertForbidden();
+
+    actingAs($qa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->toBeNull()
+        ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBeNull()
+        ->and($qaListIds())->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', false));
+
+    actingAs($otherQa);
+    expect($qaListIds())->not->toContain($ticket->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertSessionHasErrors('qa_status');
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->not->toBeNull();
+
+    $askedOfOther = StoreTicket::make()->action($this->group, ['subject' => 'Asked of the other checker']);
+    Ticket::whereKey($askedOfOther->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $otherQa->id]);
+
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'failed', 'qa_note' => 'Not mine to judge'])->assertSessionHasErrors('qa_status');
+    expect($askedOfOther->refresh()->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($askedOfOther->qa_user_id)->toBe($otherQa->id);
+
+    actingAs($otherQa);
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true)->where('qa_held_by_another', false));
+});
+
+test('an engineer writes an incident post-mortem on a ticket and customers cannot', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Side basket empty']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Root cause: null charge', 'post_mortem' => true])->assertOk()->assertSee('"commented":true');
+
+    $postMortem = $ticket->comments()->latest('id')->first();
+    expect($postMortem->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::POST_MORTEM)
+        ->and(\App\Http\Resources\Helpers\TicketCommentResource::make($postMortem)->resolve()['type'])->toBe('post_mortem')
+        ->and(StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'plain'], false)->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::COMMENT);
+
+    expect(fn () => StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'mine', 'type' => 'post_mortem'], false))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+});
+
+test('the QA list filters by ticket status, keeps tickets being QA checked whatever their status, and the dashboard lists who is checking what', function () {
+    $qa      = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $checkingOpen    = StoreTicket::make()->action($this->group, ['subject' => 'Checked while still in progress']);
+    $checkingByOther = StoreTicket::make()->action($this->group, ['subject' => 'Another checker has it']);
+    $openUnchecked   = StoreTicket::make()->action($this->group, ['subject' => 'Still in progress, not in QA']);
+    $done            = StoreTicket::make()->action($this->group, ['subject' => 'Done, waiting for QA']);
+    Ticket::whereKey($checkingOpen->id)->update(['status' => TicketStatusEnum::IN_PROGRESS, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($checkingByOther->id)->update(['status' => TicketStatusEnum::ASSIGNED, 'qa_status' => TicketQaStatusEnum::CHECKING, 'qa_user_id' => $otherQa->id]);
+    Ticket::whereKey($openUnchecked->id)->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+    Ticket::whereKey($done->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+
+    actingAs($qa);
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) {
+        $elementGroups = $page->toArray()['props']['queryBuilderProps']['default']['elementGroups'];
+        expect(array_slice(array_keys($elementGroups), 0, 3))->toBe(['qa_checker', 'status', 'qa_status'])
+            ->and(array_keys($elementGroups['status']['elements']))->toContain('resolved', 'pending_deploy', 'in_progress', 'assigned');
+    });
+    expect($qaListIds())->toContain($checkingOpen->id, $done->id)->not->toContain($openUnchecked->id, $checkingByOther->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($checkingByOther->id)
+        ->and($qaListIds(['elements' => ['status' => 'in_progress', 'qa_status' => '']]))->toContain($checkingOpen->id)->not->toContain($openUnchecked->id, $done->id)
+        ->and($qaListIds(['elements' => ['status' => 'resolved']]))->toContain($done->id)->not->toContain($checkingOpen->id);
+
+    get(route('grp.tickets.list'))->assertInertia(function (AssertableInertia $page) {
+        $keys = array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+        expect($keys[array_search('status', $keys) + 1])->toBe('qa_status');
+    });
+
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['qa_checking'])->pluck('id')->all())
+        ->toContain($checkingOpen->id, $checkingByOther->id)->not->toContain($done->id));
+});
+
+test('a pull request link is checked on GitHub before it is saved, and read from GitHub when the ticket opens', function () {
+    Cache::flush();
+    Http::fake([
+        'https://api.github.com/repos/acme/app/pulls/42/commits*' => Http::response([
+            [
+                'sha'      => 'abcdef1234567890',
+                'html_url' => 'https://github.com/acme/app/commit/abcdef1234567890',
+                'commit'   => ['message' => "Round each invoice line\n\nThe total now adds rounded lines", 'author' => ['name' => 'Louis', 'date' => '2026-09-30T10:00:00Z']],
+                'author'   => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis'],
+            ],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/42' => Http::response([
+            'number'   => 42,
+            'title'    => 'Fix invoice rounding',
+            'html_url' => 'https://github.com/acme/app/pull/42',
+            'state'    => 'closed',
+            'merged'   => true,
+            'draft'    => false,
+            'body'     => 'Rounds each line before adding them up',
+            'user'     => ['login' => 'louis', 'avatar_url' => 'https://avatars.example/louis', 'html_url' => 'https://github.com/louis'],
+        ]),
+        'https://api.github.com/repos/acme/app/pulls/*' => Http::response(['message' => 'Not Found'], 404),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Invoice totals are off by a cent']);
+
+    expect(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://gitlab.com/acme/app/merge_requests/1']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => 'https://github.com/acme/app/pull/7']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($ticket->fresh()->pull_request_url)->toBeNull();
+
+    UpdateTicketPullRequest::make()->action($ticket, ['pull_request_url' => ' https://github.com/acme/app/pull/42/files#diff ']);
+    expect($ticket->fresh()->pull_request_url)->toBe('https://github.com/acme/app/pull/42');
+
+    $read = GetTicketPullRequest::make()->handle($ticket->fresh());
+    expect($read['error'])->toBeNull()
+        ->and($read['commits'])->toBeNull()
+        ->and($read['pull_request']['title'])->toBe('Fix invoice rounding')
+        ->and($read['pull_request']['state'])->toBe('merged')
+        ->and($read['pull_request']['author']['login'])->toBe('louis');
+
+    $commits = GetTicketPullRequest::make()->handle($ticket->fresh(), true)['commits'];
+    expect($commits)->toHaveCount(1)
+        ->and($commits[0]['short_sha'])->toBe('abcdef1')
+        ->and($commits[0]['subject'])->toBe('Round each invoice line')
+        ->and($commits[0]['author'])->toBe('louis')
+        ->and($commits[0]['date'])->toBe('2026-09-30T10:00:00Z');
+
+    UpdateTicketPullRequest::make()->action($ticket->fresh(), ['pull_request_url' => null]);
+    expect($ticket->fresh()->pull_request_url)->toBeNull()
+        ->and(GetTicketPullRequest::make()->handle($ticket->fresh()))->toBe(['pull_request' => null, 'commits' => null, 'error' => null]);
+});
+
+test('changing a ticket, commenting on it or changing its collaborators tells the open ticket page to reload', function () {
+    Mail::fake();
+    Notification::fake();
+    Event::fake([\App\Events\BroadcastTicketUpdated::class]);
+
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Live page']);
+    $broadcastsFor = fn () => Event::dispatched(\App\Events\BroadcastTicketUpdated::class, fn ($event) => $event->ticketId === $ticket->id)->count();
+
+    expect($broadcastsFor())->toBe(0);
+
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $afterUpdate = $broadcastsFor();
+    expect($afterUpdate)->toBeGreaterThan(0);
+
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'Looking into it'], false);
+    $afterComment = $broadcastsFor();
+    expect($afterComment)->toBeGreaterThan($afterUpdate);
+
+    SyncTicketCollaborators::make()->action($ticket, [$collaborator->id]);
+    expect($broadcastsFor())->toBeGreaterThan($afterComment);
+
+    $event = new \App\Events\BroadcastTicketUpdated($ticket->id, $ticket->group_id);
+    expect(collect($event->broadcastOn())->pluck('name')->all())->toBe(['private-grp.ticket.'.$ticket->id, 'private-grp.'.$ticket->group_id.'.general'])
+        ->and($event->broadcastAs())->toBe('ticket-updated')
+        ->and($event->broadcastWith())->toBe(['id' => $ticket->id]);
+});
+
+test('a ticket list refetches one changed row, and a confidential ticket is not handed to someone who cannot see it', function () {
+    $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider->removeRole('group-admin');
+
+    $open         = StoreTicket::make()->action($this->group, ['subject' => 'Row to refresh', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $confidential = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+
+    actingAs($this->user);
+    get(route('grp.json.ticket.row', $open->id))->assertOk()
+        ->assertJsonPath('id', $open->id)
+        ->assertJsonPath('reference', $open->reference)
+        ->assertJsonPath('subject', 'Row to refresh');
+
+    actingAs($outsider);
+    get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
+});
+
+test('jev fills in the kind and module nobody set, replaces a set one only when sure, and the reports chart tickets by module', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    Http::fake(['openrouter.ai/api/alpha/decisions' => Http::sequence()
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'feature', 'probabilities' => ['feature' => 0.8, 'bug' => 0.2]],
+            'module' => ['choice' => 'procurement', 'probabilities' => ['procurement' => 0.9]],
+        ]])
+        ->push(['answers' => ['module' => ['choice' => 'crm', 'probabilities' => ['crm' => 0.3, 'chat' => 0.3]]]])
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'aurora', 'probabilities' => ['aurora' => 0.7]],
+            'module' => ['choice' => 'websites', 'probabilities' => ['websites' => 0.2]],
+        ]])]);
+
+    $classified = StoreTicket::make()->action($this->group, ['subject' => 'Add supplier lead times to purchase orders']);
+    $unsure     = StoreTicket::make()->action($this->group, ['subject' => 'Something odd', 'kind' => TicketKindEnum::BUG->value]);
+    $setByStaff = StoreTicket::make()->action($this->group, ['subject' => 'Chat lag', 'kind' => TicketKindEnum::BUG->value, 'module' => TicketModuleEnum::CHAT->value]);
+
+    expect($classified->refresh()->kind)->toBe(TicketKindEnum::FEATURE)
+        ->and($classified->module)->toBe(TicketModuleEnum::PROCUREMENT)
+        ->and($unsure->refresh()->kind)->toBe(TicketKindEnum::BUG)
+        ->and($unsure->module)->toBe(TicketModuleEnum::CRM)
+        ->and($setByStaff->refresh()->module)->toBe(TicketModuleEnum::CHAT);
+    Http::assertSentCount(2);
+
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
+    $rows  = collect($stats['breakdown']);
+
+    expect($rows->where(1, 'procurement')->where(2, 'feature')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and($rows->where(1, 'crm')->where(3, 'open')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and(collect($stats['modules'])->firstWhere('value', 'chat')['label'])->toBe('Chat')
+        ->and(collect($stats['kinds'])->sum('total'))->toBe($stats['created'])
+        ->and($rows->sum(5))->toBe($stats['created']);
+
+    ClassifyTicket::make()->handle($setByStaff, reclassify: true);
+
+    expect($setByStaff->refresh()->kind)->toBe(TicketKindEnum::AURORA)
+        ->and($setByStaff->module)->toBe(TicketModuleEnum::CHAT);
+});
+
+test('a project gathers tickets, tasks, milestones, commits and progress updates its team can edit', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $first    = StoreTicket::make()->action($this->group, ['subject' => 'Move moulds to the new unit']);
+    $second   = StoreTicket::make()->action($this->group, ['subject' => 'Train the new packers']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Label the new shelves', 'department' => 'warehouse']);
+    $first->update(['data' => [...$first->data, 'commits' => [['hash' => 'abc1234def', 'subject' => 'Moulds page', 'version' => 'v9.1.0', 'deployed_at' => now()->toIso8601String()]]]]);
+
+    actingAs($member);
+    post(route('grp.models.ticket_project.store'), [
+        'name'        => 'Warehouse move',
+        'description' => 'Move all production and reorganise the organisation',
+        'start_date'  => now()->subWeek()->toDateString(),
+        'target_date' => now()->subWeek()->addMonths(3)->toDateString(),
+        'member_ids'  => [$member->id, $this->user->id],
+    ])->assertRedirect(route('grp.projects.show', 'warehouse-move'));
+
+    $project = TicketProject::where('slug', 'warehouse-move')->firstOrFail();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['name' => 'Moulds moved', 'due_date' => now()->toDateString(), 'done' => true], ['name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    [$moved, $trained] = $project->milestones()->get()->all();
+
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => 'HELP-0'])->assertSessionHasErrors('references');
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => strtolower($first->reference).", {$second->reference} {$task->reference}", 'ticket_project_milestone_id' => $moved->id])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $trained->id])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::fake();
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'Moulds are in, packers next week', 'health' => 'at_risk'])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::assertSentTo($this->user, \App\Notifications\TicketProjectNotification::class, fn ($notification) => $notification->title === 'Warehouse move: At risk' && str_contains($notification->body, 'packers next week') && str_contains((string) $notification->toMail($this->user)->render(), 'Open the project'));
+    Notification::assertNotSentTo($member, \App\Notifications\TicketProjectNotification::class);
+    Notification::assertNotSentTo($outsider, \App\Notifications\TicketProjectNotification::class);
+    UpdateTicket::make()->action($first->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $moved->id, 'name' => 'Moulds moved', 'done' => true], ['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($moved->fresh()->done_at)->not->toBeNull()
+        ->and($task->fresh()->ticket_project_milestone_id)->toBe($moved->id)
+        ->and($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Tickets/TicketProject')
+        ->where('can_edit', true)
+        ->where('project.health', 'at_risk')
+        ->where('progress.total', 3)
+        ->where('progress.done', 1)
+        ->where('progress.percent', 33)
+        ->where('progress.week', 2)
+        ->has('work', 3)
+        ->where('milestones.0.total', 2)
+        ->where('milestones.0.done', 1)
+        ->where('milestones.1.total', 1)
+        ->where('commits.0.hash', 'abc1234def')
+        ->where('commits.0.reference', $first->reference)
+        ->where('updates.0.health', 'at_risk')
+        ->has('burn_up', 2)
+        ->has('workload')
+        ->has('activity'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(str_replace('/projects', '/tickets/projects', route('grp.projects.show', $project->slug)))->assertRedirect(route('grp.projects.show', $project->slug))->assertStatus(301);
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['projects']['route']['name'])->toBe('grp.projects.index')
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['tickets']['topMenu']['subSections'])->pluck('label'))->not->toContain('Projects');
+    get(route('grp.tickets.show', $first->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.project.slug', $project->slug)->where('can_change_project', true)->has('options.milestones', 2));
+
+    $otherProject = StoreTicketProject::make()->action($this->group, ['name' => 'Other', 'start_date' => now()->toDateString()]);
+    $otherMilestone = $otherProject->milestones()->create(['name' => 'Elsewhere']);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $otherMilestone->id])->assertSessionHasErrors('ticket_project_milestone_id');
+    expect($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_id' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect($second->fresh()->ticket_project_id)->toBeNull();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id)
+        ->and($task->fresh()->ticket_project_milestone_id)->toBeNull();
+
+    patchJson(route('grp.tasks.project.update', $task->reference), ['ticket_project_milestone_id' => $trained->id])
+        ->assertOk()
+        ->assertJson(['ticket_project_id' => $project->id, 'ticket_project_milestone_id' => $trained->id]);
+
+    actingAs($outsider);
+    $otherProject->update(['owner_id' => $outsider->id]);
+    post(route('grp.models.ticket_project.work.attach', $otherProject->id), ['references' => $first->reference])->assertSessionHasErrors('references');
+    expect($first->fresh()->ticket_project_id)->toBe($project->id);
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
+    patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
+});
+
+test('the project tools let a team member run a project through the AI assistant', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id, 'username' => 'projmember'.Str::random(4)]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Move the filling line']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Book the movers', 'department' => 'warehouse']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'create', 'name' => 'Factory move', 'goal' => 'Move production', 'start_date' => now()->subWeek()->toDateString(), 'target_date' => now()->addWeeks(11)->toDateString(), 'team' => $member->username])->assertOk()->assertSee('factory-move');
+    $project = TicketProject::where('slug', 'factory-move')->firstOrFail();
+    expect($project->owner_id)->toBe($member->id);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => now()->addWeeks(4)->toDateString()])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'Factory move', 'milestone' => 'Staff trained'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'staff trained', 'position' => 1, 'rename' => 'Staff ready'])->assertOk();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => "{$ticket->reference} {$task->reference}", 'milestone' => 'Line moved'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Staff ready'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Nope'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'none'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Ghost', 'rename' => 'Real'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'start_date' => now()->addWeeks(5)->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'next friday'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => 'factory-move', 'target_date' => now()->subMonth()->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => ' '])->assertHasErrors();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved'])
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready');
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'none'])->assertOk();
+    expect($project->milestones()->where('name', 'Line moved')->first()->due_date)->toBeNull();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'Movers booked', 'health' => 'on_track'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Staff ready', 'done' => true])->assertOk();
+
+    expect($ticket->fresh()->milestone->name)->toBe('Line moved')
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready')
+        ->and($project->milestones()->where('name', 'Staff ready')->first()->done_at)->not->toBeNull();
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => 'factory-move'])->assertOk()->assertSee(['Movers booked', 'on_track', $ticket->reference, 'Staff ready']);
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, [])->assertOk()->assertSee('factory-move');
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'delete' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBe($project->id)->and($ticket->fresh()->ticket_project_milestone_id)->toBeNull();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $ticket->reference, 'remove' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBeNull();
+
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id);
 });

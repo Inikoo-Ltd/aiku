@@ -27,7 +27,6 @@ trait WithSupplierInfo
             'payment_terms'           => Arr::get($supplier->settings, 'payment_terms'),
             'minimum_order'           => Arr::get($supplier->settings, 'minimum_order'),
             'cooling_period'          => Arr::get($supplier->settings, 'cooling_period'),
-            'order_number_prefix'     => Arr::get($supplier->settings, 'order_number_prefix'),
         ], fn ($value) => $value !== null && $value !== '');
     }
 }

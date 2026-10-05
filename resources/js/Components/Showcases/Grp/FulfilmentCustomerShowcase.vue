@@ -10,7 +10,7 @@ import { useFormatTime } from "@/Composables/useFormatTime";
 import CustomerShowcaseStats from "@/Components/Showcases/Grp/CustomerShowcaseStats.vue";
 import { routeType } from "@/types/route";
 import { FulfilmentCustomerStats } from "@/types/Pallet";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import TabSelector from "@/Components/Elements/TabSelector.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -139,7 +139,6 @@ const props = defineProps<{
   handleTabUpdate?: Function
 }>();
 
-console.log(props);
 
 const locale = inject("locale", aikuLocaleStructure);
 const layout = inject("layout", layoutStructure);
@@ -156,15 +155,15 @@ const radioValue = computed(() => {
 const optionRadio = [
   {
     value: "pallets_storage",
-    label: trans("Pallet Storage")
+    label: ctrans("Pallet Storage")
   },
   {
     value: "items_storage",
-    label: trans("Dropshipping")
+    label: ctrans("Dropshipping")
   },
   {
     value: "space_rental",
-    label: trans("Space (Parking)")
+    label: ctrans("Space (Parking)")
   }
 ];
 
@@ -352,7 +351,7 @@ const isModalBalanceIncrease = ref(false)
 
                         <div @click="() => isModalAddress = true"
                              class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                          <span>{{ trans("Edit") }}</span>
+                          <span>{{ ctrans("Edit") }}</span>
                         </div>
                       </div>
                     </dd>
@@ -413,7 +412,7 @@ const isModalBalanceIncrease = ref(false)
             <div class="w-full flex justify-between items-center">
                 <div>
                     <div class="text-base">
-                        {{ trans("Balance") }}
+                        {{ ctrans("Balance") }}
                     </div>
                 </div>
                 <div class="flex flex-col items-end">
@@ -427,13 +426,13 @@ const isModalBalanceIncrease = ref(false)
                     </div>
                     <div class="flex items-center">
                         <div @click="() => isModalBalanceIncrease = true"
-                            v-tooltip="trans('Increase customer balance')"
+                            v-tooltip="ctrans('Increase customer balance')"
                             class="cursor-pointer text-gray-400 hover:text-indigo-600">
                             <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base" tooltip="Increase Balance" fixed-width aria-hidden="true" />
                         </div>
                         <span class="mx-2 text-gray-400">|</span>
                         <div @click="() => isModalBalanceDecrease = true"
-                            v-tooltip="trans('Decrease customer balance')"
+                            v-tooltip="ctrans('Decrease customer balance')"
                             class="cursor-pointer text-gray-400 hover:text-indigo-600">
                             <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance" fixed-width aria-hidden="true" />
                         </div>
@@ -443,7 +442,7 @@ const isModalBalanceIncrease = ref(false)
 
             <div v-if="handleTabUpdate" @click="() => handleTabUpdate('balance')"
                 class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
-                {{ trans("See all :translist transactions list", { translist: data?.balance?.credit_transactions ?? 0 }) }}
+                {{ ctrans("See all :translist transactions list", { translist: data?.balance?.credit_transactions ?? 0 }) }}
             </div>
         </div>
 
@@ -463,7 +462,7 @@ const isModalBalanceIncrease = ref(false)
             :style="{
 							borderLeft: `4px solid ${layout.app.theme[0]}`,
 						}">
-            <div class="block text-lg font-semibold">{{ trans("Current Bill") }}</div>
+            <div class="block text-lg font-semibold">{{ ctrans("Current Bill") }}</div>
             <div class="text-sm flex items-center gap-x-1">
               {{
                 locale.currencyFormat(
@@ -477,7 +476,7 @@ const isModalBalanceIncrease = ref(false)
           <!-- State Date & End Date -->
           <div class="pl-1 mt-4 w-80 lg:w-96 grid grid-cols-9 gap-x-3">
             <div class="col-span-4 text-sm">
-              <div class="text-gray-400">{{ trans("Start date") }}</div>
+              <div class="text-gray-400">{{ ctrans("Start date") }}</div>
               <div class="font-medium">
                 {{ useFormatTime(data.recurring_bill.start_date) }}
               </div>
@@ -492,7 +491,7 @@ const isModalBalanceIncrease = ref(false)
             </div>
 
             <div class="col-span-4 text-sm">
-              <div class="text-gray-400">{{ trans("End date") }}</div>
+              <div class="text-gray-400">{{ ctrans("End date") }}</div>
               <div class="font-medium">
                 {{ useFormatTime(data.recurring_bill.end_date) }}
               </div>
@@ -527,7 +526,7 @@ const isModalBalanceIncrease = ref(false)
           <div
             class="border-b border-gray-300 py-2 px-2 pl-4 flex items-center justify-between">
             <div class="">
-              {{ trans("Rental Agreement") }}
+              {{ ctrans("Rental Agreement") }}
               <span
                 v-if="data.rental_agreement.stats?.data?.reference"
                 class="text-gray-400 text-sm"
@@ -551,23 +550,23 @@ const isModalBalanceIncrease = ref(false)
           <!-- Stats -->
           <div v-if="data.rental_agreement.stats" class="p-5 space-y-2">
             <div class="flex gap-x-1 items-center text-sm">
-              <div class="">{{ trans("Last updated") }}:</div>
+              <div class="">{{ ctrans("Last updated") }}:</div>
               <div class="text-gray-500">
                 {{ useFormatTime(data.rental_agreement.updated_at) }}
               </div>
             </div>
             <div class="flex gap-x-1 items-center text-sm">
-              <div class="">{{ trans("Billing Cycle") }}:</div>
+              <div class="">{{ ctrans("Billing Cycle") }}:</div>
               <div class="text-gray-500">
                 {{ data.rental_agreement.stats?.data.billing_cycle }}
               </div>
             </div>
             <div class="flex gap-x-1 items-center text-sm">
-              <div class="">{{ trans("Pallet Limit") }}:</div>
+              <div class="">{{ ctrans("Pallet Limit") }}:</div>
               <div class="text-gray-500">
                 {{
                   data.rental_agreement.stats?.data.pallets_limit ||
-                  `(${trans("No limit")})`
+                  `(${ctrans("No limit")})`
                 }}
               </div>
             </div>

@@ -23,13 +23,29 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use App\Actions\Traits\Authorisations\WithAttachmentEditAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
+    use WithAttachmentEditAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $model = collect($request->route()?->parameters())->first(fn ($parameter) => $parameter instanceof Model);
+
+        return $model && $this->canChangeAttachments($request->user(), $model);
+    }
+
+    public function handle(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
             $file           = $attachment;
@@ -37,7 +53,7 @@ class AttachAttachmentToModel extends OrgAction
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
                 'scope'        => Arr::get($modelData, 'scope', 'Other'),
-                'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'caption'      => Arr::get($modelData, 'caption') ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'extension'    => $file->getClientOriginalExtension()
             ];
 
@@ -68,11 +84,13 @@ class AttachAttachmentToModel extends OrgAction
                 'required',
                 'string'
             ],
+            'caption'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 
-    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
+    public function action(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
+        $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 
         $this->handle($model, $this->validatedData);
@@ -83,13 +101,6 @@ class AttachAttachmentToModel extends OrgAction
         $this->initialisationFromGroup($tradeUnitFamily->group, $request);
 
         $this->handle($tradeUnitFamily, $this->validatedData);
-    }
-
-    public function inProduct(Product $product, ActionRequest $request): void
-    {
-        $this->initialisation($product->organisation, $request);
-
-        $this->handle($product, $this->validatedData);
     }
 
     public function inEmployee(Employee $employee, ActionRequest $request): void
@@ -104,6 +115,13 @@ class AttachAttachmentToModel extends OrgAction
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $this->validatedData);
+    }
+
+    public function inAgent(Agent $agent, ActionRequest $request): void
+    {
+        $this->initialisationFromGroup($agent->group, $request);
+
+        $this->handle($agent, $this->validatedData);
     }
 
     public function inSupplier(Supplier $supplier, ActionRequest $request): void

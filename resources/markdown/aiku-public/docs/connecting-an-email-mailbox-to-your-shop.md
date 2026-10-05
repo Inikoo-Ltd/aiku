@@ -3,7 +3,7 @@ title: Connecting an email mailbox to your shop
 summary: Sign the shop's customer mailbox in once, and the emails customers send arrive in Chat next to the website chat and WhatsApp, answered from the same address.
 date: 2026-09-21
 tags: chat, email, shop
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

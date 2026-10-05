@@ -1,8 +1,8 @@
 ---
 title: Enviar un mailshot
 summary: Crea un correo de marketing, elige quién lo recibe, diséñalo en el taller de email, y llévalo de borrador a enviado - con un vistazo a lo que realmente disparan "publicar" y "enviar".
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-29
+source_date: 2026-09-29
 tags: marketing, mailshots, email
 category: marketing
 ---
@@ -23,7 +23,7 @@ Pulsa **Mailshot** arriba de la lista de Mailshots (o **New Newsletter** en la l
 
 ## Elegir destinatarios
 
-La pantalla de destinatarios te permite filtrar a quién llega el mailshot. Por defecto, un mailshot nuevo está configurado para llegar a **todos los clientes**, pero puedes acotarlo - por familia, por interés, por ubicación (país, código postal, o un radio alrededor de un punto), por departamento o subdepartamento, por valor del pedido, por artículos que estén ahora mismo en una cesta, por colecciones de pedidos anteriores, por pedidos de showroom, por estado de recompensa gold, o a clientes que se registraron pero nunca pidieron. A medida que ajustas el filtro, la pantalla muestra un recuento estimado de destinatarios para que veas el tamaño de la audiencia antes de confirmar.
+La pantalla de destinatarios te permite filtrar a quién llega el mailshot. Por defecto, un mailshot nuevo está configurado para llegar a **todos los clientes**, pero puedes acotarlo - por familia, por interés, por ubicación (país, código postal, o un radio alrededor de un punto), por departamento o subdepartamento, por valor del pedido, por artículos que estén ahora mismo en una cesta, por colecciones de pedidos anteriores, por pedidos de showroom, por estado de recompensa gold, a clientes pendientes de reponer, o a clientes que se registraron pero nunca pidieron. A medida que ajustas el filtro, la pantalla muestra un recuento estimado de destinatarios para que veas el tamaño de la audiencia antes de confirmar.
 
 Desde aquí, pulsa **Compose email** para pasar a diseñar el correo en sí.
 

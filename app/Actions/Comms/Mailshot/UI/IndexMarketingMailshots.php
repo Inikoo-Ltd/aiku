@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\MarketingMailshotsResource;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexMarketingMailshots extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use HasUIMailshots;
     use WithIndexMailshots;
 
@@ -31,6 +33,11 @@ class IndexMarketingMailshots extends OrgAction
     public function handle(Group|Outbox|PostRoom|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
         return $this->handleMailshot(OutboxCodeEnum::MARKETING, $parent, $prefix);
+    }
+
+    public function filterableOutboxCode(): OutboxCodeEnum
+    {
+        return OutboxCodeEnum::MARKETING;
     }
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response

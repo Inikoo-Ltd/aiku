@@ -4,6 +4,7 @@ import Skeleton from 'primevue/skeleton'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
@@ -28,6 +29,7 @@ const props = defineProps<{
             image: ImgTS
             price?: number | string | null
             price_per_unit?: number | null
+            rrp?: number | null
             rrp_per_unit?: number | null
             discounted_price?: number | null
             discounted_price_per_unit?: number | null
@@ -72,9 +74,13 @@ const formatPrice = (price?: number | string | null): string | null => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-const formatRrp = (rrpPerUnit?: number | null, unit?: string | null): string | null => {
-    if (!rrpPerUnit) return null
-    const rrp = String(locale.currencyFormatRrp(currency?.code, rrpPerUnit))
+const isDropshipping = layout?.retina?.type === 'dropshipping'
+
+const formatRrp = (product: { rrp?: number | null; rrp_per_unit?: number | null; units?: number | string | null; unit?: string | null }): string | null => {
+    const value = isDropshipping ? product.rrp : product.rrp_per_unit
+    if (!value) return null
+    const rrp = String(locale.currencyFormatRrp(currency?.code, value))
+    const unit = isDropshipping && Number(product.units) !== 1 ? ctrans('outer') : product.unit
     return unit ? `${rrp}/${unit}` : rrp
 }
 
@@ -134,8 +140,8 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                             <p class="text-xs font-bold">{{ product.code }}</p>
                             <p class="text-sm font-medium leading-tight line-clamp-2 group-hover:underline text-justify">{{ getProductName(product) }}</p>
 
-                            <p v-if="formatRrp(product.rrp_per_unit, product.unit)" class="text-xxs text-gray-500 mt-0.5">
-                                {{ ctrans('RRP') }}: {{ formatRrp(product.rrp_per_unit, product.unit) }}
+                            <p v-if="formatRrp(product)" class="text-xxs text-gray-500 mt-0.5">
+                                {{ ctrans('RRP') }}: {{ formatRrp(product) }}
                             </p>
 
                             <p v-if="formatPrice(product.price)" class="text-sm font-bold mt-0.5 text-[var(--theme-color-0)]">

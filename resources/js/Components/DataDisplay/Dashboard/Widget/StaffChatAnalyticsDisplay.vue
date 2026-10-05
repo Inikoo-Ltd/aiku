@@ -40,7 +40,7 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
             </h3>
             <Link
                 :href="route('grp.sysadmin.staff_chat.index')"
-                class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+                class="text-xs text-[var(--theme-color-4)] hover:underline whitespace-nowrap"
             >
                 {{ ctrans("Per-user & per-conversation stats") }}
                 <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
@@ -50,7 +50,7 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
         <template v-if="widget && widget.messages">
             <div class="flex flex-wrap gap-x-10 gap-y-3 mb-4">
                 <div>
-                    <p class="text-4xl font-bold text-indigo-600">{{ widget.messages.toLocaleString() }}</p>
+                    <p class="text-4xl font-bold text-[var(--theme-color-4)]">{{ widget.messages.toLocaleString() }}</p>
                     <p class="text-sm text-gray-600">{{ ctrans("Messages") }}</p>
                 </div>
                 <div>
@@ -76,7 +76,7 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
 
             <div class="grid grid-cols-2 gap-6 text-sm">
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-indigo-400 mr-1" />{{ ctrans("Most chatty") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-1)] mr-1" />{{ ctrans("Most chatty") }}</p>
                     <div class="divide-y divide-gray-100">
                         <Link
                             v-for="user in widget.top_users"
@@ -88,20 +88,20 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
                                 <span class="text-gray-600 truncate min-w-0">{{ user.username }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ user.messages }}<span class="text-gray-400 font-normal"> / {{ user.conversations }} {{ ctrans("chats") }}</span></span>
                             </div>
-                            <MiniBar :value="user.messages" :max="maxUserMessages" color="bg-indigo-400" />
+                            <MiniBar :value="user.messages" :max="maxUserMessages" color="bg-[var(--theme-chart-1)]" />
                         </Link>
                         <p v-if="!widget.top_users.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-sky-400 mr-1" />{{ ctrans("Pairs who chat most") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1"><span class="inline-block w-2 h-2 rounded-full bg-[var(--theme-chart-2)] mr-1" />{{ ctrans("Pairs who chat most") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="pair in widget.top_pairs" :key="pair.conversation_id" class="py-1">
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0">{{ pair.members }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">{{ pair.messages }}</span>
                             </div>
-                            <MiniBar :value="pair.messages" :max="maxPairMessages" color="bg-sky-400" />
+                            <MiniBar :value="pair.messages" :max="maxPairMessages" color="bg-[var(--theme-chart-2)]" />
                         </div>
                         <p v-if="!widget.top_pairs.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>

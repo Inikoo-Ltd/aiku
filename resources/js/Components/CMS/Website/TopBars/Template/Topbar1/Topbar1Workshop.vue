@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -84,19 +84,18 @@ watch(
 
 
         <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-           <!--  <SwitchLanguage /> -->
             <!-- Section: My account -->
             <Button type="transparent"
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
-                v-tooltip="trans('My account')" url="/app/dashboard">
+                v-tooltip="ctrans('My account')" url="/app/dashboard">
                 <template #label>
-                    <span class="text-white button whitespace-nowrap"> {{ trans('My account') }}</span>
+                    <span class="text-white button whitespace-nowrap"> {{ ctrans('My account') }}</span>
                 </template>
             </Button>
 
             <!-- Section: Profile -->
             <Button v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')"  icon="fal fa-user" type="transparent" class="button">
+                v-tooltip="ctrans('Profile')"  icon="fal fa-user" type="transparent" class="button">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width
                         aria-hidden="true" />
@@ -110,7 +109,7 @@ watch(
             <!-- Section: Favourite -->
             <Button
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
-                v-tooltip="trans('Favourites')"  icon="fal fa-heart" :type="'transparent'" class="button">
+                v-tooltip="ctrans('Favourites')"  icon="fal fa-heart" :type="'transparent'" class="button">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-heart" fixed-width
                         aria-hidden="true" class="button"/>
@@ -120,7 +119,7 @@ watch(
                         v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" class="button whitespace-nowrap"/>
                     <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`" class="button whitespace-nowrap">
                         {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
-                            trans("favourites") : trans("favourite") }}
+                            ctrans("favourites") : ctrans("favourite") }}
                     </span>
                 </template>
             </Button>
@@ -145,7 +144,7 @@ watch(
 
                 <template #label>
                     <span class="text-white button whitespace-nowrap">
-                        {{ trans("Register") }}
+                        {{ ctrans("Register") }}
                     </span>
                 </template>
             </Button>
@@ -159,7 +158,7 @@ watch(
                 </template>
                 <template #label>
                     <span class="text-white button whitespace-nowrap">
-                        {{ trans("Login") }}
+                        {{ ctrans("Login") }}
                     </span>
                 </template>
             </Button>
@@ -173,7 +172,7 @@ watch(
                 </template>
                 <template #label>
                     <span class="text-white button whitespace-nowrap">
-                        {{ trans("Logout") }}
+                        {{ ctrans("Logout") }}
                     </span>
                 </template>
             </Button>

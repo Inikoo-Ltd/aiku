@@ -76,6 +76,8 @@ class IndexCollectionsInMasterCollection extends OrgAction
                 'collections.updated_at',
                 'collections.slug',
                 'collections.web_images',
+                'collections.master_collection_id',
+                'collections.not_follow_master_items',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
                 'collection_stats.number_parents',
@@ -126,14 +128,13 @@ class IndexCollectionsInMasterCollection extends OrgAction
                     ]
                 );
 
-            $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
-            $table
-                ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false);
-            $table
-                ->column(key: 'image_thumbnail', label: '', type: 'avatar');
-            $table
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false);
+            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
         };
     }
 

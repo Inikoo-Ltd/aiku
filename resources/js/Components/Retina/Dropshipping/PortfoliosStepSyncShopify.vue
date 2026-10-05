@@ -5,7 +5,7 @@ import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get, set } from 'lodash-es'
 import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
@@ -74,11 +74,9 @@ const disabledRowId = ref([])
 onMounted(() => {
     emits('mounted')
     props.portfolios.forEach(porto => {
-        console.log('porto', selectSocketi(porto))
         const xxx = window.Echo.private(selectSocketi(porto)?.event).listen(
             selectSocketi(porto)?.action,
             (eventData) => {
-                console.log('poppppppp', porto.id, eventData)
                 if(eventData.errors_response) {
                     set(props.progressToUploadToShopify, [porto.id], 'error')
                     setTimeout(() => {
@@ -138,8 +136,8 @@ const valueTableFilter = ref({})
                     </InputIcon>
                     <InputText
                         :modelValue="get(valueTableFilter, 'global.value', '')"
-                        @update:model-value="(e) => (console.log(e), set(valueTableFilter, ['global', 'value'], e))"
-                        :placeholder="trans('Search in table')"
+                        @update:model-value="(e) => set(valueTableFilter, ['global', 'value'], e)"
+                        :placeholder="ctrans('Search in table')"
                     />
                 </IconField>
             </div>

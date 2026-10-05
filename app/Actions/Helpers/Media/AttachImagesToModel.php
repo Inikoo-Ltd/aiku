@@ -11,6 +11,7 @@ use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\Masters\MasterCollection\UploadImagesToMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
@@ -22,6 +23,16 @@ use Lorisleiva\Actions\ActionRequest;
 class AttachImagesToModel extends OrgAction
 {
     use WithAttachMediaToModel;
+    use WithTradeUnitMediaEditAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || !$request->route('tradeUnit')) {
+            return true;
+        }
+
+        return $this->canEditTradeUnitMedia($request);
+    }
 
     /**
      * @return array<Media>

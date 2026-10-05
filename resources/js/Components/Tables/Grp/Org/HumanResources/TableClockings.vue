@@ -16,7 +16,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import DatePicker from "primevue/datepicker";
 import axios from "axios";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { notify } from "@kyvg/vue3-notification";
 import { faEdit, faTrash, faPlus } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -73,7 +73,6 @@ const canEdit = computed<boolean>(() => {
 
 const openEditModal = (clocking: any) => {
     selectedClocking.value = clocking;
-    console.log(clocking);
     notes.value = typeof clocking.notes === "string" ? clocking.notes : "";
     clockedAt.value = clocking.clocked_at ? new Date(clocking.clocked_at) : null;
     isEditModalOpen.value = true;
@@ -106,8 +105,8 @@ const submitNotes = async () => {
         );
 
         notify({
-            title: trans("Success"),
-            text: trans("Notes updated successfully."),
+            title: ctrans("Success"),
+            text: ctrans("Notes updated successfully."),
             type: "success",
         });
 
@@ -125,12 +124,12 @@ const submitNotes = async () => {
     } catch (e: any) {
         const message =
             e?.response?.data?.message ??
-            trans("Failed to update notes.");
+            ctrans("Failed to update notes.");
 
         errorMsg.value = message;
 
         notify({
-            title: trans("Failed"),
+            title: ctrans("Failed"),
             text: message,
             type: "error",
         });
@@ -168,8 +167,8 @@ const submitAddClocking = async (): Promise<void> => {
         });
 
         notify({
-            title: trans("Success"),
-            text: trans("Clocking added successfully."),
+            title: ctrans("Success"),
+            text: ctrans("Clocking added successfully."),
             type: "success",
         });
 
@@ -181,12 +180,12 @@ const submitAddClocking = async (): Promise<void> => {
     } catch (e: any) {
         const message =
             e?.response?.data?.message ??
-            trans("Failed to add clocking.");
+            ctrans("Failed to add clocking.");
 
         addErrorMsg.value = message;
 
         notify({
-            title: trans("Failed"),
+            title: ctrans("Failed"),
             text: message,
             type: "error",
         });
@@ -204,7 +203,7 @@ const submitAddClocking = async (): Promise<void> => {
                 type="create"
                 size="xs"
                 :icon="faPlus"
-                :label="trans('Add clocking')"
+                :label="ctrans('Add clocking')"
                 @click="openAddModal"
             />
         </div>
@@ -243,21 +242,21 @@ const submitAddClocking = async (): Promise<void> => {
                         type="transparent"
                         size="xs"
                         :icon="faEdit"
-                        :label="trans('Edit')"
+                        :label="ctrans('Edit')"
                         @click="openEditModal(item)"
                     />
                     <ModalConfirmationDelete
                         v-if="item.delete_route"
                         :routeDelete="item.delete_route"
-                        :title="trans('Delete this clocking?')"
-                        :description="trans('Any working period anchored on this clocking will keep its record but lose that reference. This action cannot be undone.')"
+                        :title="ctrans('Delete this clocking?')"
+                        :description="ctrans('Any working period anchored on this clocking will keep its record but lose that reference. This action cannot be undone.')"
                     >
                         <template #default="{ changeModel }">
                             <Button
                                 type="cancel"
                                 size="xs"
                                 :icon="faTrash"
-                                :label="trans('Delete')"
+                                :label="ctrans('Delete')"
                                 @click="changeModel(true)"
                             />
                         </template>
@@ -272,14 +271,14 @@ const submitAddClocking = async (): Promise<void> => {
             width="w-full max-w-md"
         >
             <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                {{ trans("Edit Clocking Notes") }}
+                {{ ctrans("Edit Clocking Notes") }}
             </h2>
 
             <form @submit.prevent="submitNotes" class="space-y-4">
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans("Clocked At") }}
+                            {{ ctrans("Clocked At") }}
                         </label>
                         <DatePicker
                             v-model="clockedAt"
@@ -294,7 +293,7 @@ const submitAddClocking = async (): Promise<void> => {
 
                     <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans("Notes") }}
+                        {{ ctrans("Notes") }}
                     </label>
                     <textarea
                         v-model="notes"
@@ -310,13 +309,13 @@ const submitAddClocking = async (): Promise<void> => {
                 <div class="flex justify-end space-x-3">
                     <Button
                         type="secondary"
-                        :label="trans('Cancel')"
+                        :label="ctrans('Cancel')"
                         :disabled="isSubmitting"
                         @click="closeEditModal"
                     />
                     <Button
                         type="primary"
-                        :label="isSubmitting ? trans('Saving...') : trans('Save')"
+                        :label="isSubmitting ? ctrans('Saving...') : ctrans('Save')"
                         :disabled="isSubmitting"
                         nativeType="submit"
                     />
@@ -330,14 +329,14 @@ const submitAddClocking = async (): Promise<void> => {
             width="w-full max-w-md"
         >
             <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                {{ trans("Add Clocking") }}
+                {{ ctrans("Add Clocking") }}
             </h2>
 
             <form @submit.prevent="submitAddClocking" class="space-y-4">
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans("Date") }}
+                            {{ ctrans("Date") }}
                         </label>
                         <div class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-500">
                             {{ timesheetDate ? useFormatTime(timesheetDate) : "-" }}
@@ -346,7 +345,7 @@ const submitAddClocking = async (): Promise<void> => {
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans("Time") }}
+                            {{ ctrans("Time") }}
                         </label>
                         <DatePicker
                             v-model="newClockedAt"
@@ -360,7 +359,7 @@ const submitAddClocking = async (): Promise<void> => {
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans("Notes") }}
+                            {{ ctrans("Notes") }}
                         </label>
                         <textarea
                             v-model="newNotes"
@@ -376,13 +375,13 @@ const submitAddClocking = async (): Promise<void> => {
                 <div class="flex justify-end space-x-3">
                     <Button
                         type="secondary"
-                        :label="trans('Cancel')"
+                        :label="ctrans('Cancel')"
                         :disabled="isAddSubmitting"
                         @click="closeAddModal"
                     />
                     <Button
                         type="primary"
-                        :label="isAddSubmitting ? trans('Saving...') : trans('Save')"
+                        :label="isAddSubmitting ? ctrans('Saving...') : ctrans('Save')"
                         :disabled="isAddSubmitting"
                         nativeType="submit"
                     />

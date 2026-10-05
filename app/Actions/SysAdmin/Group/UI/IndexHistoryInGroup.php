@@ -10,6 +10,7 @@
 
 namespace App\Actions\SysAdmin\Group\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\History\HistoryResource;
@@ -26,6 +27,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexHistoryInGroup extends OrgAction
 {
+    use WithOverviewAuthorisation;
     public function handle(Group $group, $prefix = null): LengthAwarePaginator|array|bool
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

@@ -19,12 +19,12 @@ import { computed, ref } from "vue"
 import type { Component } from "vue"
 import type { Navigation } from "@/types/Tabs"
 import { useTabChange } from "@/Composables/tab-change"
-import { faSeedling } from '@fal'
+import { faSeedling, faNarwhal, faStream, faSignOutAlt } from '@fal'
 import {library} from "@fortawesome/fontawesome-svg-core";
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
-library.add(faSeedling)
+library.add(faSeedling, faNarwhal, faStream, faSignOutAlt)
 
 const props = defineProps<{
     title: string
@@ -64,8 +64,8 @@ function createPickingSession() {
 
     if (!props.picking_session_route) {
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Please try again or contact support.'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Please try again or contact support.'),
             type: 'error',
         })
         return
@@ -84,7 +84,7 @@ function createPickingSession() {
                 loading.value = false
                 if (errors.message) {
                     notify({
-                        title: trans('Validation Error'),
+                        title: ctrans('Validation Error'),
                         text: errors.message,
                         type: 'error',
                     })
@@ -102,7 +102,7 @@ function createPickingSession() {
             <Button
                 v-if="showPickingSessionButton"
                 type="create"
-                :label="trans('Picking session')"
+                :label="ctrans('Picking session')"
                 :loading="loading"
                 @click="createPickingSession"
             />

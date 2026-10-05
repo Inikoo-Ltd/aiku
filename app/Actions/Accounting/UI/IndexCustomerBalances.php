@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -31,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerBalances extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use WithAccountingSubNavigation;
 
     private Group|Organisation|Shop|Fulfilment $parent;

@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailbox;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -52,7 +53,7 @@ class CallbackShopMailbox extends OrgAction
         // because by the time it is saved there is nothing left to tell the copies apart.
         $takenBy = Shop::where('id', '!=', $shop->id)
             ->where('settings->gmail->email', $mailbox)
-            ->first();
+            ->first() ?? CallbackProcurementMailbox::procurementMailboxOwner($mailbox);
 
         if ($takenBy) {
             return Redirect::to($state['return'])->with('notification', [
@@ -95,11 +96,17 @@ class CallbackShopMailbox extends OrgAction
 
         $state = json_decode(Crypt::decryptString((string) $request->query('state')), true);
 
-        $shop = Shop::findOrFail($state['shop_id']);
-
-        $this->initialisationFromShop($shop, $request);
-
         try {
+            if (isset($state['procurement_organisation_id'])) {
+                $organisation = Organisation::findOrFail($state['procurement_organisation_id']);
+
+                return CallbackProcurementMailbox::make()->handle($organisation, (string) $request->query('code'), $state);
+            }
+
+            $shop = Shop::findOrFail($state['shop_id']);
+
+            $this->initialisationFromShop($shop, $request);
+
             return $this->handle((string) $request->query('code'), $state);
         } catch (RequestException $exception) {
             return Redirect::to($state['return'])->with('notification', [

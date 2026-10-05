@@ -10,7 +10,10 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
@@ -35,6 +38,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
+use App\Actions\Traits\WithIndivisibleSet;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,6 +49,7 @@ class ShowMasterProduct extends OrgAction
     use WithMastersAuthorisation;
     use WithMasterProductNavigation;
     use WithMasterProductSubNavigation;
+    use WithIndivisibleSet;
 
     private MasterShop|Group|MasterAsset|MasterProductCategory $parent;
 
@@ -261,7 +266,14 @@ class ShowMasterProduct extends OrgAction
                 'shopsData'            => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tradeUnits'           => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset)),
                 'is_single_trade_unit' => $masterAsset->is_single_trade_unit,
-                'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
+                'indivisible_set'      => $this->getIndivisibleSet($masterAsset, $this->canEdit ? [
+                    'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                    'parameters' => [
+                        'masterShop'    => $masterAsset->masterShop->slug,
+                        'masterProduct' => $masterAsset->slug,
+                    ]
+                ] : null),
+                'trade_unit_slug'      => $masterAsset->tradeUnits->first()?->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
@@ -274,6 +286,14 @@ class ShowMasterProduct extends OrgAction
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)
                     : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
+
+                MasterAssetTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterAssetTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+                'sales_analysis_teaser' => $this->tab === MasterAssetTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset))),
 
                 'salesData' => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductTimeSeriesData::run($masterAsset)
@@ -290,6 +310,10 @@ class ShowMasterProduct extends OrgAction
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
                     fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+
+                MasterAssetTabsEnum::ATTACHMENTS->value => $this->tab == MasterAssetTabsEnum::ATTACHMENTS->value ?
+                    fn () => ['documents' => GetTradeUnitDocuments::run($masterAsset->tradeUnits)]
+                    : Inertia::optional(fn () => ['documents' => GetTradeUnitDocuments::run($masterAsset->tradeUnits)]),
 
                 MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))

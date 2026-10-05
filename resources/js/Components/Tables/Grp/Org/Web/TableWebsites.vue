@@ -102,7 +102,7 @@ const fetchUniqueVisitorData = async (website:any) => {
 			})
 		} catch (error) {
 			// Log the error and set a fallback entry in chartDataMap
-			console.log(error)
+			console.error(error)
 			chartDataMap.value.set(website.rowIndex, { labels: [], datasets: [], totalUniques: 0 })
 		}
 	}

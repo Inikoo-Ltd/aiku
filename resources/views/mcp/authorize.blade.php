@@ -94,9 +94,9 @@
 
     <div class="panel">
         <p class="muted" style="margin:0 0 .25rem">Logged in as</p>
-        <p style="margin:0;font-weight:500">{{ $user->email }}</p>
+        <p style="margin:0;font-weight:500">{{ $user->username }} <span class="muted">({{ $user->email }})</span></p>
 
-        @if(count($scopes) > 0)
+        @if(count($scopes) > 0 && $user->can_use_mcp)
             <p class="muted" style="margin:1rem 0 0">Permissions</p>
             <ul>
                 @foreach($scopes as $scope)
@@ -105,6 +105,13 @@
             </ul>
         @endif
     </div>
+
+    @unless($user->can_use_mcp)
+        <div class="panel" id="mcpAccessMissing" style="border-color:#d97706">
+            <p style="margin:0 0 .5rem;font-weight:600">{{ $user->username }} cannot use the AI assistant</p>
+            <p class="muted" style="margin:0">If you authorize as this user, {{ $client->name }} will only show “Couldn’t connect to the server”. Log out of Aiku in this browser and sign in as a user with AI assistant access, or ask an administrator to turn it on for {{ $user->username }} and try again.</p>
+        </div>
+    @endunless
 
     <div class="actions">
         <form method="POST" action="{{ route('passport.authorizations.deny') }}">
@@ -121,7 +128,7 @@
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
-            <button type="submit" class="primary" id="authorizeButton">Authorize</button>
+            <button type="submit" class="primary" id="authorizeButton" @disabled(!$user->can_use_mcp)>Authorize</button>
         </form>
     </div>
 </div>

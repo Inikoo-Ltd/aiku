@@ -52,8 +52,68 @@ class StaffConversation extends Model
     public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'staff_conversation_participants')
-            ->withPivot('last_read_at')
+            ->withPivot('last_read_at', 'left_at')
             ->withTimestamps();
+    }
+
+    public function activeParticipants(): BelongsToMany
+    {
+        return $this->participants()->wherePivotNull('left_at');
+    }
+
+    /**
+     * Joining again clears a previous leave, so the whole history is theirs to read once more.
+     *
+     * @param array<int, int> $userIds
+     */
+    public function addParticipants(array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+        if (!$userIds) {
+            return;
+        }
+
+        $this->participants()->syncWithoutDetaching($userIds);
+        $this->participants()->newPivotStatement()
+            ->where('staff_conversation_id', $this->id)
+            ->whereIn('user_id', $userIds)
+            ->whereNotNull('left_at')
+            ->update(['left_at' => null]);
+    }
+
+    /**
+     * Someone taken off keeps the history up to that moment but gets nothing new and cannot write.
+     *
+     * @param array<int, int> $userIds
+     */
+    public function removeParticipants(array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+        if (!$userIds) {
+            return;
+        }
+
+        $this->participants()->newPivotStatement()
+            ->where('staff_conversation_id', $this->id)
+            ->whereIn('user_id', $userIds)
+            ->whereNull('left_at')
+            ->update(['left_at' => now()->format(self::PRECISE_DATE_FORMAT)]);
+    }
+
+    public function leftAtFor(User $user): ?string
+    {
+        return $this->participants()->where('users.id', $user->id)->first()?->pivot?->left_at;
+    }
+
+    public function isActiveParticipant(User $user): bool
+    {
+        return $this->activeParticipants()->where('users.id', $user->id)->exists();
+    }
+
+    public function canBeWrittenToBy(User $user): bool
+    {
+        return $this->isActiveParticipant($user)
+            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user));
     }
 
     public function messages(): HasMany

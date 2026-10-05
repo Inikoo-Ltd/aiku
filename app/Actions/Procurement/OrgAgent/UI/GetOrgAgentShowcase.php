@@ -8,17 +8,20 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgAgent;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrgAgentShowcase
 {
     use AsObject;
     use WithSupplierInfo;
+    use WithProcurementSerialReferences;
 
-    public function handle(OrgAgent $orgAgent): array
+    public function handle(OrgAgent $orgAgent, Organisation $viewingOrganisation): array
     {
         $agent        = $orgAgent->agent;
         $organisation = $agent->organisation;
@@ -34,7 +37,11 @@ class GetOrgAgentShowcase
                 'currency'     => $agent->currency ?? $organisation->currency,
                 'address'      => AddressResource::make($organisation->address)->getArray(),
                 'photo'        => $agent->imageSources(320, 320),
-                'supplierInfo' => $this->supplierInfo($agent),
+                'supplierInfo' => [
+                    ...$this->supplierInfo($agent),
+                    'next_purchase_order_reference' => $this->nextPurchaseOrderReference($orgAgent),
+                    'next_stock_delivery_reference' => $this->nextStockDeliveryReference($orgAgent),
+                ],
             ],
             'stats'       => [
                 [
@@ -43,7 +50,7 @@ class GetOrgAgentShowcase
                     'count' => $orgAgent->stats->number_active_org_suppliers,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_agents.show.suppliers.index',
-                        'parameters' => [$organisation->slug, $orgAgent->slug],
+                        'parameters' => [$viewingOrganisation->slug, $orgAgent->slug],
                     ],
                 ],
                 [
@@ -52,7 +59,7 @@ class GetOrgAgentShowcase
                     'count' => $orgAgent->stats->number_current_org_supplier_products,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_agents.show.supplier_products.index',
-                        'parameters' => [$organisation->slug, $orgAgent->slug],
+                        'parameters' => [$viewingOrganisation->slug, $orgAgent->slug],
                     ],
                 ],
                 [
@@ -61,7 +68,7 @@ class GetOrgAgentShowcase
                     'count' => $orgAgent->stats->number_purchase_orders,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index',
-                        'parameters' => [$organisation->slug, $orgAgent->slug],
+                        'parameters' => [$viewingOrganisation->slug, $orgAgent->slug],
                     ],
                 ],
                 [
@@ -70,7 +77,7 @@ class GetOrgAgentShowcase
                     'count' => $orgAgent->stats->number_stock_deliveries,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
-                        'parameters' => [$organisation->slug, $orgAgent->slug],
+                        'parameters' => [$viewingOrganisation->slug, $orgAgent->slug],
                     ],
                 ],
             ],

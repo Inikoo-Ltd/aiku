@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\JsonResponse;
 
@@ -24,6 +25,10 @@ class UpdateMailshotTemplate extends OrgAction
     {
         data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
 
+        if (Arr::pull($modelData, 'common_outbox')) {
+            data_set($modelData, 'data', array_merge($emailTemplate->data ?? [], ['common_outbox' => true]));
+        }
+
         return $this->update($emailTemplate, $modelData);
     }
 
@@ -32,7 +37,8 @@ class UpdateMailshotTemplate extends OrgAction
         $rules = [
             'name'              => ['sometimes', 'string', 'max:255'],
             'layout'            => ['sometimes', 'array'],
-            'compiled_layout'   => ['sometimes', 'string']
+            'compiled_layout'   => ['sometimes', 'string'],
+            'common_outbox'     => ['sometimes', 'boolean'],
         ];
 
         return $rules;

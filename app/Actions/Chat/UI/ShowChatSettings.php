@@ -8,7 +8,12 @@
 namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\Agent\UI\IndexAgent;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\UpdateShopChatClosing;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
+use App\Actions\Comms\Mailbox\ProcessInboundEmail;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
 use App\Actions\OrgAction;
@@ -16,7 +21,9 @@ use App\Enums\UI\Chat\ChatSettingsTabsEnum;
 use App\Http\Resources\Chat\MetaMessageTemplatesResource;
 use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowChatSettings extends OrgAction
 {
     use WithChatScopeNavigation;
+    use WithChatAgentAuthorisation;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -95,10 +103,35 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => ChatSettingsTabsEnum::navigation(),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps() : null,
+                'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
+                'closing'        => $isShop ? [
+                    'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
+                    'close_after_thanks_minutes' => UpdateShopChatClosing::minutes($parent),
+                    'wait_for_customer_hours'    => UpdateShopChatClosing::waitingHours($parent),
+                    'can_edit'                   => $this->userSupervisesChatOnShop($request->user(), $parent),
+                    'update_route'               => [
+                        'name'       => 'grp.org.shops.show.chat.settings.closing.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    ],
+                ] : null,
+                'policies'       => $isShop ? [
+                    'text'         => data_get($parent->settings, 'chat.policies', ''),
+                    'notes'        => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('is_manual', true)->latest('updated_at')->get(['id', 'title', 'body', 'updated_at'])->all(),
+                    'copied'       => ChatKnowledgeEntry::where('shop_id', $parent->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs'])->selectRaw('kind, count(*) as total, max(hydrated_at) as at')->groupBy('kind')->get()->all(),
+                    'learned'      => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('source_type', 'learned')->whereIn('status', ['active', 'proposed', 'conflict'])->orderByDesc('customers_count')->limit(200)
+                        ->get(['id', 'title', 'body', 'status', 'conflict', 'customers_count', 'last_seen_at', 'expires_at'])->all(),
+                    'knowledge_route' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    'can_edit'        => $this->userCanActOnChatOnShop($request->user(), $parent),
+                    'update_route' => [
+                        'name'       => 'grp.org.shops.show.chat.settings.policies.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    ],
+                ] : null,
+                'couriers'       => $isShop ? null : $this->getCouriersProps($request),
 
                 $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
 
@@ -128,7 +161,7 @@ class ShowChatSettings extends OrgAction
             ];
         }
 
-        if (!$isShop) {
+        if (!$isShop || in_array($this->tab, [ChatSettingsTabsEnum::OUT_OF_HOURS->value, ChatSettingsTabsEnum::CLOSING->value, ChatSettingsTabsEnum::POLICIES->value], true)) {
             return [];
         }
 
@@ -160,6 +193,51 @@ class ShowChatSettings extends OrgAction
                     'method'     => 'post',
                     'name'       => 'grp.org.shops.show.chat.whatsapp_templates.sync',
                     'parameters' => $shopParameters,
+                ],
+            ],
+        ];
+    }
+
+    private function getCouriersProps(ActionRequest $request): array
+    {
+        $domains = ProcessInboundEmail::carrierDomains($this->group);
+
+        $sessionsBySenderDomain = DB::table('chat_sessions')
+            ->join('shops', 'shops.id', '=', 'chat_sessions.shop_id')
+            ->where('shops.group_id', $this->group->id)
+            ->where('chat_sessions.is_carrier', true)
+            ->where('chat_sessions.status', '!=', ChatSessionStatusEnum::CLOSED->value)
+            ->where('chat_sessions.created_at', '>=', now()->subDays(30))
+            ->selectRaw("lower(split_part(chat_sessions.metadata->>'email_from', '@', 2)) as domain, count(*) as sessions")
+            ->groupBy('domain')
+            ->pluck('sessions', 'domain');
+
+        return [
+            'domains'      => collect($domains)->map(fn (string $domain) => [
+                'domain'   => $domain,
+                'sessions' => $sessionsBySenderDomain
+                    ->filter(fn ($count, $senderDomain) => $senderDomain === $domain || str_ends_with((string) $senderDomain, '.'.$domain))
+                    ->sum(),
+            ])->all(),
+            'can_edit'     => $this->userSupervisesChatOnOrganisation($request->user(), $this->organisation),
+            'update_route' => [
+                'name'       => 'grp.org.chat.settings.carrier_domains.update',
+                'parameters' => ['organisation' => $this->organisation->slug],
+            ],
+        ];
+    }
+
+    private function getOutOfHoursProps(Shop $shop): array
+    {
+        return [
+            'message'      => data_get($shop->settings, 'chat.out_of_hours_message', ''),
+            'opening_line' => SendOutOfHoursReply::make()->text($shop, true, null, true),
+            'show_opening_line' => data_get($shop->settings, 'chat.out_of_hours_opening_line') !== false,
+            'update_route' => [
+                'name'       => 'grp.org.shops.show.chat.settings.out_of_hours_message.update',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $shop->slug,
                 ],
             ],
         ];

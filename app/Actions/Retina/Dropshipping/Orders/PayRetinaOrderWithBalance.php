@@ -9,6 +9,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -19,6 +21,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -41,6 +44,17 @@ class PayRetinaOrderWithBalance extends RetinaAction
             return $warning;
         }
 
+        if ($order->shop->hasPreOrders() && !$order->preOrder) {
+            $basketPreOrders = GetBasketPreOrders::run($order);
+            if ($basketPreOrders['has_pre_orders'] && !$basketPreOrders['is_accepted']) {
+                return [
+                    'success' => false,
+                    'reason'  => __('Please accept the pre-order terms before placing your order.'),
+                    'order'   => $order,
+                ];
+            }
+        }
+
         if ($order->payment_amount == $order->total_amount) {
             return [
                 'success' => false,
@@ -49,12 +63,16 @@ class PayRetinaOrderWithBalance extends RetinaAction
             ];
         }
 
-        if ($order->customer->balance < $order->total_amount) {
-            return [
-                'success' => false,
-                'reason'  => 'Insufficient balance',
-                'order'   => $order,
-            ];
+        $insufficientBalance = [
+            'success' => false,
+            'reason'  => 'Insufficient balance',
+            'order'   => $order,
+        ];
+
+        $amountToPayNow = GetOrderAmountToPayNow::run($order);
+
+        if ($order->customer->spendableBalance() < $amountToPayNow) {
+            return $insufficientBalance;
         }
 
         $customer = $order->customer;
@@ -73,13 +91,18 @@ class PayRetinaOrderWithBalance extends RetinaAction
         }
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $order->total_amount,
+            'amount'                  => $amountToPayNow,
             'status'                  => PaymentStatusEnum::SUCCESS,
             'state'                   => PaymentStateEnum::COMPLETED,
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
-        $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
+        $paidOrder = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder, $amountToPayNow) {
+            $customer = Customer::lockForUpdate()->findOrFail($customer->id);
+            if ($customer->spendableBalance() < $amountToPayNow) {
+                return null;
+            }
+
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
@@ -111,10 +134,14 @@ class PayRetinaOrderWithBalance extends RetinaAction
             return $order;
         });
 
+        if (!$paidOrder) {
+            return $insufficientBalance;
+        }
+
         return [
             'success' => true,
             'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'order'   => $paidOrder,
         ];
     }
 

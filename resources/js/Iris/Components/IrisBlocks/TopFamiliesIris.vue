@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faCube,
@@ -208,6 +208,7 @@ watch(
 					v-if="props.screenType !== 'mobile' && !isBeginning"
 					ref="prevEl"
 					class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+					:aria-label="ctrans('Previous')"
 					@click.stop="scrollLeft"
 					type="button">
 					<FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" fixed-width />
@@ -260,7 +261,7 @@ watch(
 										}"
 										class="flex-1 flex items-center justify-center bg-gray-100">
 										<span class="text-sm font-semibold">
-											{{ trans("View All") }}
+											{{ ctrans("View All") }}
 										</span>
 									</div>
 								</div>
@@ -297,6 +298,7 @@ watch(
 					v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext && !isEnd"
 					ref="nextEl"
 					class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+					:aria-label="ctrans('Next')"
 					@click.stop="scrollRight"
 					type="button">
 					<FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" fixed-width />

@@ -1,0 +1,21 @@
+/*
+ * Styles for the standalone storefront widget. They are inlined into a shadow root, so Tailwind's
+ * preflight is deliberately included: inside the shadow boundary it resets only our own nodes and
+ * cannot touch the storefront around it.
+ */
+
+@import "@fortawesome/fontawesome-free/css/svg-with-js.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Not `all: initial`: custom properties inherit through the shadow boundary and that would wipe
+ * the theme variables set on the host element.
+ */
+:host {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5;
+    color: #374151;
+}

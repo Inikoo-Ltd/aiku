@@ -22,6 +22,7 @@ import TableLocationOrgStockHistories from "@/Components/Tables/Grp/Org/Inventor
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import TableOrgStockMovements from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockMovements.vue"
+import { routeType } from "@/types/route"
 
 library.add(faInventory, faExchange, faBox, faWarehouse, faMapSigns, faPallet)
 
@@ -38,7 +39,9 @@ const props = defineProps<{
     pallets?: {}
     showcase?: {}
     location_id: number
+    can_move_location_stock?: boolean
     transfer_reason?: {}
+    create_order_route?: routeType | null
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -62,5 +65,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="true" :location_id="location_id" :transfer_reason></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="can_move_location_stock" :location_id="location_id" :transfer_reason :create_order_route></component>
 </template>

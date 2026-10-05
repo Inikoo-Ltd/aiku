@@ -22,6 +22,7 @@ trait HasBucketAttachment
                 ['label' => __('Declaration of Conformity'), 'scope' => 'doc', 'enum' => TradeAttachmentScopeEnum::DOC],
                 ['label' => 'CPSR', 'scope' => 'cpsr', 'enum' => TradeAttachmentScopeEnum::CPSR],
                 ['label' => __('Test Reports'), 'scope' => 'test_reports', 'enum' => TradeAttachmentScopeEnum::TEST_REPORTS],
+                ['label' => __('How to use'), 'scope' => 'how_to_use', 'enum' => TradeAttachmentScopeEnum::HOW_TO_USE],
             ],
             'private' => [
                 ['label' => 'IFRA '.__('Private'), 'scope' => 'ifra_private', 'enum' => TradeAttachmentScopeEnum::IFRA_PRIVATE],

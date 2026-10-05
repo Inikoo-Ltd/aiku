@@ -6,7 +6,7 @@ import {
     DisclosureButton,
     DisclosurePanel
 } from "@headlessui/vue"
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 
 defineProps<{
     form: any
@@ -24,7 +24,6 @@ function editOffer(key: string) {
     editingOffer.value = key
 
     nextTick(() => {
-        console.log(offerInputRef.value)
         if(offerInputRef.value) offerInputRef.value?.focus()
          if(offerInputRef.value) offerInputRef.value?.select()
     })
@@ -95,7 +94,7 @@ function closeEdit() {
 
                 <DisclosurePanel class="px-4 py-3 space-y-2 bg-white">
                     <div class="text-xs font-semibold text-gray-500 uppercase">
-                        {{  trans('Allowances') }}
+                        {{  ctrans('Allowances') }}
                     </div>
 
                     <ul v-if="offer.allowances?.length"
@@ -133,7 +132,7 @@ function closeEdit() {
                     </ul>
 
                     <div v-else class="text-sm text-gray-400 italic">
-                         {{  trans('No allowances available') }}
+                         {{  ctrans('No allowances available') }}
                     </div>
                 </DisclosurePanel>
             </Disclosure>

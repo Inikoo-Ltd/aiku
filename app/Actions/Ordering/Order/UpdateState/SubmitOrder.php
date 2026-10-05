@@ -11,17 +11,23 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
+use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
+use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
+use App\Actions\Ordering\PreOrder\SplitOrderPreOrders;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -70,6 +76,25 @@ class SubmitOrder extends OrgAction
     {
         $oldState = $order->state;
 
+
+        $insertsWithoutArtwork = GetOrderInsertsWithoutArtwork::run($order);
+
+        if ($insertsWithoutArtwork) {
+            throw ValidationException::withMessages([
+                'inserts' => __('Upload the artwork for :inserts before placing the order.', [
+                    'inserts' => implode(', ', $insertsWithoutArtwork),
+                ]),
+            ]);
+        }
+
+        if ($order->isGiftMessageMissing()) {
+            throw ValidationException::withMessages([
+                'gift_message' => __('Write a gift message or upload a PDF before placing the order.'),
+            ]);
+        }
+
+        EnsurePartnerOrderPackedInMatches::run($order);
+
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
@@ -94,11 +119,16 @@ class SubmitOrder extends OrgAction
             );
         }
 
-        $this->processGrGift($order);
-        $this->removeGiftsFromOffersNoLongerLive($order);
-        $this->processGiftOffers($order);
-        $this->processVoucherGiftOffers($order);
-        $this->processUpComingTransactions($order);
+        /** A pre-order split off a basket at its submit: gifts and upcoming lines stay with the in-stock order */
+        $isSplitPreOrder = (bool)$order->preOrder?->parent_order_id;
+
+        if (!$isSplitPreOrder) {
+            $this->processGrGift($order);
+            $this->removeGiftsFromOffersNoLongerLive($order);
+            $this->processGiftOffers($order);
+            $this->processVoucherGiftOffers($order);
+            $this->processUpComingTransactions($order);
+        }
 
         /**
          * A product line at zero quantity with no bonus is nothing to pick: it was zeroed while out
@@ -113,34 +143,55 @@ class SubmitOrder extends OrgAction
             ->get()
             ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
 
-        $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
-        /** @var Transaction $transaction */
-        if ($transactions->isNotEmpty()) {
-            foreach ($transactions as $transaction) {
-                $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-                data_set($transactionData, 'submitted_at', $date);
-                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
-                data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
-                data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
-                data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
-                data_set($transactionData, 'submitted_offers_data', $transaction->offers_data); // TODO only take needed data later
-                data_set($transactionData, 'has_discount_when_submitted', $transaction->current_discount_factor < 1);
+        /** The split, the money moved to the pre-order and its submit stand or fall together: a failure must not leave a pre-order basket to be paid again */
+        $order = DB::transaction(function () use ($order, $modelData, $date) {
+            $splitPreOrder = SplitOrderPreOrders::run($order);
+            $order->load('preOrder');
 
-                $transaction->update($transactionData);
+            /**
+             * The submitted_* columns freeze each line at the price it was sold at, copied column to
+             * column so the stored value is exact by construction. Transaction has no observers or
+             * auditing, so the per-line model save added nothing but a query per line. A line with no
+             * offer carries offers_data as an empty json array, which the model save never wrote
+             * (an empty array is equivalent to the {} default under the array cast), so the snapshot
+             * keeps {} for anything that is not a json object, as RepairAuroraSubmittedTransactionSnapshots does.
+             */
+            $order->transactions()->where('state', TransactionStateEnum::CREATING)->update([
+                'state'                       => TransactionStateEnum::SUBMITTED,
+                'submitted_at'                => $date,
+                'status'                      => TransactionStatusEnum::PROCESSING,
+                'submitted_quantity_ordered'  => DB::raw('quantity_ordered'),
+                'submitted_gross_amount'      => DB::raw('gross_amount'),
+                'submitted_net_amount'        => DB::raw('net_amount'),
+                'submitted_discount_factor'   => DB::raw('current_discount_factor'),
+                'submitted_offers_data'       => DB::raw("CASE WHEN jsonb_typeof(offers_data::jsonb) = 'object' THEN offers_data::jsonb ELSE '{}'::jsonb END"),
+                'has_discount_when_submitted' => DB::raw('current_discount_factor < 1'),
+            ]);
+
+            $this->update($order, $modelData);
+
+            /**
+             * An order that never reached a payment attempt - no balance to settle and no working saved
+             * card - keeps the null pay_status it was created with, and then belongs to neither the
+             * submitted paid nor the submitted unpaid queue, so nobody ever chases it (HELP-3116).
+             */
+            if ($order->pay_status === null) {
+                $order = UpdateOrderPaymentsStatus::run($order);
             }
-        }
 
-        $this->update($order, $modelData);
+            if ($splitPreOrder?->parent_order_id) {
+                MoveOrderExcessPaymentToPreOrder::run($order, $splitPreOrder->order);
+                $order = UpdateOrderPaymentsStatus::run($order);
+                SubmitOrder::run($splitPreOrder->order->refresh());
 
-        /**
-         * An order that never reached a payment attempt - no balance to settle and no working saved
-         * card - keeps the null pay_status it was created with, and then belongs to neither the
-         * submitted paid nor the submitted unpaid queue, so nobody ever chases it (HELP-3116).
-         */
-        if ($order->pay_status === null) {
-            $order = UpdateOrderPaymentsStatus::run($order);
-        }
+                /** Dropshipping pays pre-orders in full upfront, second delivery and pallet estimate included (HELP-3432) */
+                if (!$splitPreOrder->is_trade) {
+                    PayOrderWithCustomerBalance::make()->handle($splitPreOrder->order->refresh());
+                }
+            }
+
+            return $order;
+        });
 
         if ($order->customer->warehouse_temporary_notes) {
             UpdateCustomer::make()->action($order->customer, [
@@ -188,6 +239,8 @@ class SubmitOrder extends OrgAction
         if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);
         }
+
+        SendNewOrderAlert::run($order->refresh());
 
         $customerSalesChannel = $order->customerSalesChannel;
         if ($customerSalesChannel) {

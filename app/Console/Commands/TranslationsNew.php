@@ -33,7 +33,7 @@ class TranslationsNew extends Command
     protected $signature = 't:new
                             {locale : ISO 639-1 code as it appears in the languages table, e.g. ko}
                             {--native= : Native name for the language picker, e.g. 한국어}
-                            {--driver=gpt-4o-mini : Translation driver}
+                            {--driver=catalogue : Translation driver}
                             {--skip-translate : lang/<code>.json already exists}';
 
     protected $description = 'Add a language end to end: translate the UI, seed POEditor, activate it';

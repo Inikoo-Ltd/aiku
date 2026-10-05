@@ -6,8 +6,9 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { computed, ref, watch } from "vue"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
+import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,18 +21,10 @@ const props = withDefaults(defineProps<{
     ticket: any
     storageKey: string
     defaultOpen?: boolean
-}>(), { defaultOpen: true })
+    embedded?: boolean
+}>(), { defaultOpen: true, embedded: false })
 
-const kindIcons: Record<string, string> = {
-    bug: "fal fa-bug",
-    feature: "fal fa-lightbulb",
-    escalation: "fal fa-level-up",
-    task: "fal fa-tasks",
-    qa: "fal fa-vial",
-    documentation: "fal fa-books",
-    data_integrity: "fal fa-database",
-    support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const readPanelState = (): boolean => {
     try {
@@ -43,6 +36,10 @@ const readPanelState = (): boolean => {
 }
 
 const isOpen = ref(readPanelState())
+
+watch(() => props.storageKey, () => {
+    isOpen.value = readPanelState()
+})
 
 const toggle = () => {
     isOpen.value = !isOpen.value
@@ -57,16 +54,26 @@ const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id:
 </script>
 
 <template>
-    <aside class="bg-white rounded-lg border border-gray-300 text-sm">
+    <aside class="text-sm" :class="embedded ? '-mx-5 -mt-3 mb-4 border-b border-gray-200' : 'bg-white rounded-lg border border-gray-300'">
         <button type="button" class="flex w-full items-start justify-between gap-3 p-4 text-left transition duration-200 hover:bg-gray-50" @click="toggle">
-            <span v-if="isOpen" class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Control panel") }}</span>
-            <span v-if="!isOpen" class="flex min-w-0 flex-col gap-1.5">
+            <span v-if="embedded" class="flex min-w-0 flex-col gap-1">
+                <span class="text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Assignee") }}</span>
+                <span class="flex min-w-0 items-center gap-2 text-xs">
+                    <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" size="sm" class="shrink-0" />
+                    <span v-else class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                        <FontAwesomeIcon icon="fal fa-user" fixed-width class="text-xs" />
+                    </span>
+                    <span class="truncate" :class="ticket.assignee ? 'font-medium text-gray-800' : 'text-gray-400'">{{ ticket.assignee || ctrans("Unassigned") }}</span>
+                </span>
+            </span>
+            <span v-else-if="isOpen" class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Control panel") }}</span>
+            <span v-else class="flex min-w-0 flex-col gap-1.5">
                 <span class="flex items-center gap-2">
                     <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" size="sm" />
                     <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width class="text-xs" />
                     </span>
-                    <span :class="ticket.assignee ? 'font-medium text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
+                    <span :class="ticket.assignee ? 'font-medium text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || ctrans("Unassigned") }}</span>
                 </span>
                 <span
                     v-if="summaryPeople.length"
@@ -76,7 +83,7 @@ const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id:
                     <span class="flex -space-x-1.5">
                         <TicketUserAvatar v-for="person in summaryPeople.slice(0, 3)" :key="person.id" :name="person.name" :avatar="person.avatar" size="xs" class="ring-2 ring-white" />
                     </span>
-                    <span v-if="summaryPeople.length > 3" class="text-xs text-gray-500">{{ trans("+:count others", { count: String(summaryPeople.length - 3) }) }}</span>
+                    <span v-if="summaryPeople.length > 3" class="text-xs text-gray-500">{{ ctrans("+:count others", { count: String(summaryPeople.length - 3) }) }}</span>
                 </span>
             </span>
             <span class="flex shrink-0 items-center gap-3">

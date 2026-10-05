@@ -206,7 +206,7 @@ class GetGroupOverview extends OrgAction
             [
                 'name'  => __('Services'),
                 'icon'  => 'fal fa-concierge-bell',
-                'route' => route('grp.overview.billables.services.index'),
+                'route' => null,
                 'count' => $group->catalogueStats->number_services ?? 0
             ],
         ];
@@ -369,7 +369,7 @@ class GetGroupOverview extends OrgAction
             [
                 'name'  => __('SKO Movements'),
                 'icon'  => 'fal fa-dolly',
-                'route' => route('grp.overview.inventory.org-stock-movements.index'),
+                'route' => null,
                 'count' => $group->inventoryStats->number_org_stock_movements ?? 0
             ],
 

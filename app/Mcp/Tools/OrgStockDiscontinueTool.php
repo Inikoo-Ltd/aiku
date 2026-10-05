@@ -9,6 +9,8 @@
 namespace App\Mcp\Tools;
 
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
+use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
@@ -18,6 +20,8 @@ use Laravel\Mcp\Server\Attributes\Description;
 #[Description('Changes the state of SKOs (organisation stock) after org-stock-discontinue-preview-tool has been shown to the user and they confirmed in their own words. Group wide by default: every organisation carrying the same stock moves together; organisation_states keeps named organisations on a different state. A reason is required unless going back to active. effective_at in the future schedules the change instead of applying it. Pass expected_updated_at from the preview so a SKO that moved since is refused. Every change is audited with the user, the reason and request_text. Only for users enrolled to discontinue SKOs through their assistant.')]
 class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
 {
+    use WithMcpChangeLog;
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -53,8 +57,18 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
             ->mapWithKeys(fn ($value, $code) => [$orgStocks->firstWhere('code', $code)?->id ?? $code => $value])
             ->all();
 
+        $groupOrgStockIds = OrgStock::whereIn('stock_id', $orgStocks->pluck('stock_id')->filter())
+            ->orWhereIn('id', $orgStocks->pluck('id'))
+            ->pluck('id')
+            ->all();
+
         try {
-            $stats = DiscontinueOrgStocks::make()->action($organisation, array_filter([
+            $stats = $this->recordChange(
+                $request,
+                McpChangeTypeEnum::ORG_STOCK_STATE,
+                'SKOs '.$orgStocks->pluck('code')->implode(', ').' ('.$organisation->code.') to '.$request->string('state'),
+                ['org_stock_ids' => $groupOrgStockIds],
+                fn () => DiscontinueOrgStocks::make()->action($organisation, array_filter([
                 'org_stock_ids'       => $orgStocks->pluck('id')->all(),
                 'state'               => $request->string('state')->toString(),
                 'reason'              => $request->get('reason'),
@@ -63,7 +77,8 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
                 'expected_updated_at' => $expected,
                 'source'              => 'mcp',
                 'request_text'        => $request->string('request_text')->toString(),
-            ], fn ($value) => $value !== null), $request->user());
+            ], fn ($value) => $value !== null), $request->user())
+            );
         } catch (ValidationException $exception) {
             return Response::error(implode(' ', $exception->validator->errors()->all()).' Nothing was changed; preview again.');
         }
@@ -72,7 +87,8 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
             'organisation' => $organisation->code,
             'codes'        => $orgStocks->pluck('code')->all(),
             'state'        => $request->string('state')->toString(),
-            'result'       => $stats,
+            'result'        => $stats,
+            'change_log_id' => $this->mcpChange?->id,
         ]);
     }
 

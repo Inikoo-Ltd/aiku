@@ -216,6 +216,7 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgSupplier;
         $this->initialisation($organisation, $request)->withTab(OrgSupplierProductsTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier, OrgSupplierProductsTabsEnum::INDEX->value);
     }
@@ -262,7 +263,11 @@ class IndexOrgSupplierProducts extends OrgAction
             'Procurement/OrgSupplierProducts',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Supplier Products'),
+                'title'       => match (true) {
+                    $this->parent instanceof OrgSupplier => '('.$this->parent->supplier->code.') '.__('Supplier Products'),
+                    $this->parent instanceof OrgAgent    => '('.$this->parent->agent->organisation->code.') '.__('Supplier Products'),
+                    default                              => __('Supplier Products'),
+                },
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,

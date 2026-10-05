@@ -2,6 +2,8 @@
 
 namespace App\Actions\UI\Dashboards;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
@@ -60,7 +62,7 @@ class ShowGroupDashboard extends OrgAction
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
         $tabNavigation = GroupDashboardSalesTableTabsEnum::navigation();
         $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
         $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
@@ -78,9 +80,12 @@ class ShowGroupDashboard extends OrgAction
                     ],
                     'settings'  => [
                         'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'partners_type'       => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
+                    'month_target' => GetShopMonthSalesTarget::run($group, $user),
+                    'year_target'  => GetShopYearSalesTarget::run($group, $user),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
@@ -117,6 +122,7 @@ class ShowGroupDashboard extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard'          => $dashboard,
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
+                'warehouseOverview'  => GetGroupWarehouseDashboardData::run($group),
             ]
         );
     }
@@ -125,7 +131,7 @@ class ShowGroupDashboard extends OrgAction
     {
         $group = group();
 
-        if (!$request->user()->hasGroupAccess()) {
+        if (!$request->user()->hasGroupAccess() && !$request->user()->canViewSales()) {
             $organisation = $request->user()->authorisedOrganisations()->first();
             abort_unless($organisation, 403);
 

@@ -55,6 +55,15 @@ const confirmForward = async () => {
             type: "success",
         })
 
+        const notEmailed: string[] = data?.data?.not_emailed ?? []
+        if (notEmailed.length) {
+            notify({
+                title: ctrans("Not emailed"),
+                text: ctrans(":names has no work email in Aiku, so only got it in the staff chat.", { names: notEmailed.join(", ") }),
+                type: "warning",
+            })
+        }
+
         emit("forwarded", data)
         close()
     } catch (e: any) {

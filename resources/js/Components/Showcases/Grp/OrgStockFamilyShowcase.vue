@@ -7,8 +7,10 @@ import {
     faBox
 } from '@fal'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue'
 import Image from "@common/Components/Image.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faImage, faCheckCircle, faExclamationCircle, faTimesCircle, faPauseCircle,
@@ -36,6 +38,7 @@ const props = defineProps<{
         }
     }
     salesData?: object
+    salesAnalysisTeaser?: object
 }>()
 </script>
 
@@ -85,10 +88,12 @@ const props = defineProps<{
 
             <!-- Middle: Stock stats -->
             <div class="col-span-1 md:col-span-2 lg:col-span-4 space-y-4">
+                <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" />
+                <SalesAnalysisMovers :teaser="salesAnalysisTeaser" />
 
                 <!-- Stock state counts -->
                 <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('SKO Status') }}</h3>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ ctrans('SKO Status') }}</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div v-for="item in data.stock_counts" :key="item.label"
                             class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
@@ -103,7 +108,7 @@ const props = defineProps<{
 
                 <!-- Quantity status -->
                 <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('Quantity Status') }}</h3>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ ctrans('Quantity Status') }}</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <div v-for="item in data.quantity_status" :key="item.label"
                             class="flex items-center justify-between p-2 rounded-lg bg-gray-50">
@@ -118,27 +123,27 @@ const props = defineProps<{
 
                 <!-- Dispatched -->
                 <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('Dispatched') }}</h3>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ ctrans('Dispatched') }}</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
                         <div class="p-2 rounded-lg bg-gray-50">
                             <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.today }}</div>
-                            <div class="text-xs text-gray-500">{{ trans('Today') }}</div>
+                            <div class="text-xs text-gray-500">{{ ctrans('Today') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
                             <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_week }}</div>
-                            <div class="text-xs text-gray-500">{{ trans('Last week') }}</div>
+                            <div class="text-xs text-gray-500">{{ ctrans('Last week') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
                             <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_month }}</div>
-                            <div class="text-xs text-gray-500">{{ trans('Last month') }}</div>
+                            <div class="text-xs text-gray-500">{{ ctrans('Last month') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
                             <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_year }}</div>
-                            <div class="text-xs text-gray-500">{{ trans('Last year') }}</div>
+                            <div class="text-xs text-gray-500">{{ ctrans('Last year') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-blue-50 border border-blue-100">
                             <div class="text-lg font-bold text-blue-700">{{ data?.dispatched?.all }}</div>
-                            <div class="text-xs text-blue-500">{{ trans('All time') }}</div>
+                            <div class="text-xs text-blue-500">{{ ctrans('All time') }}</div>
                         </div>
                     </div>
                 </div>

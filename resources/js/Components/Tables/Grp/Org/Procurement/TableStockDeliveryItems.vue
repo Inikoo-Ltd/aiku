@@ -34,6 +34,7 @@ const props = defineProps<{
     tab?: string,
     costing?: {
         is_costed: boolean
+        can_edit: boolean
         currency: string | null
         distributeExtraCostRoute: routeType | null
     }
@@ -51,7 +52,7 @@ function reloadStockDelivery() {
     })
 }
 
-function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, message: string, acceptLabel: string) {
+function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, message: string, acceptLabel: string, body: Record<string, unknown> = {}) {
     if (!stateRoute) {
         return
     }
@@ -64,11 +65,11 @@ function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, messa
         rejectLabel: ctrans('Cancel'),
         acceptClass: 'p-button-success',
         rejectClass: 'p-button-text',
-        accept: () => changeState(item, stateRoute),
+        accept: () => changeState(item, stateRoute, body),
     })
 }
 
-async function changeState(item: any, stateRoute: any) {
+async function changeState(item: any, stateRoute: any, body: Record<string, unknown> = {}) {
     if (!stateRoute) {
         return
     }
@@ -76,7 +77,7 @@ async function changeState(item: any, stateRoute: any) {
     changingId.value = item.id
     try {
         const method = String(stateRoute.method ?? 'patch').toLowerCase()
-        await axios[method](route(stateRoute.name, stateRoute.parameters))
+        await axios[method](route(stateRoute.name, stateRoute.parameters), body)
         notify({ title: ctrans('Success'), text: ctrans('Item state updated'), type: 'success' })
         reloadStockDelivery()
     } catch (error: any) {
@@ -164,11 +165,23 @@ function findLocation(locationsList: any[], locationCode: string | null) {
     return locationsList?.find(location => location.location_code == locationCode) || locationsList?.[0]
 }
 
+const setAsPickingLocationChoice = reactive<Record<number, boolean>>({})
+
+function isOnlyLocationOfSko(item: any) {
+    const locationsCount = item.locations?.length ?? 0
+    return selectedOtherLocation[item.id] ? locationsCount === 0 : locationsCount === 1
+}
+
+function isSetAsPickingLocation(item: any) {
+    return !item.has_picking_location && (setAsPickingLocationChoice[item.id] ?? isOnlyLocationOfSko(item))
+}
+
 function placedAdditionalData(item: any) {
+    const pickingLocationData = isSetAsPickingLocation(item) ? { set_as_picking_location: true } : {}
     if (selectedOtherLocation[item.id]) {
-        return { location_id: selectedOtherLocation[item.id]?.id }
+        return { location_id: selectedOtherLocation[item.id]?.id, ...pickingLocationData }
     }
-    return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id }
+    return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id, ...pickingLocationData }
 }
 
 function sowingLocationRoute(sowing: any, item: any) {
@@ -198,7 +211,7 @@ watch(() => props.data?.data, (items) => {
     }
 
     for (const item of items ?? []) {
-        if (!item.updateCostRoute) {
+        if (!item.updateCostRoute || props.costing?.can_edit === false) {
             continue
         }
 
@@ -208,6 +221,14 @@ watch(() => props.data?.data, (items) => {
 
 function money(item: any, value: number | string | null) {
     return locale.currencyFormat(item.currency ?? props.costing?.currency ?? 'EUR', Number(value ?? 0))
+}
+
+function isShortOrOver(item: any) {
+    return Number(item.unit_quantity) > 0 && item.unit_quantity_placed != null && Number(item.unit_quantity_placed) !== Number(item.unit_quantity)
+}
+
+function receivedShare(item: any) {
+    return Number(item.unit_quantity_placed) / Number(item.unit_quantity)
 }
 
 function rowTotal(item: any) {
@@ -235,6 +256,44 @@ async function saveCost(item: any) {
         })
     } finally {
         savingCostId.value = null
+    }
+}
+
+const isSavingAllCosts = ref(false)
+
+function changedCostItems() {
+    return (props.data?.data ?? []).filter(item =>
+        item.updateCostRoute && costDraft[item.id]
+        && costFields.some(field => Number(costDraft[item.id][field]) !== Number(item[field] ?? 0))
+    )
+}
+
+async function saveAllCosts() {
+    const items = changedCostItems()
+
+    if (!items.length) {
+        notify({ title: ctrans('Nothing to save'), text: ctrans('No item costs were changed'), type: 'info' })
+        return
+    }
+
+    isSavingAllCosts.value = true
+    let savedCount = 0
+
+    try {
+        for (const item of items) {
+            await axios.patch(route(item.updateCostRoute.name, item.updateCostRoute.parameters), costDraft[item.id])
+            savedCount++
+        }
+        notify({ title: ctrans('Success'), text: ctrans(':count items costs updated', { count: String(savedCount) }), type: 'success' })
+        reloadStockDelivery()
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update item costs'),
+            type: 'error',
+        })
+    } finally {
+        isSavingAllCosts.value = false
     }
 }
 
@@ -270,7 +329,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #before-table>
-            <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
+            <div v-if="costing?.distributeExtraCostRoute && costing.can_edit" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <label for="extra-cost-to-distribute" class="text-sm text-gray-600">
                     {{ ctrans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
                 </label>
@@ -304,11 +363,34 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     :disabled="distributingType !== null"
                     @click="distributeExtraCost('by_value')"
                 />
+
+                <Button
+                    :label="ctrans('Save all')"
+                    :tooltip="ctrans('Save the costs of every changed item')"
+                    icon="fal fa-save"
+                    type="save"
+                    size="xs"
+                    class="ml-auto"
+                    :loading="isSavingAllCosts"
+                    :disabled="isSavingAllCosts || savingCostId !== null"
+                    @click="saveAllCosts"
+                />
             </div>
         </template>
 
         <template #cell(units_in)="{ item }">
-            <span class="text-gray-500">{{ formatQuantity(Number(item.unit_quantity_placed)) }}</span>
+            <Button
+                v-if="item.receivedAfterAllRoute"
+                :label="ctrans('Received after all')"
+                :tooltip="ctrans('Check the delivered quantity and take the delivery back to booking in')"
+                icon="fal fa-check"
+                type="secondary"
+                size="xs"
+                :loading="changingId === item.id"
+                :disabled="changingId === item.id"
+                @click="confirmChangeState($event, item, item.receivedAfterAllRoute, ctrans('Check :code as received? The delivery goes back to booking in so it can be placed.', { code: item.code }), ctrans('Received'))"
+            />
+            <span v-else class="text-gray-500">{{ formatQuantity(Number(item.unit_quantity_placed)) }}</span>
         </template>
 
         <template v-for="field in costFields" :key="field" #[`cell(${field})`]="{ item }">
@@ -325,6 +407,21 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 
         <template #cell(cost_total)="{ item }">
             <span class="font-semibold text-gray-700">{{ money(item, rowTotal(item)) }}</span>
+            <div
+                v-if="isShortOrOver(item)"
+                class="whitespace-nowrap text-xs text-gray-500"
+                v-tooltip="ctrans('Costs are for the :ordered ordered; only the units that arrived go into stock, each at the same cost per unit', { ordered: formatQuantity(Number(item.unit_quantity)) })"
+            >
+                {{ ctrans(':placed in stock: items :items · total :total', {
+                    placed: formatQuantity(Number(item.unit_quantity_placed)),
+                    items: money(item, Number(item.cost_items ?? 0) * receivedShare(item)),
+                    total: money(item, rowTotal(item) * receivedShare(item)),
+                }) }}
+            </div>
+        </template>
+
+        <template #cell(cost_per_sko_org)="{ item }">
+            <span v-if="item.cost_per_sko_org !== null" class="font-semibold text-gray-700 tabular-nums">{{ locale.currencyFormat(item.org_currency ?? 'GBP', Number(item.cost_per_sko_org)) }}</span>
         </template>
 
         <template #cell(code)="{ item }">
@@ -347,6 +444,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 >
                     <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
                 </Link>
+
+                <span v-if="item.is_new_org_stock"
+                    v-tooltip="ctrans('Never been in stock')"
+                    class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    {{ ctrans('New') }}
+                </span>
             </div>
         </template>
 
@@ -357,6 +460,20 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
+                <div v-if="item.locations?.length" class="mt-1 w-fit min-w-40 divide-y divide-gray-100 border-t border-gray-100 text-xs">
+                    <div v-for="location in item.locations" :key="location.id" class="flex justify-between gap-x-6 py-0.5">
+                        <Link
+                            v-if="sowingLocationRoute(location, item)"
+                            :href="sowingLocationRoute(location, item)"
+                            class="secondaryLink"
+                        >
+                            {{ location.location_code }}
+                        </Link>
+                        <span v-else>{{ location.location_code }}</span>
+                        <span class="text-gray-500">{{ formatQuantity(Number(location.quantity)) }}</span>
+                    </div>
+                </div>
+                <div v-else-if="item.org_stock_id" class="mt-1 text-xs italic text-red-500">{{ ctrans('No location yet') }}</div>
             </div>
         </template>
 
@@ -393,7 +510,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         <template #cell(actions)="{ item }">
             <div class="flex justify-end items-center gap-2">
                 <Button
-                    v-if="item.updateCostRoute"
+                    v-if="item.updateCostRoute && costDraft[item.id]"
                     :label="ctrans('Save')"
                     :tooltip="ctrans('Save the costs of this item')"
                     icon="fal fa-save"
@@ -466,6 +583,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <span :class="differenceClass(item.difference_units)">{{ formatQuantity(Number(item.difference_units)) }}</span>
         </template>
 
+        <template #cell(difference_amount)="{ item }">
+            <span :class="differenceClass(item.difference_amount)">
+                {{ item.difference_amount === null ? '-' : locale.currencyFormat(item.currency_code ?? 'EUR', Number(item.difference_amount)) }}
+            </span>
+        </template>
+
         <template #cell(difference_skos)="{ item }">
             <span :class="differenceClass(item.difference_skos)">
                 {{ item.difference_skos === null ? '-' : formatQuantity(Number(item.difference_skos)) }}
@@ -479,16 +602,16 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     @onError="(error: any) => {
                         proxyItem.errors = Object.values(error || {})
                     }"
-                    :modelValue="Number(item.unit_quantity_checked)"
+                    :modelValue="Number(item.sko_quantity_checked)"
                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                     saveOnForm
                     isUseAxios
                     isWithRefreshModel
                     :routeSubmit="item.checkedRoute"
-                    keySubmit="unit_quantity_checked"
+                    keySubmit="sko_quantity_checked"
                     :bindToTarget="{
                         step: 1,
-                        min: Number(item.unit_quantity_placed)
+                        min: Number(item.sko_quantity_placed)
                     }"
                     autoSave
                     @onSuccess="onCheckedSaved"
@@ -511,15 +634,25 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                             >
                                 <template #label>
                                     <div>
-                                        {{ formatQuantity(Number(item.unit_quantity)) }}
+                                        {{ formatQuantity(Number(item.sko_quantity)) }}
                                     </div>
                                 </template>
                             </ButtonWithLink>
+                            <Button
+                                v-if="item.state === 'received'"
+                                v-tooltip="ctrans('Not received')"
+                                icon="fal fa-times"
+                                :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                type="negative"
+                                :loading="isProcessing || changingId === item.id"
+                                class="py-0"
+                                @click="confirmChangeState($event, item, item.checkedRoute, ctrans('Mark :code as not received? The delivery closes without it once everything else is booked in.', { code: item.code }), ctrans('Not received'), { sko_quantity_checked: 0 })"
+                            />
                         </div>
                     </template>
                 </NumberWithButtonSave>
             </div>
-            <span v-else>{{ formatQuantity(Number(item.unit_quantity_checked)) }}</span>
+            <span v-else>{{ formatQuantity(Number(item.sko_quantity_checked)) }}</span>
         </template>
 
         <template #cell(sowings)="{ item }">
@@ -624,16 +757,30 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     />
                     <span v-else class="text-red-500 italic text-xs">{{ ctrans('No location yet') }}</span>
                     <Button
-                        v-tooltip="ctrans('Choose another location')"
+                        v-tooltip="ctrans('Book in to any location in the warehouse')"
+                        :label="item.locations?.length || selectedOtherLocation[item.id] ? ctrans('Other location') : ctrans('Choose location')"
                         icon="fal fa-inventory"
-                        type="tertiary"
+                        :type="item.locations?.length || selectedOtherLocation[item.id] ? 'tertiary' : 'secondary'"
                         size="xs"
                         @click="() => { isModalLocation = true; selectedItemValue = item }"
                     />
                 </div>
+                <label
+                    v-if="!item.has_picking_location && (item.locations?.length || selectedOtherLocation[item.id])"
+                    class="flex items-center gap-1 cursor-pointer select-none text-xs text-amber-700"
+                    v-tooltip="ctrans('This SKO has no picking location yet')"
+                >
+                    <input
+                        :checked="isSetAsPickingLocation(item)"
+                        @change="(event) => setAsPickingLocationChoice[item.id] = (event.target as HTMLInputElement).checked"
+                        type="checkbox"
+                        class="rounded border-gray-300"
+                    />
+                    {{ ctrans('Set as picking location') }}
+                </label>
             </div>
-            <span v-else-if="Number(item.unit_quantity_placed) > 0" class="text-green-500">
-                {{ formatQuantity(Number(item.unit_quantity_placed)) }}
+            <span v-else-if="Number(item.sko_quantity_placed) > 0" class="text-green-500">
+                {{ formatQuantity(Number(item.sko_quantity_placed)) }}
             </span>
             <span v-else>
             </span>
@@ -647,8 +794,8 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
-        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
-        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+        :contentStyle="{ overflow: 'visible' }"
+        :header="ctrans('Where to put :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
     >
         <SelectPickingLocation
             v-if="selectedItemValue?.locations?.length"
@@ -658,7 +805,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             :ignoreNoQty="true"
         />
         <div v-if="selectedItemValue?.searchLocationsRoute" class="mt-4">
-            <div class="text-sm text-gray-500 mb-1">{{ ctrans('Or book in to any other location in the warehouse') }}</div>
+            <div class="text-sm text-gray-700 mb-1">{{ selectedItemValue?.locations?.length ? ctrans('Or book in to any other location in the warehouse') : ctrans('Book in to any location in the warehouse') }}</div>
             <PureMultiselectInfiniteScroll
                 :key="`other-location-${selectedItemValue?.id}`"
                 :modelValue="selectedOtherLocation[selectedItemValue?.id]?.id ?? null"

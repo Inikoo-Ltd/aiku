@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\UploadsResource;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class IndexRetinaRecentCustomerSalesChannelPortfolioUploads extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

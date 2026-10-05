@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Redirects;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -44,6 +45,7 @@ class RedirectShopInShopFromDashboard extends OrgAction
             [
                 $shop->organisation->slug,
                 $shop->slug,
+                'section' => ShopDashboardSectionsEnum::TARGET->value,
             ]
         );
     }

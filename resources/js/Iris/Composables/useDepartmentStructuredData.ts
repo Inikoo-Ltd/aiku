@@ -1,4 +1,5 @@
 import {
+    CATEGORY_ITEM_LIST_SCRIPT_KEY,
     getEntityImageUrls,
     injectStructuredDataScript,
     isFilledValue,
@@ -163,7 +164,6 @@ export const buildDepartmentStructuredData = (
             (node) => node?.["@type"] === "ItemList" && node?.["@id"] === itemListNode["@id"]
         )
     }
-// console.log('ereeeeeeeeeee', structuredData)
     return structuredData
 }
 
@@ -174,7 +174,7 @@ export const useDepartmentStructuredData = () => {
         const structuredData = buildDepartmentStructuredData(options)
         if (!structuredData) return null
 
-        return injectStructuredDataScript(structuredData)
+        return injectStructuredDataScript(structuredData, CATEGORY_ITEM_LIST_SCRIPT_KEY)
     }
 
     return {

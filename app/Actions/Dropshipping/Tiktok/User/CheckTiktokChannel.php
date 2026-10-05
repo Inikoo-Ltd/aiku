@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\User;
 
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -15,10 +16,12 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckTiktokChannel
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use asAction;
     use WithActionUpdate;
 
@@ -70,8 +73,10 @@ class CheckTiktokChannel
         return 'tiktok:check {customerSalesChannel}';
     }
 
-    public function asController(TiktokUser $tiktokUser): CustomerSalesChannel
+    public function asController(TiktokUser $tiktokUser, ActionRequest $request): CustomerSalesChannel
     {
+        abort_unless($this->authorize($request), 403);
+
         return $this->handle($tiktokUser);
     }
 

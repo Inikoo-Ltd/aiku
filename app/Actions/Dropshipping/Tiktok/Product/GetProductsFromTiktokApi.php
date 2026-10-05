@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
@@ -21,11 +22,13 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetProductsFromTiktokApi extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -98,8 +101,10 @@ class GetProductsFromTiktokApi extends OrgAction
         $this->handle($tiktokUser);
     }
 
-    public function asController(TiktokUser $tiktokUser): void
+    public function asController(TiktokUser $tiktokUser, ActionRequest $request): void
     {
+        abort_unless($this->authorize($request), 403);
+
         $this->handle($tiktokUser);
     }
 }

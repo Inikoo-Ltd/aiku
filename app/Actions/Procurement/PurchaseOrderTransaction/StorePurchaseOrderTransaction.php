@@ -8,6 +8,8 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
+use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -17,11 +19,17 @@ use App\Actions\Traits\WithStoreProcurementOrderItem;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\HistoricSupplierProduct;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,6 +41,11 @@ class StorePurchaseOrderTransaction extends OrgAction
 
     private OrgStock $orgStock;
 
+    /**
+     * Set when adding many lines at once: the caller totals and hydrates the order once at the end.
+     */
+    public bool $batched = false;
+
     public function handle(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
     {
         $modelData = $this->prepareProcurementOrderItem($purchaseOrder, $historicSupplierProduct, $orgStock, $modelData);
@@ -40,8 +53,10 @@ class StorePurchaseOrderTransaction extends OrgAction
         /** @var PurchaseOrderTransaction $purchaseOrderTransaction */
         $purchaseOrderTransaction = $purchaseOrder->purchaseOrderTransactions()->create($modelData);
 
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
-        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
+        if (!$this->batched) {
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+            PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->delay($this->hydratorsDelay);
+        }
 
         return $purchaseOrderTransaction;
     }
@@ -69,7 +84,7 @@ class StorePurchaseOrderTransaction extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->strict) {
+        if (!$this->strict || !isset($this->orgStock)) {
             return;
         }
 
@@ -92,10 +107,136 @@ class StorePurchaseOrderTransaction extends OrgAction
         return $this->handle($purchaseOrder, $historicSupplierProduct, $orgStock, $this->validatedData);
     }
 
-    public function asController(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, ActionRequest $request): void
+    public function asController(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): void
     {
-        $this->orgStock = $orgStock;
         $this->initialisation($purchaseOrder->organisation, $request);
-        $this->handle($purchaseOrder, $historicSupplierProduct, $orgStock, $this->validatedData);
+
+        $this->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, $this->validatedData);
     }
+
+    public function inPartnerPurchaseOrder(PurchaseOrder $purchaseOrder, OrgStock $orgStock, ActionRequest $request): void
+    {
+        $this->initialisation($purchaseOrder->organisation, $request);
+
+        $this->addPartnerOrgStock($purchaseOrder, $orgStock, $this->validatedData);
+    }
+
+    /**
+     * A partner purchase order is priced at what the partner sells the SKO for; the invoice the
+     * partner sends is what costs the delivery in the end.
+     *
+     * @param  array<string, mixed>  $modelData
+     * @throws ValidationException
+     */
+    public function addPartnerOrgStock(PurchaseOrder $purchaseOrder, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
+    {
+        return DB::transaction(function () use ($purchaseOrder, $orgStock, $modelData) {
+            $fail = fn (string $message) => throw ValidationException::withMessages(['org_stock' => $message]);
+
+            if (!$purchaseOrder->parent instanceof OrgPartner) {
+                $fail(__('Only a purchase order to a partner takes SKOs directly'));
+            }
+            if ($purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+                $fail(__('Products can only be added while the purchase order is in process'));
+            }
+            if ($orgStock->organisation_id !== $purchaseOrder->organisation_id) {
+                $fail(__('This SKO belongs to another organisation'));
+            }
+            if (in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {
+                $fail(__('SKO :code is :state and cannot be ordered', ['code' => $orgStock->code, 'state' => $orgStock->state->labels()[$orgStock->state->value]]));
+            }
+            if ($purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $orgStock->id)->exists()) {
+                $fail(__(':code is already on this purchase order, change its quantity instead', ['code' => $orgStock->code]));
+            }
+
+            $product   = GetPartnerSellingProduct::run($purchaseOrder->parent, $orgStock->stock_id);
+            $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
+            if ($unitPrice === null) {
+                $fail(__(':partner does not sell :code', ['partner' => $purchaseOrder->parent->partner->name, 'code' => $orgStock->code]));
+            }
+
+            return $this->handle($purchaseOrder, null, $orgStock, array_merge($modelData, [
+                'unit_cost'  => round($unitPrice, 6),
+                'net_amount' => round($unitPrice * (float) $modelData['quantity_ordered'], 2),
+            ]));
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $modelData
+     * @throws ValidationException
+     */
+    public function addOrgSupplierProduct(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct, array $modelData): PurchaseOrderTransaction
+    {
+        return DB::transaction(function () use ($purchaseOrder, $orgSupplierProduct, $modelData) {
+            $this->ensureCanBeAdded($purchaseOrder, $orgSupplierProduct);
+            $orgStock = $this->resolveOrgStock($purchaseOrder, $orgSupplierProduct);
+
+            return $this->handle(
+                $purchaseOrder,
+                $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+                $orgStock,
+                array_merge($modelData, ['org_supplier_product_id' => $orgSupplierProduct->id])
+            );
+        });
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function ensureCanBeAdded(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct): void
+    {
+        $fail = fn (string $message) => throw ValidationException::withMessages(['org_supplier_product' => $message]);
+
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+            $fail(__('Products can only be added while the purchase order is in process'));
+        }
+
+        if ($orgSupplierProduct->organisation_id !== $purchaseOrder->organisation_id) {
+            $fail(__('This product is not supplied to this organisation'));
+        }
+
+        $belongsToParent = match ($purchaseOrder->parent_type) {
+            'OrgSupplier' => $orgSupplierProduct->org_supplier_id === $purchaseOrder->parent_id,
+            'OrgAgent'    => $orgSupplierProduct->org_agent_id === $purchaseOrder->parent_id,
+            default       => true,
+        };
+        if (!$belongsToParent) {
+            $fail(__('This product is not supplied by :parent', ['parent' => $purchaseOrder->parent_name]));
+        }
+
+        if ($orgSupplierProduct->state !== OrgSupplierProductStateEnum::ACTIVE->value) {
+            $fail(__(':code is not active for this supplier', ['code' => $orgSupplierProduct->supplierProduct->code]));
+        }
+
+        if (!$orgSupplierProduct->supplierProduct->historicSupplierProduct) {
+            $fail(__(':code has no price history, save the supplier product again', ['code' => $orgSupplierProduct->supplierProduct->code]));
+        }
+
+        if ($purchaseOrder->purchaseOrderTransactions()->where('org_supplier_product_id', $orgSupplierProduct->id)->exists()) {
+            $fail(__(':code is already on this purchase order, change its quantity instead', ['code' => $orgSupplierProduct->supplierProduct->code]));
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function resolveOrgStock(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct): OrgStock
+    {
+        $orgStock = ResolveOrgStockForSupplierProduct::run($purchaseOrder->organisation, $orgSupplierProduct->supplierProduct);
+
+        if (!$orgStock) {
+            throw ValidationException::withMessages(['org_supplier_product' => __(':code cannot be ordered: its SKO is discontinued, or it is not linked to any SKO', ['code' => $orgSupplierProduct->supplierProduct->code])]);
+        }
+
+        if (in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {
+            throw ValidationException::withMessages(['org_stock' => __('SKO :code is :state and cannot be ordered', [
+                'code'  => $orgStock->code,
+                'state' => $orgStock->state->labels()[$orgStock->state->value],
+            ])]);
+        }
+
+        return $orgStock;
+    }
+
 }

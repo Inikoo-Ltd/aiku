@@ -8,10 +8,12 @@
 
 namespace App\Actions\Billables\Charge;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCharges;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -33,6 +35,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCharge extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithNoStrictRules;
 
     /**
@@ -72,7 +75,9 @@ class StoreCharge extends OrgAction
             ChargeTypeEnum::PREMIUM,
             ChargeTypeEnum::PREMIUM->value,
             ChargeTypeEnum::INSURANCE,
-            ChargeTypeEnum::INSURANCE->value
+            ChargeTypeEnum::INSURANCE->value,
+            ChargeTypeEnum::GIFT_MESSAGE,
+            ChargeTypeEnum::GIFT_MESSAGE->value
         ])) {
             data_set($modelData, 'trigger', ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
         } elseif (in_array($type, [
@@ -140,6 +145,7 @@ class StoreCharge extends OrgAction
         ShopHydrateCharges::dispatch($shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCharges::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCharges::dispatch($shop->group)->delay($this->hydratorsDelay);
+        PurgeIrisDocsFromVarnish::forShop($shop);
 
         return $charge;
     }

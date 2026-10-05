@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -25,6 +25,8 @@ interface CostRow {
     amount: number | string | null
     received_at: string | null
     is_na: boolean
+    currency_id: number | null
+    exchange: number | string | null
     updateRoute: routeType | null
     deleteRoute: routeType | null
 }
@@ -39,7 +41,16 @@ interface AvailableDeposit {
 const props = defineProps<{
     costing: {
         is_costed: boolean
+        is_partner: boolean
+        reopened: { at: string, by: string | null, reason: string } | null
+        unbalanced: Record<string, { allocated: number, amount: number }>
         currency: string | null
+        currency_id: number | null
+        currencies: { id: number, code: string }[]
+        org_currency: string
+        org_currency_id: number
+        org_exchange: number | string | null
+        updateRoute: routeType
         checklist: CostRow[]
         agent_invoice_missing: boolean
         storeCostRoute: routeType
@@ -51,8 +62,17 @@ const props = defineProps<{
             available: AvailableDeposit[]
             applyRoute: routeType
         }
+        partner_invoice: {
+            reference: string
+            net_amount: number
+            refunds: { reference: string, date: string, net_amount: number }[]
+            refunded: number
+            missing_amount: number
+            to_refund: number
+        } | null
     }
     canEdit: boolean
+    canEditPayments: boolean
 }>()
 
 const selectedDepositId = ref<number | null>(null)
@@ -70,7 +90,7 @@ const applyDeposit = () => {
 
 const unapplyDeposit = (application: { deleteRoute: routeType | null }) => {
     if (!application.deleteRoute) return
-    if (!window.confirm(trans("Remove this deposit application? This is audited and visible to org staff and the agent."))) return
+    if (!window.confirm(ctrans("Remove this deposit application? This is audited and visible to org staff and the agent."))) return
 
     router.delete(route(application.deleteRoute.name, application.deleteRoute.parameters), { preserveScroll: true, onError })
 }
@@ -86,10 +106,10 @@ function rowKey(row: CostRow) {
 }
 
 const onError = () => {
-    notify({ title: trans("Something went wrong"), text: trans("Failed to save the cost"), type: "error" })
+    notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to save the cost"), type: "error" })
 }
 
-const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean }) => {
+const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean, currency_id?: number, exchange?: string }) => {
     const data: { [key: string]: string | number | boolean | null } = {}
 
     if ("amount" in payload) {
@@ -100,6 +120,12 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
     }
     if ("is_na" in payload) {
         data.is_na = payload.is_na
+    }
+    if ("currency_id" in payload) {
+        data.currency_id = payload.currency_id
+    }
+    if ("exchange" in payload) {
+        data.exchange = payload.exchange ? Number(payload.exchange) : null
     }
 
     const key = rowKey(row)
@@ -117,8 +143,20 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
     }
 }
 
+const deliveryPerOrg = computed(() => Number(props.costing.org_exchange) > 0 ? Number((1 / Number(props.costing.org_exchange)).toFixed(6)) : null)
+
+const saveOrgExchange = (value: string) => {
+    if (!value || Number(value) <= 0) return
+
+    router.patch(
+        route(props.costing.updateRoute.name, props.costing.updateRoute.parameters),
+        { org_exchange: 1 / Number(value) },
+        { preserveScroll: true, onError }
+    )
+}
+
 const addExtra = () => {
-    const label = window.prompt(trans("Extra expense description (e.g. fine, customs storage)"))
+    const label = window.prompt(ctrans("Extra expense description (e.g. fine, customs storage)"))
     if (!label) return
 
     router.post(
@@ -144,118 +182,190 @@ const removeExtra = (row: CostRow) => {
                 fixed-width
                 aria-hidden="true"
             />
-            <span class="font-medium">{{ trans("Costing") }}</span>
-            <span v-if="costing.is_costed" class="text-sm text-green-600">{{ trans("Done") }}</span>
-            <span v-else-if="costing.agent_invoice_missing" class="flex items-center gap-1 text-sm text-orange-500">
+            <span class="font-medium">{{ ctrans("Costing") }}</span>
+            <span v-if="costing.is_costed" class="text-sm text-green-600">{{ ctrans("Done") }}</span>
+            <span v-else-if="costing.reopened" class="flex items-center gap-1 text-sm text-orange-600">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                {{ trans("Agent invoice not received") }}
+                {{ ctrans("Costing being updated by :name: :reason", { name: costing.reopened.by ?? "", reason: costing.reopened.reason }) }}
             </span>
+            <span v-else-if="!costing.is_partner && costing.agent_invoice_missing" class="flex items-center gap-1 text-sm text-orange-500">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                {{ ctrans("Agent invoice not received") }}
+            </span>
+            <span v-if="costing.is_partner" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
         </div>
 
-        <div class="grid gap-1 text-sm">
-            <div
-                v-for="row in costing.checklist"
-                :key="rowKey(row)"
-                class="flex items-center gap-3"
-                :class="row.is_na ? 'text-gray-400' : ''"
+        <div v-if="costing.partner_invoice" class="mb-3 grid gap-1 text-sm">
+            <div class="flex gap-3">
+                <span class="w-40 shrink-0">{{ ctrans("Partner invoice :reference", { reference: costing.partner_invoice.reference }) }}</span>
+                <span>{{ locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.net_amount) }}</span>
+            </div>
+            <div v-for="refund in costing.partner_invoice.refunds" :key="refund.reference" class="flex gap-3 text-green-700">
+                <span class="w-40 shrink-0">{{ ctrans("Refund :reference", { reference: refund.reference }) }}</span>
+                <span>-{{ locale.currencyFormat(costing.currency ?? "", refund.net_amount) }}</span>
+            </div>
+            <div v-if="costing.partner_invoice.missing_amount > 0" class="flex gap-3">
+                <span class="w-40 shrink-0">{{ ctrans("Not received") }}</span>
+                <span>{{ locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.missing_amount) }}</span>
+            </div>
+            <div v-if="costing.partner_invoice.to_refund > 0" class="flex items-center gap-1 text-orange-500">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                {{ ctrans("Still to be refunded by the partner: :amount", { amount: String(locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.to_refund)) }) }}
+            </div>
+            <div v-else-if="costing.partner_invoice.missing_amount > 0" class="flex items-center gap-1 text-green-700">
+                <FontAwesomeIcon icon="fas fa-check-circle" fixed-width aria-hidden="true" />
+                {{ ctrans("Refunded by the partner") }}
+            </div>
+        </div>
+
+        <div v-for="(totals, field) in costing.unbalanced" :key="field" class="mb-2 flex items-center gap-1 text-sm text-red-600">
+            <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+            {{ ctrans("The lines add up to :allocated of :field, the cost is :amount. Change the lines until they match.", { allocated: String(totals.allocated), field: String(field).replace("cost_", ""), amount: String(totals.amount) }) }}
+        </div>
+
+        <template v-if="!costing.is_partner">
+            <label v-if="costing.org_currency !== costing.currency" class="mb-2 flex items-center gap-2 text-sm">
+                <span class="w-40 shrink-0">{{ ctrans("Invoice exchange rate") }}</span>
+                1 {{ costing.org_currency }} =
+                <input
+                    :value="deliveryPerOrg"
+                    type="number"
+                    min="0"
+                    step="0.000001"
+                    class="w-32 h-7 rounded border-gray-300 text-sm disabled:bg-gray-100"
+                    :disabled="!canEdit"
+                    @change="saveOrgExchange(($event.target as HTMLInputElement).value)"
+                />
+                {{ costing.currency }}
+            </label>
+
+            <div class="grid gap-1 text-sm">
+                <div
+                    v-for="row in costing.checklist"
+                    :key="rowKey(row)"
+                    class="flex items-center gap-3"
+                    :class="row.is_na ? 'text-gray-400' : ''"
+                >
+                    <label class="flex items-center gap-2 w-40 shrink-0">
+                        <input
+                            type="checkbox"
+                            :checked="!!row.received_at"
+                            :disabled="!canEdit || row.is_na || loading === rowKey(row)"
+                            @change="save(row, { received: ($event.target as HTMLInputElement).checked })"
+                        />
+                        <span :class="row.received_at ? '' : 'italic'">{{ row.label }}</span>
+                    </label>
+
+                    <div class="flex items-center gap-1">
+                        <input
+                            v-model="drafts[rowKey(row)]"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="w-32 h-7 rounded border-gray-300 text-sm disabled:bg-gray-100"
+                            :disabled="!canEdit || row.is_na"
+                            @blur="drafts[rowKey(row)] !== (row.amount == null ? '' : String(row.amount)) && save(row, { amount: drafts[rowKey(row)] })"
+                        />
+                        <span v-if="row.type === 'agent_invoice'" class="text-gray-400">{{ costing.currency }}</span>
+                        <select
+                            v-else
+                            :value="row.currency_id ?? costing.currency_id"
+                            class="h-7 py-0 rounded border-gray-300 text-sm disabled:bg-gray-100"
+                            :disabled="!canEdit || row.is_na"
+                            @change="save(row, { currency_id: Number(($event.target as HTMLSelectElement).value), amount: drafts[rowKey(row)] })"
+                        >
+                            <option v-for="currency in costing.currencies" :key="currency.id" :value="currency.id">{{ currency.code }}</option>
+                        </select>
+                    </div>
+
+                    <label v-if="row.currency_id && row.currency_id !== costing.currency_id && row.currency_id !== costing.org_currency_id" class="flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans("Rate to :currency", { currency: costing.currency ?? "" }) }}
+                        <input
+                            :value="row.exchange"
+                            type="number"
+                            min="0"
+                            step="0.000001"
+                            class="w-24 h-7 rounded border-gray-300 text-xs disabled:bg-gray-100"
+                            :disabled="!canEdit || row.is_na"
+                            @change="save(row, { exchange: ($event.target as HTMLInputElement).value })"
+                        />
+                    </label>
+
+                    <label v-if="row.type !== 'agent_invoice'" class="flex items-center gap-1 text-xs">
+                        <input
+                            type="checkbox"
+                            :checked="row.is_na"
+                            :disabled="!canEdit"
+                            @change="save(row, { is_na: ($event.target as HTMLInputElement).checked })"
+                        />
+                        {{ ctrans("N/A") }}
+                    </label>
+
+                    <button
+                        v-if="canEdit && row.deleteRoute"
+                        type="button"
+                        class="text-gray-400 hover:text-red-500"
+                        @click="removeExtra(row)"
+                    >
+                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+
+            <button
+                v-if="canEdit"
+                type="button"
+                class="mt-2 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                @click="addExtra"
             >
-                <label class="flex items-center gap-2 w-40 shrink-0">
-                    <input
-                        type="checkbox"
-                        :checked="!!row.received_at"
-                        :disabled="!canEdit || row.is_na || loading === rowKey(row)"
-                        @change="save(row, { received: ($event.target as HTMLInputElement).checked })"
-                    />
-                    <span :class="row.received_at ? '' : 'italic'">{{ row.label }}</span>
-                </label>
+                <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                {{ ctrans("Add extra expense") }}
+            </button>
 
-                <div class="flex items-center gap-1">
-                    <input
-                        v-model="drafts[rowKey(row)]"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="w-32 h-7 rounded border-gray-300 text-sm disabled:bg-gray-100"
-                        :disabled="!canEdit || row.is_na"
-                        @blur="drafts[rowKey(row)] !== (row.amount == null ? '' : String(row.amount)) && save(row, { amount: drafts[rowKey(row)] })"
-                    />
-                    <span class="text-gray-400">{{ costing.currency }}</span>
+            <div class="mt-4 pt-3 border-t border-gray-200 text-sm">
+                <div class="font-medium mb-1">{{ ctrans("Settlement") }}</div>
+                <div v-for="application in costing.deposits.applied" :key="application.id" class="flex items-center gap-3">
+                    <span>{{ application.reference || application.id }}</span>
+                    <span>{{ application.amount }} {{ costing.currency }}</span>
+                    <button
+                        v-if="canEditPayments && application.deleteRoute"
+                        type="button"
+                        class="text-gray-400 hover:text-red-500"
+                        :title="ctrans('Un-apply deposit (audited)')"
+                        @click="unapplyDeposit(application)"
+                    >
+                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                    </button>
                 </div>
 
-                <label v-if="row.type !== 'agent_invoice'" class="flex items-center gap-1 text-xs">
-                    <input
-                        type="checkbox"
-                        :checked="row.is_na"
-                        :disabled="!canEdit"
-                        @change="save(row, { is_na: ($event.target as HTMLInputElement).checked })"
-                    />
-                    {{ trans("N/A") }}
-                </label>
-
-                <button
-                    v-if="canEdit && row.deleteRoute"
-                    type="button"
-                    class="text-gray-400 hover:text-red-500"
-                    @click="removeExtra(row)"
-                >
-                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-        </div>
-
-        <button
-            v-if="canEdit"
-            type="button"
-            class="mt-2 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
-            @click="addExtra"
-        >
-            <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-            {{ trans("Add extra expense") }}
-        </button>
-
-        <div class="mt-4 pt-3 border-t border-gray-200 text-sm">
-            <div class="font-medium mb-1">{{ trans("Settlement") }}</div>
-            <div v-for="application in costing.deposits.applied" :key="application.id" class="flex items-center gap-3">
-                <span>{{ application.reference || application.id }}</span>
-                <span>{{ application.amount }} {{ costing.currency }}</span>
-                <button
-                    v-if="canEdit && application.deleteRoute"
-                    type="button"
-                    class="text-gray-400 hover:text-red-500"
-                    :title="trans('Un-apply deposit (audited)')"
-                    @click="unapplyDeposit(application)"
-                >
-                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-
-            <div class="mt-1 grid gap-1">
-                <div class="flex items-center gap-2">
-                    <span class="text-gray-500">{{ trans("Agent invoice") }}</span>
-                    <span>{{ costing.deposits.agent_invoice_amount }} {{ costing.currency }}</span>
+                <div class="mt-1 grid gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-500">{{ ctrans("Agent invoice") }}</span>
+                        <span>{{ costing.deposits.agent_invoice_amount }} {{ costing.currency }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-500">{{ ctrans("Deposits applied") }}</span>
+                        <span>{{ Number(costing.deposits.applied_total) > 0 ? '-' : '' }}{{ costing.deposits.applied_total }} {{ costing.currency }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 font-medium">
+                        <span>{{ ctrans("Balance due") }}</span>
+                        <span>{{ costing.deposits.balance_due }} {{ costing.currency }}</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-gray-500">{{ trans("Deposits applied") }}</span>
-                    <span>{{ Number(costing.deposits.applied_total) > 0 ? '-' : '' }}{{ costing.deposits.applied_total }} {{ costing.currency }}</span>
-                </div>
-                <div class="flex items-center gap-2 font-medium">
-                    <span>{{ trans("Balance due") }}</span>
-                    <span>{{ costing.deposits.balance_due }} {{ costing.currency }}</span>
+
+                <div v-if="canEditPayments && costing.deposits.available.length" class="mt-2 flex items-center gap-2">
+                    <select v-model="selectedDepositId" class="h-7 rounded border-gray-300 text-sm">
+                        <option :value="null">{{ ctrans("Select a paid deposit") }}</option>
+                        <option v-for="deposit in costing.deposits.available" :key="deposit.id" :value="deposit.id">
+                            {{ deposit.reference || deposit.id }} ({{ deposit.unapplied_amount }} {{ deposit.currency_code }} {{ ctrans("unapplied") }})
+                        </option>
+                    </select>
+                    <input v-model="applyAmount" type="number" min="0" step="0.01" class="w-28 h-7 rounded border-gray-300 text-sm" :placeholder="ctrans('Amount')" />
+                    <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="applyDeposit">
+                        {{ ctrans("Apply deposit") }}
+                    </button>
                 </div>
             </div>
-
-            <div v-if="canEdit && costing.deposits.available.length" class="mt-2 flex items-center gap-2">
-                <select v-model="selectedDepositId" class="h-7 rounded border-gray-300 text-sm">
-                    <option :value="null">{{ trans("Select a paid deposit") }}</option>
-                    <option v-for="deposit in costing.deposits.available" :key="deposit.id" :value="deposit.id">
-                        {{ deposit.reference || deposit.id }} ({{ deposit.unapplied_amount }} {{ deposit.currency_code }} {{ trans("unapplied") }})
-                    </option>
-                </select>
-                <input v-model="applyAmount" type="number" min="0" step="0.01" class="w-28 h-7 rounded border-gray-300 text-sm" :placeholder="trans('Amount')" />
-                <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="applyDeposit">
-                    {{ trans("Apply deposit") }}
-                </button>
-            </div>
-        </div>
+        </template>
     </div>
 </template>

@@ -6,7 +6,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Select from "primevue/select"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -151,13 +151,13 @@ const yearOptions = computed(() => {
 })
 
 const weekdayLabels = [
-	trans("Mo"),
-	trans("Tu"),
-	trans("We"),
-	trans("Th"),
-	trans("Fr"),
-	trans("Sa"),
-	trans("Su"),
+	ctrans("Mo"),
+	ctrans("Tu"),
+	ctrans("We"),
+	ctrans("Th"),
+	ctrans("Fr"),
+	ctrans("Sa"),
+	ctrans("Su"),
 ]
 
 const parseDateKey = (value: string): Date => {
@@ -217,7 +217,7 @@ const displayPeriodLabel = computed(() => {
 	}
 
 	if (visibleWeeks.value.length === 0) {
-		return trans("Week")
+		return ctrans("Week")
 	}
 
 	const week = visibleWeeks.value[0]
@@ -647,7 +647,7 @@ const submitExport = () => {
 			<Button
 				type="secondary"
 				:icon="faDownload"
-				:label="trans('Export')"
+				:label="ctrans('Export')"
 				@click="openExportModal" />
 		</template>
 	</PageHeading>
@@ -668,7 +668,7 @@ const submitExport = () => {
 						v-model="searchQuery"
 						@input="debouncedSearch"
 						type="text"
-						:placeholder="trans('Search employees...')"
+						:placeholder="ctrans('Search employees...')"
 						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm pl-8 pr-3 py-2" />
 					<div
 						class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
@@ -697,7 +697,7 @@ const submitExport = () => {
 								: 'bg-white text-gray-700 hover:bg-gray-50'
 						"
 						@click="changeView('month')">
-						{{ trans("Month") }}
+						{{ ctrans("Month") }}
 					</button>
 					<button
 						type="button"
@@ -708,7 +708,7 @@ const submitExport = () => {
 								: 'bg-white text-gray-700 hover:bg-gray-50'
 						"
 						@click="changeView('week')">
-						{{ trans("Week") }}
+						{{ ctrans("Week") }}
 					</button>
 				</div>
 
@@ -716,7 +716,7 @@ const submitExport = () => {
 					v-model="selectedEmployeeId"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
-					<option :value="null">{{ trans("All Employees") }}</option>
+					<option :value="null">{{ ctrans("All Employees") }}</option>
 					<option
 						v-for="employee in employeeOptions"
 						:key="employee.value"
@@ -731,7 +731,7 @@ const submitExport = () => {
 					:options="typeOptions"
 					optionLabel="label"
 					optionValue="value"
-					:placeholder="trans('All Types')"
+					:placeholder="ctrans('All Types')"
 					showClear
 					class="w-full md:w-48" />
 
@@ -739,7 +739,7 @@ const submitExport = () => {
 					v-model="selectedDepartment"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
-					<option :value="null">{{ trans("All Departments") }}</option>
+					<option :value="null">{{ ctrans("All Departments") }}</option>
 					<option v-for="dept in departmentOptions" :key="dept.value" :value="dept.value">
 						{{ dept.label }}
 					</option>
@@ -758,10 +758,10 @@ const submitExport = () => {
 					v-model="selectedSortBy"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
-					<option value="name">{{ trans("Name") }}</option>
-					<option value="last_name">{{ trans("Last Name") }}</option>
-					<option value="first_name">{{ trans("First Name") }}</option>
-					<option value="department">{{ trans("Department") }}</option>
+					<option value="name">{{ ctrans("Name") }}</option>
+					<option value="last_name">{{ ctrans("Last Name") }}</option>
+					<option value="first_name">{{ ctrans("First Name") }}</option>
+					<option value="department">{{ ctrans("Department") }}</option>
 				</select>
 
 				<select
@@ -781,7 +781,7 @@ const submitExport = () => {
 					class="grid grid-cols-[12rem_minmax(0,1fr)] border border-gray-200 rounded-t-lg overflow-hidden">
 					<div
 						class="bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 border-r border-gray-200">
-						{{ trans("Employee") }}
+						{{ ctrans("Employee") }}
 					</div>
 					<div class="grid grid-cols-7 bg-gray-50">
 						<div
@@ -802,7 +802,7 @@ const submitExport = () => {
 				<div
 					v-if="employeeLaneData.length === 0"
 					class="border-x border-b border-gray-200 p-8 text-center text-gray-500 rounded-b-lg">
-					{{ trans("No employees found.") }}
+					{{ ctrans("No employees found.") }}
 				</div>
 
 				<div
@@ -902,11 +902,11 @@ const submitExport = () => {
 		</div>
 	</div>
 
-	<Modal :show="showModal" @close="closeModal">
+	<Modal :isOpen="showModal" @onClose="closeModal">
 		<div class="p-6">
 			<div class="flex items-center justify-between mb-4">
 				<h3 class="text-lg font-medium text-gray-900">
-					{{ trans("Leave Details") }}
+					{{ ctrans("Leave Details") }}
 				</h3>
 				<button @click="closeModal" class="text-gray-400 hover:text-gray-500">
 					<span class="sr-only">Close</span>
@@ -924,7 +924,7 @@ const submitExport = () => {
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Employee")
+							ctrans("Employee")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ selectedLeave.employee_name }}
@@ -932,7 +932,7 @@ const submitExport = () => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Type")
+							ctrans("Type")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ formatTypeLabel(selectedLeave.type_label) }}
@@ -940,27 +940,27 @@ const submitExport = () => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Start Date")
+							ctrans("Start Date")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.start_date }}</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("End Date")
+							ctrans("End Date")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.end_date }}</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Duration")
+							ctrans("Duration")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
-							{{ selectedLeave.duration_days }} {{ trans("days") }}
+							{{ selectedLeave.duration_days }} {{ ctrans("days") }}
 						</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Status")
+							ctrans("Status")
 						}}</label>
 						<div class="mt-1">
 							<span
@@ -980,7 +980,7 @@ const submitExport = () => {
 
 				<div v-if="selectedLeave.reason">
 					<label class="block text-sm font-medium text-gray-500">{{
-						trans("Reason")
+						ctrans("Reason")
 					}}</label>
 					<div
 						class="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md border border-gray-100">
@@ -991,7 +991,7 @@ const submitExport = () => {
 
 			<div class="mt-6 flex justify-end">
 				<Button type="secondary" @click="closeModal">
-					{{ trans("Close") }}
+					{{ ctrans("Close") }}
 				</Button>
 			</div>
 		</div>
@@ -1000,10 +1000,10 @@ const submitExport = () => {
 	<Modal :isOpen="isExportModalOpen" @onClose="closeExportModal" width="w-full max-w-lg">
 		<div class="p-6">
 			<h3 class="text-lg font-semibold text-gray-900 mb-4">
-				{{ trans("Export Leave Reports") }}
+				{{ ctrans("Export Leave Reports") }}
 			</h3>
 			<p class="text-sm text-gray-600 mb-4">
-				{{ trans("Select filters and export format for your leave report.") }}
+				{{ ctrans("Select filters and export format for your leave report.") }}
 			</p>
 			<div v-if="exportError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
 				<p class="text-sm text-red-800">{{ exportMessage }}</p>
@@ -1013,7 +1013,7 @@ const submitExport = () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("From Date")
+							ctrans("From Date")
 						}}</label>
 						<input
 							v-model="exportForm.from"
@@ -1022,7 +1022,7 @@ const submitExport = () => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("To Date")
+							ctrans("To Date")
 						}}</label>
 						<input
 							v-model="exportForm.to"
@@ -1034,27 +1034,27 @@ const submitExport = () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Leave Type")
+							ctrans("Leave Type")
 						}}</label>
 						<Select
 							v-model="exportForm.type"
 							:options="typeOptions"
 							optionLabel="label"
 							optionValue="value"
-							:placeholder="trans('All Types')"
+							:placeholder="ctrans('All Types')"
 							showClear
 							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Status")
+							ctrans("Status")
 						}}</label>
 						<Select
 							v-model="exportForm.status"
 							:options="parsedStatusOptions"
 							optionLabel="label"
 							optionValue="value"
-							:placeholder="trans('All Statuses')"
+							:placeholder="ctrans('All Statuses')"
 							showClear
 							class="w-full" />
 					</div>
@@ -1063,20 +1063,20 @@ const submitExport = () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Department")
+							ctrans("Department")
 						}}</label>
 						<Select
 							v-model="exportForm.department"
 							:options="parsedDepartmentOptions"
 							optionLabel="label"
 							optionValue="value"
-							:placeholder="trans('All Departments')"
+							:placeholder="ctrans('All Departments')"
 							showClear
 							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Format")
+							ctrans("Format")
 						}}</label>
 						<Select
 							v-model="exportForm.format"
@@ -1096,7 +1096,7 @@ const submitExport = () => {
 							type="checkbox"
 							v-model="exportForm.include_summary"
 							class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
-						<span class="text-sm">{{ trans("Include Summary") }}</span>
+						<span class="text-sm">{{ ctrans("Include Summary") }}</span>
 					</label>
 				</div>
 
@@ -1106,7 +1106,7 @@ const submitExport = () => {
 							type="checkbox"
 							v-model="exportForm.print_view"
 							class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
-						<span class="text-sm">{{ trans("Print View") }}</span>
+						<span class="text-sm">{{ ctrans("Print View") }}</span>
 					</label>
 				</div>
 			</form>

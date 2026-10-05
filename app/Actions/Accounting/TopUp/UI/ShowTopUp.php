@@ -18,10 +18,12 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithAccountingShopAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTopUp extends OrgAction
 {
+    use WithAccountingShopAuthorisation;
     public function handle(TopUp $topUp): TopUp
     {
         return $topUp;

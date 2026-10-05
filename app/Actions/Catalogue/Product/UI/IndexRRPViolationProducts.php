@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -85,6 +86,8 @@ class IndexRRPViolationProducts extends OrgAction
     public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($shop, $modelOperations, $prefix) {
+            $isDropshipping = $shop->type == ShopTypeEnum::DROPSHIPPING;
+
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -111,7 +114,7 @@ class IndexRRPViolationProducts extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: $isDropshipping ? 'rrp' : 'rrp_per_unit', label: $isDropshipping ? __('RRP/outer') : __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 

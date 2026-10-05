@@ -9,6 +9,9 @@
 namespace App\Actions\Tasks;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
+use App\Events\BroadcastStaffTaskChanged;
+use App\Notifications\StaffTaskNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Resources\Tasks\StaffTaskResource;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
@@ -46,8 +49,8 @@ class SyncStaffTaskCollaborators
         $task->collaborators()->attach(collect($addedIds)->mapWithKeys(fn (int $id) => [$id => ['added_by_id' => $actor->id]])->all());
 
         $conversation = $task->conversation;
-        $conversation->participants()->syncWithoutDetaching(array_merge($addedIds, [$actor->id]));
-        $conversation->participants()->detach(array_diff($removedIds, [$task->requester_id, $task->assignee_id, $actor->id]));
+        $conversation->addParticipants(array_merge($addedIds, [$actor->id]));
+        $conversation->removeParticipants(array_values(array_diff($removedIds, [$task->requester_id, $task->assignee_id, $actor->id])));
 
         $names = fn (array $ids) => User::whereIn('id', $ids)->get()->map(fn (User $user) => $user->chatName())->implode(', ');
         $lines = array_filter([
@@ -56,12 +59,34 @@ class SyncStaffTaskCollaborators
         ]);
         SendStaffMessage::run($conversation, $actor, ['body' => implode("\n", $lines)]);
 
+        $newcomers = User::whereIn('id', array_diff($addedIds, [$actor->id]))->get();
+        if ($newcomers->isNotEmpty()) {
+            Notification::send($newcomers, new StaffTaskNotification($task, __('You are working on :reference too', ['reference' => $task->reference]), $task->subject));
+        }
+
+        BroadcastStaffTaskChanged::dispatch($task);
+        SendStaffTaskBadgeUpdateToUsers::run([...$task->involvedUserIds(), ...$removedIds]);
+
         return $task;
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffTask')->group_id === $request->user()->group_id;
+        $task = $request->route('staffTask');
+        $user = $request->user();
+
+        if (!$task->isVisibleTo($user) || !$task->canChangeCollaboratorsBy($user)) {
+            return false;
+        }
+
+        if ($task->canRemoveCollaboratorsBy($user)) {
+            return true;
+        }
+
+        $wantedIds  = collect($request->input('collaborator_ids', []))->map(fn ($id) => (int) $id)->all();
+        $removedIds = $task->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->diff($wantedIds);
+
+        return $removedIds->reject(fn (int $id) => $id === $user->id)->isEmpty();
     }
 
     public function rules(): array

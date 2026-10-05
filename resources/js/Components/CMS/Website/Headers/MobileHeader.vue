@@ -108,7 +108,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                 <!-- Search Bar -->
                 <IrisSearchMobile
-                    v-if="screenType === 'mobile'"
+                    v-if="screenType !== 'desktop'"
                     id="iris_search_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
@@ -119,10 +119,11 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
             <!-- Section: Logo -->
             <div class="xcol-span-2 flex items-center w-full" :class="layout.retina?.type == 'b2b' ? 'justify-start' : 'justify-center'">
-                <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
+                <component :is="LinkIris" :href="'/'" class="block h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         :imgAttributes="{ loading: 'eager', decoding: 'async' }"
-                        class="w-full h-auto object-contain" />
+                        class="w-full h-full"
+                        :style="{ maxWidth: '100%', objectFit: 'contain' }" />
                 </component>
             </div>
 

@@ -45,14 +45,15 @@ class StoreShopifyUser extends RetinaAction
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'username', Str::random(4));
-        data_set($modelData, 'password', Str::random(8));
         data_set($modelData, 'platform_id', $platform->id);
 
 
         return DB::transaction(function () use ($customer, $platform, $modelData) {
             /** @var ShopifyUser $shopifyUser */
-            $shopifyUser = ShopifyUser::whereNull('customer_id')->where('name', Arr::get($modelData, 'name'))->first();
+            $shopifyUser = ShopifyUser::where('name', Arr::get($modelData, 'name'))
+                ->where(fn ($query) => $query->whereNull('customer_id')->orWhere('customer_id', $customer->id))
+                ->orderByRaw('customer_id is null')
+                ->first();
 
 
             if ($shopifyUser) {
@@ -62,6 +63,9 @@ class StoreShopifyUser extends RetinaAction
 
                 $shopifyUser = $this->update($shopifyUser, $modelData);
             } else {
+                data_set($modelData, 'username', Str::random(4));
+                data_set($modelData, 'password', Str::random(8));
+
                 /** @var ShopifyUser $shopifyUser */
                 $shopifyUser = $customer->shopifyUser()->create($modelData);
             }
@@ -109,7 +113,7 @@ class StoreShopifyUser extends RetinaAction
         ]);
 
         if ($wasClosed) {
-            foreach ($customerSalesChannel->portfolios as $portfolio) {
+            foreach ($customerSalesChannel->portfolios()->with(['group', 'organisation', 'shop'])->get() as $portfolio) {
                 UpdatePortfolio::run($portfolio, ['status' => true]);
             }
         }
@@ -137,6 +141,7 @@ class StoreShopifyUser extends RetinaAction
 
         if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
             ->whereNotNull('customer_id')
+            ->where('customer_id', '!=', $this->customer?->id)
             ->exists()) {
             $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
         }
@@ -145,13 +150,6 @@ class StoreShopifyUser extends RetinaAction
         if (!$response->ok()) {
             $validator->errors()->add('name', __('Shopify shop :shop not found', ['shop' => $this->get('name')]));
         }
-    }
-
-    public function jsonResponse(ShopifyUser $shopifyUser): string
-    {
-        return route('pupil.authenticate', [
-            'shop' => $shopifyUser->name
-        ]);
     }
 
     public function rules(): array
@@ -183,16 +181,37 @@ class StoreShopifyUser extends RetinaAction
         $nameInput = trim($nameInput);
 
 
-        $this->set('name', $nameInput);
+        $this->set('name', Str::lower($this->permanentHandle($nameInput)));
     }
 
     /**
-     * @throws \Throwable
+     * Customers type the store name they chose, but Shopify installs the app for the store's
+     * permanent handle (e.g. hekqes-nt). The token then lands on a new row nobody owns and the
+     * channel waits forever, so the handle is asked for before anything is stored.
      */
-    public function asController(ActionRequest $request): ShopifyUser
+    public function permanentHandle(string $name): string
+    {
+        if ($name === '' || !preg_match('/^[a-zA-Z0-9-]+$/', $name)) {
+            return $name;
+        }
+
+        try {
+            $domain = Http::timeout(10)->withOptions(['allow_redirects' => false])->get('https://'.$name.'.'.config('shopify-app.my_shopify_domain').'/meta.json')->json('myshopify_domain');
+        } catch (\Throwable) {
+            return $name;
+        }
+
+        if (!is_string($domain) || !preg_match('/^([a-z0-9-]+)\.myshopify\.com$/', $domain, $matches)) {
+            return $name;
+        }
+
+        return $matches[1];
+    }
+
+    public function asController(ActionRequest $request): string
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $this->validatedData);
+        return ClaimShopifyUser::make()->authenticateUrl($this->customer, Str::lower($this->validatedData['name'].'.'.config('shopify-app.my_shopify_domain')));
     }
 }

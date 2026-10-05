@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Amazon\Product;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\AmazonUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SyncronisePortfoliosToAmazon extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

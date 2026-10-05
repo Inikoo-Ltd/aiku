@@ -17,7 +17,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import WorkshopTab from '@/Components/CMS/Website/Workshop/WorkshopTab.vue'
 
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 
@@ -95,7 +95,6 @@ const setPayloadData = () => {
 const onPublish = () => {
   const action = props.publishRoute[currentTab.value]
   const payload = setPayloadData()
-  console.log(payload)
 
   if (!action || !payload) return
 
@@ -113,11 +112,11 @@ const onPublish = () => {
         loadingPublish.value = false
       },
       onSuccess: () => {
-        notify({ type: 'success',  title: trans('Success'), text: trans('Website section published successfully') })
+        notify({ type: 'success',  title: ctrans('Success'), text: ctrans('Website section published successfully') })
         initSocketListener()
       },
       onError: () => {
-        notify({ type: 'error', title: trans('Error'), text: trans('Failed to publish website section') })
+        notify({ type: 'error', title: ctrans('Error'), text: ctrans('Failed to publish website section') })
       }
     }
   )

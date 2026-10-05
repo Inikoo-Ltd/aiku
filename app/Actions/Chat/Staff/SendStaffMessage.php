@@ -84,7 +84,7 @@ class SendStaffMessage
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffConversation')->canBeAccessedBy($request->user());
+        return $request->route('staffConversation')->canBeWrittenToBy($request->user());
     }
 
     public function rules(): array

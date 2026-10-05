@@ -17,6 +17,7 @@ enum MasterFamilyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE  = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
@@ -24,6 +25,7 @@ enum MasterFamilyTabsEnum: string
 
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
     case HISTORY   = 'history';
+    case ATTACHMENTS = 'attachments';
     case VARIANTS   = 'variants';
 
     public function blueprint(): array
@@ -34,6 +36,10 @@ enum MasterFamilyTabsEnum: string
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
+            MasterFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
+            ],
             // MasterFamilyTabsEnum::FAMILIES => [
             //     'title' => __('Families in shop'),
             //     'icon'  => 'fal fa-store',
@@ -42,6 +48,12 @@ enum MasterFamilyTabsEnum: string
             MasterFamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
+            ],
+            MasterFamilyTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             MasterFamilyTabsEnum::HISTORY => [
                 'title' => __('History'),

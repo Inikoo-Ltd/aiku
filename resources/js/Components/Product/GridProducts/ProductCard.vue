@@ -11,7 +11,7 @@
  */
 
 import {ref, inject, computed} from 'vue'
-import {trans} from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import {aikuLocaleStructure} from '@/Composables/useLocaleStructure'
 import type {Product} from './types'
 import Image from "@common/Components/Image.vue"
@@ -57,14 +57,14 @@ const isInBasket = computed(() => {
 
 const buttonLabel = computed(() => {
     return isInBasket.value 
-        ? trans('Add more') 
-        : trans('Add to basket')
+        ? ctrans('Add more') 
+        : ctrans('Add to basket')
 })
 
 const buttonTooltip = computed(() => {
     return isInBasket.value 
-        ? trans('Add one more to basket (current: :quantity)', { quantity: props.existingTransaction?.quantity_ordered || 0 })
-        : trans('Add to basket')
+        ? ctrans('Add one more to basket (current: :quantity)', { quantity: props.existingTransaction?.quantity_ordered || 0 })
+        : ctrans('Add to basket')
 })
 
 const navigateToProduct = () => {
@@ -94,15 +94,15 @@ const onAddProducts = async (product: Product) => {
                 },
                 onError: (error) => {
                     notify({
-                        title: trans("Something went wrong."),
-                        text: error.products || trans("Failed to add to basket"),
+                        title: ctrans("Something went wrong."),
+                        text: error.products || error.message || ctrans("Failed to add to basket"),
                         type: "error"
                     })
                 },
                 onSuccess: () => {
                     notify({
-                        title: trans("Success!"),
-                        text: trans("Product quantity updated in basket"),
+                        title: ctrans("Success!"),
+                        text: ctrans("Product quantity updated in basket"),
                         type: "success"
                     })
                 },
@@ -127,16 +127,16 @@ const onAddProducts = async (product: Product) => {
                 },
                 onError: (error) => {
                     notify({
-                        title: trans("Something went wrong."),
-                        text: error.products || trans("Failed to add to basket"),
+                        title: ctrans("Something went wrong."),
+                        text: error.products || error.message || ctrans("Failed to add to basket"),
                         type: "error"
                     })
                 },
                 onSuccess: () => {
                     
                     notify({
-                        title: trans("Success!"),
-                        text: trans("Product added to basket"),
+                        title: ctrans("Success!"),
+                        text: ctrans("Product added to basket"),
                         type: "success"
                     })
                 },
@@ -163,16 +163,16 @@ const toggleFavorite = (product: Product) => {
                 onSuccess: () => {
                     product.is_not_favourite = false
                     notify({
-                        title: trans("Added to favourites!"),
-                        text: trans(':product has been added to favorites', { product: product.name}),
+                        title: ctrans("Added to favourites!"),
+                        text: ctrans(':product has been added to favorites', { product: product.name}),
                         type: "success",
                         duration: 3000
                     })
                 },
                 onError: (errors) => {
                     notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to add to favorites"),
+                        title: ctrans("Something went wrong"),
+                        text: ctrans("Failed to add to favorites"),
                         type: "error",
                         duration: 3000
                     })
@@ -196,16 +196,16 @@ const toggleFavorite = (product: Product) => {
                 onSuccess: () => {
                     product.is_not_favourite = true
                     notify({
-                        title: trans("Removed from favorites"),
-                        text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+                        title: ctrans("Removed from favorites"),
+                        text: `${product.name || 'Product'} ${ctrans('has been removed from your favorites')}`,
                         type: "info",
                         duration: 3000
                     })
                 },
                 onError: (errors) => {
                     notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to remove from favorites"),
+                        title: ctrans("Something went wrong"),
+                        text: ctrans("Failed to remove from favorites"),
                         type: "error",
                         duration: 3000
                     })
@@ -248,7 +248,7 @@ const toggleFavorite = (product: Product) => {
             <!-- Placeholder when no image -->
             <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
                 <FontAwesomeIcon icon="fal fa-image" class="text-gray-400 text-3xl" fixed-width :aria-hidden="true" />
-                <span class="sr-only">{{ trans('No image available') }}</span>
+                <span class="sr-only">{{ ctrans('No image available') }}</span>
             </div>
         </div>
 
@@ -256,12 +256,12 @@ const toggleFavorite = (product: Product) => {
         <div class="space-y-1">
             <!-- Product Name -->
             <h3 class="text-base font-medium line-clamp-2 min-h-[2.5rem]"
-                :title="props.product.name || trans('No name')">
+                :title="props.product.name || ctrans('No name')">
                 {{ props.product.name || '-' }}
             </h3>
 
             <!-- Product Code -->
-            <p class="text-xs text-gray-400" :title="`${trans('Code')}: ${product.code}`">
+            <p class="text-xs text-gray-400" :title="`${ctrans('Code')}: ${product.code}`">
                 {{ product.code }}
             </p>
 

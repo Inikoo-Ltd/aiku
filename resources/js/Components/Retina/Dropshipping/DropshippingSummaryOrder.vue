@@ -217,7 +217,7 @@ const onPayWithBalance = () => {
             <div v-if="
                 summary.products.payment.pay_amount > 0
                 && summary.products.payment.pay_amount <= summary?.customer?.balance
-                && props.order?.data?.state === 'submitted'
+                && (props.order?.data?.state === 'submitted' || props.order?.data?.state === 'handling')
                 && (!props.is_forbidden_billing && !props.is_forbidden_delivery)
             " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded px-2">
                 <div class="text-yellow-700">

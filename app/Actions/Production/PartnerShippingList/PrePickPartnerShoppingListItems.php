@@ -29,7 +29,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
+        return $this->organisation->is_manufacturing_hub && $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
             "productions_operations.{$this->production->id}.prepare",
@@ -94,7 +94,13 @@ class PrePickPartnerShoppingListItems extends OrgAction
             }
 
             $remainder = round((float) $item->quantity - $wanted, 3);
-            if ($remainder > 0) {
+            $openSibling = $remainder > 0
+                ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)->where('id', '!=', $item->id)->first()
+                : null;
+
+            if ($openSibling) {
+                $openSibling->increment('quantity', $remainder);
+            } elseif ($remainder > 0) {
                 /* What we cannot cover yet stays on the list as its own line, still waiting. */
                 PartnerShoppingListItem::create([
                     ...$item->only([

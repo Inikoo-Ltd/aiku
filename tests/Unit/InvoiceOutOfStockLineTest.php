@@ -57,6 +57,8 @@ class InvoiceOutOfStockLineTest extends TestCase
         $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '6', 'transaction' => (object)['quantity_ordered' => '6']]));
         $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '1', 'transaction' => (object)['quantity_ordered' => '0']]));
         $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '1', 'transaction' => null]));
+        $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '0.333', 'transaction' => (object)['quantity_ordered' => '0.333333']]));
+        $this->assertEqualsWithDelta(0.333, $this->subject->undeliveredQuantity((object)['quantity' => '0.667', 'transaction' => (object)['quantity_ordered' => '1']]), 0.0001);
     }
 
     public function testDiscountPercentageLabel(): void

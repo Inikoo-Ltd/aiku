@@ -29,7 +29,7 @@ class StaffMessageSent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [];
-        foreach ($this->message->conversation->participants as $participant) {
+        foreach ($this->message->conversation->activeParticipants as $participant) {
             $channels[] = new PrivateChannel('grp.personal.'.$participant->id);
         }
 

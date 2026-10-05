@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\AbandonedCartMailshotsResource;
@@ -31,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAbandonedCartMailshots extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use HasUIMailshots;
 
     public Group|Outbox|PostRoom|Organisation|Shop $parent;

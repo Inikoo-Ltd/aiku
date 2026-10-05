@@ -12,7 +12,7 @@ import {
     faCameraRetro, faClock,
     faCube, faCubes, faQuoteLeft,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
-    faTrashAlt, faSortAmountDown
+    faTrashAlt, faChartLine, faSortAmountDown
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -44,6 +44,7 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 import FamiliesOrder from "@/Components/Catalogue/FamiliesOrder.vue"
 import { Department } from "@/types/department";
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -58,7 +59,7 @@ library.add(
     faDiagramNext,
     faCubes,
     faFolders, faBrowser, faSeedling, faQuoteLeft,
-    faTrashAlt, faSortAmountDown
+    faTrashAlt, faChartLine, faSortAmountDown
 );
 
 
@@ -81,6 +82,8 @@ const props = defineProps<{
     images?:object
     sales?: object
     salesData?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     mini_breadcrumbs?: any[]
     related_product_category? : object
     families_order?: object
@@ -92,7 +95,8 @@ const props = defineProps<{
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
 const component = computed(() => {
     const components: Record<string, any> = {
         showcase: MasterDepartmentShowcase,
@@ -106,6 +110,7 @@ const component = computed(() => {
         images: ImagesManagement,
         content : MasterContentProductCategory,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         related_product_category: RelatedProductCategory,
         families_order: FamiliesOrder,
     };
@@ -115,6 +120,16 @@ const component = computed(() => {
 const currentData = computed(() => {
     return (props as Record<string, any>)[currentTab.value];
 });
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    if (!row.slug || !params.masterDepartment) {
+        return null
+    }
+    return params.masterShop
+        ? route("grp.masters.master_shops.show.master_departments.show.master_families.show", [params.masterShop, params.masterDepartment, row.slug])
+        : route("grp.masters.master_departments.show.master_families.show", [params.masterDepartment, row.slug])
+}
 
 
 function masterDepartmentRoute(department: Department) {
@@ -209,7 +224,7 @@ async function deleteItem() {
         </Breadcrumb>
     </div>
     
-    <component :is="component" :data="currentData" :tab="currentTab" is-master :salesData="salesData"></component>
+    <component :is="component" :data="currentData" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute"></component>
 </template>
 
 <style scoped>

@@ -16,7 +16,9 @@ import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
+import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
 import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -51,13 +53,7 @@ const copyTicketLink = async () => {
     setTimeout(() => (isLinkCopied.value = false), 2000)
 }
 
-const roleClasses: Record<string, string> = {
-    lead_engineer: "bg-teal-100 text-teal-700",
-    engineer: "bg-blue-100 text-blue-700",
-    qa: "bg-purple-100 text-purple-700",
-    staff: "bg-gray-100 text-gray-600",
-    customer: "bg-slate-200 text-slate-700",
-}
+const thread = ref<InstanceType<typeof TicketThread> | null>(null)
 
 const isTicketClosed = computed(() => ["resolved", "cancelled"].includes(displayTicket.value?.status))
 
@@ -71,17 +67,47 @@ const loadControls = async (ticketId: number) => {
     }
 }
 
+const LIVE_RELOAD_DELAY_MS = 800
+
+let stopListeningForChanges: (() => void) | null = null
+
+const listenForChanges = (ticketId: number) => {
+    if (!window.Echo) {
+        return
+    }
+
+    const channelName = `grp.ticket.${ticketId}`
+    let reloadTimer: ReturnType<typeof setTimeout> | undefined
+
+    const onTicketUpdated = () => {
+        clearTimeout(reloadTimer)
+        reloadTimer = setTimeout(() => {
+            if (ticket.value?.id === ticketId) loadControls(ticketId)
+        }, LIVE_RELOAD_DELAY_MS)
+    }
+
+    window.Echo.private(channelName).listen(".ticket-updated", onTicketUpdated)
+
+    stopListeningForChanges = () => {
+        clearTimeout(reloadTimer)
+        window.Echo.private(channelName).stopListening(".ticket-updated", onTicketUpdated)
+    }
+}
+
 watch(
     () => ticket.value?.id,
     (ticketId) => {
         controls.value = null
         stopReloadingAfterSaves?.()
         stopReloadingAfterSaves = null
+        stopListeningForChanges?.()
+        stopListeningForChanges = null
         if (!ticketId) return
         loadControls(ticketId)
         stopReloadingAfterSaves = router.on("success", () => {
             if (ticket.value?.id === ticketId) loadControls(ticketId)
         })
+        listenForChanges(ticketId)
     },
     { immediate: true }
 )
@@ -94,6 +120,7 @@ onMounted(() => desktopQuery?.addEventListener("change", onDesktopQueryChange))
 
 onBeforeUnmount(() => {
     stopReloadingAfterSaves?.()
+    stopListeningForChanges?.()
     desktopQuery?.removeEventListener("change", onDesktopQueryChange)
 })
 
@@ -149,14 +176,20 @@ const close = () => {
                     <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
                         <span class="flex flex-wrap items-center gap-1"
                             >{{ ctrans("Raised") }}: {{ shortDate(displayTicket.created_at) }}
-                            {{ displayTicket.reporter ? "· " + displayTicket.reporter : "" }}
-                            <span
-                                v-for="role in displayTicket.reporter_roles ?? []"
-                                :key="role.key"
-                                class="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                                :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
-                                >{{ role.label }}</span
-                            ></span
+                            <template v-if="displayTicket.reporter">
+                                ·
+                                <TicketUserHoverCard
+                                    :name="displayTicket.reporter"
+                                    :avatar="displayTicket.reporter_avatar ?? null"
+                                    :roles="displayTicket.reporter_roles ?? []"
+                                    :username="displayTicket.reporter_username ?? null"
+                                    :reporterKey="displayTicket.reporter_key ?? null"
+                                    :profileUrl="displayTicket.reporter_profile_url ?? null"
+                                    :canMention="!!thread"
+                                    size="xs"
+                                    class="font-normal"
+                                    @mention="(username) => thread?.mentionInReply(username)" />
+                            </template></span
                         >
                         <span v-if="displayTicket.assignee"
                             >{{ ctrans("Assignee") }}: {{ displayTicket.assignee }}</span
@@ -176,11 +209,14 @@ const close = () => {
                         <span v-if="displayTicket.customer"
                             >{{ ctrans("Customer") }}: {{ displayTicket.customer }}</span
                         >
-                        <span v-if="displayTicket.shop">{{ ctrans("Shop") }}: {{ displayTicket.shop }}</span>
-                    </div>
+                        <span v-if="displayTicket.shop">{{ ctrans("Shop") }}: {{ displayTicket.shop }}</span>                    </div>
                     <template v-if="!isDesktop">
                         <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
-                            <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
+                            <TicketControls v-bind="controls" @updated="loadControls(ticket.id)">
+                                <template #after-qa>
+                                    <TicketPullRequest :ticket="controls.ticket" :routes="controls.routes" :can-edit="controls.can_contribute" compact @updated="loadControls(ticket.id)" />
+                                </template>
+                            </TicketControls>
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
@@ -200,6 +236,7 @@ const close = () => {
                             </div>
                             <div class="mt-2">
                                 <TicketThread
+                                    ref="thread"
                                     :ticket="controls.ticket"
                                     :comments="controls.comments ?? []"
                                     :comment-route="controls.routes.comment"
@@ -214,7 +251,11 @@ const close = () => {
                         </div>
                     </div>
                     <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                        <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
+                        <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)">
+                            <template #after-qa>
+                                <TicketPullRequest :ticket="controls.ticket" :routes="controls.routes" :can-edit="controls.can_contribute" compact @updated="loadControls(ticket.id)" />
+                            </template>
+                        </TicketControls>
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
                     </aside>

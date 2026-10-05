@@ -15,7 +15,7 @@ import { faCube, faStar, faImage } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ImageData } from '@/types/Image'
 library.add(faCube, faStar, faImage)
 
@@ -86,21 +86,19 @@ const onSubmitUpload = async (files: File[]) => {
         emits('onSuccessUpload', response.data);
         uploadProgress.value = null
         if (galleryUploadRef.value) {
-            console.log(galleryUploadRef.value)
             galleryUploadRef.value.fileUploadRef.uploadedFiles = files
             galleryUploadRef.value.fileUploadRef.files = []
         }
         notify({
-            title: trans('Success'),
-            text: trans('New image added'),
+            title: ctrans('Success'),
+            text: ctrans('New image added'),
             type: 'success',
         });
     } catch (error) {
-        console.log(error)
         uploadProgress.value = null
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to add new image'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Failed to add new image'),
             type: 'error',
         });
     } finally {

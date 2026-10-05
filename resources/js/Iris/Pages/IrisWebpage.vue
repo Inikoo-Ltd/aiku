@@ -73,7 +73,7 @@ const checkScreenType = () => {
 
 const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
 
-const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2", "product-3"]
+const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2", "product-3", "product-4"]
 
 const firstProductImage = computed(() => {
     const blocks = Array.isArray(props.web_blocks) ? props.web_blocks : []
@@ -114,7 +114,6 @@ onMounted(() => {
         webBlocks: props.web_blocks,
         currencyCode: layout.iris?.currency?.code,
         websiteName: layout.iris?.website?.name,
-        showPrice: Boolean(layout.iris?.is_logged_in || layout.iris?.show_price),
     })
 
     checkScreenType()

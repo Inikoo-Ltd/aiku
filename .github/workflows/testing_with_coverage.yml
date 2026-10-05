@@ -1,7 +1,7 @@
 name: Nightly Coverage & Bundle Analysis
 on:
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       only:
@@ -12,13 +12,22 @@ on:
 
 env:
   HOME: /home/aiku_test
-  XDEBUG_MODE: coverage
+  REDIS_SOCKET: /home/aiku_test/redis-ci.sock
+  REDIS_DEFAULT_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_HORIZON_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_CACHE_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_SESSIONS_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_DEFAULT_PORT: 0
+  REDIS_HORIZON_PORT: 0
+  REDIS_CACHE_PORT: 0
+  REDIS_SESSONS_PORT: 0
+  XDEBUG_MODE: 'off'
 
 jobs:
   coverage:
     name: Coverage → Codecov 📊
     if: ${{ inputs.only == 'all' || inputs.only == 'coverage' || inputs.only == '' }}
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -45,7 +54,9 @@ jobs:
         run: |
           MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
           if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
-            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            DB_HOST=$(sed -n 's/^DB_HOST=//p' .env.testing)
+            DB_PORT=$(sed -n 's/^DB_PORT=//p' .env.testing)
+            ./generate_testing_db_dumps.sh php8.4 aiku_test "${DB_HOST:-localhost}" "${DB_PORT:-5432}"
             cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/aiku.dump.tmp
             mv ../../../../artifacts/aiku.dump.tmp ../../../../artifacts/aiku.dump
             echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
@@ -54,16 +65,21 @@ jobs:
           fi
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
+      - name: Start private Redis
+        run: redis-server --port 0 --unixsocket "$REDIS_SOCKET" --unixsocketperm 700 --save '' --appendonly no --maxmemory 512mb --daemonize yes --pidfile /home/aiku_test/redis-ci.pid --logfile /home/aiku_test/redis-ci.log
       - name: Run tests with coverage
         run: |
           COVERAGE=""
+          mkdir -p "$RUNNER_TEMP/php-coverage"
+          printf 'extension=pcov.so\npcov.enabled=1\npcov.directory=app\n' > "$RUNNER_TEMP/php-coverage/pcov.ini"
+          export PHP_INI_SCAN_DIR=":$RUNNER_TEMP/php-coverage"
           if php8.4 -m | grep -qiE '^(pcov|xdebug)$'; then
             COVERAGE="--coverage-clover clover.xml"
           else
             echo "::warning::No coverage driver (pcov/xdebug) for php8.4 on this runner, running tests without coverage"
           fi
           sed 's/name="memory_limit" value="5120M"/name="memory_limit" value="-1"/' phpunit.xml > phpunit.coverage.xml
-          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --parallel --processes=8 $COVERAGE --log-junit junit.xml
+          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-4} $COVERAGE --log-junit junit.xml
       - name: Upload coverage to Codecov
         if: ${{ hashFiles('clover.xml') != '' }}
         uses: codecov/codecov-action@v5
@@ -91,10 +107,14 @@ jobs:
           files: junit.xml
           flags: backend
 
+      - name: Stop private Redis
+        if: ${{ always() }}
+        run: redis-cli -s "$REDIS_SOCKET" shutdown nosave || true
+
   bundle-analysis:
     name: Bundle analysis → Codecov 📦
     if: ${{ inputs.only == 'all' || inputs.only == 'bundle' || inputs.only == '' }}
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6

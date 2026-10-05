@@ -4,6 +4,8 @@ namespace App\Services;
 
 use HTMLPurifier;
 use HTMLPurifier_Config;
+use HTMLPurifier_URIScheme;
+use HTMLPurifier_URISchemeRegistry;
 
 class HTMLSanitizer
 {
@@ -78,11 +80,31 @@ class HTMLSanitizer
             // refuses to start when asked to allow them.
         ]);
 
+        // data is how a small inline picture is written into the body; the purifier only lets
+        // through png, gif and jpeg that decode as images. cid is how the mail points at a picture
+        // it carries: kept as written, and turned into an address only when the message is shown,
+        // because where a stored file can be fetched from changes over its life.
         $config->set('URI.AllowedSchemes', [
             'http'   => true,
             'https'  => true,
             'mailto' => true,
+            'data'   => true,
+            'cid'    => true,
         ]);
+        HTMLPurifier_URISchemeRegistry::instance()->register('cid', new class () extends HTMLPurifier_URIScheme {
+            public $browsable = true;
+
+            public $may_omit_host = true;
+
+            public function doValidate(&$uri, $config, $context): bool
+            {
+                $uri->userinfo = null;
+                $uri->host     = null;
+                $uri->port     = null;
+
+                return true;
+            }
+        });
 
         $config->set('HTML.SafeIframe', false);
         $config->set('HTML.ForbiddenElements', ['script', 'style', 'iframe', 'object', 'embed', 'svg', 'form', 'input', 'button', 'link', 'meta', 'base']);

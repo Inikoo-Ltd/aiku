@@ -26,10 +26,7 @@ class CalculateManufactureTaskSessionPay
             return $session;
         }
 
-        $hours = round(
-            $session->started_at->diffInSeconds($session->ended_at) / 3600 - $session->break_minutes / 60,
-            4
-        );
+        $hours = round($session->paidHours(), 4);
 
         if ($hours <= 0) {
             $session->update(['hours' => 0, 'pay' => 0, 'bonus' => 0]);

@@ -12,7 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import type { IconDefinition } from '@fal'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     style?: string | object
@@ -55,10 +55,9 @@ const emits = defineEmits<{
 const isLoadingVisit = ref(false)
 
 const setError = (e: {}) => {
-    console.log(e)
     notify({
-        title: trans("Something went wrong"),
-        text: e.message ? e.message : trans("Please try again or contact support."),
+        title: ctrans("Something went wrong"),
+        text: e.message ? e.message : ctrans("Please try again or contact support."),
         type: "error",
     })
 }

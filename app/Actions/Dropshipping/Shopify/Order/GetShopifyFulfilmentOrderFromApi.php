@@ -18,9 +18,15 @@ class GetShopifyFulfilmentOrderFromApi
     use WithShopifyApi;
     use WithShopifyFulfilmentOrderPayload;
 
-    public function handle(ShopifyUser $shopifyUser, string $orderId): array
+    /**
+     * Null means Shopify has no such order; an empty array means the order is there but holds no
+     * fulfilment request for AW, which is a different answer to give whoever retries the import.
+     *
+     * @throws \Exception
+     */
+    public function handle(ShopifyUser $shopifyUser, string $orderId): ?array
     {
-        $fields = $this->orderWithFulfilmentOrdersFields();
+        $fields = $this->orderWithFulfilmentOrdersFields($shopifyUser);
 
         $query = <<<QUERY
             query getFulfilmentOrder(\$id: ID!) {
@@ -33,12 +39,12 @@ class GetShopifyFulfilmentOrderFromApi
         list($success, $response) = $this->doPost($shopifyUser, $query, ['id' => $this->resolveGid($orderId)]);
 
         if (!$success) {
-            return [];
+            throw new \Exception(is_string($response) ? $response : 'Shopify refused the request.');
         }
 
         $order = data_get($response['body']->toArray(), 'data.order');
 
-        return $order ? $this->buildFulfilmentOrderPayload($order) : [];
+        return $order ? ($this->buildFulfilmentOrderPayloads($shopifyUser, $order)[0] ?? []) : null;
     }
 
     private function resolveGid(string $orderId): string

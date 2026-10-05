@@ -65,7 +65,7 @@ class StoreShopOffer extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Category Discount', $english, $shop->language, 'gpt-5-nano').' '.$shop->code,
+            Translate::run('Category Discount', $english, $shop->language, 'catalogue').' '.$shop->code,
             false
         );
 

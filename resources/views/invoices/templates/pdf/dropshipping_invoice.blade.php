@@ -321,6 +321,10 @@
                             {{ trimDecimalZeros($packUnits) }}x
                         @endif
                         {{ $transaction->historicAsset->name }}
+                        @if($invoice->order?->preOrder && $preOrderNote = \App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote(data_get($transaction->transaction?->data, 'pre_order')))
+                            <br>
+                            {{ __('Pre-order') }}: {{ $preOrderNote }}
+                        @endif
                         @if(isset($transaction->pallet))
                             <br>
                             {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
@@ -392,6 +396,22 @@
         <td>{{ __('Charges') }}</td>
         <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
     </tr>
+
+    @if((float) $invoice->packaging_amount > 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Packaging') }}</td>
+            <td>{{ $invoice->currency->symbol . $invoice->packaging_amount }}</td>
+        </tr>
+    @endif
+
+    @if((float) $invoice->leaflet_amount > 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Add-ons') }}</td>
+            <td>{{ $invoice->currency->symbol . $invoice->leaflet_amount }}</td>
+        </tr>
+    @endif
 
     <tr>
         <td style="border:none" colspan="4"></td>
@@ -494,6 +514,17 @@
 @endif
 <br>
 <br>
+
+@if($invoice->order?->preOrder?->terms)
+    <div style="font-size: 8pt;">
+        <strong>{{ __('Pre-order terms') }}</strong>
+        <ul>
+            @foreach($invoice->order->preOrder->terms as $term)
+                <li>{{ $term }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 
 @if($invoice->footer)
     <div>

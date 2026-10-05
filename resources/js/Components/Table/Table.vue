@@ -10,7 +10,9 @@ import TableColumns from '@/Components/Table/TableColumns.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
+import { useScrollArrows } from '@/Composables/useScrollArrows'
+import ScrollFadeArrow from '@/Components/Utils/ScrollFadeArrow.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
@@ -24,7 +26,7 @@ import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle} from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle } from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
@@ -61,6 +63,12 @@ const props = defineProps(
         // To align the label each row to the top (middle by default)
         rowAlignTop: {
             type: Boolean,
+        },
+
+
+        rowspanColumns: {
+            type: Array as () => string[],
+            default: () => [],
         },
 
         striped: {
@@ -174,6 +182,16 @@ const props = defineProps(
             default: () => {
                 return ''
             },
+            required: false,
+        },
+        tableClass: {
+            type: String,
+            default: '',
+            required: false,
+        },
+        withScrollArrows: {
+            type: Boolean,
+            default: false,
             required: false,
         },
         isParentLoading : {
@@ -746,12 +764,16 @@ const immediateVisit = () => {
 // TableElements reports the selection it read from the URL right after mount. The server already
 // rendered that selection, so the state is stored without letting the watcher fire off a visit for
 // a query string identical to the current one.
-const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false, isImmediate = false) => {
     if (isInitial) {
         skipNextDebouncedVisit = true;
     }
 
     queryBuilderData.value[key] = data;
+
+    if (isImmediate && !isInitial && isMounted) {
+        immediateVisit();
+    }
 };
 
 const inertiaListener = () => {
@@ -785,6 +807,18 @@ function show(key) {
     const intKey = findDataKey('columns', key);
 
     return !queryBuilderData?.value?.columns?.[intKey]?.hidden;
+}
+
+function isRowspanColumn(key) {
+    return props.rowspanColumns.includes(key)
+}
+
+function showCell(key, rowIndex) {
+    return !isRowspanColumn(key) || rowIndex === 0
+}
+
+function cellRowspan(key) {
+    return isRowspanColumn(key) ? (props.resource?.data?.length || 1) : undefined
 }
 
 function header(key) {
@@ -893,6 +927,8 @@ const virtualRowOffsets = computed(() => {
 })
 
 const virtualContainerRef = ref<HTMLElement | null>(null)
+const scrollArrowsContainer = computed(() => props.withScrollArrows ? virtualContainerRef.value : null)
+const { canScrollLeft: canScrollTableLeft, canScrollRight: canScrollTableRight, scrollBy: scrollTable } = useScrollArrows(scrollArrowsContainer)
 const virtualWindow = ref({
     start: 0,
     end: Math.min(compResourceData.value?.length ?? 0, props.virtualOverscan + 20),
@@ -1091,14 +1127,14 @@ const getSeverity = (type?: string) => {
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('elementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                     />
                 </div>
 
                 <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('additionalElementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                         :isAdditional="true"
                     />
@@ -1124,8 +1160,8 @@ const getSeverity = (type?: string) => {
                                         {{
                                         compResourceMeta.total > 1
                                         ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
-                                        trans('records')
-                                        : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                        ctrans('records')
+                                        : queryBuilderProps.labelRecord?.[0] || ctrans('record')
                                         }}
                                         <slot name="afterRecordCount" />
                                     </span>
@@ -1302,8 +1338,8 @@ const getSeverity = (type?: string) => {
                                                     {{
                                                     compResourceMeta.total > 1
                                                     ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
-                                                    trans('records')
-                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    ctrans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || ctrans('record')
                                                     }}
                                                     <slot name="afterRecordCount" />
                                                 </span>
@@ -1364,11 +1400,12 @@ const getSeverity = (type?: string) => {
                     </slot>
 
                     <slot name="table">
+                        <div class="relative isolate">
                         <div ref="virtualContainerRef"
                             class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
-                        <table class="divide-y divide-gray-200 bg-white min-w-full">
+                        <table class="divide-y divide-gray-200 bg-white min-w-full" :class="tableClass">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
                                 <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
@@ -1612,16 +1649,18 @@ const getSeverity = (type?: string) => {
                                             </td>
 
                                             <!-- Rows: main data -->
-                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                            <template v-for="(column, index) in queryBuilderProps.columns"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`">
+                                            <td v-if="showCell(column.key, key)"
                                                 v-show="show(column.key)"
-                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                :rowspan="cellRowspan(column.key)"
                                                 class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
                                                             ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
                                                             : 'px-2 lg:px-6',
-                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    props.rowAlignTop || isRowspanColumn(column.key) ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
@@ -1632,6 +1671,7 @@ const getSeverity = (type?: string) => {
                                                     <TableRows :column :item />
                                                 </slot>
                                             </td>
+                                            </template>
                                         </tr>
 
                                         <tr v-if="useExpandTable">
@@ -1694,6 +1734,9 @@ const getSeverity = (type?: string) => {
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
+                        <ScrollFadeArrow direction="left" :visible="canScrollTableLeft" iconClass="sticky top-24 bottom-24" @click="scrollTable(-1)" />
+                        <ScrollFadeArrow direction="right" :visible="canScrollTableRight" iconClass="sticky top-24 bottom-24" @click="scrollTable(1)" />
                         </div>
                     </slot>
 

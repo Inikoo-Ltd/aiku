@@ -8,6 +8,8 @@
 
 namespace App\Models\Helpers;
 
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Traits\HasTicketImages;
@@ -23,6 +25,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $body
  * @property bool $is_internal
  * @property bool $is_lead_only
+ * @property TicketCommentTypeEnum $type
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent|null $author
@@ -36,9 +39,16 @@ class TicketComment extends Model implements HasMedia
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'type' => 'comment',
+    ];
+
     protected static function booted(): void
     {
-        $refresh = fn (TicketComment $comment) => Ticket::refreshSearchVectors($comment->ticket_id);
+        $refresh = function (TicketComment $comment) {
+            Ticket::refreshSearchVectors($comment->ticket_id);
+            $comment->ticket?->broadcastUpdated();
+        };
         static::saved($refresh);
         static::deleted($refresh);
     }
@@ -48,6 +58,8 @@ class TicketComment extends Model implements HasMedia
         return [
             'is_internal' => 'boolean',
             'is_lead_only' => 'boolean',
+            'type'         => TicketCommentTypeEnum::class,
+            'has_qa_verdict' => TicketQaStatusEnum::class,
         ];
     }
 

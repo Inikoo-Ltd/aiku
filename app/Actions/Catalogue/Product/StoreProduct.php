@@ -114,6 +114,10 @@ class StoreProduct extends OrgAction
             $product = $shop->products()->create($modelData);
             $product->stats()->create();
 
+            if ($product->exclusive_for_customer_id) {
+                $product->exclusiveCustomers()->attach($product->exclusive_for_customer_id);
+            }
+
             if ($tradeUnits) {
                 $product = SyncProductTradeUnits::run($product, $tradeUnits);
             } elseif ($orgStocks) {

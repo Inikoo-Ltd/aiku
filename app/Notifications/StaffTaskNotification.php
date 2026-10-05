@@ -20,7 +20,7 @@ class StaffTaskNotification extends Notification
 
     public function via($notifiable): array
     {
-        BroadcastPersonalNotification::dispatch($notifiable->id, ['id' => null, 'title' => $this->title, 'body' => $this->body, 'route' => route('grp.tasks.index', ['task' => $this->task->reference])]);
+        BroadcastPersonalNotification::dispatch($notifiable->id, ['id' => null, 'title' => $this->title, 'body' => $this->body, 'route' => route('grp.tasks.show', $this->task->reference)]);
 
         return ['database'];
     }
@@ -31,7 +31,7 @@ class StaffTaskNotification extends Notification
             'title' => $this->title,
             'body'  => $this->body,
             'type'  => 'staff_task',
-            'route' => route('grp.tasks.index', ['task' => $this->task->reference]),
+            'route' => route('grp.tasks.show', $this->task->reference),
         ];
     }
 }

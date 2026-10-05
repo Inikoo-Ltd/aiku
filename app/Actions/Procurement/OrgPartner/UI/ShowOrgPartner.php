@@ -53,6 +53,17 @@ class ShowOrgPartner extends OrgAction
                             'title' => __('Partner')
                         ],
                     'title' => $orgPartner->partner->name,
+                    'actions' => $orgPartner->organisation->is_manufacturing_hub && $request->user()->authTo("org-supervisor.{$orgPartner->organisation_id}.procurement") ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_partners.show.edit',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ],
+                    ] : [],
                     'subNavigation' => $this->getOrgPartnerNavigation($orgPartner),
                 ],
                 'tabs'                                               => [

@@ -8,7 +8,7 @@ import { ref, computed, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faTimes, faPencil, faEnvelope, faPhone, faMapMarkerAlt, faBan, faUndo } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { notify } from '@kyvg/vue3-notification'
@@ -73,7 +73,6 @@ const dontContactMeToggle = computed({
         localDontContactMe.value = value
         
         // Don't automatically change other preferences when toggling "don't contact me"
-        console.log('Dont contact me status changed to:', localDontContactMe.value)
     }
 })
 
@@ -84,8 +83,8 @@ const undoDontContact = async () => {
     if (!props.contactPreferences?.update_route) {
         console.error('Update route not found')
         notify({
-            title: trans('Error'),
-            text: trans('Contact preference configuration not found'),
+            title: ctrans('Error'),
+            text: ctrans('Contact preference configuration not found'),
             type: 'error'
         })
         return
@@ -106,19 +105,18 @@ const undoDontContact = async () => {
         
         // Show success toast for UI feedback
         notify({
-            title: trans('Success'),
-            text: trans('Contact preferences have been restored'),
+            title: ctrans('Success'),
+            text: ctrans('Contact preferences have been restored'),
             type: 'success'
         })
         
-        console.log('Undo do not  contact me - restored to normal view')
     } catch (error) {
         console.error('Failed to undo dont contact me:', error)
         
         // Show error toast
         notify({
-            title: trans('Error'),
-            text: trans('Failed to restore contact preferences. Please try again.'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to restore contact preferences. Please try again.'),
             type: 'error'
         })
     }
@@ -135,8 +133,8 @@ const togglePreference = async (preferenceKey: string, value: boolean) => {
     if (!preference || !props.contactPreferences?.update_route) {
         console.error('Preference or update route not found')
         notify({
-            title: trans('Error'),
-            text: trans('Contact preference configuration not found'),
+            title: ctrans('Error'),
+            text: ctrans('Contact preference configuration not found'),
             type: 'error'
         })
         return
@@ -156,14 +154,13 @@ const togglePreference = async (preferenceKey: string, value: boolean) => {
         
         // Show success toast
         notify({
-            title: trans('Success'),
+            title: ctrans('Success'),
             text: value 
-                ? trans('Contact via :method is now allowed', { method: preference.label })
-                : trans('Contact via :method is now disabled', { method: preference.label }),
+                ? ctrans('Contact via :method is now allowed', { method: preference.label })
+                : ctrans('Contact via :method is now disabled', { method: preference.label }),
             type: 'success'
         })
         
-        console.log(`Preference ${preferenceKey} updated successfully to:`, value)
     } catch (error) {
         console.error('Failed to update preference:', error)
         
@@ -172,8 +169,8 @@ const togglePreference = async (preferenceKey: string, value: boolean) => {
         
         // Show error toast
         notify({
-            title: trans('Error'),
-            text: trans('Failed to update contact preference. Please try again.'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to update contact preference. Please try again.'),
             type: 'error'
         })
     }
@@ -188,8 +185,8 @@ const toggleDontContactMe = async (value: boolean) => {
     if (!props.contactPreferences?.update_route) {
         console.error('Update route not found')
         notify({
-            title: trans('Error'),
-            text: trans('Contact preference configuration not found'),
+            title: ctrans('Error'),
+            text: ctrans('Contact preference configuration not found'),
             type: 'error'
         })
         return
@@ -211,14 +208,13 @@ const toggleDontContactMe = async (value: boolean) => {
         
         // Show success toast
         notify({
-            title: trans('Success'),
+            title: ctrans('Success'),
             text: value 
-                ? trans('All contact methods have been disabled')
-                : trans('Contact preferences have been restored'),
+                ? ctrans('All contact methods have been disabled')
+                : ctrans('Contact preferences have been restored'),
             type: 'success'
         })
         
-        console.log(`Don't contact me updated successfully to:`, value)
     } catch (error) {
         console.error('Failed to update dont contact me:', error)
         
@@ -227,8 +223,8 @@ const toggleDontContactMe = async (value: boolean) => {
         
         // Show error toast
         notify({
-            title: trans('Error'),
-            text: trans('Failed to update contact preferences. Please try again.'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to update contact preferences. Please try again.'),
             type: 'error'
         })
     }
@@ -258,7 +254,7 @@ defineExpose({
         <!-- Contact Preferences Section Box -->
         <div :class="containerClass">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="text-sm font-medium text-gray-900">{{ trans("Contact Preferences") }}</h3>
+                <h3 class="text-sm font-medium text-gray-900">{{ ctrans("Contact Preferences") }}</h3>
             </div>
 
             <!-- Contact Preferences List - Hidden when "don't contact me" is active -->
@@ -275,7 +271,7 @@ defineExpose({
                             @update:modelValue="(value) => togglePreference(key, value)" :class="{
                                 'toggle-switch-active': localPreferences[key],
                                 'toggle-switch-inactive': !localPreferences[key]
-                            }" v-tooltip="localPreferences[key] ? trans('Allowed') : trans('Not Allowed')" />
+                            }" v-tooltip="localPreferences[key] ? ctrans('Allowed') : ctrans('Not Allowed')" />
                     </div>
                 </div>
             </div>
@@ -285,9 +281,9 @@ defineExpose({
                 <!-- Message with Edit Button -->
                 <div class="p-2 bg-red-50 rounded flex items-center justify-between">
                     <div class="text-start flex-1">
-                        <span class="text-xs text-red-600">{{ trans('Prospect do not want to be contacted') }}</span>
+                        <span class="text-xs text-red-600">{{ ctrans('Prospect do not want to be contacted') }}</span>
                         <div v-if="contactPreferences.dont_contact_me.reason" class="mt-1">
-                            <span class="text-xs text-red-500">{{ trans('Reason') }}: {{
+                            <span class="text-xs text-red-500">{{ ctrans('Reason') }}: {{
                                 contactPreferences.dont_contact_me.reason }}</span>
                         </div>
                     </div>
@@ -295,7 +291,7 @@ defineExpose({
                     <!-- Pencil Edit Button -->
                     <button v-if="editable" @click="undoDontContact" class="ml-2 p-1"
                         :style="{ color: layout?.app?.theme?.[0] || '#6366f1' }"
-                        v-tooltip="trans('Edit Contact Preferences')">
+                        v-tooltip="ctrans('Edit Contact Preferences')">
                         <FontAwesomeIcon :icon="faPencil" class="text-sm" fixed-width />
                     </button>
                 </div>

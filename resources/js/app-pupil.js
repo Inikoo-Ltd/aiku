@@ -20,6 +20,10 @@ import PupilLayout from '@/Layouts/PupilLayout.vue'
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
+import { usePupilSessionToken } from '@/Composables/usePupilSessionToken';
+import { ctrans } from "@/Composables/useTrans";
+
+usePupilSessionToken();
 
 const appName = trans('Pupil') || window.document.getElementsByTagName('title')[0]?.innerText;
 
@@ -86,8 +90,11 @@ createInertiaApp(
                     '../../lang/*.json');
                 return await languages[`../../lang/${lang}.json`]();
               },
-            }).
-            mount(el);
+            });
+
+        app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
+
+        app.mount(el);
 
       },
       progress: {

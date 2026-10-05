@@ -19,6 +19,8 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,6 +47,8 @@ class StorePartnerShoppingListItem extends OrgAction
                 ?? StoreOrgStock::make()->action($orgPartner->organisation, $orgStock->stock);
         }
 
+        EnsurePartnerOrderPackedInMatches::make()->guard($orgPartner, [$buyerOrgStock->stock_id]);
+
         data_set($modelData, 'group_id', $orgPartner->group_id);
         data_set($modelData, 'organisation_id', $orgPartner->organisation_id);
         data_set($modelData, 'org_partner_id', $orgPartner->id);
@@ -56,7 +60,17 @@ class StorePartnerShoppingListItem extends OrgAction
             data_set($modelData, 'added_by_user_id', request()->user()->id);
         }
 
-        $item = PartnerShoppingListItem::create($modelData)->refresh();
+        $item = Cache::lock("partner-shopping-list:{$orgPartner->id}:{$buyerOrgStock->id}", 10)->block(5, function () use ($orgPartner, $buyerOrgStock, $modelData) {
+            $openItem = PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $buyerOrgStock->id)->first();
+
+            if ($openItem) {
+                $openItem->update(Arr::except($modelData, ['added_by_user_id']));
+
+                return $openItem->refresh();
+            }
+
+            return PartnerShoppingListItem::create($modelData)->refresh();
+        });
 
         OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);
 

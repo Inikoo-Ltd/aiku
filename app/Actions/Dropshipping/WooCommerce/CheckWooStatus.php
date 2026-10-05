@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use Lorisleiva\Actions\ActionRequest;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Carbon;
@@ -64,8 +65,10 @@ class CheckWooStatus extends RetinaAction
         return $canConnectToPlatform;
     }
 
-    public function asController($slug)
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): bool
     {
-        return $this->handle($slug);
+        abort_unless($customerSalesChannel->customer_id === $request->user()?->customer_id, 403);
+
+        return $this->handle($customerSalesChannel->slug);
     }
 }

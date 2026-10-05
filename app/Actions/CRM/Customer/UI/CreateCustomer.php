@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -89,7 +88,6 @@ class CreateCustomer extends OrgAction
                                             )
                                         )->getArray(),
                                         'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
 
                                         ]
                                     ],
@@ -99,7 +97,6 @@ class CreateCustomer extends OrgAction
                                         'value'   => null,
                                         'country' => $shop->country->code,
                                         'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
                                         ],
                                     ]
                                 ]

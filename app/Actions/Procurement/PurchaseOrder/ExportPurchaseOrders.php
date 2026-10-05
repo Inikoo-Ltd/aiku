@@ -8,37 +8,34 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Procurement\PurchaseOrdersExport;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportPurchaseOrders
+class ExportPurchaseOrders extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithProcurementAuthorisation;
     use WithExportData;
 
     /**
      * @throws \Throwable
      */
-    public function handle(array $modelData): BinaryFileResponse
+    public function handle(Organisation $organisation, array $modelData): BinaryFileResponse
     {
-        $type = $modelData['type'];
-
-        return $this->export(new PurchaseOrdersExport(), 'purchase-orders', $type);
+        return $this->export(new PurchaseOrdersExport($organisation), 'purchase-orders', $modelData['type']);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($organisation, $request);
 
-        return $this->handle($request->all());
+        return $this->handle($organisation, $this->validatedData);
     }
 }

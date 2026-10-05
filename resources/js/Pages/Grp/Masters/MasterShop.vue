@@ -22,6 +22,9 @@ import {
   faFolderDownload,
   faStoreAlt,
   faAlignLeft,
+  faBinoculars,
+  faBalanceScale,
+  faTruckContainer,
 } from "@fal";
 import { faCheckCircle, faPlusCircle } from "@fas";
 
@@ -36,15 +39,21 @@ import ShopShowcase from "@/Components/Showcases/Grp/ShopShowcase.vue";
 import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import TableShopInMaster from "@/Components/Tables/Grp/Masters/TableShopInMaster.vue";
+import TableCompetitors from "@/Components/Tables/Grp/Masters/TableCompetitors.vue";
+import TableMasterAssetCompetitorProducts from "@/Components/Tables/Grp/Masters/TableMasterAssetCompetitorProducts.vue";
+import TableCatalogueOnItsWay from "@/Components/Tables/Grp/Org/Catalogue/TableCatalogueOnItsWay.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
+import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft
+  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faBinoculars, faBalanceScale, faTruckContainer
 );
 
 const props = defineProps<{
@@ -56,8 +65,14 @@ const props = defineProps<{
   title: string
   dashboard?: {}
   showcase?: {}
+  sales_analysis?: object
+  sales_analysis_teaser?: object
   history?: {}
   shops?: {}
+  competitors?: {}
+  competitor_prices?: {}
+  on_its_way?: {}
+  can_edit?: boolean
   organisations_list: {
     [key: string]: {
       label: string
@@ -66,16 +81,21 @@ const props = defineProps<{
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
 const layout = useLayoutStore();
 
 const component = computed(() => {
 
   const components = {
     showcase: ShopShowcase,
+    sales_analysis: SalesAnalysis,
     dashboard: CatalogueDashboard,
     history: TableHistories,
     shops: TableShopInMaster,
+    competitors: TableCompetitors,
+    competitor_prices: TableMasterAssetCompetitorProducts,
+    on_its_way: TableCatalogueOnItsWay,
   };
   return components[currentTab.value];
 });
@@ -123,22 +143,28 @@ const isOpenModalAddShop = ref(false)
               <FontAwesomeIcon :icon="faStoreAlt" fixed-width/>
               <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;" fixed-width/>
             </FontAwesomeLayers>
-            {{ trans('Add Shop') }}
+            {{ ctrans('Add Shop') }}
           </Button>
+          <Button v-if="currentTab == 'competitors' && can_edit" :type="'create'" :label="ctrans('Add competitor')"
+            @click="router.visit(route('grp.masters.master_shops.show.competitors.create', { masterShop: route().params['masterShop'] }))" />
         </template>
   </PageHeading>
 
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-  <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+  <div v-if="currentTab === 'showcase'" class="grid gap-4 px-4 pt-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <SalesAnalysisTeaser :teaser="sales_analysis_teaser" />
+    <SalesAnalysisMovers :teaser="sales_analysis_teaser" />
+  </div>
+  <component :is="component" :tab="currentTab" :data="props[currentTab]" :canEdit="can_edit"></component>
 
   <Modal :isOpen="isOpenModalAddShop" width="w-full max-w-lg" @close="isOpenModalAddShop = false">
       <div>
         <div class="font-bold text-2xl text-center mb-4">
-          {{ trans("Create Shop") }}
+          {{ ctrans("Create Shop") }}
         </div>
 
         <div class="">
-          {{ trans("Select organisation for the new shop") }}:
+          {{ ctrans("Select organisation for the new shop") }}:
         </div>
 
         <div>
@@ -153,7 +179,7 @@ const isOpenModalAddShop = ref(false)
         <div class="mt-6">
           <Button
             v-tooltip="selectedOrganisation ? '' : 'Select an organisation to create shop'"
-            :label="trans('Create shop')"
+            :label="ctrans('Create shop')"
             :loading="isLoadingVisit"
             :disabled="!selectedOrganisation"
             @click="() => createShop()"

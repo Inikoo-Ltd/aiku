@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\CheckoutAbandonment\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
@@ -36,6 +37,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCheckoutAbandonments extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use WithCustomerSubNavigation;
     private Group|Organisation|Shop|Customer $parent;
 

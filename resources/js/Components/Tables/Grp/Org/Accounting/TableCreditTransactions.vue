@@ -7,31 +7,21 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue";
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import { CreditTransaction } from "@/types/credit-transaction"
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import RefundModal from "@/Components/RefundModal.vue";
-import { faStickyNote, faUndo } from "@fal";
+import { faStickyNote } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { ref, inject } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useBasicColor } from '@/Composables/useColors'
 // Import the new NotesDisplay component
 import NotesDisplay from "@/Components/NotesDisplay.vue"
-
-library.add(faUndo)
 
 const props = defineProps<{
     data: object,
     tab?: string
 }>();
 
-const layout = inject("layout");
-
-// Modal state
-const isRefundModalVisible = ref(false)
-const selectedTransaction = ref<CreditTransaction | null>(null)
 
 function paymentRoute(credit_transaction?: CreditTransaction) {
 
@@ -122,47 +112,6 @@ function creditNoteRoute(credit_transaction: CreditTransaction) {
     })
 }
 
-// Function to open refund modal
-function openRefundModal(transaction: CreditTransaction) {
-    selectedTransaction.value = transaction
-    isRefundModalVisible.value = true
-}
-
-// Function to close refund modal
-function closeRefundModal() {
-    isRefundModalVisible.value = false
-    selectedTransaction.value = null
-}
-
-// Create showcase object for RefundModal
-function createShowcase(transaction: CreditTransaction) {
-    return {
-        amount: transaction.amount?.toString() || '0',
-        state: 'completed', // Assuming completed state for refund eligibility
-        currency: {
-            data: {
-                id: 1, // Default values - adjust based on your data structure
-                code: transaction.currency_code || 'USD',
-                name: transaction.currency_code || 'USD',
-                symbol: '$' // Default symbol - adjust based on your needs
-            }
-        }
-    }
-}
-
-// Create refund route for RefundModal
-function createRefundRoute(transaction: CreditTransaction) {
-    if (!transaction.payment_id) return undefined
-
-    return {
-      name: "grp.models.org.payment_refund.store",
-        parameters: {
-            organisation: layout?.group?.id,
-            payment: transaction.payment_id
-        }
-    }
-}
-
 </script>
 
 <template>
@@ -194,7 +143,7 @@ function createRefundRoute(transaction: CreditTransaction) {
                     {{ credit_transaction.credit_note_reference }}
                 </Link>
                 <div v-if="credit_transaction.requested_by" class="text-xs text-gray-500">
-                    {{ trans('Requested by') }} {{ credit_transaction.requested_by }}
+                    {{ ctrans('Requested by') }} {{ credit_transaction.requested_by }}
                 </div>
             </div>
         </template>
@@ -206,22 +155,5 @@ function createRefundRoute(transaction: CreditTransaction) {
                 {{ credit_transaction.order_reference }}
             </div>
         </template>
-        <template #cell(actions)="{item}">
-          <Button 
-            v-if="item.payment_id !== null && item.payment_reference !== null && layout?.app?.environment !== 'production'" 
-            :icon="faUndo" 
-            v-tooltip="trans('Proceed Refund')"
-            @click="openRefundModal(item)"
-          />
-        </template>
     </Table>
-
-    <!-- Refund Modal -->
-    <RefundModal
-        v-if="selectedTransaction && layout?.app?.environment !== 'production'"
-        :showcase="createShowcase(selectedTransaction)"
-        :refund-route="createRefundRoute(selectedTransaction)"
-        :is-visible="isRefundModalVisible"
-        @close="closeRefundModal"
-    />
 </template>

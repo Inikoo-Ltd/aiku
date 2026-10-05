@@ -18,6 +18,7 @@
  */
 
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
@@ -45,18 +46,23 @@ use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Http\Resources\Web\WebBlockDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 const PRODUCT_WEBPAGE_BLOCKS = [
     'product',
     'product-1',
     'product-2',
     'product-3',
+    'product-4',
     'recommendation-customer-recently-bought-1',
 ];
 
@@ -531,6 +537,20 @@ test('product web blocks return a null description tabs style when no family ext
         ->and(Arr::get($fieldValue, 'tabs_style'))->toBeNull();
 });
 
+test('iris product web block gives a guest the product price for the product snippet structured data', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    expect(auth()->check())->toBeFalse();
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->price)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'price'))->toEqual($product->price)
+        ->and($irisProduct)->toHaveKey('stock');
+});
+
 test('website product workshop layout exposes the family extra description style', function () {
     [, $product] = createProduct($this->shop);
 
@@ -676,7 +696,11 @@ test('families that sold the same are listed newest first', function () {
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update([
+            'created_at'      => now()->subDays($daysAgo),
+            'state'           => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE->value,
+            'show_in_website' => true,
+        ]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),
@@ -857,4 +881,333 @@ test('the families under a department page default to the hand picked order', fu
 
     expect($listedCodes())
         ->toBe([$families['oldest']->code, $families['newest']->code, $families['middle']->code]);
+});
+
+test('cached family product list carries the same shop-wide offer prices as the logged-in list', function () {
+    [, $product] = createProduct($this->shop);
+
+    DB::table('products')->where('id', $product->id)->update([
+        'price'              => 20,
+        'available_quantity' => 10,
+        'offers_data'        => json_encode(['number_offers' => 1, 'best_percentage_off' => ['percentage_off' => 0.1]]),
+    ]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($row)->not->toBeNull();
+
+    $cached    = (new IrisProductsInWebpageResource($row))->toArray(request());
+    $loggedIn  = (new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request());
+    $offerKeys = [
+        'family_id',
+        'is_coming_soon',
+        'is_golden_product',
+        'variant',
+        'variant_axis_label',
+        'product_offers_data',
+        'discounted_price',
+        'discounted_price_per_unit',
+        'discounted_profit',
+        'discounted_profit_per_unit',
+        'discounted_margin',
+        'discounted_percentage',
+        'step_discount',
+    ];
+
+    expect(Arr::only($cached, $offerKeys))->toBe(Arr::only($loggedIn, $offerKeys))
+        ->and($cached)->toHaveKeys($offerKeys)
+        ->and($cached['discounted_price'])->toEqual(18.0)
+        ->and($cached['product_offers_data']['number_offers'])->toBe(1)
+        ->and($cached['family_id'])->toBe($product->family_id);
+});
+
+test('logged-in product list prices a basket line of a fractional-units product per unit', function () {
+    [, $product] = createProduct($this->shop);
+
+    DB::table('products')->where('id', $product->id)->update([
+        'units'              => 0.5,
+        'available_quantity' => 10,
+    ]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    $row->quantity_ordered = 2;
+    $row->net_amount       = 10;
+
+    $prices = (new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request());
+
+    expect($prices['offer_price_per_unit'])->toEqual(5.0)
+        ->and($prices['price_per_unit'])->toEqual(round((float) $row->price, 2));
+});
+
+test('department web block renders when the department lost its webpage link', function () {
+    [, $product] = createProduct($this->shop);
+    $department  = $product->department;
+    $department->setRelation('webpage', null);
+
+    expect(WebBlockDepartmentResource::make($department)->resolve())->toHaveKey('url', null);
+});
+
+test('iris product web block does not expose other customers back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    $customer = createCustomer($this->shop);
+
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($customer, $product, [], strict: false);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect(Arr::get($irisProduct, 'is_back_in_stock'))->toBeFalse();
+});
+
+test('iris product web block exposes the product family id so the member price can react to the family basket', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->family_id)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'family_id'))->toBe($product->family_id);
+});
+
+test('iris variant products list leaves out the variant products that are not for sale', function () {
+    [, $forSaleProduct] = createProduct($this->shop);
+    $forSaleProduct->updateQuietly(['is_for_sale' => true]);
+
+    $notForSaleProduct = $forSaleProduct->replicate();
+    $notForSaleProduct->fill([
+        'code'        => $forSaleProduct->code.'-NFS',
+        'slug'        => $forSaleProduct->slug.'-nfs',
+        'is_for_sale' => false,
+    ])->saveQuietly();
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $forSaleProduct->group_id,
+        'code'     => $forSaleProduct->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'        => $forSaleProduct->group_id,
+        'organisation_id' => $forSaleProduct->organisation_id,
+        'shop_id'         => $forSaleProduct->shop_id,
+        'family_id'       => $forSaleProduct->family_id,
+        'code'            => $forSaleProduct->code,
+        'leader_id'       => $forSaleProduct->id,
+        'data'            => ['products' => []],
+    ]);
+    $forSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+    $notForSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+
+    $variant->updateQuietly(['data' => ['products' => [
+        $forSaleProduct->id    => ['product' => ['id' => $forSaleProduct->id]],
+        $notForSaleProduct->id => ['product' => ['id' => $notForSaleProduct->id]],
+    ]]]);
+
+    $productIds = collect(\App\Actions\Catalogue\Product\Json\GetProductsOfVariant::run($variant)['products'])->pluck('id');
+
+    $variantAndProducts = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant);
+
+    expect($productIds->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['products'])->pluck('id')->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
+});
+
+test('iris variant products list sends the offers and step discount each variant needs to price the selection', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id]);
+
+    \App\Actions\Discounts\Offer\StoreProductStepDiscount::make()->action($product, [
+        'steps'    => [
+            ['min_quantity' => 5, 'percentage_off' => 0.25],
+            ['min_quantity' => 1, 'percentage_off' => 0.15],
+        ],
+        'duration' => 'interval',
+        'start_at' => now(),
+        'end_at'   => now()->addDays(14)->toDateTimeString(),
+    ]);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($variantProduct)->toHaveKeys(['offers_data', 'family_id', 'is_golden_product'])
+        ->and($variantProduct['family_id'])->toBe($product->family_id)
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5])
+        ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
+});
+
+test('iris product lists name the first variant axis so the choose button can read choose size', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => [
+            'variants' => [
+                ['label' => 'Size', 'options' => ['S', 'M']],
+                ['label' => 'Colour', 'options' => ['Red', 'Blue']],
+            ],
+            'products' => [$product->id => ['product' => ['id' => $product->id]]],
+        ],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    $variantProduct = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0];
+
+    expect($row)->not->toBeNull()
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_axis_label'])->toBe('Size')
+        ->and($variantProduct['variant_axis_label'])->toBe('Size')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe($product->name)
+        ->and($variantProduct['variant_title'])->toBe($product->name);
+});
+
+test('master variant label is dispatched to each shop variant translated and titles the product card', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterVariant\UpdateMasterVariant::make()->action($masterVariant, ['label' => 'Compass of Life T-shirt']);
+
+    expect($masterVariant->refresh()->label)->toBe('Compass of Life T-shirt');
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::assertPushed(1);
+
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tričko Kompas života');
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant, 'Compass of Life T-shirt');
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and((new IrisProductsInWebpageResource($row))->toArray(request())['variant_title'])->toBe('Tričko Kompas života')
+        ->and(\App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant)['products'][0]['variant_title'])->toBe('Tričko Kompas života');
+});
+
+test('shop can translate its variant label and the master label no longer overwrites it', function () {
+    [, $product] = createProduct($this->shop);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code,
+        'label'    => 'Compass of Life T-shirt',
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $product->group_id,
+        'organisation_id'   => $product->organisation_id,
+        'shop_id'           => $product->shop_id,
+        'family_id'         => $product->family_id,
+        'code'              => $product->code,
+        'leader_id'         => $product->id,
+        'data'              => ['products' => [$product->id => ['product' => ['id' => $product->id]]]],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, [
+        'label'             => 'Tričko Kompas života',
+        'is_label_reviewed' => true,
+    ]);
+
+    \App\Actions\Catalogue\Variant\TranslateVariantLabel::run($variant->refresh(), 'Compass of Life T-shirt v2');
+
+    expect($variant->refresh()->label)->toBe('Tričko Kompas života')
+        ->and($variant->is_label_reviewed)->toBeTrue()
+        ->and($product->refresh()->variant_id)->toBe($variant->id);
+});
+
+test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $order       = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, \App\Models\Ordering\Order::factory()->definition());
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+    $customer->updateQuietly(['current_order_in_basket_id' => $order->id]);
+
+    $basketLine  = \App\Actions\Catalogue\Product\Json\GetIrisBasketTransactions::run($customer->refresh())[$product->id];
+    $productData = \App\Actions\Iris\Basket\GetIrisBasketTransactionProductData::run($transaction);
+
+    expect($basketLine['quantity_ordered'])->toBe(1.0)
+        ->and($basketLine['quantity_ordered_new'])->toBe(1.0)
+        ->and($productData['quantity_ordered'])->toBe(1.0)
+        ->and($productData['quantity_ordered_new'])->toBe(1.0);
+});
+
+test('iris side basket sends the customer credit balance', function () {
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+    $customer->updateQuietly(['balance' => 25.50]);
+
+    $fetchBasket = \App\Actions\Iris\Basket\FetchIrisEcomBasket::make();
+    (fn () => $this->shop = $order->shop)->call($fetchBasket);
+
+    expect((float) $fetchBasket->jsonResponse($order->refresh())['balance'])->toBe(25.5);
 });

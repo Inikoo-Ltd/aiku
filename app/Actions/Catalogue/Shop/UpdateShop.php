@@ -8,11 +8,16 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Chat\Widget\EnableShopChatWidget;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
+use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
@@ -32,6 +37,7 @@ use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
 use App\Models\Reviews\ReviewRatingLabel;
@@ -39,6 +45,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -47,6 +54,7 @@ use App\Models\Ordering\SalesChannel;
 use Closure;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
@@ -86,6 +94,9 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+        $originalChatEnabled             = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', ShopPermissionsEnum::shopHasChat($shop));
+
+        $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
            differently: the shop screen sends them flat and they are nested below, while
@@ -127,6 +138,13 @@ class UpdateShop extends OrgAction
                 imageData: $imageData,
                 scope: 'avatar'
             );
+        }
+
+        foreach (['signature', 'logo'] as $letterImage) {
+            if (Arr::has($modelData, "letter_of_authorisation_$letterImage")) {
+                $this->saveLetterOfAuthorisationImage($shop, $letterImage, Arr::pull($modelData, "letter_of_authorisation_$letterImage"));
+                $shop->refresh();
+            }
         }
 
         $bannedCountriesUpdated = false;
@@ -184,6 +202,10 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'chat_enabled')) {
+            data_set($modelData, 'settings.chat.enabled', (bool) Arr::pull($modelData, 'chat_enabled'));
+        }
+
         if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
             data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
         }
@@ -198,6 +220,16 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
+            data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
+        }
+
+        foreach (array_keys(Shop::PRE_ORDER_DEFAULTS) as $preOrderSetting) {
+            if (Arr::has($modelData, "pre_order_$preOrderSetting")) {
+                data_set($modelData, "settings.pre_orders.$preOrderSetting", Arr::pull($modelData, "pre_order_$preOrderSetting"));
+            }
         }
 
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
@@ -240,6 +272,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'related_product_follow_master')) {
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'shopkeeper_in_charge_id')) {
+            data_set($modelData, 'settings.catalog.shopkeeper_in_charge_id', Arr::pull($modelData, 'shopkeeper_in_charge_id'));
         }
 
         if (Arr::has($modelData, 'related_product_categories_follow_master')) {
@@ -300,6 +336,11 @@ class UpdateShop extends OrgAction
                     'meta_ads_access_token' => 'settings.meta_ads.access_token',
                     'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
                     'mailbox_sender_name' => 'settings.gmail.sender_name',
+                    'letter_of_authorisation_enabled' => 'settings.letter_of_authorisation.enabled',
+                    'letter_of_authorisation_company_name' => 'settings.letter_of_authorisation.company_name',
+                    'letter_of_authorisation_body' => 'settings.letter_of_authorisation.body',
+                    'letter_of_authorisation_footer' => 'settings.letter_of_authorisation.footer',
+                    'letter_of_authorisation_signatory' => 'settings.letter_of_authorisation.signatory',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -345,6 +386,11 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'meta_ads_access_token');
         data_forget($modelData, 'meta_ads_campaign_name_prefix');
         data_forget($modelData, 'mailbox_sender_name');
+        data_forget($modelData, 'letter_of_authorisation_enabled');
+        data_forget($modelData, 'letter_of_authorisation_company_name');
+        data_forget($modelData, 'letter_of_authorisation_body');
+        data_forget($modelData, 'letter_of_authorisation_footer');
+        data_forget($modelData, 'letter_of_authorisation_signatory');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
@@ -373,6 +419,24 @@ class UpdateShop extends OrgAction
                 $channels = array_values(array_filter((array)Arr::pull($modelData, 'chat_slack_channels')));
                 data_set($settings, 'chat.slack_channels', $channels);
             }
+
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
+
+        if (Arr::exists($modelData, 'gmail_showroom_senders')) {
+            $senders = array_values(array_filter(array_map(
+                'strtolower',
+                (array) Arr::pull($modelData, 'gmail_showroom_senders')
+            )));
+
+            $settings = $shop->settings ?? [];
+            $labeledSenders = Arr::get($settings, 'gmail.labeled_senders', []);
+            $labeledSenders = array_filter($labeledSenders, fn ($label) => $label !== 'aiku/showroom');
+            foreach ($senders as $sender) {
+                $labeledSenders[$sender] = 'aiku/showroom';
+            }
+            data_set($settings, 'gmail.labeled_senders', $labeledSenders);
 
             $shop->settings = $settings;
             $shop->saveQuietly();
@@ -598,6 +662,20 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
+        /*
+         * The toggle is only half of it: the chat permissions are built from this setting, so a
+         * shop switched on without seeding them is one whose conversations no agent can open.
+         * Switching it off drops them again. The key survives, so turning chat back on does not
+         * mean editing every storefront embed; it is the config endpoint that refuses to answer
+         * while chat is off.
+         */
+        $chatEnabled = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', $originalChatEnabled);
+
+        if ($chatEnabled !== $originalChatEnabled) {
+            EnableShopChatWidget::run($shop, $chatEnabled);
+            $shop->refresh();
+        }
+
         $chatSettingsChanged =
             Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel') != $originalViewContactOptionsPanel
             || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel
@@ -605,6 +683,10 @@ class UpdateShop extends OrgAction
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
+        if ($shop->website && (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false) !== $originalPackagingAndInsertsEnabled) {
+            BreakWebsiteIrisCache::run($shop->website);
         }
 
         /* Compared by value rather than read off getChanges(), which reports the whole settings
@@ -680,7 +762,34 @@ class UpdateShop extends OrgAction
             Event::dispatch(new AuditCustom($shop));
         }
 
+        PurgeIrisDocsFromVarnish::forShop($shop);
+
         return $shop;
+    }
+
+    protected function saveLetterOfAuthorisationImage(Shop $shop, string $letterImage, UploadedFile $file): void
+    {
+        $previousMediaId = Arr::get($shop->settings, "letter_of_authorisation.{$letterImage}_media_id");
+
+        $media = StoreMediaFromFile::run(
+            $shop,
+            [
+                'path'         => $file->getPathname(),
+                'originalName' => $file->getClientOriginalName(),
+                'extension'    => $file->getClientOriginalExtension(),
+                'checksum'     => md5_file($file->getPathname()),
+            ],
+            "letter_of_authorisation_$letterImage"
+        );
+
+        $settings = $shop->settings ?? [];
+        data_set($settings, "letter_of_authorisation.{$letterImage}_media_id", $media->id);
+        $shop->settings = $settings;
+        $shop->save();
+
+        if ($previousMediaId && $previousMediaId != $media->id) {
+            Media::find($previousMediaId)?->delete();
+        }
     }
 
     public function updateInvoiceSerialReferences(Shop $shop, array $modelData): Shop
@@ -862,10 +971,30 @@ class UpdateShop extends OrgAction
             'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
             'mailbox_sender_name'                                     => ['sometimes', 'nullable', 'string', 'max:128'],
+            'letter_of_authorisation_enabled'                         => ['sometimes', 'boolean'],
+            'letter_of_authorisation_company_name'                    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'letter_of_authorisation_body'                            => ['sometimes', 'nullable', 'string', 'max:20000'],
+            'letter_of_authorisation_signatory'                       => ['sometimes', 'nullable', 'string', 'max:255'],
+            'letter_of_authorisation_footer'                          => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'letter_of_authorisation_logo'                            => ['sometimes', File::image()->types(['png', 'jpg', 'jpeg'])->max(4 * 1024)],
+            'letter_of_authorisation_signature'                       => ['sometimes', File::image()->types(['png', 'jpg', 'jpeg'])->max(2 * 1024)],
             'enable_chat'                                             => ['sometimes', 'boolean'],
+            'chat_enabled'                                            => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'gmail_showroom_senders'                                  => [
+                'sometimes',
+                'nullable',
+                'array',
+                function (string $attribute, mixed $senders, Closure $fail) {
+                    foreach ((array) $senders as $sender) {
+                        if (! is_string($sender) || ! preg_match('/^[^@\s]*@[^@\s]+\.[^@\s]+$/', $sender)) {
+                            $fail(__('":sender" is not an email address or @domain', ['sender' => is_string($sender) ? $sender : '']));
+                        }
+                    }
+                },
+            ],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
@@ -900,6 +1029,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
+            'shopkeeper_in_charge_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],
@@ -931,6 +1061,24 @@ class UpdateShop extends OrgAction
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
+            'pre_order_enabled'                                       => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_full_payment_below'                            => ['sometimes', 'numeric', 'min:0'],
+            'pre_order_default_lead_time_days'                        => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'pre_order_dispatch_range_weeks'                          => ['sometimes', 'integer', 'min:0', 'max:52'],
+            'pre_order_balance_due_days'                              => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_first_reminder_day'                    => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_second_reminder_day'                   => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_cancel_after_days'                     => ['sometimes', 'integer', 'min:1', 'max:180'],
+            'pre_order_free_cancellation_working_days'                => ['sometimes', 'integer', 'min:0', 'max:30'],
+            'pre_order_late_cancellation_days'                        => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'pre_order_pallet_weight_kg'                              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_longest_side_cm'                        => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_quote_tolerance_percentage'             => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_pallet_rates'                                  => ['sometimes', 'array'],
+            'pre_order_pallet_rates.*.country_code'                   => ['required', 'string', 'size:2'],
+            'pre_order_pallet_rates.*.amount'                         => ['required', 'numeric', 'min:0'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],
@@ -997,6 +1145,9 @@ class UpdateShop extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->shop = $shop;
+        if ($request->hasFile('letter_of_authorisation_signature') && !PdfCustomerLetterOfAuthorisation::canSign($request->user(), $shop)) {
+            abort(403, __('Only an organisation or group admin can upload the signature.'));
+        }
         $this->initialisation($organisation, $request);
 
         return $this->handle($shop, $this->validatedData);

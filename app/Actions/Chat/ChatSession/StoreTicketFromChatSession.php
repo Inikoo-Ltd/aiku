@@ -49,6 +49,7 @@ class StoreTicketFromChatSession
             'description'     => $description ?: null,
             'priority'        => Arr::get($modelData, 'priority', ChatPriorityEnum::NORMAL->value),
             'kind'            => Arr::get($modelData, 'kind'),
+            'module'          => Arr::get($modelData, 'module'),
             'organisation_id' => $session->shop?->organisation_id,
             'shop_id'         => $session->shop_id,
             'customer_id'     => $customer?->id,

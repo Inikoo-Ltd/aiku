@@ -12,7 +12,7 @@ import { faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, f
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { inject, ref } from "vue"
 import Popover from "primevue/popover"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
@@ -62,7 +62,7 @@ const setPalletStatus = (routes: routeType) => {
             })
         },
         onError: (errors) => {
-            console.log("errors", errors)
+            console.error("errors", errors)
             errorMessage.value = errors
             // loading.value = false
         },
@@ -81,11 +81,11 @@ const typePallet = [
 
 <template>
     <div v-if="item.status === 'storing'">
-        <Button :key="item.index" iconRight="fal fa-fragile" v-tooltip="trans('Set pallet as damaged')" :size="'xs'" type="negative" @click="statusPopover.toggle($event)" />
+        <Button :key="item.index" iconRight="fal fa-fragile" v-tooltip="ctrans('Set pallet as damaged')" :size="'xs'" type="negative" @click="statusPopover.toggle($event)" />
 
         <Popover ref="statusPopover">
             <div class="w-[250px]">
-                <span class="text-xs mt-2">{{ trans("Status") }}: </span>
+                <span class="text-xs mt-2">{{ ctrans("Status") }}: </span>
                 <div class="flex items-center mb-3 gap-x-4">
                     <div v-for="(typeData, typeIdx) in typePallet" :key="typeIdx" class="relative py-1">
                         <input type="radio" :id="typeData.value" :value="typeData.value"
@@ -96,7 +96,7 @@ const typePallet = [
                 </div>
 
 
-                <label for="message" class="text-xs">{{ trans("Message") }}:</label>
+                <label for="message" class="text-xs">{{ ctrans("Message") }}:</label>
                 <div class="mt-1">
                     <PureTextarea v-model.trim="form.message" name="message" placeholder="Add detail about the pallet's status" />
                 </div>

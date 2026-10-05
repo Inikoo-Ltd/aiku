@@ -49,7 +49,6 @@ Route::get('locations/{orgStock}/exclude', [IndexLocations::class, 'excludeOrgSt
 Route::get('locations/{orgStock}/only', [IndexLocations::class, 'onlyOrgStockLocs'])->name('locations.index.only_in_org_stock')->withoutScopedBindings();
 
 Route::scopeBindings()->prefix('locations')->name('locations.')->group(function () {
-    Route::get('export', [ExportLocations::class, 'inWarehouse'])->name('export');
     Route::get('create', [CreateLocation::class, 'inWarehouse'])->name('create');
     Route::get('', [IndexLocations::class, 'inWarehouse'])->name('index');
     Route::get('all-empty', [IndexLocations::class, 'inWarehouseAllEmpty'])->name('all_empty');

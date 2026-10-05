@@ -20,6 +20,6 @@ withDefaults(defineProps<{
 <template>
     <span v-if="days !== null && days !== undefined"
         :class="{ 'font-medium text-red-600': days <= alertAt, 'text-amber-600': days > alertAt && days <= warnAt }">
-        {{ days === 0 ? ctrans("we run out now") : `${ctrans("we run out in")} ~${days} ${ctrans("days")}` }}
+        {{ days === 0 ? ctrans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${days} ${ctrans("days")}` }}
     </span>
 </template>

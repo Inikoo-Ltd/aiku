@@ -16,7 +16,7 @@ import { faExclamation } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faExclamation, faSpinnerThird)
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import CropComponents from "./CropComponents.vue"
 import { routeType } from '@/types/route'
@@ -147,7 +147,7 @@ const addComponent = async () => {
         emits('onFinishCropped', response.data)
         loadingState.value = false
     } catch (error) {
-        console.log(error)
+        console.error(error)
         form.value = new FormData()
         catchError.value = error.response.data.message || "Failed to Upload"
         // props.response(error.response)

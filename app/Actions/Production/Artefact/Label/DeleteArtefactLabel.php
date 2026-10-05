@@ -9,12 +9,15 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteArtefactLabel extends OrgAction
 {
+    use WithArtefactLabelAuthorisation;
+
     public function handle(ArtefactLabel $artefactLabel): ArtefactLabel
     {
         $artefactLabel->delete();
@@ -28,13 +31,13 @@ class DeleteArtefactLabel extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+        return $this->canEditLabels($request);
     }
 
     public function action(ArtefactLabel $artefactLabel): ArtefactLabel
     {
         $this->asAction = true;
-        $this->initialisationFromProduction($artefactLabel->artefact->production, []);
+        $this->initialisation($artefactLabel->organisation, []);
 
         return $this->handle($artefactLabel);
     }
@@ -42,6 +45,14 @@ class DeleteArtefactLabel extends OrgAction
     public function asController(Artefact $artefact, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
     {
         $this->initialisationFromProduction($artefact->production, $request);
+
+        return $this->handle($label);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrgStock(OrgStock $orgStock, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
+    {
+        $this->initialisation($orgStock->organisation, $request);
 
         return $this->handle($label);
     }

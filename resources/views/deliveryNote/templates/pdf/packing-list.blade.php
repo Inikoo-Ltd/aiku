@@ -13,6 +13,12 @@
         table.items th, table.items td { border: 1px solid #ddd; padding: 12px 10px; text-align: left; }
         table.items th { background-color: #f4f4f4; text-transform: uppercase; font-size: 12px; }
         .text-center { text-align: center; }
+        table.items tr.set-head td { background-color: #eef2f7; font-weight: bold; border-top: 2px solid #555; }
+        table.items tr.set-part td { background-color: #f8fafc; font-size: 12px; padding-top: 6px; padding-bottom: 6px; }
+        table.items tr.set-last td { border-bottom: 2px solid #555; }
+        table.items td.set-left { border-left: 2px solid #555; }
+        table.items td.set-right { border-right: 2px solid #555; }
+        .set-note { font-size: 11px; font-weight: normal; color: #666; }
         .footer { margin-top: 40px; font-size: 12px; color: #777; text-align: center; font-style: italic; }
     </style>
 </head>
@@ -36,37 +42,110 @@
         </tr>
     </table>
 
+    @if($boxes->isNotEmpty())
+        <table class="meta-info">
+            <tr>
+                <td>
+                    <strong>{{ __("Delivery Note") }}:</strong> {{ $deliveryNote->reference }}<br>
+                    <strong>{{ __("Boxes") }}:</strong> {{ $numberBoxes }}
+                </td>
+                <td style="text-align: right;">
+                    <strong>{{ __("Deliver to") }}:</strong><br>
+                    @if($deliveryNote->company_name){{ $deliveryNote->company_name }}<br>@endif
+                    @if($deliveryNote->contact_name){{ $deliveryNote->contact_name }}<br>@endif
+                    {!! nl2br(e($deliveryAddress ?? '')) !!}
+                </td>
+            </tr>
+        </table>
+
+        @foreach($boxes as $box => $rows)
+            @php $parcel = $deliveryNote->parcels[$box - 1] ?? null; @endphp
+            <h3 style="margin: 25px 0 5px 0;">
+                {{ __("Box :box of :boxes", ['box' => $box, 'boxes' => $numberBoxes]) }}
+                @if($parcel)
+                    <span style="font-weight: normal; font-size: 12px; color: #777;">
+                        {{ $parcel['weight'] ?? '' }} kg
+                        @if(!empty($parcel['dimensions']))
+                            · {{ implode('x', $parcel['dimensions']) }} cm
+                        @endif
+                    </span>
+                @endif
+            </h3>
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th width="18%">{{ __("SKO Code") }}</th>
+                        <th width="18%">{{ __("Product Code") }}</th>
+                        <th width="49%">{{ __("Description") }}</th>
+                        <th width="15%" class="text-center">{{ __("Quantity") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($rows as $row)
+                        <tr>
+                            <td>{{ $row['sko_code'] }}</td>
+                            <td>{{ $row['product_code'] }}</td>
+                            <td>{{ $row['description'] }}</td>
+                            <td class="text-center">{{ $row['quantity'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" style="text-align: right;">{{ __("Total in box :box", ['box' => $box]) }}</th>
+                        <th class="text-center">{{ (float) $rows->sum('quantity') }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        @endforeach
+    @else
     <table class="items">
         <thead>
             <tr>
-                <th width="25%">{{ __("Product Code") }}</th>
-                <th width="60%">{{ __("Product Name") }}</th>
-                <th width="15%" class="text-center">{{ __("Packed") }}</th>
+                <th width="18%">{{ __("SKO Code") }}</th>
+                <th width="18%">{{ __("Product Code") }}</th>
+                <th width="49%">{{ __("Description") }}</th>
+                <th width="15%" class="text-center">{{ __("Quantity") }}</th>
             </tr>
         </thead>
         <tbody>
-            @php $totalQty = 0; @endphp
-            @foreach($items as $item)
-                <tr>
-                    <td>{{ $item->orgStock->code ?? 'Unknown Code' }}</td>
-                    <td>
-                        {{ $item->orgStock->name ?? 'Unknown Name' }}
-                        @if(isset($item->orgStock->packed_in) && $item->orgStock->packed_in > 1)
-                            [Pack of {{ $item->orgStock->packed_in }}]
-                        @endif
-                    </td>
-                    <td>{{ number_format((float) ($item->quantity_packed ?? 0), 0) }}</td>
-                </tr>
-                @php $totalQty += (float) ($item->quantity_packed ?? 0); @endphp
+            @foreach($lines as $line)
+                @if($line['components'])
+                    <tr class="set-head">
+                        <td class="set-left"></td>
+                        <td>{{ $line['product_code'] }}</td>
+                        <td>
+                            {{ $line['description'] }}
+                            <br><span class="set-note">{{ __("Set of :count items, packed together", ['count' => count($line['components'])]) }}</span>
+                        </td>
+                        <td class="text-center set-right">{{ $line['quantity'] }}</td>
+                    </tr>
+                    @foreach($line['components'] as $component)
+                        <tr class="set-part {{ $loop->last ? 'set-last' : '' }}">
+                            <td class="set-left">{{ $component['sko_code'] }}</td>
+                            <td></td>
+                            <td>&#8627; {{ $component['description'] }}</td>
+                            <td class="text-center set-right">{{ $component['quantity'] }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td>{{ $line['sko_code'] }}</td>
+                        <td>{{ $line['product_code'] }}</td>
+                        <td>{{ $line['description'] }}</td>
+                        <td class="text-center">{{ $line['quantity'] }}</td>
+                    </tr>
+                @endif
             @endforeach
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="2" style="text-align: right;">{{ __("Total Items Packed") }}</th>
-                <th class="text-center" style="font-size: 14px;">{{ number_format($totalQty, 0) }}</th>
+                <th colspan="3" style="text-align: right;">{{ __("Total") }}</th>
+                <th class="text-center">{{ $lines->sum('quantity') }}</th>
             </tr>
         </tfoot>
     </table>
+    @endif
 
     <div class="footer">
     </div>

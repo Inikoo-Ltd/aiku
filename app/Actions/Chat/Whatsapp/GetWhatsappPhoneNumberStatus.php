@@ -33,15 +33,15 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
     /**
      * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
      */
-    public function handle(Shop $shop): array
+    public function handle(Shop|Organisation $parent): array
     {
         [
             'phone_number_id' => $phoneNumberId,
             'access_token'    => $accessToken,
-        ] = $this->whatsappCredentials($shop);
+        ] = $parent instanceof Shop ? $this->whatsappCredentials($parent) : $this->procurementWhatsappCredentials($parent);
 
         if ($phoneNumberId === '' || $accessToken === '') {
-            return $this->notConfigured();
+            return $this->notConfigured($parent);
         }
 
         $response = Http::withToken($accessToken)->get(
@@ -55,12 +55,12 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
 
         $data = Arr::only($response->json() ?? [], explode(',', self::FIELDS));
 
-        $settings = $shop->settings;
-        Arr::set($settings, 'whatsapp.last_status_check', [
+        $settings = $parent->settings ?? [];
+        Arr::set($settings, ($parent instanceof Shop ? 'whatsapp' : 'procurement.whatsapp').'.last_status_check', [
             'at'     => now()->toIso8601String(),
             'status' => $data,
         ]);
-        $shop->update(['settings' => $settings]);
+        $parent->update(['settings' => $settings]);
 
         return [
             'ok'   => true,
@@ -70,6 +70,10 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if (! isset($this->shop)) {
+            return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'org-supervisor.'.$this->organisation->id.'.procurement']);
+        }
+
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
@@ -81,5 +85,15 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);
+    }
+
+    /**
+     * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
+     */
+    public function inProcurement(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
     }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
@@ -76,6 +76,8 @@ const perRowCfg = computed(() => {
     desktop: cfg?.desktop ?? 6.5,
   }
 })
+
+const familyImageSizes = computed(() => `(max-width: 639px) ${100 / perRowCfg.value.mobile}vw, (max-width: 1023px) ${100 / perRowCfg.value.tablet}vw, ${100 / perRowCfg.value.desktop}vw`)
 
 const swiperBreakpoints = computed(() => ({
   640: { slidesPerView: perRowCfg.value.tablet, spaceBetween: 16 },
@@ -201,7 +203,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
         <button v-if="props.screenType !== 'mobile' && !isBeginning" ref="prevEl"
           class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          @click.stop="scrollLeft" type="button">
+          @click.stop="scrollLeft" type="button" :aria-label="ctrans('Previous')">
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" fixed-width />
         </button>
 
@@ -229,7 +231,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                     ...getStyles(props.fieldValue?.button?.view_more?.properties, props.screenType),
                   }"  class="flex-1 flex items-center justify-center bg-gray-100">
                     <span class="text-sm font-semibold">
-                      {{trans("View All")}}
+                      {{ ctrans("View All") }}
                     </span>
                   </div>
                 </div>
@@ -242,6 +244,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                 <Family3Render
                   class="family-item w-full h-full"
                   :data="item"
+                  :imageSizes="familyImageSizes"
                   :isLoading="isLoading"
                   :style="{
                     ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
@@ -255,7 +258,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
         </div>
 
         <button v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext && !isEnd" ref="nextEl" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800
-           opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button">
+           opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button" :aria-label="ctrans('Next')">
           <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" fixed-width />
         </button>
 

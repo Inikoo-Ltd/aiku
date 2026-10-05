@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableArtefacts from "@/Components/Tables/Grp/Org/Production/TableArtefacts.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { faBars, faIndustry } from "@fal";
+import { faBars, faIndustry, faFolderTree, faFolder, faTags, faHamsa } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -20,7 +20,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
-library.add(faBars, faIndustry);
+library.add(faBars, faIndustry, faFolderTree, faFolder, faTags, faHamsa);
 
 
 const props = defineProps<{
@@ -36,6 +36,7 @@ const props = defineProps<{
   set_batch_size?: object
   set_shelf_life?: object
   set_state?: object
+  set_recipe?: object
   upload_artefacts?: {
     title: {
       label: string
@@ -77,7 +78,7 @@ const component = computed(() => {
     </template>
   </PageHeading>
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-  <component :is="component" :tab="currentTab" :data="props[currentTab]" :moveToDepartment="move_to_department" :moveToFamily="move_to_family" :setBatchSize="set_batch_size" :setShelfLife="set_shelf_life" :setState="set_state"></component>
+  <component :is="component" :tab="currentTab" :data="props[currentTab]" :moveToDepartment="move_to_department" :moveToFamily="move_to_family" :setBatchSize="set_batch_size" :setShelfLife="set_shelf_life" :setState="set_state" :setRecipe="set_recipe"></component>
 
   <UploadExcel
     v-if="upload_artefacts"

@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLanguage } from "@far"
 import { faMale } from "@fas"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import TranslationRating from "@/Components/Forms/Fields/TranslationRating.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { faArrowToRight } from "@fal"
@@ -23,6 +24,8 @@ const props = defineProps<{
   fieldData: {
     main?: string
     reviewed?: boolean
+    value?: string
+    review_route?: { name: string; parameters: Record<string, unknown> }
     disable?: boolean
     show_follow_master?: boolean
     follow_master?: boolean
@@ -50,6 +53,7 @@ const languagesTo = ref<Language>(
 
 if (typeof props.form[props.fieldName] !== "string") {
   props.form[props.fieldName] = ""
+  props.form.defaults?.(props.fieldName, "")
 }
 
 
@@ -79,7 +83,7 @@ const generateTranslateAI = async () => {
         languageFrom: props.fieldData.language_from || "en",
         languageTo: languagesTo.value.code || "en",
       }),
-      { text: props.fieldData.main },
+      { text: props.fieldData.main, catalogue: true },
       { timeout: 10000 } // 10 seconds
     )
 
@@ -88,18 +92,18 @@ const generateTranslateAI = async () => {
       emits("update:form", { ...props.form })
 
       notify({
-        title: trans("Translation Completed"),
-        text: trans("Translation generated successfully."),
+        title: ctrans("Translation Completed"),
+        text: ctrans("Translation generated successfully."),
         type: "success",
       })
     }
   } catch (error: any) {
     const isTimeout = error.code === "ECONNABORTED"
     notify({
-      title: trans("Translation Error"),
+      title: ctrans("Translation Error"),
       text: isTimeout
-        ? trans("Translation request timed out. Please try again.")
-        : error.response?.data?.message || trans("Failed to generate translation."),
+        ? ctrans("Translation request timed out. Please try again.")
+        : error.response?.data?.message || ctrans("Failed to generate translation."),
       type: "error",
     })
   } finally {
@@ -122,10 +126,10 @@ const changeValue = (async () => {
   }).finally(() => {
     isLoadingFollowMaster.value = false;
     let textDisplay = props.fieldData.follow_master ? 
-      trans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
-      : trans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
+      ctrans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
+      : ctrans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
     notify({
-      title: trans('Success'),
+      title: ctrans('Success'),
       text: textDisplay,
       type: 'success'
     })
@@ -139,10 +143,10 @@ const changeValue = (async () => {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <div v-if="fieldData.show_follow_master" class="px-3 py-1 flex col-span-2 items-end justify-items-center align-middle w-full">
         <span class="align-middle h-full w-full text-end mr-3 font-semibold">
-          {{ trans('Follow Master') }}
+          {{ ctrans('Follow Master') }}
         </span>
         <Toggle
-          v-tooltip="trans('Turning this option on would make it so that this item will follow its master counterpart')"
+          v-tooltip="ctrans('Turning this option on would make it so that this item will follow its master counterpart')"
           :modelValue="fieldData.follow_master"
           @update:modelValue="changeValue()"
           :loading="isLoadingFollowMaster"
@@ -154,7 +158,7 @@ const changeValue = (async () => {
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
           <FontAwesomeIcon
             :icon="faOctopusDeploy"
-            v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+            v-tooltip="ctrans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
             class="h-3.5 w-3.5" fixed-width
           />
         </div>
@@ -165,7 +169,7 @@ const changeValue = (async () => {
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
           <FontAwesomeIcon
             :icon="faArrowToRight"
-            v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+            v-tooltip="ctrans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
             class="h-3.5 w-3.5" fixed-width
           />
         </div>
@@ -218,7 +222,7 @@ const changeValue = (async () => {
             @click="generateTranslateAI"
             class="absolute right-1 h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50"
             :class="isTextarea ? 'top-2' : 'top-1/2 -translate-y-1/2'"
-            v-tooltip="trans('get translation from AI')"
+            v-tooltip="ctrans('get translation from AI')"
             v-if="fieldData.main"
           >
             <FontAwesomeIcon v-if="!loading" :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
@@ -226,6 +230,12 @@ const changeValue = (async () => {
           </button>
         </div>
       </div>
+
+      <TranslationRating
+        v-if="fieldData.review_route && !fieldData.reviewed && fieldData.value"
+        :field="fieldName"
+        :reviewRoute="fieldData.review_route"
+      />
 
     </div>
   </div>

@@ -215,7 +215,7 @@ const shopRoute = (zone: ShippingZone): string | null => {
 					`${zone.slug}/edit`,
 				])
 			default:
-				console.log("No matching route found for:", currentRoute)
+				console.warn("No matching route found for:", currentRoute)
 				return null
 		}
 	} catch (error) {

@@ -9,8 +9,11 @@
 
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -42,6 +45,39 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     {
         if ($this->isForbidden($order)) {
             abort(403, __('Order billing or delivery address is marked as forbidden'));
+        }
+
+
+        $insertsWithoutArtwork = GetOrderInsertsWithoutArtwork::run($order);
+
+        if ($insertsWithoutArtwork) {
+            $notification = [
+                'status'      => 'error',
+                'title'       => __('Insert file missing'),
+                'description' => __('Upload the file for :inserts before checking out.', [
+                    'inserts' => implode(', ', $insertsWithoutArtwork),
+                ]),
+            ];
+
+            if ($order->customerSalesChannel) {
+                return [
+                    'redirect' => true,
+                    'route'    => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.show',
+                        'parameters' => [
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'order'                => $order->slug,
+                        ],
+                    ],
+                    'notification' => $notification,
+                ];
+            }
+
+            return [
+                'redirect'     => true,
+                'route'        => ['name' => 'retina.dashboard.show', 'parameters' => []],
+                'notification' => $notification,
+            ];
         }
 
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
@@ -113,7 +149,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $order = Arr::get($checkoutData, 'order');
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
+            GetOrderAmountToPayNow::run($order),
             $this->customer->balance
         );
 
@@ -135,6 +171,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'pre_orders'     => GetBasketPreOrders::run($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
                 'total_amount'   => $order->total_amount,

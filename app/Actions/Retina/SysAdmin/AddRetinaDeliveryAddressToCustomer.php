@@ -40,8 +40,7 @@ class AddRetinaDeliveryAddressToCustomer extends RetinaAction
         }
 
         if ($request->user() instanceof WebUser) {
-            // TODO: Raul please do the permission for the web user
-            return true;
+            return $request->route()->parameter('customer')->id === $request->user()->customer_id;
         }
 
         return false;

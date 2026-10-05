@@ -8,7 +8,9 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
@@ -158,9 +160,11 @@ trait WithMasterAssetTradeUnits
         ModelHydrateSingleTradeUnits::run($masterAsset);
         MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
         MasterAssetHydrateLabelInfoFromTradeUnits::run($masterAsset);
+        MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
         ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
+        MasterAssetHydrateEffectiveCost::dispatch($masterAsset)->afterCommit();
 
         $masterAsset->refresh();
     }

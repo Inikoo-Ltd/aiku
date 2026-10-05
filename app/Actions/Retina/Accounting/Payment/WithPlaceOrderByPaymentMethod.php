@@ -8,6 +8,9 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
+use App\Actions\Retina\GetRetinaPaymentMethods;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -46,6 +49,16 @@ trait WithPlaceOrderByPaymentMethod
                 'success' => false,
                 'reason'  => 'Order has not items',
                 'order'   => null,
+            ];
+        }
+
+        GetBasketPreOrders::make()->ensureTermsAccepted($order);
+
+        if (!GetRetinaPaymentMethods::make()->checkoutPaymentAccountShops($order)->contains('type', PaymentAccountTypeEnum::from($method->value))) {
+            return [
+                'success' => false,
+                'reason'  => __('This payment method is not available for this order.'),
+                'order'   => $order,
             ];
         }
 

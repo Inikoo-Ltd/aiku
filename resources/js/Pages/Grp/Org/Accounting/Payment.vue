@@ -8,25 +8,24 @@
 import {Head} from '@inertiajs/vue3';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {
-    faCoins, faFilePdf, faFileTimes, faUndo
+    faCoins, faFilePdf, faFileTimes
 } from '@fal';
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {computed, defineAsyncComponent, ref, inject} from "vue";
+import {computed, defineAsyncComponent, ref} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
-import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 
-library.add(faCoins, faUndo);
+library.add(faCoins);
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -167,13 +166,6 @@ interface Props {
     showcase: Showcase
     refunds?: {}
     history_notes?: {}
-    refund_route?: {
-        name: string
-        parameters: {
-            organisation: number
-            payment: number
-        }
-    }
     cancel_route: {
         name: string
         parameters: {
@@ -193,30 +185,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const layout = inject('layout')
-
-// Refund modal state
-const showRefundModal = ref(false)
-
-// Computed properties for refund conditions
-const isRefund = computed(() => {
-    return parseFloat(props?.showcase?.amount) < 0
-})
-
-const canRefund = computed(() => {
-    // Only allow refund for completed payments, not already refunds, and must have refund route
-    return props.showcase.state === 'completed' &&
-        !isRefund.value &&
-        parseFloat(props.showcase.amount) > 0 &&
-        props.refund_route &&
-        props.is_cancelled === false
-})
-
-const showRefundButton = computed(() => {
-    // Show refund button only in showcase tab and when conditions are met
-    return props.tabs.current === 'showcase' && canRefund.value
-})
 
 const showReceiptButton = computed(() => {
     const validParams = route().params['organisation'] && route().params['payment'] && props.topup_receipt_route?.parameters.topUp;
@@ -241,15 +209,6 @@ const component = computed(() => {
 });
 
 
-// Methods
-const openRefundModal = () => {
-    showRefundModal.value = true
-}
-
-const closeRefundModal = () => {
-    showRefundModal.value = false
-}
-
 const openSingleTopUpReceipt = () => {
     const url = route(props.topup_receipt_route?.name, {
         organisation: route().params['organisation'],
@@ -266,7 +225,7 @@ const openSingleTopUpReceipt = () => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template #afterTitle>
-            <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="trans('This payment is cancelled')" v-if="is_cancelled" fixed-width/>
+            <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="ctrans('This payment is cancelled')" v-if="is_cancelled" fixed-width/>
         </template>
         <template #other>
             <ModalConfirmation
@@ -276,20 +235,20 @@ const openSingleTopUpReceipt = () => {
 					parameters: cancel_route?.parameters,
 					method: 'patch'
 				}"
-				:title="trans('Are you sure you want to cancel this payment?')"
-				:description="payment_account_type === 'account' ? trans('This payment will be cancelled. This action would also affect the customer balance.') : trans('This payment will be cancelled.')"
-				:noLabel="trans('Return')"
+				:title="ctrans('Are you sure you want to cancel this payment?')"
+				:description="payment_account_type === 'account' ? ctrans('This payment will be cancelled. This action would also affect the customer balance.') : ctrans('This payment will be cancelled.')"
+				:noLabel="ctrans('Return')"
 				:iconClass="'text-red-500'"
 				:iconContainerClass="'bg-red-100 border-1 border-red-500'"
 			>
 				<template #default="{ changeModel }">
 					<Button 
-						v-tooltip="trans('Cancel Payment')"
+						v-tooltip="ctrans('Cancel Payment')"
 						class="text-sm" :type="'negative'"
 						@click="changeModel"
 					>
                         <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" fixed-width/>
-                        {{ trans('Cancel Payment') }}
+                        {{ ctrans('Cancel Payment') }}
 					</Button>
 				</template>
 
@@ -298,18 +257,15 @@ const openSingleTopUpReceipt = () => {
 						:style="'delete'"
 						:loading="isLoadingdelete"
 						@click="() => clickYes()"
-						:label="trans('Cancel Payment')"
+						:label="ctrans('Cancel Payment')"
 					/>
 				</template>
 			</ModalConfirmation>
-            <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
-            </Button>
-            <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="trans('Download Receipt')">
+            <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="ctrans('Download Receipt')">
             </Button>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
-    <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal" @close="closeRefundModal"/>
 </template>
 

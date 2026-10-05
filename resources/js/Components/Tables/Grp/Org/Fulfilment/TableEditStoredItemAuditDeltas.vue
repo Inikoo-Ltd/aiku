@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import StoredItemsProperty from "@/Components/StoredItemsProperty.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { reactive, ref } from "vue"
 import { debounce, get, set } from "lodash-es"
 import InputNumber from "primevue/inputnumber"
@@ -136,9 +136,7 @@ const onUnselectNewStoredItem = (row: number, store_item_audit_deltas_id: number
 // Section: store quantity stored item (first update)
 const isLoadingStoreQuantity = reactive<StoredItemsQuantity>({})
 const onStoreStoredItem = (row: number, idPallet: number, idStoredItem: number, quantity: number, idStoredItemAudit: number) => {
-    console.log("onStoreStoredItem", idStoredItem)
     // Store
-    console.log("lolo", props.route_list?.stored_item_audit_delta?.store?.name)
     if (!props.route_list?.stored_item_audit_delta?.store?.name) {
         console.error("No id stored item audit")
         return
@@ -161,8 +159,8 @@ const onStoreStoredItem = (row: number, idPallet: number, idStoredItem: number, 
                 console.error(e)
                 const errorMessages = e && Object.keys(e).length ? Object.values(e).join("\n") : ""
                 notify({
-                    title: trans("Something went wrong."),
-                    text: errorMessages || trans("Failed to update the quantity."),
+                    title: ctrans("Something went wrong."),
+                    text: errorMessages || ctrans("Failed to update the quantity."),
                     type: "error"
                 })
             },
@@ -179,13 +177,11 @@ const debounceStoreStoredItem = debounce((row: number, idPallet: number, idStore
 const isStoredItemEdited = reactive<StoredItemsQuantity>({})
 const isLoadingQuantity = reactive<StoredItemsQuantity>({})
 const onChangeQuantity = (row: number, idStoredItemAuditDelta: number | null, quantity: number) => {
-    console.log("onChangeQuantity")
     //todo if   "store_item_audit_delta_id" ==null,
     // use props.route_list?.stored_item_audit_delta?.store.name
     // get back the store_item_audit_delta_id and set it uo so next time you call update
 
     // Update
-    console.log("lolo", props.route_list?.stored_item_audit_delta?.update?.name)
     if (!props.route_list?.stored_item_audit_delta?.update?.name) {
         return
     }
@@ -204,8 +200,8 @@ const onChangeQuantity = (row: number, idStoredItemAuditDelta: number | null, qu
                 console.error(e)
                 const errorMessages = e && Object.keys(e).length ? Object.values(e).join("\n") : ""
                 notify({
-                    title: trans("Something went wrong."),
-                    text: errorMessages || trans("Failed to update the quantity."),
+                    title: ctrans("Something went wrong."),
+                    text: errorMessages || ctrans("Failed to update the quantity."),
                     type: "error"
                 })
             },
@@ -238,7 +234,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                 {{ pallet.reference }}
             </component>
 
-            <div v-if="pallet.customer_reference" v-tooltip="trans(`Customer's reference`)"
+            <div v-if="pallet.customer_reference" v-tooltip="ctrans(`Customer's reference`)"
                  class="mt-1 space-x-1.5 whitespace-nowrap">
                 <span class="text-gray-400 text-sm">({{ pallet.customer_reference }})</span>
             </div>
@@ -289,10 +285,10 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
 
             <DataTable v-if="proxyItem.stored_items?.length || proxyItem.new_stored_items?.length"
                        :value="[...proxyItem.stored_items, ...proxyItem.new_stored_items]">
-                <Column field="reference" :header="trans('SKO')" class="">
+                <Column field="reference" :header="ctrans('SKO')" class="">
                     <template #body="{ data }">
                         <div class="whitespace-nowrap">{{ data.reference }}
-                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKO`)" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="ctrans(`New added Customer's SKO`)" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
                         </div>
                     </template>
                 </Column>
@@ -407,7 +403,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                                                     <span class="text-gray-600">
                                                         {{ !data.stored_item_audit_delta_id_id ? data.quantity : data.audited_quantity }}
                                                     </span>
-                                                    <FontAwesomeIcon v-tooltip="trans('Edit')" icon="fal fa-pencil" size="sm" class=""
+                                                    <FontAwesomeIcon v-tooltip="ctrans('Edit')" icon="fal fa-pencil" size="sm" class=""
                                                                      fixed-width aria-hidden="true" />
                                                 </div>
                                             </transition>
@@ -419,7 +415,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                                         v-if="get(data, ['is_edit'], false)"
                                         @click="set(data, ['is_edit'], false)"
                                         @clicccck="() => onUnselectNewStoredItem(item.rowIndex, data.stored_item_audit_delta_id)"
-                                        v-tooltip="trans('Close input')"
+                                        v-tooltip="ctrans('Close input')"
                                         type="tertiary"
                                         icon="fal fa-undo-alt"
                                         class="border-none rounded-none text-gray-500"
@@ -429,7 +425,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                                     <Button
                                         v-else-if="   data.stored_item_audit_delta_id"
                                         @click="() => onUnselectNewStoredItem(item.rowIndex, data.stored_item_audit_delta_id)"
-                                        v-tooltip="trans('Reset to original')"
+                                        v-tooltip="ctrans('Reset to original')"
                                         type="tertiary"
                                         icon="fal fa-undo"
                                         class="border-none rounded-none"
@@ -442,7 +438,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
 
                                 <!-- {{ isStoredItemEdited }} -->
 
-                                <!-- <FontAwesomeIcon v-tooltip="trans('Close')"
+                                <!-- <FontAwesomeIcon v-tooltip="ctrans('Close')"
                                     @click="() => set(statesBoxEdit, `${item.rowIndex}.${data.id}`, false)"
                                     icon='fal fa-arrow-to-left'
                                     class='py-1 px-1 transition-all cursor-pointer text-gray-400 hover:text-gray-700'
@@ -462,7 +458,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                         </div>
                         <div v-else @click="() => onUnselectNewStoredItem(item.rowIndex, data.stored_item_audit_delta_id)"
                              class="text-red-500 hover:underline cursor-pointer">
-                            {{ trans("Unselect") }}
+                            {{ ctrans("Unselect") }}
                         </div>
                     </template>
                     <div v-else @click="onCheck(proxyItem.auditRoute, data.id, data.quantity)"
@@ -498,7 +494,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                            :label="trans(`Customer's SKO`)" />
+                            :label="ctrans(`Customer's SKO`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">

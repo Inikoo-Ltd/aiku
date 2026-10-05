@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -93,6 +94,19 @@ class GetMasterProductsPricingSales extends OrgAction
         $masterAssetIDs = MasterAsset::whereIn('id', $this->validatedData['ids'])
             ->where('group_id', $this->group->id)
             ->where('master_shop_id', $masterProductCategory->master_shop_id)
+            ->pluck('id')
+            ->all();
+
+        return $this->handle($masterAssetIDs, $this->validatedData['interval']);
+    }
+
+    public function inMasterShop(MasterShop $masterShop, ActionRequest $request): array
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        $masterAssetIDs = MasterAsset::whereIn('id', $this->validatedData['ids'])
+            ->where('group_id', $this->group->id)
+            ->where('master_shop_id', $masterShop->id)
             ->pluck('id')
             ->all();
 

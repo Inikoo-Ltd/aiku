@@ -15,7 +15,7 @@ import '@/Composables/Icon/Pallet/PalletType'  // Import all icon for State
 import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { computed, inject, reactive, ref, onBeforeMount } from 'vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Modal from "@/Components/Utils/Modal.vue"
 import { debounce, isNull } from 'lodash-es'
@@ -51,7 +51,6 @@ const emit = defineEmits<{
     (e: 'isStoredItemAdded', value: boolean): void
 }>()
 
-console.log('s',props)
 
 const isPickingLoading = ref(false)
 const isUndoLoading = ref(false)
@@ -60,19 +59,19 @@ const selectedRow = ref({})
 // Not Picked
 const listStatusNotPicked = [
     {
-        label: trans('Damaged'),
+        label: ctrans('Damaged'),
         value: 'damaged'
     },
     {
-        label: trans('Lost'),
+        label: ctrans('Lost'),
         value: 'lost'
     },
     {
-        label: trans('Other incident'),
+        label: ctrans('Other incident'),
         value: 'other_incident'
     },
     {
-        label: trans('Unlink'),
+        label: ctrans('Unlink'),
         value: 'unlink'
     }
 ]
@@ -136,7 +135,7 @@ const onSubmitMarkPalletStatus = async () => {
     }
 
     if (!selectedStatusNotPicked.status) {
-        errorNotPicked.status = trans('Please select status')
+        errorNotPicked.status = ctrans('Please select status')
         return
     }
 
@@ -160,7 +159,7 @@ const onSubmitMarkPalletStatus = async () => {
     }
 
     if (!selectedStatusNotPicked.notes) {
-        errorNotPicked.notes = trans('Description is required')
+        errorNotPicked.notes = ctrans('Description is required')
         return
     }
 
@@ -256,12 +255,11 @@ const onCheckAllTable = async (payload: { data: {}[]; allChecked: boolean }) => 
         debounceReloadBoxStats()
         router.reload({ only: ['pallets'], preserveScroll: true })
     } catch (error) {
-        console.log('Failed to check/uncheck all pallets', error)
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: payload.allChecked
-                ? trans('Failed to select all pallets')
-                : trans('Failed to unselect all pallets'),
+                ? ctrans('Failed to select all pallets')
+                : ctrans('Failed to unselect all pallets'),
             type: 'error',
         })
     }
@@ -312,7 +310,6 @@ const onCheckTable = async (item: {}) => {
             emit('isStoredItemAdded', false)
             debounceReloadBoxStats()
         } catch (error) {
-            console.log('sssss',error)
             notify({
                 title: 'Something went wrong',
                 text: 'Failed to unselect the data',
@@ -485,7 +482,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
             <div>
                 {{ item.customer_reference }}
                 <div v-if="item.notes" class="text-gray-400">
-                    <FontAwesomeIcon v-tooltip="trans(`Pallet's note`)" icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="ctrans(`Pallet's note`)" icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
                     <span>
                         {{ item.notes }}
                     </span>
@@ -516,7 +513,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
             </div>
 
             <div v-else class="text-gray-400 text-xs italic">
-                {{ trans('No items')}}
+                {{ ctrans('No items')}}
             </div>
         </template>
 
@@ -551,7 +548,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                     <div v-else class="text-gray-400">-</div>
                     <div
                         v-if="(item.picked?.picked ?? 0) > 0"
-                        v-tooltip="trans('Picked pallet')"
+                        v-tooltip="ctrans('Picked pallet')"
                         class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-gray-100 text-gray-700 text-xs font-medium"
                     >
                         {{ item.picked?.picked }}
@@ -560,13 +557,13 @@ const generateLocationRoute = (item: any, picking?: any) => {
             </div>
             <div v-else-if="item.pivot_state === 'not_picked'" class="text-red-500 italic flex items-center gap-x-1">
                 <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
-                <span v-if="item.state === 'lost'">{{ trans("Pallet lost") }}</span>
-                <span v-else-if="item.state === 'damaged'">{{ trans("Pallet damaged") }}</span>
-                <span v-else-if="item.state === 'other_incident'">{{ trans("Other incident") }}</span>
-                <span v-else>{{ trans("Not picked") }}</span>
+                <span v-if="item.state === 'lost'">{{ ctrans("Pallet lost") }}</span>
+                <span v-else-if="item.state === 'damaged'">{{ ctrans("Pallet damaged") }}</span>
+                <span v-else-if="item.state === 'other_incident'">{{ ctrans("Other incident") }}</span>
+                <span v-else>{{ ctrans("Not picked") }}</span>
             </div>
             <div v-else class="text-xs text-gray-400 italic">
-                {{ trans("No items picked yet") }}
+                {{ ctrans("No items picked yet") }}
             </div>
         </template>
 
@@ -576,7 +573,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                 <span>{{ item.picked?.picked ?? 0 }}</span>
                 <span
                     v-if="(item.picked?.not_picked ?? 0) > 0"
-                    v-tooltip="trans('Not Picked')"
+                    v-tooltip="ctrans('Not Picked')"
                     class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 border border-red-400 bg-red-50 text-red-500 text-xs font-medium leading-none"
                 >
                     {{ item.picked?.not_picked }}
@@ -605,7 +602,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                     preserveScroll
                     :only="['pallets', 'pageHead', 'data']"
                     method="patch"
-                    v-tooltip="trans(`Set as picked`)"
+                    v-tooltip="ctrans(`Set as picked`)"
                 >
                     <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
@@ -617,7 +614,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                 <Button
                     v-if="pallet.state === 'picking' && isWarehouseDispatchingPalletReturnPage && pallet.notPickedPalletRoute?.name"
                     icon="fal fa-debug"
-                    v-tooltip="trans('Set as not picked')"
+                    v-tooltip="ctrans('Set as not picked')"
                     :type="'negative'"
                     size="sm"
                     :loading="isSubmitNotPickedLoading == pallet.id"
@@ -627,7 +624,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                 <Button
                     v-if="pallet.state === 'not_picked' && isFulfilmentOperationsPalletReturnPage"
                     icon="fal fa-debug"
-                    v-tooltip="trans('Mark pallet status')"
+                    v-tooltip="ctrans('Mark pallet status')"
                     :type="'negative'"
                     size="sm"
                     :loading="isSubmitNotPickedLoading == pallet.id || isUnlinkLoading === pallet.id"
@@ -642,7 +639,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                     preserveScroll
                     :only="['pallets', 'pageHead', 'data']"
                     method="patch"
-                    v-tooltip="trans(`Unlink pallet from this return order (Will set it as in-warehouse)`)"
+                    v-tooltip="ctrans(`Unlink pallet from this return order (Will set it as in-warehouse)`)"
                 >
                     <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
@@ -654,13 +651,13 @@ const generateLocationRoute = (item: any, picking?: any) => {
                 <!-- Button: Undo picking -->
                 <div v-if="(pallet.state === 'picked' || pallet.state === 'not_picked') && isWarehouseDispatchingPalletReturnPage" class="flex items-center justify-center gap-x-1">
                     <FontAwesomeIcon v-if="pallet.state === 'not_picked'"
-                        v-tooltip="trans('Pallet not picked')"
+                        v-tooltip="ctrans('Pallet not picked')"
                         icon="fas fa-skull"
                         class="text-red-500"
                         fixed-width
                         aria-hidden="true"
                     />
-                    <FontAwesomeIcon v-if="pallet.state === 'picked'" v-tooltip="trans('Pallet picked')"
+                    <FontAwesomeIcon v-if="pallet.state === 'picked'" v-tooltip="ctrans('Pallet picked')"
                         :icon="faHandHoldingBox" class="text-gray-500" fixed-width aria-hidden="true" />
                     <Link
                         as="div"
@@ -670,7 +667,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
                         method="patch"
                         preserveScroll
                         :only="['pallets', 'pageHead', 'data']"
-                        v-tooltip="trans('Undo pick')"
+                        v-tooltip="ctrans('Undo pick')"
                         class="flex items-center justify-center"
                     >
                         <Button icon="fal fa-undo" type="negative" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />
@@ -678,15 +675,15 @@ const generateLocationRoute = (item: any, picking?: any) => {
                 </div>
 
                 <div v-else-if="['lost', 'damaged', 'other_incident'].includes(pallet.state)" class="text-red-300 italic">
-                    <FontAwesomeIcon v-tooltip="trans('Pallet not picked')" icon="fas fa-skull" class="text-red-500" fixed-width aria-hidden="true" />
-                    {{ trans(pallet.state === 'lost' ? 'Pallet lost' : pallet.state === 'damaged' ? 'Pallet damaged' : 'Other incident') }}
+                    <FontAwesomeIcon v-tooltip="ctrans('Pallet not picked')" icon="fas fa-skull" class="text-red-500" fixed-width aria-hidden="true" />
+                    {{ ctrans(pallet.state === 'lost' ? 'Pallet lost' : pallet.state === 'damaged' ? 'Pallet damaged' : 'Other incident') }}
                 </div>
             </div>
         </template>
 
         <!-- <template #cell(actions)="{ item: pallet }" v-else>
             <div v-if="pallet.pivot_state == 'cancel'" class="text-red-300 italic" >
-                {{ trans("Pallet set back to storing") }}
+                {{ ctrans("Pallet set back to storing") }}
             </div>
         </template> -->
 
@@ -694,11 +691,11 @@ const generateLocationRoute = (item: any, picking?: any) => {
     </Table>
 
     <Modal :isOpen="isModalMarkPalletStatus" @onClose="onCloseModalMarkPalletStatus" width="w-full max-w-md" closeButton>
-        <div class="text-base font-semibold mb-4">{{ trans('Mark pallet status') }}</div>
+        <div class="text-base font-semibold mb-4">{{ ctrans('Mark pallet status') }}</div>
 
         <div class="mb-3">
             <div class="text-xs px-1 mb-1">
-                <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans('Select status') }}:
+                <span class="text-red-500 text-sm mr-0.5">*</span>{{ ctrans('Select status') }}:
             </div>
             <PureMultiselect
                 v-model="selectedStatusNotPicked.status"
@@ -713,12 +710,12 @@ const generateLocationRoute = (item: any, picking?: any) => {
 
         <div v-if="selectedStatusNotPicked.status !== 'unlink'" class="mb-4">
             <div class="text-xs px-1 mb-1">
-                <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans('Description') }}:
+                <span class="text-red-500 text-sm mr-0.5">*</span>{{ ctrans('Description') }}:
             </div>
             <PureTextarea
                 v-model="selectedStatusNotPicked.notes"
                 @update:modelValue="() => errorNotPicked.notes = null"
-                :placeholder="trans('Enter reason why the pallet is not picked')"
+                :placeholder="ctrans('Enter reason why the pallet is not picked')"
                 :class="errorNotPicked.notes ? 'errorShake' : ''"
             />
             <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.notes }}</div>
@@ -728,7 +725,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
             <Button
                 @click="onSubmitMarkPalletStatus"
                 full
-                :label="selectedStatusNotPicked.status === 'unlink' ? trans('Unlink') : trans('Submit')"
+                :label="selectedStatusNotPicked.status === 'unlink' ? ctrans('Unlink') : ctrans('Submit')"
                 :loading="isSubmitNotPickedLoading == selectedPalletForMarkStatus?.id || isUnlinkLoading === selectedPalletForMarkStatus?.id"
                 :disabled="!selectedStatusNotPicked.status || (selectedStatusNotPicked.status !== 'unlink' && !selectedStatusNotPicked.notes)"
             />

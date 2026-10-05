@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dashboard;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
@@ -43,11 +45,6 @@ class ShowOrganisationDashboard extends OrgAction
     use WithTabsBox;
     use WithPerformanceDateResolution;
 
-    private function canViewSales(Organisation $organisation, User $user): bool
-    {
-        return $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
-    }
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()
@@ -66,7 +63,7 @@ class ShowOrganisationDashboard extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $fromDate, $toDate);
+        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
 
         $currentTabEnum = OrganisationDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables = OrganisationDashboardSalesTableTabsEnum::tablesForTabs($organisation, $timeSeriesData, [$currentTabEnum]);
@@ -84,9 +81,12 @@ class ShowOrganisationDashboard extends OrgAction
                     ],
                     'settings'  => [
                         'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'partners_type'       => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
+                    'month_target' => GetShopMonthSalesTarget::run($organisation, $request->user()),
+                    'year_target'  => GetShopYearSalesTarget::run($organisation, $request->user()),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
@@ -114,7 +114,7 @@ class ShowOrganisationDashboard extends OrgAction
             [
                 'title'         => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$this->canViewSales($organisation, $request->user()) ? ['super_blocks' => []] : $dashboard,
+                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$request->user()->canViewSales() ? ['super_blocks' => []] : $dashboard,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
             ]
         );
@@ -149,7 +149,7 @@ class ShowOrganisationDashboard extends OrgAction
 
     private function onlyProductionReachable(Organisation $organisation, User $user): ?Production
     {
-        if ($this->canViewSales($organisation, $user)) {
+        if ($user->canViewSales()) {
             return null;
         }
         $navigation = GetOrganisationNavigation::run($user, $organisation);

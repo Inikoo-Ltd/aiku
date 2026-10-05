@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
@@ -15,15 +16,13 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
-use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Procurement\OrgPartner;
@@ -60,6 +59,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         $skipped      = [];
         $picked       = 0;
         $touchedOrgPartners = [];
+        $splitByBuyer       = [];
 
         foreach ($lines as $line) {
             /** @var PartnerShoppingListItem|null $item */
@@ -69,9 +69,14 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $product = $this->resolveSellerProduct($seller, $item);
+            $product = GetPartnerSellingProduct::run($item->orgPartner, $item->stock_id);
             if (!$product) {
-                $skipped[] = ['id' => $item->id, 'reason' => 'no active product for this stock in the partner organisation'];
+                $skipped[] = ['id' => $item->id, 'reason' => 'no product for this stock in the shops the partner sells from'];
+                continue;
+            }
+
+            if ($packedInMismatches = EnsurePartnerOrderPackedInMatches::make()->mismatches($item->orgPartner, $product->orgStocks()->pluck('stock_id')->push($item->stock_id)->unique()->all())) {
+                $skipped[] = ['id' => $item->id, 'reason' => $packedInMismatches[0]];
                 continue;
             }
 
@@ -81,9 +86,15 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $order = $orders[$customer->id] ?? $this->resolveOrder($customer);
+            $splitCosmetics = $splitByBuyer[$item->organisation_id] ??= (bool) OrgPartner::where('organisation_id', $seller->id)
+                ->where('partner_id', $item->organisation_id)
+                ->value('split_cosmetics');
+            $isCosmetic     = $splitCosmetics && $item->stock->is_cosmetic;
+            $orderKey       = $customer->id.($splitCosmetics ? ':'.(int) $isCosmetic : '');
 
-            $orders[$customer->id] = $order;
+            $order = $orders[$orderKey] ?? $this->resolveOrder($customer, $splitCosmetics, $isCosmetic);
+
+            $orders[$orderKey] = $order;
 
             $quantityRequested = (float) ($line['quantity'] ?? $item->quantity);
             $quantityPicked    = min($quantityRequested, (float) $item->quantity);
@@ -106,7 +117,13 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 ]
             );
 
-            if ($remainder > 0) {
+            $openSibling = $remainder > 0 && !$item->pre_picked_at
+                ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)->where('id', '!=', $item->id)->first()
+                : null;
+
+            if ($openSibling) {
+                $openSibling->increment('quantity', $remainder);
+            } elseif ($remainder > 0) {
                 PartnerShoppingListItem::create([
                     ...$item->only([
                         'group_id',
@@ -156,22 +173,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         ];
     }
 
-    private function resolveSellerProduct(Organisation $seller, PartnerShoppingListItem $item): ?Product
-    {
-        $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)
-            ->where('stock_id', $item->stock_id)
-            ->first();
-
-        $products = $sellerOrgStock?->products();
-        if (!$products) {
-            return null;
-        }
-        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery());
-
-        return $products->first();
-    }
-
-    private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
+    public function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
         $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
         if ($customer) {
@@ -208,25 +210,32 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         return $customer;
     }
 
-    private function resolveOrder(Customer $customer): Order
+    private function resolveOrder(Customer $customer, bool $splitCosmetics, bool $isCosmetic): Order
     {
         $channel = $this->intercompanySalesChannel($customer->group_id);
 
         $order = $customer->orders()
             ->where('state', OrderStateEnum::CREATING)
             ->where('sales_channel_id', $channel->id)
+            ->when($splitCosmetics, fn ($query) => $query->whereRaw("coalesce((data->>'partner_cosmetic')::boolean, false) = ?", [$isCosmetic]))
             ->first();
 
         if ($order) {
             return $order;
         }
 
-        return StoreOrder::make()->action($customer, [
+        $order = StoreOrder::make()->action($customer, [
             'sales_channel_id' => $channel->id,
         ]);
+
+        if ($splitCosmetics) {
+            $order->update(['data' => array_replace($order->data ?? [], ['partner_cosmetic' => $isCosmetic])]);
+        }
+
+        return $order;
     }
 
-    private function intercompanySalesChannel(int $groupId): SalesChannel
+    public function intercompanySalesChannel(int $groupId): SalesChannel
     {
         $channel = SalesChannel::where('group_id', $groupId)
             ->where('code', 'intercompany')

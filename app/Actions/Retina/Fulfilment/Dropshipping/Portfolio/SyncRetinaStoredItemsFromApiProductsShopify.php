@@ -9,10 +9,12 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\LinkShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
@@ -25,10 +27,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -93,6 +97,10 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
                             $portfolio = $storedItem->portfolio;
                             if (!$portfolio) {
+                                if (LinkShopifyPortfolio::refusal($shopifyUser->customerSalesChannel, Arr::get($product, 'admin_graphql_api_id'), Arr::get($variant, 'admin_graphql_api_id'))) {
+                                    $numberFails++;
+                                    continue;
+                                }
 
                                 $portfolio = StorePortfolio::make()->action(
                                     $shopifyUser->customerSalesChannel,
@@ -134,8 +142,10 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(CustomerSalesChannel $customerSalesChannel): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        abort_unless($this->authorize($request), 403);
+
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 

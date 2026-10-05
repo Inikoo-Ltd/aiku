@@ -8,7 +8,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -190,7 +190,7 @@ const hideBulkButton = () => {
 const onUploadToShopify = () => {
 	if (!props.routes.bulk_upload?.name) {
 		notify({
-			title: trans("No route defined"),
+			title: ctrans("No route defined"),
 			type: "error",
 		})
 		return
@@ -206,7 +206,7 @@ const onUploadToShopify = () => {
 			onBefore: () => (isLoadingUpload.value = true),
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: "",
 					type: "error",
 				})
@@ -215,7 +215,7 @@ const onUploadToShopify = () => {
 				selectedData.products = []
 				router.reload({ only: ["pageHead", "products"] })
 				notify({
-					title: trans("Success!"),
+					title: ctrans("Success!"),
 					text: `Portfolios successfully uploaded to ${props.platform_data.name}`,
 					type: "success",
 				})
@@ -246,7 +246,6 @@ const _export_popover = ref()
 
 // Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
-	console.log("customerSalesChannel", customerSalesChannel)
 	try {
 		const response = await axios[customerSalesChannel.reconnect_route.method || "get"](
 			route(
@@ -254,7 +253,6 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 				customerSalesChannel.reconnect_route.parameters
 			)
 		)
-		console.log("1111 response", response)
 		if (response.status !== 200) {
 			throw new Error("Something went wrong. Try again later.")
 		} else {
@@ -303,7 +301,7 @@ const onCloneManualPortfolio = async (
 			},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: "",
 					type: "error",
 				})
@@ -316,8 +314,8 @@ const onCloneManualPortfolio = async (
 			onSuccess: () => {
 				selectedData.products = []
 				notify({
-					title: trans("Success!"),
-					text: trans(`Portfolios cloning started in background.`),
+					title: ctrans("Success!"),
+					text: ctrans(`Portfolios cloning started in background.`),
 					type: "success",
 				})
 				props.step.current = 1
@@ -354,8 +352,8 @@ const startProgressSimulation = () => {
 				isOpenModalCloneProgress.value = false
 				router.reload({ only: ["pageHead", "products"] })
 				notify({
-					title: trans("Cloning Complete!"),
-					text: trans(":total products cloned.", {
+					title: ctrans("Cloning Complete!"),
+					text: ctrans(":total products cloned.", {
 						total: cloneProgressData.value.total,
 					}),
 					type: "success",
@@ -404,8 +402,8 @@ watch(
 					isOpenModalCloneProgress.value = false
 					router.reload({ only: ["pageHead", "products"] })
 					notify({
-						title: trans("Cloning Complete!"),
-						text: trans(":success products cloned successfully, :fails failed.", {
+						title: ctrans("Cloning Complete!"),
+						text: ctrans(":success products cloned successfully, :fails failed.", {
 							success: progressForChannel.data.number_success,
 							fails: progressForChannel.data.number_fails,
 						}),
@@ -440,10 +438,9 @@ const bulkUpload = () => {
 				isLoadingBulkDeleteUpload.value = false
 			},
 			onError: (error) => {
-				console.log("Error during bulk upload:", error)
 				notify({
-					title: trans("Something went wrong"),
-					text: error.message || trans("An error occurred while uploading portfolios"),
+					title: ctrans("Something went wrong"),
+					text: error.message || ctrans("An error occurred while uploading portfolios"),
 					type: "error",
 				})
 			},
@@ -499,8 +496,8 @@ const onSuccessBulkMatch = () => {
 	selectedProducts.value = []
 
 	notify({
-		title: trans("Matching started"),
-		text: trans("Your products are being matched with the listings already on your shop."),
+		title: ctrans("Matching started"),
+		text: ctrans("Your products are being matched with the listings already on your shop."),
 		type: "success",
 	})
 
@@ -724,7 +721,6 @@ const countdownInterval = ref<number | null>(null)
 // Set countdown for download link expiration
 const setCountdown = (expiryDate: Date) => {
 	clearInterval(countdownInterval.value!)
-	console.log("Setting countdown for:", expiryDate, "Current time:", new Date())
 
 	// Initial update
 	timeCountdown.value = useTimeCountdown(expiryDate.toISOString(), { human: true })
@@ -756,7 +752,6 @@ const updateTimeLeft = () => {
 		1
 	)
 	const now = new Date()
-	console.log("Now:", now, "Expiry:", expiryDate)
 
 	if (now > expiryDate) {
 		timeCountdown.value = "Expired"
@@ -792,10 +787,10 @@ const submitBulkEditPrice = async (type) => {
 		modalBulkEditPrice.value = false
 
 		notify({
-			title: trans(
+			title: ctrans(
 				"Your edits was successfully submitted and still processed in background."
 			),
-			text: trans("Please wait for a few minutes to update the product"),
+			text: ctrans("Please wait for a few minutes to update the product"),
 			type: "success",
 		})
 	} catch (error: any) {
@@ -822,15 +817,15 @@ onBeforeUnmount(() => {
 const productAvailibility = [
 	{
 		key: "exclude_not_for_sale",
-		label: trans("Exclude products that are not for sale"),
+		label: ctrans("Exclude products that are not for sale"),
 	},
 	{
 		key: "exclude_out_of_stocks",
-		label: trans("Exclude products that are out of stock"),
+		label: ctrans("Exclude products that are out of stock"),
 	},
 	{
 		key: "only_not_for_sale",
-		label: trans("Only products that are not for sale"),
+		label: ctrans("Only products that are not for sale"),
 	},
 ]
 
@@ -903,7 +898,7 @@ function toggleSelectAll() {
 const onDownloadExtendedProperties = () => {
 	if (!selectedExtendedColumns.value.length) {
 		notify({
-			title: trans("Select at least one column"),
+			title: ctrans("Select at least one column"),
 			type: "warn",
 		})
 		return
@@ -918,7 +913,7 @@ const onDownloadExtendedProperties = () => {
 
 	if (!url) {
 		notify({
-			title: trans("No route defined"),
+			title: ctrans("No route defined"),
 			type: "error",
 		})
 		return
@@ -945,7 +940,7 @@ const openUpdateDimension = () => {
 const submitBatchAllDimensionsUpdate = () => {
 	if (!props.routes.batch_all_dimensions_update?.name) {
 		notify({
-			title: trans("No route defined"),
+			title: ctrans("No route defined"),
 			type: "error",
 		})
 		return
@@ -965,14 +960,14 @@ const submitBatchAllDimensionsUpdate = () => {
 			onSuccess: () => {
 				modalUpdateDimension.value = false
 				notify({
-					title: trans("Success!"),
-					text: trans("Products dimensions update has been started."),
+					title: ctrans("Success!"),
+					text: ctrans("Products dimensions update has been started."),
 					type: "success",
 				})
 			},
 			onError: () => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					type: "error",
 				})
 			},
@@ -998,7 +993,7 @@ const layout = inject("layout", layoutStructure)
 				:disabled="!selectedData.products.length"
 				v-tooltip="
 					!selectedData.products.length
-						? trans('Select at least one product to upload')
+						? ctrans('Select at least one product to upload')
 						: ''
 				" />
 		</template>
@@ -1016,7 +1011,7 @@ const layout = inject("layout", layoutStructure)
 				</a>
 				<Button
 					@click="(e: MouseEvent) => _export_popover?.toggle(e)"
-					v-tooltip="trans('Other Export Options')"
+					v-tooltip="ctrans('Other Export Options')"
 					:icon="faEllipsisV"
 					class="h-9 px-2 py-0 border-0 rounded-none border-r"
 					type="tertiary" />
@@ -1025,19 +1020,19 @@ const layout = inject("layout", layoutStructure)
 						<div
 							class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
 							<span class="font-semibold text-sm text-gray-700">{{
-								trans("Export Options")
+								ctrans("Export Options")
 							}}</span>
 							<button
 								@click="toggleSelectAll"
 								class="text-xs text-blue-600 hover:underline font-medium">
-								{{ allSelected ? trans("Deselect All") : trans("Select All") }}
+								{{ allSelected ? ctrans("Deselect All") : ctrans("Select All") }}
 							</button>
 						</div>
 
 						<div class="p-4 overflow-y-auto space-y-5 text-sm">
 							<div>
 								<div class="font-medium text-gray-800 mb-2">
-									{{ trans("Bundles") }}
+									{{ ctrans("Bundles") }}
 								</div>
 								<label
 									class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
@@ -1045,16 +1040,16 @@ const layout = inject("layout", layoutStructure)
 										type="checkbox"
 										v-model="includeBundles"
 										class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-									<span>{{ trans("Include bundles") }}</span>
+									<span>{{ ctrans("Include bundles") }}</span>
 								</label>
 								<div class="mt-1 pl-1 text-xs text-gray-500">
-									{{ trans("Applies to both CSV exports. Off by default.") }}
+									{{ ctrans("Applies to both CSV exports. Off by default.") }}
 								</div>
 							</div>
 
 							<div class="border-t pt-4">
 								<div class="font-medium text-gray-800 mb-2">
-									{{ trans("Columns to Export") }}
+									{{ ctrans("Columns to Export") }}
 								</div>
 								<div class="space-y-2">
 									<label
@@ -1072,7 +1067,7 @@ const layout = inject("layout", layoutStructure)
 													col.key
 												),
 											}">
-											{{ trans(col.label) }}
+											{{ ctrans(col.label) }}
 										</span>
 									</label>
 								</div>
@@ -1080,7 +1075,7 @@ const layout = inject("layout", layoutStructure)
 
 							<div class="border-t pt-4">
 								<div class="font-medium text-gray-800 mb-2">
-									{{ trans("Product State") }}
+									{{ ctrans("Product State") }}
 								</div>
 								<div class="space-y-2">
 									<label
@@ -1092,14 +1087,14 @@ const layout = inject("layout", layoutStructure)
 											:value="state.key"
 											v-model="selectedProductStates"
 											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-										<span>{{ trans(state.label) }}</span>
+										<span>{{ ctrans(state.label) }}</span>
 									</label>
 								</div>
 							</div>
 
 							<div class="border-t pt-4">
 								<div class="font-medium text-gray-800 mb-2">
-									{{ trans("Product Sale Status") }}
+									{{ ctrans("Product Sale Status") }}
 								</div>
 								<div class="space-y-2">
 									<label
@@ -1111,7 +1106,7 @@ const layout = inject("layout", layoutStructure)
 											:value="availibility.key"
 											v-model="selectedProductAvailibility"
 											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-										<span>{{ trans(availibility.label) }}</span>
+										<span>{{ ctrans(availibility.label) }}</span>
 									</label>
 								</div>
 							</div>
@@ -1124,7 +1119,7 @@ const layout = inject("layout", layoutStructure)
 								type="primary"
 								class="w-full !px-3 !py-2 !justify-center"
 								@click="onDownloadExtendedProperties"
-								:label="trans('Export Extended Properties')" />
+								:label="ctrans('Export Extended Properties')" />
 						</div>
 					</div>
 				</Popover>
@@ -1141,7 +1136,7 @@ const layout = inject("layout", layoutStructure)
 						<template #label>
 							<LoadingIcon v-if="stateDownloadImagesReady === 'loading'" />
 							<span v-else>
-								{{ trans("Images") }}
+								{{ ctrans("Images") }}
 							</span>
 						</template>
 					</Button>
@@ -1151,7 +1146,7 @@ const layout = inject("layout", layoutStructure)
 					<a :href="linkDownloadImages" target="_blank" rel="noopener" download>
 						<Button
 							:icon="faDownload"
-							:label="trans('Download images')"
+							:label="ctrans('Download images')"
 							type="secondary"
 							class="border-l-0 rounded-l-none"
 							:disabled="isSocketActive">
@@ -1160,7 +1155,7 @@ const layout = inject("layout", layoutStructure)
 					<template #popper>
 						<div class="text-xs tabular-nums">
 							{{
-								trans(":timeCountdown left before link expires", {
+								ctrans(":timeCountdown left before link expires", {
 									timeCountdown: timeCountdown,
 								})
 							}}.
@@ -1171,7 +1166,7 @@ const layout = inject("layout", layoutStructure)
 
 			<Button
 				@click="(e) => (_import_modal = true)"
-				v-tooltip="trans('Import from xlsx file')"
+				v-tooltip="ctrans('Import from xlsx file')"
 				:icon="faUpload"
 				xloading="!!isLoadingSpecificChannel.length"
 				class="!px-2 h-full"
@@ -1181,7 +1176,7 @@ const layout = inject("layout", layoutStructure)
 
 			<Button
 				@click="() => (isOpenModalPortfolios = true)"
-				:label="trans('Add products')"
+				:label="ctrans('Add products')"
 				:icon="'fas fa-plus'"
 				v-if="!customer_sales_channel?.ban_stock_update_until && !routes?.syncAllRoute" />
 			<ButtonWithLink
@@ -1191,10 +1186,10 @@ const layout = inject("layout", layoutStructure)
 					() => {
 						isOpenModalFetchProgress = true
 						notify({
-							title: trans(
+							title: ctrans(
 								'Your product was successfully fetched and still processed in background.'
 							),
-							text: trans('Please wait for a few minutes to the products added'),
+							text: ctrans('Please wait for a few minutes to the products added'),
 							type: 'success',
 						})
 					}
@@ -1207,7 +1202,7 @@ const layout = inject("layout", layoutStructure)
 				<!-- Section: Download button -->
 				<Button
 					@click="(e) => _clone_popover?.toggle(e)"
-					v-tooltip="trans('Open another options')"
+					v-tooltip="ctrans('Open another options')"
 					:icon="faEllipsisV"
 					xloading="!!isLoadingSpecificChannel.length"
 					class="!px-2 h-full"
@@ -1218,7 +1213,7 @@ const layout = inject("layout", layoutStructure)
 				<Popover ref="_clone_popover">
 					<div class="w-64 relative">
 						<div class="text-sm mb-2">
-							{{ trans("Clone portfolio from channel:") }}
+							{{ ctrans("Clone portfolio from channel:") }}
 						</div>
 
 						<div
@@ -1248,7 +1243,7 @@ const layout = inject("layout", layoutStructure)
 										<LoadingIcon
 											v-if="loading"
 											class="h-5"
-											v-tooltip="trans('Processing...')" />
+											v-tooltip="ctrans('Processing...')" />
 										<img
 											v-else
 											:src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
@@ -1277,7 +1272,7 @@ const layout = inject("layout", layoutStructure)
 		<template v-if="!props.is_closed && currentTab === 'bundles'" #other>
 			<Button
 				@click="() => (isOpenModalCreateBundle = true)"
-				:label="trans('Create bundle')"
+				:label="ctrans('Create bundle')"
 				:icon="'fas fa-plus'"
 				 />
 		</template>
@@ -1305,16 +1300,16 @@ const layout = inject("layout", layoutStructure)
 							clip-rule="evenodd"></path>
 					</svg>
 					<strong class="text-sm text-red-700 sm:hidden">{{
-						trans("Important Notice:")
+						ctrans("Important Notice:")
 					}}</strong>
 				</div>
 				<div class="sm:ml-3">
 					<p class="text-sm text-red-700">
-						<strong class="hidden sm:inline">{{ trans("Important Notice:") }}</strong>
-						{{ trans("We noticed your account is registered in") }}
+						<strong class="hidden sm:inline">{{ ctrans("Important Notice:") }}</strong>
+						{{ ctrans("We noticed your account is registered in") }}
 						<strong> {{ ebay_warehouse_policy_msg?.customer_country + "." }} </strong>
 						{{
-							trans(
+							ctrans(
 								"In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas."
 							)
 						}}
@@ -1327,7 +1322,7 @@ const layout = inject("layout", layoutStructure)
 						<br />
 						<br />
 						{{
-							trans(
+							ctrans(
 								"If this happens, please contact eBay Support to request approval or further assistance:"
 							)
 						}}
@@ -1347,9 +1342,9 @@ const layout = inject("layout", layoutStructure)
 		<div class="gap-x-3 flex">
 			<Button
 				v-if="selectedProducts.length > 0 && !customer_sales_channel?.do_not_update_prices"
-				v-tooltip="trans('Edit Product :platform', { platform: props.platform_data?.name })"
+				v-tooltip="ctrans('Edit Product :platform', { platform: props.platform_data?.name })"
 				:type="'tertiary'"
-				:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
+				:label="ctrans('Edit Price (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-edit')"
 				@click="openBulkEditModal()"
 				:icon="['fal', 'fa-pencil']"
@@ -1358,12 +1353,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				v-if="selectedProducts.length > 0"
 				v-tooltip="
-					trans('Unlink & Delete Product :platform', {
+					ctrans('Unlink & Delete Product :platform', {
 						platform: props.platform_data?.name,
 					})
 				"
 				:type="'delete'"
-				:label="trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })"
+				:label="ctrans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-unlink')"
 				@click="
 					() =>
@@ -1379,12 +1374,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				v-if="selectedProducts.length > 0"
 				v-tooltip="
-					trans('Unlink Product :platform', {
+					ctrans('Unlink Product :platform', {
 						platform: props.platform_data?.name,
 					})
 				"
 				:type="'tertiary'"
-				:label="trans('Unlink (:_count)', { _count: selectedProducts?.length })"
+				:label="ctrans('Unlink (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-unlink-only')"
 				@click="
 					() =>
@@ -1400,12 +1395,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				v-if="selectedProducts.length > 0 && !isHiddenBulkButton"
 				v-tooltip="
-					trans('Upload as new product to the :platform', {
+					ctrans('Upload as new product to the :platform', {
 						platform: props.platform_data?.name,
 					})
 				"
 				:type="'create'"
-				:label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
+				:label="ctrans('Create New (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-create')"
 				@click="
 					() =>
@@ -1421,12 +1416,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				v-if="selectedProducts.length > 0 && props.routes.batch_match"
 				v-tooltip="
-					trans('Match the selected products with the ones already listed on :platform', {
+					ctrans('Match the selected products with the ones already listed on :platform', {
 						platform: props.platform_data?.name,
 					})
 				"
 				:type="'tertiary'"
-				:label="trans('Match (:_count)', { _count: selectedProducts?.length })"
+				:label="ctrans('Match (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-match')"
 				@click="
 					() =>
@@ -1444,9 +1439,9 @@ const layout = inject("layout", layoutStructure)
 	<div v-if="platform_data.type === 'shopify' && currentTab === 'products'" class="pt-2 grid justify-items-end mr-4">
 		<div class="gap-x-3 flex">
 			<Button
-				v-tooltip="trans('Update all dimensions ')"
+				v-tooltip="ctrans('Update all dimensions ')"
 				:type="'tertiary'"
-				:label="trans('Update all dimensions')"
+				:label="ctrans('Update all dimensions')"
 				@click="openUpdateDimension()"
 				:icon="['fal', 'fa-pencil-alt']"
 				size="xs" />
@@ -1470,7 +1465,7 @@ const layout = inject("layout", layoutStructure)
 					aria-hidden="true" />
 				<div class="inline items-center gap-x-2">
 					{{
-						trans("You have :products products not synced yet", {
+						ctrans("You have :products products not synced yet", {
 							products: `${count_product_not_synced}`,
 						})
 					}}
@@ -1508,12 +1503,12 @@ const layout = inject("layout", layoutStructure)
 				<div v-if="props.routes.batch_match">
 					<ButtonWithLink
 						:tooltip="
-							trans(
+							ctrans(
 								'Link your products to the ones already listed on :platform, matched by SKU',
 								{ platform: props.platform_data?.name }
 							)
 						"
-						:label="trans('Match all with default product')"
+						:label="ctrans('Match all with default product')"
 						type="tertiary"
 						icon="fal fa-link"
 						size="xs"
@@ -1533,12 +1528,12 @@ const layout = inject("layout", layoutStructure)
 			v-if="props.product_count < 1"
 			class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
 			<h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-				{{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
+				{{ content?.portfolio_empty?.title || ctrans(`You don't have a single portfolios`) }}
 			</h1>
 			<p class="mt-4 text-xl">
 				{{
 					content?.portfolio_empty?.description ||
-					trans(
+					ctrans(
 						"To get started, add products to your shop. You can sync from your inventory or create a new one."
 					)
 				}}
@@ -1553,12 +1548,12 @@ const layout = inject("layout", layoutStructure)
 					xtype="tertiary"
 					size="xl" />
 				<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
-					{{ content?.portfolio_empty?.separation || trans("or") }}
+					{{ content?.portfolio_empty?.separation || ctrans("or") }}
 				</div>
 				<Button
 					v-if="routes?.addPortfolioRoute"
 					@click="isOpenModalPortfolios = true"
-					:label="content?.portfolio_empty?.add_button || trans('Add products')"
+					:label="content?.portfolio_empty?.add_button || ctrans('Add products')"
 					icon="fas fa-plus"
 					size="xl" />
 			</div>
@@ -1620,12 +1615,12 @@ const layout = inject("layout", layoutStructure)
 			v-if="props.product_count < 1"
 			class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
 			<h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-				{{ content?.portfolio_empty?.title || trans(`You don't have a single bundles`) }}
+				{{ content?.portfolio_empty?.title || ctrans(`You don't have a single bundles`) }}
 			</h1>
 			<p class="mt-4 text-xl">
 				{{
 					content?.portfolio_empty?.description ||
-					trans(
+					ctrans(
 						"To get started, add bundles to your shop. You can sync from your inventory or create a new one."
 					)
 				}}
@@ -1640,12 +1635,12 @@ const layout = inject("layout", layoutStructure)
 					xtype="tertiary"
 					size="xl" />
 				<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
-					{{ content?.portfolio_empty?.separation || trans("or") }}
+					{{ content?.portfolio_empty?.separation || ctrans("or") }}
 				</div>
 				<Button
 					v-if="routes?.addPortfolioRoute"
 					@click="isOpenModalPortfolios = true"
-					:label="content?.portfolio_empty?.add_button || trans('Add products')"
+					:label="content?.portfolio_empty?.add_button || ctrans('Add products')"
 					icon="fas fa-plus"
 					size="xl" />
 			</div>
@@ -1757,7 +1752,7 @@ const layout = inject("layout", layoutStructure)
 				</div>
 
 				<a v-if="linkDownloadImages" :href="linkDownloadImages" class="mt-5 sm:mt-6">
-					<Button :label="trans('Download')" full />
+					<Button :label="ctrans('Download')" full />
 				</a>
 			</div>
 		</div>
@@ -1799,7 +1794,7 @@ const layout = inject("layout", layoutStructure)
 					target="_blank"
 					download
 					class="mt-5 sm:mt-6 block">
-					<Button :label="trans('Download')" full />
+					<Button :label="ctrans('Download')" full />
 				</a>
 			</div>
 		</div>
@@ -1811,31 +1806,31 @@ const layout = inject("layout", layoutStructure)
 		width="w-full max-w-2xl h-full max-h-[570px]"
 		@close="modalBulkEditPrice = false">
 		<div class="text-xl font-semibold text-center">
-			{{ trans("Edit Product Price") }}
+			{{ ctrans("Edit Product Price") }}
 		</div>
 
 		<div class="mb-3">
 			<label class="block text-sm font-semibold">{{
-				trans("Price Mapping")
+				ctrans("Price Mapping")
 			}}</label>
 			<div class="mt-2 flex flex-row flex-wrap items-center gap-2">
 				<Button
 					:key="'bulk-percent-' + bulkUpdatePriceData.pricing_type"
-					:label="trans('± % over live RRP')"
+					:label="ctrans('± % over live RRP')"
 					size="xs"
 					:type="bulkUpdatePriceData.pricing_type === 'percent' ? 'primary' : 'tertiary'"
 					:style="bulkUpdatePriceData.pricing_type === 'percent' ? undefined : 'white-w-outline'"
 					@click="switchBulkPricingMode('percent')" />
 				<Button
 					:key="'bulk-fixed-' + bulkUpdatePriceData.pricing_type"
-					:label="trans('± :currency over live RRP', { currency: layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£' })"
+					:label="ctrans('± :currency over live RRP', { currency: layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£' })"
 					size="xs"
 					:type="bulkUpdatePriceData.pricing_type === 'fixed' ? 'primary' : 'tertiary'"
 					:style="bulkUpdatePriceData.pricing_type === 'fixed' ? undefined : 'white-w-outline'"
 					@click="switchBulkPricingMode('fixed')" />
 				<Button
 					:key="'bulk-notfollow-' + bulkUpdatePriceData.pricing_type"
-					:label="trans('Not follow')"
+					:label="ctrans('Not follow')"
 					size="xs"
 					:type="bulkUpdatePriceData.pricing_type === 'not_follow' ? 'primary' : 'tertiary'"
 					:style="bulkUpdatePriceData.pricing_type === 'not_follow' ? undefined : 'white-w-outline'"
@@ -1856,11 +1851,11 @@ const layout = inject("layout", layoutStructure)
 					:prefix="bulkUpdatePriceData.pricing_type === 'fixed' ? (layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£') : (bulkUpdatePriceData.pricing_value > 0 ? '+' : undefined)"
 					size="small" />
 				<div class="text-sm text-gray-500">
-					{{ trans("Each of the :count selected products is priced from its own live RRP.", { count: selectedProducts.length }) }}
+					{{ ctrans("Each of the :count selected products is priced from its own live RRP.", { count: selectedProducts.length }) }}
 				</div>
 			</div>
 			<div v-else class="mt-3 min-h-[44px] flex items-center text-sm text-gray-500">
-				{{ trans("The selected products keep their eBay price as it is. We will not update them, even when the RRP changes.") }}
+				{{ ctrans("The selected products keep their eBay price as it is. We will not update them, even when the RRP changes.") }}
 			</div>
 		</div>
 
@@ -1868,12 +1863,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				type="tertiary"
 				@click="() => submitBulkEditPrice('draft')"
-				:label="trans('Save as Draft')"
+				:label="ctrans('Save as Draft')"
 				full
 				:loading="loadingAction.includes('bulk-edit')" />
 			<Button
 				@click="() => submitBulkEditPrice('publish')"
-				:label="trans('Save & Publish')"
+				:label="ctrans('Save & Publish')"
 				full
 				:loading="loadingAction.includes('bulk-edit')" />
 		</div>
@@ -1935,17 +1930,17 @@ const layout = inject("layout", layoutStructure)
 									cloneProgressData.done >= cloneProgressData.total &&
 									cloneProgressData.total > 0
 								">
-								{{ trans("Cloning Complete!") }}
+								{{ ctrans("Cloning Complete!") }}
 							</template>
 							<template v-else>
-								{{ trans("Cloning Portfolios...") }}
+								{{ ctrans("Cloning Portfolios...") }}
 							</template>
 						</div>
 
 						<div class="mt-2 text-sm text-gray-500">
 							<template v-if="cloneSourceChannelName">
 								{{
-									trans("From channel: :channel", {
+									ctrans("From channel: :channel", {
 										channel: cloneSourceChannelName,
 									})
 								}}
@@ -1971,7 +1966,7 @@ const layout = inject("layout", layoutStructure)
 							</div>
 							<div class="text-sm text-gray-500 mt-1">
 								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
-								{{ trans("products") }}
+								{{ ctrans("products") }}
 							</div>
 						</div>
 
@@ -1987,7 +1982,7 @@ const layout = inject("layout", layoutStructure)
 									icon="fas fa-spinner"
 									class="animate-spin"
 									fixed-width aria-hidden="true" />
-								<span>{{ trans("Preparing...") }}</span>
+								<span>{{ ctrans("Preparing...") }}</span>
 							</div>
 						</div>
 
@@ -1997,7 +1992,7 @@ const layout = inject("layout", layoutStructure)
 								cloneProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
-							{{ trans("Page will reload automatically...") }}
+							{{ ctrans("Page will reload automatically...") }}
 						</div>
 					</div>
 				</div>
@@ -2061,17 +2056,17 @@ const layout = inject("layout", layoutStructure)
 									cloneProgressData.done >= cloneProgressData.total &&
 									cloneProgressData.total > 0
 								">
-								{{ trans("Cloning Complete!") }}
+								{{ ctrans("Cloning Complete!") }}
 							</template>
 							<template v-else>
-								{{ trans("Cloning Portfolios...") }}
+								{{ ctrans("Cloning Portfolios...") }}
 							</template>
 						</div>
 
 						<div class="mt-2 text-sm text-gray-500">
 							<template v-if="cloneSourceChannelName">
 								{{
-									trans("From channel: :channel", {
+									ctrans("From channel: :channel", {
 										channel: cloneSourceChannelName,
 									})
 								}}
@@ -2097,7 +2092,7 @@ const layout = inject("layout", layoutStructure)
 							</div>
 							<div class="text-sm text-gray-500 mt-1">
 								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
-								{{ trans("products") }}
+								{{ ctrans("products") }}
 							</div>
 						</div>
 
@@ -2113,7 +2108,7 @@ const layout = inject("layout", layoutStructure)
 									icon="fas fa-spinner"
 									class="animate-spin"
 									fixed-width aria-hidden="true" />
-								<span>{{ trans("Preparing...") }}</span>
+								<span>{{ ctrans("Preparing...") }}</span>
 							</div>
 						</div>
 
@@ -2123,7 +2118,7 @@ const layout = inject("layout", layoutStructure)
 								cloneProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
-							{{ trans("Page will reload automatically...") }}
+							{{ ctrans("Page will reload automatically...") }}
 						</div>
 					</div>
 				</div>
@@ -2187,10 +2182,10 @@ const layout = inject("layout", layoutStructure)
 									cloneProgressData.done >= cloneProgressData.total &&
 									cloneProgressData.total > 0
 								">
-								{{ trans("Fetching Complete!") }}
+								{{ ctrans("Fetching Complete!") }}
 							</template>
 							<template v-else>
-								{{ trans("Fetching Portfolios...") }}
+								{{ ctrans("Fetching Portfolios...") }}
 							</template>
 						</div>
 
@@ -2213,7 +2208,7 @@ const layout = inject("layout", layoutStructure)
 							</div>
 							<div class="text-sm text-gray-500 mt-1">
 								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
-								{{ trans("products") }}
+								{{ ctrans("products") }}
 							</div>
 						</div>
 
@@ -2229,7 +2224,7 @@ const layout = inject("layout", layoutStructure)
 									icon="fas fa-spinner"
 									class="animate-spin"
 									fixed-width aria-hidden="true" />
-								<span>{{ trans("Preparing...") }}</span>
+								<span>{{ ctrans("Preparing...") }}</span>
 							</div>
 						</div>
 
@@ -2239,7 +2234,7 @@ const layout = inject("layout", layoutStructure)
 								cloneProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
-							{{ trans("Page will reload automatically...") }}
+							{{ ctrans("Page will reload automatically...") }}
 						</div>
 					</div>
 				</div>
@@ -2303,10 +2298,10 @@ const layout = inject("layout", layoutStructure)
 									uploadProgressData.done >= uploadProgressData.total &&
 									uploadProgressData.total > 0
 								">
-								{{ trans("Uploading Complete!") }}
+								{{ ctrans("Uploading Complete!") }}
 							</template>
 							<template v-else>
-								{{ trans("Uploading Portfolios...") }}
+								{{ ctrans("Uploading Portfolios...") }}
 							</template>
 						</div>
 
@@ -2362,7 +2357,7 @@ const layout = inject("layout", layoutStructure)
 									icon="fas fa-spinner"
 									class="animate-spin"
 									aria-hidden="true" />
-								<span>{{ trans("Preparing...") }}</span>
+								<span>{{ ctrans("Preparing...") }}</span>
 							</div>
 						</div>-->
 
@@ -2372,7 +2367,7 @@ const layout = inject("layout", layoutStructure)
 								uploadProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
-							{{ trans("Page will reload automatically...") }}
+							{{ ctrans("Page will reload automatically...") }}
 						</div>
 					</div>
 				</div>
@@ -2393,12 +2388,12 @@ const layout = inject("layout", layoutStructure)
 		width="w-full max-w-md"
 		@onClose="modalUpdateDimension = false">
 		<div class="text-xl font-semibold text-center">
-			{{ trans("Update All Dimension") }}
+			{{ ctrans("Update All Dimension") }}
 		</div>
 
 		<div class="mt-4 text-center text-sm text-gray-600">
 			{{
-				trans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
+				ctrans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
 			}}
 		</div>
 
@@ -2406,12 +2401,12 @@ const layout = inject("layout", layoutStructure)
 			<Button
 				type="tertiary"
 				@click="modalUpdateDimension = false"
-				:label="trans('Close')"
+				:label="ctrans('Close')"
 				full
 				:disabled="isLoadingUpdateDimension" />
 			<Button
 				@click="submitBatchAllDimensionsUpdate()"
-				:label="trans('Submit')"
+				:label="ctrans('Submit')"
 				full
 				:disabled="totalProductsForDimensionUpdate === 0 || isLoadingUpdateDimension"
 				:loading="isLoadingUpdateDimension" />

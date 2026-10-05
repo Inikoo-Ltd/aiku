@@ -10,12 +10,10 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
-use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
@@ -98,21 +96,10 @@ class StorePicking extends OrgAction
         });
         $picking->refresh();
 
-        if (app()->environment('production')) {
-            SavePickingInAurora::dispatch($picking);
+
+        if ($picking->type == PickingTypeEnum::PICK) {
+            StorePickingOrgStockMovement::dispatch($picking->id, $this->user?->id)->afterCommit();
         }
-
-
-        StoreOrgStockMovement::dispatch(
-            $locationOrgStock->orgStock,
-            $locationOrgStock->location,
-            [
-                'quantity' => -$picking->quantity,
-                'type'     => OrgStockMovementTypeEnum::PICKED,
-                'user_id'  => $this->user?->id,
-            ],
-            $picking
-        );
 
 
         $deliveryNoteItem->refresh();

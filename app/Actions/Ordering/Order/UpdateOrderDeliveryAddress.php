@@ -45,17 +45,19 @@ class UpdateOrderDeliveryAddress extends OrgAction
 
         $customer = $order->customer;
 
-        $taxCategory = GetTaxCategory::run(
-            country: $order->organisation->country,
-            taxNumber: $customer->taxNumber,
-            billingAddress: $order->billingAddress,
-            deliveryAddress: $order->deliveryAddress,
-            isRe: $order->is_re,
-        );
+        if ($order->canChangeTaxCategory()) {
+            $taxCategory = GetTaxCategory::run(
+                country: $order->organisation->country,
+                taxNumber: $customer->taxNumber,
+                billingAddress: $order->billingAddress,
+                deliveryAddress: $order->taxableDeliveryAddress($customer->taxNumber),
+                isRe: $order->is_re,
+            );
 
-        $order->update([
-            'tax_category_id' => $taxCategory->id,
-        ]);
+            $order->update([
+                'tax_category_id' => $taxCategory->id,
+            ]);
+        }
 
         CalculateOrderTotalAmounts::run($order, calculateDiscounts: false);
 

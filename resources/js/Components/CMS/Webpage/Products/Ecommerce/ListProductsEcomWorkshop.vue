@@ -8,7 +8,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { getStyles } from "@/Composables/styles";
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ctrans } from "@/Composables/useTrans"
 import { getProductsRenderB2bComponent } from "@/Iris/Composables/getIrisComponents";
 import Image from "@common/Components/Image.vue";
 
@@ -19,7 +20,6 @@ const props = defineProps<{
   screenType: "mobile" | "tablet" | "desktop";
   code: string
 }>();
-console.log('List Products',props)
 const layout: any = inject("layout", {});
 
 /* layout.app.theme = layout.iris.theme */
@@ -66,16 +66,16 @@ const responsiveGridClass = computed(() => {
 const sortOptions = computed(() => {
   const baseOptions = [
     /* { label: "Latest Arrivals", value: "created_at" }, */
-    { label: trans("New arrivals"), value: "created_at" },
-    { label: trans("Product Code"), value: "code" },
-    { label: trans("Name"), value: "name" }
+    { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Product Code"), value: "code" },
+    { label: ctrans("Name"), value: "name" }
   ]
   if (layout?.iris?.is_logged_in) {
-    baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
-    baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+    baseOptions.splice(1, 0, { label: ctrans("Price"), value: "price" })
+    baseOptions.splice(1, 0, { label: ctrans("RRP"), value: "rrp" })
   }
   if (props.modelValue?.sub_type == 'family') {
-    baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    baseOptions.splice(1, 0, { label: ctrans("Recommended"), value: "recommended" })
   }
   return baseOptions
 })
@@ -112,7 +112,7 @@ watch(
       <main class="flex-1 mt-4">
         <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
             <div
-                v-tooltip="trans('This is not work in workshop, try in website.')"
+                v-tooltip="ctrans('This is not work in workshop, try in website.')"
                 xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
                 xtarget="_blank"
                 class="group hover:underline w-fit">
@@ -134,15 +134,15 @@ watch(
             <div
               class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
               <span class="font-medium">
-                {{ trans("Showing") }}
+                {{ ctrans("Showing") }}
                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                   {{ dummyProducts.length }}
                 </span>
-                {{ trans("of") }}
+                {{ ctrans("of") }}
                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                   {{ dummyProducts.length }}
                 </span>
-                {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
+                {{ dummyProducts.length === 1 ? ctrans("product") : ctrans("products") }}
               </span>
             </div>
           </div>

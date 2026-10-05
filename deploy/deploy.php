@@ -194,7 +194,7 @@ task('deploy:restart-owl', function () {
         return;
     }
 
-    run("bash -c 'sudo /usr/bin/supervisorctl restart aiku-owl || true'");
+    run("bash -c 'sudo /usr/bin/supervisorctl status aiku-owl | grep -q STOPPED || sudo /usr/bin/supervisorctl restart aiku-owl || true'");
 });
 
 desc('Stops inertia SSR server');
@@ -227,6 +227,13 @@ task('artisan:octane:reload', function () {
         artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
     } catch (\Throwable $e) {
         writeln('<comment>octane:reload skipped: '.$e->getMessage().'</comment>');
+    }
+
+    if (has('octane_replica_state_file')) {
+        $stateFile = '{{deploy_path}}/shared/storage/{{octane_replica_state_file}}';
+        if (test("[ -f $stateFile ]")) {
+            run('cd {{release_or_current_path}} && PROCESS_OCTANE_STATE_FILE={{octane_replica_state_file}} {{bin/php}} artisan octane:reload');
+        }
     }
 });
 
@@ -437,11 +444,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', function () {
-    // helio's horizon workers run with --max-time=0 and stay pinned to the release
-    // they started in, so 2 was deleting a release that was still live.
-    return currentHost()->getAlias() === 'aiku_helio' ? 4 : 20;
-});
+set('keep_releases', 20);
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -463,7 +466,7 @@ task('debug:writable', function () {
 $defaultWritableDirs = get('writable_dirs');
 
 set('writable_dirs', function () use ($defaultWritableDirs) {
-    if (currentHost()->getAlias() === 'aiku_helio') {
+    if (currentHost()->getAlias() === 'aiku_litio') {
         return ['bootstrap/cache'];
     }
 
@@ -515,6 +518,28 @@ task('deploy:aiku-public:index-notes', function () {
     }
 });
 
+desc('Purge the dropshipping websites /docs from Varnish when the guides changed');
+task('deploy:iris-docs:purge-varnish', function () {
+    try {
+        $prevHash = trim(run('cat {{previous_release}}/REVISION'));
+        $changed  = trim(run("cd {{release_path}} && git diff --name-only $prevHash HEAD -- resources/markdown/dropshipping"));
+    } catch (\Throwable $e) {
+        $changed = 'unknown';
+    }
+
+    if ($changed === '') {
+        writeln('Dropshipping docs unchanged. Skipping purge.');
+
+        return;
+    }
+
+    try {
+        artisan('iris:purge-docs', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>iris:purge-docs skipped: '.$e->getMessage().'</comment>');
+    }
+})->once();
+
 desc('Submit public URLs to IndexNow');
 task('deploy:aiku-public:indexnow', function () {
     try {
@@ -531,7 +556,7 @@ task('deploy:prune-node-modules', function () {
 });
 
 desc('Deploys your project');
-task('deploy', [
+$deploySteps = [
     'deploy:unlock',
     'debug:writable',
     'deploy:prepare',
@@ -557,10 +582,40 @@ task('deploy', [
     'deploy:log-app-deployment',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
+    'deploy:iris-docs:purge-varnish',
     'deploy:translations:setup-guess-language',
     'deploy:aiku-public:index-notes',
     'deploy:aiku-public:indexnow',
-]);
+];
+
+task('deploy', $deploySteps);
+
+// ponytail: fire-and-forget, 3s cap, never fails the deploy. aiku reloads itself
+// mid-deploy, so a report sent while Octane restarts is simply lost; the GitHub
+// webhook still shows the run's real outcome.
+function reportDeployProgress(string $task, string $state, int $index, int $total): void
+{
+    $runId = getenv('GITHUB_RUN_ID');
+    $token = getenv('DEVOPS_TOKEN');
+    if (!$runId || !$token || currentHost()->get('environment') !== 'production') {
+        return;
+    }
+
+    @file_get_contents(getenv('DEPLOY_PROGRESS_URL') ?: 'https://aiku.io/devops/deploy-progress', false, stream_context_create([
+        'http' => [
+            'method'        => 'POST',
+            'header'        => "Content-Type: application/json\r\nAccept: application/json\r\nX-DEVOPS-TOKEN: $token\r\n",
+            'content'       => json_encode(['run_id' => (int) $runId, 'task' => $task, 'state' => $state, 'host' => currentHost()->getAlias(), 'index' => $index, 'total' => $total]),
+            'timeout'       => 3,
+            'ignore_errors' => true,
+        ],
+    ]));
+}
+
+foreach ($deploySteps as $position => $deployStep) {
+    before($deployStep, fn () => reportDeployProgress($deployStep, 'start', $position + 1, count($deploySteps)));
+    after($deployStep, fn () => reportDeployProgress($deployStep, 'done', $position + 1, count($deploySteps)));
+}
 
 // ponytail: same as the stock cleanup, plus two things it lacks. A release is
 // skipped while any process still has its cwd inside it -- horizon workers and

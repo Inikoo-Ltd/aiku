@@ -6,12 +6,15 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Ordering\PreOrder\UpdatePreOrder;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Http\Middleware\EnsureNotHandledInAurora;
+use App\Http\Middleware\EnsurePreOrderIsUnlocked;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\Picking\SplitPicking;
@@ -32,6 +35,7 @@ use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderExtraPacking;
+use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
 use App\Actions\Ordering\Order\UpdateOrderInsurance;
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Actions\Ordering\Order\UpdateOrderReCalculateVAT;
@@ -46,6 +50,7 @@ use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\ReleaseOrderFromGate;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SendUnpaidOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -60,7 +65,7 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
 use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
-Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->middleware(EnsurePreOrderIsUnlocked::class)->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update')->withTrashed();
     Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
@@ -70,7 +75,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
 
-Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
+Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledInAurora::class, EnsurePreOrderIsUnlocked::class])->group(function () {
     Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');
 
 
@@ -80,6 +85,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::patch('update-premium-dispatch', UpdateOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateOrderExtraPacking::class)->name('update_extra_packing');
+    Route::patch('update-gift-message', UpdateOrderGiftMessage::class)->name('update_gift_message');
     Route::patch('update-insurance', UpdateOrderInsurance::class)->name('update_insurance');
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
@@ -88,6 +94,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
+    Route::post('claim-refund-to-balance', RefundClaimToBalance::class)->name('claim_refund_to_balance');
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
@@ -119,6 +126,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', CancelOrder::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
+        Route::patch('in-warehouse-unpaid', SendUnpaidOrderToWarehouse::class)->name('in-warehouse-unpaid');
         Route::patch('release-from-gate', ReleaseOrderFromGate::class)->name('release_from_gate');
         Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
@@ -129,6 +137,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
     Route::get('set-shipping-engine-auto', UpdateOrderShippingEngineAsAuto::class)->name('set_shipping_engine_auto');
 
     Route::patch('recalculate-vat', UpdateOrderReCalculateVAT::class)->name('recalculate-vat');
+    Route::patch('pre-order', UpdatePreOrder::class)->name('pre_order.update');
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {

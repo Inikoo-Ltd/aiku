@@ -17,6 +17,7 @@ use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessSendMailshot
@@ -67,16 +68,20 @@ class ProcessSendMailshot
                 // Encrypt and store the dispatched email ID in the data field
                 $this->encryptAndStoreDispatchedEmailId($dispatchedEmail);
 
-                StoreMailshotRecipient::run(
-                    $mailshot,
-                    [
-                        'dispatched_email_id' => $dispatchedEmail->id,
-                        'recipient_type'      => class_basename($customer),
-                        'recipient_id'        => $customer->id,
-                        'recipient_name'      => $customer->name,
-                        'channel'             => $emailDeliveryChannel->id,
-                    ]
-                );
+                try {
+                    StoreMailshotRecipient::run(
+                        $mailshot,
+                        [
+                            'dispatched_email_id' => $dispatchedEmail->id,
+                            'recipient_type'      => class_basename($customer),
+                            'recipient_id'        => $customer->id,
+                            'recipient_name'      => $customer->name,
+                            'channel'             => $emailDeliveryChannel->id,
+                        ]
+                    );
+                } catch (UniqueConstraintViolationException) {
+                    $dispatchedEmail->delete();
+                }
             }
         }
 
@@ -91,6 +96,6 @@ class ProcessSendMailshot
         UpdateMailshotRecipientsStoredAt::run($mailshot);
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2)->onQueue($mailshot->is_second_wave ? 'ses-low' : 'ses-send');
     }
 }

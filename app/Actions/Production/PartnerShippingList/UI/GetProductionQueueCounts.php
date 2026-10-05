@@ -49,17 +49,12 @@ class GetProductionQueueCounts extends OrgAction
 
         return [
             'channel'    => 'grp.org.'.$seller->id.'.production-queues',
-            'to_produce' => (clone $openItems)
+            'to_produce' => PartnerShoppingListItem::whereRoutedToProduction(clone $openItems)
                 ->whereExists(function ($query) use ($production) {
                     $query->from('artefacts')
                         ->whereColumn('artefacts.org_stock_id', 'org_stocks.id')
                         ->where('artefacts.production_id', $production->id)
                         ->whereNull('artefacts.deleted_at');
-                })
-                ->where(function ($query) {
-                    $query->whereNotNull('partner_shopping_list_items.job_order_id')
-                        ->orWhereNull('partner_shopping_list_items.partner_organisation_id')
-                        ->orWhereRaw('coalesce(org_stocks.quantity_available, 0) <= 0');
                 })
                 ->count(),
             'pre_pick' => (clone $openItems)

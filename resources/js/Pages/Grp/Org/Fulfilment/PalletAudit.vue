@@ -12,7 +12,7 @@ import { faPlus, faMinus, faStar, faCheckCircle as fasCheckCircle } from '@fas'
 import { reactive, ref } from 'vue'
 import { Table as TableTS } from '@/types/Table'
 import TableStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemAuditDeltas.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -66,7 +66,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log('prooooo', props)
 
 interface StoredItemsQuantity {
     [key: string]: number  // stored item id
@@ -95,7 +94,6 @@ const onUnselectNewStoredItem = (store_item_audit_deltas_id: number) => {
 // Section: store quantity stored item (first update)
 const isLoadingStoreQuantity = reactive<StoredItemsQuantity>({})
 const onStoreStoredItem = (idStoredItem: number, quantity: number, idStoredItemAudit: number) => {
-    console.log('onStoreStoredItem', idStoredItem, props.route_list?.stored_item_audit_delta?.store?.name)
 
     if (!props.route_list?.stored_item_audit_delta?.store?.name) {
         console.error('No id stored item audit')
@@ -119,8 +117,8 @@ const onStoreStoredItem = (idStoredItem: number, quantity: number, idStoredItemA
                     console.error(e)
                     const errorMessages = e && Object.keys(e).length ? Object.values(e).join('\n') : ''
                     notify({
-                        title: trans('Something went wrong.'),
-                        text: errorMessages || trans('Failed to update the quantity.'),
+                        title: ctrans('Something went wrong.'),
+                        text: errorMessages || ctrans('Failed to update the quantity.'),
                         type: 'error',
                     })
             },
@@ -138,13 +136,11 @@ const debounceStoreStoredItem = debounce((idStoredItem: number, quantity: number
 const isStoredItemEdited = reactive<StoredItemsQuantity>({})
 const isLoadingQuantity = reactive<StoredItemsQuantity>({})
 const onChangeQuantity = (idStoredItemAuditDelta: number | null, quantity: number) => {
-    console.log('onChangeQuantity')
     //todo if   "store_item_audit_delta_id" ==null,
     // use props.route_list?.stored_item_audit_delta?.store.name
     // get back the store_item_audit_delta_id and set it uo so next time you call update
     
     // Update
-    console.log('lolo', props.route_list?.stored_item_audit_delta?.update?.name)
     if (!props.route_list?.stored_item_audit_delta?.update?.name) {
         return
     }
@@ -163,8 +159,8 @@ const onChangeQuantity = (idStoredItemAuditDelta: number | null, quantity: numbe
                     console.error(e)
                     const errorMessages = e && Object.keys(e).length ? Object.values(e).join('\n') : ''
                     notify({
-                        title: trans('Something went wrong.'),
-                        text: errorMessages || trans('Failed to update the quantity.'),
+                        title: ctrans('Something went wrong.'),
+                        text: errorMessages || ctrans('Failed to update the quantity.'),
                         type: 'error',
                     })
             },
@@ -194,7 +190,7 @@ const isModalOpened = ref(false)
     <PageHeading :data="pageHead">
         <template #button-add-sku="{ }">
             <!-- <Button
-                :label="trans('Add SKO')"
+                :label="ctrans('Add SKO')"
                 icon="fal fa-plus"
                 type="secondary"
             /> -->
@@ -214,7 +210,7 @@ const isModalOpened = ref(false)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                        :label="trans(`Customer's SKO`)" />
+                        :label="ctrans(`Customer's SKO`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">
@@ -226,7 +222,7 @@ const isModalOpened = ref(false)
                             audited_quantity: form.quantity,
                         },
                         true
-                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="trans(`Add Customer's SKO`)" />
+                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="ctrans(`Add Customer's SKO`)" />
                 </template>
             </StoredItemsProperty>
         </template>
@@ -251,10 +247,10 @@ const isModalOpened = ref(false)
 
     <DataTable v-if="editDeltas"
         :value="[...editDeltas.stored_items, ...editDeltas.new_stored_items]">
-        <Column field="reference" :header="trans('SKO')" class="">
+        <Column field="reference" :header="ctrans('SKO')" class="">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">{{ data.reference }}
-                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKO`)" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="ctrans(`New added Customer's SKO`)" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
                 </div>
             </template>
         </Column>
@@ -366,7 +362,7 @@ const isModalOpened = ref(false)
                                             <span class="text-gray-600">
                                                 {{!data.stored_item_audit_delta_id_id ?  data.quantity :  data.audited_quantity }}
                                             </span>
-                                            <FontAwesomeIcon v-tooltip="trans('Edit')" icon='fal fa-pencil' size="sm" class=''
+                                            <FontAwesomeIcon v-tooltip="ctrans('Edit')" icon='fal fa-pencil' size="sm" class=''
                                                 fixed-width aria-hidden='true' />
                                         </div>
                                     </transition>
@@ -378,7 +374,7 @@ const isModalOpened = ref(false)
                                 v-if="get(data, ['is_edit'], false)"
                                 @click="set(data, ['is_edit'], false)"
                                 @clicccck="() => onUnselectNewStoredItem(data.stored_item_audit_delta_id)"
-                                v-tooltip="trans('Close input')"
+                                v-tooltip="ctrans('Close input')"
                                 type="tertiary"
                                 
                                 class="border-none rounded-none"
@@ -392,7 +388,7 @@ const isModalOpened = ref(false)
                             <Button
                                 v-else-if="   data.stored_item_audit_delta_id"
                                 @click="() => onUnselectNewStoredItem(data.stored_item_audit_delta_id)"
-                                v-tooltip="trans('Reset to original')"
+                                v-tooltip="ctrans('Reset to original')"
                                 type="tertiary"
                                 icon="fal fa-undo"
                                 class="border-none rounded-none text-red-500"
@@ -404,7 +400,7 @@ const isModalOpened = ref(false)
 
                         <!-- {{ isStoredItemEdited }} -->
 
-                        <!-- <FontAwesomeIcon v-tooltip="trans('Close')"
+                        <!-- <FontAwesomeIcon v-tooltip="ctrans('Close')"
                             @click="() => set(statesBoxEdit, `${data.id}`, false)"
                             icon='fal fa-arrow-to-left'
                             class='py-1 px-1 transition-all cursor-pointer text-gray-400 hover:text-gray-700'
@@ -424,7 +420,7 @@ const isModalOpened = ref(false)
                 </div>
                 <div v-else @click="() => onUnselectNewStoredItem(data.stored_item_audit_delta_id)"
                     class="text-red-500 hover:underline cursor-pointer">
-                    {{ trans("Unselect") }}
+                    {{ ctrans("Unselect") }}
                 </div>
             </template>
             <div v-else @click="onCheck(proxyItem.auditRoute, data.id, data.quantity)"
@@ -441,7 +437,7 @@ const isModalOpened = ref(false)
     </DataTable>
 
     <div v-if="editDeltas" class="mx-auto px-4 w-10/12 mt-4">
-        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="trans(`Customer's SKO`)" />
+        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="ctrans(`Customer's SKO`)" />
     </div>
 
 

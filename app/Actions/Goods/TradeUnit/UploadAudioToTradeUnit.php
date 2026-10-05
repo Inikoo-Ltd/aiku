@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadAudioToTradeUnit extends OrgAction
 {
+    use WithTradeUnitMediaEditAuthorisation;
     use WithAttachMediaToModel;
 
     public function handle(TradeUnit $tradeUnit, array $modelData): Media

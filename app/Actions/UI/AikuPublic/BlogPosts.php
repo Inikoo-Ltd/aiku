@@ -8,8 +8,10 @@
 
 namespace App\Actions\UI\AikuPublic;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -69,7 +71,34 @@ class BlogPosts
             'notice' => 'Přeloženo pro pohodlí. V případě rozdílů platí anglická verze.',
             'stale'  => 'Anglický originál se od tohoto překladu změnil. Platí anglická verze.',
         ],
+        'de' => [
+            'name'   => 'Deutsch',
+            'notice' => 'Zur besseren Lesbarkeit übersetzt. Bei Abweichungen gilt die englische Fassung.',
+            'stale'  => 'Das englische Original wurde seit dieser Übersetzung geändert. Es gilt die englische Fassung.',
+        ],
+        'fr' => [
+            'name'   => 'Français',
+            'notice' => 'Traduit pour plus de commodité. En cas de différence, la version anglaise fait foi.',
+            'stale'  => 'L’original anglais a changé depuis cette traduction. La version anglaise fait foi.',
+        ],
+        'pt' => [
+            'name'   => 'Português',
+            'notice' => 'Traduzido para sua comodidade. Em caso de diferença, prevalece a versão em inglês.',
+            'stale'  => 'O original em inglês mudou desde esta tradução. Prevalece a versão em inglês.',
+        ],
+        'it' => [
+            'name'   => 'Italiano',
+            'notice' => 'Tradotto per comodità. In caso di differenze, prevale la versione inglese.',
+            'stale'  => 'L’originale inglese è cambiato dopo questa traduzione. Prevale la versione inglese.',
+        ],
+        'nl' => [
+            'name'   => 'Nederlands',
+            'notice' => 'Vertaald voor het gemak. Bij verschillen geldt de Engelse versie.',
+            'stale'  => 'Het Engelse origineel is na deze vertaling gewijzigd. De Engelse versie geldt.',
+        ],
     ];
+
+    public const string DROPSHIPPING_DOCS = 'dropshipping/docs';
 
     /**
      * @return Collection<int, array{slug:string,title:string,summary:string,date:Carbon,tags:array<int,string>,body:string,html:string}>
@@ -86,7 +115,7 @@ class BlogPosts
      */
     public static function everything(string $dir = 'blog'): Collection
     {
-        return collect(File::glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
+        return collect(File::glob(self::directory($dir).'/*.md'))
             ->map(fn (string $path) => self::parse($path))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
@@ -108,7 +137,7 @@ class BlogPosts
 
     public static function find(string $slug, string $dir = 'blog'): ?array
     {
-        $path = resource_path("markdown/aiku-public/{$dir}/{$slug}.md");
+        $path = self::directory($dir)."/{$slug}.md";
 
         $post = preg_match('/^[a-z0-9-]+$/', $slug) && File::isFile($path) ? self::parse($path) : null;
 
@@ -121,7 +150,9 @@ class BlogPosts
             return null;
         }
 
-        $match = self::all('docs')
+        $docs = collect(self::helpIndex());
+
+        $match = $docs->where('lang', 'en')
             ->flatMap(fn (array $doc) => collect($doc['help_routes'])->map(fn (string $prefix) => ['prefix' => $prefix, 'doc' => $doc]))
             ->filter(fn (array $candidate) => str_starts_with($routeName, $candidate['prefix']))
             ->sortByDesc(fn (array $candidate) => strlen($candidate['prefix']))
@@ -133,13 +164,30 @@ class BlogPosts
 
         $doc = $match['doc'];
         if ($language && strtolower($language) !== 'en') {
-            $doc = self::translations($doc, 'docs')->firstWhere('lang', strtolower($language)) ?? $doc;
+            $doc = $docs->where('base_slug', $doc['base_slug'])->firstWhere('lang', strtolower($language)) ?? $doc;
         }
 
         return [
             'title' => $doc['title'],
             'url' => 'https://'.config('app.domain').'/docs/'.$doc['slug'],
         ];
+    }
+
+    /**
+     * Shared by every grp request, which cannot afford to parse every doc's markdown each time.
+     * Keyed by the files and their mtimes so an edited doc is picked up at once, and by the date
+     * because a doc dated in the future stays hidden until its day comes.
+     *
+     * @return array<int, array{slug: string, base_slug: string, lang: string, title: string, help_routes: array<int, string>}>
+     */
+    private static function helpIndex(): array
+    {
+        $files   = File::glob(self::directory('docs').'/*.md');
+        $version = md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
+
+        return Cache::remember('grp-help-index:'.$version, now()->addDay(), fn () => self::everything('docs')
+            ->map(fn (array $doc) => Arr::only($doc, ['slug', 'base_slug', 'lang', 'title', 'help_routes']))
+            ->all());
     }
 
     /**
@@ -156,6 +204,11 @@ class BlogPosts
             : count(preg_split('/\s+/u', $plain, -1, PREG_SPLIT_NO_EMPTY)) / 220;
 
         return max(1, (int) round($minutes));
+    }
+
+    private static function directory(string $dir): string
+    {
+        return str_contains($dir, '/') ? resource_path("markdown/{$dir}") : resource_path("markdown/aiku-public/{$dir}");
     }
 
     private static function parse(string $path): array
@@ -182,6 +235,8 @@ class BlogPosts
             'date' => Carbon::parse($meta['date']),
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
             'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
+            'shops' => array_values(array_filter(array_map('trim', explode(',', $meta['shops'] ?? '')))),
+            'videos' => array_values(array_filter(array_map('trim', explode(',', $meta['videos'] ?? '')))),
             'category' => $meta['category'] ?? null,
             'audience' => $meta['audience'] ?? null,
             'series' => $meta['series'] ?? null,

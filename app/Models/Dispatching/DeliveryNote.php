@@ -11,8 +11,10 @@ namespace App\Models\Dispatching;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -137,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $collection_address_id
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
+ * @property bool|null $has_gift_message
  * @property string|null $company_name recipient company name
  * @property string|null $contact_name recipient contact name
  * @property bool $is_cash_on_delivery
@@ -359,13 +362,71 @@ class DeliveryNote extends Model implements Auditable
                         $query->where('is_dirty', true)
                             ->where('is_handled', false)
                             ->whereColumn('quantity_picked', '<=', 'quantity_required');
-                    });
+                    })
+                    ->orWhere(fn ($query) => $this->whereBeyondCompleteSets($query));
+            });
+    }
+
+    /**
+     * Parts of a set sold only complete (HELP-3548) picked beyond what a finished part allows: the
+     * bulb and cable in the tote while the lamp was not found. They block the note until they are
+     * put back, so the customer is never sent, free, parts useless on their own.
+     */
+    public function incompleteSetItems(): HasMany
+    {
+        return $this->deliveryNoteItems()
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->where(fn ($query) => $this->whereBeyondCompleteSets($query));
+    }
+
+    public function hasIncompleteSets(): bool
+    {
+        return $this->incompleteSetItems()->exists();
+    }
+
+    private function whereBeyondCompleteSets($query): void
+    {
+        $query->where('delivery_note_items.quantity_required', '>', 0)
+            ->whereColumn('delivery_note_items.quantity_picked', '<=', 'delivery_note_items.quantity_required')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('delivery_note_items as part')
+                    ->join('transactions', 'transactions.id', 'part.transaction_id')
+                    ->join('products', 'products.id', 'transactions.model_id')
+                    ->where('transactions.model_type', 'Product')
+                    ->where('products.is_indivisible', true)
+                    ->whereColumn('part.delivery_note_id', 'delivery_note_items.delivery_note_id')
+                    ->whereColumn('part.transaction_id', 'delivery_note_items.transaction_id')
+                    ->where('part.state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)
+                    ->where('part.is_handled', true)
+                    ->where('part.quantity_required', '>', 0)
+                    ->whereRaw('delivery_note_items.quantity_picked * part.quantity_required - part.quantity_picked * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
             });
     }
 
     public function hasBlockingItems(): bool
     {
         return $this->blockingItems()->exists();
+    }
+
+    public function unprintedLeaflets(): HasMany
+    {
+        return $this->leaflets()
+            ->printable()
+            ->whereNotIn('state', [
+                DeliveryNoteLeafletStateEnum::PRINTED,
+                DeliveryNoteLeafletStateEnum::INCLUDED,
+            ]);
+    }
+
+
+    public function hasUnprintedLeaflets(): bool
+    {
+        if (!$this->shop?->hasPackagingAndInserts()) {
+            return false;
+        }
+
+        return $this->unprintedLeaflets()->exists();
     }
 
     public function warehouse(): BelongsTo
@@ -421,6 +482,16 @@ class DeliveryNote extends Model implements Auditable
     public function pickings(): HasMany
     {
         return $this->hasMany(Picking::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
+    }
+
+    public function leaflets(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteLeaflet::class);
     }
 
     public function packings(): HasMany
@@ -507,5 +578,30 @@ class DeliveryNote extends Model implements Auditable
     public function isLockedInAurora(): bool
     {
         return $this->handled_in_aurora && !in_array($this->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED]);
+    }
+
+    /**
+     * Picking, packing, shipping, finalising and dispatching: warehouse dispatch staff, plus the
+     * shop's customer service, who book shipments and dispatch collections themselves.
+     */
+    public function canBeWorkedOnBy(User $user): bool
+    {
+        return $user->authTo([
+            "dispatching.$this->warehouse_id.edit",
+            "supervisor-dispatching.$this->warehouse_id",
+            "returns.$this->warehouse_id",
+            "org-admin.$this->organisation_id",
+            "orders.$this->shop_id.edit",
+        ]);
+    }
+
+    public function canBeCancelledBy(User $user): bool
+    {
+        return $user->authTo([
+            "supervisor-dispatching.$this->warehouse_id",
+            "org-admin.$this->organisation_id",
+            "orders.$this->shop_id.edit",
+            "crm.$this->shop_id.edit",
+        ]);
     }
 }

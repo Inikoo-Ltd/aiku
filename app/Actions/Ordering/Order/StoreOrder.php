@@ -161,7 +161,7 @@ class StoreOrder extends OrgAction
                     country: $this->organisation->country,
                     taxNumber: $taxNumber,
                     billingAddress: $billingAddress,
-                    deliveryAddress: $deliveryAddress,
+                    deliveryAddress: $this->isCollection($modelData) && !$taxNumber?->valid && $shop->collectionAddress ? $shop->collectionAddress : $deliveryAddress,
                     isRe: $isRe,
                 )->id
             );
@@ -252,6 +252,11 @@ class StoreOrder extends OrgAction
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $order->state);
 
+
+        if ($this->strict) {
+            $order = ApplyDefaultOrderPackaging::run($order)->refresh();
+        }
+
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
@@ -272,6 +277,13 @@ class StoreOrder extends OrgAction
         }
 
         return $order->fresh();
+    }
+
+    private function isCollection(array $modelData): bool
+    {
+        $handingType = Arr::get($modelData, 'handing_type');
+
+        return ($handingType instanceof OrderHandingTypeEnum ? $handingType : OrderHandingTypeEnum::tryFrom((string)$handingType)) === OrderHandingTypeEnum::COLLECTION;
     }
 
     public function rules(): array
@@ -299,6 +311,7 @@ class StoreOrder extends OrgAction
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'platform_order_id'         => ['sometimes', 'nullable'],
+            'platform_order_created_at' => ['sometimes', 'nullable', 'date'],
             'is_shipping_by_external'   => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, provide } from 'vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BlockList from '@/Components/CMS/Webpage/BlockList.vue'
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from '@kyvg/vue3-notification'
@@ -26,13 +26,12 @@ const getWebBlockTypes = async () => {
 	try {
 		const { data } = await axios.get(route('grp.json.web-block-types.index'))
 		const setdata = data.data
-		console.log(data)
 		webBlockTypes.value = {data :setdata }
 		modelModalBlocklist.value = true
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to load block types"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to load block types"),
 			type: "error"
 		})
 	}
@@ -55,7 +54,7 @@ provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 	<div class="group hover:bg-gray-100 relative border border-gray-400 border-dashed overflow-hidden rounded-md text-center cursor-pointer" @click="getWebBlockTypes">
 		<div v-if="!model" class="text-sm">
 			<div class="py-3">
-				<p>{{ trans("Pick Block") }}</p>
+				<p>{{ ctrans("Pick Block") }}</p>
 			</div>
 		</div>
 
@@ -63,7 +62,7 @@ provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 			<Image :src="model?.screenshot" class="w-auto h-fit" />
 			<div
 				class="absolute hover:bg-black/50 z-10 inset-0 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100">
-				{{ trans("Pick Block") }}
+				{{ ctrans("Pick Block") }}
 			</div>
 			
 		</div>

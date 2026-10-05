@@ -24,7 +24,12 @@ class ReceiveSlackTicketReaction
 
     public function handle(Group $group, string $channel, string $ts, ?string $reactedBy = null): ?Ticket
     {
-        if ($existing = Ticket::where('data->slack->ts', $ts)->where('data->slack->channel_id', $channel)->first()) {
+        $existing = Ticket::where(
+            fn ($query) => $query
+            ->where(fn ($origin) => $origin->where('data->slack->ts', $ts)->where('data->slack->channel_id', $channel))
+            ->orWhere(fn ($alert) => $alert->where('data->slack_alert->ts', $ts)->where('data->slack_alert->channel', $channel))
+        )->first();
+        if ($existing) {
             return $existing;
         }
 

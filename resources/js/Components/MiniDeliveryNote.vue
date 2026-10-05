@@ -13,7 +13,7 @@ import { onMounted } from "vue";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faPrint } from "@fal"
@@ -107,8 +107,8 @@ const onSubmitParcels = () => {
         },
         onError: () => {
             notify({
-                title: trans("Something went wrong."),
-                text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                title: ctrans("Something went wrong."),
+                text: ctrans("Failed to add Shipment. Please try again or contact administrator."),
                 type: "error",
             })
         },
@@ -176,7 +176,7 @@ const handleFinaliseAndDispatch = () => {
         {
             onError: (e) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message || "Please try again later or contact administrator.",
                     type: "error",
                 })
@@ -210,8 +210,8 @@ const handleSetAsPacked = async () => {
         console.error('❌ Failed to set as packed:', error)
         notify({
             type: "error",
-            title: trans("Failed"),
-            text: error?.response?.data?.message ?? trans("Unable to set delivery note as packed."),
+            title: ctrans("Failed"),
+            text: error?.response?.data?.message ?? ctrans("Unable to set delivery note as packed."),
         })
     } finally {
         loadingFinal.value = false
@@ -235,16 +235,16 @@ onMounted(() => {
                 :context="{
                     context_type: 'DeliveryNote',
                     context_id: Number(props.deliveryNote.delivery_note_id),
-                    audiences: [{ key: 'crm', label: trans('Ask CRM') }],
+                    audiences: [{ key: 'crm', label: ctrans('Ask CRM') }],
                 }"
                 class="mr-3"
             />
 
             <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
-                type="save" :label="isCollection ? trans('Finalise and set as Collected') : trans('Finalise and Dispatch')" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
+                type="save" :label="isCollection ? ctrans('Finalise and set as Collected') : ctrans('Finalise and Dispatch')" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
             <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
-                type="save" label="Set as packed" size="sm" class="mx-3" :loading="loadingFinal"
+                type="save" :label="ctrans('Set as packed')" size="sm" class="mx-3 whitespace-nowrap" :loading="loadingFinal"
                 @click="handleSetAsPacked" />
         </template>
     </PageHeading>
@@ -261,19 +261,19 @@ onMounted(() => {
     <div v-if="!isLoading && data" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
         <!-- Box 1: Shipping -->
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
-            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Shipping") }}</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ ctrans("Shipping") }}</h3>
 
             <div v-if="isCollection" class="border border-purple-300 p-4 rounded-lg bg-purple-50 text-sm font-semibold text-purple-700 flex items-center gap-2">
                 <FontAwesomeIcon icon="fas fa-people-arrows" fixed-width aria-hidden="true" />
-                {{ trans("For Collection, do not ship") }}
+                {{ ctrans("For Collection, do not ship") }}
             </div>
 
             <div v-else-if="data.delivery_note?.delivery_address">
                 <div class="border border-gray-300 p-4 rounded-lg bg-gray-50 space-y-2 text-sm text-gray-700">
                     <div v-if="data.delivery_note.customer_client">
-                        <p><strong>{{ trans("Name") }}:</strong> {{ data.delivery_note.customer_client.contact_name || data.delivery_note.customer_client.name }}</p>
-                        <p v-if="data.delivery_note.customer_client.email"><strong>{{ trans("Email") }}:</strong> {{ data.delivery_note.customer_client.email }}</p>
-                        <p v-if="data.delivery_note.customer_client.phone"><strong>{{ trans("Phone") }}:</strong> {{ data.delivery_note.customer_client.phone }}</p>
+                        <p><strong>{{ ctrans("Name") }}:</strong> {{ data.delivery_note.customer_client.contact_name || data.delivery_note.customer_client.name }}</p>
+                        <p v-if="data.delivery_note.customer_client.email"><strong>{{ ctrans("Email") }}:</strong> {{ data.delivery_note.customer_client.email }}</p>
+                        <p v-if="data.delivery_note.customer_client.phone"><strong>{{ ctrans("Phone") }}:</strong> {{ data.delivery_note.customer_client.phone }}</p>
                     </div>
                     <div v-html="data.delivery_note.delivery_address.formatted_address" class="text-gray-600 text-sm"></div>
                 </div>
@@ -285,11 +285,11 @@ onMounted(() => {
 
             <div class="border-t border-gray-200 pt-3 mt-3 text-sm">
                 <div class="flex justify-between py-1">
-                    <span>{{ trans("Company Name") }}:</span>
+                    <span>{{ ctrans("Company Name") }}:</span>
                     <span class="font-medium">{{ data.delivery_note?.customer.company_name }}</span>
                 </div>
                 <div class="flex justify-between py-1">
-                    <span>{{ trans("Customer") }}:</span>
+                    <span>{{ ctrans("Customer") }}:</span>
                     <span class="font-medium text-right">
                         {{ data.delivery_note?.customer.contact_name }}
                         <span v-if="data.delivery_note?.customer.reference" class="text-gray-500">
@@ -302,12 +302,12 @@ onMounted(() => {
 
         <!-- Box 2: Delivery Note -->
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
-            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Delivery Note") }}</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ ctrans("Delivery Note") }}</h3>
 
             <div class="space-y-1 text-sm text-gray-700">
                 <div v-if="data.delivery_note?.picker?.contact_name">
                     <dl class="border-l-4 border-indigo-300 bg-indigo-100 pl-2 py-1">
-                        <dt>{{ trans("Picker") }}:</dt>
+                        <dt>{{ ctrans("Picker") }}:</dt>
                         <dd class="text-gray-600">{{ data.delivery_note.picker.contact_name }}</dd>
                     </dl>
                 </div>
@@ -330,24 +330,24 @@ onMounted(() => {
                 <div v-if="statesWithParcels.includes(data.delivery_note?.state)">
                     <div class="flex justify-between items-center text-sm">
                         <div class="font-medium text-gray-700">
-                            {{ trans("Parcels") }} ({{ data.delivery_note?.parcels?.length ?? 0 }})
+                            {{ ctrans("Parcels") }} ({{ data.delivery_note?.parcels?.length ?? 0 }})
                         </div>
                         <div v-if="statesWithEditableParcels.includes(data.delivery_note?.state)"
                             class="text-gray-500 cursor-pointer hover:text-gray-700"
                             @click="onOpenModalParcels">
-                            {{ data.delivery_note?.parcels?.length ? trans("Edit") : trans("Add") }}
+                            {{ data.delivery_note?.parcels?.length ? ctrans("Edit") : ctrans("Add") }}
                             <FontAwesomeIcon :icon="data.delivery_note?.parcels?.length ? 'fal fa-pencil' : 'fas fa-plus'" size="sm" fixed-width />
                         </div>
                     </div>
                     <ul class="list-disc pl-4 mt-1 text-gray-600 text-xs space-y-0.5">
                         <li v-for="(parcel, idx) in data.delivery_note?.parcels" :key="idx">
                             {{ parcel.weight }} kg
-                            <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">({{ trans("dimensions missing") }})</span>
+                            <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">({{ ctrans("dimensions missing") }})</span>
                             <span v-else>({{ parcel.dimensions?.join('×') }} cm)</span>
                         </li>
                     </ul>
                     <div v-if="isParcelsMissingForPacking" class="mt-1 text-xs text-red-500">
-                        {{ trans("Add parcels with their dimensions before setting as packed") }}
+                        {{ ctrans("Add parcels with their dimensions before setting as packed") }}
                     </div>
                 </div>
 
@@ -382,11 +382,11 @@ onMounted(() => {
 
     <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
         <div class="text-center font-bold mb-4">
-            {{ trans('Add shipment') }}
+            {{ ctrans('Add shipment') }}
         </div>
 
         <div>
-            <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+            <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
                 <!-- Header Row -->
                 <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
                     <div class="flex justify-center">
@@ -431,7 +431,7 @@ onMounted(() => {
                         </div>
                     </TransitionGroup>
                     <div v-else class="text-center text-gray-400">
-                        {{ trans('No parcels') }}
+                        {{ ctrans('No parcels') }}
                     </div>
                 </div>
 
@@ -441,13 +441,13 @@ onMounted(() => {
                     <div @click="() => parcelsCopy.push(newParcel())"
                         class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                         <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                        {{ trans("Add another parcel") }}
+                        {{ ctrans("Add another parcel") }}
                     </div>
                 </div>
             </Fieldset>
 
             <div v-if="parcelsCopy?.some(isParcelMissingDimensions)" class="mt-3 text-xs text-red-500">
-                {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+                {{ ctrans("Enter length, width and height of every parcel, they are needed to set as packed") }}
             </div>
             <div class="flex justify-end mt-3">
                 <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="

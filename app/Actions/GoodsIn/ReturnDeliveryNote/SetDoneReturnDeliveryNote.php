@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
@@ -33,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetDoneReturnDeliveryNote extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
     use WithReturnDeliveryNoteTransition;
@@ -181,6 +183,25 @@ class SetDoneReturnDeliveryNote extends OrgAction
             'createRefund'                              => ['required', 'boolean'],
             'createReplacement'                         => ['required', 'boolean'],
         ];
+    }
+
+    /**
+     * Finishing a return decides the refund or replacement, which customer services do from the
+     * order's shop, so editing that shop's orders is enough besides the warehouse returns permissions.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $returnDeliveryNote = $request->route('returnDeliveryNote');
+
+        return $request->user()->authTo([
+            "incoming.{$this->warehouse->id}.edit",
+            "returns.{$this->warehouse->id}",
+            "orders.{$returnDeliveryNote->order->shop_id}.edit",
+        ]);
     }
 
     /**

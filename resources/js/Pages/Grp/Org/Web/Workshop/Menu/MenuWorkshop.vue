@@ -25,7 +25,7 @@ import {
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { get, set } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
@@ -142,7 +142,6 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 let controller: AbortController | null = null
 const autoSave = async (value: any) => {
-	console.log("Auto saving parents...", value)
 	if (controller) {
 		controller.abort()
 	}
@@ -165,7 +164,6 @@ const autoSave = async (value: any) => {
 			error.name === "CanceledError" ||
 			error.message === "canceled"
 		) {
-			console.log("Autosave request cancelled")
 			return
 		}
 
@@ -198,7 +196,7 @@ const autoSave = async (value: any) => {
                 v-else
                 @click="() => autoSave(Navigation)"
                 type="tertiary"
-                :label="trans('Save')"
+                :label="ctrans('Save')"
                 icon="fas fa-save"
                 size="xs"
                 :loading="statusSave === 'loading'"
@@ -213,8 +211,8 @@ const autoSave = async (value: any) => {
 			<div v-if="shop_type !== 'fulfilment'" class="border-dashed border-b border-gray-300 pb-6 mb-6">
 				<div class="flex justify-between mt-4 ">
 					<div>
-						{{ trans("Is follow sidebar navigation?") }}
-						<InformationIcon :information="trans('The data will be same like Sidebar')" />
+						{{ ctrans("Is follow sidebar navigation?") }}
+						<InformationIcon :information="ctrans('The data will be same like Sidebar')" />
 					</div>
 
 					<Toggle
@@ -223,7 +221,7 @@ const autoSave = async (value: any) => {
 				</div>
 
 				<Link :href="urlToSidebar" class="text-xs underline hover:text-blue-500 cursor-pointer mt-2">
-				{{ trans("Open Sidebar workshop") }}
+				{{ ctrans("Open Sidebar workshop") }}
 				<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
 				</Link>
 			</div>

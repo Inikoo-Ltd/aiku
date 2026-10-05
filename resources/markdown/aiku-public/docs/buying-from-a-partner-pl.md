@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-09-09
-source_date: 2026-09-09
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -28,7 +28,7 @@ Obok pulpitu zakładka **Shopping list** (Lista zakupowa) przechowuje wszystkie 
 
 ## Przeglądanie katalogu partnera
 
-Obok listy zakupowej znajduje się zakładka **Browse** (Przeglądaj): cały katalog partnera jako sklep, z aktualnymi stanami i cenami na żywo. Poruszaj się po nim przez **Departments** (Działy) lub **Collections** (Kolekcje), schodź do rodzin produktów, albo po prostu wpisz coś w polu wyszukiwania. Każda karta produktu pokazuje aktualną cenę, plakietkę **Their stock** (Ich stan) z tym, co partner ma dostępne, oraz - dla produktów, których używasz - Twoje własne liczby: *our stock* (nasz stan), *our sales / quarter* (nasza sprzedaż / kwartał) i *we run out in* (skończy nam się za) tyle a tyle dni (na czerwono, gdy to dwa tygodnie lub mniej).
+Obok listy zakupowej znajduje się zakładka **Browse** (Przeglądaj): cały katalog partnera jako sklep, z aktualnymi stanami i cenami na żywo. Poruszaj się po nim przez **Departments** (Działy) lub **Collections** (Kolekcje), schodź do rodzin produktów, albo po prostu wpisz coś w polu wyszukiwania. Każda karta produktu pokazuje aktualną cenę, plakietkę **Their stock** (Ich stan) z tym, co partner ma dostępne, oraz - dla produktów, których używasz - Twoje własne liczby: *our stock* (nasz stan), *our sales / quarter* (nasza sprzedaż / kwartał) i *Estimated: Would run out in* (skończy nam się za) tyle a tyle dni (na czerwono, gdy to dwa tygodnie lub mniej).
 
 Warto wiedzieć dwie rzeczy o tym katalogu. Ceny są **Twoje, nie z półki**: cena katalogowa sprzedającego z odjętym już Twoim rabatem międzyorganizacyjnym, przeliczona na walutę Twojej organizacji, więc to, co widzisz, jest tym, co powie faktura. I zawiera produkty, które partner uczynił **exclusive to you** (wyłącznymi dla Ciebie) - pozycje, które nigdy nie pojawiają się w jego publicznym sklepie, ale istnieją dla Twojej organizacji. Jeśli nie możesz znaleźć czegoś, czego się spodziewałeś, warto o to zapytać; jeśli znajdziesz coś, czego się nie spodziewałeś, prawdopodobnie jest Twoje na mocy ustaleń.
 
@@ -42,7 +42,7 @@ Podczas przeglądania Twoja lista zakupowa towarzyszy Ci jako paragon przypięty
 
 Auto-fill (automatyczne uzupełnienie) istnieje po to, żeby uzupełnianie zapasów nie zależało od tego, czy ktoś pamięta o każdej pozycji. Podajesz mu jedną liczbę - **budget** (budżet), w tej samej walucie, w jakiej kupujesz - a ono buduje propozycję, która się w niej mieści:
 
-- Przegląda każdą pozycję, którą partner może dostarczyć i której faktycznie używasz, szereguje je wg tego, **jak szybko Ci się skończy** (ta sama prognoza *we run out in*, którą widzisz podczas przeglądania), i uzupełnia najpierw te najbliższe wyczerpania, każdą w zalecanej ilości zamówienia, zaokrąglonej do kroku zamówienia (order step) danej pozycji.
+- Przegląda każdą pozycję, którą partner może dostarczyć i której faktycznie używasz, szereguje je wg tego, **jak szybko Ci się skończy** (ta sama prognoza *Estimated: Would run out in*, którą widzisz podczas przeglądania), i uzupełnia najpierw te najbliższe wyczerpania, każdą w zalecanej ilości zamówienia, zaokrąglonej do kroku zamówienia (order step) danej pozycji.
 - Każda proponowana pozycja pokazuje swój **reason** (powód, np. "Our sales/quarter ~48 · our stock 0 · we run out now"), ilość i koszt, więc widzisz, dlaczego się tam znalazła. Ilości wynikają z tej samej prognozy co plakietki *suggested* w Browse.
 - **Instruction box** (pole instrukcji) jest opcjonalne i przyjmuje zwykły język: *"prioritise essential oils, skip anything we hold over 8 weeks of"* ("traktuj priorytetowo olejki eteryczne, pomiń wszystko, czego mamy zapas na ponad 8 tygodni"), *"focus on candles, nothing seasonal"* ("skup się na świecach, nic sezonowego"). AI czyta Twoją instrukcję razem z tymi samymi danymi o zużyciu i odpowiednio przekształca propozycję - ale jej wynik jest sprawdzany wobec rzeczywistości, zanim go zobaczysz: ilości są ograniczone do tego, co partner faktycznie ma, a suma jest wymuszona z powrotem w granicach Twojego budżetu. Jeśli instrukcji nie da się zrealizować, dostajesz standardową propozycję.
 - **Nic nie dodaje się samo.** Propozycja to zestaw zaznaczonych pozycji, które możesz odznaczyć, zmienić ilość albo wygenerować ponownie z innym budżetem lub instrukcją; dopiero **Add items to shopping list** (Dodaj pozycje do listy zakupowej) coś zatwierdza.
@@ -51,6 +51,17 @@ Auto-fill (automatyczne uzupełnienie) istnieje po to, żeby uzupełnianie zapas
 Auto-fill można też otworzyć od razu zawężone: **+ fill** na kafelku ryzyka na pulpicie otwiera je tylko dla tego kubełka, z już wygenerowaną propozycją. Te same zasady - dostosowujesz, odznaczasz i zatwierdzasz; nic nie dodaje się samo.
 
 Dobry nawyk: pracuj nad kafelkami pulpitu od najgorszych, potem raz na cykl uzupełnienia uruchom Auto-fill dla tego, co zostało, przeczytaj powody, odznacz to, z czym się nie zgadzasz, i dodaj resztę.
+
+## Poproś swojego asystenta AI o dodanie pozycji
+
+Jeśli Twoje konto jest włączone do tej funkcji, asystent AI, którego podłączysz do aiku, może dodawać pozycje do listy za Ciebie. Planowanie zrób w swoim asystencie - zapytaj, co się kończy, i przejrzyjcie razem liczby - a gdy będziesz zadowolony, powiedz mu: *"ok, dodaj to do listy zakupowej"*. Najpierw pokaże Ci kody SKO i ilości, a doda je dopiero po Twoim potwierdzeniu.
+
+- Do planowania asystent czyta te same liczby, które widzisz Ty: stan, sprzedaż, dni do wyczerpania zapasu, prognozowaną ilość, krok zamówienia (order step) i trwałość (shelf life). Nigdy nie proponuje więcej, niż się sprzeda przed upływem terminu przydatności; produkt, dla którego nie zapisano jeszcze trwałości, jest planowany tak, jakby miał ją równą jednemu rokowi.
+- Ilości są w SKO i **ustawiają** pozycję: SKO, które już jest na liście, dostaje nową ilość, a nie dodatkową.
+- Obowiązują te same zasady co przy ręcznym dodawaniu: budżet, miejsce w magazynie i kontrole opakowań opisane poniżej. Pozycja odrzucona przez listę wraca z powodem, a pozostałe i tak zostają dodane.
+- Asystent tylko dodaje i zmienia ilości; priorytety i usuwanie pozycji pozostają w tabeli listy zakupowej.
+- Każda zmiana jest zapisywana razem z Twoją prośbą i można ją cofnąć: poproś asystenta o jej wycofanie albo zrobi to administrator z dziennika AI changes (zmian AI).
+- Włączenie to przełącznik na Twoim koncie użytkownika, który ustawia administrator; potrzebujesz też uprawnienia do edycji zakupów dla swojej organizacji.
 
 ## Kiedy lista mówi nie
 
@@ -66,6 +77,7 @@ Gdy partner [wyśle przesyłkę do swojego magazynu](/docs/fulfilling-partner-or
 <li><b>Dodaj do listy:</b> <b>Shopping list</b> (Lista zakupowa) → <b>Add stocks</b> (Dodaj towary), albo <b>Browse</b> (Przeglądaj) i ustaw ilości na kartach produktów, albo <b>Auto-fill</b> (lub <b>+ fill</b> na kafelku pulpitu) po propozycję.</li>
 <li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
+<li><b>Pozwól komuś uzupełniać listę przez jego asystenta AI (administratorzy):</b> <b>Sysadmin → Users</b> (Administracja systemu → Użytkownicy) → otwórz użytkownika → <b>Edit</b> → <b>Access</b> → włącz <b>Can connect AI assistant</b>, a potem <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
 <li><b>Wyłącz pozycję z auto-fill:</b> Twoja organizacja → <b>Warehouse → Inventory</b> (Magazyn → Zapasy) → otwórz SKO → <b>Edit SKO</b> (Edytuj SKO) → włącz <b>Do not auto order</b> (Nie zamawiaj automatycznie).</li>
 <li><b>Śledź i przyjmij przesyłkę:</b> ta sama strona partnera → <b>Stock deliveries</b> (Dostawy towaru) → gdy towar dotrze, <b>Receive</b> (Przyjmij) → sprawdź → rozmieść na lokalizacjach.</li>
 </ul>

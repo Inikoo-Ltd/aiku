@@ -197,6 +197,12 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $not_follow_master_media
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
+ * @property bool $is_back_order Offered for pre-order while out of stock, dispatched when the next delivery arrives
+ * @property bool $is_made_to_order Not stocked, ordered from the supplier when a customer buys it
+ * @property string|null $pre_order_deposit_percentage Deposit taken at checkout on made-to-order lines, null uses the shop default
+ * @property int|null $pre_order_lead_time_days Overrides the supplier's pre-order lead time
+ * @property int|null $max_quantity_per_order
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -258,6 +264,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|Product onlyTrashed()
  * @method static Builder<static>|Product query()
  * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product offeredToPartners()
  * @method static Builder<static>|Product sellableToCustomer(?int $customerId)
  * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
@@ -287,6 +294,14 @@ class Product extends Model implements Auditable, HasMedia
             }
         });
     }
+
+    public const array PRE_ORDER_FIELDS = [
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
+    ];
 
     protected $guarded = [];
 
@@ -328,6 +343,10 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media'       => 'boolean',
         'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
+        'is_indivisible'                => 'boolean',
+        'is_back_order'                 => 'boolean',
+        'is_made_to_order'              => 'boolean',
+        'pre_order_deposit_percentage'  => 'decimal:2',
     ];
 
     protected $attributes = [
@@ -349,7 +368,10 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_in_website',
                 'is_on_demand',
+                'barcode',
+                'web_images',
                 'created_at'
             ]);
     }
@@ -404,10 +426,16 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media',
         'not_follow_master_trade_units',
         'is_golden_product',
+        'is_indivisible',
         'barcode',
         'independent_barcode',
         'is_for_sale',
         'exclusive_for_customer_id',
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
     ];
 
     public function getRouteKeyName(): string
@@ -617,6 +645,28 @@ class Product extends Model implements Auditable, HasMedia
     }
 
     /**
+     * Products staff may put on an order for one of the group's partner companies: everything
+     * active that is not private, plus the ranges private to the partner companies. Another
+     * customer's private label is never offered to them.
+     */
+    public function scopeOfferedToPartners(Builder $query): Builder
+    {
+        return $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+            ->where(function (Builder $query) {
+                $query->whereNotExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+                })->orWhereExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->whereIn('product_has_exclusive_customers.customer_id', function ($partners) {
+                            $partners->from('org_partners')->whereNotNull('customer_id')->select('customer_id');
+                        });
+                });
+            });
+    }
+
+    /**
      * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
      * every product fetch from its own single-customer field, and it holds nothing for the ranges
      * sold to the AW group companies, so trusting it would quietly make those products public.
@@ -748,6 +798,11 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function dropshippingBasePrice(): float
+    {
+        return (float) ($this->rrp > 0 ? $this->rrp : $this->price);
     }
 
     public function bundle(): MorphOne

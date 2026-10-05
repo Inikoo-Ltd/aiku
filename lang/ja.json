@@ -1356,5 +1356,16 @@
     "working place": "職場",
     "working places": "作業場所",
     "workplace": "職場",
-    "workshop": "ワークショップ"
+    "workshop": "ワークショップ",
+    "Closing chats": "チャットのクローズ",
+    "Closing chats saved": "チャットのクローズ設定を保存しました",
+    "When a customer on website chat or WhatsApp only thanks us after we answered, we react with a 👍 and close the conversation. If an agent has the chat open, it waits first and closes only if nobody writes. Anything the customer writes next reopens it. An email that only thanks us is closed without a reply.": "ウェブサイトのチャットや WhatsApp で、こちらの回答後にお客様がお礼だけを送ってきた場合、👍 でリアクションして会話を閉じます。担当者がチャットを開いている場合は、まず待機し、誰も書き込まなければ閉じます。その後お客様が何か書き込むと再開されます。お礼だけのメールは返信せずに閉じます。",
+    "React with a 👍 and close when the customer only thanks us": "お客様がお礼だけのときは 👍 でリアクションして閉じる",
+    "Minutes to wait when an agent has the chat open": "担当者がチャットを開いているときの待機時間（分）",
+    "Only a chat supervisor can change this.": "これを変更できるのはチャットのスーパーバイザーだけです。",
+    "Keep open": "開いたままにする",
+    "The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.": "お客様はお礼だけを送りました：👍 が送られ、誰も書き込まなければチャットは閉じます。入力すると開いたままになります。",
+    "Always available": "常時購入可能",
+    "Made on demand": "受注生産",
+    ":quantity on the shelf, made on demand": "棚に:quantity、受注生産"
 }

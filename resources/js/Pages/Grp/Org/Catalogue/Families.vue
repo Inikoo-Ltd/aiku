@@ -14,9 +14,9 @@ import { computed, ref } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSeedling, faPenAlt } from "@fal"
+import { faSeedling, faPenAlt, faFolder } from "@fal"
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
@@ -29,9 +29,10 @@ import Dialog from "primevue/dialog"
 import { Checkbox } from 'primevue'
 import { watch } from 'vue'
 import axios from 'axios'
+import Image from "@common/Components/Image.vue"
 
 const screenType = inject('screenType', ref('desktop'))
-library.add(faSeedling, faPenAlt)
+library.add(faSeedling, faPenAlt, faFolder)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -45,10 +46,10 @@ const props = defineProps<{
     sales?: {}
     need_review?: {}
     missing_gr?: {}
-    routes: {
+    routes?: {
         departments_route: routeType
         submit_route: routeType
-    }
+    } | null
     is_orphan_families?: boolean
     shops_do_not_have_family?: {}[]
     master_product_category_id?: number
@@ -96,8 +97,8 @@ const onSubmitToDepartment = () => {
                 selectedDepartmentId.value = null
                 selectedFamiliesId.value = {}
                 notify({
-                    title: trans("Success"),
-                    text: selectedFamiliesIdToSubmit.length + ' ' + trans("Families added to Department successfully."),
+                    title: ctrans("Success"),
+                    text: selectedFamiliesIdToSubmit.length + ' ' + ctrans("Families added to Department successfully."),
                     type: "success",
                 })
             },
@@ -133,8 +134,8 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         onSuccess: () => {
             router.reload({only: ['data']})
             notify({
-                title: trans("Success!"),
-                text: trans("Successfully added families"),
+                title: ctrans("Success!"),
+                text: ctrans("Successfully added families"),
                 type: "success"
             })
             isOpenModalAddToShop.value = false
@@ -171,8 +172,8 @@ watch(() => cloneProgress.value?.isFinished, (isFinished) => {
     selectedShops.value = []
 
     notify({
-        title: trans("Success"),
-        text: trans("Family and its products have been added to the selected shops."),
+        title: ctrans("Success"),
+        text: ctrans("Family and its products have been added to the selected shops."),
         type: "success",
     })
 
@@ -195,8 +196,8 @@ const submitCloneFromMaster = async () => {
     } catch (error: any) {
         echoPersonal.clearCloneFamilyProgress(props.master_product_category_id)
         notify({
-            title: trans("Something went wrong."),
-            text: error?.response?.data?.message || trans("Failed to add family to the selected shops, please try again."),
+            title: ctrans("Something went wrong."),
+            text: error?.response?.data?.message || ctrans("Failed to add family to the selected shops, please try again."),
             type: "error",
         })
     }
@@ -214,16 +215,16 @@ const submitCloneFromMaster = async () => {
                 @click="() => isOpenModalAddToDepartment = true"
                 type="tertiary"
                 icon="fas fa-plus"
-                :label="trans('Add to Department')"
+                :label="ctrans('Add to Department')"
                 :disabled="compSelectedFamiliesId.length < 1"
-                v-tooltip="compSelectedFamiliesId.length < 1 ? trans('Select at least one family') : ''"
+                v-tooltip="compSelectedFamiliesId.length < 1 ? ctrans('Select at least one family') : ''"
             />
             <Button
                 v-if="routes?.fetch_families"
                 @click="() => isOpenModalAddToShop = true"
                 type="tertiary"
                 icon="fas fa-plus"
-                :label="trans('Attach families')"
+                :label="ctrans('Attach families')"
             />
         </template>
         <template #button-assign="{ action }">
@@ -328,23 +329,23 @@ const submitCloneFromMaster = async () => {
     
     <Modal v-if="is_orphan_families" :isOpen="isOpenModalAddToDepartment" @onClose="isOpenModalAddToDepartment = false" width="w-full max-w-[500px]">
         <div class="text-center font-semibold text-lg mb-4">
-            {{ trans("Select Family to add the products to:") }}
+            {{ ctrans("Select Family to add the products to:") }}
         </div>
 
         <div class="mb-4">
             <PureMultiselectInfiniteScroll
                 v-model="selectedDepartmentId"
                 :fetchRoute="props.routes.departments_route"
-                :placeholder="trans('Select Department')"
+                :placeholder="ctrans('Select Department')"
                 valueProp="id"
                 xoptionsList="(options) => dataFamilyList = options"
             >
                 <template #singlelabel="{ value }">
-                    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.number(value.number_current_families) }} {{ trans("families") }})</span></div>
+                    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.number(value.number_current_families) }} {{ ctrans("families") }})</span></div>
                 </template>
                 
                 <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.number(option.number_current_families) }} {{ trans("families") }})</span></div>
+                    <div class="">{{ option.name }} <span class="text-sm text-gray-400">({{ locale.number(option.number_current_families) }} {{ ctrans("families") }})</span></div>
                 </template>
             </PureMultiselectInfiniteScroll>
         </div>
@@ -360,7 +361,7 @@ const submitCloneFromMaster = async () => {
     <Modal v-if="true" :isOpen="isOpenModalAddToShop" @onClose="isOpenModalAddToShop = false" width="w-full max-w-6xl">
         <ProductsSelector
             v-if="routes?.fetch_families"
-            :headLabel="trans('Add Family to portfolios')"
+            :headLabel="ctrans('Add Family to portfolios')"
             :route-fetch="routes.fetch_families"
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
@@ -369,13 +370,13 @@ const submitCloneFromMaster = async () => {
                 <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                 <div class="flex flex-col justify-between">
                     <div class="w-fit" xclick="() => selectProduct(item)">
-                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
-                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                        <div v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                        <div v-if="!item.no_code" v-tooltip="ctrans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                        <div v-if="item.reference" v-tooltip="ctrans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                        <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                     </div>
-                    <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                        {{ locale?.number(item.number_current_products || 0) }} {{ trans("products") }}
+                    <div v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
+                        {{ locale?.number(item.number_current_products || 0) }} {{ ctrans("products") }}
                     </div>
                 </div>
             </template>

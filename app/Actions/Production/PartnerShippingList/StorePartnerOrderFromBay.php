@@ -8,6 +8,8 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Models\Procurement\PartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\OrgPartner;
@@ -49,8 +51,16 @@ class StorePartnerOrderFromBay extends OrgAction
             throw ValidationException::withMessages(['order' => __('Nothing this partner asked for is in stock yet')]);
         }
 
-        return DB::transaction(function () use ($orgPartner, $inTheMaking) {
-            $picked = CherryPickPartnerShoppingListItems::make()->action($orgPartner->organisation, $inTheMaking['lines']);
+        $lineStockIds       = PartnerShoppingListItem::whereIn('id', collect($inTheMaking['lines'])->pluck('id'))->pluck('stock_id', 'id');
+        $mismatchedStockIds = EnsurePartnerOrderPackedInMatches::make()->mismatchedStockIds($orgPartner, $lineStockIds->unique()->values()->all());
+        $lines              = collect($inTheMaking['lines'])->reject(fn ($line) => in_array($lineStockIds->get($line['id']), $mismatchedStockIds))->values()->all();
+
+        if (!$lines) {
+            throw ValidationException::withMessages(['order' => EnsurePartnerOrderPackedInMatches::make()->mismatches($orgPartner, $mismatchedStockIds)]);
+        }
+
+        return DB::transaction(function () use ($orgPartner, $lines) {
+            $picked = CherryPickPartnerShoppingListItems::make()->action($orgPartner->organisation, $lines);
 
             if ($picked['skipped']) {
                 throw ValidationException::withMessages(['order' => collect($picked['skipped'])->pluck('reason')->unique()->implode(', ')]);

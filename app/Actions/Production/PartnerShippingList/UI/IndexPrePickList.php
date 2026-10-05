@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -28,12 +29,14 @@ class IndexPrePickList extends OrgAction
 {
     private const CATEGORY = "coalesce(artefact_departments.name, '')";
 
+    private const COSMETIC = "case when stocks.is_cosmetic then 'cosmetic' else 'non-cosmetic' end";
+
     private ?array $elementGroups = null;
 
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo([
+        return $this->organisation->is_manufacturing_hub && $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",
@@ -89,7 +92,12 @@ class IndexPrePickList extends OrgAction
                 'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
+                'stocks.is_cosmetic',
                 'organisations.code as buyer_code',
+                DB::raw("(select locations.code from org_partners to_partner
+                    join locations on locations.id = ".OrgPartner::bayIdSql('to_partner', 'stocks.is_cosmetic')."
+                    where to_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
+                        and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
                 DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
             ])
@@ -153,6 +161,7 @@ class IndexPrePickList extends OrgAction
 
         return $this->elementGroups = [
             'category'  => $group(__('Category'), self::CATEGORY, $counts(self::CATEGORY)),
+            'cosmetic'  => $group(__('Cosmetic'), self::COSMETIC, $counts(self::COSMETIC)),
             'requester' => $group(__('Requester'), 'organisations.code', $counts('organisations.code')),
             'priority'  => $group(__('Urgency'), 'partner_shopping_list_items.priority', $counts('partner_shopping_list_items.priority')),
         ];
@@ -171,6 +180,7 @@ class IndexPrePickList extends OrgAction
                 ->column(key: 'pick', label: '', canBeHidden: false)
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Artefact'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'to_location', label: __('To'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Asked'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'stock_available', label: __('In stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'can_pick', label: __('Can pick'), canBeHidden: false, sortable: true, align: 'right')

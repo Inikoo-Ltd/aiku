@@ -12,9 +12,8 @@ import type { Table as TableTS } from "@/types/Table"
 import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { get, intersection, set } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ref, onMounted, reactive, inject, onUnmounted, watch } from "vue"
+import { ref, onMounted, reactive, inject, onUnmounted, watch, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faHourglassHalf, faBox, faBarcodeRead } from "@fal"
 import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
@@ -24,6 +23,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Tab, Dialog } from "primevue"
+import Popover from "primevue/popover"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faAnalytics, faPencil } from "@far"
@@ -37,17 +37,98 @@ import LabelPickingLocation from "../DeliveryNotes/LabelPickingLocation.vue"
 import LabelItemsWaitingForWarehouse from "../DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "../DeliveryNotes/LabelItemsWaitingForCrm.vue"
 import ButtonNotPickedOrWaiting from "../DeliveryNotes/ButtonNotPickedOrWaiting.vue"
+import ButtonPutBackIncompleteSets from "@/Components/DeliveryNote/ButtonPutBackIncompleteSets.vue"
+import IndivisibleSetIcon from "@/Components/Catalogue/IndivisibleSetIcon.vue"
+import { useStringToHex } from "@/Composables/useStringToHex"
+import { useIndivisibleSetMismatches } from "@/Composables/useIndivisibleSetMismatches"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
+import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
+import { faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload, faEye, faInfoCircle } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faBarcodeRead)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload, faEye, faInfoCircle)
+
+// Section: Packaging & leaflet inserts (warehouse)
+const changingPackagingId = ref<number | null>(null)
+const onChangePackaging = (deliveryNoteId: number, packagingId: number) => {
+    router.patch(
+        route("grp.models.delivery_note.update_packaging", { deliveryNote: deliveryNoteId }),
+        { packaging_id: packagingId },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => changingPackagingId.value = deliveryNoteId,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => changingPackagingId.value = null,
+        }
+    )
+}
+
+const pullingMediaLeafletId = ref<number | null>(null)
+const onPullLeafletMedia = (leaflet: { id: number }) => {
+    router.patch(
+        route("grp.models.delivery_note_leaflet.pull_media", { deliveryNoteLeaflet: leaflet.id }),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => pullingMediaLeafletId.value = leaflet.id,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => pullingMediaLeafletId.value = null,
+        }
+    )
+}
+
+const messagePopover = ref()
+const shownLeafletMessage = ref("")
+const showLeafletMessage = (event: Event, message: string) => {
+    shownLeafletMessage.value = message
+    messagePopover.value?.toggle(event)
+}
+
+const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
+
+const printingLeafletId = ref<number | null>(null)
+const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
+    try {
+        printingLeafletId.value = leaflet.id
+        const response = await axios.post(
+            route("grp.models.delivery_note_leaflet.print", { deliveryNoteLeaflet: leaflet.id })
+        )
+        if (response.data?.state === "error") {
+            notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to print insert"), type: "error" })
+        } else {
+            leaflet.state = "printed"
+            notify({ title: ctrans("Sent to printer"), text: ctrans("Insert sent to your printer"), type: "success" })
+            router.reload({ only: [props.tab] })
+        }
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Failed to print insert"), type: "error" })
+    } finally {
+        printingLeafletId.value = null
+    }
+}
+
+const printingAllId = ref<number | null>(null)
+const onPrintAllLeaflets = (deliveryNoteId: number) => {
+    router.post(
+        route("grp.models.delivery_note.leaflets.print", { deliveryNote: deliveryNoteId }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => printingAllId.value = deliveryNoteId,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => printingAllId.value = null,
+        }
+    )
+}
 
 
 const props = defineProps<{
@@ -60,14 +141,52 @@ const props = defineProps<{
     }
     allowWaiting?: boolean
     allowPickerSetNotPicked?: boolean
+    incompleteSets?: { delivery_note_reference: string, action: any }[]
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
+
+const itemizedRows = () => props.tab === 'itemized' ? Object.values(props.data?.data ?? {}) : []
+const { quantityToPutBack, incompleteSetFor } = useIndivisibleSetMismatches(itemizedRows)
+const hasIndivisibleSetRows = computed(() => itemizedRows().some((row: any) => row.indivisible_set))
+const roundQuantity = (quantity: number) => Math.round(quantity * 100) / 100
+
+const explainPutBack = (transactionId?: number) => {
+    const incompleteSet = incompleteSetFor(transactionId)
+
+    return incompleteSet
+        ? ctrans(':product is sold only as a complete set. Another part is short, so only :complete of :ordered sets can be sent and the rest of this part has to go back on the shelf.', {
+            product: incompleteSet.product.code,
+            complete: incompleteSet.completeSets,
+            ordered: roundQuantity(incompleteSet.setsOrdered),
+        })
+        : ''
+}
+
+const describePartsToPutBack = (parts: { code: string | null, quantity: number }[]) =>
+    parts.map((part) => `${roundQuantity(part.quantity)} × ${part.code}`).join(', ')
 
 const modalDetail = ref(false)
 
 
 const currentRouteParams = route().params as RouteParams
+
+const waitingItemsUrl = (waitingFor: 'warehouse' | 'crm', shopType?: string, deliveryNoteState?: string) => {
+    if (!currentRouteParams.organisation || !currentRouteParams.warehouse || !shopType) {
+        return undefined
+    }
+
+    const isStillPicking = deliveryNoteState === 'handling'
+    const routeName = waitingFor === 'warehouse'
+        ? (isStillPicking ? 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop' : 'grp.org.warehouses.show.dispatching.waiting_items.shop')
+        : (isStillPicking ? 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop' : 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop')
+
+    return route(routeName, {
+        organisation: currentRouteParams.organisation,
+        warehouse: currentRouteParams.warehouse,
+        shopType,
+    })
+}
 
 const orgStockRouteCache = new Map<string, string>()
 function showOrgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
@@ -238,8 +357,8 @@ const submitItemAsWaiting = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set item as waiting"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set item as waiting"),
                     type: "success"
                 })
                 dataToSendAsWaiting.value.note = ''
@@ -247,8 +366,8 @@ const submitItemAsWaiting = () => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set item as waiting. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set item as waiting. Try again"),
                     type: "error"
                 })
             },
@@ -315,7 +434,7 @@ const initSocketListener = () => {
     if (props.pickingSession.state == 'packing_finished') return; // No need initiate listener if packing finished
 
     socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
-        
+
         if (!['handling', 'handling_blocked'].includes(props.pickingSession.state)) return
 
         const affectedData  = eventData.affected_data;
@@ -326,30 +445,30 @@ const initSocketListener = () => {
             itemToSet = props.data.data.find(
                 item => item.org_stock_id === affectedData.org_stock_id
             );
-    
+
             if (!itemToSet) {
                 return;
             }
-    
+
             let locationOrgStock = itemToSet.locations.find(
                 item => item.location_id === affectedData.location_id
             )
-    
+
             const remainingItem =
                 parseFloat(itemToSet.quantity_required) -
                 (parseFloat(itemToSet.quantity_not_picked ?? 0) +
                 parseFloat(itemToSet.quantity_picked ?? 0));
-    
+
             shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
         } else if (props.tab == 'grouped') {
             itemToSet = props.data.data.find(deliveryNote =>
                 deliveryNote.items?.some(child => child.org_stock_id === affectedData.org_stock_id)
             );
-    
+
             if (!itemToSet) {
                 return;
             }
-    
+
             let targetOrgStock = itemToSet.items.find(
                 item => item.org_stock_id === affectedData.org_stock_id
             )
@@ -357,15 +476,15 @@ const initSocketListener = () => {
             let targetLocationStock = targetOrgStock.locations.find(
                 item => item.location_id === affectedData.location_id
             )
-    
+
             const remainingItem =
                 parseFloat(targetOrgStock.quantity_required) -
                 (parseFloat(targetOrgStock.quantity_not_picked ?? 0) +
                 parseFloat(targetOrgStock.quantity_picked ?? 0));
-    
+
             shouldRefetch = (remainingItem > 0) && (targetLocationStock.quantity != affectedData.new_quantity)
         }
-        
+
         if (shouldRefetch && itemToSet) {
             const response = await axios.get(
                 route('grp.json.picking_session_item_row', {
@@ -399,7 +518,25 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo>
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo
+        tableClass="max-lg:min-w-[max(100%,64rem)]"
+        withScrollArrows
+        :rowColorFunction="(row) => quantityToPutBack(row.id) > 0 ? '!bg-red-50' : ''">
+        <template #before-table>
+            <div v-if="tab === 'itemized' && incompleteSets?.length" class="mx-3 mb-3 space-y-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <div v-for="incompleteSet in incompleteSets" :key="incompleteSet.delivery_note_reference" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <div class="flex items-start gap-x-2">
+                        <FontAwesomeIcon :icon="faExclamationCircle" class="mt-0.5 text-amber-600" fixed-width aria-hidden="true" />
+                        <span>
+                            <span class="font-semibold">{{ incompleteSet.delivery_note_reference }}</span>:
+                            {{ ctrans('a set sold only complete has a part that was not found. Put back :parts, then confirm.', { parts: describePartsToPutBack(incompleteSet.action.parts) }) }}
+                        </span>
+                    </div>
+                    <ButtonPutBackIncompleteSets :action="incompleteSet.action" size="sm" />
+                </div>
+            </div>
+        </template>
+
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -410,6 +547,12 @@ onUnmounted(() => {
         </template>
 
         <template #cell(org_stock_code)="{ item }">
+            <span v-if="hasIndivisibleSetRows" class="mr-1 inline-flex w-5 justify-center align-middle">
+                <IndivisibleSetIcon
+                    v-if="item.indivisible_set"
+                    :set="item.indivisible_set"
+                    :color="useStringToHex(item.indivisible_set.product.code)" />
+            </span>
             <Link :href="showOrgStockRoute(item)" class="secondaryLink">
             {{ item.org_stock_code }}
             </Link>
@@ -419,7 +562,16 @@ onUnmounted(() => {
                 :icon="faBarcodeRead"
                 class="ml-1 text-gray-500"
                 fixed-width
-                aria-hidden="true" />            
+                aria-hidden="true" />
+            <div v-if="quantityToPutBack(item.id) > 0" class="mt-1 inline-flex items-center gap-x-1 whitespace-nowrap text-xs font-semibold text-red-600" :class="hasIndivisibleSetRows ? 'ml-6' : ''">
+                {{ ctrans('Put back :quantity', { quantity: roundQuantity(quantityToPutBack(item.id)) }) }}
+                <FontAwesomeIcon
+                    v-tooltip="explainPutBack(item.indivisible_set?.transaction_id)"
+                    icon="fal fa-info-circle"
+                    class="cursor-help text-red-400"
+                    fixed-width
+                    aria-hidden="true" />
+            </div>
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
@@ -437,9 +589,9 @@ onUnmounted(() => {
                 <Link :href="showDeliveryNoteRoute(item)" class="primaryLink">
                 {{ item?.delivery_note_reference }}
                 </Link>
-                <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="trans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="ctrans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="ctrans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="ctrans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
 
 
 
@@ -481,7 +633,7 @@ onUnmounted(() => {
                     />
                 </span>
 
-                <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                <div v-else v-tooltip="ctrans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                     {{ item.quantity_not_picked }}
                 </div>
@@ -510,7 +662,7 @@ onUnmounted(() => {
                         {{ picking.location_code }}
                         </Link>
 
-                        <div v-tooltip="trans('Total picked quantity in this location')"
+                        <div v-tooltip="ctrans('Total picked quantity in this location')"
                             class="text-gray-500 whitespace-nowrap">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
                                 aria-hidden="true" />
@@ -522,7 +674,7 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans('Quantity not gonna be picked')"
                         class="text-red-500 w-fit mr-auto whitespace-nowrap">
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="picking.quantity_picked_fractional"
@@ -554,10 +706,16 @@ onUnmounted(() => {
 
         <template #cell(items)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.items.length" v-for="(deliveryItem, index) in itemValue.items"
-                :key="deliveryItem.id || index" class="space-y-2">
+                :key="deliveryItem.id || index" class="space-y-2 border-b border-gray-100 py-1.5 last:border-0">
 
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center gap-x-3">
                     <div class="space-x-1">
+                        <span v-if="itemValue.items.some((groupItem) => groupItem.indivisible_set)" class="inline-flex w-5 justify-center align-middle">
+                            <IndivisibleSetIcon
+                                v-if="deliveryItem.indivisible_set"
+                                :set="deliveryItem.indivisible_set"
+                                :color="useStringToHex(deliveryItem.indivisible_set.product.code)" />
+                        </span>
                         <Link :href="showOrgStockRoute(deliveryItem)" class="secondaryLink">
                         {{ deliveryItem.org_stock_code }}
                         </Link>
@@ -618,7 +776,7 @@ onUnmounted(() => {
                                         :readonly="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked">
                                         <template #save="{ isProcessing }">
                                             <ButtonWithLink
-                                                v-tooltip="trans('Pick all required quantity in this location')"
+                                                v-tooltip="ctrans('Pick all required quantity in this location')"
                                                 icon="fal fa-clipboard-list-check"
                                                 :disabled="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked"
                                                 size="xs" type="secondary"
@@ -658,11 +816,12 @@ onUnmounted(() => {
                     </template>
 
                     <!-- Section: items are waiting -->
-                    <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 || Number(deliveryItem.quantity_waiting_crm) > 0" class="flex items-center gap-x-2">
+                    <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 || Number(deliveryItem.quantity_waiting_crm) > 0" class="my-1 flex items-center gap-x-2">
                         <LabelItemsWaitingForWarehouse
                             v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0"
                             :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)"
                             :fractionData="GetWaitingWarehouseFractional(deliveryItem)"
+                            :href="waitingItemsUrl('warehouse', deliveryItem.delivery_note_shop_type, itemValue.delivery_note_state)"
                         />
                         <ButtonWithLink
                             v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 && (pickingSession.state == 'handling' || pickingSession.state == 'handling_blocked')"
@@ -681,6 +840,7 @@ onUnmounted(() => {
                             v-if="Number(deliveryItem.quantity_waiting_crm) > 0"
                             :qty_waiting_crm="Number(deliveryItem.quantity_waiting_crm)"
                             :fractionData="GetWaitingCrmFractional(deliveryItem)"
+                            :href="waitingItemsUrl('crm', deliveryItem.delivery_note_shop_type, itemValue.delivery_note_state)"
                         />
                     </div>
 
@@ -758,6 +918,7 @@ onUnmounted(() => {
                 <LabelItemsWaitingForWarehouse
                     :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)"
                     :fractionData="GetWaitingWarehouseFractional(itemValue)"
+                    :href="waitingItemsUrl('warehouse', itemValue.delivery_note_shop_type, itemValue.delivery_note_state)"
                 />
                 <ButtonWithLink
                     v-if="pickingSession.state == 'handling'"
@@ -779,6 +940,7 @@ onUnmounted(() => {
                 <LabelItemsWaitingForCrm
                     :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)"
                     :fractionData="GetWaitingCrmFractional(itemValue)"
+                    :href="waitingItemsUrl('crm', itemValue.delivery_note_shop_type, itemValue.delivery_note_state)"
                 />
             </div>
 
@@ -822,7 +984,7 @@ onUnmounted(() => {
                                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                         <div class="hidden lg:flex gap-x-8 w-fit">
                                             <ButtonWithLink
-                                                v-tooltip="trans('Pick all required quantity in this location')"
+                                                v-tooltip="ctrans('Pick all required quantity in this location')"
                                                 icon="fal fa-clipboard-list-check"
                                                 :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                                 size="xs" type="secondary"
@@ -925,8 +1087,13 @@ onUnmounted(() => {
                 />
             </div>
 
+            <ButtonPutBackIncompleteSets
+                v-if="itemValue.put_back_incomplete_sets"
+                :action="itemValue.put_back_incomplete_sets"
+                size="sm" />
+
             <Button
-                v-if="
+                v-else-if="
                     (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
                     && (
                         itemValue.delivery_note_state === 'handling'
@@ -957,6 +1124,102 @@ onUnmounted(() => {
                 <!-- Empty div to avoid print unexpected from BE -->
             </div>
         </template>
+
+        <!-- Column: Packaging -->
+        <template #cell(packaging)="{ item }">
+            <div v-if="item.packaging || item.packaging_options?.length" class="min-w-[190px]">
+                <div class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'box-open']" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <span v-if="item.packaging" class="font-medium">{{ item.packaging.name }}</span>
+                    <span v-else class="text-gray-400 italic">{{ ctrans('No packaging') }}</span>
+                </div>
+                <div v-if="item.packaging?.dimensions" class="text-xs text-gray-400 pl-6">{{ item.packaging.dimensions }}</div>
+                <ChangePackagingSelect
+                    v-if="item.packaging_options?.length && ['handling', 'picked'].includes(item.delivery_note_state)"
+                    class="mt-1"
+                    :options="item.packaging_options"
+                    :selectedId="item.packaging?.id ?? null"
+                    :loading="changingPackagingId === item.delivery_note_id"
+                    @change="(packagingId) => onChangePackaging(item.delivery_note_id, packagingId)"
+                />
+            </div>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <!-- Column: Inserts to print -->
+        <template #cell(leaflets)="{ item }">
+            <div v-if="item.leaflets?.length" class="space-y-1 min-w-[210px]">
+                <div v-for="leaflet in item.leaflets" :key="leaflet.id" class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'file-alt']" class="text-gray-500" fixed-width aria-hidden="true" />
+                    <span class="flex-1 truncate">{{ leaflet.name }}</span>
+                    <span class="text-xs text-gray-400">x{{ leaflet.copies }}</span>
+                    <button
+                        v-if="leaflet.type === 'personalised_message' && leaflet.message"
+                        type="button"
+                        class="p-1 text-gray-400 hover:text-gray-600"
+                        v-tooltip="ctrans('View message')"
+                        @click="showLeafletMessage($event, leaflet.message)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'eye']" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
+                        v-if="leaflet.has_media"
+                        type="button"
+                        class="p-1 disabled:text-gray-300"
+                        :class="isLeafletPrinted(leaflet) ? 'text-gray-400 hover:text-gray-600' : 'text-orange-500 hover:text-orange-600'"
+                        :disabled="printingLeafletId === leaflet.id"
+                        v-tooltip="isLeafletPrinted(leaflet) ? ctrans('Reprint') : ctrans('Print')"
+                        @click="onPrintLeaflet(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', isLeafletPrinted(leaflet) ? 'redo' : 'print']" fixed-width aria-hidden="true" />
+                    </button>
+
+                    <button
+                        v-else-if="leaflet.can_pull_media"
+                        type="button"
+                        class="p-1 text-blue-500 hover:text-blue-600 disabled:text-gray-300"
+                        :disabled="pullingMediaLeafletId === leaflet.id"
+                        v-tooltip="ctrans('The customer uploaded a file after this order — take it')"
+                        @click="onPullLeafletMedia(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'cloud-download']" fixed-width aria-hidden="true" />
+                    </button>
+                    <FontAwesomeIcon
+                        v-else
+                        :icon="['fal', 'exclamation-circle']"
+                        class="text-amber-500"
+                        v-tooltip="ctrans('No file uploaded')"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </div>
+            </div>
+            <span v-else class="text-gray-400 italic text-sm">{{ ctrans('No inserts to print') }}</span>
+        </template>
+
+        <!-- Column: Print all inserts -->
+        <template #cell(print_status)="{ item }">
+            <div v-if="item.print_status?.total > 0" class="space-y-1 min-w-[150px]">
+                <Button
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-print"
+                    :label="ctrans('Print all (:n)', { n: item.print_status.total })"
+                    :loading="printingAllId === item.delivery_note_id"
+                    @click="onPrintAllLeaflets(item.delivery_note_id)"
+                />
+                <div class="text-xs">
+                    <span class="text-gray-500">{{ ctrans('Print status') }}: </span>
+                    <span
+                        class="inline-flex rounded-full px-2 py-0.5 font-medium"
+                        :class="item.print_status.all_printed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                    >
+                        {{ item.print_status.label }}
+                    </span>
+                </div>
+            </div>
+            <span v-else class="text-gray-400">—</span>
+        </template>
     </Table>
 
     <!-- Modal: Location list (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
@@ -978,7 +1241,7 @@ onUnmounted(() => {
         />
     </Dialog>
 
-    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
+    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-full max-w-4xl" closeButton>
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
                           @SuccsesUpdateState="() => { onCloseModalDetail() }" />
     </Modal>
@@ -1051,7 +1314,7 @@ onUnmounted(() => {
             />
             <Button
                 @click="() => submitItemAsWaiting()"
-                :label="trans('Set as waiting')"
+                :label="ctrans('Set as waiting')"
                 full
                 iconRight="far fa-arrow-right"
                 :loading="isLoadingSetAsWaiting"
@@ -1060,4 +1323,10 @@ onUnmounted(() => {
     </Modal>
 
 
+    <Popover ref="messagePopover">
+        <div class="max-w-xs">
+            <div class="mb-1 text-xs font-semibold text-gray-500">{{ ctrans("Personalised Message") }}</div>
+            <p class="whitespace-pre-line break-words text-sm text-gray-800">{{ shownLeafletMessage }}</p>
+        </div>
+    </Popover>
 </template>

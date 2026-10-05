@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Magento\Product;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SyncronisePortfolioToMagento extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

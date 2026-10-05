@@ -4,9 +4,9 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faEnvelope, faCalendarAlt, faAt, faEye, faEyeSlash, faUserClock, faArrowRight, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt } from '@fal'
+import { faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH } from '@fal'
 import { faCheckCircle, faTimesCircle } from '@fas'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
@@ -15,9 +15,9 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { router } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { formatDistanceToNowStrict } from 'date-fns'
+import { formatDuration, intervalToDuration } from 'date-fns'
 
-library.add(faEnvelope, faCalendarAlt, faAt, faEye, faEyeSlash, faUserClock, faArrowRight, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faCheckCircle, faTimesCircle)
+library.add(faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH, faCheckCircle, faTimesCircle)
 
 interface ProfileData {
     username: string
@@ -44,18 +44,6 @@ const emits = defineEmits<{
 
 const layout = inject('layout', layoutStructure)
 
-const emailVisibilityStorageKey = 'profile_showcase_email_hidden'
-
-const readStoredEmailVisibility = (): boolean => {
-    try {
-        return localStorage.getItem(emailVisibilityStorageKey) !== '0'
-    } catch {
-        return true
-    }
-}
-
-const isEmailHidden = ref(readStoredEmailVisibility())
-
 const profile = ref<ProfileData | null>(null)
 const isLoadingProfile = ref(true)
 
@@ -70,10 +58,6 @@ const accentColor = computed(() => layout.app?.theme?.[0] ?? fallbackAccentColor
 const accentVariables = computed(() => ({
     '--profile-accent': accentColor.value,
     '--profile-accent-soft': `color-mix(in srgb, ${accentColor.value} 15%, white)`,
-}))
-
-const bannerStyle = computed(() => ({
-    backgroundImage: `linear-gradient(to right, ${accentColor.value}, color-mix(in srgb, ${accentColor.value} 65%, white))`,
 }))
 
 const maxNicknameLength = 24
@@ -98,31 +82,13 @@ const initials = computed(() => displayName.value
     .join(''))
 
 const memberFor = computed(() => profile.value?.created_at
-    ? formatDistanceToNowStrict(new Date(profile.value.created_at))
+    ? formatDuration(intervalToDuration({ start: new Date(profile.value.created_at), end: new Date() }), { format: ['years', 'months', 'days', 'hours'], delimiter: ', ' })
     : null)
-
-const maskedEmail = computed(() => {
-    const [localPart, domain] = (profile.value?.email ?? '').split('@')
-    if (!domain) {
-        return '••••••'
-    }
-
-    return `${localPart.charAt(0)}${'•'.repeat(Math.max(3, localPart.length - 1))}@${domain}`
-})
-
-const toggleEmailVisibility = () => {
-    isEmailHidden.value = !isEmailHidden.value
-    try {
-        localStorage.setItem(emailVisibilityStorageKey, isEmailHidden.value ? '1' : '0')
-    } catch {
-        return
-    }
-}
 
 const firstValidationMessage = (error: any, field: string): string => {
     return error?.response?.data?.errors?.[field]?.[0]
         ?? error?.response?.data?.message
-        ?? trans('Something went wrong.')
+        ?? ctrans('Something went wrong.')
 }
 
 const updateProfile = async (payload: FormData) => {
@@ -142,7 +108,7 @@ const onPickAvatar = async (event: Event) => {
     }
 
     if (file.size > maxAvatarSizeInMb * 1024 * 1024) {
-        notify({ title: trans('Image is too large'), text: trans('Maximum size is :size MB', { size: String(maxAvatarSizeInMb) }), type: 'error' })
+        notify({ title: ctrans('Image is too large'), text: ctrans('Maximum size is :size MB', { size: String(maxAvatarSizeInMb) }), type: 'error' })
         return
     }
 
@@ -151,9 +117,9 @@ const onPickAvatar = async (event: Event) => {
         const payload = new FormData()
         payload.append('image', file)
         await updateProfile(payload)
-        notify({ title: trans('Profile photo updated'), type: 'success' })
+        notify({ title: ctrans('Profile photo updated'), type: 'success' })
     } catch (error: any) {
-        notify({ title: trans('Failed to update profile photo'), text: firstValidationMessage(error, 'image'), type: 'error' })
+        notify({ title: ctrans('Failed to update profile photo'), text: firstValidationMessage(error, 'image'), type: 'error' })
     } finally {
         isUploadingAvatar.value = false
     }
@@ -195,6 +161,12 @@ const saveNickname = async () => {
     }
 }
 
+const openSettings = () => {
+    router.visit(route('grp.profile.edit'), {
+        onSuccess: () => layout.stackedComponents = [],
+    })
+}
+
 const openClocking = () => {
     router.visit(route('grp.clocking_employees.index'), {
         onSuccess: () => layout.stackedComponents = [],
@@ -205,7 +177,7 @@ onMounted(async () => {
     try {
         await fetchProfile()
     } catch {
-        notify({ title: trans('Something went wrong.'), text: trans('Failed to load your profile.'), type: 'error' })
+        notify({ title: ctrans('Something went wrong.'), text: ctrans('Failed to load your profile.'), type: 'error' })
     } finally {
         isLoadingProfile.value = false
         await nextTick()
@@ -217,33 +189,23 @@ onMounted(async () => {
 <template>
     <header class="-mt-6 bg-white" :style="accentVariables">
         <div>
-            <div class="relative h-28" :style="bannerStyle">
-                <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_120%,white,transparent_45%),radial-gradient(circle_at_85%_-20%,white,transparent_40%)]" />
+            <div class="relative h-16">
 
-                <div class="absolute right-14 top-4 flex flex-row items-center gap-2 sm:right-16">
-                    <button type="button" @click="openClocking"
-                        v-tooltip="trans('Clocking')" :aria-label="trans('Clocking')"
-                        class="group inline-flex h-9 w-9 items-center justify-center gap-x-2 rounded-full bg-white/15 text-sm font-medium text-white ring-1 ring-inset ring-white/30 backdrop-blur-sm transition hover:bg-white hover:text-[color:var(--profile-accent)] sm:h-9 sm:w-32 sm:px-4">
-                        <FontAwesomeIcon icon="fal fa-user-clock" fixed-width aria-hidden="true" />
-                        <span class="hidden sm:inline">{{ trans('Clocking') }}</span>
-                        <FontAwesomeIcon icon="fal fa-arrow-right" class="hidden text-xs transition-transform group-hover:translate-x-0.5 sm:inline-block" fixed-width aria-hidden="true" />
-                    </button>
+                <div class="absolute right-14 top-4 z-10 flex flex-row items-center gap-2 sm:right-16">
+                    <Button type="tertiary" icon="fal fa-sliders-h" :label="ctrans('Personal settings')" @click="openSettings" />
+                    <Button type="tertiary" icon="fal fa-user-clock" :label="ctrans('Clocking')" @click="openClocking" />
 
                     <Popover class="relative">
-                        <PopoverButton :disabled="isLoadingLogout"
-                            v-tooltip="trans('Logout')" :aria-label="trans('Logout')"
-                            class="inline-flex h-9 w-9 items-center justify-center gap-x-2 rounded-full bg-red-500/30 text-sm font-medium text-white ring-1 ring-inset ring-red-200/50 backdrop-blur-sm transition hover:bg-white hover:text-red-600 focus:outline-none disabled:opacity-60 sm:h-9 sm:w-32 sm:px-4">
-                            <LoadingIcon v-if="isLoadingLogout" />
-                            <FontAwesomeIcon v-else icon="fal fa-sign-out-alt" fixed-width aria-hidden="true" />
-                            <span class="hidden sm:inline">{{ trans('Logout') }}</span>
+                        <PopoverButton as="div">
+                            <Button type="negative" icon="fal fa-sign-out-alt" :label="ctrans('Logout')" :loading="isLoadingLogout" />
                         </PopoverButton>
 
                         <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
                             <PopoverPanel class="absolute right-0 top-full z-20 mt-2 bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
                                 <div class="min-w-32 flex flex-col justify-center gap-y-2">
-                                    <div class="whitespace-nowrap text-gray-500 text-xs">{{ trans('Are you sure want to logout?') }}</div>
+                                    <div class="whitespace-nowrap text-gray-500 text-xs">{{ ctrans('Are you sure want to logout?') }}</div>
                                     <div class="mx-auto">
-                                        <Button @click="emits('logout')" :loading="isLoadingLogout" :label="trans('Yes, logout')" type="red" :full="true" />
+                                        <Button @click="emits('logout')" :loading="isLoadingLogout" :label="ctrans('Yes, logout')" type="red" :full="true" />
                                     </div>
                                 </div>
                             </PopoverPanel>
@@ -252,8 +214,8 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div v-if="isLoadingProfile" class="animate-pulse px-6 sm:px-8 pb-6" role="status" :aria-label="trans('Loading profile')">
-                <div class="-mt-14 flex items-end gap-x-5">
+            <div v-if="isLoadingProfile" class="animate-pulse px-6 sm:px-8 pb-6" role="status" :aria-label="ctrans('Loading profile')">
+                <div class="-mt-8 flex items-end gap-x-5">
                     <div class="h-28 w-28 shrink-0 rounded-full bg-gray-200 ring-4 ring-white" />
                     <div class="flex-1 space-y-2 pb-2">
                         <div class="h-6 w-64 max-w-full rounded bg-gray-200" />
@@ -266,9 +228,9 @@ onMounted(async () => {
             </div>
 
             <div v-else class="relative px-4 sm:px-8 pb-6">
-                <div class="pointer-events-none -mt-14 flex items-start gap-x-4 sm:items-end sm:gap-x-5">
+                <div class="pointer-events-none -mt-8 flex items-start gap-x-4 sm:items-end sm:gap-x-5">
                     <button type="button" @click="_avatarInput?.click()" :disabled="isUploadingAvatar"
-                        v-tooltip="trans('Change profile photo')"
+                        v-tooltip="ctrans('Change profile photo')"
                         class="pointer-events-auto group relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 rounded-full ring-4 ring-white bg-[color:var(--profile-accent-soft)] overflow-hidden shadow-md flex items-center justify-center focus:outline-none focus-visible:ring-[color:var(--profile-accent)]">
                         <Image v-if="profile?.avatar" :src="profile.avatar" :alt="displayName" imageCover class="h-full w-full object-cover" />
                         <span v-else class="text-3xl font-semibold text-[color:var(--profile-accent)] select-none">{{ initials }}</span>
@@ -278,10 +240,10 @@ onMounted(async () => {
                             <LoadingIcon v-if="isUploadingAvatar" />
                             <template v-else>
                                 <FontAwesomeIcon icon="fal fa-camera" class="text-lg" fixed-width aria-hidden="true" />
-                                {{ trans('Change') }}
+                                {{ ctrans('Change') }}
                             </template>
                         </span>
-                        <span class="sr-only">{{ trans('Change profile photo') }}</span>
+                        <span class="sr-only">{{ ctrans('Change profile photo') }}</span>
                     </button>
                     <input ref="_avatarInput" type="file" accept="image/*" class="sr-only" @change="onPickAvatar" />
 
@@ -312,19 +274,12 @@ onMounted(async () => {
                             <FontAwesomeIcon icon="fal fa-envelope" fixed-width aria-hidden="true" />
                         </div>
                         <div class="min-w-0 flex-1">
-                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans('Email') }}</dt>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Email') }}</dt>
                             <dd class="truncate text-sm font-medium text-gray-900">
                                 <span v-if="!profile?.email" class="text-gray-400">-</span>
-                                <span v-else-if="isEmailHidden" class="tracking-wide text-gray-500">{{ maskedEmail }}</span>
                                 <a v-else :href="`mailto:${profile.email}`" class="hover:underline">{{ profile.email }}</a>
                             </dd>
                         </div>
-                        <button v-if="profile?.email" type="button" @click="toggleEmailVisibility"
-                            v-tooltip="isEmailHidden ? trans('Show email') : trans('Hide email')"
-                            :aria-label="isEmailHidden ? trans('Show email') : trans('Hide email')"
-                            class="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 hover:bg-white hover:text-[color:var(--profile-accent)]">
-                            <FontAwesomeIcon :icon="isEmailHidden ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
-                        </button>
                     </div>
 
                     <div class="flex items-start gap-x-3 rounded-xl bg-gray-50 px-4 py-3 ring-1 ring-inset ring-gray-100">
@@ -332,7 +287,7 @@ onMounted(async () => {
                             <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" />
                         </div>
                         <div class="min-w-0">
-                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans('Member since') }}</dt>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Member since') }}</dt>
                             <dd class="text-sm font-medium text-gray-900">
                                 {{ useFormatTime(profile?.created_at) }}
                                 <span v-if="memberFor" class="ml-1 font-normal text-gray-400">({{ memberFor }})</span>
@@ -346,33 +301,33 @@ onMounted(async () => {
                             <FontAwesomeIcon icon="fal fa-comment-alt" fixed-width aria-hidden="true" />
                         </div>
                         <div class="min-w-0 flex-1">
-                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans('Chat nickname') }}</dt>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Chat nickname') }}</dt>
                             <dd class="text-sm font-medium text-gray-900">
                                 <form v-if="isEditingNickname" @submit.prevent="saveNickname" class="mt-1 flex items-center gap-x-1">
                                     <input ref="_nicknameInput" v-model="nicknameDraft" type="text" :maxlength="maxNicknameLength"
-                                        :placeholder="trans('Short name shown in staff chat')"
+                                        :placeholder="ctrans('Short name shown in staff chat')"
                                         :disabled="isSavingNickname"
                                         @keydown.esc="cancelEditingNickname"
                                         class="min-w-0 flex-1 rounded-md border-gray-300 py-1 px-2 text-sm focus:border-[color:var(--profile-accent)] focus:ring-[color:var(--profile-accent)]" />
-                                    <button type="submit" :disabled="isSavingNickname" :aria-label="trans('Save')"
+                                    <button type="submit" :disabled="isSavingNickname" :aria-label="ctrans('Save')"
                                         class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-green-600 hover:bg-white disabled:opacity-50">
                                         <LoadingIcon v-if="isSavingNickname" />
                                         <FontAwesomeIcon v-else icon="fal fa-check" fixed-width aria-hidden="true" />
                                     </button>
-                                    <button type="button" @click="cancelEditingNickname" :disabled="isSavingNickname" :aria-label="trans('Cancel')"
+                                    <button type="button" @click="cancelEditingNickname" :disabled="isSavingNickname" :aria-label="ctrans('Cancel')"
                                         class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-white hover:text-gray-600 disabled:opacity-50">
                                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                                     </button>
                                 </form>
                                 <template v-else>
                                     <span v-if="profile?.nickname" class="truncate">{{ profile.nickname }}</span>
-                                    <span v-else class="font-normal italic text-gray-400">{{ trans('Not set') }}</span>
+                                    <span v-else class="font-normal italic text-gray-400">{{ ctrans('Not set') }}</span>
                                 </template>
                             </dd>
                             <p v-if="nicknameError" class="mt-1 text-xs text-red-600">{{ nicknameError }}</p>
                         </div>
                         <button v-if="!isEditingNickname" type="button" @click="startEditingNickname"
-                            v-tooltip="trans('Edit chat nickname')" :aria-label="trans('Edit chat nickname')"
+                            v-tooltip="ctrans('Edit chat nickname')" :aria-label="ctrans('Edit chat nickname')"
                             class="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 hover:bg-white hover:text-[color:var(--profile-accent)]">
                             <FontAwesomeIcon icon="fal fa-pen" fixed-width aria-hidden="true" />
                         </button>

@@ -51,9 +51,11 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import { useAutoCollapseLeftSidebar } from "@/Composables/useAutoCollapseLeftSidebar"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
+useAutoCollapseLeftSidebar(layout)
 const locale = useLocaleStore()
 const isOpenMenuMobile = ref(false)
 provide("layout", layout)
@@ -77,7 +79,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 <template>
 	<!-- page background -->
-	<div class="-z-[1] fixed inset-0 bg-slate-100" />
+	<div class="-z-[1] fixed inset-0 bg-gray-100" />
 
 	<ScreenWarning v-if="layout.app.environment === 'staging'">
 		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
@@ -102,21 +104,21 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-2 md:my-10 px-3 md:px-8 xl:px-0 transition-all">
+				class="flex flex-col sm:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-2 md:my-10 pl-2 pr-2 sm:pl-3 xl:pl-0 transition-all" :style="screenType === 'mobile' ? undefined : { paddingRight: 'max(0.75rem, min(4.25rem, calc(4.25rem - (100vw - 80rem) / 2)))' }">
 				<Transition>
 					<RetinaDsLeftSidebar
 						v-if="layout.user && layout.iris.is_logged_in && screenType !== 'mobile'"
 						:class="[
-							'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
+							'fixed inset-y-0 left-0 sm:h-fit bg-white shadow-lg transform z-50 sm:z-0 transition-all',
 							sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-							'md:relative md:translate-x-0 md:flex md:flex-col',
-							layout.leftSidebar.show ? 'min-w-56 w-1/2 md:w-56' : 'min-w-56 w-56 md:min-w-14 md:w-14 '
+							'sm:relative sm:translate-x-0 sm:flex sm:flex-col',
+							layout.leftSidebar.show ? 'min-w-56 w-1/2 sm:w-56' : 'min-w-56 w-56 sm:min-w-14 sm:w-14 '
 						]"
 					/>
 				</Transition>
 
 				<!-- RetinaLayoutDS -->
-				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+				<div class="flex-1 min-w-0 flex flex-col pb-6 text-gray-800 relative">
 					<div class="z-[1] flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
 						<div>
 							<BreadcrumbsIris
@@ -164,7 +166,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 					<div
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
-						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
+						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto empty:hidden" />
 
 						<!-- Main content of the page -->
 						<slot name="default" />

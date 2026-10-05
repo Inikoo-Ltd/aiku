@@ -3,7 +3,7 @@ title: Connecting WhatsApp to your shop
 summary: What to collect from Meta, which of the two settings pages each value goes on, and how to check the connection works before you rely on it.
 date: 2026-09-10
 tags: marketing, whatsapp, shop
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 1
 ---

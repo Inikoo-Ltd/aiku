@@ -16,9 +16,9 @@ import { computed, ref } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlug, faUnlink } from '@fal'
+import { faPlug, faUnlink, faChessClock } from '@fal'
 
-library.add(faPlug, faUnlink)
+library.add(faPlug, faUnlink, faChessClock)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -38,6 +38,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
@@ -90,6 +91,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'charges_amount'            => $order->charges_amount,
                 'shipping_amount'           => $order->shipping_amount,
                 'insurance_amount'          => $order->insurance_amount,
+                'packaging_amount'          => $order->packaging_amount,
+                'leaflet_amount'            => $order->leaflet_amount,
                 'amount_off'                => $order->amount_off,
                 'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
@@ -131,6 +134,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                     );
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
+                } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $data);
                 } else {
                     $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
@@ -232,7 +237,7 @@ class GenerateInvoiceFromOrder extends OrgAction
          * transactions is how invoices ended up with a VAT figure their own rows did not add up
          * to (HELP-3081).
          */
-        $modelTypes = ['Service', 'Charge', 'Adjustment'];
+        $modelTypes = ['Service', 'Charge', 'Adjustment', 'Packaging', 'Leaflet'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }
@@ -265,27 +270,20 @@ class GenerateInvoiceFromOrder extends OrgAction
         $historicAsset = $transaction->historicAsset;
 
 
-        $pickings = [];
+        $quantityOrdered = $transaction->quantity_ordered + $transaction->quantity_bonus;
 
-        if ($deliveryNote) {
-            foreach (
-                DB::table('delivery_note_items')->select('quantity_required', 'quantity_picked')->where('transaction_id', $transaction->id)
-                    ->where('delivery_note_id', $deliveryNote->id)->get() as $deliveryNoteItem
-            ) {
-                if ($deliveryNoteItem->quantity_required == 0) {
-                    $ratioOfPicking = 1;
-                } else {
-                    $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
-                }
-                $pickings[] = $ratioOfPicking;
-            }
-        }
-        if (empty($pickings)) {
-            //todo: check this or I will reget
-            $quantityPicked = $transaction->quantity_ordered + $transaction->quantity_bonus;
+        $parts = $deliveryNote
+            ? DB::table('delivery_note_items')
+                ->leftJoin('org_stocks', 'org_stocks.id', 'delivery_note_items.org_stock_id')
+                ->where('delivery_note_items.transaction_id', $transaction->id)
+                ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+                ->get(['delivery_note_items.quantity_required', 'delivery_note_items.quantity_picked', 'org_stocks.sku_commercial_value'])
+            : collect();
+
+        if ($parts->isEmpty()) {
+            $quantityPicked = $quantityOrdered;
         } else {
-            $sumOfPickings  = array_sum($pickings) / count($pickings);
-            $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
+            $quantityPicked = $quantityOrdered * $this->getPickedFraction($parts, $this->isIndivisible($transaction));
         }
 
         $gross = $historicAsset->price * $quantityPicked;
@@ -335,6 +333,39 @@ class GenerateInvoiceFromOrder extends OrgAction
             'grp_net_amount'  => $net * $transaction->grp_exchange,
             'is_gift'         => $transaction->is_gift ?? false,
         ];
+    }
+
+    public function isIndivisible(Transaction $transaction): bool
+    {
+        return $transaction->model_type == 'Product'
+            && (bool)DB::table('products')->where('id', $transaction->model_id)->value('is_indivisible');
+    }
+
+    /**
+     * How much of the product was taken, from what was picked of each of its parts. A set that can
+     * not be split counts only complete sets. Otherwise each part weighs what it sells for, so a
+     * missing lamp refunds the lamp and not a third of the lamp, bulb and cable; a part with no value
+     * known falls back to every part weighing the same.
+     *
+     * @param  Collection<int, object{quantity_required: string, quantity_picked: string, sku_commercial_value: string|null}>  $parts
+     */
+    public function getPickedFraction(Collection $parts, bool $isIndivisible): float
+    {
+        $pickedFractions = $parts->map(
+            fn ($part) => $part->quantity_required == 0 ? 1 : $part->quantity_picked / $part->quantity_required
+        );
+
+        if ($isIndivisible) {
+            return (float)$pickedFractions->min();
+        }
+
+        $requiredValue = $parts->sum(fn ($part) => $part->quantity_required * $part->sku_commercial_value);
+
+        if ($requiredValue > 0 && $parts->every(fn ($part) => $part->sku_commercial_value > 0)) {
+            return $parts->sum(fn ($part) => $part->quantity_picked * $part->sku_commercial_value) / $requiredValue;
+        }
+
+        return (float)$pickedFractions->avg();
     }
 
     public function htmlResponse(Invoice $invoice): RedirectResponse

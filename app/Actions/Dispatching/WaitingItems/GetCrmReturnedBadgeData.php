@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\WaitingItems;
 
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -68,19 +69,11 @@ class GetCrmReturnedBadgeData
 
     public function totalCount(User $user): int
     {
-        $total = 0;
+        $shopIds = $user->authorisedShops()->pluck("shops.id")
+            ->filter(fn (int $shopId) => $user->authTo("orders.$shopId.edit"));
 
-        foreach ($user->authorisedShops()->get() as $shop) {
-            if (!$user->authTo("orders.{$shop->id}.edit")) {
-                continue;
-            }
-
-            $total += $shop
-                ->returnDeliveryNotes()
-                ->where("return_delivery_notes.state", ReturnDeliveryNoteStateEnum::RETURNED)
-                ->count();
-        }
-
-        return $total;
+        return ReturnDeliveryNote::whereIn("shop_id", $shopIds)
+            ->where("state", ReturnDeliveryNoteStateEnum::RETURNED)
+            ->count();
     }
 }

@@ -9,6 +9,7 @@
 namespace Database\Factories\SysAdmin;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class GuestFactory extends Factory
 {
@@ -21,7 +22,7 @@ class GuestFactory extends Factory
             'identity_document_number' => fake('en_GB')->vat(),
             'identity_document_type'   => 'passport',
             'user'                     => [
-                'username' => fake()->unique()->userName,
+                'username' => substr(fake()->userName(), 0, 20).Str::lower(Str::random(8)),
                 'password' => 'password',
             ]
 

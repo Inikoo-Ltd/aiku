@@ -8,7 +8,7 @@ import { isNull } from 'lodash-es';
 const IrisSidebarDesktop = defineAsyncComponent(() => import('@iris/Components/Layout/IrisSidebarDesktop.vue'));
 const IrisSidebarMobile = defineAsyncComponent(() => import('@iris/Components/Layout/IrisSidebarMobile.vue'));
 import { Image as ImageTS } from '@/types/Image';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -488,7 +488,7 @@ const fetchSidebarOnce = async () => {
 								irisLayout?.currentQuery?.q
 							}}</span>
 							<span v-else class="ml-2 text-sm italic opacity-60">{{
-								trans("I am looking for..")
+								ctrans("I am looking for..")
 							}}</span>
 						</div>
 					</div>

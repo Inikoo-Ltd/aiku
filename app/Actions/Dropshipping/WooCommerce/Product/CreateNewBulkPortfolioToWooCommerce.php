@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

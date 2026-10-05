@@ -2,6 +2,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Models\CRM\Customer;
@@ -33,6 +34,7 @@ class GetMetaChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...GetChatCustomerProfile::make()->contactAndLastOrders($customer),
             ...GetChatCustomerProfile::make()->previousContact($customer, $metaChatSession),
+            'claim'       => \App\Actions\Chat\ChatSession\GetChatClaimCase::run($metaChatSession, $customer),
 
             'tags' => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
@@ -67,6 +69,7 @@ class GetMetaChatCustomerProfile
             $organisation->slug,
             $shop->slug,
             $customer->slug,
+            'tab' => CustomerTabsEnum::COMMUNICATIONS->value,
         ]);
     }
 

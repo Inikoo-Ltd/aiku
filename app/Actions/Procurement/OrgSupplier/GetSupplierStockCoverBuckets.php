@@ -44,7 +44,8 @@ class GetSupplierStockCoverBuckets
      */
     private function bucketExpression(int $leadDays): string
     {
-        $lead = "coalesce(sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+        $lead       = "coalesce(sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+        $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
 
         $stocking = "'".OrgStockStateEnum::ACTIVE->value."','".OrgStockStateEnum::DISCONTINUING->value."'";
 
@@ -53,7 +54,7 @@ class GetSupplierStockCoverBuckets
             when os.state not in ($stocking) then 'dead'
             when os.quantity_available <= 0 then 'out'
             when s.days_of_cover <= $lead then 'w1'
-            when s.days_of_cover <= 2 * $lead then 'w2'
+            when s.days_of_cover <= $understock then 'w2'
             when s.days_of_cover <= 3 * $lead then 'w3'
             when s.days_of_cover <= 4 * $lead then 'w4'
             when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
@@ -76,6 +77,8 @@ class GetSupplierStockCoverBuckets
                     ->where('os.organisation_id', $orgSupplier->organisation_id);
             })
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
+            ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('p.org_supplier_id', $orgSupplier->id)
             ->where('sp.supplier_id', $orgSupplier->supplier_id)
             ->where('p.is_available', true)

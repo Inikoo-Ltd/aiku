@@ -116,10 +116,10 @@ class StoreSupplierProduct extends OrgAction
             'name'                 => ['required', 'string', 'max:255'],
             'state'                => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
             'is_available'         => ['sometimes', 'required', 'boolean'],
-            'cost'                 => ['required'],
-            'units_per_pack'       => ['sometimes', 'nullable'],
-            'units_per_carton'     => ['sometimes', 'nullable'],
-            'cbm'                  => ['sometimes', 'nullable', 'numeric'],
+            'cost'                 => ['required', 'numeric', 'min:0'],
+            'units_per_pack'       => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'units_per_carton'     => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cbm'                  => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
             'trade_units'          => ['sometimes', 'nullable', 'array'],
@@ -129,8 +129,10 @@ class StoreSupplierProduct extends OrgAction
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
-            $rules                = $this->noStrictStoreRules($rules);
-            $rules['source_slug'] = ['sometimes', 'nullable', 'string'];
+            $rules                     = $this->noStrictStoreRules($rules);
+            $rules['source_slug']      = ['sometimes', 'nullable', 'string'];
+            $rules['units_per_pack']   = ['sometimes', 'nullable'];
+            $rules['units_per_carton'] = ['sometimes', 'nullable'];
         }
 
         return $rules;

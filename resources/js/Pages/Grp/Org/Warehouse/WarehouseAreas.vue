@@ -42,7 +42,6 @@ const props = defineProps<{
 }>();
 
 
-console.log(props)
 
 const dataModal = ref({ isModalOpen: false });
 

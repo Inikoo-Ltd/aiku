@@ -18,7 +18,7 @@ import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue";
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { ulid } from "ulid";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { notify } from '@kyvg/vue3-notification'
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
@@ -55,7 +55,6 @@ const selectedProductsId = ref<Record<string, boolean>>({})
 const compSelectedProductsId = computed(() =>
   Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
 )
-console.log(compSelectedProductsId.value)
 const locale = inject('locale', aikuLocaleStructure)
 
 const form = useForm({
@@ -133,16 +132,16 @@ const onSubmitToFamily = () => {
                 selectedMasterFamilyId.value = null
                 selectedProductsId.value = {}
                 notify({
-                    title: trans("Success"),
-                    text: selectedProductsIdToSubmit.length + ' ' + trans("Products added to Family successfully."),
+                    title: ctrans("Success"),
+                    text: selectedProductsIdToSubmit.length + ' ' + ctrans("Products added to Family successfully."),
                     type: "success",
                 })
             },
             onError: (errors) => {
                 console.error(errors)
                 notify({
-                    title: trans('Something went wrong.'),
-                    text: trans('Fail to add Products to Family, please try again.'),
+                    title: ctrans('Something went wrong.'),
+                    text: ctrans('Fail to add Products to Family, please try again.'),
                     type: 'error',
                 })
             },
@@ -172,7 +171,7 @@ const onSubmitToFamily = () => {
             type="tertiary"
             icon="fas fa-plus"
             label="Add to Family"
-            v-tooltip="trans('Select at least one product')"
+            v-tooltip="ctrans('Select at least one product')"
         />
     </template>
   </PageHeading>
@@ -187,7 +186,7 @@ const onSubmitToFamily = () => {
     :masterProductCategory="masterProductCategory" :is_dropship="route().params['masterShop'] == 'ds'"/>
 
 
-    <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
+    <Dialog :header="ctrans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
         :closable="true" :style="{ width: '500px' }">
         <div class="px-2 space-y-4">
             <!-- Form fields -->
@@ -241,23 +240,23 @@ const onSubmitToFamily = () => {
         width="w-full max-w-[500px]"
     >
         <div class="text-center font-semibold text-lg mb-4">
-            {{ trans("Select Family to add the products to:") }}
+            {{ ctrans("Select Family to add the products to:") }}
         </div>
 
         <div class="mb-4">
             <PureMultiselectInfiniteScroll
                 v-model="selectedMasterFamilyId"
                 :fetchRoute="routes.master_families_route"
-                :placeholder="trans('Select Family')"
+                :placeholder="ctrans('Select Family')"
                 valueProp="id"
                 xoptionsList="(options) => dataFamilyList = options"
             >
                 <template #singlelabel="{ value }">
-                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
+                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ ctrans("products") }})</span></div>
                 </template>
                 
                 <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
+                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ ctrans("products") }})</span></div>
                 </template>
             </PureMultiselectInfiniteScroll>
         </div>

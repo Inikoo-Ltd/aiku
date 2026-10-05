@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, computed } from "vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import ShopSales from "@/Components/Shop/ShopSales.vue";
 import ShopInvoices from "@/Components/Shop/ShopInvoices.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
@@ -44,7 +44,6 @@ const getConversionRate = () => {
     }
 
     if (rate > 100 || isNaN(rate) || !isFinite(rate)) {
-        console.error('Invalid conversion rate:', { invoices, visitors, rate });
         return null;
     }
 
@@ -86,20 +85,20 @@ const registrationsRatio = computed(() => {
 
             <div v-if="Number(data.interval_data.visitors?.[interval]?.raw_value) > 0" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg min-h-32 transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Visitors') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Visitors') }}</p>
                     <span class="text-2xl font-bold">
                         {{ data.interval_data.visitors?.[interval]?.formatted_value || '0' }}
                         <span v-if="getYoYComparison('visitors')" :class="['italic text-base font-medium ml-1', { 'text-green-500': getYoYComparison('visitors')?.isPositive, 'text-red-500': getYoYComparison('visitors')?.isNegative }]">
                             {{ getYoYComparison('visitors')?.value }}
                         </span>
                     </span>
-                    <p class="text-xs text-gray-500 mt-1">{{ trans('Total visitors') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ ctrans('Total visitors') }}</p>
                 </div>
             </div>
 
             <div v-if="registrationsRatio.with_orders > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Registrations with product in Basket') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Registrations with product in Basket') }}</p>
                     <p class="flex flex-col">
                         <span class="text-2xl font-bold">
                             {{ data.interval_data.registrations_with_orders?.[interval]?.formatted_value || 0 }}
@@ -109,7 +108,7 @@ const registrationsRatio = computed(() => {
                         </span>
                         <span class="text-xs text-gray-500 mt-1">
                             {{ registrationsRatio.total > 0 ? ((registrationsRatio.with_orders / registrationsRatio.total) * 100).toFixed(1) : 0 }}%
-                            <span class="italic">{{ trans("of total registrations") }}</span>
+                            <span class="italic">{{ ctrans("of total registrations") }}</span>
                         </span>
                     </p>
                 </div>
@@ -117,7 +116,7 @@ const registrationsRatio = computed(() => {
 
             <div v-if="registrationsRatio.without_orders > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Registrations with empty Basket') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Registrations with empty Basket') }}</p>
                     <p class="flex flex-col">
                         <span class="text-2xl font-bold">
                             {{ data.interval_data.registrations_without_orders?.[interval]?.formatted_value || 0 }}
@@ -127,7 +126,7 @@ const registrationsRatio = computed(() => {
                         </span>
                         <span class="text-xs text-gray-500 mt-1">
                             {{ registrationsRatio.total > 0 ? ((registrationsRatio.without_orders / registrationsRatio.total) * 100).toFixed(1) : 0 }}%
-                            <span class="italic">{{ trans("of total registrations") }}</span>
+                            <span class="italic">{{ ctrans("of total registrations") }}</span>
                         </span>
                     </p>
                 </div>
@@ -135,30 +134,30 @@ const registrationsRatio = computed(() => {
 
             <div v-if="Number(data.interval_data.orders?.[interval]?.raw_value) > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Purchases') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Purchases') }}</p>
                     <span class="text-2xl font-bold">
                         {{ data.interval_data.orders?.[interval]?.formatted_value || '0' }}
                         <span v-if="getYoYComparison('orders')" :class="['italic text-base font-medium ml-1', { 'text-green-500': getYoYComparison('orders')?.isPositive, 'text-red-500': getYoYComparison('orders')?.isNegative }]">
                             {{ getYoYComparison('orders')?.value }}
                         </span>
                     </span>
-                    <p class="text-xs text-gray-500 mt-1">{{ trans('Total orders') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ ctrans('Total orders') }}</p>
                 </div>
             </div>
 
             <div v-if="getAverageOrderValue() !== null" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Average Order Value') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Average Order Value') }}</p>
                     <span class="text-2xl font-bold">{{ getAverageOrderValue() }}</span>
-                    <p class="text-xs text-gray-500 mt-1">{{ trans('Total sales ÷ Number of orders') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ ctrans('Total sales ÷ Number of orders') }}</p>
                 </div>
             </div>
 
             <div v-if="getConversionRate() !== null" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Conversion Rate') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ ctrans('Conversion Rate') }}</p>
                     <span class="text-2xl font-bold">{{ getConversionRate()?.toFixed(2) }}%</span>
-                    <p class="text-xs text-gray-500 mt-1">{{ trans('Invoiced orders ÷ Total visits') }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ ctrans('Invoiced orders ÷ Total visits') }}</p>
                 </div>
             </div>
         </div>

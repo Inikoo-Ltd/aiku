@@ -117,6 +117,17 @@ trait WithCommsSubNavigation
                     "tooltip" => __("Push"),
                 ],
             ],
+            [
+                "label"    => __("Templates"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.templates.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-layer-group"],
+                    "tooltip" => __("Templates"),
+                ],
+            ],
 //            [
 //                "label"    => __("Test"),
 //                "route"    => [

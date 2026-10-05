@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\TaxCategory;
@@ -21,6 +22,7 @@ use Spatie\LaravelOptions\Options;
 
 class IndexEbayUserPolicies extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

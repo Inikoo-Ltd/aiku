@@ -46,17 +46,10 @@ class StoreAgent extends OrgAction
                 ->where('user_id', $modelData['user_id'])
                 ->first();
 
-
             if ($agent && ! $agent->trashed()) {
-                $alreadyInOrg = $agent->shopAssignments()
-                    ->where('organisation_id', $modelData['organisation_id'])
-                    ->exists();
-
-                if ($alreadyInOrg) {
-                    throw ValidationException::withMessages([
-                        'user_id' => __('This user is already an active agent in this organisation.'),
-                    ]);
-                }
+                throw ValidationException::withMessages([
+                    'user_id' => __('This user already has a chat agent profile.'),
+                ]);
             }
 
             if ($agent && $agent->trashed()) {
@@ -84,8 +77,6 @@ class StoreAgent extends OrgAction
                 ]);
             }
 
-            AssignChatAgentToScope::make()->update($modelData, $agent);
-
             return $agent;
         });
     }
@@ -99,9 +90,6 @@ class StoreAgent extends OrgAction
                 'integer',
                 'exists:organisations,id',
             ],
-
-            'shop_id' => ['nullable', 'array'],
-            'shop_id.*' => ['integer', 'exists:shops,id'],
 
             'user_id' => [
                 'required',

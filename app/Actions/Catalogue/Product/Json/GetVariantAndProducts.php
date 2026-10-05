@@ -17,15 +17,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class GetVariantAndProducts extends IrisAction
 {
+    use WithStepDiscountColumn;
+    use WithVariantColumns;
+
     public function handle(Variant $variant): array
     {
-        $variant->loadMissing('allProduct');
+        $data             = $variant->data;
+        $visibleProducts  = collect(data_get($variant->data, 'products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
+        $products         = $variant->allProductForSale()
+            ->select('products.*', $this->getStepDiscountColumn(), $this->getVariantAxisLabelColumn(), $this->getVariantTitleColumn())
+            ->whereIn('id', $visibleProducts->keys())
+            ->get();
+        $visibleProducts  = $visibleProducts->only($products->pluck('id')->all());
 
-        $data = $variant->data;
-        $excludedProducts = collect(data_get($variant->data, 'products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
-        $products   = $variant->allProduct()->whereIn('id', $excludedProducts->keys())->get();
-
-        data_set($data, 'products', $excludedProducts);
+        data_set($data, 'products', $visibleProducts);
 
         return [
             'variant_data'  => $data,

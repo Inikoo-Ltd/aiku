@@ -11,7 +11,7 @@ import { WebUser } from "@/types/web-user";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { RouteParams } from "@/types/route-params";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -21,7 +21,6 @@ defineProps<{
 
 
 function webUserRoute(webUser: WebUser) {
-    console.log(route().current());
     switch (route().current()) {
         case "grp.org.fulfilments.show.crm.customers.show.web_users.index":
             return route(
@@ -65,7 +64,6 @@ function webUserRoute(webUser: WebUser) {
 }
 
 function webUserEditRoute(webUser: WebUser) {
-    console.log(route().current());
     switch (route().current()) {
         case "grp.org.fulfilments.show.crm.customers.show.web_users.index":
             return route(
@@ -108,7 +106,7 @@ function webUserEditRoute(webUser: WebUser) {
         </template>
 
         <template #cell(last_login_at)="{ item: webUser }">
-            {{ webUser.last_login_at ? useFormatTime(webUser.last_login_at) : trans('never') }}
+            {{ webUser.last_login_at ? useFormatTime(webUser.last_login_at) : ctrans('never') }}
         </template>
 
         <template #cell(number_failed_logins)="{ item: webUser }">
@@ -128,8 +126,8 @@ function webUserEditRoute(webUser: WebUser) {
                 <ModalConfirmationDelete
                         v-if="webUser.delete_route"
                         :routeDelete="webUser.delete_route"
-                        :title="trans('Delete this login?')"
-                        :description="trans('The customer will no longer be able to log in with it. This can not be undone. Their orders are not affected.')"
+                        :title="ctrans('Delete this login?')"
+                        :description="ctrans('The customer will no longer be able to log in with it. This can not be undone. Their orders are not affected.')"
                         isFullLoading
                     >
                         <template #default="{ isOpenModal, changeModel }">

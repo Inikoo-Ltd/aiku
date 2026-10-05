@@ -29,7 +29,7 @@ class CloneMailshotForSecondWave extends OrgAction
             'organisation_id' => $parentMailshot->organisation_id,
             'shop_id' => $parentMailshot->shop_id,
             'type' => $parentMailshot->type,
-            'subject' => $parentMailshot->subject . ' (2nd)',
+            'subject' => SyncMailshotSecondWaveSubject::subjectFor($parentMailshot),
             'name' => $parentMailshot->name,
             'state' => $parentMailshot->state,
             'is_second_wave' => true,

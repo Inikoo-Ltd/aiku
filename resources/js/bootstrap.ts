@@ -1,6 +1,14 @@
 import _ from 'lodash-es';
 window._ = _;
 
+window.__VUE_DEVTOOLS_TOAST__ = (message: string, type?: string) => {
+    if (type === 'error') {
+        console.error(message);
+    } else if (type === 'warn') {
+        console.warn(message);
+    }
+};
+
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
  * to our Laravel back-end. This library automatically handles sending the
@@ -29,7 +37,6 @@ import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
 window.Pusher = Pusher;
-console.log(import.meta.env.VITE_PUSHER_HOST + ":" +import.meta.env.VITE_PUSHER_PORT)
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: import.meta.env.VITE_PUSHER_APP_KEY,

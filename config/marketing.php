@@ -117,7 +117,10 @@ return [
         'gold_reward_reminder_1',
         'gold_reward_reminder_2',
         'gold_reward_reminder_3',
+        'due_to_reorder',
         'basket_low_stock',
+        'basket_on_offer',
+        'favourites_on_offer',
         'basket_push',
         'new_customer_push',
         'oos_notification',
@@ -197,5 +200,30 @@ return [
         '/^outlook\.(live|office|office365)\.com$/',
         '/^mail\.(google|yahoo|proton|zoho)\.com$/',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default monthly sales target growth
+    |--------------------------------------------------------------------------
+    |
+    | When management has not set a shop's target for a month, the target is the
+    | same month last year plus this growth, so standing still counts as falling
+    | behind inflation. 0.04 means 4%.
+    |
+    */
+
+    'default_sales_target_growth' => env('DEFAULT_SALES_TARGET_GROWTH', 0.04),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sales target tips
+    |--------------------------------------------------------------------------
+    |
+    | The model that words the morning tip on how each shop and invoice category
+    | can reach the month's target (sales-targets:daily-tips).
+    |
+    */
+
+    'sales_target_tip_model' => env('SALES_TARGET_TIP_MODEL', 'openai/gpt-5.6-luna'),
 
 ];

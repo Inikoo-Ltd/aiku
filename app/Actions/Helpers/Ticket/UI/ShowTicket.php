@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 use App\Actions\Helpers\Ticket\MarkTicketNotificationsAsRead;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\TicketProject\AssignWorkToProject;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -19,10 +20,14 @@ use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketProject;
+use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -83,6 +88,8 @@ class ShowTicket extends OrgAction
         $statuses    = TicketStatusEnum::labels();
         $statusIcons = TicketStatusEnum::stateIcon();
         $modules     = TicketModuleEnum::labels();
+        $projectIds  = $audits->flatMap(fn ($audit) => [$audit->new_values['ticket_project_id'] ?? null])->filter()->unique();
+        $projects    = TicketProject::withTrashed()->whereIn('id', $projectIds)->pluck('name', 'id');
 
         $events = [[
             'at'   => $ticket->created_at,
@@ -104,6 +111,8 @@ class ShowTicket extends OrgAction
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
                     'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
+                    'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
+                    'ticket_project_id' => $value ? __('Added to project :name', ['name' => $projects[$value] ?? '?']) : __('Removed from its project'),
                     default           => null,
                 };
                 if ($text) {
@@ -113,6 +122,8 @@ class ShowTicket extends OrgAction
                             'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
                             'collaborators' => 'fal fa-users',
+                            'pull_request_url' => 'fal fa-code-branch',
+                            'ticket_project_id' => 'fal fa-project-diagram',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -165,6 +176,10 @@ class ShowTicket extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($ticket),
                 'title'       => $ticket->reference,
+                'navigation'  => [
+                    'previous' => $this->getPrevious($ticket),
+                    'next'     => $this->getNext($ticket),
+                ],
                 'pageHead'    => [
                     'model' => __('Ticket'),
                     'title' => $ticket->reference,
@@ -184,18 +199,50 @@ class ShowTicket extends OrgAction
     /**
      * @return array<string, mixed>
      */
+    /**
+     * The comment waiting for the next deployment, for the side panel to show and edit.
+     *
+     * @return array{body: string, files: array<int, array{ulid: string, name: string, url: string, is_image: bool}>}|null
+     */
+    private function deployCommentFor(Ticket $ticket): ?array
+    {
+        $comment = $ticket->status === TicketStatusEnum::PENDING_DEPLOY ? $ticket->deployComment()->first() : null;
+
+        return $comment ? [
+            'body'  => $comment->body,
+            'files' => $comment->media()->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])->orderBy('id')->get()
+                ->map(fn (Media $media) => [
+                    'ulid'     => $media->ulid,
+                    'name'     => $media->name,
+                    'url'      => route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $media->ulid]),
+                    'is_image' => $media->collection_name === 'ticket_images',
+                ])->all(),
+        ] : null;
+    }
+
     public function controlProps(Ticket $ticket): array
     {
         $user = request()->user();
 
         return [
-            'ticket'  => TicketResource::make($ticket)->toArray(request()),
+            'ticket'  => array_merge(TicketResource::make($ticket)->toArray(request()), [
+                'deploy_comment'    => $this->deployCommentFor($ticket),
+                'ticket_project_id' => $ticket->ticket_project_id,
+                'ticket_project_milestone_id' => $ticket->ticket_project_milestone_id,
+                'project'           => $ticket->project ? ['name' => $ticket->project->name, 'slug' => $ticket->project->slug] : null,
+            ]),
             'options' => [
                 'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'tags'       => Ticket::knownTags($ticket->group_id),
                 'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'projects'   => TicketProject::where('group_id', $ticket->group_id)
+                    ->where(fn ($query) => $query->whereIn('status', [TicketProjectStatusEnum::ACTIVE, TicketProjectStatusEnum::ON_HOLD])->orWhere('id', $ticket->ticket_project_id))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn (TicketProject $project) => ['label' => $project->name, 'value' => $project->id]),
+                'milestones' => $ticket->project?->milestones()->get(['id', 'name'])->map(fn ($milestone) => ['label' => $milestone->name, 'value' => $milestone->id])->values() ?? [],
                 'qa_users'      => GetTicketBadgeData::qaUsers($ticket->group_id)
                     ->map(fn (User $person) => [
                         'label'  => strtok((string) ($person->contact_name ?: $person->username), ' '),
@@ -227,11 +274,15 @@ class ShowTicket extends OrgAction
             'can_manage'             => Ticket::canBeManagedBy($user),
             'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
-            'can_qa'                 => Ticket::canCheckQa($user),
+            'can_qa'                 => Ticket::canGiveQaVerdict($user),
+            'can_claim_qa'           => $ticket->canBeClaimedForQaBy($user),
+            'qa_held_by_another'     => $ticket->isQaHeldByAnotherThan($user),
+            'can_request_qa'         => $ticket->canRequestQaBy($user),
             'is_reporter'            => $ticket->isReportedBy($user),
             'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),
             'can_reopen_as_reporter' => $ticket->canBeReopenedByReporter($user),
             'can_change_kind_module' => $ticket->canChangeKindAndModuleBy($user),
+            'can_change_project'     => AssignWorkToProject::canAssign($ticket, $user, $ticket->ticket_project_id),
             'can_update'               => $ticket->canBeUpdatedBy($user),
             'can_contribute'           => $ticket->canContributeBy($user),
             'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
@@ -240,7 +291,11 @@ class ShowTicket extends OrgAction
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
+                'project'  => ['name' => 'grp.models.ticket.project.update', 'parameters' => ['ticket' => $ticket->id]],
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
+                'deploy_comment' => ['name' => 'grp.models.ticket.deploy_comment.update', 'parameters' => ['ticket' => $ticket->id]],
+                'pull_request' => ['name' => 'grp.json.ticket.pull_request', 'parameters' => ['ticket' => $ticket->id]],
+                'pull_request_update' => ['name' => 'grp.models.ticket.pull_request.update', 'parameters' => ['ticket' => $ticket->id]],
                 'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                 'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
@@ -262,5 +317,41 @@ class ShowTicket extends OrgAction
                 ],
             ]
         );
+    }
+
+    public function getPrevious(Ticket $ticket): ?array
+    {
+        $previous = $this->siblingTicketsQuery($ticket)->where('tickets.id', '<', $ticket->id)->orderByDesc('tickets.id')->first();
+
+        return $this->getNavigation($previous);
+    }
+
+    public function getNext(Ticket $ticket): ?array
+    {
+        $next = $this->siblingTicketsQuery($ticket)->where('tickets.id', '>', $ticket->id)->orderBy('tickets.id')->first();
+
+        return $this->getNavigation($next);
+    }
+
+    private function siblingTicketsQuery(Ticket $ticket): Builder
+    {
+        return Ticket::query()
+            ->where('tickets.group_id', $ticket->group_id)
+            ->visibleTo(request()->user());
+    }
+
+    /**
+     * @return array{label: string, route: array{name: string, parameters: array<int, string>}}|null
+     */
+    private function getNavigation(?Ticket $ticket): ?array
+    {
+        if (!$ticket) {
+            return null;
+        }
+
+        return [
+            'label' => $ticket->reference,
+            'route' => $this->ticketsRoute('show', [$ticket->reference]),
+        ];
     }
 }

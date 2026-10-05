@@ -10,12 +10,14 @@ namespace App\Actions\Retina\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreRetinaNewProductToCurrentEbay extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public function handle(Portfolio $portfolio): void

@@ -19,7 +19,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log('form', props)
 </script>
 
 <template>

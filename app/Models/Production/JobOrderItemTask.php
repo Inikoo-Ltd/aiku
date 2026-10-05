@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
@@ -90,6 +91,25 @@ class JobOrderItemTask extends Model
     public function scopeLive(Builder $query): Builder
     {
         return $query->whereHas('jobOrder')->whereHas('jobOrderItem');
+    }
+
+    /**
+     * @param Collection<int, JobOrderItemTask> $siblings tasks of the same job order item, including this one
+     */
+    public function blockingStep(Collection $siblings): ?JobOrderItemTask
+    {
+        if ($this->state != JobOrderItemTaskStateEnum::TODO) {
+            return null;
+        }
+
+        $recipeTaskIds = $this->jobOrderItem->artefact->manufactureTasks->pluck('id');
+
+        $firstUnfinished = $siblings
+            ->filter(fn (JobOrderItemTask $sibling) => $sibling->id == $this->id || $recipeTaskIds->contains($sibling->manufacture_task_id))
+            ->sortBy([['position', 'asc'], ['id', 'asc']])
+            ->first(fn (JobOrderItemTask $sibling) => $sibling->state != JobOrderItemTaskStateEnum::DONE);
+
+        return $firstUnfinished && $firstUnfinished->id != $this->id ? $firstUnfinished : null;
     }
 
     public function sessions(): HasMany

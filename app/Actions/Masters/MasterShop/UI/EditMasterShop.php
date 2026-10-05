@@ -104,7 +104,19 @@ class EditMasterShop extends OrgAction
                                             'masterShop' => $masterShop->id
                                         ]
                                     ]
-                                ]
+                                ],
+                                'cost_price_ratio' => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Suggested price (× cost)'),
+                                    'information' => __('New products get this price per shop: cost × this number. Staff can still change the price on each product.'),
+                                    'value'       => $masterShop->costPriceRatio(),
+                                ],
+                                'rrp_price_ratio' => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Suggested RRP (× price)'),
+                                    'information' => __('New products get this RRP: price × this number. Staff can still change the RRP on each product.'),
+                                    'value'       => $masterShop->rrpPriceRatio(),
+                                ],
                             ]
                         ] : null,
                         $this->canEditOffers ? [

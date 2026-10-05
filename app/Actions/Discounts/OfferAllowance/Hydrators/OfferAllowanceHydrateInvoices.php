@@ -27,7 +27,7 @@ class OfferAllowanceHydrateInvoices implements ShouldBeUnique
     public function handle(OfferAllowance $offerAllowance): void
     {
         $stats = [
-            'number_invoices' => $offerAllowance->invoiceTransactions()->distinct()->count('invoice_transaction_has_offer_allowances.invoice_id')
+            'number_invoices' => $offerAllowance->invoiceTransactions()->where('invoice_transactions.in_process', false)->distinct()->count('invoice_transaction_has_offer_allowances.invoice_id')
         ];
 
         $offerAllowance->stats()->update($stats);

@@ -13,6 +13,8 @@ import { router } from '@inertiajs/vue3'
 import { capitalize } from "@/Composables/capitalize"
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(
     faIdCard,
@@ -76,7 +78,26 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #button-delete="{ action }">
+            <ModalConfirmationDelete
+                :routeDelete="action.route"
+                isFullLoading
+                :title="action.title"
+                :description="action.description"
+            >
+                <template #default="{ changeModel }">
+                    <Button
+                        @click="() => changeModel()"
+                        :style="action.style"
+                        :label="action.label"
+                        :icon="action.icon"
+                        :tooltip="action.tooltip"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>

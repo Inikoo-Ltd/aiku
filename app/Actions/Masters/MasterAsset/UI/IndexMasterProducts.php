@@ -29,7 +29,9 @@ use App\Http\Resources\Masters\MasterProductsPricingResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Currency;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterAssetPriceTip;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -260,6 +262,14 @@ class IndexMasterProducts extends OrgAction
                    and model_has_trade_units.model_id = master_assets.id",
                 'trade_units_label'
             );
+            $queryBuilder->selectSub(
+                "select max(model_has_trade_units.trade_unit_id)
+                 from model_has_trade_units
+                 where model_has_trade_units.model_type = 'MasterAsset'
+                   and model_has_trade_units.model_id = master_assets.id
+                 having count(*) = 1",
+                'single_trade_unit_id'
+            );
         }
 
         // PARENT FILTER ONLY
@@ -373,7 +383,7 @@ class IndexMasterProducts extends OrgAction
 
     protected function getPricingCurrenciesRate(): Collection
     {
-        return $this->pricingCurrenciesRate ??= GetMasterShopCurrenciesRate::run($this->parent->masterShop);
+        return $this->pricingCurrenciesRate ??= GetMasterShopCurrenciesRate::run($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop);
     }
 
     public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false, $sortByIndex = false): \Closure
@@ -500,6 +510,7 @@ class IndexMasterProducts extends OrgAction
             ];
         } elseif ($this->parent instanceof MasterShop) {
             $masterShop    = $this->parent;
+            $exception     = [MasterProductsTabsEnum::INDEX_ORDERING];
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
             $model         = '';
@@ -556,6 +567,18 @@ class IndexMasterProducts extends OrgAction
 
         $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
 
+        $hasPricing        = $this->parent instanceof MasterProductCategory || $this->parent instanceof MasterShop;
+        $tabsNavigation    = MasterProductsTabsEnum::navigationExcept($exception);
+        if ($this->parent instanceof MasterShop) {
+            $tabsNavigation[MasterProductsTabsEnum::PRICING->value] = [
+                'title'  => __('Price tips'),
+                'icon'   => 'fal fa-money-bill',
+                'number' => MasterAssetPriceTip::where('status', MasterAssetPriceTipStatusEnum::OPEN)
+                    ->whereHas('masterAsset', fn ($query) => $query->where('master_shop_id', $this->parent->id)->where('status', true)->where('is_main', true))
+                    ->count(),
+            ];
+        }
+
         $actions = [];
 
         if ($isFamily) {
@@ -605,17 +628,17 @@ class IndexMasterProducts extends OrgAction
                     'actions'       =>  $actions,
                 ],
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
-                'masterProductCategoryId' => $this->parent->id,
-                'pricingMajorCurrencies'  => $this->parent instanceof MasterProductCategory
-                    ? collect($this->parent->masterShop->price_exchanges ?? [])
+                'masterProductCategoryId' => $this->parent instanceof MasterProductCategory ? $this->parent->id : null,
+                'pricingMajorCurrencies'  => $hasPricing
+                    ? collect(($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop)->price_exchanges ?? [])
                         ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
                         ->keys()
                         ->values()
                     : null,
-                'pricingCurrencies'       => $this->parent instanceof MasterProductCategory
+                'pricingCurrencies'       => $hasPricing
                     ? $this->wrapPricingSupportProp(fn () => $this->getPricingCurrenciesRate())
                     : null,
-                'pricingCostRates'        => $this->parent instanceof MasterProductCategory
+                'pricingCostRates'        => $hasPricing
                     ? $this->wrapPricingSupportProp(
                         fn () => $this->getPricingCurrenciesRate()
                             ->keys()
@@ -636,7 +659,7 @@ class IndexMasterProducts extends OrgAction
                 'taxPresetOptions'        => $this->getTaxPresetOptions([]),
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
+                    'navigation' => $tabsNavigation,
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
@@ -654,7 +677,7 @@ class IndexMasterProducts extends OrgAction
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))),
 
-                MasterProductsTabsEnum::PRICING->value => $this->parent instanceof MasterProductCategory
+                MasterProductsTabsEnum::PRICING->value => $hasPricing
                     ? ($this->tab == MasterProductsTabsEnum::PRICING->value ?
                         fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))
                         : Inertia::optional(fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))))
@@ -667,7 +690,7 @@ class IndexMasterProducts extends OrgAction
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value));
 
-        if ($this->parent instanceof MasterProductCategory) {
+        if ($hasPricing) {
             $response->table(
                 IndexMasterProductsPricing::make()->tableStructure($this->parent, prefix: MasterProductsTabsEnum::PRICING->value)
             );

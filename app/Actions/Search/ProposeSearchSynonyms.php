@@ -8,10 +8,10 @@
 namespace App\Actions\Search;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Exceptions\AICreditException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -21,6 +21,7 @@ class ProposeSearchSynonyms
     use AsAction;
     use WithTypesenseApi;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public string $commandSignature = 'search:propose-synonyms {--days=7}';
 
@@ -220,10 +221,10 @@ class ProposeSearchSynonyms
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                $response = Http::withToken(config('services.openai.api_key'))
+                $response = $this->aiRequest()
                     ->timeout(300)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model'            => 'gpt-5-nano',
+                    ->post('chat/completions', [
+                        'model'            => $this->aiModel('gpt-5-nano'),
                         'reasoning_effort' => 'low',
                         'messages'         => [['role' => 'user', 'content' => $prompt]],
                     ]);

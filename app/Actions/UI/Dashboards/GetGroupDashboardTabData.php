@@ -4,6 +4,7 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -13,6 +14,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetGroupDashboardTabData extends OrgAction
 {
+    use WithDashboardPartnersTypeSettings;
     use WithPerformanceDateResolution;
     use WithGroupDashboardSalesAuthorisation;
 
@@ -42,7 +44,7 @@ class GetGroupDashboardTabData extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom((string) ($intervalParam ?? Arr::get($userSettings, 'selected_interval', 'all'))) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
 
         $table = $tab->table($group, $timeSeriesData);
         $tableSecondBlock = $tab->table($group, $timeSeriesData, true);

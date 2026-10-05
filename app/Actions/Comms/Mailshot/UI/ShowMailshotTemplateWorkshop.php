@@ -40,6 +40,11 @@ class ShowMailshotTemplateWorkshop extends OrgAction
 
     public function htmlResponse(EmailTemplate $emailTemplate, ActionRequest $request): Response
     {
+        $isCommonOutbox = $request->route()->getName() === 'grp.org.shops.show.dashboard.comms.templates.workshop';
+        $indexRouteName = $isCommonOutbox
+            ? 'grp.org.shops.show.dashboard.comms.templates.index'
+            : 'grp.org.shops.show.marketing.templates.index';
+
         return Inertia::render(
             'Org/Web/Workshop/Mailshot/MailshotTemplateWorkshop',
             [
@@ -61,7 +66,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                             'style' => 'exit',
                             'label' => __('Exit workshop'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.templates.index',
+                                'name'       => $indexRouteName,
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
                                     'shop'         => $this->shop->slug
@@ -91,10 +96,11 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                 ],
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',
-                    'parameters' => [
+                    'parameters' => array_filter([
                         'shop'          => $emailTemplate->shop_id,
-                        'emailTemplate' => $emailTemplate->id
-                    ],
+                        'emailTemplate' => $emailTemplate->id,
+                        'common_outbox' => $isCommonOutbox ? 1 : null,
+                    ]),
                     'method'     => 'patch'
                 ],
                 'storeTemplateRoute'  => [
@@ -114,7 +120,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     'method'     => 'delete'
                 ],
                 'indexRoute'          => [
-                    'name'       => 'grp.org.shops.show.marketing.templates.index',
+                    'name'       => $indexRouteName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
                         'shop'         => $this->shop->slug
@@ -161,6 +167,18 @@ class ShowMailshotTemplateWorkshop extends OrgAction
             array_merge(
                 IndexMailshotTemplates::make()->getBreadcrumbs(
                     'grp.org.shops.show.marketing.templates.index',
+                    $routeParameters,
+                    parent: $this->shop
+                ),
+                $headCrumb(
+                    $emailTemplate,
+                    $routeParameters,
+                ),
+            ),
+            'grp.org.shops.show.dashboard.comms.templates.workshop' =>
+            array_merge(
+                IndexMailshotTemplates::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.templates.index',
                     $routeParameters,
                     parent: $this->shop
                 ),

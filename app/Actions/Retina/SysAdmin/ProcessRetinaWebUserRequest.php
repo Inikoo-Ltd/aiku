@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrdersOnCustomerActivity;
 use App\Actions\SysAdmin\WebUserRequest\StoreWebUserRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
@@ -61,6 +62,10 @@ class ProcessRetinaWebUserRequest
             'last_location'  => json_encode($geoLocation),
             'last_active_at' => $datetime
         ]);
+
+        if ($webUser->customer) {
+            FetchEbayOrdersOnCustomerActivity::run($webUser->customer);
+        }
 
         return $webUserRequest;
     }

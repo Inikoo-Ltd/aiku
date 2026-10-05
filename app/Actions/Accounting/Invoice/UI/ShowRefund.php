@@ -46,10 +46,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRefund extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     use IsInvoiceUI;
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
@@ -213,19 +215,21 @@ class ShowRefund extends OrgAction
             ],
         ];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'delete',
-            'label' => __('Delete'),
-            'key'   => 'delete_refund',
-            'route' => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.refund.delete',
-                'parameters' => [
-                    'refund' => $refund->id,
+        if (DeleteRefund::userCanDeleteInvoicesIn($request->user(), $refund->shop)) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'delete',
+                'label' => __('Delete'),
+                'key'   => 'delete_refund',
+                'route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.refund.delete',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         if ($refund->in_process) {
 

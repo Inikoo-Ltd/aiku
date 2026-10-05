@@ -21,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
 
     private DeliveryNote $deliveryNote;

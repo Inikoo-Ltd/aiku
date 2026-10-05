@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Traits\HasBucketImages;
@@ -90,6 +91,7 @@ class WebBlockProductResource extends JsonResource
         return [
             'slug'              => $product->slug,
             'code'              => $product->code,
+            'family_id'         => $product->family_id,
             'family_code'       => $product->family?->code,
             'name'              => $product->name,
             'description'       => $product->description,
@@ -122,11 +124,12 @@ class WebBlockProductResource extends JsonResource
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
             'is_golden_product' => (bool)$product->is_golden_product,
-            'is_back_in_stock'  => $product->backInStockReminders,
+            'is_back_in_stock'  => $back_in_stock,
             'expected_back_in_stock_at' => $product->available_quantity > 0
                 ? null
                 : GetProductIncomingStock::make()->earliestEta($product),
             'back_in_stock'     => $back_in_stock,
+            'pre_order'         => GetProductPreOrder::make()->forWebsite(GetProductPreOrder::make()->handle($product)),
 
 
             'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),

@@ -36,7 +36,6 @@ const getStockImages = async () => {
         stockImages.value = response.data.data
     } catch (error: any) {
         loading.value = false
-        console.log('error', error);
         notify({
             title: 'Failed',
             text: 'cannot show stock images',

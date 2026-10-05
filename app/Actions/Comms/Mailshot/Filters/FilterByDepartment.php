@@ -43,29 +43,38 @@ class FilterByDepartment
             // Normalize department IDs to array
             $departmentIds = (array) $departmentIds;
 
-            $query->where(function ($q) use ($departmentIds, $behaviors) {
-                if (in_array('purchased', $behaviors)) {
-                    $q->orWhereExists(function ($subQuery) use ($departmentIds) {
-                        $subQuery->select(DB::raw(1))
-                            ->from('orders')
-                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
-                            ->whereRaw('orders.customer_id = customers.id')
-                            ->where('orders.state', '!=', OrderStateEnum::CREATING)
-                            ->whereIn('transactions.department_id', $departmentIds)
-                            ->whereNull('orders.deleted_at');
-                    });
+            $includesPurchased = in_array('purchased', $behaviors);
+            $includesInBasket  = in_array('basket_not_purchased', $behaviors);
+
+            if (!$includesPurchased && !$includesInBasket) {
+                return $query;
+            }
+
+            $dateRange = $val['date_range'] ?? null;
+            $startDate = is_array($dateRange) ? ($dateRange[0] ?? null) : null;
+            $endDate   = is_array($dateRange) ? ($dateRange[1] ?? null) : null;
+
+            $query->whereExists(function ($subQuery) use ($departmentIds, $includesPurchased, $includesInBasket, $startDate, $endDate) {
+                $subQuery->select(DB::raw(1))
+                    ->from('orders')
+                    ->join('transactions', 'orders.id', '=', 'transactions.order_id')
+                    ->whereRaw('orders.customer_id = customers.id')
+                    ->whereIn('transactions.department_id', $departmentIds)
+                    ->whereNull('orders.deleted_at')
+                    ->where('orders.state', '!=', OrderStateEnum::CANCELLED);
+
+                if (!$includesInBasket) {
+                    $subQuery->where('orders.state', '!=', OrderStateEnum::CREATING);
+                } elseif (!$includesPurchased) {
+                    $subQuery->where('orders.state', OrderStateEnum::CREATING);
                 }
 
-                if (in_array('basket_not_purchased', $behaviors)) {
-                    $q->orWhereExists(function ($subQuery) use ($departmentIds) {
-                        $subQuery->select(DB::raw(1))
-                            ->from('orders')
-                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
-                            ->whereRaw('orders.customer_id = customers.id')
-                            ->where('orders.state', OrderStateEnum::CREATING)
-                            ->whereIn('transactions.department_id', $departmentIds)
-                            ->whereNull('orders.deleted_at');
-                    });
+                if ($startDate) {
+                    $subQuery->whereDate('orders.date', '>=', $startDate);
+                }
+
+                if ($endDate) {
+                    $subQuery->whereDate('orders.date', '<=', $endDate);
                 }
             });
         }

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { ProductShowcase } from "@/types/product-showcase"
 import FractionDisplay from "../DataDisplay/FractionDisplay.vue"
@@ -102,6 +102,7 @@ const props = withDefaults(
 
 		}
 		noTradeUnit?: boolean
+		parts?: { id: number, quantity_available: string | null }[]
 		labelInfo?: Record<string, { show: boolean }>
 		publicAttachment: array<any>
 		properties?: {
@@ -111,6 +112,9 @@ const props = withDefaults(
 		}
 	}>(), {}
 )
+
+const partStock = (orgStockId: number): string | null =>
+	props.parts?.find((part) => part.id === orgStockId)?.quantity_available ?? null
 
 library.add(
 	faCircle,
@@ -141,20 +145,20 @@ library.add(
 				<div class="space-y-3">
 					<!-- Section: Since -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Since") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Since") }}</dt>
 						<dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
 					</div>
 
 					<!-- Section: Units -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Units") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Units") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} ({{ data.unit }}) </dd>
 					</div>
 
 					<!-- Section: Weight marketing -->
 					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
-						<dt class="text-gray-500">{{ trans("Weight") }} <span
-								class="text-xs font-light text-gray-500">({{ trans('Marketing') }})</span></dt>
+						<dt class="text-gray-500">{{ ctrans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ ctrans('Marketing') }})</span></dt>
 						<dd class="font-medium">
 							{{ data?.marketing_weight }}
 						</dd>
@@ -162,8 +166,8 @@ library.add(
 
 					<!-- Section: Weight shipping -->
 					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
-						<dt class="text-gray-500">{{ trans("Weight") }} <span
-								class="text-xs font-light text-gray-500">({{ trans('Shipping') }})</span></dt>
+						<dt class="text-gray-500">{{ ctrans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ ctrans('Shipping') }})</span></dt>
 						<dd class="font-medium">
 							{{ data?.gross_weight }}
 						</dd>
@@ -171,7 +175,7 @@ library.add(
 
 					<!-- Section: Marketing Dimensions -->
 					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
-						<dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Dimensions") }}</dt>
 						<dd class="font-medium">
 							{{ data?.marketing_dimensions }}
 						</dd>
@@ -179,7 +183,7 @@ library.add(
 
 					<!-- Section: Barcode -->
 					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
-						<dt class="text-gray-500">{{ trans("Barcode") }}
+						<dt class="text-gray-500">{{ ctrans("Barcode") }}
 							<FontAwesomeIcon :icon="faBarcode" fixed-width />
 						</dt>
 						<dd class="font-medium">
@@ -189,7 +193,7 @@ library.add(
 
 					<!-- Section: Picking -->
 					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking') && !noTradeUnit">
-						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
 								<div class="grid grid-cols-4 gap-2 py-1 text-sm border-b border-dashed">
@@ -219,9 +223,15 @@ library.add(
 												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
 												{{ ctrans("On Demand") }}
 											</span>
+
+											<span v-if="partStock(pick.org_stock_id) !== null"
+												class="text-xs tabular-nums"
+												:class="Number(partStock(pick.org_stock_id)) > 0 ? 'text-gray-500' : 'text-red-600 font-medium'">
+												{{ ctrans("Stock") }}: {{ partStock(pick.org_stock_id) }}
+											</span>
 										</div>
 
-										<div v-if="pick.note" v-tooltip="trans('Note')"
+										<div v-if="pick.note" v-tooltip="ctrans('Note')"
 											class="text-[11px] text-gray-400 truncate max-w-[90%]">
 											{{ pick.note }}
 										</div>
@@ -229,14 +239,14 @@ library.add(
 
 									<!-- Right -->
 									<div class="flex items-center justify-end text-xs">
-										<FractionDisplay vxtooltip="trans('Number of picking')" :fractionData="pick.picking_factor" />
+										<FractionDisplay vxtooltip="ctrans('Number of picking')" :fractionData="pick.picking_factor" />
 									</div>
 								</div>
 							</template>
 
 
 							<div v-else class="text-center text-gray-400 italic text-xs">
-								{{ trans("No data available") }}
+								{{ ctrans("No data available") }}
 							</div>
 						</dd>
 					</div>

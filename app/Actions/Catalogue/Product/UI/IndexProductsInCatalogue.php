@@ -452,7 +452,7 @@ class IndexProductsInCatalogue extends OrgAction
         /** @var Shop $shop */
         $shop = $request->route('shop');
 
-        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING, ProductsTabsEnum::SALES]);
+        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING, ProductsTabsEnum::SALES, ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT]);
         $subNavigation = $this->getShopProductsSubNavigation($shop);
 
         $title = __('Products');
@@ -505,6 +505,11 @@ class IndexProductsInCatalogue extends OrgAction
                 'products_export'              => $this->getProductsExport($shop),
                 'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
+                'bulk_set_active_route'        => $this->bucket == 'in_process' && $this->canEdit ? [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.product.bulk_set_active',
+                    'parameters' => ['shop' => $shop->id],
+                ] : null,
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
@@ -533,7 +538,7 @@ class IndexProductsInCatalogue extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT]));
 
         return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
@@ -542,7 +547,7 @@ class IndexProductsInCatalogue extends OrgAction
     public function current(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'current';
-        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT]));
 
         return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
@@ -551,7 +556,7 @@ class IndexProductsInCatalogue extends OrgAction
     public function inProcess(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'in_process';
-        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT]));
 
         return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }
@@ -560,7 +565,7 @@ class IndexProductsInCatalogue extends OrgAction
     public function discontinued(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'discontinued';
-        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT]));
 
         return $this->handle(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket);
     }

@@ -13,6 +13,9 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { computed, ref } from "vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBoxesAlt } from "@fal"
+library.add(faBoxesAlt)
 
 const props = defineProps<{
     title: string;

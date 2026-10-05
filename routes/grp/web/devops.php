@@ -7,9 +7,11 @@
  */
 
 
-use App\Actions\DevOps\UI\ShowAikuPublicAnalytics;
 use App\Actions\DevOps\UI\ShowDevopsDashboard;
+use App\Actions\DevOps\UI\ShowServer;
+use App\Actions\DevOps\UI\UpdateNightOwlIssue;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowDevopsDashboard::class)->name('dashboard');
-Route::get('/aiku-public-analytics', ShowAikuPublicAnalytics::class)->name('aiku-public-analytics');
+Route::get('/servers/{server}', ShowServer::class)->name('servers.show');
+Route::patch('/telemetry/issues/{issueId}', UpdateNightOwlIssue::class)->whereNumber('issueId')->name('telemetry.issues.update');

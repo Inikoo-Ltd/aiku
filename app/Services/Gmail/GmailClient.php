@@ -8,6 +8,8 @@
 namespace App\Services\Gmail;
 
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -33,7 +35,7 @@ final class GmailClient
 
     private const string DRIVE_BASE_URL = 'https://www.googleapis.com/drive/v3/';
 
-    public function __construct(private readonly Shop $shop)
+    public function __construct(private readonly Shop|Organisation $owner, private readonly string $settingsKey, private readonly string $cacheKey)
     {
     }
 
@@ -43,7 +45,16 @@ final class GmailClient
             return null;
         }
 
-        return new self($shop);
+        return new self($shop, 'gmail', (string) $shop->id);
+    }
+
+    public static function forProcurement(Organisation $organisation): ?self
+    {
+        if (blank(Arr::get($organisation->settings, 'procurement.gmail.refresh_token'))) {
+            return null;
+        }
+
+        return new self($organisation, 'procurement.gmail', 'procurement-'.$organisation->id);
     }
 
     public static function authorizationUrl(string $state, string $redirectUri): string
@@ -75,8 +86,8 @@ final class GmailClient
 
     public function accessToken(): string
     {
-        return Cache::remember("gmail-access-token:{$this->shop->id}", now()->addMinutes(50), function () {
-            $refreshToken = Crypt::decryptString((string) Arr::get($this->shop->settings, 'gmail.refresh_token'));
+        return Cache::remember("gmail-access-token:{$this->cacheKey}", now()->addMinutes(50), function () {
+            $refreshToken = Crypt::decryptString((string) Arr::get($this->owner->settings, $this->settingsKey.'.refresh_token'));
 
             $response = Http::asForm()->post(self::OAUTH_TOKEN_URL, [
                 'client_id'     => config('services.gmail.client_id'),
@@ -99,18 +110,18 @@ final class GmailClient
      *
      * @throws GmailHistoryExpiredException
      */
-    public function listHistory(string $startHistoryId): array
+    public function listHistory(string $startHistoryId, ?string $labelId = 'INBOX'): array
     {
         $messageIds = [];
         $historyId  = $startHistoryId;
         $pageToken  = null;
 
         do {
-            $query = [
+            $query = array_filter([
                 'startHistoryId' => $startHistoryId,
                 'historyTypes'   => 'messageAdded',
-                'labelId'        => 'INBOX',
-            ];
+                'labelId'        => $labelId,
+            ]);
 
             if ($pageToken) {
                 $query['pageToken'] = $pageToken;
@@ -119,14 +130,14 @@ final class GmailClient
             $response = Http::withToken($this->accessToken())->get(self::API_BASE_URL.'users/me/history', $query);
 
             if ($response->status() === 404) {
-                throw new GmailHistoryExpiredException("Gmail history $startHistoryId has expired for shop {$this->shop->id}");
+                throw new GmailHistoryExpiredException("Gmail history $startHistoryId has expired for {$this->cacheKey}");
             }
 
             $response->throw();
 
             foreach ($response->json('history', []) as $historyRecord) {
                 foreach (Arr::get($historyRecord, 'messagesAdded', []) as $messageAdded) {
-                    if (in_array('INBOX', Arr::get($messageAdded, 'message.labelIds', []), true)) {
+                    if (! $labelId || in_array($labelId, Arr::get($messageAdded, 'message.labelIds', []), true)) {
                         $messageIds[] = Arr::get($messageAdded, 'message.id');
                     }
                 }
@@ -159,6 +170,69 @@ final class GmailClient
             static fn (array $message) => $message['id'],
             $response->json('messages', [])
         );
+    }
+
+    /**
+     * One page of the message ids a search finds, newest first, and where the next page starts.
+     *
+     * @return array{ids: array<int, string>, next: string|null}
+     */
+    public function listMessageIds(string $query, ?string $pageToken = null, int $maxResults = 500): array
+    {
+        $response = $this->get('users/me/messages', array_filter([
+            'q'          => $query,
+            'maxResults' => $maxResults,
+            'pageToken'  => $pageToken,
+        ]));
+
+        return [
+            'ids'  => array_map(static fn (array $message) => $message['id'], $response->json('messages', [])),
+            'next' => $response->json('nextPageToken'),
+        ];
+    }
+
+    /**
+     * Several messages fetched side by side, within one mailbox's rate limit. A message Gmail
+     * refused comes back null, a rate limit as the string 'rate_limited', so the caller can wait.
+     * Given headers, only those headers are fetched (format metadata): a few hundred bytes instead
+     * of the whole mail, for deciding whether the mail is worth reading at all.
+     *
+     * @param  array<int, string>  $messageIds
+     * @param  array<int, string>  $onlyHeaders
+     * @return array<string, array<string, mixed>|string|null>
+     */
+    public function getMessages(array $messageIds, array $onlyHeaders = []): array
+    {
+        $token     = $this->accessToken();
+        $query     = $onlyHeaders
+            ? 'format=metadata&'.implode('&', array_map(fn (string $header) => 'metadataHeaders='.rawurlencode($header), $onlyHeaders))
+            : 'format=full';
+        $responses = Http::pool(fn (Pool $pool) => array_map(
+            fn (string $messageId) => $pool->as($messageId)->withToken($token)->timeout(60)->get(self::API_BASE_URL."users/me/messages/$messageId?$query"),
+            $messageIds
+        ));
+
+        return collect($responses)->map(fn ($response) => match (true) {
+            $response instanceof Response && $response->successful()                            => $response->json(),
+            $response instanceof Response && self::isRateLimited($response)                     => 'rate_limited',
+            default                                                                            => null,
+        })->all();
+    }
+
+    /**
+     * Gmail asking us to slow down: a 429, a 403 whose reason or message says a rate limit or quota
+     * (a 403 for anything else, like a missing scope, never gets better by waiting), or its backend
+     * briefly failing.
+     */
+    public static function isRateLimited(Response $response): bool
+    {
+        return match ($response->status()) {
+            429, 500, 503 => true,
+            403           => in_array($response->json('error.errors.0.reason'), ['rateLimitExceeded', 'userRateLimitExceeded', 'quotaExceeded'], true)
+                || $response->json('error.status') === 'RESOURCE_EXHAUSTED'
+                || str_contains((string) $response->json('error.message'), 'Quota exceeded'),
+            default       => false,
+        };
     }
 
     public function getMessage(string $messageId): array
@@ -197,7 +271,7 @@ final class GmailClient
             $this->lastDriveError = $response->status().' '.$response->json('error.message', $response->body());
 
             Log::warning('Drive file not readable', [
-                'shop'    => $this->shop->slug,
+                'shop'    => $this->owner->slug,
                 'file_id' => $fileId,
                 'error'   => $this->lastDriveError,
             ]);
@@ -241,7 +315,7 @@ final class GmailClient
      * @param  array<int, string>  $priorLabelIds  the message's labels as they were read, so a
      *                                             wrong import can be undone from the log
      */
-    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = []): void
+    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = [], bool $markRead = true): void
     {
         $labelId = $this->labelId($labelName);
 
@@ -249,7 +323,7 @@ final class GmailClient
         // leaves mail read that nobody read, and nothing else remembers which of them were
         // unread. The line is what a restore reads back.
         Log::info('gmail-file-away', [
-            'shop'       => $this->shop->slug,
+            'shop'       => $this->owner->slug,
             'message'    => $messageId,
             'label'      => $labelName,
             'was_unread' => in_array('UNREAD', $priorLabelIds, true),
@@ -260,14 +334,17 @@ final class GmailClient
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
                 'addLabelIds'    => [$labelId],
-                'removeLabelIds' => ['INBOX', 'UNREAD'],
+                'removeLabelIds' => array_merge(
+                    $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
+                    in_array('SPAM', $priorLabelIds, true) ? ['SPAM'] : []
+                ),
             ]);
     }
 
     private function labelId(string $labelName): string
     {
         return Cache::remember(
-            "gmail-label:{$this->shop->id}:$labelName",
+            "gmail-label:{$this->cacheKey}:$labelName",
             now()->addDay(),
             function () use ($labelName) {
                 $labels = $this->get('users/me/labels')->json('labels', []);

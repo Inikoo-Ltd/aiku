@@ -9,8 +9,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
-import { usePage } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
+import DeploymentChangeLog from "@/Components/DevOps/DeploymentChangeLog.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
 import "@/Composables/Icon/NavigationImportIcon"
@@ -18,17 +19,17 @@ import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
-import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
-import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
+import ChatPane from "@/Layouts/Grp/ChatPane.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { fetchUnreadCount } from "@/Composables/useNotificationSound"
+import { startOrderAlerts, startWorkAlerts } from "@/Composables/useNotificationSound"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
@@ -48,9 +49,12 @@ provide("isMovePallet", true)
 
 initialiseApp()
 
+const MessagingDock = defineAsyncComponent(() => import("@/Components/Messaging/MessagingDock.vue"))
+const PhoneCallDock = defineAsyncComponent(() => import("@/Components/Chat/PhoneCallDock.vue"))
+
 
 const layout = useLayoutStore()
-const isEmbedded = usePage().url.includes("embed=1")
+const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
 
@@ -151,25 +155,13 @@ const checkScreenType = () => {
     else screenType.value = "desktop"
 }
 provide("screenType", screenType)
+provide("isEmbedded", isEmbedded)
 
-const requestNotificationPermission = () => {
-    if (!("Notification" in window)) return
-    if (Notification.permission === "default") {
-        Notification.requestPermission()
-    }
-    if (Notification.permission === "denied") {
-        notify({
-            title: trans("Alert"),
-            text: trans("You must allow notification to get notif from chat"),
-            type: "error"
-        })
-    }
-}
-
-const baseUrl = layout?.appUrl ?? ""
-const myAgentId = layout.user?.id
 onMounted(() => {
-    fetchUnreadCount(baseUrl, "", myAgentId)
+    if (!isEmbedded) {
+        startWorkAlerts(useStaffMessaging())
+        startOrderAlerts()
+    }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
@@ -218,7 +210,7 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4 md:pr-[calc(1rem_+_var(--chat-pane,0px))]"
             :class="[
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
@@ -237,12 +229,12 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[23] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar
                 class="-left-2/3 z-20 block md:left-[0]"
-                :class="[{ 'left-[0]': sidebarOpen }]"
+                :class="[{ 'left-[0] max-md:z-[24]': sidebarOpen }]"
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 
@@ -250,8 +242,9 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
+				usePage().component === 'Tickets/Ticket' ? 'pb-0' : usePage().component === 'Tasks/StaffTask' ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				'mr-4',
 				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
@@ -261,6 +254,7 @@ const safeTheme = computed(() => {
         </main>
 
         <MessagingSideBar />
+        <ChatPane />
         <Teleport to="body">
             <MessagingDock />
         </Teleport>
@@ -360,50 +354,50 @@ const safeTheme = computed(() => {
         :closable="false"
         :closeOnEscape="false"
         :showHeader="false"
-        :style="{ width: '32rem' }"
-        :breakpoints="{ '640px': '90vw' }">
-        <div class="pt-8 pb-4">
-            <div class="text-center">
+        :style="{ width: '38rem' }"
+        :breakpoints="{ '640px': '92vw' }">
+        <div class="pt-6 pb-4">
+            <div class="flex items-center justify-between gap-4">
                 <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
                     🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
                 </div>
-                <div v-else class="font-semibold text-2xl">
+                <div v-else class="font-semibold text-xl">
                     {{ ctrans("Hey, sorry for your inconvenience.") }}
                 </div>
 
-                <div
-                    v-if="deploymentInfo?.change_log"
-                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
-                    {{ deploymentInfo.change_log }}
-                </div>
-
-                <div v-else class="mt-2 text-sm text-gray-500">
-                    {{
-                        ctrans(
-                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                        )
-                    }}
-                </div>
-
-                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                <div v-if="deploymentInfo?.committers?.length" class="flex shrink-0 items-center -space-x-2">
                     <template v-for="committer in deploymentInfo.committers" :key="committer.email">
                         <img
                             v-if="committer.avatar"
                             :src="committer.avatar"
                             :alt="committer.name"
-                            :title="committer.name"
-                            class="size-7 rounded-full ring-2 ring-white" />
+                            v-tooltip="committer.name"
+                            class="size-8 rounded-full ring-2 ring-white" />
                         <div
                             v-else
-                            :title="committer.name"
-                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            v-tooltip="committer.name"
+                            class="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
                             {{ committer.name.charAt(0).toUpperCase() }}
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+            <div
+                v-if="deploymentInfo?.change_log"
+                class="mt-4 max-h-72 overflow-y-auto rounded-md bg-gray-50 px-4 pb-3 pt-1 text-left">
+                <DeploymentChangeLog :text="deploymentInfo.change_log" :clamped="false" />
+            </div>
+
+            <div v-else class="mt-3 text-sm text-gray-500">
+                {{
+                    ctrans(
+                        "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                    )
+                }}
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3">
                 <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
                 <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
             </div>
@@ -421,6 +415,49 @@ const safeTheme = computed(() => {
             <Notification :notification="props" />
         </template>
     </notifications>
+
+    <notifications
+        group="order-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="flex items-center justify-between gap-x-2 text-xs text-gray-500">
+                    <span>{{ item.title }}</span>
+                    <span v-if="item.data.is_unpaid" class="rounded bg-amber-100 px-1.5 text-amber-800">{{ ctrans("Unpaid") }}</span>
+                </div>
+                <div class="mt-1 truncate text-sm font-semibold text-gray-900">{{ item.data.reference }} · {{ item.data.customer }}</div>
+                <div class="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{{ item.data.money }}</div>
+                <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
+            </Link>
+        </template>
+    </notifications>
+
+    <notifications
+        group="ticket-alerts"
+        position="top right"
+        :max="5"
+        width="340"
+        :pauseOnHover="true"
+        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        <template #body="{ item, close }">
+            <Link
+                role="status"
+                :href="item.data.url"
+                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
+                @click="close">
+                <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
+                <div class="mt-1 truncate text-xs text-gray-500">{{ item.text }}</div>
+            </Link>
+        </template>
+    </notifications>
     </template>
 </template>
 
@@ -429,15 +466,15 @@ const safeTheme = computed(() => {
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
     box-shadow: v-bind(
-        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
+        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.navigation_theme[2]}, 20% white)`"
     ) !important;
-    background-color: v-bind("layout?.app?.theme[2]");
-    color: v-bind("layout?.app?.theme[3]");
+    background-color: v-bind("layout?.app?.navigation_theme[2]");
+    color: v-bind("layout?.app?.navigation_theme[3]");
 }
 
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
-    color: v-bind("layout?.app?.theme[1]");
+    color: v-bind("layout?.app?.navigation_theme[1]");
 }
 
 .subNavActive {

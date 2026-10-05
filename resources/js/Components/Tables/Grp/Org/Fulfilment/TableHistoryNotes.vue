@@ -11,7 +11,7 @@ import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Popover from 'primevue/popover';
 import { ref, inject } from 'vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PureTextarea from '@/Components/Pure/PureTextarea.vue';
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -52,7 +52,6 @@ const addNotes = () => {
         { details: JSON.stringify({ text: "description" }), note: notes.value, permanent: permanent.value },
         {   
             onSuccess: () => {
-                console.log('Note added successfully!');
                 _op.value.hide()
                 notes.value = ""
             },
@@ -85,7 +84,7 @@ const addNotes = () => {
             <div class="flex flex-col gap-4 w-[20rem] pt-3">
               <!-- Toggle Switch -->
               <div class="flex items-center justify-between">
-                <div class="text-gray-600 font-medium">{{ trans("Permanent :")}}</div>
+                <div class="text-gray-600 font-medium">{{ ctrans("Permanent :")}}</div>
                 <ToggleSwitch v-model="permanent">
                   <template #handle="{ checked }">
                     <FontAwesomeIcon 

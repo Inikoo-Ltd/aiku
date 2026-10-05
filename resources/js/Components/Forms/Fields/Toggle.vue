@@ -6,13 +6,19 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faCheck } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Link } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 library.add(faTimes, faCheck)
 defineOptions({ inheritAttrs: false })
+
+interface DirectionalWarning {
+	title: string
+	text: string
+	confirmLabel?: string
+}
 
 const props = defineProps<{
 	form: any
@@ -34,6 +40,8 @@ const props = defineProps<{
 		warnTitle?: string
 		confirmLabel?: string
 		warnOnEnableOnly?: boolean
+		warnOn?: DirectionalWarning   // Asked before turning on, instead of warnTitle/warningText
+		warnOff?: DirectionalWarning  // Asked before turning off
 		submitOnConfirm?: boolean
 		description?: string | string[]
 		single_description?: string
@@ -95,8 +103,15 @@ watch(value, (newValue) => {
 	props.form.errors[props.fieldName] = ""
 })
 
-const clearAndWarn = () => {
+// Taken when the modal opens, so the copy does not flip while it closes after confirming
+const pendingWarning = ref<DirectionalWarning | undefined>()
+
+const clearAndWarn = (newValue: boolean) => {
 	props.form.errors[props.fieldName] = null
+	if (props.fieldData?.warnOn || props.fieldData?.warnOff) {
+		pendingWarning.value = newValue ? props.fieldData.warnOn : props.fieldData.warnOff
+		return !!pendingWarning.value
+	}
 	if (
 		!props.fieldData?.warningText &&
 		!props.fieldData?.warningTextHtml &&
@@ -147,89 +162,95 @@ const getDescriptionSegments = (description: string) => {
 </script>
 <template>
 	<div>
-		<ModalConfirmation
-			:title="fieldData?.warnTitle ?? trans('Are you sure you want to proceed?')"
-			:description="
-				fieldData?.warningText ?? trans('Enabling this would have direct consequences')
-			"
-			hideCancel>
-			<template v-if="fieldData?.warningTextHtml || fieldData?.warningBox" #description>
-				<div class="mt-2 space-y-3">
-					<!-- warningTextHtml is blueprint copy authored in PHP, never user input -->
-					<p
-						v-if="fieldData?.warningTextHtml"
-						class="text-sm text-gray-500"
-						v-html="fieldData.warningTextHtml"></p>
-					<p v-else class="text-sm text-gray-500">{{ fieldData?.warningText }}</p>
-					<div
-						v-if="fieldData?.warningBox"
-						class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-						{{ fieldData.warningBox }}
+		<div class="flex items-center gap-3">
+			<ModalConfirmation
+				:title="pendingWarning?.title ?? fieldData?.warnTitle ?? ctrans('Are you sure you want to proceed?')"
+				:description="
+					pendingWarning?.text ?? fieldData?.warningText ?? ctrans('Enabling this would have direct consequences')
+				"
+				hideCancel>
+				<template v-if="fieldData?.warningTextHtml || fieldData?.warningBox" #description>
+					<div class="mt-2 space-y-3">
+						<!-- warningTextHtml is blueprint copy authored in PHP, never user input -->
+						<p
+							v-if="fieldData?.warningTextHtml"
+							class="text-sm text-gray-500"
+							v-html="fieldData.warningTextHtml"></p>
+						<p v-else class="text-sm text-gray-500">{{ fieldData?.warningText }}</p>
+						<div
+							v-if="fieldData?.warningBox"
+							class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+							{{ fieldData.warningBox }}
+						</div>
 					</div>
-				</div>
-			</template>
-			<template #default="{ isOpenModal, changeModel }">
-				<Switch
-					v-model="value"
-					@update:modelValue="
-						() => {
-							if (clearAndWarn() && !(fieldData?.warnOnEnableOnly && !value)) {
+				</template>
+				<template #default="{ isOpenModal, changeModel }">
+					<Switch
+						v-model="value"
+						@update:modelValue="
+							() => {
+								if (clearAndWarn(value) && !(fieldData?.warnOnEnableOnly && !value)) {
+									value = !value
+									changeModel()
+									return
+								}
+								if (fieldData?.submitOnConfirm) {
+									updateFormValue(value)
+									submit?.()
+								}
+							}
+						"
+						class="pr-1 relative inline-flex h-6 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+						:style="{ backgroundColor: value ? 'var(--app-accent, #6366f1)' : 'color-mix(in srgb, var(--app-accent, #6366f1) 20%, white)' }"
+						:class="[
+							form.errors[fieldName] ? 'errorShake' : '',
+							fieldData?.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+						]"
+						:disabled="fieldData?.disabled"
+					>
+						<span
+							aria-hidden="true"
+							:class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
+							class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
+							<template v-if="!fieldData?.noIcon">
+								<FontAwesomeIcon
+									v-if="value"
+									icon="fal fa-check"
+									class="text-sm text-green-500"
+									fixed-width
+									aria-hidden="true" />
+								<FontAwesomeIcon
+									v-else
+									icon="fal fa-times"
+									class="text-sm text-red-500"
+									fixed-width
+									aria-hidden="true" />
+							</template>
+						</span>
+					</Switch>
+				</template>
+				<template #btn-yes="{ closeModal }">
+					<Button
+						:label="pendingWarning?.confirmLabel ?? fieldData?.confirmLabel ?? ctrans('Confirm')"
+						@click="
+							() => {
 								value = !value
-								changeModel()
-								return
+								closeModal()
+								if (fieldData?.submitOnConfirm) {
+									updateFormValue(value)
+									props.submit?.()
+								}
 							}
-							if (fieldData?.submitOnConfirm) {
-								updateFormValue(value)
-								submit?.()
-							}
-						}
-					"
-					class="pr-1 relative inline-flex h-6 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
-					:class="[
-						value ? 'bg-indigo-500' : 'bg-indigo-100',
-						form.errors[fieldName] ? 'errorShake' : '',
-						fieldData?.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-					]"
-					:disabled="fieldData?.disabled"
-				>
-					<span
-						aria-hidden="true"
-						:class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
-						class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
-						<template v-if="!fieldData?.noIcon">
-							<FontAwesomeIcon
-								v-if="value"
-								icon="fal fa-check"
-								class="text-sm text-green-500"
-								fixed-width
-								aria-hidden="true" />
-							<FontAwesomeIcon
-								v-else
-								icon="fal fa-times"
-								class="text-sm text-red-500"
-								fixed-width
-								aria-hidden="true" />
-						</template>
-					</span>
-				</Switch>
-			</template>
-			<template #btn-yes="{ closeModal }">
-				<Button
-					:label="fieldData?.confirmLabel ?? trans('Confirm')"
-					@click="
-						() => {
-							value = !value
-							closeModal()
-							if (fieldData?.submitOnConfirm) {
-								updateFormValue(value)
-								props.submit?.()
-							}
-						}
-					"
-					type="negative"
-					:icon="faWarning" />
-			</template>
-		</ModalConfirmation>
+						"
+						type="negative"
+						:icon="faWarning" />
+				</template>
+			</ModalConfirmation>
+
+			<slot v-if="fieldData.suffixImage" name="suffix-image">
+				<img :src="fieldData.suffixImage" :alt="fieldData.label" class="h-9 w-9 shrink-0 object-contain" />
+			</slot>
+		</div>
 
 		<ul v-if="descriptionLines.length" class="mt-2 space-y-1 text-sm text-gray-500 list-disc list-outside">
 			<li v-for="(description, descriptionIndex) in descriptionLines" :key="descriptionIndex">
@@ -249,10 +270,6 @@ const getDescriptionSegments = (description: string) => {
 		<p v-if="fieldData?.single_description" class="mt-2 text-sm text-gray-500">
 			{{ fieldData.single_description }}
 		</p>
-
-		<slot v-if="fieldData.suffixImage" name="suffix-image">
-			<img :src="fieldData.suffixImage" class="inline-block h-8 w-8 ml-2 object-cover" />
-		</slot>
 
 		<p
 			v-if="getLodash(form, ['errors', `${fieldName}`])"

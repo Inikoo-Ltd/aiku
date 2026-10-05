@@ -93,12 +93,14 @@ class StoreShipment extends OrgAction
         );
 
 
+        $packetaSenderName = Arr::pull($modelData, 'sender_name');
+
         if ($shipper->api_shipper) {
             $shipmentData = match ($shipper->api_shipper) {
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSkShipping::run($parent, $shipper),
                 'gls-es' => CallApiGlsEsShipping::run($parent, $shipper),
-                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
+                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper, $packetaSenderName),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'dpd-sk' => CallApiDpdSkShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),

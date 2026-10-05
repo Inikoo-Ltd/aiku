@@ -2,7 +2,6 @@
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { inject, ref, watch, computed } from 'vue'
 import { debounce, set, toInteger } from 'lodash-es'
@@ -50,6 +49,10 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null
 const isLoadingSubmitQuantityProduct = ref(false)
 
 const availableStock = computed(() => {
+    if (product.value.pre_order) {
+        return product.value.pre_order.max_quantity ?? Infinity
+    }
+
     const stock = customer.value.stock ?? product.value.stock
 
     return Number.isFinite(Number(stock)) ? Number(stock) : Infinity
@@ -107,7 +110,7 @@ const fetchCustomerOrderingProduct = async () => {
 
 
     } catch (error: any) {
-        console.log('error', error)
+        console.error('error', error)
     }
 }
 
@@ -171,7 +174,7 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
     } catch (error: any) {
         setStatus('error')
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: error.response?.data?.message || error.message || ctrans('Failed to add product to basket'),
             type: 'error'
         })
@@ -234,7 +237,7 @@ const onUpdateQuantity = async () => {
     } catch (error: any) {
         setStatus('error')
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: error.response?.data?.message || error.message || ctrans('Failed to update product quantity'),
             type: 'error'
         })

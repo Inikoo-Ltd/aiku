@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Illuminate\Support\Arr;
@@ -23,14 +24,18 @@ use Throwable;
 
 class DownloadArtefactLabelPdf extends OrgAction
 {
+    use WithArtefactLabelAuthorisation;
+
     private const PDF_MIME_TYPE = 'application/pdf';
+
+    public const RUN_SOURCES = ['batch_code', 'expiry_date'];
 
     /**
      * @param  array<string, string>  $runTexts  keyed by field source, replacing what the design holds
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, ArtefactLabel $artefactLabel, array $runTexts = []): Response
+    public function handle(Artefact|OrgStock $model, ArtefactLabel $artefactLabel, array $runTexts = []): Response
     {
         abort_unless($artefactLabel->state === ArtefactLabelStateEnum::PUBLISHED, 404);
 
@@ -38,7 +43,7 @@ class DownloadArtefactLabelPdf extends OrgAction
 
         try {
             return PdfArtefactLabelSheet::make()->handle(
-                $artefact,
+                $model,
                 $this->applyRunTexts($artefactLabel->layout, $runTexts),
                 $artwork ? ['path' => $artwork->getPath(), 'mime_type' => $artwork->mime_type] : null
             );
@@ -56,6 +61,10 @@ class DownloadArtefactLabelPdf extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if (!isset($this->production)) {
+            return $this->canViewLabels($request);
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
@@ -77,17 +86,40 @@ class DownloadArtefactLabelPdf extends OrgAction
     }
 
     /**
+     * @throws \Mpdf\MpdfException
+     */
+    public function inOrgStock(OrgStock $orgStock, ArtefactLabel $label, ActionRequest $request): Response
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle($orgStock, $label, $this->getRunTexts($request));
+    }
+
+    /**
      * A run carries its own batch code and expiry date, and the board prints from the run, not from
      * the design. Anything not sent keeps what the label was designed with.
      *
      * @return array<string, string>
      */
-    private function getRunTexts(ActionRequest $request): array
+    public function getRunTexts(ActionRequest $request): array
     {
         return array_filter([
             'batch_code'  => trim((string) $request->query('batch_code')),
             'expiry_date' => $this->getRunExpiryDate($request->query('expiry_date')),
         ], fn (string $text) => $text !== '');
+    }
+
+    /**
+     * The texts of a label that change with every run, batch code and expiry date, when the label
+     * carries them.
+     *
+     * @return array<int, string>
+     */
+    public static function getRunSources(ArtefactLabel $artefactLabel): array
+    {
+        $placed = array_map(fn (array $field) => $field['source'] ?? 'batch_code', Arr::get($artefactLabel->layout, 'fields', []) ?? []);
+
+        return array_values(array_intersect(self::RUN_SOURCES, $placed));
     }
 
     /**

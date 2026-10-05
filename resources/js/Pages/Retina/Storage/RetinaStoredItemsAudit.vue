@@ -49,7 +49,6 @@ const props = defineProps<{
         update: routeType
     }
 }>()
-console.log(props)
 
 function palletRoute(pallet: Pallet) {
     switch (route().current()) {

@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class PublishRetinaEbayPortfolio extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithPortfolioErrorResponse;
 

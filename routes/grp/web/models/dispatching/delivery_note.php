@@ -6,7 +6,12 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNotePackaging;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflet;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\PullDeliveryNoteLeafletMediaFromPreference;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflets;
 use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\DeliveryNote\UI\ExportDeliveryNoteTariffCodes;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
@@ -23,9 +28,11 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingWithTrolleyDel
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Actions\Dispatching\DeliveryNote\SkipDeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
@@ -48,6 +55,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middle
     Route::get('tariff-codes/export', ExportDeliveryNoteTariffCodes::class)->name('tariff_codes.export');
 
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::patch('update-packaging', UpdateDeliveryNotePackaging::class)->name('update_packaging');
+    Route::post('print-leaflets', PrintDeliveryNoteLeaflets::class)->name('leaflets.print');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::patch('update-shipping-fields-retry-store-shipping/{shipper:id}', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)
         ->name('update_shipping_fields_retry_store_shipping')->withoutScopedBindings();
@@ -60,6 +69,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middle
 
     Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach')->withoutScopedBindings();
     Route::patch('detach-trolley/{trolley:id}', DetachTrolleyFromDeliveryNote::class)->name('trolleys.detach');
+    Route::patch('skip-box-packing-list', SkipDeliveryNoteBoxPackingList::class)->name('box_packing_list.skip');
 
 
     Route::name('state.')->prefix('state')->group(function () {
@@ -74,6 +84,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middle
         Route::patch('undo-packing', UndoPackingDeliveryNote::class)->name('undo_packing');
         Route::patch('undo-set-as-picked', UndoSetAsPickedDeliveryNote::class)->name('undo_set_as_picked');
         Route::patch('auto-finish-waiting', AutoFinishWaitingDeliveryNote::class)->name('auto_finish_waiting');
+        Route::patch('undo-waiting', UndoWaitingDeliveryNote::class)->name('undo_waiting');
+        Route::patch('put-back-incomplete-sets', PutBackIncompleteSetParts::class)->name('put_back_incomplete_sets');
 
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('set-as-picked-with-picked-bay', SetAsPickedWithPickingBaysDeliveryNote::class)->name('set_as_picked_with_picked_bay');
@@ -85,3 +97,6 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middle
         Route::patch('cancel', CancelDeliveryNote::class)->name('cancel');
     });
 });
+
+Route::post('delivery-note-leaflet/{deliveryNoteLeaflet:id}/print', PrintDeliveryNoteLeaflet::class)->name('delivery_note_leaflet.print');
+Route::patch('delivery-note-leaflet/{deliveryNoteLeaflet:id}/pull-media', PullDeliveryNoteLeafletMediaFromPreference::class)->name('delivery_note_leaflet.pull_media');

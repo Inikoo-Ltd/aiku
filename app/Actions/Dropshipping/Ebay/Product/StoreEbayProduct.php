@@ -95,8 +95,8 @@ class StoreEbayProduct extends RetinaAction
 
             $images = [];
             if (app()->isProduction()) {
-                foreach ($product->images as $image) {
-                    $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
+                foreach ($product->orderedImages() as $image) {
+                    $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg')->resize(1600, 1600));
                 }
             } else {
                 $images[] = Arr::get($product->web_images, 'all.0.gallery.original');
@@ -243,7 +243,7 @@ class StoreEbayProduct extends RetinaAction
                     ],
                     'weight' => [
                         'unit' => 'KILOGRAM',
-                        'value' => (in_array($product->marketing_weight, [null, 0]) ? 100 : $product->marketing_weight) / 1000
+                        'value' => ($product->gross_weight ?: $product->marketing_weight ?: 100) / 1000
                     ]
                 ],
                 'product' => [

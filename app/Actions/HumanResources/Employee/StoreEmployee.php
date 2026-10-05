@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Employee;
 
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateWeekWorkingHours;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
@@ -36,10 +37,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreEmployee extends OrgAction
 {
+    use WithWithheldJobPositions;
     use WithHumanResourcesEditAuthorisation;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
@@ -76,6 +79,7 @@ class StoreEmployee extends OrgAction
         $positions = Arr::get($modelData, 'positions', []);
         data_forget($modelData, 'positions');
         $positions = $this->reorganisePositionsSlugsToIds($positions);
+        $positions = $this->keepWithheldJobPositionsAsTheyWere($positions, $parent instanceof Workplace ? $parent->organisation : $parent, $this->asAction ? null : request()->user());
 
         $employee = DB::transaction(function () use ($parent, $modelData, $positions, $credentials, $contactAddressData, $contractData) {
             /** @var Employee $employee */
@@ -98,22 +102,26 @@ class StoreEmployee extends OrgAction
             if (Arr::get($credentials, 'username')) {
                 $status = Arr::get($credentials, 'user_model_status', true);
 
-                StoreUser::make()->action(
-                    $employee,
-                    [
-                        'username'          => Arr::get($credentials, 'username'),
-                        'password'          => Arr::get(
-                            $credentials,
-                            'password',
-                            (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true))
-                        ),
-                        'contact_name'      => $employee->contact_name,
-                        'email'             => $employee->work_email,
-                        'reset_password'    => Arr::get($credentials, 'reset_password', true),
-                        'status'            => $status,
-                        'user_model_status' => $status
-                    ],
-                );
+                try {
+                    StoreUser::make()->action(
+                        $employee,
+                        [
+                            'username'          => Arr::get($credentials, 'username'),
+                            'password'          => Arr::get(
+                                $credentials,
+                                'password',
+                                (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true))
+                            ),
+                            'contact_name'      => $employee->contact_name,
+                            'email'             => $employee->work_email,
+                            'reset_password'    => Arr::get($credentials, 'reset_password', true),
+                            'status'            => $status,
+                            'user_model_status' => $status
+                        ],
+                    );
+                } catch (ValidationException $exception) {
+                    throw ValidationException::withMessages($this->userErrorsOnEmployeeFields($exception->errors()));
+                }
             }
 
             SyncEmployeeJobPositions::run($employee, $positions);
@@ -135,6 +143,29 @@ class StoreEmployee extends OrgAction
         OrganisationHydrateEmployees::dispatch($organisation)->delay($this->hydratorsDelay);
 
         return $employee;
+    }
+
+    /**
+     * @param  array<string, array<int, string>>  $userErrors
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function userErrorsOnEmployeeFields(array $userErrors): array
+    {
+        $employeeFields = [
+            'user'     => 'username',
+            'username' => 'username',
+            'email'    => 'work_email',
+            'password' => 'password',
+        ];
+
+        $errors = [];
+        foreach ($userErrors as $userField => $messages) {
+            $field          = $employeeFields[$userField] ?? 'username';
+            $errors[$field] = array_merge($errors[$field] ?? [], $messages);
+        }
+
+        return $errors;
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -198,6 +229,7 @@ class StoreEmployee extends OrgAction
             'email'                                   => ['sometimes', 'nullable', 'email'],
             'username'                                => [
                 $this->asAction ? 'nullable' : 'required',
+                'lowercase',
                 new AlphaDashDot(),
                 new IUnique(
                     table: 'users',

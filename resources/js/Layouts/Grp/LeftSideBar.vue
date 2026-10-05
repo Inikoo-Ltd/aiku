@@ -11,7 +11,7 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -21,7 +21,7 @@ import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
+library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram)
 
 const layout = inject("layout", layoutStructure)
 
@@ -92,6 +92,7 @@ const tasksRoute = computed(() => scopedModuleRoute("tasks"))
 const ticketsRoute = computed(() => scopedModuleRoute("tickets"))
 
 const bottomLinks = computed(() => [
+    { route: "grp.projects.index", parameters: {}, root: "grp.projects.", label: ctrans("Projects"), tooltip: ctrans("Projects: big pieces of work with milestones, tickets and tasks"), icon: "fal fa-project-diagram" },
     { route: tasksRoute.value.name, parameters: tasksRoute.value.parameters, root: tasksRoute.value.root, label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
@@ -128,8 +129,8 @@ const onLogoutAuth = () => {
         class="fixed top-0 md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
         :style="{
 			paddingBottom: navigationPaddingBottom,
-			'background-color': layout.app.theme[0],
-			color: layout.app.theme[2],
+			'background-color': layout.app.navigation_theme[0],
+			color: layout.app.navigation_theme[2],
 		}"
         :class="[
 			layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-12',
@@ -142,8 +143,8 @@ const onLogoutAuth = () => {
             class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
             :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
             :style="{
-				'background-color': `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
-				color: layout.app.theme[1],
+				'background-color': `color-mix(in srgb, ${layout.app.navigation_theme[0]} 85%, black)`,
+				color: layout.app.navigation_theme[1],
 			}">
             <div
                 class="flex items-center justify-center transition-all duration-300 ease-in-out"

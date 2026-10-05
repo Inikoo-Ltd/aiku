@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\Product\GetProductImages;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
@@ -52,6 +54,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use Illuminate\Support\Arr;
+use App\Actions\Traits\WithIndivisibleSet;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,6 +63,7 @@ class ShowProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithIndivisibleSet;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -310,7 +314,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
             ]);
-        } elseif (!$product->is_minion_variant && !$isExternalShop && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
+        } elseif (!$product->is_minion_variant && !$isExternalShop && !$product->isExclusive() && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -349,6 +353,14 @@ class ShowProduct extends OrgAction
             'salesData' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                 fn () => GetProductTimeSeriesData::run($product)
                 : Inertia::optional(fn () => GetProductTimeSeriesData::run($product)),
+
+            ProductTabsEnum::SALES_ANALYSIS->value => $this->tab == ProductTabsEnum::SALES_ANALYSIS->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProduct($product), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProduct($product), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+            'sales_analysis_teaser' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProduct($product)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProduct($product))),
 
             ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value
                 ?
@@ -457,6 +469,17 @@ class ShowProduct extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
+                'exclusive_customers'  => $product->exclusiveCustomers()
+                    ->orderBy('customers.name')
+                    ->get(['customers.name', 'customers.reference', 'customers.slug'])
+                    ->map(fn ($customer) => [
+                        'name'      => $customer->name,
+                        'reference' => $customer->reference,
+                        'route'     => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show',
+                            'parameters' => [$product->organisation->slug, $product->shop->slug, $customer->slug],
+                        ],
+                    ])->all(),
                 'product_id'           => $product->id,
                 'product_units'        => (int)$product->units,
                 'product_unit'         => $product->unit,
@@ -479,7 +502,15 @@ class ShowProduct extends OrgAction
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
                 'retirement_decision'       => $this->canEdit ? $this->getRetirementDecision($product) : null,
                 'is_single_trade_unit'      => $product->is_single_trade_unit,
-                'trade_unit_slug'           => $product->tradeUnits?->first->slug,
+                'indivisible_set'           => $this->getIndivisibleSet($product, $this->canEdit && $product->shop->type != ShopTypeEnum::EXTERNAL ? [
+                    'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'product'      => $product->slug,
+                    ]
+                ] : null),
+                'trade_unit_slug'           => $product->tradeUnits->first()?->slug,
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,

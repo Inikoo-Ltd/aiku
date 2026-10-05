@@ -68,6 +68,26 @@ export const isAnnouncementVisible = (announcement: AnnouncementVisibilityData, 
     return false
 }
 
+export type AnnouncementAudience = 'everyone' | 'logged_in' | 'logged_out'
+
+export const announcementsAtPosition = <T extends AnnouncementVisibilityData>(announcements: T[], position: string, now: number): { announcement: T, audience: AnnouncementAudience }[] => {
+    const firstVisible = (isLoggedIn: boolean) => announcements.find(announcement =>
+        announcement?.settings?.position === position
+        && isAnnouncementVisible(announcement, now, isLoggedIn)
+    ) ?? null
+    const forLoggedIn = firstVisible(true)
+    const forLoggedOut = firstVisible(false)
+
+    if (forLoggedIn === forLoggedOut) {
+        return forLoggedIn ? [{ announcement: forLoggedIn, audience: 'everyone' }] : []
+    }
+
+    return [
+        forLoggedOut && { announcement: forLoggedOut, audience: 'logged_out' as const },
+        forLoggedIn && { announcement: forLoggedIn, audience: 'logged_in' as const },
+    ].filter((item): item is { announcement: T, audience: AnnouncementAudience } => !!item)
+}
+
 export const useAnnouncementClock = (intervalMs: number = 20_000) => {
     const now = ref(Date.now())
     let tickTimer: ReturnType<typeof setInterval> | null = null

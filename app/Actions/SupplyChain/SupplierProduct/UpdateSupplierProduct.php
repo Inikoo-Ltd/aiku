@@ -45,10 +45,6 @@ class UpdateSupplierProduct extends OrgAction
         'units_per_carton',
     ];
 
-    private const ORG_PROPAGATED_FIELDS = [
-        'state',
-        'is_available',
-    ];
 
     private const STATS_FIELDS = [
         'state',
@@ -79,15 +75,9 @@ class UpdateSupplierProduct extends OrgAction
             ]);
         }
 
-        if ($supplierProduct->wasChanged(self::ORG_PROPAGATED_FIELDS)) {
+        if ($supplierProduct->wasChanged('state')) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
-                UpdateOrgSupplierProduct::run(
-                    $orgSupplierProduct,
-                    [
-                        'state'        => $supplierProduct->state,
-                        'is_available' => $supplierProduct->is_available
-                    ]
-                );
+                UpdateOrgSupplierProduct::run($orgSupplierProduct, ['state' => $supplierProduct->state]);
             }
         }
 
@@ -124,20 +114,22 @@ class UpdateSupplierProduct extends OrgAction
             'name'             => ['sometimes', 'required', 'string', 'max:255'],
             'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
             'is_available'     => ['sometimes', 'required', 'boolean'],
-            'cost'             => ['sometimes', 'required'],
-            'units_per_pack'   => ['sometimes', 'nullable'],
-            'units_per_carton' => ['sometimes', 'nullable'],
-            'cbm'              => ['sometimes', 'nullable', 'numeric'],
-            'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'cost'                     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'units_per_pack'           => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'units_per_carton'         => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cbm'                      => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'extra_costs'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
 
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
-            $rules['data']     = ['sometimes', 'array'];
-            $rules['settings'] = ['sometimes', 'array'];
-            $rules             = $this->noStrictUpdateRules($rules);
+            $rules['data']             = ['sometimes', 'array'];
+            $rules['settings']         = ['sometimes', 'array'];
+            $rules['units_per_pack']   = ['sometimes', 'nullable'];
+            $rules['units_per_carton'] = ['sometimes', 'nullable'];
+            $rules                     = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

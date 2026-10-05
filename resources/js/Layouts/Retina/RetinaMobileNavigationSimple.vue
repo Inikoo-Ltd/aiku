@@ -33,12 +33,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Link :href="nav?.route?.name ? route(nav.route?.name, nav?.route?.parameters) : '#'"
-        class="group flex items-center justify-center flex-shrink-0 h-9 w-9 rounded-lg text-[15px] transition-colors"
+    <Link v-if="!isNavigationActive(layout.currentRoute, props.nav.root)" :href="nav?.route?.name ? route(nav.route?.name, nav?.route?.parameters) : '#'"
+        class="group flex shrink-0 w-[4.75rem] snap-start flex-col items-center justify-start gap-y-1 rounded-lg px-0.5 py-1.5 transition-colors"
         :class="[
             isNavigationActive(layout.currentRoute, props.nav.root)
                 ? 'navigationActive'
-                : 'navigation text-slate-500 hover:text-slate-900 hover:bg-slate-100',
+                : 'navigation text-gray-600 hover:text-gray-900 hover:bg-gray-100',
         ]"
         :style="[isNavigationActive(layout.currentRoute, props.nav.root) ? {
             'background-color': layout.app?.theme[1],
@@ -47,8 +47,9 @@ onUnmounted(() => {
         @start="() => isLoading = true"
         @finish="() => isLoading = false"
     >
-        <LoadingIcon v-if="isLoading" class="flex-shrink-0" />
-        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0" fixed-width :icon="nav.icon" />
+        <LoadingIcon v-if="isLoading" class="flex-shrink-0 text-lg" />
+        <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0 text-lg" fixed-width :icon="nav.icon" />
+        <span class="w-full text-center text-[11px] font-medium leading-tight break-words hyphens-auto">{{ nav.label }}</span>
     </Link>
 
     <!-- If this Navigation is active, then teleport the SubSections to #RetinaTopBarSubsections in <AppTopBar> -->

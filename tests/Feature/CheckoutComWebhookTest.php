@@ -1127,7 +1127,7 @@ test('a staff payment link is bound to the order and its capture pays a submitte
         ->and($sentRequest->metadata['operation'])->toBe('order')
         ->and($sentRequest->metadata['api_point_id'])->toBe($orderPaymentApiPoint->id)
         ->and($orderPaymentApiPoint->data['payment_link']['url'])->toBe('https://pay.sandbox.checkout.com/link/pl_test_link')
-        ->and($orderPaymentApiPoint->data['payment_methods']['checkout'])->toBe($paymentAccountShop->id);
+        ->and($orderPaymentApiPoint->data['payment_methods']['checkout'])->toBe(App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::checkoutPaymentAccountShop($order)->id);
 
     ProcessCheckoutComPaymentGatewayLog::partialMock()
         ->shouldReceive('getCheckOutPayment')

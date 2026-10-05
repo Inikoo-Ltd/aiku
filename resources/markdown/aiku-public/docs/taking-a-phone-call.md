@@ -3,7 +3,7 @@ title: Taking a phone call
 summary: Aiku does not dial anybody - but when you pick up the phone, tell it. Your colleagues stop wondering why your chats are going unanswered, no new conversation is handed to you, and what was said on the call ends up on the customer's conversation instead of in your head.
 date: 2026-09-21
 tags: chat, phone, crm
-category: crm
+category: help-desk
 help_routes: grp.org.chat.phone_calls, grp.chat.phone_calls, grp.org.shops.show.chat.phone_calls
 ---
 

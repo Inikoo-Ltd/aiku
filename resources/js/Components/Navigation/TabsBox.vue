@@ -11,10 +11,9 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { routeType } from "@/types/route"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Select from 'primevue/select'
-import IftaLabel from 'primevue/iftalabel'
-import { trans } from "laravel-vue-i18n";
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import Icon from "../Icon.vue"
 import { Link } from "@inertiajs/vue3"
 
@@ -47,12 +46,8 @@ const props = defineProps<{
     current: string | number
 }>()
 
-console.log('ew', props.tabs_box)
-const mergeTabs = () => {
-    return props.tabs_box.reduce((acc, current) => {
-        return acc.concat(current.tabs);
-    }, []);
-};
+const boxesScroller = ref<HTMLElement | null>(null)
+const { canScrollLeft, canScrollRight, scrollBy } = useScrollArrows(boxesScroller)
 
 const emits = defineEmits<{
     (e: 'update:tab', value: string): void
@@ -93,8 +88,8 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 
 <template>
     <div>
-        <!-- Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 xborder-b border-gray-300 overflow-x-auto pb-1.5 tinyScrollbar">
+        <div class="relative isolate mx-3 my-2 md:mx-6">
+        <div ref="boxesScroller" class="flex gap-x-3 md:gap-x-6 overflow-x-auto pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div v-for="box in tabs_box" class="rounded-md px-3 relative border flex flex-col py-2 xtransition-all z-10"
                 xclass="box.tabs.some(tab => tab.tab_slug === currentTab)
                     ? 'bg-indigo-100 border-indigo-'
@@ -166,53 +161,10 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 
             </div>
         </div>
-
-        <!-- Mobile -->
-        <div class="mt-2 px-2 md:hidden">
-            <IftaLabel>
-                <Select
-                    :modelValue="current"
-                    :options="mergeTabs()"
-                    optionValue="tab_slug"
-                    optionLabel="label"
-                    checkmark
-                    :loading="!!tabLoading"
-                    class="w-full"
-                    @change="(ee) => onChangeTab(ee.value)"
-                >
-                    <template #loadingicon>
-                        <LoadingIcon />
-                    </template>
-                </Select>
-                <label for="dd-city">{{ trans("Tabs") }}</label>
-            </IftaLabel>
+        <ScrollFadeArrow direction="left" rounded :visible="canScrollLeft" @click="scrollBy(-1)" />
+        <ScrollFadeArrow direction="right" rounded :visible="canScrollRight" @click="scrollBy(1)" />
         </div>
-        
 
         <div class="mt-2"></div>
     </div>
 </template>
-
-<style scoped>
-.tinyScrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: theme('colors.gray.300') transparent;
-}
-
-.tinyScrollbar::-webkit-scrollbar {
-    height: 6px;
-}
-
-.tinyScrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.tinyScrollbar::-webkit-scrollbar-thumb {
-    background-color: theme('colors.gray.300');
-    border-radius: 9999px;
-}
-
-.tinyScrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: theme('colors.gray.400');
-}
-</style>

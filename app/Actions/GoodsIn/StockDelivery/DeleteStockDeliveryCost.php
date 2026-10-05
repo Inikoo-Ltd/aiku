@@ -9,7 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Models\GoodsIn\StockDeliveryCost;
 use Illuminate\Http\RedirectResponse;
@@ -18,12 +18,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteStockDeliveryCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
 
     private StockDeliveryCost $stockDeliveryCost;
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDeliveryCost->stockDelivery->is_costed) {
+            $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
+        }
+
         if ($this->stockDeliveryCost->type !== StockDeliveryCostTypeEnum::EXTRA) {
             $validator->errors()->add('type', __('Only extra expenses can be deleted'));
         }

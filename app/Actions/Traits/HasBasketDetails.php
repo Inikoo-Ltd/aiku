@@ -26,6 +26,7 @@ trait HasBasketDetails
             'premium_dispatch' => $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first(),
             'extra_packing'    => $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first(),
             'insurance'        => $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first(),
+            'gift_message'     => $order->shop->charges()->where('type', ChargeTypeEnum::GIFT_MESSAGE)->where('state', ChargeStateEnum::ACTIVE)->first(),
         ];
     }
 
@@ -84,8 +85,9 @@ trait HasBasketDetails
         $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
         if ($grGiftsData) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            $giftProducts   = Product::whereIn('id', array_column($grGiftsData, 'id'))->get()->keyBy('id');
             foreach ($grGiftsData as $key => $gift) {
-                $product = Product::find($gift['id']);
+                $product = $giftProducts->get($gift['id']);
                 if ($product) {
                     $grGiftsData[$key]['web_images_main'] = $product->web_images['main'];
                 }

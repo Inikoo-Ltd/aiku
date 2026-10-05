@@ -17,7 +17,7 @@ trait WithOrgStockSubNavigation
     {
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
-        $routeName = preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', $routeName);
+        $routeName = preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', $routeName);
 
         return [
             [
@@ -90,6 +90,18 @@ trait WithOrgStockSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-barcode'],
                     'tooltip' => __('Batch codes')
+                ]
+            ],
+            [
+                'label' => __('Labels'),
+
+                'route'    => [
+                    'name'       => $routeName.'.labels',
+                    'parameters' => $routeParameters
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-tags'],
+                    'tooltip' => __('Labels').', '.__('Compliance')
                 ]
             ],
 

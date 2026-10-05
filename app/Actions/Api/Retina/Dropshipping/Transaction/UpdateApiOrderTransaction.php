@@ -12,10 +12,12 @@ namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaApiAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -24,6 +26,7 @@ class UpdateApiOrderTransaction extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
+    use WithCustomerPurchasableProduct;
 
     public function handle(Transaction $transaction, array $modelData): Transaction|JsonResponse
     {
@@ -46,6 +49,8 @@ class UpdateApiOrderTransaction extends RetinaApiAction
                 'message' => 'Unable to modify this transaction data. Only able to modify product transaction data.',
             ], 422);
         }
+
+        $this->ensureCustomerCanChangeLine($transaction, Arr::get($modelData, 'quantity_ordered'));
 
         $transaction->order->update([
             'updated_by_customer_at' => now()

@@ -17,10 +17,12 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithAccountingShopAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditPaymentAccountShop extends OrgAction
 {
+    use WithAccountingShopAuthorisation;
     use HasPaymentAccountShopFields;
 
 

@@ -193,8 +193,8 @@ class Invoice extends Model implements Auditable, HasMedia
         'tax_liability_at'    => 'datetime',
         'fetched_at'          => 'datetime',
         'last_fetched_at'     => 'datetime',
-        'grp_exchange'        => 'decimal:4',
-        'org_exchange'        => 'decimal:4',
+        'grp_exchange'        => 'decimal:10',
+        'org_exchange'        => 'decimal:10',
         'commission_amount'   => 'decimal:2',
         'tax_number_status'   => 'boolean',
     ];

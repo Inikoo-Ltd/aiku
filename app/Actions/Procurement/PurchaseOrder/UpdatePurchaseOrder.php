@@ -16,10 +16,13 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -47,6 +50,17 @@ class UpdatePurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
     {
+        $newEta = null;
+        if (array_key_exists('estimated_receiving_date', $modelData)) {
+            $modelData['estimated_receiving_date'] = $modelData['estimated_receiving_date'] ?: null;
+            $modelData['estimated_received_at']    = $modelData['estimated_receiving_date'];
+
+            $typedEta = $modelData['estimated_receiving_date'] ? Carbon::parse($modelData['estimated_receiving_date'])->toDateString() : null;
+            if ($typedEta && $typedEta !== $purchaseOrder->estimatedReceivingDate()) {
+                $newEta = $typedEta;
+            }
+        }
+
         foreach (self::DATA_FIELDS as $field) {
             if (array_key_exists($field, $modelData)) {
                 $modelData['data'][$field] = Arr::pull($modelData, $field);
@@ -54,6 +68,16 @@ class UpdatePurchaseOrder extends OrgAction
         }
 
         $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
+
+        if ($newEta) {
+            AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)
+                ->whereIn('state', [
+                    AgentSupplierPurchaseOrderStateEnum::IN_PROCESS,
+                    AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
+                    AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
+                ])
+                ->update(['estimated_received_at' => $newEta]);
+        }
 
         if ($purchaseOrder->wasChanged(['state', 'delivery_state'])) {
             $this->purchaseOrderHydrate($purchaseOrder);
@@ -68,7 +92,7 @@ class UpdatePurchaseOrder extends OrgAction
             'reference'       => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string',
+                $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
             'notes' => ['sometimes', 'string'],
             'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
@@ -84,6 +108,11 @@ class UpdatePurchaseOrder extends OrgAction
             'deposit_amount'            => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'deposit_paid_at'           => ['sometimes', 'nullable', 'date'],
             'balance_paid_at'           => ['sometimes', 'nullable', 'date'],
+            'sample_approved_at'        => ['sometimes', 'nullable', 'date'],
+            'produced_at'               => ['sometimes', 'nullable', 'date'],
+            'qc_passed_at'              => ['sometimes', 'nullable', 'date'],
+            'handed_over_at'            => ['sometimes', 'nullable', 'date'],
+            'buyer_id'                  => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
 
         if ($this->strict) {

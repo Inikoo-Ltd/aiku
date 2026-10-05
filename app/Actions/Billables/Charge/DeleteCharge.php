@@ -8,8 +8,10 @@
 
 namespace App\Actions\Billables\Charge;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCharges;
 use App\Models\Billables\Charge;
@@ -22,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteCharge extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public string $commandSignature = 'delete:charge {id}';
 
     /**
@@ -47,6 +50,7 @@ class DeleteCharge extends OrgAction
         ShopHydrateCharges::dispatch($shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCharges::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCharges::dispatch($shop->group)->delay($this->hydratorsDelay);
+        PurgeIrisDocsFromVarnish::forShop($shop);
 
         return $charge;
     }
@@ -57,15 +61,6 @@ class DeleteCharge extends OrgAction
             ->where('model_type', 'Charge')
             ->where('model_id', $charge->id)
             ->exists();
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     /**

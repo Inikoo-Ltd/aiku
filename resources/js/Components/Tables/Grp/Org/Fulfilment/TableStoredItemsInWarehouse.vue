@@ -11,7 +11,7 @@ import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faShare, faSeedling, faInventory, faSignOutAlt, faGhost } from "@fal"
 
@@ -20,11 +20,9 @@ library.add(faShare, faSeedling, faInventory, faSignOutAlt, faGhost)
 const props = defineProps<{
     data?: {}
     tab?: string
-    state:any
-    key:any 
+    state?: any
     tableKey?: string
 }>()
-console.log('test')
 const isLoading = ref<string | boolean>(false)
 function storedItemRoute(storedItem) {
     switch (route().current()) {

@@ -8,6 +8,11 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Models\Inventory\OrgStock;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
+use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
@@ -32,6 +37,7 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -61,19 +67,24 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
+use App\Actions\Ordering\Order\PdfOrderGiftMessage;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SendUnpaidOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Purge\HydratePurges;
@@ -84,6 +95,9 @@ use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
+use App\Actions\Retina\Ordering\StoreRetinaTransaction;
+use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
 use App\Actions\Maintenance\Ordering\RemoveDiscontinuedProductsFromBaskets;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
@@ -174,12 +188,21 @@ use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Actions\Catalogue\Shop\CalculateShopOrderAlertSizes;
+use App\Actions\Ordering\Order\SendNewOrderAlert;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
+use App\Enums\Ordering\Order\OrderAlertTypeEnum;
+use App\Events\BroadcastNewOrderAlert;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\Event;
 use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
@@ -219,6 +242,12 @@ beforeEach(function () {
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->user);
+});
+
+afterEach(function () {
+    $this->shop->update(['shipping_zone_schema_id' => null]);
+    $this->organisation->update(['settings' => Arr::except($this->organisation->settings, 'fulfilment_gate')]);
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
 });
 
 test('store shipping country action', function () {
@@ -394,6 +423,14 @@ test('order products picker offers not for sale products to partners only', func
     expect($order->isPartnerOrder())->toBeTrue()
         ->and($offered())->toContain($this->product->id);
 
+    $outsideCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$outsideCustomer->id]]);
+    expect($offered())->not->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$order->customer_id]]);
+    expect($offered())->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => []]);
     $orgPartner->delete();
     $this->product->update(['is_for_sale' => true]);
 
@@ -432,7 +469,7 @@ test('import transactions in order from spreadsheet', function (Order $order) {
 
     DeleteTransaction::make()->action($transaction);
     $order->refresh();
-    expect($order->transactions()->count())->toBe(0);
+    expect($order->transactions()->whereKey($transaction->id)->exists())->toBeFalse();
 
     return $order;
 })->depends('delete previous transaction');
@@ -1128,7 +1165,7 @@ test('delete transaction', function (Order $order) {
     DeleteTransaction::make()->action($transaction);
     $order->refresh();
 
-    expect($order->transactions()->count())->toBe(0);
+    expect($order->transactions()->whereKey($transaction->id)->exists())->toBeFalse();
 
     return $order;
 })->depends('create old order');
@@ -1685,7 +1722,14 @@ test('invoice from overpaid order credits excess to customer balance', function 
         ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
 
     expect($invoice)->toBeInstanceOf(Invoice::class)
-        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1);
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1)
+        ->and($invoice->delivery_country_id)->toBe($order->deliveryAddress->country_id)
+        ->and($invoice->deliveryAddress->postal_code)->toBe($order->deliveryAddress->postal_code);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+
+    expect($refund->delivery_address_id)->toBe($invoice->delivery_address_id)
+        ->and($refund->delivery_country_id)->toBe($invoice->delivery_country_id);
 });
 
 test('invoice from overpaid order paid by bank transfer credits excess to customer balance', function () {
@@ -2318,6 +2362,7 @@ test('submit order skips upcoming transaction when product has no current histor
         ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
         ->and($upcomingTransaction->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
 
+    $upcomingTransaction->delete();
     $this->product->update(['current_historic_asset_id' => $originalHistoricAssetId]);
 });
 
@@ -2665,6 +2710,8 @@ test('shipping zone with territories wins over a catch all zone placed above it'
 });
 
 test('a step priced TBC leaves the shipping to be confirmed instead of free', function (Order $order) {
+    $this->shop->update(['shipping_zone_schema_id' => $order->shipping_zone_schema_id]);
+
     UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
         'price' => [
             'type'  => 'Step Order Items Net Amount',
@@ -2733,6 +2780,8 @@ test('repricing a basket picks up a shipping price that changed since it was cre
 });
 
 test('repricing skips an order that is no longer a basket', function (Order $order) {
+    $this->shop->update(['shipping_zone_schema_id' => $order->shipping_zone_schema_id]);
+
     SubmitOrder::make()->action($order);
 
     UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
@@ -3372,8 +3421,7 @@ test('a part paid order that fails to submit is alerted, an unpaid one is not', 
 });
 
 test('fulfilment gate holds order from warehouse until released', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3402,13 +3450,10 @@ test('fulfilment gate holds order from warehouse until released', function () {
         ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull()
         ->and(\App\Models\Dispatching\FulfilmentGateRelease::where('order_id', $order->id)->count())->toBe(1);
-
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('fulfilment gate lets paid fully coverable order straight to warehouse', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3434,14 +3479,10 @@ test('fulfilment gate lets paid fully coverable order straight to warehouse', fu
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull();
-
-    $this->product->orgStocks()->update(['quantity_available' => 0]);
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('fulfilment gate auto releases paid order when stock arrives', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3474,14 +3515,10 @@ test('fulfilment gate auto releases paid order when stock arrives', function () 
     expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull()
         ->and($order->deliveryNotes()->count())->toBe(1);
-
-    $this->product->orgStocks()->update(['quantity_available' => 0]);
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('make queue ranks paid blocked stock with suggested quantity', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3520,8 +3557,6 @@ test('make queue ranks paid blocked stock with suggested quantity', function () 
         ->and((float) $row->blocked_paid_amount)->toBe(250.0)
         ->and((int) $row->suggested_quantity)->toBeGreaterThanOrEqual(5)
         ->and((float) $row->score)->toBeGreaterThan(0);
-
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('repair order charge flags sets premium flag from orphan charge line', function (Order $order) {
@@ -3545,6 +3580,189 @@ test('repair order charge flags sets premium flag from orphan charge line', func
 
     $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
     expect($order->refresh()->is_premium_dispatch)->toBeTrue();
+})->depends('create order');
+
+function clearActiveGiftMessageCharges(Order $order): void
+{
+    $order->shop->charges()
+        ->where('type', ChargeTypeEnum::GIFT_MESSAGE)
+        ->where('state', ChargeStateEnum::ACTIVE)
+        ->get()
+        ->each(fn ($charge) => UpdateCharge::make()->action($charge, ['state' => ChargeStateEnum::DISCONTINUED]));
+}
+
+test('store charge with gift message type gets selected by customer trigger', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::IN_PROCESS,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+    ]);
+
+    expect($charge->trigger)->toBe(ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
+})->depends('create order');
+
+test('toggling gift message on an order adds and removes its charge transaction', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-TOGGLE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+
+    $giftMessageTransaction = DB::table('transactions')
+        ->where('order_id', $order->id)
+        ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+        ->where('model_type', 'Charge')
+        ->where('charges.type', ChargeTypeEnum::GIFT_MESSAGE->value)
+        ->value('transactions.id');
+
+    expect($giftMessageTransaction)->not->toBeNull();
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+
+    $giftMessageTransaction = DB::table('transactions')
+        ->where('order_id', $order->id)
+        ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+        ->where('model_type', 'Charge')
+        ->where('charges.type', ChargeTypeEnum::GIFT_MESSAGE->value)
+        ->value('transactions.id');
+
+    expect($giftMessageTransaction)->toBeNull();
+})->depends('create order');
+
+test('updating the gift message charge amount changes the amount added to the basket', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-AMOUNT',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+    $transaction = Transaction::where('order_id', $order->id)->where('model_id', $charge->id)->where('model_type', 'Charge')->first();
+    expect((float) $transaction->gross_amount)->toBe(1.0);
+
+    UpdateCharge::make()->action($charge, ['amount' => 3]);
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+
+    $transaction->refresh();
+    expect((float) $transaction->gross_amount)->toBe(3.0);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+})->depends('create order');
+
+test('switching the gift message charge off removes it from the basket charges', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-STATE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    expect($order->shop->charges()->where('type', ChargeTypeEnum::GIFT_MESSAGE)->where('state', ChargeStateEnum::ACTIVE)->first()?->id)->toBe($charge->id);
+
+    UpdateCharge::make()->action($charge, ['state' => ChargeStateEnum::DISCONTINUED]);
+
+    expect($order->shop->charges()->where('type', ChargeTypeEnum::GIFT_MESSAGE)->where('state', ChargeStateEnum::ACTIVE)->first())->toBeNull();
+})->depends('create order');
+
+test('gift message text saves and is cleared when the toggle is switched off', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-TEXT',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+    $order->update(['gift_message' => 'Happy Birthday!']);
+    expect($order->refresh()->gift_message)->toBe('Happy Birthday!');
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+    expect($order->refresh()->gift_message)->toBeNull();
+})->depends('create order');
+
+test('gift message pdf upload accepts a pdf and rejects a non pdf file', function (Order $order) {
+    $pdf = UpdateRetinaOrderGiftMessagePdf::make()->handle($order, [
+        'gift_message_pdf' => UploadedFile::fake()->create('message.pdf', 100, 'application/pdf'),
+    ]);
+
+    expect($pdf->attachments()->wherePivot('scope', 'GiftMessage')->exists())->toBeTrue();
+
+    $validator = validator(
+        ['gift_message_pdf' => UploadedFile::fake()->image('message.jpg')],
+        UpdateRetinaOrderGiftMessagePdf::make()->rules()
+    );
+
+    expect($validator->fails())->toBeTrue();
+})->depends('create order');
+
+test('iris exposes the gift message text and pdf routes on the retina order gift message actions', function () {
+    expect(\Illuminate\Support\Facades\Route::has('iris.models.order.update_gift_message_text'))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Route::has('iris.models.order.update_gift_message_pdf'))->toBeTrue();
+
+    $textRoute = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update_gift_message_text');
+    $pdfRoute  = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update_gift_message_pdf');
+
+    expect($textRoute->getActionName())->toContain(\App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::class)
+        ->and($pdfRoute->getActionName())->toContain(UpdateRetinaOrderGiftMessagePdf::class);
+});
+
+test('iris exposes the order update route for basket delivery and other instructions', function () {
+    $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update');
+
+    expect($route)->not->toBeNull()
+        ->and($route->methods())->toContain('PATCH')
+        ->and($route->getActionName())->toContain(\App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::class);
+});
+
+test('retina order update stores basket delivery and other instructions', function (Order $order) {
+    $order = \App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::make()->handle($order, [
+        'shipping_notes' => 'Leave at back door',
+        'customer_notes' => 'Please pack carefully',
+    ]);
+
+    expect($order->shipping_notes)->toBe('Leave at back door')
+        ->and($order->customer_notes)->toBe('Please pack carefully');
+})->depends('create order');
+
+test('the generated gift message card pdf route returns a pdf for a text message', function (Order $order) {
+    $order->update(['gift_message' => 'Happy Birthday!']);
+
+    $response = PdfOrderGiftMessage::make()->handle($order);
+
+    expect($response->headers->get('Content-Type'))->toContain('application/pdf');
+})->depends('create order');
+
+test('checkout is blocked when the gift message toggle is on without a message or pdf', function (Order $order) {
+    foreach ($order->attachments()->wherePivot('scope', 'GiftMessage')->get() as $attachment) {
+        $order->attachments()->detach($attachment->id);
+    }
+    $order->update(['has_gift_message' => true, 'gift_message' => null]);
+
+    expect(fn () => SubmitOrder::make()->handle($order))->toThrow(ValidationException::class);
 })->depends('create order');
 
 test('submitting an order stamps the customer permanent shipping label note unless the order has its own', function () {
@@ -3622,6 +3840,122 @@ test('paying with balance sends the order to the warehouse only when the balance
         ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
 });
 
+test('a staff recorded payment sends a submitted order to the warehouse only once it is fully paid', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and((float) $order->total_amount)->toBeGreaterThan(1);
+
+    $bankAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        [
+            'code' => 'BANK'.mt_rand(1000, 9999),
+            'name' => 'Bank transfer',
+        ]
+    );
+    $payByBank = fn (float $amount) => PayOrder::make()->action($order->refresh(), $bankAccount, [
+        'amount'    => $amount,
+        'reference' => 'BT-'.Str::ulid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payByBank(1);
+    expect($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $payByBank(round((float) $order->total_amount - 1, 2));
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('an accounting supervisor can send an unpaid order to the warehouse, leaving who and why in the internal notes', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->not->toBe(OrderPayStatusEnum::PAID);
+
+    expect(fn () => SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => '']))
+        ->toThrow(ValidationException::class);
+
+    SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => 'Customer on 30 day terms']);
+    $order->refresh();
+    expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->internal_notes)->toContain('Customer on 30 day terms')
+        ->and($order->internal_notes)->toContain($this->user->contact_name ?: $this->user->username);
+
+    expect(fn () => SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => 'again']))
+        ->toThrow(ValidationException::class);
+});
+
+test('a credit line lets the customer order on account down to minus the limit, never beyond', function () {
+    $newBasket = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        return $order->refresh();
+    };
+
+    $this->customer->refresh();
+    if ((float) $this->customer->balance != 0) {
+        StoreCreditTransaction::make()->action($this->customer, [
+            'amount' => -$this->customer->balance,
+            'date'   => now(),
+            'type'   => CreditTransactionTypeEnum::ADJUST,
+        ]);
+    }
+    expect((float) $this->customer->refresh()->balance)->toBe(0.0);
+
+    $order = $newBasket();
+    $total = (float) $order->total_amount;
+
+    $result = PayRetinaOrderWithBalance::make()->handle($order);
+    expect($result['success'])->toBeFalse()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total - 0.01, 'payment_terms_days' => 30]);
+    $result = PayRetinaOrderWithBalance::make()->handle($order->refresh());
+    expect($result['success'])->toBeFalse()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total]);
+    $result = PayRetinaOrderWithBalance::make()->handle($order->refresh());
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($order->refresh()->state)->not->toBe(OrderStateEnum::CREATING)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total)
+        ->and($this->customer->spendableBalance())->toBe(0.0);
+
+    $secondOrder = SubmitOrder::make()->action($newBasket());
+    $result      = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh());
+    expect($result['success'])->toBeFalse()
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total * 3]);
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh(), canUseCredit: false);
+    expect($result['success'])->toBeFalse()
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total);
+
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh());
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($secondOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float) $this->customer->refresh()->balance)->toBe(round(-$total - (float) $secondOrder->total_amount, 2));
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => 0, 'payment_terms_days' => null]);
+});
+
 test('turning on recargo de equivalencia propagates to baskets migrated from aurora in aiku shops', function () {
     $this->shop->update(['is_aiku' => true]);
     $this->customer->refresh();
@@ -3697,7 +4031,7 @@ test('export flag follows the customs territory of the organisation', function (
     expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
 
     $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
-    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->backlogFilterCounts($this->shop, 'in_basket')['scope'];
     $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
     expect($counts)->toBe([
         'domestic' => (clone $creating)->where('is_export', false)->count(),
@@ -3709,8 +4043,6 @@ test('export flag follows the customs territory of the organisation', function (
 test('an order with no billing address is held instead of going to the warehouse', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3729,7 +4061,6 @@ test('an order with no billing address is held instead of going to the warehouse
 test('a collection invoice stores the collection address it was issued with', function () {
     $customer = createCustomer($this->shop);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
 
     $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
@@ -3747,18 +4078,87 @@ test('a collection invoice stores the collection address it was issued with', fu
     expect($invoice->deliveryAddress?->address_line_1)->toBe('Affinity Park');
 });
 
+test('an order switched to collection is taxed where it is collected, not where the customer lives', function () {
+    DB::beginTransaction();
+    try {
+        $spain = Country::where('code', 'ES')->first();
+        $this->organisation->forceFill(['country_id' => $spain->id])->save();
+        $spanishVat = TaxCategory::where('type', \App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum::STANDARD)->where('country_id', $spain->id)->where('status', true)->first();
+
+        $addressIn = fn (string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+            \App\Models\Helpers\Address::factory()->definition(),
+            ['group_id' => $this->shop->group_id, 'country_code' => 'ES', 'country_id' => $spain->id, 'postal_code' => $postalCode]
+        ));
+        $showroom = $addressIn('29004');
+        $this->shop->update(['collection_address_id' => $showroom->id]);
+
+        $customer = freshCustomerLike($this->shop, $this->customer);
+        $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $ceuta = $addressIn('51001');
+        $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        expect($order->refresh()->tax_category_id)->toBe(1);
+
+        UpdateOrder::make()->action($order, ['collection_address_id' => $ceuta->id]);
+        $order->refresh();
+        expect($order->collection_address_id)->toBe($showroom->id)
+            ->and($order->tax_category_id)->toBe($spanishVat->id)
+            ->and((float)$order->tax_amount)->toBeGreaterThan(0.0)
+            ->and($order->taxableDeliveryAddress(new \App\Models\Helpers\TaxNumber(['valid' => true]))->id)->toBe($ceuta->id);
+
+        UpdateOrder::make()->action($order, ['collection_address_id' => null]);
+        expect($order->refresh()->tax_category_id)->toBe(1);
+
+        $order->updateQuietly(['state' => OrderStateEnum::FINALISED]);
+        UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        expect($order->refresh()->tax_category_id)->toBe(1);
+    } finally {
+        DB::rollBack();
+    }
+});
+
+test('ticking collection on a delivery note stores the shop collection address, not the customer address', function () {
+    DB::beginTransaction();
+    try {
+        $spain = Country::where('code', 'ES')->first();
+        $this->organisation->forceFill(['country_id' => $spain->id])->save();
+        $addressIn = fn (string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+            \App\Models\Helpers\Address::factory()->definition(),
+            ['group_id' => $this->shop->group_id, 'country_code' => 'ES', 'country_id' => $spain->id, 'postal_code' => $postalCode]
+        ));
+        $showroom = $addressIn('29004');
+        $this->shop->update(['collection_address_id' => $showroom->id]);
+
+        $customer = freshCustomerLike($this->shop, $this->customer);
+        $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $ceuta = $addressIn('51001');
+        $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = $order->refresh()->deliveryNotes()->first() ?? SendOrderToWarehouse::make()->action($order, []);
+        expect($order->refresh()->tax_category_id)->toBe(1);
+
+        \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote, ['collection_address_id' => $ceuta->id]);
+
+        expect($deliveryNote->refresh()->collection_address_id)->toBe($showroom->id);
+    } finally {
+        DB::rollBack();
+    }
+});
+
 test('a held order goes to the warehouse once its address is put on it', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
@@ -3779,8 +4179,6 @@ test('a held order goes to the warehouse once its address is put on it', functio
 test('the warehouse can be sent an order without an address on purpose', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3800,8 +4198,6 @@ test('the warehouse can be sent an order without an address on purpose', functio
 test('send anyway only shows on an order missing an address', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
     $order->refresh();
@@ -3838,8 +4234,6 @@ function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $
 {
     $customer = freshCustomerLike($shop, $template);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $historicAsset, Transaction::factory()->definition());
 
     if ($separateDeliveryAddress) {
@@ -3851,9 +4245,26 @@ function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $
     }
 
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     return $order->refresh();
+}
+
+/** Paid for real, because every totals recalculation reads pay_status from the payments; twice the total so a new address changing the tax keeps it paid */
+function payHeldOrder(Order $order): void
+{
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $order->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'HLD'.fake()->unique()->numberBetween(10000, 99999), 'name' => 'Held order cash']
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($order->refresh()->total_amount * 2, 2),
+        'reference' => 'HELD-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
 }
 
 test('a customer who pays with no address is never refused, the order is held instead', function () {
@@ -3934,8 +4345,6 @@ test('an order with its own delivery address keeps it when the customer is fixed
 test('a submitted order whose street sits in the town box is left alone when the customer changes address', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3984,7 +4393,6 @@ function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \A
     $customer = freshCustomerLike($shop, $template);
 
     $lastDelivered = StoreOrder::make()->action($customer, Order::factory()->definition());
-    $lastDelivered->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $deliveredTo = \App\Models\Helpers\Address::create(heldOrderAddressLike($template, [
         'address_line_1' => '19 Periwinkle Gardens '.fake()->unique()->numberBetween(1, 9999999),
         'postal_code'    => 'NN14 2AH',
@@ -3993,7 +4401,6 @@ function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \A
     $lastDelivered->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $deliveredTo->id])->saveQuietly();
 
     $basket = StoreOrder::make()->action($customer->refresh(), Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
 
     return [$customer, $lastDelivered->refresh(), $basket->refresh()];
 }
@@ -4060,7 +4467,6 @@ test('a customer can send the order to the address their last order went to in o
 test('retina basket lines resolve their webpage and image without a query per line', function () {
     createWebsite($this->shop);
     $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $webpages = [];
     [, $bulk] = createProduct($this->shop);
     foreach (range(1, 3) as $quantity) {
@@ -4104,12 +4510,12 @@ test('retina basket lines resolve their webpage and image without a query per li
 
 test('a basket line may exceed stock, is zeroed while out of stock and restored when back, never blocking the order', function () {
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     [, $bulk] = createProduct($this->shop);
     $lowStock = StoreProduct::make()->action($bulk->family, array_merge(
         Product::factory()->definition(),
         ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
     ));
+    $lowStock->update(['status' => ProductStatusEnum::FOR_SALE]);
     $lowStockData                     = Transaction::factory()->definition();
     $lowStockData['quantity_ordered'] = 3;
     $lowStockData['order_id']         = $basket->id;
@@ -4160,6 +4566,11 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
 
     DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    expect(fn () => RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]))
+        ->toThrow(ValidationException::class)
+        ->and((float) Arr::get($lowStockLine->fresh()->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBe(7.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 2]);
     $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]);
 
     expect((float) $lowStockLine->quantity_ordered)->toBe(3.0)
@@ -4185,9 +4596,92 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
         ->and($submitted->transactions()->where('model_type', 'Product')->count())->toBe(1);
 });
 
+test('a customer cannot raise a basket line of an out of stock product, nor change an order after it is submitted', function () {
+    $website = createWebsite($this->shop);
+    $website->update(['status' => true]);
+    $webUser = createWebUser($this->customer);
+    $basket  = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $product->update(['status' => ProductStatusEnum::FOR_SALE]);
+    $lineData                     = Transaction::factory()->definition();
+    $lineData['quantity_ordered'] = 3;
+    $lineData['order_id']         = $basket->id;
+    $line                         = StoreTransaction::make()->action($basket, $product->currentHistoricProduct, $lineData);
+    $url                          = 'http://'.$website->domain.'/app/models/transaction/'.$line->id;
+
+    DB::table('products')->where('id', $product->id)->update(['available_quantity' => 2, 'is_on_demand' => false]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 5])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    DB::table('products')->where('id', $product->id)->update(['available_quantity' => 0]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 6])->assertSessionHasErrors('message');
+    $this->actingAs($webUser, 'retina')->patch($url, ['units_ordered' => 60])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $otherShop = $this->shop->replicate(['ulid'])->fill(['code' => 'oth'.$line->id, 'slug' => 'oth-'.$line->id]);
+    $otherShop->saveQuietly();
+    $otherShopProduct = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    DB::table('products')->where('id', $otherShopProduct->id)->update(['shop_id' => $otherShop->id, 'status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 10]);
+    expect($otherShopProduct->fresh()->shop_id)->not->toBeNull()->not->toBe($this->shop->id)
+        ->and(fn () => StoreRetinaTransaction::run($basket, ['historic_asset_id' => $otherShopProduct->current_historic_asset_id, 'quantity' => 1]))
+        ->toThrow(ValidationException::class);
+
+    $csv = tempnam(sys_get_temp_dir(), 'order-transactions').'.csv';
+    file_put_contents($csv, "code,quantity\n".$product->code.",9\n");
+    $upload = ImportTransactionInOrder::make()->action($basket, ['file' => new \Illuminate\Http\UploadedFile($csv, 'transactions.csv', 'text/csv', null, true)], byCustomer: true);
+    expect($upload->number_fails)->toBe(1)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $upload = ImportTransactionInOrder::make()->action($basket, ['file' => new \Illuminate\Http\UploadedFile($csv, 'transactions.csv', 'text/csv', null, true)]);
+    expect($upload->number_success)->toBe(1)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(9.0);
+    UpdateTransaction::make()->action($line->fresh(), ['quantity_ordered' => 5]);
+
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 4.5])->assertSessionHasErrors('quantity_ordered');
+    DB::table('transactions')->where('id', $line->id)->update(['is_gift' => true]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 4])->assertSessionHasErrors('message');
+    DB::table('transactions')->where('id', $line->id)->update(['is_gift' => false]);
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $this->actingAs($webUser, 'retina')
+        ->postJson('http://'.$website->domain.'/models/'.$line->id.'/update-transaction', ['quantity_ordered' => 6])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('message');
+    expect(fn () => UpdateRetinaTransaction::run($line->fresh(), ['quantity_ordered' => 6]))->toThrow(ValidationException::class)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+    $product->update(['status' => ProductStatusEnum::OUT_OF_STOCK]);
+    StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 4]);
+    expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+
+    DB::table('products')->where('id', $product->id)->update(['is_on_demand' => true]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 6])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0);
+
+    $basket->update(['state' => OrderStateEnum::SUBMITTED]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 1])->assertSessionHasErrors('message');
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0)
+        ->and(fn () => StoreRetinaTransaction::run($basket->fresh(), ['historic_asset_id' => $product->current_historic_asset_id, 'quantity' => 1]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => ImportRetinaOrderTransaction::run($basket->fresh(), []))
+        ->toThrow(ValidationException::class);
+
+    $this->actingAs($webUser, 'retina')
+        ->post('http://'.$website->domain.'/app/models/order/'.$basket->id.'/transaction/add', ['historic_asset_id' => $product->current_historic_asset_id])
+        ->assertSessionHasErrors('message');
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0);
+});
+
 test('a product that is not for sale cannot be added to a basket', function () {
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $this->customer->update(['current_order_in_basket_id' => $basket->id]);
     [, $bulk] = createProduct($this->shop);
     $product  = StoreProduct::make()->action($bulk->family, array_merge(
@@ -4206,12 +4700,27 @@ test('a product that is not for sale cannot be added to a basket', function () {
     }
 });
 
+test('products added from a stale customer after the basket was deleted all land in one new basket', function () {
+    $this->customer->update(['current_order_in_basket_id' => null]);
+    $staleCustomer = $this->customer->fresh();
+    [, $bulk] = createProduct($this->shop);
+    [$firstProduct, $secondProduct] = collect([1, 2])->map(fn () => tap(StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    )))->update(['status' => ProductStatusEnum::FOR_SALE]))->all();
+
+    $firstLine  = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $firstProduct->fresh(), ['quantity' => 1]);
+    $secondLine = StoreEcomBasketTransaction::make()->handle($staleCustomer, $secondProduct->fresh(), ['quantity' => 1]);
+
+    expect($secondLine->order_id)->toBe($firstLine->order_id)
+        ->and($this->customer->fresh()->current_order_in_basket_id)->toBe($firstLine->order_id);
+});
+
 test('an exclusive product can be added only by its own customer, and only while in stock', function () {
     $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     foreach ([$owner, $other] as $customer) {
         $basket = StoreOrder::make()->action($customer, Order::factory()->definition());
-        $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
         $customer->update(['current_order_in_basket_id' => $basket->id]);
     }
     [, $bulk]  = createProduct($this->shop);
@@ -4229,7 +4738,7 @@ test('an exclusive product can be added only by its own customer, and only while
         ->toThrow(ValidationException::class);
 
     DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 0]);
-    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 3]))
         ->toThrow(ValidationException::class);
 
     DB::table('products')->where('id', $exclusive->id)->update(['is_on_demand' => true]);
@@ -4253,12 +4762,10 @@ test('discontinued products are removed from baskets only when run live, submitt
     };
 
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $discontinuedLine = $addLine($basket, $discontinued);
     $keptLine         = $addLine($basket, $this->product);
 
     $submitted = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $submitted->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $submittedLine = $addLine($submitted, $discontinued);
     $submitted->update(['state' => OrderStateEnum::SUBMITTED]);
 
@@ -4277,8 +4784,6 @@ test('discontinued products are removed from baskets only when run live, submitt
 test('a packed order shipped by us offers the invoice button once the packer recorded parcels', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about the invoice button, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
     $order->refresh();
@@ -4356,4 +4861,949 @@ test('the shop orders list flags a partner order and the channel filter separate
     $directOnly = $flagsIn('?orders_elements[channel]=direct');
     expect($directOnly->get($directOrder->reference))->toBeFalse()
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
+});
+
+test('the orders backlog can be filtered to partner or direct orders and counts each channel', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]
+    );
+    $directOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        Order::factory()->definition()
+    );
+
+    $sisterOrganisationCustomer = freshCustomerLike($this->shop, $this->customer);
+    $sisterOrganisationCustomer->update([
+        'as_organisation_id' => (int) DB::table('organisations')->max('id') + 1,
+    ]);
+    $phonedInPartnerOrder = StoreOrder::make()->action($sisterOrganisationCustomer, Order::factory()->definition());
+
+    $url = route('grp.org.shops.show.ordering.backlog', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'tab'          => 'in_basket',
+    ]);
+
+    $pageFor = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return $response->viewData('page')['props'];
+    };
+
+    $referencesIn = fn (array $props) => collect($props['in_basket']['data'])->pluck('reference');
+
+    $partnerOnly = $pageFor('&in_basket_elements[channel]=partner');
+    expect($referencesIn($partnerOnly))->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference)
+        ->not->toContain($directOrder->reference)
+        ->and($partnerOnly['backlog_filters']['current']['channel'])->toBe('partner');
+
+    $directOnly = $pageFor('&in_basket_elements[channel]=direct');
+    expect($referencesIn($directOnly))->toContain($directOrder->reference)
+        ->not->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference);
+
+    $creating     = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    $partnerCount = (clone $creating)
+        ->where(fn ($query) => $query
+            ->where('sales_channel_id', $intercompany->id)
+            ->orWhereIn('customer_id', Customer::whereNotNull('as_organisation_id')->select('id')))
+        ->count();
+    $counts = $pageFor('')['backlog_filters']['counts']['channel'];
+    expect($counts['partner'])->toBe($partnerCount)
+        ->and($counts['direct'] + $counts['partner'])->toBe((clone $creating)->count());
+
+    expect(array_sum($partnerOnly['backlog_filters']['counts']['scope']))->toBe($partnerCount);
+});
+
+test('the shop orders list sends the warehouse note so its icon shows next to the order', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    $order->updateQuietly(['private_warehouse_note' => 'Fragile, pack twice']);
+
+    $response = get(route('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ]));
+    $response->assertOk();
+
+    $warehouseNotes = collect($response->viewData('page')['props']['data']['data'])
+        ->pluck('private_warehouse_note', 'reference');
+
+    expect($warehouseNotes->get($order->reference))->toBe('Fragile, pack twice');
+});
+
+test('org and group amounts of orders and invoices use the whole exchange rate', function () {
+    $orgExchange = 0.0025371234;
+    $grpExchange = 0.0021456789;
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order->transactions()->whereNot('id', $transaction->id)->delete();
+    $transaction->updateQuietly(['gross_amount' => 1000000, 'net_amount' => 1000000]);
+    $order->updateQuietly(['amount_off' => 0, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+
+    CalculateOrderTotalAmounts::make()->handle($order->refresh(), false, false);
+    $order->refresh();
+
+    expect($order->org_exchange)->toBe('0.0025371234')
+        ->and($order->grp_exchange)->toBe('0.0021456789')
+        ->and((float) $order->net_amount)->toBe(1000000.0)
+        ->and((float) $order->org_net_amount)->toBe(2537.12)
+        ->and((float) $order->grp_net_amount)->toBe(2145.68);
+
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
+    $invoice = StoreInvoice::make()->action($order, $invoiceData);
+    StoreInvoiceTransaction::make()->action($invoice, $transaction, [
+        'date'            => now(),
+        'tax_category_id' => $transaction->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 1000000,
+        'net_amount'      => 1000000,
+    ]);
+    $invoice->updateQuietly(['amount_off' => 0, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+
+    \App\Actions\Accounting\Invoice\CalculateInvoiceTotals::run($invoice->refresh());
+    $invoice->refresh();
+
+    expect((float) $invoice->net_amount)->toBe(1000000.0)
+        ->and((float) $invoice->org_net_amount)->toBe(2537.12)
+        ->and((float) $invoice->grp_net_amount)->toBe(2145.68);
+
+    $transaction->updateQuietly(['quantity_ordered' => 100000, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+    $order->updateQuietly(['state' => OrderStateEnum::PACKED]);
+
+    UpdateOrderStateToHandling::make()->action($order->refresh());
+    $transaction->refresh();
+
+    expect((float) $transaction->net_amount)->toBeGreaterThan(0.0)
+        ->and((float) $transaction->grp_net_amount)->toBe(round((float) $transaction->net_amount * $grpExchange, 2))
+        ->and((float) $transaction->org_net_amount)->toBe(round((float) $transaction->net_amount * $orgExchange, 2));
+});
+
+test('b2b dashboard insights show the customer order overview, their regular products, favourites and when each is due again', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+
+    foreach ([30, 10] as $daysAgo) {
+        $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $product->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 4]));
+        $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays($daysAgo), 'net_amount' => 40]);
+    }
+    \App\Actions\CRM\Favourite\StoreFavourite::make()->action($customer, $product, []);
+
+    $insights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh());
+    $regular  = collect($insights['regulars'])->firstWhere('id', $product->id);
+
+    expect($insights['kpis']['orders'])->toBe(2)
+        ->and($insights['kpis']['total_orders'])->toBe(2)
+        ->and($insights['kpis']['average_order'])->toEqual(40)
+        ->and($insights['kpis']['days_since_last'])->toBe(10)
+        ->and($insights)->not->toHaveKey('monthly')
+        ->and($insights['recent_orders'])->toHaveCount(2)
+        ->and($insights['recent_orders'][0])->toHaveKey('invoice')
+        ->and(collect($insights['favourites'])->pluck('id')->all())->toBe([$product->id])
+        ->and($insights['favourites'][0]['stock_status'])->toBe('in_stock')
+        ->and($insights['favourites'][0]['has_reminder'])->toBeFalse()
+        ->and($regular['orders'])->toBe(2)
+        ->and($regular['average_quantity'])->toBe(4)
+        ->and($regular['reorder_every_days'])->toBe(20)
+        ->and($regular['days_until_due'])->toBe(10)
+        ->and($regular['stock_status'])->toBe('in_stock')
+        ->and($regular['is_purchasable'])->toBeTrue()
+        ->and($regular['is_on_demand'])->toBeFalse()
+        ->and($regular['has_reminder'])->toBeFalse()
+        ->and($insights['recent_orders'][0]['date'])->toBe(now()->subDays(10)->toDateString())
+        ->and(collect($insights['recommendations'])->every(fn ($product) => array_key_exists('quantity_in_basket', $product)))->toBeTrue();
+});
+
+test('b2b dashboard insights work for a customer who never ordered and for one who stopped ordering', function () {
+    $newCustomer = freshCustomerLike($this->shop, $this->customer);
+    $newInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($newCustomer);
+
+    expect($newInsights['kpis']['orders'])->toBe(0)
+        ->and($newInsights['kpis']['total_orders'])->toBe(0)
+        ->and($newInsights['kpis']['average_order'])->toBeNull()
+        ->and($newInsights['favourites'])->toBe([])
+        ->and($newInsights['kpis']['last_order_at'])->toBeNull()
+        ->and($newInsights['kpis']['is_lapsed'])->toBeFalse()
+        ->and($newInsights['regulars'])->toBe([])
+        ->and($newInsights['recent_orders'])->toBe([])
+        ->and($newInsights['recommendations_source'])->toBe('shop_best_sellers');
+
+    $lostCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+    $order = StoreOrder::make()->action($lostCustomer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+    $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(900), 'net_amount' => 50]);
+
+    $lostInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($lostCustomer->fresh());
+
+    expect($lostInsights['kpis']['orders'])->toBe(0)
+        ->and($lostInsights['kpis']['total_orders'])->toBe(1)
+        ->and($lostInsights['kpis']['average_order'])->toEqual(50)
+        ->and($lostInsights['kpis']['days_since_last'])->toBe(900)
+        ->and($lostInsights['kpis']['is_lapsed'])->toBeTrue()
+        ->and(collect($lostInsights['regulars'])->pluck('id')->all())->toBe([$product->id])
+        ->and($lostInsights['recent_orders'])->toHaveCount(1)
+        ->and($lostInsights['recommendations_source'])->toBe('bought_together');
+});
+
+test('b2b dashboard recommendations carry the customer favourites and basket so they render like any product card', function () {
+    $customer      = freshCustomerLike($this->shop, $this->customer);
+    $otherCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $seed]      = createProduct($this->shop);
+    $suggested     = StoreProduct::make()->action($seed->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seed->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+    ));
+
+    foreach ([$seed, $suggested] as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+    }
+
+    $customerOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($customerOrder, $seed->currentHistoricProduct, Transaction::factory()->definition());
+    $customerOrder->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(5), 'net_amount' => 10]);
+
+    $otherOrder = StoreOrder::make()->action($otherCustomer, Order::factory()->definition());
+    foreach ([$seed, $suggested] as $product) {
+        StoreTransaction::make()->action($otherOrder, $product->currentHistoricProduct, Transaction::factory()->definition());
+    }
+
+    \App\Actions\CRM\Favourite\StoreFavourite::make()->action($customer, $suggested, []);
+
+    $recommendation = collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['recommendations'])
+        ->firstWhere('id', $suggested->id);
+
+    expect($recommendation)->not->toBeNull()
+        ->and($recommendation['is_favourite'])->toBeTrue()
+        ->and($recommendation['is_back_in_stock'])->toBeFalse()
+        ->and($recommendation['transaction_id'])->toBeNull()
+        ->and($recommendation['quantity_ordered'])->toBe(0)
+        ->and($recommendation)->toHaveKeys(['stock', 'price', 'price_per_unit', 'product_offers_data']);
+});
+
+test('basket recommendations never suggest a product sold exclusively to another customer', function () {
+    $customer      = freshCustomerLike($this->shop, $this->customer);
+    $otherCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $seed]      = createProduct($this->shop);
+    [$exclusive, $public] = collect(range(1, 2))->map(fn () => StoreProduct::make()->action($seed->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seed->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+    )))->all();
+
+    foreach ([$seed, $exclusive, $public] as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+    }
+    DB::table('product_has_exclusive_customers')->insert([
+        'product_id'  => $exclusive->id,
+        'customer_id' => $otherCustomer->id,
+        'created_at'  => now(),
+        'updated_at'  => now(),
+    ]);
+
+    $order = StoreOrder::make()->action($otherCustomer, Order::factory()->definition());
+    foreach ([$seed, $exclusive, $public] as $product) {
+        StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+    }
+
+    $recommend = fn (?int $customerId) => \App\Actions\Retina\Ecom\Basket\GetRetinaProductBasketRecommendations::make()
+        ->handle($this->shop, [$seed->id], ['customer_id' => $customerId])->pluck('id');
+
+    expect($recommend($customer->id))->toContain($public->id)->not->toContain($exclusive->id)
+        ->and($recommend(null))->not->toContain($exclusive->id)
+        ->and($recommend($otherCustomer->id))->toContain($exclusive->id);
+});
+
+test('b2b dashboard shows a voucher only once staff opt it in, and hides it after the customer used it', function () {
+    if (!$this->shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOUCHERS)->exists()) {
+        \App\Actions\Discounts\OfferCampaign\SeedShopOfferCampaigns::run($this->shop);
+    }
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $code     = 'DASH'.strtoupper(\Illuminate\Support\Str::random(6));
+
+    $voucher = \App\Actions\Discounts\Offer\StoreVoucherOffers::make()->handle($this->shop, [
+        'voucher'            => $code,
+        'name'               => '15% off over 200',
+        'offer_amount'       => 200,
+        'can_customer_reuse' => false,
+        'start_at'           => now()->subDay()->toDateTimeString(),
+        'end_at'             => now()->addDays(10)->toDateTimeString(),
+        'percentage_off'     => 15,
+        'allowance_type'     => 'percentage_off',
+        'target_type'        => 'shop',
+        'target_id'          => $this->shop->id,
+    ]);
+    $voucher->update(['status' => true]);
+
+    $dashboardVoucherCodes = fn () => collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->pluck('code')->all();
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+
+    \App\Actions\Discounts\Offer\UpdateOffer::make()->action($voucher, ['show_on_customer_dashboard' => true]);
+    $shown = collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->firstWhere('code', $code);
+
+    expect($voucher->fresh()->settings)->toMatchArray(['can_customer_reuse' => false, 'show_on_customer_dashboard' => true])
+        ->and($shown['percentage_off'])->toEqual(0.15)
+        ->and($shown['min_amount'])->toEqual(200)
+        ->and($shown['is_whole_order'])->toBeTrue()
+        ->and($shown['expires_at'])->toBe(now()->addDays(10)->toDateString());
+
+    $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['state' => OrderStateEnum::DISPATCHED, 'offer_voucher_id' => $voucher->id]);
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+});
+
+test('ordering a past order again fills the basket once, however many times it is pressed', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+
+    $pastOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($pastOrder, $product->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 6]));
+    $pastOrder->update(['state' => OrderStateEnum::DISPATCHED]);
+
+    $first  = \App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder);
+    $second = \App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder);
+
+    $basket = $customer->fresh()->orderInBasket;
+    $line   = $basket->transactions()->where('model_type', 'Product')->where('model_id', $product->id)->first();
+
+    expect($first)->toBe(['added' => 1, 'skipped' => []])
+        ->and($second['added'])->toBe(1)
+        ->and($pastOrder->fresh()->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($basket->id)->not->toBe($pastOrder->id)
+        ->and((float) $line->quantity_ordered)->toEqual(6.0)
+        ->and((float) $line->net_amount)->toBeGreaterThan(0.0)
+        ->and((float) $basket->goods_amount)->toEqual((float) $line->net_amount);
+
+    $product->update(['status' => ProductStatusEnum::DISCONTINUED]);
+    expect(\App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder)['skipped'])
+        ->toBe([['code' => $product->code, 'name' => $product->name]]);
+});
+
+test('a claim refunded to balance is paid out of the card payment and leaves nothing due on the order', function () {
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $attachedOrgStock = null;
+    if (!$this->product->orgStocks()->count()) {
+        $attachedOrgStock = OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($attachedOrgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+    $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
+    $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $invoice      = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    $claimed      = [['id' => $item->id, 'quantity' => 1]];
+
+    expect((float) $invoice->total_amount)->toBeGreaterThan(0.0)
+        ->and(fn () => RefundClaimToBalance::make()->handle($order->refresh(), $claimed))->toThrow(ValidationException::class, 'no payment left')
+        ->and($order->invoices()->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(0);
+
+    $cardAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim card account']
+    );
+    $payment = PayInvoice::make()->action($invoice->refresh(), $cardAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+
+    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed);
+
+    $credit = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
+    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $refund->total_amount)->toBeLessThan(0.0)
+        ->and((float) $order->customer->refresh()->balance)->toBe(abs((float) $refund->total_amount))
+        ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
+        ->and($credit->payment->original_payment_id)->toBe($payment->id)
+        ->and($credit->payment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::ACCOUNT)
+        ->and(StoreOrderPaymentLink::amountDue($order->refresh()))->toBe(0.0);
+
+    if ($attachedOrgStock) {
+        $this->product->orgStocks()->detach($attachedOrgStock->id);
+    }
+});
+
+test('staff see the customer balance on a basket so a phone payment can use it first', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $basket = StoreOrder::make()->action($this->customer, $modelData);
+    $originalBalance = $this->customer->balance;
+    $this->customer->update(['balance' => 10.46]);
+
+    try {
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', fn ($balance) => (float) $balance === 10.46)->etc());
+
+        $basket->update(['state' => OrderStateEnum::IN_WAREHOUSE]);
+
+        get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $basket->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('basket_customer_balance', null)->etc());
+    } finally {
+        $this->customer->update(['balance' => $originalBalance]);
+    }
+});
+
+describe('pre-orders (HELP-3432)', function () {
+    beforeEach(function () {
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['pre_orders' => [
+            'enabled'                => true,
+            'deposit_percentage'     => 30,
+            'full_payment_below'     => 50,
+            'default_lead_time_days' => 60,
+            'dispatch_range_weeks'   => 2,
+        ]])]);
+        $this->shop->refresh();
+
+        $this->preOrderProduct = function (array $flags, float $price = 100) {
+            [, $bulk] = createProduct($this->shop);
+            $product = StoreProduct::make()->action($bulk->family, array_merge(
+                Product::factory()->definition(),
+                ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => $price]
+            ));
+            $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->whereNotIn('id', DB::table('product_has_org_stocks')->pluck('org_stock_id'))->first()
+                ?? \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+            DB::table('product_has_org_stocks')->where('product_id', $product->id)->delete();
+            $product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+            $orgStock->update(['quantity_available' => 0, 'quantity_reserved_for_pre_orders' => 0]);
+            DB::table('products')->where('id', $product->id)->update(array_merge([
+                'state'              => ProductStateEnum::ACTIVE->value,
+                'status'             => ProductStatusEnum::OUT_OF_STOCK->value,
+                'is_for_sale'        => true,
+                'available_quantity' => 0,
+            ], $flags));
+
+            return $product->fresh();
+        };
+
+        $this->fundedCustomer = function (float $amount) {
+            $customer = freshCustomerLike($this->shop, $this->customer);
+            StoreCreditTransaction::make()->action($customer, [
+                'amount' => $amount,
+                'date'   => now(),
+                'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
+            ]);
+
+            return $customer->refresh();
+        };
+    });
+
+    afterEach(function () {
+        $this->shop->update(['settings' => Arr::except($this->shop->settings ?? [], 'pre_orders')]);
+    });
+
+    test('the shop settings switch turns pre-orders on and off and stores the pallet rates', function () {
+        $editShop = \App\Actions\Catalogue\Shop\UI\EditShop::make();
+        $section  = collect((new ReflectionMethod($editShop, 'preOrderSettingsFields'))->invoke($editShop, $this->shop));
+        expect($section['fields']['pre_order_enabled']['type'])->toBe('toggle');
+
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['pre_order_enabled' => false]);
+        expect($this->shop->refresh()->hasPreOrders())->toBeFalse();
+
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, [
+            'pre_order_enabled'      => true,
+            'pre_order_pallet_rates' => [['country_code' => 'DE', 'amount' => '150']],
+        ]);
+        $this->shop->refresh();
+
+        expect($this->shop->hasPreOrders())->toBeTrue()
+            ->and(\App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->palletEstimate($this->shop, 'DE'))->toBe(150.0)
+            ->and($this->shop->preOrderSetting('deposit_percentage'))->toBe(30);
+    });
+
+    test('only flagged products of a shop with pre-orders on can be bought beyond stock, within their maximum per order', function () {
+        $purchasable = new class () {
+            use \App\Actions\Traits\WithCustomerPurchasableProduct;
+
+            public function check(Product $product, $customer, $quantity = null): void
+            {
+                $this->ensureProductIsPurchasableByCustomer($product, $customer, $quantity);
+            }
+        };
+
+        $plain = ($this->preOrderProduct)([]);
+        expect(fn () => $purchasable->check($plain, $this->customer))->toThrow(ValidationException::class);
+
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'max_quantity_per_order' => 5]);
+        $purchasable->check($backOrder, $this->customer, 5);
+        expect(fn () => $purchasable->check($backOrder, $this->customer, 6))->toThrow(ValidationException::class);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings, ['pre_orders' => ['enabled' => false]])]);
+        expect(fn () => $purchasable->check($backOrder->fresh(), $this->customer, 1))->toThrow(ValidationException::class);
+
+        DB::table('products')->where('id', $backOrder->id)->update(['status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 100]);
+        $purchasable->check($backOrder->fresh(), $this->customer, 6);
+    });
+
+    test('the dispatch estimate is a range in weeks from the product, then the supplier, then the shop lead time', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $preOrder    = \App\Actions\Ordering\PreOrder\GetProductPreOrder::run($madeToOrder);
+
+        expect($preOrder['type'])->toBe('made_to_order')
+            ->and($preOrder['lead_time_days'])->toBe(60)
+            ->and($preOrder['dispatch_from_weeks'])->toBe(9)
+            ->and($preOrder['dispatch_to_weeks'])->toBe(11)
+            ->and($preOrder['deposit_percentage'])->toBe(30.0);
+
+        DB::table('products')->where('id', $madeToOrder->id)->update(['pre_order_lead_time_days' => 84, 'pre_order_deposit_percentage' => 50]);
+        $preOrder = \App\Actions\Ordering\PreOrder\GetProductPreOrder::run($madeToOrder->fresh());
+
+        expect($preOrder['dispatch_from_weeks'])->toBe(12)
+            ->and($preOrder['dispatch_to_weeks'])->toBe(14)
+            ->and($preOrder['deposit_percentage'])->toBe(50.0);
+    });
+
+    test('a mixed basket pays the deposit, splits at submit, holds the pre-order until its goods arrive and releases it once the balance is paid', function () {
+        $inStock = ($this->preOrderProduct)([]);
+        DB::table('products')->where('id', $inStock->id)->update(['status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 100]);
+        $inStock->orgStocks()->update(['quantity_available' => 100]);
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+
+        $customer = ($this->fundedCustomer)(10000);
+        $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $inStock->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+        $basket->refresh();
+
+        $basketPreOrders = \App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket);
+        $taxFactor       = (float) $basket->total_amount / (float) $basket->net_amount;
+
+        expect($basketPreOrders['has_pre_orders'])->toBeTrue()
+            ->and($basketPreOrders['has_in_stock_lines'])->toBeTrue()
+            ->and($basketPreOrders['deferred_amount'])->toBe(round(200 * 0.7 * $taxFactor, 2))
+            ->and(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket))->toBe((float) $basket->total_amount);
+
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket, false);
+        expect(\App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket->fresh())['is_accepted'])->toBeTrue()
+            ->and(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket->fresh()))->toBe(round((float) $basket->total_amount - $basketPreOrders['deferred_amount'], 2));
+
+        $result = PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+        expect($result['success'])->toBeTrue();
+
+        $parent   = $basket->fresh();
+        $preOrder = $parent->splitPreOrder;
+        $child    = $preOrder->order;
+
+        expect($parent->state)->not->toBe(OrderStateEnum::CREATING)
+            ->and($parent->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$inStock->id])
+            ->and($child->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$madeToOrder->id])
+            ->and($child->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and($preOrder->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::WAITING_FOR_GOODS)
+            ->and((float) $parent->payment_amount)->toBe((float) $parent->total_amount)
+            ->and((float) $child->payment_amount)->toBeGreaterThan(0.0)
+            ->and((float) $child->payment_amount)->toBeLessThan((float) $child->total_amount)
+            ->and($child->deliveryNotes()->count())->toBe(0)
+            ->and($preOrder->terms)->not->toBeEmpty()
+            ->and(Arr::get($child->transactions()->where('model_type', 'Product')->first()->data, 'pre_order.type'))->toBe('made_to_order');
+
+        $madeToOrder->orgStocks()->update(['quantity_available' => 2]);
+        \App\Actions\Ordering\PreOrder\AllocatePreOrderStock::run();
+        $preOrder->refresh();
+
+        expect($preOrder->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::BALANCE_REQUESTED)
+            ->and($preOrder->goods_arrived_at)->not->toBeNull()
+            ->and((float) $madeToOrder->orgStocks()->first()->quantity_reserved_for_pre_orders)->toBe(2.0);
+
+        PayOrderWithCustomerBalance::make()->handle($child->fresh());
+        $preOrder->refresh();
+
+        expect($preOrder->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::RELEASED)
+            ->and((float) $madeToOrder->orgStocks()->first()->quantity_reserved_for_pre_orders)->toBe(0.0)
+            ->and($child->fresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+    });
+
+    test('placing a pre-order basket with balance needs the terms accepted, and staff must unlock the pre-order for themselves to change its money', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+
+        $refused = PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+        expect($refused['success'])->toBeFalse()
+            ->and($basket->fresh()->state)->toBe(OrderStateEnum::CREATING)
+            ->and((float) $basket->fresh()->payment_amount)->toBe(0.0);
+
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+        expect(PayRetinaOrderWithBalance::make()->handle($basket->fresh())['success'])->toBeTrue();
+
+        $order    = $basket->fresh();
+        $preOrder = $order->preOrder;
+        $other    = new \App\Models\SysAdmin\User();
+        $other->id = $this->user->id + 100000;
+
+        $middleware = new \App\Http\Middleware\EnsurePreOrderIsUnlocked();
+        $through    = function (string $routeName, $user, array $input = []) use ($middleware, $order) {
+            $request = \Illuminate\Http\Request::create('/pre-order-lock', 'PATCH', $input);
+            $route   = (new \Illuminate\Routing\Route('PATCH', '/pre-order-lock', []))->name($routeName)->bind($request);
+            $route->setParameter('order', $order);
+            $request->setRouteResolver(fn () => $route);
+            $request->setUserResolver(fn () => $user);
+
+            return $middleware->handle($request, fn () => 'passed');
+        };
+
+        expect($preOrder->isLocked())->toBeTrue()
+            ->and(fn () => $through('grp.models.order.update_insurance', $this->user))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.update', $this->user, ['collection_address_id' => null]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.order.update', $this->user, ['internal_notes' => 'call first']))->toBe('passed')
+            ->and($through('grp.models.order.payment.store', $this->user))->toBe('passed');
+
+        \App\Actions\Ordering\PreOrder\UnlockPreOrder::run($preOrder, $this->user);
+        $preOrder->refresh();
+
+        expect($through('grp.models.order.update_insurance', $this->user))->toBe('passed')
+            ->and(fn () => $through('grp.models.order.update_insurance', $other))->toThrow(ValidationException::class)
+            ->and($preOrder->unlockedUntil()->isFuture())->toBeTrue()
+            ->and($order->audits()->where('event', 'pre_order_unlocked')->exists())->toBeTrue();
+
+        \App\Actions\Ordering\PreOrder\UnlockPreOrder::run($preOrder, $this->user, unlock: false);
+        $preOrder->refresh();
+        expect(fn () => $through('grp.models.order.update_insurance', $this->user))->toThrow(ValidationException::class);
+
+        $preOrder->update(['data' => array_merge($preOrder->data, ['unlock' => ['user_id' => $this->user->id, 'until' => now()->subMinute()->toIso8601String()]])]);
+        expect($preOrder->fresh()->canBeEditedBy($this->user))->toBeFalse();
+
+        $preOrder->update(['state' => \App\Enums\Ordering\PreOrder\PreOrderStateEnum::RELEASED]);
+        expect($through('grp.models.order.update_insurance', $other))->toBe('passed');
+    });
+
+    test('an unpaid balance is reminded on the shop days and the pre-order cancelled keeping the deposit after the limit', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+        PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+        $preOrder = $basket->fresh()->preOrder;
+        $paid     = (float) $preOrder->order->payment_amount;
+        $deposit  = (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount');
+
+        $madeToOrder->orgStocks()->update(['quantity_available' => 1]);
+        \App\Actions\Ordering\PreOrder\AllocatePreOrderStock::run();
+        expect($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::BALANCE_REQUESTED);
+
+        $this->travel(3)->days();
+        \App\Actions\Ordering\PreOrder\ProcessPreOrders::run();
+        expect($preOrder->refresh()->balance_first_reminder_sent_at)->not->toBeNull()
+            ->and($preOrder->balance_second_reminder_sent_at)->toBeNull();
+
+        $this->travel(11)->days();
+        $balanceBefore = (float) $customer->refresh()->balance;
+        \App\Actions\Ordering\PreOrder\ProcessPreOrders::run();
+        $this->travelBack();
+
+        expect($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::CANCELLED)
+            ->and($preOrder->cancellation_reason)->toBe('balance_not_paid')
+            ->and(round((float) $customer->refresh()->balance - $balanceBefore, 2))->toBe(round($paid - $deposit, 2))
+            ->and((float) $preOrder->order->refresh()->payment_amount)->toBe($deposit)
+            ->and((float) $madeToOrder->orgStocks()->first()->quantity_reserved_for_pre_orders)->toBe(0.0);
+    });
+
+    test('cancelling a trade made-to-order pre-order refunds everything until the supplier is ordered, then keeps the deposit', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+
+        $placePreOrder = function () use ($madeToOrder) {
+            $customer = ($this->fundedCustomer)(10000);
+            $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+            StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+            \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+            PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+
+            return $basket->fresh()->preOrder;
+        };
+
+        $preOrder = $placePreOrder();
+        $order    = $preOrder->order;
+        $paid     = (float) $order->payment_amount;
+        $deposit  = (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount');
+        expect($preOrder->parent_order_id)->toBeNull()
+            ->and($deposit)->toBe(round(100 * 0.3 * (float) $order->total_amount / (float) $order->net_amount, 2))
+            ->and($paid)->toBe(round((float) $order->total_amount - (float) $preOrder->deferred_amount, 2))
+            ->and(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::CUSTOMER_REQUEST))->toBe($paid);
+
+        \App\Actions\Ordering\PreOrder\MarkPreOrdersSupplierOrdered::run([$preOrder->id]);
+        $preOrder->refresh();
+
+        expect(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::CUSTOMER_REQUEST))->toBe(round($paid - $deposit, 2))
+            ->and(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY))->toBe($paid);
+
+        $balanceBefore = (float) $preOrder->customer->refresh()->balance;
+        \App\Actions\Ordering\PreOrder\CancelPreOrder::run($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY);
+
+        expect($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::CANCELLED)
+            ->and($preOrder->order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+            ->and(round((float) $preOrder->customer->refresh()->balance - $balanceBefore, 2))->toBe($paid);
+    });
+
+    test('a basket with pre-order lines and no accepted terms is never split, charges in full, and cannot be placed from Retina', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        $basket->refresh();
+
+        expect(\App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow::run($basket))->toBe((float) $basket->total_amount)
+            ->and(\App\Actions\Retina\GetRetinaPaymentMethods::make()->checkoutPaymentAccountShops($basket))->toBeEmpty()
+            ->and(fn () => \App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder::make()->handle($basket->fresh()))->toThrow(ValidationException::class)
+            ->and($basket->fresh()->state)->toBe(OrderStateEnum::CREATING);
+
+        $channelOrder = SubmitOrder::make()->action($basket->fresh());
+
+        expect($channelOrder->fresh()->preOrder)->toBeNull()
+            ->and($channelOrder->splitPreOrder)->toBeNull()
+            ->and(\App\Models\Ordering\PreOrder::where('customer_id', $customer->id)->exists())->toBeFalse();
+    });
+
+    test('a cancelled pre-order stays cancelled, and a release needs the balance paid and happens once', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+
+        $placePreOrder = function () use ($madeToOrder) {
+            $customer = ($this->fundedCustomer)(10000);
+            $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+            StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+            \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+            PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+
+            return $basket->fresh()->preOrder;
+        };
+
+        $cancelled = $placePreOrder();
+        $stale     = \App\Models\Ordering\PreOrder::find($cancelled->id);
+        \App\Actions\Ordering\PreOrder\CancelPreOrder::run($cancelled, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY);
+
+        expect(fn () => \App\Actions\Ordering\PreOrder\ArrivePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\SetPreOrderPalletQuote::run($stale, 99))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and(fn () => \App\Actions\Ordering\PreOrder\CancelPreOrder::run($stale, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::LATE))->toThrow(ValidationException::class)
+            ->and($cancelled->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::CANCELLED)
+            ->and($cancelled->goods_arrived_at)->toBeNull()
+            ->and($cancelled->order->deliveryNotes()->count())->toBe(0);
+
+        $preOrder = $placePreOrder();
+        expect(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($preOrder))->toThrow(ValidationException::class)
+            ->and($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::WAITING_FOR_GOODS);
+
+        PayOrderWithCustomerBalance::make()->handle($preOrder->order->fresh());
+        $stale = \App\Models\Ordering\PreOrder::find($preOrder->id);
+        \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($preOrder);
+
+        expect(fn () => \App\Actions\Ordering\PreOrder\ReleasePreOrder::run($stale))->toThrow(ValidationException::class)
+            ->and($preOrder->refresh()->state)->toBe(\App\Enums\Ordering\PreOrder\PreOrderStateEnum::RELEASED)
+            ->and($preOrder->order->deliveryNotes()->count())->toBe(1);
+    });
+
+    test('a balance not paid in time keeps at most the made-to-order deposit, and nothing for dropshipping', function () {
+        $madeToOrder = ($this->preOrderProduct)(['is_made_to_order' => true]);
+        $customer    = ($this->fundedCustomer)(10000);
+        $basket      = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $madeToOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+        PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+        $preOrder = $basket->fresh()->preOrder;
+        $paid     = (float) $preOrder->order->payment_amount;
+        $deposit  = (float) Arr::get($preOrder->data, 'made_to_order_deposit_amount');
+        $reason   = \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::BALANCE_NOT_PAID;
+
+        expect(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, $reason))->toBe(round($paid - $deposit, 2));
+
+        $preOrder->is_trade = false;
+        expect(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, $reason))->toBe($paid)
+            ->and(\App\Actions\Ordering\PreOrder\CancelPreOrder::make()->refundAmount($preOrder, \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::CUSTOMER_REQUEST))->toBe(0.0);
+    });
+
+    test('a line split between stock and pre-order keeps its free goods on the in-stock order only', function () {
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'available_quantity' => 1]);
+        $backOrder->orgStocks()->update(['quantity_available' => 1]);
+        $customer = ($this->fundedCustomer)(10000);
+        $basket   = StoreOrder::make()->action($customer, Order::factory()->definition());
+        $line     = StoreTransaction::make()->action($basket, $backOrder->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+        $line->update(['quantity_bonus' => 1]);
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+
+        $preOrder     = \App\Actions\Ordering\PreOrder\SplitOrderPreOrders::run($basket->fresh());
+        $preOrderLine = $preOrder->order->transactions()->where('model_type', 'Product')->first();
+
+        expect((float) $line->refresh()->quantity_ordered)->toBe(1.0)
+            ->and((float) $line->quantity_bonus)->toBe(1.0)
+            ->and((float) $preOrderLine->quantity_ordered)->toBe(2.0)
+            ->and((float) $preOrderLine->quantity_bonus)->toBe(0.0);
+    });
+
+    test('paying with balance twice from the same page charges once', function () {
+        $order = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        $staleOrder = $order->fresh();
+
+        PayOrderWithCustomerBalance::make()->handle($staleOrder);
+        $second = PayOrderWithCustomerBalance::make()->handle($staleOrder);
+
+        expect($second['success'])->toBeFalse()
+            ->and((float) $order->fresh()->payment_amount)->toBe((float) $order->fresh()->total_amount);
+    });
+});
+
+test('submitting an ecom order broadcasts a new order alert sized against the shop', function () {
+    Event::fake([BroadcastNewOrderAlert::class]);
+    $this->shop->update(['settings' => array_merge($this->shop->settings, ['order_alerts' => ['small_below' => 1000000, 'big_above' => 2000000]])]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    Event::assertDispatched(BroadcastNewOrderAlert::class, fn (BroadcastNewOrderAlert $event) => $event->shopId === $this->shop->id
+        && $event->alert['types'] === [OrderAlertTypeEnum::ECOM_SMALL->value]
+        && $event->alert['reference'] === $order->reference
+        && str_ends_with($event->alert['url'], '/orders/'.$order->slug)
+        && $event->broadcastOn()[0]->name === 'private-grp.shop.'.$this->shop->id.'.new-orders');
+
+    $this->shop->update(['settings' => Arr::except($this->shop->fresh()->settings, 'order_alerts')]);
+});
+
+test('ecom order size follows the nightly limits, and is normal while a shop has too few orders', function () {
+    $order = new Order(['net_amount' => 500]);
+    $order->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B, 'settings' => ['order_alerts' => ['small_below' => 50, 'big_above' => 400]]]));
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_BIG);
+
+    $order->net_amount = 20;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_SMALL);
+
+    $order->net_amount = 100;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_NORMAL);
+
+    $order->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B, 'settings' => ['order_alerts' => ['orders' => 3]]]));
+    $order->net_amount = 99999;
+    expect(SendNewOrderAlert::make()->ecomSize($order))->toBe(OrderAlertTypeEnum::ECOM_NORMAL);
+
+    CalculateShopOrderAlertSizes::run($this->shop);
+    $sizes = Arr::get($this->shop->fresh()->settings, 'order_alerts');
+    expect(isset($sizes['big_above'], $sizes['small_below']))->toBe($sizes['orders'] >= CalculateShopOrderAlertSizes::MIN_ORDERS);
+    $this->shop->update(['settings' => Arr::except($this->shop->fresh()->settings, 'order_alerts')]);
+});
+
+test('dropshipping rings only for an unpaid order or the first order of a connected store', function () {
+    $dropshippingShop = new Shop(['type' => ShopTypeEnum::DROPSHIPPING]);
+
+    $firstUnpaid = new Order(['state' => OrderStateEnum::SUBMITTED]);
+    $firstUnpaid->customer_sales_channel_id = PHP_INT_MAX;
+    $firstUnpaid->setRelation('shop', $dropshippingShop);
+    $firstUnpaid->setRelation('platform', new Platform(['type' => PlatformTypeEnum::SHOPIFY]));
+
+    expect(SendNewOrderAlert::make()->alertTypes($firstUnpaid))->toBe([OrderAlertTypeEnum::DROPSHIPPING_FIRST_CHANNEL_ORDER, OrderAlertTypeEnum::DROPSHIPPING_UNPAID]);
+
+    $paidManual = new Order(['state' => OrderStateEnum::IN_WAREHOUSE, 'pay_status' => OrderPayStatusEnum::PAID]);
+    $paidManual->customer_sales_channel_id = PHP_INT_MAX;
+    $paidManual->setRelation('shop', $dropshippingShop);
+    $paidManual->setRelation('platform', new Platform(['type' => PlatformTypeEnum::MANUAL]));
+
+    expect(SendNewOrderAlert::make()->alertTypes($paidManual))->toBe([]);
+});
+
+test('only users who can see the shop orders may listen to its new order alerts', function () {
+    $nobody = new User(['group_id' => $this->group->id]);
+
+    expect(GetUserOrderAlerts::make()->canHear($this->user, $this->shop->id))->toBeTrue()
+        ->and(GetUserOrderAlerts::make()->canHear($nobody, $this->shop->id))->toBeFalse()
+        ->and(GetUserOrderAlerts::run($nobody)['shops'])->toBe([]);
+});
+
+test('order alert settings are saved on the user and reach the layout', function () {
+    $types = [
+        'ecom_small'  => ['enabled' => false, 'sound' => 'bell'],
+        'ecom_normal' => ['enabled' => true, 'sound' => 'coins'],
+        'ecom_big'    => ['enabled' => true, 'sound' => 'oh_yeah', 'muted' => true],
+    ];
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => [
+            'shops' => [$this->shop->id, 999999],
+            'types' => $types,
+            'popup' => ['show' => true],
+        ]])
+        ->assertSuccessful();
+
+    $user = $this->user->fresh();
+
+    expect(Arr::get($user->settings, 'order_alerts.shops'))->toBe([$this->shop->id])
+        ->and(Arr::get($user->settings, 'order_alerts.types.ecom_big'))->toEqual(['enabled' => true, 'sound' => 'oh_yeah', 'muted' => true])
+        ->and(GetUserOrderAlerts::run($user)['sounds']['ecom_big'])->toBe('silent')
+        ->and(Arr::get($user->settings, 'order_alerts.types.dropshipping_unpaid.enabled'))->toBeFalse()
+        ->and(array_keys(GetUserOrderAlerts::run($user)['shops']))->toBe([$this->shop->id])
+        ->and(GetUserOrderAlerts::run($user)['shops'][$this->shop->id])->toEqualCanonicalizing(['ecom_normal', 'ecom_big'])
+        ->and(GetUserOrderAlerts::run($user)['popup'])->toEqual(['show' => true])
+        ->and(GetUserOrderAlerts::run($user)['sounds']['ecom_normal'])->toBe('coins');
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => ['types' => ['ecom_big' => ['sound' => 'air-horn']], 'popup' => ['show' => 'maybe']]])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['order_alerts.types.ecom_big.sound', 'order_alerts.popup.show']);
+
+    $user->update(['settings' => Arr::except($user->settings, 'order_alerts')]);
+    $this->shop->update(['state' => $shopState]);
+});
+
+test('staff entered and partner orders do not ring, and a failing alert never stops the order', function () {
+    Event::fake([BroadcastNewOrderAlert::class]);
+
+    $phoneOrder = new Order();
+    $phoneOrder->setRelation('salesChannel', new SalesChannel(['type' => SalesChannelTypeEnum::PHONE]));
+    SendNewOrderAlert::run($phoneOrder);
+
+    $partnerOrder = new Order();
+    $partnerOrder->setRelation('salesChannel', new SalesChannel(['type' => SalesChannelTypeEnum::OTHER, 'code' => 'intercompany']));
+    SendNewOrderAlert::run($partnerOrder);
+
+    $brokenOrder = new Order(['net_amount' => 10]);
+    $brokenOrder->setRelation('shop', new Shop(['type' => ShopTypeEnum::B2B]));
+    $brokenOrder->setRelation('currency', null);
+    SendNewOrderAlert::run($brokenOrder);
+
+    Event::assertNotDispatched(BroadcastNewOrderAlert::class);
+});
+
+test('role defaults ring for big orders on the admin shops and never for small ones', function () {
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $defaults = GetUserOrderAlerts::make()->defaultShopTypes($this->user);
+
+    $this->shop->update(['state' => $shopState]);
+
+    expect($defaults)->toHaveKey($this->shop->id)
+        ->and($defaults[$this->shop->id])->toContain(OrderAlertTypeEnum::ECOM_BIG->value)
+        ->and($defaults[$this->shop->id])->not->toContain(OrderAlertTypeEnum::ECOM_SMALL->value);
 });

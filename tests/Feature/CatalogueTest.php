@@ -76,6 +76,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -922,71 +923,85 @@ test('a private product off the website can still be put on its own customer ord
         ->and($sellableTo(null))->toBeFalse();
 });
 
-test('repair records unrecorded exclusives among products hidden from the site', function () {
+test('a product made for one customer is recorded as theirs', function () {
     list($organisation, $user, $shop) = createShop();
 
     $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
         $shop,
         \App\Models\CRM\Customer::factory()->definition(),
     );
-    $partnerCustomer = $newCustomer();
-    $publicCustomer  = $newCustomer();
-    DB::table('org_partners')->insert([
-        'group_id'        => $organisation->group_id,
-        'organisation_id' => $organisation->id,
-        'partner_id'      => $organisation->id,
-        'customer_id'     => $partnerCustomer->id,
-        'sources'         => '{}',
-        'created_at'      => now(),
-        'updated_at'      => now(),
-    ]);
+    $owner = $newCustomer();
+    $other = $newCustomer();
 
-    createProduct($shop);
-    $intercompany = $shop->products()->orderBy('id')->first();
-    $public       = StoreProduct::make()->action($intercompany->family, array_merge(
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
         Product::factory()->definition(),
-        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+        [
+            'trade_units'               => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'                     => 1,
+            'exclusive_for_customer_id' => $owner->id,
+        ]
     ));
-    DB::table('products')->whereIn('id', [$intercompany->id, $public->id])
-        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
 
-    $invoiceFor = function ($customer, $product) {
-        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
-        \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
-            'date'            => now(),
-            'tax_category_id' => $invoice->tax_category_id,
-            'quantity'        => 1,
-            'gross_amount'    => 10,
-            'net_amount'      => 10,
-        ]);
-    };
-    $privateLabel = StoreProduct::make()->action($intercompany->family, array_merge(
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and(Product::whereKey($product->id)->visibleToCustomer($other->id)->exists())->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1);
+});
+
+test('staff choose who a product is sold to from its edit page', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner      = $newCustomer();
+    $wrongOwner = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
         Product::factory()->definition(),
-        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 3]
+        ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
     ));
-    DB::table('products')->where('id', $privateLabel->id)
-        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => [$wrongOwner->id]]);
 
-    $invoiceFor($partnerCustomer, $intercompany);
-    $invoiceFor($partnerCustomer, $public);
-    $invoiceFor($publicCustomer, $public);
-    $invoiceFor($publicCustomer, $privateLabel);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($owner, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
 
-    $repair   = \App\Actions\Maintenance\Catalogue\RepairUnrecordedExclusiveProducts::make();
-    $partners = $repair->partnerCustomerIds($shop);
-    expect($partners)->toBe([$partnerCustomer->id])
-        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id])
-        ->and($repair->singleBuyerCandidates($shop)->reorder("id")->get()->map(fn ($product) => [$product->id, $product->buyer_id])->all())
-        ->toBe([[$intercompany->id, $partnerCustomer->id], [$privateLabel->id, $publicCustomer->id]]);
+    $soldOnlyTo = fn () => collect(EditProduct::make()->getBlueprint($product->refresh()))->pluck('fields')->collapse();
 
-    $repair->handle($intercompany, $partners);
-    $repair->handle($privateLabel, [$publicCustomer->id]);
-    $intercompany->refresh();
-    $privateLabel->refresh();
-    expect($intercompany->exclusive_for_customer_id)->toBe($partnerCustomer->id)
-        ->and($privateLabel->exclusive_for_customer_id)->toBe($publicCustomer->id)
-        ->and($repair->candidates($shop, $partners)->count())->toBe(0)
-        ->and($repair->singleBuyerCandidates($shop)->count())->toBe(0);
+    expect($soldOnlyTo()->get('customer_ids')['value'])->toBe([$wrongOwner->id])
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'][0]['description'])->toContain($owner->reference)
+        ->and($soldOnlyTo()->has('is_for_sale'))->toBeFalse();
+
+    UpdateProduct::make()->action($product, ['exclusive_for_customer_id' => $owner->id]);
+    expect($product->refresh()->exclusive_for_customer_id)->toBe($wrongOwner->id);
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => [$owner->id]])
+        ->assertSessionHasNoErrors();
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and($product->exclusive_for_customer_id)->toBe($owner->id)
+        ->and($product->is_for_sale)->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1)
+        ->and($wrongOwner->refresh()->number_exclusive_products)->toBe(0)
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'])->toBe([]);
+
+    expect(fn () => StoreProductWebpage::make()->action($product))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $product->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('exclusive_customers.0.reference', $owner->reference)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', __('Create Webpage')))
+        );
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => []])
+        ->assertSessionHasNoErrors();
+
+    expect($product->refresh()->exclusive_for_customer_id)->toBeNull()
+        ->and($product->isExclusive())->toBeFalse();
 });
 
 test('repair repoints products from a discontinued org stock to its active twin', function () {
@@ -1138,6 +1153,22 @@ test('a bundle spec block says which component each ingredient and size belongs 
         ->and($specifications['dimensions'])
         ->toContain($bulb->code.' (')
         ->toContain($lamp->code.' (');
+});
+
+test('product detail carries the public documents of the selected variant', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $publicDocument = createAttachedMedia('Product', $product->id, 'doc');
+    createAttachedMedia('Product', $product->id, 'doc_private');
+
+    $attachments = \App\Actions\Iris\Catalogue\GetProductDetail::make()
+        ->jsonResponse(Product::find($product->id), \Lorisleiva\Actions\ActionRequest::createFrom(request()))['attachments'];
+
+    expect($attachments)->toHaveCount(1)
+        ->and($attachments[0]['media_ulid'])->toBe($publicDocument->ulid)
+        ->and($attachments[0]['scope'])->toBe('doc');
 });
 
 test('bulk update product unit is scoped to shop', function () {
@@ -1362,8 +1393,8 @@ test('retina new arrivals hide exclusive products from other customers and famil
         'state'             => ProductStateEnum::ACTIVE->value,
         'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
     ]);
-    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
     \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => []]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
 
     $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
         \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
@@ -1455,6 +1486,55 @@ test('shop products json carries the outer size from the stock, not the product 
         ->firstWhere('id', $product->id);
 
     expect($multi->packed_in)->toBeNull();
+});
+
+test('an on-demand stock never caps a product, and the shop products json reports what is on the shelf', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $onDemandStock      = $this->orgStock1;
+    $stockedStock       = $this->orgStock2;
+    $stockAttributes    = ['is_on_demand', 'has_been_in_warehouse', 'quantity_available'];
+    $originalOnDemand   = $onDemandStock->only($stockAttributes);
+    $originalStocked    = $stockedStock->only($stockAttributes);
+    $originalIsForSale  = $product->is_for_sale;
+    $originalStockLinks = $product->orgStocks->mapWithKeys(fn ($orgStock) => [$orgStock->id => ['quantity' => $orgStock->pivot->quantity]])->all();
+
+    $shelfRow = function () use ($shop, $product): ?array {
+        $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
+        $data     = \App\Http\Resources\Catalogue\ProductsWebpageResource::collection($products)->response()->getData(true)['data'];
+
+        return collect($data)->firstWhere('id', $product->id);
+    };
+
+    try {
+        $product->update(['is_for_sale' => true]);
+        $onDemandStock->update(['is_on_demand' => true, 'has_been_in_warehouse' => true, 'quantity_available' => 0]);
+        $stockedStock->update(['is_on_demand' => false, 'has_been_in_warehouse' => true, 'quantity_available' => 7]);
+
+        $product->orgStocks()->sync([$onDemandStock->id => ['quantity' => 20]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+        $product->refresh();
+
+        expect($product->is_on_demand)->toBeTrue()
+            ->and($product->available_quantity)->toBe(ProductHydrateAvailableQuantity::ON_DEMAND_QUANTITY)
+            ->and($shelfRow())->toMatchArray(['is_on_demand' => true, 'shelf_quantity' => 0]);
+
+        $product->orgStocks()->sync([$onDemandStock->id => ['quantity' => 1], $stockedStock->id => ['quantity' => 1]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+        $product->refresh();
+
+        expect($product->is_on_demand)->toBeFalse()
+            ->and($product->available_quantity)->toBe(7)
+            ->and($shelfRow())->toMatchArray(['is_on_demand' => false, 'stock' => 7, 'shelf_quantity' => 0]);
+    } finally {
+        $onDemandStock->update($originalOnDemand);
+        $stockedStock->update($originalStocked);
+        $product->update(['is_for_sale' => $originalIsForSale]);
+        $product->orgStocks()->sync($originalStockLinks);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+    }
 });
 
 test('faire case size change flags the product for units review until its trade units are saved', function () {
@@ -1699,4 +1779,32 @@ test('product barcode is left alone when it stops being a single trade unit', fu
 
     /* Clearing it here is what emptied 561 products and pushed blank GTINs to live listings. */
     expect($product->barcode)->toBe('5060000000011');
+});
+
+test('customer service gets one stock notification for all their shops, new apart from back', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $shop = Shop::first();
+    createProduct($shop);
+    $product = $shop->products()->orderByDesc('id')->first();
+    $shop->updateQuietly(['is_aiku' => true, 'state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::SENT_MARKER);
+
+    $agent = $this->adminGuest->getUser();
+    $agent->assignRole(Role::where('name', \App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $shop))->firstOrFail());
+
+    $product->updateQuietly(['is_for_sale' => true, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'available_quantity' => 4, 'back_in_stock_since' => now()->subMinute(), 'first_in_stock_at' => now()->subMinute()]);
+
+    expect(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run())->toBe(0);
+
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($agent, \App\Notifications\ShopStockArrivalsNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertSentTo($agent, \App\Notifications\ShopStockArrivalsNotification::class, function ($notification) use ($product, $shop) {
+        $data = $notification->toArray(null);
+
+        return in_array($product->code, $notification->newCodes, true)
+            && !in_array($product->code, $notification->backCodes, true)
+            && in_array($shop->code, $notification->shopCodes, true)
+            && str_contains($data['body'], 'New in stock: ')
+            && str_contains($data['title'], $shop->code);
+    });
 });

@@ -9,7 +9,7 @@ import { inject } from "vue"
 import Timeline from '@/Components/Utils/Timeline.vue'
 
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -89,11 +89,10 @@ const locale = inject('locale', aikuLocaleStructure)
             <p class="mt-6 text-justify text-gray-600" v-html="headline.description">
             </p>
 
-            <a href="https://drive.google.com/drive/folders/1NdUdvzwTL-bw749wEmAMVuEcnuxO56Za" target="_blank" class="block mt-10 w-fit">
+            <a href="/docs" target="_blank" class="block mt-10 w-fit">
                 <Button
-                    :label="trans('View tutorials') + ` (6)`"
+                    :label="ctrans('Help and guides')"
                     type="tertiary"
-                    av-tooltip="trans('This feature is on progress.')"
                     iconRight="fal fa-external-link"
                 />
             </a>

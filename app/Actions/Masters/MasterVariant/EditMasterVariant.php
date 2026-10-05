@@ -124,6 +124,12 @@ class EditMasterVariant extends OrgAction
                             'label'   => __('Variant'),
                             'icon'    => 'fa-light fa-shapes',
                             'fields'  => [
+                                'label' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Label'),
+                                    'information' => __('Shown as the product title on the website product cards, translated into each shop language. When empty, the leader product name is used.'),
+                                    'value'       => $masterVariant->label,
+                                ],
                                 'variant'  => [
                                     'type'     => 'input-variant',
                                     'label'    => __('Variants'),

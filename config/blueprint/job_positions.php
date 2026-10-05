@@ -135,6 +135,36 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-cpl-m'    => [
+            'code'               => 'gp-cpl-m',
+            'name'               => 'Compliance Manager',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_MANAGER
+            ],
+            'organisation_types' => []
+        ],
+        'gp-cpl-s'    => [
+            'code'               => 'gp-cpl-s',
+            'name'               => 'Compliance Supervisor',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_SUPERVISOR
+            ],
+            'organisation_types' => []
+        ],
+        'gp-cpl-w'    => [
+            'code'               => 'gp-cpl-w',
+            'name'               => 'Compliance Worker',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_WORKER
+            ],
+            'organisation_types' => []
+        ],
 
         'org-admin'  => [
             'code'               => 'org-admin',
@@ -147,6 +177,30 @@ return [
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
                 OrganisationTypeEnum::DIGITAL_AGENCY,
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
+        'agt-m'      => [
+            'code'               => 'agt-m',
+            'name'               => 'Agent manager',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_MANAGER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
+        'agt-c'      => [
+            'code'               => 'agt-c',
+            'name'               => 'Agent clerk',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_CLERK
+            ],
+            'organisation_types' => [
                 OrganisationTypeEnum::AGENT
             ]
         ],
@@ -258,7 +312,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_SUPERVISOR
+                RolesEnum::MARKETING_SUPERVISOR,
+                RolesEnum::DISCOUNTS_SUPERVISOR
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -271,7 +326,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_CLERK
+                RolesEnum::MARKETING_CLERK,
+                RolesEnum::DISCOUNTS_CLERK
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -323,6 +379,19 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'roles'              => [
                 RolesEnum::CUSTOMER_SERVICE_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
+        'acc-o'      => [
+            'code'               => 'acc-o',
+            'name'               => 'Accounts orders',
+            'department'         => 'admin',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'roles'              => [
+                RolesEnum::ACCOUNTING_ORDERS
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -390,13 +459,14 @@ return [
         ],
         'dist-pik' => [
             'code'       => 'dist-pik',
-            'name'       => 'Picker',
+            'name'       => 'Picker/Returns',
             'scope'      => JobPositionScopeEnum::WAREHOUSES,
             'team'       => 'warehouse',
             'department' => 'warehouse',
 
             'roles'              => [
-                RolesEnum::DISPATCH_CLERK
+                RolesEnum::DISPATCH_CLERK,
+                RolesEnum::RETURNS_CLERK
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

@@ -23,6 +23,10 @@ import MarketingOverview from '@/Components/DataDisplay/MarketingOverview.vue'
 import AttributionDataQuality from '@/Components/DataDisplay/AttributionDataQuality.vue'
 import ClickFraud from '@/Components/DataDisplay/ClickFraud.vue'
 import OfferPerformance from '@/Components/DataDisplay/OfferPerformance.vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faHeartbeat, faUserSecret, faChartNetwork, faNewspaper, faCog } from '@fal'
+
+library.add(faHeartbeat, faUserSecret, faChartNetwork, faNewspaper, faCog)
 
 const props = defineProps<{
     title: string,
@@ -49,7 +53,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        dashboard: {},
         data_quality: AttributionDataQuality,
         fraud: ClickFraud,
         offers: OfferPerformance,
@@ -74,7 +77,7 @@ const component = computed(() => {
             :reloadOnly="['marketing_overview', 'intervals', currentTab]"
         />
     </div>
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component v-if="component" :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
     <MarketingOverview v-if="currentTab === 'dashboard' && marketing_overview" :overview="marketing_overview" />
     <SimpleBox v-if="currentTab === 'dashboard' && dashboard_stats" :box_stats="dashboard_stats" />
 </template>

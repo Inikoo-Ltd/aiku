@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, onMounted, onBeforeUnmount, nextTick, computed, watch } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
@@ -66,8 +66,8 @@ const { lockedLocationIds, announceLock } = useLowStockAuditBroadcast({
             isStockCheckModalOpen.value = false
 
             notify({
-                title: trans('Audit in progress'),
-                text: trans('Location :location is being audited somewhere else', {
+                title: ctrans('Audit in progress'),
+                text: ctrans('Location :location is being audited somewhere else', {
                     location: event.location_code ?? '',
                 }),
                 type: 'warning',
@@ -134,7 +134,10 @@ const isMoveStock = ref(false)
 const isEditLocations = ref(false)
 
 // Functions
+const canEditStock = computed(() => props.stocks_management?.can_edit !== false)
+
 const setActivePickingLocation = (location: StockLocation, scope: string) => {
+    if (!canEditStock.value) return
     // Leave it disabled for now. Always have active location. Checked through DB & Logic across actions. Need to ask Raul next
     // activePickingLocationWholesale.value = activePickingLocationWholesale.value === location.id ? null : location.id;
     if (scope == 'wholesale') {
@@ -175,6 +178,7 @@ const setQuestionPopoverRef = (el: any, locationId: number) => {
 
 
 const toggleQuestionPopover = async (locationId: number, event: Event) => {
+    if (!canEditStock.value) return
     event.stopPropagation()
 
     // Initialize tempMinMaxStock for this location if not exists
@@ -225,7 +229,7 @@ const saveMinMaxStock = (location: StockLocation) => {
     const max = tempMinMaxStock.value[locationId]?.max_stock
 
     if (min !== null && max !== null && min > max) {
-        alert(trans('Minimum stock cannot be greater than maximum stock'))
+        alert(ctrans('Minimum stock cannot be greater than maximum stock'))
         return
     }
 
@@ -269,6 +273,7 @@ const onNotePopoverShow = () => {
     focusWithRetry('note')
 }
 const toggleNotePopover = async(event: Event, loc: StockLocation) => {
+    if (!canEditStock.value) return
     if(isLoadingNoteUpdate.value === loc.id) return;
 
     event.stopPropagation()
@@ -309,9 +314,9 @@ const onSaveNote = (editedLoc: StockLocation) => {
 
 const getQuestionTooltip = (locationId: number) => {
     if (isActivePickingLocation(locationId)) {
-        return trans('Recommended min/max stock')
+        return ctrans('Recommended min/max stock')
     } else {
-        return trans('Recommended replenishment quantity')
+        return ctrans('Recommended replenishment quantity')
     }
 }
 
@@ -405,7 +410,7 @@ const MODALS = {
     ADD_LOCATION: 'add_location'
 }
 
-const visibleActions = computed(() => props.actions ?? Object.values(MODALS))
+const visibleActions = computed(() => canEditStock.value ? (props.actions ?? Object.values(MODALS)) : [])
 const showAction = (action: string) => visibleActions.value.includes(action)
 const locationCount = computed(() => props.stocks_management.locations.length)
 const actionGridClass = computed(() => {
@@ -413,9 +418,9 @@ const actionGridClass = computed(() => {
     return {
         1: 'xl:grid-cols-1',
         2: 'xl:grid-cols-2',
-        3: 'xl:grid-cols-3',
-        4: 'xl:grid-cols-4',
-    }[count] ?? 'xl:grid-cols-4'
+        3: '2xl:grid-cols-3',
+        4: '2xl:grid-cols-4',
+    }[count] ?? '2xl:grid-cols-4'
 })
 
 const isStockCheckModalOpen = ref(false)
@@ -437,8 +442,8 @@ const openModal = async (type: string, payload: number | null = null) => {
 
         if (!(await announceAuditModalLock(true))) {
             notify({
-                title: trans('Being audited somewhere else'),
-                text: trans('This stock is already being counted'),
+                title: ctrans('Being audited somewhere else'),
+                text: ctrans('This stock is already being counted'),
                 type: 'warning',
             })
 
@@ -515,7 +520,7 @@ const onAddLocationShow = () => {
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <span>
-                <h2 v-if="header_title" class="text-xl font-bold flex items-center gap-2">
+                <h2 v-if="header_title" class="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-2">
                     {{ header_title }}
                     <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
                 </h2>
@@ -540,7 +545,7 @@ const onAddLocationShow = () => {
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="trans('Stock in Location')">
+                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="ctrans('Stock in Location')">
                     <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional" />
                     <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
@@ -660,20 +665,21 @@ const onAddLocationShow = () => {
                             }">
                             <div class="col-span-4 flex items-center gap-x-3">
                                 <!-- Note Icon with Popover -->
-                                <div class="relative">
+                                <div v-if="canEditStock || loc.notes" class="relative">
                                     <div @click="(event) => toggleNotePopover(event, loc)"
-                                        v-tooltip="trans(`Add part's location note`)"
-                                        class="cursor-pointer transition-colors duration-200"
-                                        :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
+                                        v-tooltip="canEditStock ? ctrans(`Add part's location note`) : loc.notes"
+                                        class="transition-colors duration-200"
+                                        :class="[canEditStock && 'cursor-pointer', loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700']"
                                     >
                                         <LoadingIcon v-if="isLoadingNoteUpdate === loc.id"/>
                                         <FontAwesomeIcon v-else :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
                                     </div>
                                 </div>
                                 <!-- Wholesale Icon -->
-                                <div @click="() => setActivePickingLocation(loc, 'wholesale')"
-                                    v-tooltip="trans('Set as active picking location [Wholesale]')"
-                                    class="cursor-pointer transition-colors duration-200" :class="{
+                                <div v-if="canEditStock || activePickingLocationWholesale === loc.id" @click="() => setActivePickingLocation(loc, 'wholesale')"
+                                    v-tooltip="canEditStock ? ctrans('Set as active picking location [Wholesale]') : ctrans('Active picking location [Wholesale]')"
+                                    class="transition-colors duration-200" :class="{
+                                        'cursor-pointer': canEditStock,
                                         'text-orange-500': activePickingLocationWholesale === loc.id,
                                         'text-gray-600 hover:text-orange-400 opacity-30 hover:opacity-60': activePickingLocationWholesale !== loc.id
                                     }">
@@ -681,9 +687,10 @@ const onAddLocationShow = () => {
                                     <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-dolly-flatbed-empty' : 'fal fa-dolly-flatbed-empty'"
                                         class="" fixed-width aria-hidden="true" />
                                 </div>
-                                <div @click="() => setActivePickingLocation(loc, 'dropshipping')"
-                                    v-tooltip="trans('Set as active picking location [Dropshipping]')"
-                                    class="transition-colors duration-200 cursor-pointer" :class="{
+                                <div v-if="canEditStock || activePickingLocationDropshipping === loc.id" @click="() => setActivePickingLocation(loc, 'dropshipping')"
+                                    v-tooltip="canEditStock ? ctrans('Set as active picking location [Dropshipping]') : ctrans('Active picking location [Dropshipping]')"
+                                    class="transition-colors duration-200" :class="{
+                                        'cursor-pointer': canEditStock,
                                         'text-gray-400': activePickingLocationDropshipping !== loc.id,
                                         'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
                                         'text-blue-700': activePickingLocationDropshipping === loc.id,
@@ -705,12 +712,12 @@ const onAddLocationShow = () => {
                                 <!-- Question Icon(s) -->
                                 <div @click="(event) => toggleQuestionPopover(loc.id, event)"
                                     v-tooltip="getQuestionTooltip(loc.id)"
-                                    class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
+                                    class="text-gray-400 flex gap-1" :class="[canEditStock && 'cursor-pointer hover:text-gray-700']">
                                     <LoadingIcon v-if="isLoadingQtyUpdate === loc.id"/>
                                     <span v-else-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
                                         )</span>
                                     <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && !isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
-                                    <div v-else>
+                                    <div v-else-if="canEditStock">
                                         <FontAwesomeIcon icon="fal fa-question-square" class="" fixed-width
                                             aria-hidden="true" />
                                         <!-- Show second question icon only when location is active -->
@@ -723,32 +730,32 @@ const onAddLocationShow = () => {
                                     <div class="w-80 p-2">
                                         <div class="mb-3">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                                {{ isActivePickingLocation(loc.id) ? trans('Min/Max Stock') :
-                                                trans('Replenishment Quantity') }} - {{ loc.code }}
+                                                {{ isActivePickingLocation(loc.id) ? ctrans('Min/Max Stock') :
+                                                ctrans('Replenishment Quantity') }} - {{ loc.code }}
                                             </label>
                                             <!-- Show Min/Max inputs when location is active -->
                                             <div v-if="isActivePickingLocation(loc.id)" class="space-y-3">
                                                 <div>
                                                     <label class="block text-xs font-medium text-gray-600 mb-1">
-                                                        {{ trans('Min') }}
+                                                        {{ ctrans('Min') }}
                                                     </label>
                                                     <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min_stock || null"
                                                         :ref="(el) => setInputRef(el, `min-${loc.id}`)"
                                                         @update:modelValue="(val) => {
                                                             if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
                                                             tempMinMaxStock[loc.id].min_stock = val
-                                                        }" class="w-full" :placeholder="trans('Enter minimum stock')"
+                                                        }" class="w-full" :placeholder="ctrans('Enter minimum stock')"
                                                         :min="0" autofocus/>
                                                 </div>
                                                 <div>
                                                     <label class="block text-xs font-medium text-gray-600 mb-1">
-                                                        {{ trans('Max') }}
+                                                        {{ ctrans('Max') }}
                                                     </label>
                                                     <InputNumber :modelValue="tempMinMaxStock[loc.id]?.max_stock || null"
                                                         @update:modelValue="(val) => {
                                                             if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
                                                             tempMinMaxStock[loc.id].max_stock = val
-                                                        }" class="w-full" :placeholder="trans('Enter maximum stock')"
+                                                        }" class="w-full" :placeholder="ctrans('Enter maximum stock')"
                                                         :min="0" />
                                                 </div>
                                             </div>
@@ -758,36 +765,36 @@ const onAddLocationShow = () => {
                                                     @update:modelValue="(val) => {
                                                     if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
                                                     tempMinMaxStock[loc.id].replenishment_stock = val
-                                                    }" class="w-full" :placeholder="trans('Enter replenishment quantity')"
+                                                    }" class="w-full" :placeholder="ctrans('Enter replenishment quantity')"
                                                     :min="0" />
                                             </div>
                                         </div>
                                         <div class="flex justify-end gap-2">
                                             <button @click="() => cancelMinMaxStock(loc.id)"
                                                 class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                                                {{ trans('Cancel') }}
+                                                {{ ctrans('Cancel') }}
                                             </button>
                                             <button @click="() => saveMinMaxStock(loc)"
                                                 class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                {{ trans('Save') }}
+                                                {{ ctrans('Save') }}
                                             </button>
                                         </div>
                                     </div>
                                 </Popover>
                             </div>
                             <div v-if="loc.audited_at"
-                                v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
+                                v-tooltip="ctrans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
                                 class="col-span-2 text-center text-sm whitespace-nowrap">
                                 {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
                                 <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
                             </div>
                             <div v-else
                                 class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
-                                {{ trans("Never audited") }}
+                                {{ ctrans("Never audited") }}
                             </div>
                             <div class="text-center font-semibold border-l">
                                 <span
-                                    v-tooltip="trans('Stock quantity')"
+                                    v-tooltip="ctrans('Stock quantity')"
                                     class="cursor-pointer hover:text-blue-500 transition tabular-nums"
                                     @dblclick="!isAuditLocked && openModal(MODALS.STOCK_CHECK, loc.id)"
                                 >
@@ -806,7 +813,7 @@ const onAddLocationShow = () => {
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
+        <div v-if="visibleActions.length" class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
             <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0 || isAuditLocked" :tooltip="locationCount === 0 ? ctrans('No location to audit') : (isAuditLocked ? ctrans('This stock is being audited somewhere else') : undefined)" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
@@ -818,7 +825,7 @@ const onAddLocationShow = () => {
             <div class="w-80 p-2">
                 <div class="mb-3">
                     <label class="block text-sm mb-2">
-                        {{ trans('Location Note') }} - <span class="font-bold">{{ tempLocToEdit?.code }}</span>
+                        {{ ctrans('Location Note') }} - <span class="font-bold">{{ tempLocToEdit?.code }}</span>
                     </label>
 
                     <PureTextarea
@@ -830,7 +837,7 @@ const onAddLocationShow = () => {
                             }
                         }"
                         autofocus
-                        :placeholder="trans('Enter note for this location...')"
+                        :placeholder="ctrans('Enter note for this location...')"
                         class="resize-none"
                         rows="4"
                     />

@@ -32,6 +32,8 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
 
     public int $jobTimeout = 120;
 
+    public int $jobUniqueFor = 1800;
+
     public array $jobBackoff = [10, 30];
 
     public function getJobUniqueId(?int $outboxID): string

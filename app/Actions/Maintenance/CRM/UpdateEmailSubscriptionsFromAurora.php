@@ -72,7 +72,7 @@ class UpdateEmailSubscriptionsFromAurora
                             ];
 
 
-                            UpdateCustomerComms::run($customer->comms, $dataToUpdate, false);
+                            UpdateCustomerComms::run($customer->comms, $dataToUpdate);
                         }
                     }
                 }

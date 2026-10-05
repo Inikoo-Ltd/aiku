@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Trolley;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -20,6 +21,7 @@ use App\Actions\Audits\DispatchSimpleAudit;
 
 class AttachTrolleyToDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
+    use WithDeliveryNotePackaging;
 
     /**
      * $isHandled splits the delivery note in two: the items the picker still has to walk to, and the
@@ -89,6 +91,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ))
             ->addSelect([
                  'un_numbers' => $this->getUnNumbersSubquery(),
+                'indivisible_set' => $this->getIndivisibleSetSubquery(),
                 'location_org_stocks' => DB::table('location_org_stocks')
                     ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
                     ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
@@ -204,10 +207,19 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
-
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction, false);
             if ($allowAction) {
                 $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
+            }
+
+
+            if ($deliveryNote && $this->effectivePackaging($deliveryNote)) {
+                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            }
+
+            if ($deliveryNote?->shop?->hasPackagingAndInserts() && $deliveryNote->leaflets->isNotEmpty()) {
+                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             }
         };
     }

@@ -22,7 +22,6 @@ defineProps<{
 
 
 function rentalRoute(rental: {}) {
-    console.log(route().current())
     switch (route().current()) {
 
         case "grp.org.fulfilments.show.catalogue.rentals.index":

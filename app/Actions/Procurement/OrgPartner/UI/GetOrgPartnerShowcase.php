@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Http\Resources\Helpers\AddressResource;
+use App\Models\CRM\Customer;
 use App\Models\Procurement\OrgPartner;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -31,6 +32,7 @@ class GetOrgPartnerShowcase
                 'photo'    => $partner->imageSources()
             ],
             'miniCart'    => GetPartnerMiniCart::run($orgPartner),
+            'customerAccounts' => $this->getCustomerAccounts($orgPartner),
             'stats'       => [
                 [
                     'label' => __('Shopping list'),
@@ -54,5 +56,28 @@ class GetOrgPartnerShowcase
                 ],
             ]
         ];
+    }
+
+    /**
+     * The one account per shop the partner buys under; orders on it are invoiced as partner sales.
+     */
+    private function getCustomerAccounts(OrgPartner $orgPartner): array
+    {
+        return Customer::query()
+            ->where('organisation_id', $orgPartner->organisation_id)
+            ->where('as_organisation_id', $orgPartner->partner_id)
+            ->with('shop:id,slug,name')
+            ->orderBy('shop_id')
+            ->get(['id', 'slug', 'reference', 'name', 'shop_id'])
+            ->map(fn (Customer $customer) => [
+                'shop'      => $customer->shop->name,
+                'reference' => $customer->reference,
+                'name'      => $customer->name,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show',
+                    'parameters' => [$orgPartner->organisation->slug, $customer->shop->slug, $customer->slug],
+                ],
+            ])
+            ->all();
     }
 }

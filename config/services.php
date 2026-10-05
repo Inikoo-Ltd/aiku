@@ -130,6 +130,16 @@ return [
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
     ],
+    'openrouter' => [
+        'api_key'        => env('OPENROUTER_API_KEY'),
+        'decision_model' => env('OPENROUTER_DECISION_MODEL', '~typesafe/jev-latest'),
+        'low_credit_alert' => (float) env('OPENROUTER_LOW_CREDIT_ALERT', 5),
+        // Sent with every request to these models. DeepSeek V4.1 Flash thinks first by default: 40 seconds and five times the price for the same answer.
+        'embedding_model' => env('OPENROUTER_EMBEDDING_MODEL', 'baai/bge-m3'),
+        'model_options' => [
+            'deepseek/deepseek-v4.1-flash' => ['reasoning' => ['enabled' => false], 'provider' => ['data_collection' => 'deny']],
+        ],
+    ],
     'pastpay' => [
         'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
         'base_url' => env('PASTPAY_BASE_URL'),
@@ -147,12 +157,17 @@ return [
     'github' => [
         'token' => env('GITHUB_TOKEN'),
         'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
     ],
     'klipy' => [
         'key' => env('KLIPY_API_KEY'),
     ],
     'indexnow' => [
         'key' => env('INDEXNOW_KEY'),
+    ],
+    'timesfm' => [
+        'url'   => env('TIMESFM_URL'),
+        'token' => env('TIMESFM_TOKEN'),
     ],
 
 ];

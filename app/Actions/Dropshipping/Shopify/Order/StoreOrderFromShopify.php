@@ -48,7 +48,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $declinedReason = Arr::get($modelData, 'declined_reason');
 
-        $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'id'))->first();
+        $existOrder = Order::withTrashed()->where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
         if ($existOrder) {
             if (!$existOrder->isDeclinedPlatformRequest()) {
@@ -74,7 +74,6 @@ class StoreOrderFromShopify extends OrgAction
             $deliveryAddress = $this->getFallbackDeliveryAddress($shopifyUser);
         }
 
-        $customerClient  = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
         $shopifyProducts = collect(Arr::get($modelData, 'line_items', []));
 
         $matchedShopifyProducts = [];
@@ -102,6 +101,12 @@ class StoreOrderFromShopify extends OrgAction
                 .json_encode($unmatchedShopifyProducts)
             );
         }
+
+        if (!$declinedReason && !$matchedShopifyProducts) {
+            return;
+        }
+
+        $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
 
         if ($declinedReason) {
             StoreOrder::make()->action($customerClient, [
@@ -214,7 +219,7 @@ class StoreOrderFromShopify extends OrgAction
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)
-            ->where('reference', $reference)
+            ->whereRaw('lower(reference) = lower(?)', [$reference])
             ->first();
 
         if (!$customerClientID) {

@@ -9,12 +9,14 @@
 namespace App\Actions\Retina\Ebay;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PublishAllRetinaEbayDraftPortfolios extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void

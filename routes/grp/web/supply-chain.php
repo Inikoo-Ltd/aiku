@@ -19,6 +19,7 @@ use App\Actions\SupplyChain\Supplier\ExportSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
 use App\Actions\SupplyChain\Supplier\UI\IndexAgentSuppliers;
+use App\Actions\SupplyChain\Supplier\UI\IndexAssignableSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
@@ -32,9 +33,10 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
+Route::get('/', ShowSupplyChainPurchaseOrderJourney::class)->name('dashboard');
+Route::get('overview', ShowSupplyChainDashboard::class)->name('overview');
 Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
-Route::get('po-journey', ShowSupplyChainPurchaseOrderJourney::class)->name('po_journey.dashboard');
+Route::redirect('po-journey', '/supply-chain')->name('po_journey.redirect');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 
@@ -52,6 +54,7 @@ Route::prefix("agents")->name("agents.")->group(
             Route::prefix('suppliers')->as('.suppliers')->group(function () {
                 Route::get('', [IndexSuppliers::class, 'inAgent'])->name('.index');
                 Route::get('create', [CreateSupplier::class, 'inAgent'])->name('.create');
+                Route::get('assignable', IndexAssignableSuppliers::class)->name('.assignable');
 
                 Route::prefix('{supplier}')->group(function () {
                     Route::get('', [ShowSupplier::class, 'inAgent'])->name('.show');
@@ -92,6 +95,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
 
         Route::prefix('{supplier}')->group(function () {
             Route::get('', ShowSupplier::class)->name('.show');
+            Route::get('edit', EditSupplier::class)->name('.edit');
 
             Route::prefix('supplier-products')->as('.supplier_products')->group(function () {
                 Route::get('', [IndexSupplierProducts::class, 'inSupplier'])->name('.index');

@@ -3,7 +3,7 @@ title: Raising a ticket from a chat
 summary: Turn a customer conversation into a ticket without retyping it, hold the chat open until the work is done, and let whoever fixes it tell the customer and close the conversation.
 date: 2026-09-21
 tags: chat, tickets, help desk
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

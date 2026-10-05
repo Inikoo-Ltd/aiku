@@ -16,6 +16,9 @@ use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -57,11 +60,11 @@ class CategoriseInvoice extends OrgAction
         return $invoice;
     }
 
-    public function getInvoiceCategory(Invoice $invoice): ?InvoiceCategory
+    public function getInvoiceCategory(Invoice|Order $invoice, ?EloquentCollection $invoiceCategories = null): ?InvoiceCategory
     {
         $invoiceCategory = null;
 
-        $invoiceCategories = $invoice->organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
+        $invoiceCategories ??= $this->getActiveInvoiceCategories($invoice->organisation);
         /** @var InvoiceCategory $invoiceCategory */
         foreach ($invoiceCategories as $invoiceCategory) {
             $invoiceCategory = match ($invoiceCategory->type) {
@@ -71,7 +74,7 @@ class CategoriseInvoice extends OrgAction
                 InvoiceCategoryTypeEnum::NOT_IN_COUNTRY => $this->notInHaystack($invoiceCategory, 'country_ids', $invoice->billing_country_id),
                 InvoiceCategoryTypeEnum::IN_ORGANISATION => $this->inOrganisation($invoiceCategory, $invoice->as_organisation_id),
                 InvoiceCategoryTypeEnum::VIP => $invoice->is_vip ? $invoiceCategory : null,
-                InvoiceCategoryTypeEnum::EXTERNAL_INVOICER => $invoice->external_invoicer_id ? $invoiceCategory : null,
+                InvoiceCategoryTypeEnum::EXTERNAL_INVOICER => $invoice instanceof Invoice && $invoice->external_invoicer_id ? $invoiceCategory : null,
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL => $this->inHaystack($invoiceCategory, 'sales_channel_ids', $invoice->sales_channel_id),
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL_SHOP => $this->salesChannelShop($invoice, $invoiceCategory),
                 InvoiceCategoryTypeEnum::IN_SHOP_OR_IN_SALES_CHANNEL_SHOP => $this->inShopOrSalesChannelShop($invoice, $invoiceCategory),
@@ -84,6 +87,11 @@ class CategoriseInvoice extends OrgAction
         }
 
         return $invoiceCategory;
+    }
+
+    public function getActiveInvoiceCategories(Organisation $organisation): EloquentCollection
+    {
+        return $organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
     }
 
 
@@ -122,7 +130,7 @@ class CategoriseInvoice extends OrgAction
     }
 
 
-    protected function shopFallback(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    protected function shopFallback(Invoice|Order $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
     {
         if ($invoice->shop_id == Arr::get($invoiceCategory->settings, 'shop_id')) {
             return $invoiceCategory;
@@ -132,7 +140,7 @@ class CategoriseInvoice extends OrgAction
     }
 
 
-    protected function inShopOrSalesChannelShop(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    protected function inShopOrSalesChannelShop(Invoice|Order $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
     {
         $shopsIds               = Arr::get($invoiceCategory->settings, 'shop_ids', []);
         $shopsIdsForChannelsIds = Arr::get($invoiceCategory->settings, 'shop_for_sales_channel_ids', []);
@@ -149,7 +157,7 @@ class CategoriseInvoice extends OrgAction
         return null;
     }
 
-    protected function salesChannelShop(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    protected function salesChannelShop(Invoice|Order $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
     {
         $shopsIds         = Arr::get($invoiceCategory->settings, 'shop_ids', []);
         $salesChannelsIds = Arr::get($invoiceCategory->settings, 'sales_channel_ids', []);
@@ -161,7 +169,7 @@ class CategoriseInvoice extends OrgAction
         return null;
     }
 
-    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=} {--e|empty only empty}';
+    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= : Shop slug} {--i|id=} {--e|empty : Only invoices without category} {--dry-run : Show the changes without saving them}';
 
 
     public function asCommand(Command $command): int
@@ -184,7 +192,7 @@ class CategoriseInvoice extends OrgAction
             $query->whereIn('organisation_id', $this->getOrganisationsIds($command));
         }
 
-        if ($command->hasOption('empty')) {
+        if ($command->option('empty')) {
             $query->whereNull('invoice_category_id');
         }
 
@@ -201,20 +209,20 @@ class CategoriseInvoice extends OrgAction
         }
 
 
-        $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
+        $isDryRun = (bool)$command->option('dry-run');
+        $changes  = [];
+
+        $query->chunk(1000, function (Collection $modelsData) use ($bar, $command, $isDryRun, &$changes) {
             foreach ($modelsData as $modelId) {
-                $invoice              = Invoice::withTrashed()->find($modelId->id);
-                $oldInvoiceCategoryId = $invoice->invoiceCategory?->id;
-                $oldInvoiceCategory   = $invoice->invoiceCategory;
-                $invoice              = $this->handle($invoice);
+                $invoice            = Invoice::withTrashed()->find($modelId->id);
+                $oldInvoiceCategory = $invoice->invoiceCategory;
+                $newInvoiceCategory = $isDryRun ? $this->getInvoiceCategory($invoice) : $this->handle($invoice)->invoiceCategory;
 
-
-                $newInvoiceCategoryId = $invoice->invoiceCategory?->id;
-
-                if ($oldInvoiceCategoryId != $newInvoiceCategoryId) {
-                    $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$invoice->invoiceCategory?->slug);
+                if ($oldInvoiceCategory?->id != $newInvoiceCategory?->id) {
+                    $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$newInvoiceCategory?->slug);
+                    $change           = ($oldInvoiceCategory?->slug ?? '-').' -> '.($newInvoiceCategory?->slug ?? '-');
+                    $changes[$change] = ($changes[$change] ?? 0) + 1;
                 }
-
 
                 $bar?->advance();
             }
@@ -222,6 +230,15 @@ class CategoriseInvoice extends OrgAction
         if ($bar) {
             $bar->finish();
             $command->info("");
+        }
+
+        $command->table(
+            ['Change', 'Invoices'],
+            collect($changes)->sortDesc()->map(fn ($count, $change) => [$change, $count])->values()->all()
+        );
+
+        if ($isDryRun) {
+            $command->warn('Dry run: nothing was saved');
         }
 
         return 0;

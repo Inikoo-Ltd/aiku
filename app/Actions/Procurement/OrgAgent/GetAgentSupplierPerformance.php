@@ -85,6 +85,7 @@ class GetAgentSupplierPerformance
             ->whereNull('aspo.deleted_at')
             ->whereIn('aspo.state', self::OPEN_STATES)
             ->whereNotIn('aspo.delivery_state', self::CLOSED_DELIVERY_STATES)
+            ->whereRaw("(aspo.data -> 'housekeeping') is null")
             ->groupBy('aspo.supplier_id')
             ->selectRaw("aspo.supplier_id,
                 count(*) as open_orders,

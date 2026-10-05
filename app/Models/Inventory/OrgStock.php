@@ -18,6 +18,9 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Production\ArtefactComplianceItem;
+use App\Models\Production\ArtefactLabel;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -71,10 +75,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
  * @property numeric $quantity_in_submitted_orders
  * @property numeric $quantity_to_be_picked
+ * @property numeric $quantity_reserved_for_pre_orders Goods that arrived for pre-orders whose balance is due
  * @property numeric $quantity_available
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
+ * @property bool $is_fresh
  * @property bool $is_excluded_from_auto_ordering
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
@@ -113,10 +119,14 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock query()
  * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactLabel> $labels
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactComplianceItem> $complianceItems
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Media> $attachments
  * @mixin \Eloquent
  */
-class OrgStock extends Model implements Auditable
+class OrgStock extends Model implements Auditable, HasMedia
 {
+    use HasAttachments;
     use HasFactory;
     use HasHistory;
     use HasSlug;
@@ -186,6 +196,7 @@ class OrgStock extends Model implements Auditable
         'name',
         'state',
         'is_on_demand',
+        'is_fresh',
         'is_excluded_from_auto_ordering',
         'packed_in',
         'barcode',
@@ -255,6 +266,19 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    /**
+     * Labels belong to the master SKO, so every organisation stocking it prints the same ones.
+     */
+    public function labels(): HasMany
+    {
+        return $this->hasMany(ArtefactLabel::class, 'stock_id', 'stock_id')->orderBy('name');
+    }
+
+    public function complianceItems(): HasMany
+    {
+        return $this->hasMany(ArtefactComplianceItem::class, 'stock_id', 'stock_id');
     }
 
     public function batchCodes(): HasMany

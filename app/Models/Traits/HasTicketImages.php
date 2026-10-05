@@ -128,6 +128,7 @@ trait HasTicketImages
 
         return $this->getMedia('ticket_attachments')
             ->map(fn (Media $media) => [
+                'ulid' => $media->ulid,
                 'name' => $media->name,
                 'url'  => route($routeName, ['ticket' => $ticketReference, 'media' => $media->ulid]),
                 'size' => $media->size,
@@ -139,7 +140,7 @@ trait HasTicketImages
     public function ticketImageSources(): array
     {
         return $this->getMedia('ticket_images')
-            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name])
+            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name, 'ulid' => $media->ulid])
             ->all();
     }
 }

@@ -20,11 +20,45 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteSowing extends OrgAction
 {
+    private Sowing $sowing;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->sowing->stockDeliveryItem) {
+            return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        }
+
+        return $request->user()->authTo([
+            "incoming.{$this->warehouse->id}.edit",
+            "returns.{$this->warehouse->id}",
+        ]);
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $stockDeliveryItem = $this->sowing->stockDeliveryItem;
+
+        if ($stockDeliveryItem && !$stockDeliveryItem->stockDelivery->isInGoodsIn()) {
+            $validator->errors()->add('sowing', __('A put-away can only be undone while the delivery is being booked in'));
+        }
+    }
+
     public function handle(Sowing $sowing, ?User $user = null): bool
+    {
+        return DB::transaction(fn () => $this->undo($sowing, $user));
+    }
+
+    private function undo(Sowing $sowing, ?User $user): bool
     {
         $stockDeliveryItem = $sowing->stockDeliveryItem;
 
@@ -52,9 +86,10 @@ class DeleteSowing extends OrgAction
                 $orgStock,
                 $location,
                 [
-                    'quantity' => -$sowing->quantity,
-                    'type'     => $type,
-                    'user_id'  => $user?->id,
+                    'quantity'   => -$sowing->quantity,
+                    'org_amount' => -$sowing->orgStockMovement->org_amount,
+                    'type'       => $type,
+                    'user_id'    => $user?->id,
                 ],
                 $sowing
             );
@@ -80,10 +115,12 @@ class DeleteSowing extends OrgAction
 
     public function asController(Sowing $sowing, ActionRequest $request): void
     {
+        $this->sowing = $sowing;
+
         if ($sowing->stockDeliveryItem) {
             $this->initialisation($sowing->stockDeliveryItem->organisation, $request);
         } else {
-            $this->initialisationFromShop($sowing->shop, $request);
+            $this->initialisationFromWarehouse($sowing->returnItem->returnDeliveryNote->warehouse, $request);
         }
 
         $this->handle($sowing, $request->user());
@@ -91,6 +128,9 @@ class DeleteSowing extends OrgAction
 
     public function action(Sowing $sowing, ?User $user = null): bool
     {
+        $this->asAction = true;
+        $this->sowing   = $sowing;
+
         if ($sowing->stockDeliveryItem) {
             $this->initialisation($sowing->stockDeliveryItem->organisation, []);
         } else {

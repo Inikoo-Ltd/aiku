@@ -54,6 +54,7 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
             ->line(Lang::get(Arr::get($data, 'notes', 'If you did not request a password reset, no further action is required.')));
 
         if (app()->isProduction()) {
+            $message->mailer('ses');
             if ($notifiable instanceof WebUser) {
                 $message->from($notifiable->shop->email);
             } else {

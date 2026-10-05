@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
@@ -65,18 +66,23 @@ class SummarizeChatSession
 
         $chatSession->update(['summarised_at' => now()]);
 
-        $summaryData = $this->parse(AskToAi::run($this->prompt(mb_substr($transcript, 0, 6000)), config('chat.summary_model')));
+        $model       = config('chat.summary_writer_model');
+        $summaryData = $this->parse(AskToAi::run($this->prompt(mb_substr($transcript, 0, 6000)), $model));
         if (!$summaryData) {
             return $chatSession;
         }
 
         $metadata               = $chatSession->metadata ?? [];
-        $metadata['ai_summary'] = Arr::only($summaryData, ['summary', 'key_points', 'status', 'sentiment']);
+        $metadata['ai_summary'] = Arr::only($summaryData, ['summary', 'key_points', 'status', 'sentiment']) + ['model' => $model];
 
         $chatSession->update([
             'metadata' => $metadata,
             'topic'    => ChatTopicEnum::tryFrom((string) Arr::get($summaryData, 'topic'))?->value ?? ChatTopicEnum::OTHER->value,
         ]);
+
+        if ($chatSession instanceof ChatSession && $chatSession->shop && in_array($chatSession->topic, ShopHydrateCustomersDashboard::PROBLEM_TOPICS, true)) {
+            ShopHydrateCustomersDashboard::dispatch($chatSession->shop)->delay(now()->addMinutes(2));
+        }
 
         return $chatSession;
     }

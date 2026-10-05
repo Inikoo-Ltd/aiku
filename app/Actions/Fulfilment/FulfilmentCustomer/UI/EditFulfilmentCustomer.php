@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\FulfilmentCustomer\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
@@ -103,7 +102,6 @@ class EditFulfilmentCustomer extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($fulfilmentCustomer->customer->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                                 'tax_number'               => [
@@ -112,7 +110,6 @@ class EditFulfilmentCustomer extends OrgAction
                                     'value'   => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : null,
                                     'country' => $fulfilmentCustomer->customer->address->country_code,
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ],
                                 ],
                                 'is_re'                    => [

@@ -87,14 +87,6 @@ class UpdateAgent extends OrgAction
                 $agent->update($updateData);
             }
 
-
-            if (array_key_exists('shop_id', $modelData)) {
-                AssignChatAgentToScope::make()->update([
-                    'organisation_id' => $organisation->id,
-                    'shop_id'         => $modelData['shop_id'],
-                ], $agent);
-            }
-
             return $agent;
         });
     }
@@ -103,16 +95,6 @@ class UpdateAgent extends OrgAction
     public function rules(): array
     {
         return [
-            'shop_id' => [
-                'sometimes',
-                'nullable',
-                'array',
-            ],
-            'shop_id.*' => [
-                'integer',
-                'exists:shops,id',
-            ],
-
             'organisation_id' => [
                 'sometimes',
                 'nullable',

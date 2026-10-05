@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Ordering\PreOrder\ReleasePreOrder;
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -122,6 +124,11 @@ class UpdateOrderPaymentsStatus extends OrgAction
          * the paid and unpaid counters never moved when a payment landed on a submitted order. */
         if ($order->state == OrderStateEnum::SUBMITTED && Arr::has($changes, 'pay_status')) {
             $this->orderHandlingHydrators($order, $order->state);
+        }
+
+        /** A pre-order whose goods are here goes to the warehouse the moment its balance is paid (HELP-3432) */
+        if ($payStatus == OrderPayStatusEnum::PAID && $order->preOrder?->state == PreOrderStateEnum::BALANCE_REQUESTED) {
+            ReleasePreOrder::dispatch($order->preOrder)->afterCommit();
         }
 
         return $order;

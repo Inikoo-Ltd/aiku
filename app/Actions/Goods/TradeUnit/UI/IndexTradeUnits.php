@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitEditSections;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitStandardIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Enums\UI\Goods\TradeUnitsTabsEnum;
@@ -25,6 +26,7 @@ class IndexTradeUnits extends OrgAction
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
     use WithTradeUnitStandardIndex;
+    use WithTradeUnitEditSections;
 
     private Group $parent;
     private string $bucket;
@@ -137,6 +139,8 @@ class IndexTradeUnits extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => TradeUnitsTabsEnum::navigation(),
                 ],
+                'is_checkbox' => $this->canEdit,
+                'bulk_edit'   => $this->canEdit ? $this->getTradeUnitsBulkEdit() : null,
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => $this->jsonResponse($tradeUnits)
@@ -146,8 +150,8 @@ class IndexTradeUnits extends OrgAction
                     ? fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))
                     : Inertia::optional(fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
-        )->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
-         ->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));
+        )->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value, withAvatars: true))
+         ->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true, withAvatars: true));
     }
 
 

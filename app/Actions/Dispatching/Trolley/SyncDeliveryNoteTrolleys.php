@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Trolley;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncDeliveryNoteTrolleys extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 

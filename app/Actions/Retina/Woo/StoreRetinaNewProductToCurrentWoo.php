@@ -10,12 +10,14 @@ namespace App\Actions\Retina\Woo;
 
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreRetinaNewProductToCurrentWoo extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public function handle(Portfolio $portfolio): void

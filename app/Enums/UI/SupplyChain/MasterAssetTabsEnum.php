@@ -20,12 +20,14 @@ enum MasterAssetTabsEnum: string
     use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     // case PRODUCTS = 'products';
     case IMAGES = 'images';
     case SALES = 'sales';
 
     case HISTORY = 'history';
     case TRADE_UNITS = 'trade_units';
+    case ATTACHMENTS = 'attachments';
 
 
     public function blueprint(MasterAsset $masterAsset): array
@@ -34,6 +36,10 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterAssetTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterAssetTabsEnum::PRODUCTS => [
             //     'title' => __('Products in shop'),
@@ -63,6 +69,12 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            MasterAssetTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],

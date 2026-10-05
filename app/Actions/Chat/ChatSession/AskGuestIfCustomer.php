@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\MetaChatSession\SendMetaChatGreeting;
+use App\Enums\CRM\Livechat\ChatAutomationKindEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -46,11 +47,13 @@ class AskGuestIfCustomer
             return SendMetaChatGreeting::run($chatSession, $text, 'asked_if_customer');
         }
 
-        SendChatMessage::run($chatSession, [
+        $asked = SendChatMessage::run($chatSession, [
             'message_text' => $text,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
         ]);
+
+        $asked->update(['metadata' => array_merge($asked->metadata ?? [], ['automated' => ChatAutomationKindEnum::ASKED_IF_CUSTOMER->value])]);
 
         return true;
     }

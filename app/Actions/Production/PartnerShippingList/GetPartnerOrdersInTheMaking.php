@@ -8,11 +8,13 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -36,6 +38,43 @@ class GetPartnerOrdersInTheMaking
      */
     public function handle(Organisation $seller): array
     {
+        [$orders, $allocated] = $this->allocate($seller);
+
+        return $this->aggregate($orders, $allocated);
+    }
+
+    /**
+     * @return array<int, array{line: object, in_the_bay: float, on_the_shelves: float}>
+     */
+    public function allocations(Organisation $seller): array
+    {
+        return $this->allocate($seller)[1];
+    }
+
+    /**
+     * Lines already on an order that has not been picked yet: their stock still sits in the bay
+     * or on the shelves but is spoken for.
+     */
+    public static function awaitingPicking(Organisation $seller): Builder
+    {
+        return DB::table('partner_shopping_list_items')
+            ->join('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->join('orders', 'orders.id', 'transactions.order_id')
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED)
+            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+            ->whereNull('partner_shopping_list_items.deleted_at')
+            ->whereNull('transactions.deleted_at')
+            ->whereIn('orders.state', [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED,
+                OrderStateEnum::IN_WAREHOUSE,
+                OrderStateEnum::HANDLING,
+                OrderStateEnum::HANDLING_BLOCKED,
+            ]);
+    }
+
+    private function allocate(Organisation $seller): array
+    {
         $partners = OrgPartner::where('organisation_id', $seller->id)
             ->whereNotNull('goods_out_location_id')
             ->with(['partner', 'goodsOutLocation'])
@@ -43,7 +82,7 @@ class GetPartnerOrdersInTheMaking
             ->keyBy('partner_id');
 
         if ($partners->isEmpty()) {
-            return [];
+            return [[], []];
         }
 
         $lines = DB::table('partner_shopping_list_items')
@@ -69,25 +108,12 @@ class GetPartnerOrdersInTheMaking
                 DB::raw("(job_orders.id is not null and job_orders.state in ('in_process', 'submitted', 'confirmed')) as is_being_made"),
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
-                DB::raw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko'),
+                DB::raw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($seller)).' as price_per_sko'),
             ])
             ->groupBy('buyer_id');
 
-        $awaitingPicking = DB::table('partner_shopping_list_items')
-            ->join('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
-            ->join('orders', 'orders.id', 'transactions.order_id')
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED)
-            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+        $awaitingPicking = static::awaitingPicking($seller)
             ->whereIn('partner_shopping_list_items.organisation_id', $partners->keys())
-            ->whereNull('partner_shopping_list_items.deleted_at')
-            ->whereNull('transactions.deleted_at')
-            ->whereIn('orders.state', [
-                OrderStateEnum::CREATING,
-                OrderStateEnum::SUBMITTED,
-                OrderStateEnum::IN_WAREHOUSE,
-                OrderStateEnum::HANDLING,
-                OrderStateEnum::HANDLING_BLOCKED,
-            ])
             ->get([
                 'partner_shopping_list_items.organisation_id as buyer_id',
                 'partner_shopping_list_items.stock_id',
@@ -109,7 +135,7 @@ class GetPartnerOrdersInTheMaking
         $allocated = [];
         foreach ($partners as $buyerId => $partner) {
             $inTheBay = DB::table('location_org_stocks')
-                ->where('location_id', $partner->goods_out_location_id)
+                ->whereIn('location_id', $partner->bayIds())
                 ->where('quantity', '>', 0)
                 ->pluck('quantity', 'org_stock_id')
                 ->map(fn ($quantity) => (float) $quantity)
@@ -163,6 +189,11 @@ class GetPartnerOrdersInTheMaking
             unset($allocation);
         }
 
+        return [$orders, $allocated];
+    }
+
+    private function aggregate(array $orders, array $allocated): array
+    {
         $lanes = ['in_the_bay', 'on_the_shelves', 'being_made', 'requested'];
         foreach ($allocated as $allocation) {
             $line    = $allocation['line'];

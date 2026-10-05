@@ -3,7 +3,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithExportData;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -11,10 +11,11 @@ use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Mpdf\MpdfException;
 use Symfony\Component\HttpFoundation\Response;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 class PdfStockDelivery extends OrgAction
 {
-    use WithExportData;
+    use WithProcurementAuthorisation;
 
     /**
      * @throws MpdfException
@@ -30,18 +31,14 @@ class PdfStockDelivery extends OrgAction
             'items'         => $stockDelivery->items,
         ]);
 
-        return response($pdf->stream($filename.'.pdf'), 200)
+        return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
     }
 
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): Response
     {
+        abort_unless($stockDelivery->organisation_id === $organisation->id || $organisation->type === OrganisationTypeEnum::AGENT, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($stockDelivery);

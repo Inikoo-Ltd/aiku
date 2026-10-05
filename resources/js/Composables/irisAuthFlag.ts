@@ -1,3 +1,5 @@
+import { watch } from "vue"
+
 const IRIS_AUTH_COOKIE = "iris_vua"
 
 /* Storefront HTML comes from Varnish, so the first paint knows nothing about the visitor and
@@ -17,3 +19,26 @@ export const hasIrisAuthCookie = (): boolean => {
 
 export const resolveIsLoggedIn = (storedIsLoggedIn: unknown): boolean =>
     hasIrisAuthCookie() || !!storedIsLoggedIn
+
+export const whenIrisLoggedIn = (layout: { iris?: { is_logged_in?: boolean } }, callback: () => void): void => {
+    let hasRun = false
+    let stopWatching: (() => void) | undefined
+
+    stopWatching = watch(
+        () => layout?.iris?.is_logged_in,
+        (isLoggedIn) => {
+            if (!isLoggedIn || hasRun) {
+                return
+            }
+
+            hasRun = true
+            callback()
+            stopWatching?.()
+        },
+        { immediate: true }
+    )
+
+    if (hasRun) {
+        stopWatching()
+    }
+}

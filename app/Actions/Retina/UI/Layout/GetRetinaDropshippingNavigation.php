@@ -116,6 +116,8 @@ class GetRetinaDropshippingNavigation
             $customer->customerSalesChannels()
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN)
                 ->whereNull('closed_at')
+                ->with('platform')
+                ->withCount(['portfolios as number_inactive_portfolios' => fn ($query) => $query->where('status', false)])
                 ->get() as $customerSalesChannels
         ) {
             $reference = $customerSalesChannels->name ?? 'n/a';
@@ -236,8 +238,8 @@ class GetRetinaDropshippingNavigation
         }
 
         $groupNavigation['sysadmin'] = [
-            'label'   => __('manage account'),
-            'icon'    => ['fal', 'fa-users-cog'],
+            'label'   => __('Settings'),
+            'icon'    => ['fal', 'fa-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
                 'name' => 'retina.sysadmin.settings.edit'
@@ -271,6 +273,17 @@ class GetRetinaDropshippingNavigation
 
                         ]
                     ],
+                    ...($webUser->customer?->shop?->hasPackagingAndInserts() ? [
+                        [
+                            'label' => __('Packaging preferences'),
+                            'icon'  => ['fal', 'fa-gift'],
+                            'root'  => 'retina.sysadmin.packaging-preferences.',
+                            'route' => [
+                                'name' => 'retina.sysadmin.packaging-preferences.show',
+
+                            ]
+                        ],
+                    ] : []),
                     [
                         'label' => __('History'),
                         'icon'  => ['fal', 'fa-history'],

@@ -3,7 +3,7 @@ import { faCheck, faPlus, faMinus, faCheckCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
 import { faGithub } from "@fortawesome/free-brands-svg-icons"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 library.add(faCheck, faPlus, faMinus, faCheckCircle, faGithub)
@@ -19,7 +19,6 @@ const props = defineProps<{
 const tiktokCode = route().queryParams?.tiktok_code
 
 const closePage = () => {
-	console.log('aaaaaaa')
 }
 </script>
 
@@ -27,36 +26,33 @@ const closePage = () => {
 	<Head title="Welcome to TikTok Onboarding" />
 	<div class="bg-white py-16">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-			<!-- <div class="mt-8">
-				<div class="bg-white shadow sm:rounded-lg">
-					<div class="px-4 py-5 sm:p-6">
-						<div v-if="success">
-							<h3 class="text-lg font-medium text-green-600">{{ trans('Success') }}</h3>
-							<p class="mt-2 text-gray-600">
-								{{ trans(`Your TikTok account :name has been successfully onboarded.`, { name: name }) }}
-							</p>
-						</div>
-						<div v-else>
-							<h3 class="text-lg font-medium text-red-600">{{ trans('Error') }}</h3>
-							<p class="mt-2 text-gray-600">{{ message }}</p>
-						</div>
-					</div>
+			<div v-if="!success" class="text-center py-8">
+				<div class="text-7xl mb-5">
+					<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-500" fixed-width aria-hidden="true" />
 				</div>
-			</div> -->
+
+				<div class="text-red-600 text-2xl font-bold">
+					{{ ctrans("Something went wrong") }}
+				</div>
+
+				<div class="text-red-600 mt-2">
+					{{ message }}
+				</div>
+			</div>
 
 			<!-- Sucess and not registered -->
-			<div>
+			<div v-else>
 				<div class="text-center py-8">
 					<div class=" text-7xl mb-5">
 						<FontAwesomeIcon icon="fal fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
 					</div>
 
 					<div class="text-green-600 text-2xl font-bold">
-						Congrats!
+						{{ ctrans("Congrats!") }}
 					</div>
 
 					<div class="text-green-600">
-						Your Tiktok's app has been successfully onboarded.
+						{{ ctrans("Your Tiktok's app has been successfully onboarded.") }}
 					</div>
 
 				</div>

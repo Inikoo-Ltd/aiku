@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { InputNumber } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
@@ -14,9 +14,11 @@ const props = defineProps<{
 		currency_symbol?: string
 		example_price?: number
 		value_field?: string
+		applies_to_new_products_only?: boolean
 	}
 }>()
 
+const appliesToNewProductsOnly = computed(() => !!props.fieldData?.applies_to_new_products_only)
 const valueField = computed(() => props.fieldData?.value_field ?? "pricing_value")
 const currencySymbol = computed(() => props.fieldData?.currency_symbol || "£")
 const examplePrice = computed(() => props.fieldData?.example_price ?? 100)
@@ -38,6 +40,7 @@ const money = (value: number) =>
 
 const priceColor = computed(() => {
 	if (examplePriceAfter.value <= 0) return "text-red-600"
+	if (appliesToNewProductsOnly.value) return "text-gray-700"
 	const diff = ((examplePriceAfter.value - examplePrice.value) / examplePrice.value) * 100
 	if (diff > 20 || diff < -20) return "text-red-600"
 	if (diff > 15 || diff < -15) return "text-orange-500"
@@ -57,21 +60,22 @@ const switchMode = (newMode: "percent" | "fixed" | "not_follow") => {
 		<div class="flex flex-row flex-wrap items-center gap-2">
 			<Button
 				:key="'mode-percent-' + mode"
-				:label="trans('± % over live RRP')"
+				:label="ctrans('± % over live RRP')"
 				size="xs"
 				:type="mode === 'percent' ? 'primary' : 'tertiary'"
 				:style="mode === 'percent' ? undefined : 'white-w-outline'"
 				@click="switchMode('percent')" />
 			<Button
 				:key="'mode-fixed-' + mode"
-				:label="trans('± :currency over live RRP', { currency: currencySymbol })"
+				:label="ctrans('± :currency over live RRP', { currency: currencySymbol })"
 				size="xs"
 				:type="mode === 'fixed' ? 'primary' : 'tertiary'"
 				:style="mode === 'fixed' ? undefined : 'white-w-outline'"
 				@click="switchMode('fixed')" />
 			<Button
+				v-if="!appliesToNewProductsOnly"
 				:key="'mode-notfollow-' + mode"
-				:label="trans('Do not follow RRP')"
+				:label="ctrans('Do not follow RRP')"
 				size="xs"
 				:type="mode === 'not_follow' ? 'primary' : 'tertiary'"
 				:style="mode === 'not_follow' ? undefined : 'white-w-outline'"
@@ -79,7 +83,7 @@ const switchMode = (newMode: "percent" | "fixed" | "not_follow") => {
 		</div>
 
 		<div v-if="mode === 'not_follow'" class="mt-3 min-h-[56px] flex items-center text-sm text-gray-500">
-			{{ trans("You set your prices directly on eBay. We will never upload or overwrite them.") }}
+			{{ ctrans("You set your prices directly on eBay. We will never upload or overwrite them.") }}
 		</div>
 
 		<div v-else class="mt-3 min-h-[56px] flex flex-row items-center gap-4">
@@ -100,14 +104,14 @@ const switchMode = (newMode: "percent" | "fixed" | "not_follow") => {
 			<div class="flex flex-row items-center gap-3 whitespace-nowrap">
 				<div>
 					<div class="text-[10px] uppercase tracking-wide text-gray-400">
-						{{ trans("Example RRP") }}
+						{{ ctrans("Example RRP") }}
 					</div>
 					<div class="text-base text-gray-500">{{ money(examplePrice) }}</div>
 				</div>
 				<div class="text-gray-400">→</div>
 				<div>
 					<div class="text-[10px] uppercase tracking-wide" :class="priceColor">
-						{{ trans("eBay price") }}
+						{{ appliesToNewProductsOnly ? ctrans("Your price") : ctrans("eBay price") }}
 					</div>
 					<div class="text-base font-semibold" :class="priceColor">
 						{{ money(examplePriceAfter) }}
@@ -116,18 +120,22 @@ const switchMode = (newMode: "percent" | "fixed" | "not_follow") => {
 			</div>
 		</div>
 
-		<div v-if="mode !== 'not_follow'" class="text-xs text-gray-500">
-			{{ trans("Every product in this channel is priced this way, unless you give it its own price.") }}
+		<div v-if="appliesToNewProductsOnly" class="text-xs text-gray-500">
+			{{ ctrans("Applies to products you add from now on. To change the price of products already in this channel, use Edit Price in My Products.") }}
 		</div>
 
-		<label v-if="mode !== 'not_follow'" class="mt-2 flex items-start gap-2 cursor-pointer select-none">
+		<div v-else-if="mode !== 'not_follow'" class="text-xs text-gray-500">
+			{{ ctrans("Every product in this channel is priced this way, unless you give it its own price.") }}
+		</div>
+
+		<label v-if="mode !== 'not_follow' && !appliesToNewProductsOnly" class="mt-2 flex items-start gap-2 cursor-pointer select-none">
 			<input
 				type="checkbox"
 				class="mt-0.5 rounded border-gray-300 text-red-600 focus:ring-red-500"
 				:checked="!!form['pricing_reset_all']"
 				@change="(event) => (form['pricing_reset_all'] = (event.target as HTMLInputElement).checked)" />
 			<span class="text-xs" :class="form['pricing_reset_all'] ? 'text-red-600' : 'text-gray-500'">
-				{{ trans("Also reset products that have their own price, so every single product follows this policy. Their prices will be overwritten by this rule.") }}
+				{{ ctrans("Also reset products that have their own price, so every single product follows this policy. Their prices will be overwritten by this rule.") }}
 			</span>
 		</label>
 	</div>

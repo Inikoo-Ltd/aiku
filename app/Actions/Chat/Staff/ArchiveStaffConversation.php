@@ -11,6 +11,8 @@ namespace App\Actions\Chat\Staff;
 use App\Events\StaffConversationArchived;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,6 +33,10 @@ class ArchiveStaffConversation
 
     public function asController(StaffConversation $staffConversation, ActionRequest $request): array
     {
+        if ($staffConversation->context instanceof StaffTask && $staffConversation->context->isOpen()) {
+            throw ValidationException::withMessages(['conversation' => __('Finish or close :reference before archiving its chat', ['reference' => $staffConversation->context->reference])]);
+        }
+
         $this->handle($staffConversation, $request->user());
 
         return ['ok' => true];

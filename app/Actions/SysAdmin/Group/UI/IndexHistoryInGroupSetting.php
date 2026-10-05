@@ -29,6 +29,11 @@ class IndexHistoryInGroupSetting extends OrgAction
 {
     use WithAnalyticsSubNavigations;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('sysadmin.view');
+    }
+
     public function handle(Group $group, $prefix = null): LengthAwarePaginator|array|bool
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

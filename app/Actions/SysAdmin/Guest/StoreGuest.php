@@ -147,6 +147,7 @@ class StoreGuest extends OrgAction
 
             'user.username'          => [
                 'required',
+                'lowercase',
                 $this->strict ? new AlphaDashDot() : 'string',
                 new IUnique(
                     table: 'users',

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dropshipping\Shopify;
 
+use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServices;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
@@ -20,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ResetShopifyChannel
 {
     use asAction;
+    use WithRetinaRouteModelOwnershipCheck;
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
@@ -51,6 +54,13 @@ class ResetShopifyChannel
 
     public function asController(CustomerSalesChannel $customerSalesChannel): void
     {
+        $this->handle($customerSalesChannel);
+    }
+
+    public function inRetina(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
+    {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
         $this->handle($customerSalesChannel);
     }
 

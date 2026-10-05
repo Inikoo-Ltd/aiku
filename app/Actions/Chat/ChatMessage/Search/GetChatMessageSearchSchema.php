@@ -39,8 +39,15 @@ class GetChatMessageSearchSchema
                         'optional' => true,
                     ],
                     [
-                        'name' => 'message',
-                        'type' => 'string',
+                        'name'  => 'message',
+                        'type'  => 'string',
+                        'infix' => true,
+                    ],
+                    [
+                        'name'     => 'subject',
+                        'type'     => 'string',
+                        'optional' => true,
+                        'infix'    => true,
                     ],
                     [
                         'name' => 'sender_type',
@@ -59,7 +66,7 @@ class GetChatMessageSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'message'
+                'query_by' => 'subject,message',
             ],
         ];
     }

@@ -56,7 +56,12 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
         $preferCheaper  = ($modelData['prefer_cheaper'] ?? true) !== false;
         $referencePrice = $preferCheaper ? $this->getBasketReferencePrice($shop, $basketProductIds) : 0.0;
 
-        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $referencePrice, $preferCheaper);
+        $excludedProductIds = array_values(array_unique(array_merge(
+            $basketProductIds,
+            array_map('intval', $modelData['exclude_product_ids'] ?? [])
+        )));
+
+        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $excludedProductIds, $referencePrice, $preferCheaper, $modelData['customer_id'] ?? null);
 
         return $this->diversifyByFamily($candidates);
     }
@@ -95,8 +100,10 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
     private function getScoredCandidates(
         Shop $shop,
         array $basketProductIds,
+        array $excludedProductIds,
         float $referencePrice,
-        bool $preferCheaper
+        bool $preferCheaper,
+        ?int $customerId
     ): Collection {
         $coPurchase = $this->getCoPurchaseCounts($shop, $basketProductIds);
 
@@ -116,7 +123,8 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->where('products.has_live_webpage', true)
             ->where('products.available_quantity', '>', 0)
             ->where('products.price', '>', 0)
-            ->whereNotIn('products.id', $basketProductIds)
+            ->whereNotIn('products.id', $excludedProductIds)
+            ->visibleToCustomer($customerId)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('products.is_minion_variant', false)
@@ -208,7 +216,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->shop, $this->getBasketProductIds($request), $this->validatedData);
+        return $this->handle($this->shop, $this->getBasketProductIds($request), [...$this->validatedData, 'customer_id' => $this->customer?->id]);
     }
 
     /**

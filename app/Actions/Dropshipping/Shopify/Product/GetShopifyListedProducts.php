@@ -25,11 +25,12 @@ class GetShopifyListedProducts
     public const int VARIANTS_READ_PER_PRODUCT = 10;
 
     /**
-     * Only active products are on sale, so drafts and archived products are left out: matching
-     * a portfolio to one would point it at something no buyer can see.
+     * Active and draft products: merchants prepare listings as drafts and link them before they
+     * publish (CUS-1747), and uploading refuses a SKU a draft already has, pointing them here.
+     * Archived products are retired and stay out.
      *
      * Shopify's product search cannot look inside variant SKUs the way the picker needs, so the
-     * active catalogue is read in full and searched here.
+     * catalogue is read in full and searched here.
      *
      * @return array<int, array>
      */
@@ -61,7 +62,7 @@ class GetShopifyListedProducts
 
         $graphqlQuery = <<<'QUERY'
         query listProducts($cursor: String) {
-          products(first: 50, after: $cursor, query: "status:active") {
+          products(first: 50, after: $cursor, query: "status:active OR status:draft") {
             pageInfo {
               hasNextPage
               endCursor

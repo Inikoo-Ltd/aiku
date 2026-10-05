@@ -44,6 +44,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property numeric $net_amount
  * @property numeric|null $grp_net_amount
  * @property numeric|null $org_net_amount
+ * @property numeric|null $unit_cost
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
  * @property array<array-key, mixed> $data

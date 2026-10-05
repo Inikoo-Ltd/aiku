@@ -10,12 +10,14 @@ namespace App\Actions\Retina\Woo;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaNewAllPortfoliosToWoo extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**

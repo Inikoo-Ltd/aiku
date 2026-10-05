@@ -5,7 +5,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronRight } from "@fal"
@@ -181,7 +181,7 @@ const getStatusColor = (status: string): string => {
 					v-model="filters.employee_id"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
-					<option :value="null">{{ trans("All Employees") }}</option>
+					<option :value="null">{{ ctrans("All Employees") }}</option>
 					<option
 						v-for="employee in employeeOptions"
 						:key="employee.value"
@@ -194,7 +194,7 @@ const getStatusColor = (status: string): string => {
 					v-model="filters.status"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
-					<option :value="null">{{ trans("All Statuses") }}</option>
+					<option :value="null">{{ ctrans("All Statuses") }}</option>
 					<option
 						v-for="status in statusOptions"
 						:key="status.value"
@@ -230,7 +230,7 @@ const getStatusColor = (status: string): string => {
 						<tr>
 							<th
 								class="p-2 border-b border-r border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 w-48 min-w-[12rem]">
-								{{ trans("Employee") }}
+								{{ ctrans("Employee") }}
 							</th>
 							<th
 								v-for="day in days"
@@ -278,7 +278,7 @@ const getStatusColor = (status: string): string => {
 						</tr>
 						<tr v-if="calendarData.length === 0">
 							<td :colspan="daysInMonth + 1" class="p-8 text-center text-gray-500">
-								{{ trans("No employees found.") }}
+								{{ ctrans("No employees found.") }}
 							</td>
 						</tr>
 					</tbody>
@@ -287,11 +287,11 @@ const getStatusColor = (status: string): string => {
 		</div>
 	</div>
 
-	<Modal :show="showModal" @close="closeModal">
+	<Modal :isOpen="showModal" @onClose="closeModal">
 		<div class="p-6">
 			<div class="flex items-center justify-between mb-4">
 				<h3 class="text-lg font-medium text-gray-900">
-					{{ trans("Adjustment Details") }}
+					{{ ctrans("Adjustment Details") }}
 				</h3>
 				<button @click="closeModal" class="text-gray-400 hover:text-gray-500">
 					<span class="sr-only">Close</span>
@@ -309,13 +309,13 @@ const getStatusColor = (status: string): string => {
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Date")
+							ctrans("Date")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">{{ selectedAdjustment.date }}</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Status")
+							ctrans("Status")
 						}}</label>
 						<div class="mt-1">
 							<span
@@ -334,7 +334,7 @@ const getStatusColor = (status: string): string => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Original Start")
+							ctrans("Original Start")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ selectedAdjustment.original_start_at ?? "—" }}
@@ -342,7 +342,7 @@ const getStatusColor = (status: string): string => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Original End")
+							ctrans("Original End")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ selectedAdjustment.original_end_at ?? "—" }}
@@ -350,7 +350,7 @@ const getStatusColor = (status: string): string => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Requested Start")
+							ctrans("Requested Start")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ selectedAdjustment.requested_start_at ?? "—" }}
@@ -358,7 +358,7 @@ const getStatusColor = (status: string): string => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
-							trans("Requested End")
+							ctrans("Requested End")
 						}}</label>
 						<div class="mt-1 text-sm text-gray-900">
 							{{ selectedAdjustment.requested_end_at ?? "—" }}
@@ -368,7 +368,7 @@ const getStatusColor = (status: string): string => {
 
 				<div v-if="selectedAdjustment.reason">
 					<label class="block text-sm font-medium text-gray-500">{{
-						trans("Reason")
+						ctrans("Reason")
 					}}</label>
 					<div
 						class="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md border border-gray-100">
@@ -379,7 +379,7 @@ const getStatusColor = (status: string): string => {
 
 			<div class="mt-6 flex justify-end">
 				<Button type="secondary" @click="closeModal">
-					{{ trans("Close") }}
+					{{ ctrans("Close") }}
 				</Button>
 			</div>
 		</div>

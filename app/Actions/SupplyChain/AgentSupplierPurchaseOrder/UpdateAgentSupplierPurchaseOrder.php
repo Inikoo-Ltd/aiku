@@ -89,6 +89,8 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             'handed_over_at'           => ['sometimes', 'nullable', 'date'],
             'qc_passed_at'             => ['sometimes', 'nullable', 'date'],
             'compliance_complete_at'   => ['sometimes', 'nullable', 'date'],
+            'sample_approved_at'       => ['sometimes', 'nullable', 'date'],
+            'produced_at'              => ['sometimes', 'nullable', 'date'],
             'chs_excluded'             => ['sometimes', 'boolean'],
             'chs_exclusion_reason'     => ['sometimes', 'nullable', 'string'],
         ];

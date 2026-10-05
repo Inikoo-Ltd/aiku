@@ -23,6 +23,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Popover from "@/Components/Popover.vue"
+import { useSessionStorage } from "@vueuse/core"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown)
 
@@ -42,6 +43,7 @@ const props = defineProps<{
         org_stock_id: number
         stock_code: string
         stock_name: string
+        is_cosmetic: boolean
         partner_code: string
         to_location: string
         quantity_staged: number
@@ -153,6 +155,14 @@ function release(task: NonNullable<typeof props.partner_staging>[number]) {
         onFinish: () => { stagingInProgress.value = null },
     })
 }
+const stagingPartner = useSessionStorage<string>("dispatch_hub_staging_partner", "")
+const stagingPartners = computed(() => {
+    const counts: Record<string, number> = {}
+    props.partner_staging?.forEach(task => counts[task.partner_code] = (counts[task.partner_code] ?? 0) + 1)
+    return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
+})
+const activeStagingPartner = computed(() => stagingPartners.value.some(([code]) => code === stagingPartner.value) ? stagingPartner.value : "")
+const stagingTasks = computed(() => activeStagingPartner.value ? props.partner_staging?.filter(task => task.partner_code === activeStagingPartner.value) : props.partner_staging)
 const currentWorkData = computed(() => currentTab.value === "pickers" ? props.pickers_current : props.packers_current)
 
 const orderRoute = (order: { slug: string }) =>
@@ -178,6 +188,15 @@ const trolleyRoute = (trolley: { slug: string }) =>
         {{ actionError }}
     </div>
 
+    <div v-if="isStagingTab && stagingPartners.length > 1" class="mx-4 mt-4 flex flex-wrap items-center gap-2 text-sm">
+        <span class="text-gray-500">{{ ctrans("Partner") }}:</span>
+        <button v-for="[code, count] in [['', partner_staging?.length ?? 0], ...stagingPartners]" :key="code" type="button"
+            class="rounded-full border px-3 py-1 font-medium"
+            :class="activeStagingPartner === code ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200'"
+            @click="stagingPartner = code as string">
+            {{ code || ctrans("All") }} <span class="tabular-nums opacity-75">{{ count }}</span>
+        </button>
+    </div>
     <div v-if="isStagingTab" class="mx-4 mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800">
@@ -192,10 +211,13 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="task in partner_staging" :key="stagingKey(task)" class="border-t border-gray-100 dark:border-gray-800">
+                <tr v-for="task in stagingTasks" :key="stagingKey(task)" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 font-medium">{{ task.partner_code }}</td>
                     <td class="px-4 py-2">
-                        <div class="font-medium">{{ task.stock_code }}</div>
+                        <div class="flex items-center gap-1.5 font-medium">
+                            {{ task.stock_code }}
+                            <span v-if="task.is_cosmetic" class="rounded-full bg-pink-100 px-1.5 text-xs font-normal text-pink-700">{{ ctrans("Cosmetic") }}</span>
+                        </div>
                         <div class="text-gray-500">{{ task.stock_name }}</div>
                     </td>
                     <td class="px-4 py-2">

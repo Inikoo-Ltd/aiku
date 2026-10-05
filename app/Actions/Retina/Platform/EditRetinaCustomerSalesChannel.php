@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Platform;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\TaxCategory;
@@ -21,6 +22,8 @@ use Spatie\LaravelOptions\Options;
 
 class EditRetinaCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $request->route()->getName();
@@ -51,18 +54,21 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         'value' => Arr::get($customerSalesChannel->settings, 'tax_category.id')
                     ],
                     'pricing_type' => [
-                        'type' => 'select',
-                        'label' => __('Pricing Type'),
-                        'required' => true,
-                        'options' => Options::forArray($this->priceConfOptions()),
-                        'value' => Arr::get($customerSalesChannel->settings, 'pricing.type')
-                    ],
-                    'pricing_value' => [
-                        'type' => 'input',
-                        'label' => __('Pricing Value'),
-                        'hidden' => !Arr::get($customerSalesChannel->settings, 'pricing.type'),
-                        'required' => true,
-                        'value' => Arr::get($customerSalesChannel->settings, 'pricing.value')
+                        'type' => 'pricing_policy',
+                        'label' => __('Pricing Policy'),
+                        'information' => __('Products you add to this channel are priced from their RRP with this rule. Changing it does not reprice products already in the channel: use Edit Price in My Products for those.'),
+                        'value' => Arr::get($customerSalesChannel->settings, 'pricing.type') ?: 'percent',
+                        'currency_code' => $customerSalesChannel->shop->currency->code,
+                        'currency_symbol' => $customerSalesChannel->shop->currency->symbol ?? $customerSalesChannel->shop->currency->code,
+                        'example_price' => 10,
+                        'value_field' => 'pricing_value',
+                        'applies_to_new_products_only' => true,
+                        'hasOther' => [
+                            [
+                                'name'  => 'pricing_value',
+                                'value' => Arr::get($customerSalesChannel->settings, 'pricing.value') ?? 0
+                            ]
+                        ]
                     ]
                 ]
             ],
@@ -261,21 +267,6 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 ]
             ]
         );
-    }
-
-    public function priceConfOptions(?CustomerSalesChannel $customerSalesChannel = null): array
-    {
-        if (!$customerSalesChannel) {
-            return [
-                'percent' => 'Percent',
-                'fixed' => 'Fixed'
-            ];
-        }
-
-        return [
-            'percent' => __('± % over live RRP'),
-            'fixed'   => __('± :currency over live RRP', ['currency' => $customerSalesChannel->shop->currency->symbol ?? $customerSalesChannel->shop->currency->code])
-        ];
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response

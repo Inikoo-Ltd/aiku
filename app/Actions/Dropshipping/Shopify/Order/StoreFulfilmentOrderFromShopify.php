@@ -45,7 +45,6 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
 
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
         $shopifyProducts = collect($modelData['line_items']);
-        $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
@@ -59,6 +58,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
         }
 
         if ($shopifyUserHasProductExists) {
+            $this->digestShopifyCustomerClient($shopifyUser, $modelData);
             $palletReturn = StorePalletReturn::make()->actionWithDropshipping($fulfilmentCustomer, [
                 'platform_id'               => $shopifyUser->platform_id,
                 'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,

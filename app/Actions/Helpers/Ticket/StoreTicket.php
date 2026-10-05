@@ -46,6 +46,9 @@ class StoreTicket extends OrgAction
         SyncTicketSlackAlert::run($ticket);
         NotifyTicketUsers::make()->raised($ticket);
         NotifyTicketUsers::make()->pushBadges($ticket);
+        if ($ticket->kind === null || $ticket->module === null) {
+            ClassifyTicket::dispatch($ticket);
+        }
 
         return $ticket;
     }
@@ -62,6 +65,7 @@ class StoreTicket extends OrgAction
             'is_confidential' => ['sometimes', 'boolean'],
             'blocks_source'   => ['sometimes', 'boolean'],
             'closes_source'   => ['sometimes', 'boolean'],
+            'reporter_muted'  => ['sometimes', 'boolean'],
             'tags.*'            => ['string', 'max:64'],
             'priority'        => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id'     => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
@@ -80,6 +84,8 @@ class StoreTicket extends OrgAction
             'images.*'        => Ticket::ticketFileRules(),
             'stay'            => ['sometimes', 'boolean'],
             'reference_url'   => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'ticket_project_id' => ['sometimes', 'nullable', Rule::exists('ticket_projects', 'id')->where('group_id', $this->group->id)->whereNull('deleted_at')],
+            'ticket_project_milestone_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 

@@ -16,9 +16,10 @@ import ModalAutoFillShoppingList from "@/Components/Procurement/ModalAutoFillSho
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ConfirmDialog from "primevue/confirmdialog"
+import ProgressBar from "primevue/progressbar"
 import { useConfirm } from "primevue/useconfirm"
 
 const props = defineProps<{
@@ -31,19 +32,25 @@ const props = defineProps<{
 
 const isModalOpen = ref(false)
 const isAutoFillOpen = ref(false)
+const isTableLoading = ref(false)
+const tableLoadingEvents = {
+    onStart: () => (isTableLoading.value = true),
+    onFinish: () => (isTableLoading.value = false),
+}
 const confirm = useConfirm()
+const routeParams = route().params
 
 function confirmDeleteAll() {
     confirm.require({
         group: "partner-shopping-list",
-        header: trans("Delete all open items"),
-        message: trans("Remove every open item from this shopping list? Items already taken by the partner are kept."),
-        rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-        acceptProps: { label: trans("Delete all"), severity: "danger" },
+        header: ctrans("Delete all open items"),
+        message: ctrans("Remove every open item from this shopping list? Items already taken by the partner are kept."),
+        rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+        acceptProps: { label: ctrans("Delete all"), severity: "danger" },
         accept: () => {
             router.delete(
-                route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [route().params["organisation"], props.orgPartner.id]),
-                { preserveScroll: true }
+                route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [routeParams["organisation"], props.orgPartner.id]),
+                { preserveScroll: true, ...tableLoadingEvents }
             )
         },
     })
@@ -51,7 +58,7 @@ function confirmDeleteAll() {
 
 watch(isModalOpen, (isOpen, wasOpen) => {
     if (wasOpen && !isOpen) {
-        router.reload({ only: ["data"] })
+        router.reload({ only: ["data"], ...tableLoadingEvents })
     }
 })
 
@@ -63,23 +70,23 @@ const priorities = ["low", "normal", "high", "urgent"]
 function updateItem(item: { id: number }, data: Record<string, string | null>) {
     router.patch(
         route("grp.org.procurement.org_partners.show.shopping_list.update", [
-            route().params["organisation"],
+            routeParams["organisation"],
             props.orgPartner.id,
             item.id,
         ]),
         data,
-        { preserveScroll: true }
+        { preserveScroll: true, ...tableLoadingEvents }
     )
 }
 
 function deleteItem(item: { id: number }) {
     router.delete(
         route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
-            route().params["organisation"],
+            routeParams["organisation"],
             props.orgPartner.id,
             item.id,
         ]),
-        { preserveScroll: true }
+        { preserveScroll: true, ...tableLoadingEvents }
     )
 }
 </script>
@@ -88,9 +95,9 @@ function deleteItem(item: { id: number }) {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete all')" @click="confirmDeleteAll" />
-            <Button type="secondary" icon="fal fa-magic" :label="trans('Auto-fill')" @click="isAutoFillOpen = true" />
-            <Button type="create" :label="trans('Add stocks')" @click="isModalOpen = true" />
+            <Button type="negative" icon="fal fa-trash-alt" :label="ctrans('Delete all')" @click="confirmDeleteAll" />
+            <Button type="secondary" icon="fal fa-magic" :label="ctrans('Auto-fill')" @click="isAutoFillOpen = true" />
+            <Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
         </template>
     </PageHeading>
 
@@ -98,7 +105,10 @@ function deleteItem(item: { id: number }) {
     <ModalPartnerStockList v-model="isModalOpen" :fetchRoute="orgStockFetchRoute" />
     <ModalAutoFillShoppingList v-model="isAutoFillOpen" :orgPartnerId="orgPartner.id" :currency="orgPartner.currency" />
 
-    <Table :resource="data" class="mt-5">
+    <div class="mt-5 h-[3px]">
+        <ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />
+    </div>
+    <Table :resource="data">
         <template #cell(info)="{ item }">
             <div class="flex items-start gap-3">
                 <div class="h-12 w-12 shrink-0 rounded">
@@ -107,12 +117,12 @@ function deleteItem(item: { id: number }) {
                 <div class="min-w-0 text-xs leading-5">
                     <div class="truncate text-sm font-medium text-gray-800">{{ item.org_stock_name }}</div>
                     <div class="text-gray-500">
-                        {{ trans("Their stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ item.their_available !== null ? useLocaleStore().number(Math.floor(Number(item.their_available))) : "-" }}</b>
-                        · {{ trans("our stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0))) }}</b>
+                        <span v-tooltip="ctrans('Stock the partner has available to sell us right now')" class="cursor-help underline decoration-dotted">{{ ctrans("Their stock") }}</span> <b class="font-medium text-gray-700 tabular-nums">{{ item.their_available !== null ? useLocaleStore().number(Math.floor(Number(item.their_available))) : "-" }}</b>
+                        · <span v-tooltip="ctrans('Stock available in our own warehouse')" class="cursor-help underline decoration-dotted">{{ ctrans("our stock") }}</span> <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0))) }}</b>
                         <template v-if="item.days_of_cover !== null">
                             ·
                             <span :class="{ 'text-red-600 font-medium': Number(item.days_of_cover) <= 14, 'text-amber-600': Number(item.days_of_cover) > 14 && Number(item.days_of_cover) <= 30 }">
-                                {{ Number(item.days_of_cover) === 0 ? trans("we run out now") : `${trans("we run out in")} ~${Math.round(Number(item.days_of_cover))} ${trans("days")}` }}
+                                {{ Number(item.days_of_cover) === 0 ? ctrans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${Math.round(Number(item.days_of_cover))} ${ctrans("days")}` }}
                             </span>
                         </template>
                     </div>
@@ -135,9 +145,9 @@ function deleteItem(item: { id: number }) {
                 :class="{ 'text-red-600': item.priority === 'urgent', 'text-amber-600': item.priority === 'high', 'text-gray-400': item.priority === 'low' }"
                 @change="updateItem(item, { priority: ($event.target as HTMLSelectElement).value })"
             >
-                <option v-for="priority in priorities" :key="priority" :value="priority">{{ trans(priority) }}</option>
+                <option v-for="priority in priorities" :key="priority" :value="priority">{{ ctrans(priority) }}</option>
             </select>
-            <span v-else>{{ trans(item.priority) }}</span>
+            <span v-else>{{ ctrans(item.priority) }}</span>
         </template>
         <template #cell(progress)="{ item }">
             <div class="flex items-center gap-1.5">
@@ -162,7 +172,7 @@ function deleteItem(item: { id: number }) {
             <Button
                 v-if="item.state === 'open' && !item.pre_picked_at"
                 icon="fal fa-trash-alt"
-                :tooltip="trans('Remove from the shopping list')"
+                :tooltip="ctrans('Remove from the shopping list')"
                 type="negative"
                 size="xs"
                 @click="deleteItem(item)"

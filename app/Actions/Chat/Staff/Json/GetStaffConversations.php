@@ -15,6 +15,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,15 +43,18 @@ class GetStaffConversations
                 'unread_count' => StaffMessage::selectRaw('count(*)')
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
                     ->where('user_id', '!=', $user->id)
-                    ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01']),
+                    ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01'])
+                    ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)'),
                 'last_message_body' => StaffMessage::select('body')
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
+                    ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)')
                     ->latest('id')
                     ->limit(1),
                 'has_mention' => StaffMessage::selectRaw('count(*) > 0')
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
                     ->where('user_id', '!=', $user->id)
                     ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01'])
+                    ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)')
                     ->whereRaw('mentions @> ?', [json_encode([$user->id])]),
             ])
             ->with([
@@ -59,6 +63,7 @@ class GetStaffConversations
                     DeliveryNote::class   => ['organisation', 'warehouse'],
                     Order::class          => ['organisation', 'shop'],
                     PickingSession::class => ['organisation', 'warehouse'],
+                    StaffTask::class      => ['collaborators'],
                 ]),
             ])
             ->orderByRaw('staff_conversations.last_message_at desc nulls last')

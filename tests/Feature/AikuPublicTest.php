@@ -192,7 +192,7 @@ test('page views are logged server-side from the referer header so ad blockers c
     get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible)'])->assertOk();
     expect($visits()->latest('id')->first()->is_bot)->toBeTrue();
 
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['bots'])->pluck('user_agent')->first(fn ($ua) => str_contains($ua, 'Googlebot')))->not->toBeNull();
 });
 
@@ -200,7 +200,7 @@ test('visit stats aggregate for devops dashboard widget and analytics page', fun
     get($this->host.'/visit.json?p=/~search/warehouse%20layout')->assertNoContent();
     get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy&r=https://lobste.rs/s/abc', ['CF-IPCountry' => 'SK'])->assertNoContent();
 
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['searches'])->pluck('query'))->toContain('warehouse layout')
         ->and(collect($stats['pages'])->pluck('path'))->toContain('/blog/anatomy-of-a-deploy')
         ->and(collect($stats['pages'])->pluck('path'))->not->toContain('/~search/warehouse%20layout')
@@ -210,12 +210,12 @@ test('visit stats aggregate for devops dashboard widget and analytics page', fun
         ->and(collect($stats['pages'])->first(fn ($row) => $row->path === '/blog/anatomy-of-a-deploy')->last_visited_at)->not->toBeNull();
 
     get($this->host.'/visit.json?p=/docs/scraped-once', ['User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0', 'CF-IPCountry' => 'BD'])->assertNoContent();
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['pages'])->pluck('path'))->not->toContain('/docs/scraped-once')
         ->and(collect($stats['countries'])->pluck('country'))->not->toContain('BD')
         ->and((int) collect($stats['daily'])->sum('suspect'))->toBe(1);
 
-    $widget = \App\Actions\DevOps\UI\ShowDevopsDashboard::make()->getPublicSiteVisits();
+    $widget = \App\Actions\Docs\UI\ShowDocsDashboard::make()->getPublicSiteVisits();
     expect($widget['views'])->toBeGreaterThanOrEqual(2)
         ->and($widget['visitors'])->toBeGreaterThanOrEqual(1)
         ->and($widget['daily'])->not->toBeEmpty();
@@ -252,7 +252,7 @@ test('future-dated posts stay hidden until their date', function () {
 test('analytics articles tab lists every note with real commit date and visit stats', function () {
     get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy')->assertNoContent();
 
-    $articles = collect(\App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->getArticleStats());
+    $articles = collect(\App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->getArticleStats());
     expect($articles)->toHaveCount(BlogPosts::all()->count());
 
     $row = $articles->firstWhere('slug', 'anatomy-of-a-deploy');
@@ -339,6 +339,14 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.org.shops.show.chat.reports')['url'])->toContain('/docs/customer-chat')
         ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
         ->and(BlogPosts::helpFor('grp.profile.edit')['url'])->toContain('/docs/getting-notifications-on-your-computer-and-phone')
+        ->and(BlogPosts::helpFor('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.labels')['title'])->toBe('Making compliance labels')
+        ->and(BlogPosts::helpFor('grp.org.procurement.agent_labels.index', 'zh-hans')['url'])->toEndWith('/docs/printing-labels-as-an-agent-zh-hans')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_families.master_variants.show')['url'])->toEndWith('/docs/checking-master-product-prices')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.create', 'es')['url'])->toEndWith('/docs/checking-master-product-prices-es')
+        ->and(BlogPosts::helpFor('grp.masters.master_shops.show.master_collections.show')['url'])->toEndWith('/docs/master-collections')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index')['url'])->toEndWith('/docs/store-upload-errors-ours-or-theirs')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.index', 'sk')['url'])->toEndWith('/docs/store-upload-errors-ours-or-theirs-sk')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.show')['url'])->toEndWith('/docs/dropshipping-pricing-rules')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });
@@ -420,6 +428,7 @@ test('help falls back to English when the requested translation is missing', fun
     $slug = 'test-fallback-'.uniqid();
     $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
     File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$path]);
+    File::shouldReceive('lastModified')->with($path)->andReturn(0);
     File::shouldReceive('get')->with($path)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 

@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Shopify\Order\FetchShopifyOrdersFromApi;
 use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
+use App\Actions\Dropshipping\Wix\Order\GetWixOrdersFromApi;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\PlatformResponseFormatter;
@@ -79,7 +80,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
 
         Cache::put($cooldownKey, true, self::COOLDOWN_SECONDS);
 
-        $ordersBefore = $customerSalesChannel->orders()->count();
+        $ordersBefore = $this->countImportedOrders($customerSalesChannel);
 
         try {
             $this->fetch($customerSalesChannel, $platformUser);
@@ -91,7 +92,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             );
         }
 
-        $newOrders = $customerSalesChannel->orders()->count() - $ordersBefore;
+        $newOrders = $this->countImportedOrders($customerSalesChannel) - $ordersBefore;
 
         if ($newOrders < 1) {
             return $this->notification(
@@ -108,6 +109,15 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
         );
     }
 
+    /**
+     * A request AW declines still lands as a cancelled placeholder, which must not be announced to
+     * the customer as an imported order.
+     */
+    private function countImportedOrders(CustomerSalesChannel $customerSalesChannel): int
+    {
+        return $customerSalesChannel->orders()->whereNull('data->declined_reason')->count();
+    }
+
     private function isSupported(CustomerSalesChannel $customerSalesChannel): bool
     {
         return in_array($customerSalesChannel->platform->type, [
@@ -118,6 +128,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             PlatformTypeEnum::AMAZON,
             PlatformTypeEnum::ALLEGRO,
             PlatformTypeEnum::MAGENTO,
+            PlatformTypeEnum::WIX,
         ]);
     }
 
@@ -134,6 +145,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             PlatformTypeEnum::AMAZON => GetRetinaOrdersFromAmazon::run($platformUser),
             PlatformTypeEnum::ALLEGRO => GetAllegroOrdersFromApi::run($platformUser),
             PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::run($platformUser),
+            PlatformTypeEnum::WIX => GetWixOrdersFromApi::run($platformUser),
             default => null,
         };
     }

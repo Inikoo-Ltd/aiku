@@ -3,7 +3,7 @@
         <div class="relative">
             <Multiselect
                 v-model="form[fieldName]"
-                :options="props.options"
+                :options="toSelectOptions(props.options)"
                 :class="{ 'pr-8': form.errors[fieldName] || form.recentlySuccessful }"
                 :placeholder="props.fieldData.placeholder ?? 'Select your currency'"
                 :searchable="true"
@@ -27,6 +27,7 @@ import Multiselect from '@vueform/multiselect'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { toSelectOptions } from '@/Composables/useSelectOptions'
 library.add(faExclamationCircle, faCheckCircle);
 
 const props = defineProps<{

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
@@ -9,13 +9,15 @@ import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTag, faStar, faBoxHeart, faShieldAlt,faExclamationTriangle } from "@fas"
-import { faCheck } from "@far"
+import { faCheck, faPlus as farPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import GiftMessagePanel from "@/Components/Order/GiftMessagePanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
@@ -36,6 +38,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { UploadPallet } from '@/types/Pallet'
+import WhatsAppNewsletterOptIn from "@/Components/Retina/Ecom/WhatsAppNewsletterOptIn.vue"
 import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
@@ -65,6 +68,10 @@ const props = defineProps<{
         customer_slug: string
         customer_name: string
         slug: string
+        has_gift_message?: boolean
+        gift_message?: string | null
+        has_gift_message_pdf?: boolean
+        gift_message_pdf_name?: string | null
     }
     upcoming_transactions: {
         data: {
@@ -109,6 +116,11 @@ const props = defineProps<{
         charges_amount: string
     }
     balance: string
+    whatsapp_newsletter?: {
+        is_subscribed: boolean
+        label: string
+        update_route: routeType
+    }
     total_to_pay: string
     cart_gross_amount: number
     routes: {
@@ -127,6 +139,7 @@ const props = defineProps<{
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
         insurance?: ChargeResource
+        gift_message?: ChargeResource
     }
     gr_gifts: {
         is_eligible: boolean
@@ -145,6 +158,7 @@ const props = defineProps<{
     }
     missed_offers: Record<string, { label: string }>
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData | null
     voucher: {
         id: number
         voucher_code: string
@@ -203,8 +217,8 @@ const onSelectShipper = async (shipperId: number) => {
     )
         .catch((exception: any) => {
             notify({
-                title: trans("Something went wrong"),
-                text: exception.response?.data?.message ?? trans("Failed to change shipping method"),
+                title: ctrans("Something went wrong"),
+                text: exception.response?.data?.message ?? ctrans("Failed to change shipping method"),
                 type: "error"
             })
         })
@@ -215,6 +229,7 @@ const onSelectShipper = async (shipperId: number) => {
 }
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
+const isWhatsAppOptInShown = !!props.whatsapp_newsletter && !props.whatsapp_newsletter.is_subscribed && !!props.whatsapp_newsletter.update_route.parameters.customerComms
 
 const isModalProductListOpen = ref(false)
 const isModalUploadSpreadsheet = ref(false)
@@ -292,6 +307,8 @@ onMounted(async () => {
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
 const deliveryInstructions = ref(props?.order?.shipping_notes || '')
+const isDeliveryInstructionsOpen = ref(!!deliveryInstructions.value)
+const isOtherInstructionsOpen = ref(!!noteToSubmit.value)
 const recentlySuccessNote = ref<string[]>([])
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref<string[]>([])
@@ -315,8 +332,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -401,8 +418,8 @@ const onAddProducts = async (product: Product) => {
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
@@ -463,16 +480,16 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`recommender-${productId}`] = 'error'
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Product added to basket"),
+                    title: ctrans("Success!"),
+                    text: ctrans("Product added to basket"),
                     type: "success"
                 })
                 
@@ -514,22 +531,22 @@ const onChangePriorityDispatch = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to priority dispatch!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to priority dispatch!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on priority dispatch."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on priority dispatch."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update priority dispatch, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update priority dispatch, try again."),
                     type: "error"
                 })
             },
@@ -558,22 +575,22 @@ const onChangeExtraPacking = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to extra packing!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to extra packing!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on extra packing."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on extra packing."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update extra packing, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update extra packing, try again."),
                     type: "error"
                 })
             },
@@ -583,6 +600,56 @@ const onChangeExtraPacking = async (val: boolean) => {
         }
     )
 }
+
+
+// Section: Charge Gift Message
+const isLoadingGiftMessage = ref(false)
+const onChangeGiftMessage = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_gift_message', props.order.id),
+        {
+            has_gift_message: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingGiftMessage.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to gift message!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on gift message."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update gift message, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGiftMessage.value = false
+            },
+        }
+    )
+}
+
+const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
+const isGiftMessageMissing = computed(() =>
+    !!(props.order as any)?.has_gift_message && !!giftMessagePanel.value?.isMissing
+)
+const isPreOrderTermsPending = computed(() => !!props.pre_orders?.has_pre_orders && !props.pre_orders.is_accepted)
 
 
 // Section: Charge Insurance
@@ -602,22 +669,22 @@ const onChangeInsurance = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order has insurance!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order has insurance!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order no longer has insurance."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order no longer has insurance."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update insurance, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update insurance, try again."),
                     type: "error"
                 })
             },
@@ -630,21 +697,21 @@ const onChangeInsurance = async (val: boolean) => {
 </script>
 
 <template>
-    <Head :title="trans('Basket')" />
+    <Head :title="ctrans('Basket')" />
     <PageHeading :data="pageHead">
         <template #other>
-            <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
+            <div v-if="screenType !== 'mobile'" class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
                 <Button
                     v-if="upload_spreadsheet"
                     @click="() => isModalUploadSpreadsheet = true"
-                    :label="trans('Upload products')"
+                    :label="ctrans('Upload products')"
                     icon="upload"
                     type="tertiary"
                     class="rounded-none border-0"
                 />
                 <Button
                     @click="() => isModalProductListOpen = true"
-                    :label="trans('Add products')"
+                    :label="ctrans('Add products')"
                     type="tertiary"
 					icon="fas fa-plus"
 					class="rounded-none border-none"
@@ -655,9 +722,9 @@ const onChangeInsurance = async (val: boolean) => {
     </PageHeading>
 
     <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <EcomCheckoutSummary
@@ -681,10 +748,23 @@ const onChangeInsurance = async (val: boolean) => {
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
-            />
+                :preOrderLines="pre_orders?.lines"
+            >
+                <template #gridHeaderActions>
+                    <Button
+                        v-if="screenType === 'mobile'"
+                        @click="() => isModalProductListOpen = true"
+                        :label="ctrans('Add products')"
+                        type="tertiary"
+                        icon="fas fa-plus"
+                        size="s"
+                        class="h-7 !py-0"
+                    />
+                </template>
+            </TableEcomBasket>
 
             <div v-if="shipping_options" class="mx-3 md:mx-6 my-4 border border-gray-200 rounded-md p-3">
-                <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
+                <div class="font-medium mb-2">{{ ctrans('Shipping method') }}</div>
                 <div class="space-y-1">
                     <label
                         v-for="option in shipping_options"
@@ -702,8 +782,8 @@ const onChangeInsurance = async (val: boolean) => {
                             />
                             <span>{{ option.name }}</span>
                         </span>
-                        <span class="text-gray-500">
-                            {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
+                        <span class="text-gray-600">
+                            {{ option.is_tbc ? ctrans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
                         </span>
                     </label>
                 </div>
@@ -711,14 +791,23 @@ const onChangeInsurance = async (val: boolean) => {
 
             <div class="grid md:grid-cols-2 gap-x-8 py-4">
                 <!-- Section: Instructions (delivery and other) -->
-                <div class="w-full md:px-4">
+                <div class="w-full">
                     <div v-if="total_products > 0" class="flex flex-col md:flex-row xjustify-end px-3 md:px-6 gap-x-4">
                         <div class="grid md:grid-cols-2 gap-y-4 gap-x-4 w-full">
                             <!-- <div></div> -->
                 
                             <!-- Input text: Delivery instructions -->
-                            <div class="">
-                                <div class="text-sm text-gray-500">
+                            <button
+                                v-if="screenType === 'mobile' && !isDeliveryInstructionsOpen"
+                                type="button"
+                                class="w-fit text-sm text-gray-600 hover:text-gray-800"
+                                @click="isDeliveryInstructionsOpen = true"
+                            >
+                                <FontAwesomeIcon :icon="farPlus" fixed-width aria-hidden="true" />
+                                {{ ctrans("Add delivery instructions") }}
+                            </button>
+                            <div v-else class="">
+                                <div class="text-sm text-gray-600">
                                     <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
                                     {{ ctrans("Delivery Instructions") }}
                                     :
@@ -736,10 +825,19 @@ const onChangeInsurance = async (val: boolean) => {
                                 />
                             </div>
                             <!-- Input text: Other instructions -->
-                            <div class="">
-                                <div class="text-sm text-gray-500">
+                            <button
+                                v-if="screenType === 'mobile' && !isOtherInstructionsOpen"
+                                type="button"
+                                class="w-fit text-sm text-gray-600 hover:text-gray-800"
+                                @click="isOtherInstructionsOpen = true"
+                            >
+                                <FontAwesomeIcon :icon="farPlus" fixed-width aria-hidden="true" />
+                                {{ ctrans("Add other instructions") }}
+                            </button>
+                            <div v-else class="">
+                                <div class="text-sm text-gray-600">
                                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                                    {{ trans("Other Instructions") }}:
+                                    {{ ctrans("Other Instructions") }}:
                                 </div>
                                 <PureTextarea
                                     v-model="noteToSubmit"
@@ -776,7 +874,7 @@ const onChangeInsurance = async (val: boolean) => {
                     />
 
                     <!-- Section: Eligible Gifts -->
-                    <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
+                    <div v-if="gr_gifts.status" class="flex justify-end px-3 md:px-6 mt-4">
                         <EligibleGift
                             :routeUpdate="{
                                 name: 'retina.models.order.update_gr_gift',
@@ -790,79 +888,112 @@ const onChangeInsurance = async (val: boolean) => {
                     </div>
                 
                     <!-- Section: Charge Premium Dispatch -->
-                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                             <InformationIcon v-if="charges.premium_dispatch?.description" :information="charges.premium_dispatch.description ?? ''" />
                             {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.is_premium_dispatch"
                                 @update:modelValue="(e) => (onChangePriorityDispatch(e))"
                                 xdisabled="isLoadingPriorityDispatch"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingPriorityDispatch" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
                     <!-- Section: Charge Extra Packing -->
-                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                             <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
-                            {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
+                            {{ charges.extra_packing?.label ? ctrans(charges.extra_packing.label) : ctrans(charges.extra_packing?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.has_extra_packing"
                                 @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingExtraPacking" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
                 
                     <!-- Section: Charge Insurance -->
-                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative">
                             <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
-                            {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
+                            {{ charges.insurance?.label ? ctrans(charges.insurance.label) : ctrans(charges.insurance?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.has_insurance"
                                 @update:modelValue="(e) => (onChangeInsurance(e))"
                                 xdisabled="isLoadingInsurance"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingInsurance" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
+
+                    <!-- Section: Charge Gift Message -->
+                    <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative">
+                            <InformationIcon v-if="charges.gift_message?.description" :information="charges.gift_message.description ?? ''" />
+                            {{ charges.gift_message?.label ? ctrans(charges.gift_message.label) : ctrans(charges.gift_message?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
+                        </div>
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_gift_message"
+                                @update:modelValue="(e) => (onChangeGiftMessage(e))"
+                                xdisabled="isLoadingGiftMessage"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
+                            >
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingGiftMessage" class="text-[8px] text-gray-600" />
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+
+                    <!-- Section: Gift Message panel -->
+                    <div v-if="order?.has_gift_message" class="my-4 pr-2 md:pr-6">
+                        <GiftMessagePanel
+                            ref="giftMessagePanel"
+                            :giftMessage="order?.gift_message"
+                            :hasGiftMessagePdf="order?.has_gift_message_pdf"
+                            :giftMessagePdfName="order?.gift_message_pdf_name"
+                            :textRoute="{ name: 'retina.models.order.update', parameters: props.order.id }"
+                            :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.order.id }"
+                            @uploaded="() => router.reload({ only: ['order'] })"
+                        />
+                    </div>
                 </div>
             </div>
-            
+
             <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="px-4 md:px-8 pb-4 space-y-3">
                 <BasketStockIssues :stock_issues />
+            </div>
+
+            <div v-if="pre_orders?.has_pre_orders" class="px-4 md:px-8 pb-4">
+                <BasketPreOrders :pre_orders :orderId="order?.id" :currencyCode="order?.currency_code" />
             </div>
 
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
@@ -872,18 +1003,26 @@ const onChangeInsurance = async (val: boolean) => {
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
                             iconRight="fas fa-arrow-right"
-                            :label="trans('Place order')"
+                            :label="ctrans('Place order')"
                             :routeTarget="routes?.pay_with_balance"
                             full
                             :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
-                            :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                            :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                                || isGiftMessageMissing
+                                || isPreOrderTermsPending"
                         >
                         </ButtonWithLink>
-                        <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
+                        <div v-if="isPreOrderTermsPending" class="text-xs text-amber-700 mt-2 flex items-start gap-x-1">
                             <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                             <div class="leading-5">
-                                {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                                {{ ctrans("Accept the pre-order terms above to place your order.") }}
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-2 italic flex items-start gap-x-1">
+                            <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
+                            <div class="leading-5">
+                                {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                             </div>
                         </div>
                     </template>
@@ -892,7 +1031,7 @@ const onChangeInsurance = async (val: boolean) => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Go to checkout')"
+                        :label="ctrans('Go to checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {
@@ -902,23 +1041,41 @@ const onChangeInsurance = async (val: boolean) => {
                         full
                         :size="screenType === 'mobile' ? 'xl' : undefined"
                         :key="screenType + 'go_to_checkout'"
-                        :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                        :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                            || isGiftMessageMissing"
                     />
+                    <div v-if="isGiftMessageMissing" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                        {{ ctrans("Write a gift message or upload a PDF before checking out.") }}
+                    </div>
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
-                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ ctrans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
+
+        <WhatsAppNewsletterOptIn
+            v-if="isWhatsAppOptInShown"
+            :label="whatsapp_newsletter.label"
+            :updateRoute="whatsapp_newsletter.update_route"
+        />
     </template>
     
     <div v-else class="text-center w-full">
         <EmptyState
             :data="{
-                title: trans('Basket is empty')
+                title: ctrans('Basket is empty')
             }"
         />
+        <div class="mb-6 sm:hidden">
+            <Button
+                @click="() => isModalProductListOpen = true"
+                :label="ctrans('Add products')"
+                type="tertiary"
+                icon="fas fa-plus"
+            />
+        </div>
     </div>
 
     <!-- Section: Recommendations -->
@@ -926,20 +1083,17 @@ const onChangeInsurance = async (val: boolean) => {
         <div class="w-full mt-2 pt-4 border-t border-gray-300 border-dashed"
             :class="layout.leftSidebar.show ? 'max-w-[calc(1280px-200px)]' : 'max-w-[calc(1280px-(56px-0.5rem))]'"
         >
-            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
-            <div class="bg-white p-4 rounded-md shadow-lg">
-                <BasketRecommendationsInternal
-                    @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
-                    :listLoadingProducts
-                />
-            </div>
+            <BasketRecommendationsInternal
+                @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
+                :listLoadingProducts
+            />
         </div>
     </Teleport>
 
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
         <ProductsSelectorAutoSelect
-            :headLabel="trans('Add products to basket')"
+            :headLabel="ctrans('Add products to basket')"
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)"
@@ -951,7 +1105,7 @@ const onChangeInsurance = async (val: boolean) => {
         <div class="md:hidden">
             <Button
                 @click="() => isModalProductListOpen = false"
-                :label="trans('Complete')"
+                :label="ctrans('Complete')"
                 type="tertiary"
                 full
             />

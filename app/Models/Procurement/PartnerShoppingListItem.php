@@ -9,6 +9,7 @@
 namespace App\Models\Procurement;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
@@ -17,6 +18,8 @@ use App\Models\Ordering\Transaction;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
+use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -68,7 +71,7 @@ class PartnerShoppingListItem extends Model
         $announce = function (self $item) {
             $sellerId = $item->partner_organisation_id ?? $item->organisation_id;
             if ($sellerId) {
-                BroadcastProductionQueuesChanged::dispatch($sellerId);
+                rescue(fn () => BroadcastProductionQueuesChanged::dispatch($sellerId));
             }
         };
 
@@ -85,6 +88,43 @@ class PartnerShoppingListItem extends Model
             'needed_by'      => 'date',
             'expiry_date'    => 'date',
         ];
+    }
+
+    public static function whereRoutedToProduction(Builder $query, string $items = 'partner_shopping_list_items', string $orgStocks = 'org_stocks'): Builder
+    {
+        return $query->whereNull("$items.pre_picked_at")
+            ->where(function ($query) use ($items, $orgStocks) {
+                $query->whereNotNull("$items.job_order_id")
+                    ->orWhereNull("$items.partner_organisation_id")
+                    ->orWhereRaw("coalesce($orgStocks.quantity_available, 0) <= 0");
+            })
+            ->where(function ($query) use ($items, $orgStocks) {
+                $query->whereNotNull("$items.job_order_id")
+                    ->orWhereNull("$orgStocks.state")
+                    ->orWhereNotIn("$orgStocks.state", [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
+            });
+    }
+
+    public static function openRestockRequestsFor(OrgStock $orgStock): EloquentBuilder
+    {
+        return static::query()
+            ->where('organisation_id', $orgStock->organisation_id)
+            ->where('stock_id', $orgStock->stock_id)
+            ->whereNull('partner_organisation_id')
+            ->whereNull('transaction_id')
+            ->whereNull('job_order_id')
+            ->whereNull('pre_picked_at')
+            ->where('state', ShoppingListItemStateEnum::OPEN);
+    }
+
+    public static function openPartnerLineFor(int $orgPartnerId, int $orgStockId): EloquentBuilder
+    {
+        return static::query()
+            ->where('org_partner_id', $orgPartnerId)
+            ->where('org_stock_id', $orgStockId)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('job_order_id')
+            ->whereNull('pre_picked_at');
     }
 
     public function jobOrder(): BelongsTo
@@ -129,14 +169,17 @@ class PartnerShoppingListItem extends Model
 
     /**
      * Current seller price per SKO in the partner currency, as a correlated SQL subquery.
+     *
+     * @param  array<int, int>  $shopIds  the seller's shops in order of preference (GetPartnerSellingShopIds)
      */
-    public static function pricePerSkoSql(): string
+    public static function pricePerSkoSql(array $shopIds): string
     {
         return PartnerSkoPrice::pricePerSkoSql(
             "(select sos.id from org_stocks sos
                 where sos.stock_id = partner_shopping_list_items.stock_id
                     and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-                limit 1)"
+                limit 1)",
+            $shopIds
         );
     }
 }

@@ -31,7 +31,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Modal from "@/Components/Utils/Modal.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faSpellCheck,
@@ -91,7 +91,7 @@ const locale = inject("locale", aikuLocaleStructure);
                 <span v-if="dispatchedEmail.body_preview" @click="() => { dispatchedEmailRoute(dispatchedEmail); }"
                   class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 cursor-pointer transition">
                   <FontAwesomeIcon :icon="faEyeEvil" class="mr-1" fixed-width />
-                  {{ trans("Preview") }}
+                  {{ ctrans("Preview") }}
                 </span>
             </div>
         </template>
@@ -102,7 +102,7 @@ const locale = inject("locale", aikuLocaleStructure);
     </Table>
 
       <!-- Email Preview Modal -->
-    <Modal :show="showEmailPreview" @close="showEmailPreview = false" width="w-auto max-w-4xl px-4">
+    <Modal :isOpen="showEmailPreview" @onClose="showEmailPreview = false" width="w-auto max-w-4xl px-4">
       <div class="p-4">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Email Preview</h3>
         <div v-if="selectedEmail" class="space-y-4">

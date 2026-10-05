@@ -10,11 +10,14 @@ namespace App\Actions\Retina\Fulfilment\FulfilmentTransaction;
 
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\FulfilmentTransaction;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaFulfilmentTransaction extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(FulfilmentTransaction $fulfilmentTransaction): void
     {
         DeleteFulfilmentTransaction::run($fulfilmentTransaction);

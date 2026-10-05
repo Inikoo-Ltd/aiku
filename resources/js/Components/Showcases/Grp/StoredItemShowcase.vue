@@ -2,7 +2,7 @@
 import { onMounted, nextTick } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 /* import CountUp from 'vue-countup-v3' */
 import { Pie } from 'vue-chartjs'
 import { useLayoutStore } from "@/Stores/layout"
@@ -22,6 +22,7 @@ import { printBarcode } from '@/Composables/printBarcode'
 
 import { faEmptySet } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck, faPencil, faPlus } from "@fal"
 
 library.add(faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck, faPencil, faPlus)
@@ -196,8 +197,8 @@ const saveBarcode = (value: string | null) => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.barcode || trans("Could not save the barcode"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.barcode || ctrans("Could not save the barcode"),
                     type: "error",
                 })
             },
@@ -213,15 +214,15 @@ const saveBarcode = (value: string | null) => {
 
         <div class="max-w-xl mt-1 grid grid-cols-1 gap-x-6 gap-y-8 xl:gap-x-8 h-fit ">
             <div class="flex flex-wrap items-start gap-4">
-                <div class="relative  border rounded-lg p-4 shadow-sm bg-gray-50 group">
-                    <div class="text-sm font-medium text-center mb-2">{{ trans("Reference") }}</div>
+                <div class="relative border rounded-lg p-4 shadow-sm bg-gray-50 group w-full">
+                    <div class="text-sm font-medium text-center mb-2">{{ ctrans("Reference") }}</div>
                     <div class="relative">
                         <div v-if="props.data.stored_item.slug" class="relative hover:bg-black/30 rounded-lg p-2">
-                            <svg id="palletBarcode" class="mx-auto group-hover:fill-black"></svg>
+                            <svg id="palletBarcode" class="w-full group-hover:fill-black"></svg>
                         </div>
                         <div v-else
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
-                            <div>{{ trans("No customer reference barcode") }}</div>
+                            <div>{{ ctrans("No customer reference barcode") }}</div>
                             <div>
                                 <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                             </div>
@@ -230,13 +231,13 @@ const saveBarcode = (value: string | null) => {
                 </div>
 
                 <div class="relative border rounded-lg p-4 shadow-sm bg-gray-50">
-                    <div class="text-sm font-medium text-center mb-2">{{ trans("Barcode") }}</div>
+                    <div class="text-sm font-medium text-center mb-2">{{ ctrans("Barcode") }}</div>
                     <div v-if="props.data.barcode" class="relative rounded-lg p-2">
                         <svg id="storedItemBarcode" class="mx-auto"></svg>
                         <button
                             v-if="props.data.barcode_update_route"
                             type="button"
-                            v-tooltip="trans('Edit barcode')"
+                            v-tooltip="ctrans('Edit barcode')"
                             class="absolute -right-2 -top-2 rounded-full border bg-white p-1.5 text-gray-400 hover:text-gray-700"
                             @click="openBarcodeModal">
                             <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
@@ -248,9 +249,9 @@ const saveBarcode = (value: string | null) => {
                         class="flex h-[70px] w-full min-w-56 items-center justify-center gap-x-2 rounded-lg border-2 border-dashed border-gray-300 px-4 text-gray-400 hover:border-gray-400 hover:text-gray-600"
                         @click="openBarcodeModal">
                         <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-                        {{ trans("Add barcode (type or scan it)") }}
+                        {{ ctrans("Add barcode (type or scan it)") }}
                     </button>
-                    <div v-else class="text-sm italic text-gray-400">{{ trans("No barcode") }}</div>
+                    <div v-else class="text-sm italic text-gray-400">{{ ctrans("No barcode") }}</div>
                 </div>
             </div>
             <div class="w-full overflow-hidden rounded-xl border border-gray-300">
@@ -258,29 +259,29 @@ const saveBarcode = (value: string | null) => {
                     <div class="space-x-1">
                         <Icon :data="data.stored_item?.state_icon" />
                         <span v-if="data.stored_item?.name">{{ data.stored_item.name }}</span>
-                        <span v-else class="text-gray-500 italic">({{ trans('No name') }})</span>
+                        <span v-else class="text-gray-500 italic">({{ ctrans('No name') }})</span>
                     </div>
-                    <div v-tooltip="trans('Date created')" class="text-sm/6 text-gray-500 w-fit">{{
+                    <div v-tooltip="ctrans('Date created')" class="text-sm/6 text-gray-500 w-fit">{{
                         useFormatTime(data.stored_item?.created_at) }}</div>
                 </div>
 
                 <dl class="-my-3 divide-y divide-gray-100 px-6 py-4 text-sm/6">
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Reference") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Reference") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <div class="font-medium">{{ data.stored_item.reference || '-' }}</div>
                         </dd>
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Customer") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Customer") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <div class="font-medium">{{ data.stored_item?.customer_name || '-' }}</div>
                         </dd>
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Pallet") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Pallet") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <Link v-if="generateLinkPallet()" :href="generateLinkPallet()" class="primaryLink">
                             {{ locale.number(data.stored_item?.pallets?.length || 0) }}
@@ -291,7 +292,7 @@ const saveBarcode = (value: string | null) => {
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Last audit") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Last audit") }}</dt>
                         <dd class="flex items-start gap-x-2">
 
                             <Link v-if="data.stored_item?.last_audit_at && generateLinkAudit(data)"
@@ -318,7 +319,7 @@ const saveBarcode = (value: string | null) => {
             <div class="w-full md:max-w-lg rounded-xl border border-gray-300 overflow-hidden">
                 <!-- Total quantity -->
                 <div class="flex flex-col items-center justify-center gap-y-2 border-b border-gray-900/5 bg-gray-50 px-6 py-5">
-                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ trans("Quantity in warehouse") }}</div>
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans("Quantity in warehouse") }}</div>
                     <div class="text-4xl font-bold tabular-nums leading-none text-gray-800">
                         {{ locale.number(data.stored_item?.total_quantity || 0) }}
                     </div>
@@ -331,14 +332,14 @@ const saveBarcode = (value: string | null) => {
                 <!-- Breakdown per pallet / location -->
                 <div class="px-6 py-4">
                     <div class="mb-2 flex items-center justify-between">
-                        <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Per pallet / location") }}</span>
-                        <span class="text-xs text-gray-400">{{ locale.number(data.pallets?.length || 0) }} {{ trans("pallets") }}</span>
+                        <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Per pallet / location") }}</span>
+                        <span class="text-xs text-gray-400">{{ locale.number(data.pallets?.length || 0) }} {{ ctrans("pallets") }}</span>
                     </div>
                     <div v-if="data.pallets?.length" class="flex flex-col divide-y divide-gray-100">
                         <div v-for="pallet in data.pallets" :key="pallet.id" class="flex items-center justify-between gap-x-4 py-2 text-sm">
                             <div class="flex min-w-0 items-center gap-x-2">
                                 <Icon :data="pallet.state_icon" />
-                                <span class="truncate font-medium text-gray-700">{{ pallet.reference || trans('To be delivered') }}</span>
+                                <span class="truncate font-medium text-gray-700">{{ pallet.reference || ctrans('To be delivered') }}</span>
                                 <span v-if="pallet.location?.code" class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{{ pallet.location.code }}</span>
                             </div>
                             <div class="flex shrink-0 items-center gap-x-3">
@@ -347,7 +348,7 @@ const saveBarcode = (value: string | null) => {
                             </div>
                         </div>
                     </div>
-                    <div v-else class="py-2 text-sm italic text-gray-400">{{ trans("Not stored in any pallet") }}</div>
+                    <div v-else class="py-2 text-sm italic text-gray-400">{{ ctrans("Not stored in any pallet") }}</div>
                 </div>
             </div>
         </div>
@@ -401,9 +402,9 @@ const saveBarcode = (value: string | null) => {
     <!-- Modal: add or edit the item's own barcode by typing or scanning into the input -->
     <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
         <div class="space-y-4">
-            <div class="text-lg font-semibold">{{ trans("Item barcode") }}</div>
+            <div class="text-lg font-semibold">{{ ctrans("Item barcode") }}</div>
             <div class="text-sm text-gray-500">
-                {{ trans("The barcode printed on the goods themselves, usually the manufacturer's EAN13. Type it, or click the field and scan the item with a barcode scanner.") }}
+                {{ ctrans("The barcode printed on the goods themselves, usually the manufacturer's EAN13. Type it, or click the field and scan the item with a barcode scanner.") }}
             </div>
             <input
                 ref="barcodeInputElement"
@@ -417,14 +418,14 @@ const saveBarcode = (value: string | null) => {
             <div class="flex justify-between">
                 <Button
                     v-if="props.data.barcode"
-                    :label="trans('Remove barcode')"
+                    :label="ctrans('Remove barcode')"
                     type="negative"
                     :loading="isSavingBarcode"
                     @click="saveBarcode(null)" />
                 <div v-else />
                 <div class="flex gap-x-2">
-                    <Button :label="trans('Cancel')" type="tertiary" @click="isBarcodeModalOpen = false" />
-                    <Button :label="trans('Save')" :loading="isSavingBarcode" @click="saveBarcode(barcodeInput.trim() || null)" />
+                    <Button :label="ctrans('Cancel')" type="tertiary" @click="isBarcodeModalOpen = false" />
+                    <Button :label="ctrans('Save')" :loading="isSavingBarcode" @click="saveBarcode(barcodeInput.trim() || null)" />
                 </div>
             </div>
         </div>

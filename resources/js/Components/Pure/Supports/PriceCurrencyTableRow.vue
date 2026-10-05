@@ -54,7 +54,7 @@ const inputDisabled = computed(
     () => props.alwaysIndependent
         ? false
         : (props.autoMode
-            ? !model.value.independent
+            ? false
             : (!props.isBase && !model.value.independent))
 )
 
@@ -67,6 +67,14 @@ const unitValue = computed(
 const editableValue = computed({
     get: () => props.editOn === 'outer' ? model.value.value : unitValue.value,
     set: (value: number | null) => {
+        if (value != null && Number.isNaN(value)) {
+            value = null
+        }
+
+        if (props.autoMode && !model.value.independent && value !== editableValue.value) {
+            model.value.independent = true
+        }
+
         model.value.value = value == null || props.editOn === 'outer'
             ? value
             : Math.round(value * units.value * 100) / 100

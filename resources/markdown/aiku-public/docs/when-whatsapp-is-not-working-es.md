@@ -4,7 +4,7 @@ summary: Los síntomas con los que la gente se topa de verdad - nada llega a la 
 date: 2026-09-10
 source_date: 2026-09-10
 tags: marketing, whatsapp, campaigns
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 3
 ---

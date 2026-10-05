@@ -11,12 +11,15 @@ namespace App\Actions\Retina\Fulfilment\StoredItem;
 
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToReturn;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletStoredItem;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachRetinaStoredItemToReturn extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     private PalletStoredItem $palletStoredItem;
 
     public function handle(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData)

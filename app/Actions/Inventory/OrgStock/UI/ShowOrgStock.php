@@ -8,10 +8,12 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -67,7 +69,7 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
-        $canDiscontinue = $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+        $canDiscontinue = DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation);
         $hasMaster     = $orgStock->stock;
         $subNavigation = $this->getOrgStockSubNavigation($orgStock, $request);
 
@@ -138,13 +140,6 @@ class ShowOrgStock extends OrgAction
                                 'parameters' => $request->route()->originalParameters(),
                             ]
                         ],
-                        ...($canDiscontinue ? [[
-                            'type'  => 'button',
-                            'style' => 'negative',
-                            'key'   => 'discontinue',
-                            'label' => __('Discontinue'),
-                            'icon'  => ['fal', 'fa-ban'],
-                        ]] : []),
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -158,7 +153,14 @@ class ShowOrgStock extends OrgAction
                                     'orgStock'     => $orgStock->slug,
                                 ]
                             ]
-                        ]
+                        ],
+                        ...($canDiscontinue ? [[
+                            'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'discontinue',
+                            'label' => __('Discontinue'),
+                            'icon'  => ['fal', 'fa-ban'],
+                        ]] : [])
                     ],
                     'subNavigation' => $subNavigation
                 ],
@@ -179,6 +181,8 @@ class ShowOrgStock extends OrgAction
                     'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 ],
                 'org_stock_id'  => $orgStock->id,
+                'can_link_supplier_products'   => $request->user()->authTo("inventory.{$orgStock->organisation_id}.edit"),
+                'can_create_supplier_products' => $request->user()->authTo("procurement.{$orgStock->organisation_id}.edit"),
                 'discontinue_preview_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
                     'parameters' => [
@@ -198,6 +202,14 @@ class ShowOrgStock extends OrgAction
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::optional(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
+
+                OrgStockTabsEnum::SALES_ANALYSIS->value => $this->tab == OrgStockTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+                'sales_analysis_teaser' => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock))),
 
                 OrgStockTabsEnum::TRADE_UNITS->value => $this->tab == OrgStockTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))

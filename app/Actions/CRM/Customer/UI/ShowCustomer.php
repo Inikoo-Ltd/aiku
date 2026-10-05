@@ -8,13 +8,13 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
-use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -27,13 +27,16 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithWebUserMeta;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
+use App\Actions\CRM\Customer\GetCustomerCommunications;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
+use App\Http\Resources\CRM\CustomerReorderProductsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -95,6 +98,9 @@ class ShowCustomer extends OrgAction
                 CustomerTabsEnum::HISTORY->value,
             ]);
         }
+        if ($customer->shop->type != ShopTypeEnum::B2B) {
+            unset($navigation[CustomerTabsEnum::RETINA_DASHBOARD->value]);
+        }
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -137,6 +143,7 @@ class ShowCustomer extends OrgAction
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
                 'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
+                'customer_email'     => $customer->email,
                 'emailCustomerRoute' => [
                     'name'       => 'grp.models.customer.email_chat.store',
                     'parameters' => ['customer' => $customer->id],
@@ -157,6 +164,17 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
+                        PdfCustomerLetterOfAuthorisation::isAvailable($customer->shop) && $request->route()->getName() == 'grp.org.shops.show.crm.customers.show' ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'label'   => __('Letter of authorisation'),
+                            'icon'    => 'fal fa-file-pdf',
+                            'target'  => '_blank',
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.customers.show.letter_of_authorisation.pdf',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : null,
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
@@ -167,17 +185,6 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                        $customer->shop->type !== ShopTypeEnum::EXTERNAL && $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
-                            'key'     => 'delete_customer',
-                            'type'    => 'button',
-                            'style'   => 'delete',
-                            'tooltip' => __('Delete Customer'),
-                            'route'   => [
-                                'name'       => 'grp.models.customer.delete',
-                                'parameters' => ['customer' => $customer->id],
-                                'method'     => 'delete',
-                            ]
-                        ] : false,
                     ])),
                     'subNavigation' => $subNavigation,
                     'iconRight' => $customer->is_vip ? [
@@ -238,9 +245,17 @@ class ShowCustomer extends OrgAction
                     fn () => GetCustomerTimeline::run($customer)
                     : Inertia::optional(fn () => GetCustomerTimeline::run($customer)),
 
+                $tabs::COMMUNICATIONS->value      => $this->tab == $tabs::COMMUNICATIONS->value ?
+                    fn () => GetCustomerCommunications::run($customer)
+                    : Inertia::optional(fn () => GetCustomerCommunications::run($customer)),
+
                 CustomerTabsEnum::JOURNEY->value  => $this->tab == CustomerTabsEnum::JOURNEY->value ?
                     fn () => GetCustomerJourney::run($customer)
                     : Inertia::optional(fn () => GetCustomerJourney::run($customer)),
+
+                CustomerTabsEnum::RETINA_DASHBOARD->value => $this->tab == CustomerTabsEnum::RETINA_DASHBOARD->value ?
+                    fn () => $this->getRetinaDashboard($customer)
+                    : Inertia::optional(fn () => $this->getRetinaDashboard($customer)),
 
                 $tabs::API_REQUESTS->value => $this->tab == $tabs::API_REQUESTS->value ?
                     fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($customer, $tabs::API_REQUESTS->value))
@@ -260,6 +275,9 @@ class ShowCustomer extends OrgAction
                 $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::optional(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
+                CustomerTabsEnum::REORDERS->value            => $this->tab == CustomerTabsEnum::REORDERS->value ?
+                    fn () => CustomerReorderProductsResource::collection(IndexCustomerReorderProducts::run($customer, CustomerTabsEnum::REORDERS->value))
+                    : Inertia::optional(fn () => CustomerReorderProductsResource::collection(IndexCustomerReorderProducts::run($customer, CustomerTabsEnum::REORDERS->value))),
                 $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
                     fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
                     : Inertia::optional(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
@@ -275,6 +293,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexOrders::make()->tableStructure($customer))
         ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
         ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
+        ->table(IndexCustomerReorderProducts::make()->tableStructure(CustomerTabsEnum::REORDERS->value))
         ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
         ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
@@ -469,5 +488,10 @@ class ShowCustomer extends OrgAction
                 ]
             ]
         };
+    }
+
+    private function getRetinaDashboard(Customer $customer): ?array
+    {
+        return $customer->shop->type == ShopTypeEnum::B2B ? GetRetinaB2BDashboardInsights::run($customer) : null;
     }
 }

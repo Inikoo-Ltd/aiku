@@ -9,12 +9,14 @@
 namespace App\Actions\Billables\Service;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Billables\Service;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShopService extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
     use WithControllerUpdateServiceRules;
 

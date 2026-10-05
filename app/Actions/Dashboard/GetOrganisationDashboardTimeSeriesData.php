@@ -8,7 +8,9 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Ordering\Order\GetOrderBacklog;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
+use App\Actions\Comms\Mailshot\GetShopMailshotsSentStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\SysAdmin\Organisation;
@@ -20,31 +22,32 @@ class GetOrganisationDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, $fromDate = null, $toDate = null, ?bool $useCache = null): array
+    public function handle(Organisation $organisation, $fromDate = null, $toDate = null, ?bool $useCache = null, bool $includePartners = false): array
     {
         $useCache = $useCache ?? true;
 
         if (!$useCache) {
-            return $this->fetchData($organisation, $fromDate, $toDate);
+            return $this->fetchData($organisation, $fromDate, $toDate, $includePartners);
         }
 
-        $cacheKey = $this->getCacheKey($organisation, $fromDate, $toDate);
+        $cacheKey = $this->getCacheKey($organisation, $fromDate, $toDate, $includePartners);
 
         return Cache::tags(["dashboard-org-{$organisation->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate) {
-                return $this->fetchData($organisation, $fromDate, $toDate);
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate, $includePartners) {
+                return $this->fetchData($organisation, $fromDate, $toDate, $includePartners);
             });
     }
 
-    protected function getCacheKey(Organisation $organisation, $fromDate, $toDate): string
+    protected function getCacheKey(Organisation $organisation, $fromDate, $toDate, bool $includePartners): string
     {
         [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
 
         return sprintf(
-            'dashboard:org_timeseries:%s:%s:%s',
+            'dashboard:org_timeseries:%s:%s:%s%s',
             $organisation->id,
             $normalizedFromDate,
-            $normalizedToDate
+            $normalizedToDate,
+            $includePartners ? ':partners' : ''
         );
     }
 
@@ -73,13 +76,16 @@ class GetOrganisationDashboardTimeSeriesData
         return Carbon::parse((string) $date)->toDateString();
     }
 
-    protected function fetchData(Organisation $organisation, $fromDate, $toDate): array
+    protected function fetchData(Organisation $organisation, $fromDate, $toDate, bool $includePartners): array
     {
+        $backlog = GetOrderBacklog::run($organisation, $includePartners);
+
         return [
-            'shops'             => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'platforms'         => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'brands'            => GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate),
+            'shops'             => GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate, null, $includePartners), $backlog['shops']),
+            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']),
+            'platforms'         => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['platforms']),
+            'brands'            => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['brands']),
+            'mailshots'         => GetShopMailshotsSentStats::run($organisation, $fromDate, $toDate),
         ];
     }
 

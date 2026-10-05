@@ -8,7 +8,6 @@
 
 namespace App\Actions\Traits\Fields;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
@@ -72,7 +71,6 @@ trait StoreCustomerFields
                             )
                         )->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
 
                         ]
                     ]

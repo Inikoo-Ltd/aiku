@@ -31,7 +31,7 @@ trait WithOrgSupplierSubNavigation
 
     protected function getOrgSupplierNavigation(OrgSupplier $parent): array
     {
-        $routeParameters = [$parent->organisation->slug, $parent->slug];
+        $routeParameters = [$this->organisation->slug, $parent->slug];
 
         return [
             [

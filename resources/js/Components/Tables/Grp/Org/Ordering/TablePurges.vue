@@ -16,7 +16,7 @@ import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { inject } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
 
 defineProps<{
@@ -31,7 +31,6 @@ defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 function purgeRoute(purge: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case "grp.overview.ordering.purges.index":
             return route(
@@ -55,7 +54,7 @@ function purgeRoute(purge: {}) {
             <Link :href="purgeRoute(purge)" class="primaryLink">
                 <span v-if="purge.scheduled_at">{{ purge["scheduled_at"] }}</span>
                 <span v-else class="opacity-70 italic">
-                    {{ trans("No date") }}
+                    {{ ctrans("No date") }}
                 </span>
             </Link>
         </template>

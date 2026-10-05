@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onBeforeUnmount, watch, computed } from "vue"
-import MessageArea from "@/Components/Chat/Customer/MessageArea.vue"
-import MessageHistory from "@/Components/Chat/MessageHistory.vue"
+import { ref, inject, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage, faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
+import { faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
 import {
     faWhatsapp,
     faFacebookF,
@@ -27,13 +25,17 @@ import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNot
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
-import OfflineChatForm from "../OfflineChatForm.vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
+import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import Image from "@common/Components/Image.vue"
+
+const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Customer/MessageArea.vue"))
+const MessageHistory = defineAsyncComponent(() => import("@/Components/Chat/MessageHistory.vue"))
+const HistoryChatList = defineAsyncComponent(() => import("@/Components/Chat/HistoryChatList.vue"))
+const OfflineChatForm = defineAsyncComponent(() => import("../OfflineChatForm.vue"))
 
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
@@ -88,8 +90,35 @@ interface ContactOption {
     url: string
 }
 
+/*
+ * The widget also runs outside Iris, in the Shopify embedded app, where there is no website
+ * layout to read the shop from and sessions are opened through a route that knows the
+ * merchant. Both are passed in there; everywhere else they keep coming from Iris.
+ */
+const props = withDefaults(
+    defineProps<{
+        shopId?: number | null
+        createSessionUrl?: string | null
+        docked?: boolean
+        active?: boolean
+    }>(),
+    {
+        shopId: null,
+        createSessionUrl: null,
+        docked: false,
+        active: false,
+    }
+)
+
+const emit = defineEmits<{
+    (e: "unread", count: number): void
+    (e: "requestOpen"): void
+}>()
+
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const shopId = computed(() => props.shopId ?? layout?.iris?.shop?.id)
 
 const isClient = typeof window !== "undefined"
 
@@ -131,6 +160,7 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
+const isFullHeight = computed(() => isMobile.value || !!props.docked)
 
 const page = usePage()
 
@@ -202,7 +232,7 @@ const showContactOptions = computed(
 const contactOptionIcon = (option: ContactOption) => option.icon ?? faComments
 
 const contactOptionColor = (option: ContactOption) =>
-    brandColors[option.icon?.[1] ?? ""] ?? layout?.app?.theme?.[4]
+    brandColors[option.icon?.[1] ?? ""] ?? brandColor.value
 
 if (isClient) {
     watch(open, (val) => {
@@ -253,14 +283,17 @@ const createSession = async (): Promise<ChatSessionData | null> => {
         const payload: any = {
             language_id: 68,
             priority: "normal",
-            shop_id: layout?.iris?.shop?.id,
+            shop_id: shopId.value,
         }
 
         if (isLoggedIn.value && layout.user?.id) {
             payload.web_user_id = layout.user?.id
         }
 
-        const res = await axios.post(`${baseUrl}/app/api/chats/sessions`, payload)
+        const res = await axios.post(
+            props.createSessionUrl ?? `${baseUrl}/app/api/chats/sessions`,
+            payload
+        )
         if (res.data?.data?.ulid) {
             saveChatSession(res.data.data)
             chatSession.value = res.data.data
@@ -678,7 +711,7 @@ const checkChatStatus = async (sessionUlid: string, isRetry = false) => {
     try {
         const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
             params: {
-                shop_id: layout?.iris?.shop?.id,
+                shop_id: shopId.value,
                 ulid: sessionUlid
             },
         })
@@ -766,6 +799,7 @@ const handleChatFromUrl = async () => {
         hasOpenedLiveChat.value = true
         await startChat()
     }
+    emit("requestOpen")
 }
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
@@ -788,20 +822,32 @@ onMounted(() => {
 
     handleChatFromUrl()
 
+    /*
+     * Composed path rather than the target: when the widget runs inside a shadow root the event
+     * is retargeted to the host by the time it reaches the document, so every click on the panel
+     * reads as a click outside it and shuts the panel the moment anyone tries to type.
+     */
+    const isInside = (element: HTMLElement | null | undefined, event: Event): boolean => {
+        if (!element) {
+            return false
+        }
+
+        const path = typeof event.composedPath === "function" ? event.composedPath() : []
+
+        return path.length ? path.includes(element) : element.contains(event.target as Node)
+    }
+
     document.addEventListener("mousedown", (e) => {
-        if (
-            isMenuOpen.value &&
-            menuRef.value &&
-            !menuRef.value.contains(e.target as Node)
-        ) {
+        if (isMenuOpen.value && menuRef.value && !isInside(menuRef.value, e)) {
             isMenuOpen.value = false
         }
 
         if (
+            !props.docked &&
             open.value &&
             panelRef.value &&
-            !panelRef.value.contains(e.target as Node) &&
-            !buttonRef.value?.contains(e.target as Node)
+            !isInside(panelRef.value, e) &&
+            !isInside(buttonRef.value, e)
         ) {
             open.value = false
         }
@@ -831,6 +877,28 @@ defineExpose({
 })
 
 const bundle = useBundle()
+const brandColor = computed(() => layout?.iris?.theme?.color?.[4] ?? layout?.app?.theme?.[4])
+const brandTextColor = computed(() => layout?.iris?.theme?.color?.[5] ?? layout?.app?.theme?.[5])
+const floatingButtonsDrag = useFloatingButtonsDrag(layout)
+const floatingPanelStyle = computed(() => isMobile.value || props.docked ? undefined : {
+    bottom: `${88 + floatingButtonsDrag.offset.value}px`,
+    maxHeight: `calc(100dvh - ${104 + floatingButtonsDrag.offset.value}px)`,
+})
+
+const onChatButtonClick = () => {
+    if (floatingButtonsDrag.wasJustDragged()) {
+        return
+    }
+    toggle()
+}
+
+watch(() => props.active, async (isActive) => {
+    if (props.docked && !!isActive !== open.value) {
+        await toggle()
+    }
+}, { immediate: true })
+
+watch(unreadCount, (count) => emit("unread", count), { immediate: true })
 
 const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
     if (!isClient) return
@@ -856,14 +924,14 @@ const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
 
 if (isClient) {
     watch(
-        [() => bundle.open.value, () => layout?.rightbasket?.show],
+        [() => bundle.open.value],
         () => {
             waitForElement('#jsd-widget', (widget) => {
                 widget.style.setProperty(
                     'right',
-                    (bundle.open.value || layout?.rightbasket?.show)
-                        ? '420px'
-                        : '16px',
+                    props.docked
+                        ? 'calc(var(--iris-side-width, 0px) + 1rem)'
+                        : bundle.open.value ? '420px' : '16px',
                     'important'
                 )
             })
@@ -875,11 +943,17 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
-            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
+        <button v-if="!docked" ref="buttonRef" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] w-12 h-12 flex items-center justify-center rounded-full shadow-lg buttonPrimary transition-[right,background-color] duration-300 touch-none focus:outline-none" :class="bundle.open.value ? 'right-[470px]' : 'right-3'"
+            :style="{ bottom: `${24 + floatingButtonsDrag.offset.value}px` }"
+            @pointerdown="floatingButtonsDrag.onPointerDown"
+            @pointermove="floatingButtonsDrag.onPointerMove"
+            @pointerup="floatingButtonsDrag.onPointerUp"
+            @pointercancel="floatingButtonsDrag.onPointerUp"
+            @click="onChatButtonClick">
+            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faComments" class="text-base"
                 fixed-width aria-hidden="true" />
-            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
-               bg-red-500 text-white text-[10px] font-semibold
+            <span v-if="unreadCount > 0" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1
+               bg-white text-gray-800 text-[11px] font-semibold shadow
                rounded-full flex items-center justify-center">
                 {{ unreadCount }}
             </span>
@@ -888,17 +962,19 @@ if (isClient) {
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="contact-options">
-            <div v-if="open && showContactOptions" ref="panelRef"
-                class="fixed z-[70] flex flex-col overflow-hidden bg-white shadow-xl" :class="isMobile
-                    ? 'inset-0 h-[100dvh]'
-                    : ['bottom-[140px] w-[350px] rounded-2xl max-h-[calc(100dvh-12rem)]',
-                        (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+            <div v-if="open && showContactOptions" ref="panelRef" :style="floatingPanelStyle"
+                class="flex flex-col overflow-hidden bg-white" :class="docked
+                    ? 'h-full w-full pt-3'
+                    : isMobile
+                    ? 'fixed z-[70] shadow-xl inset-0 h-[100dvh]'
+                    : ['fixed z-[70] shadow-xl w-[350px] rounded-2xl',
+                        bundle.open.value ? 'right-[430px]' : 'right-3'
                     ]">
                 <div class="relative shrink-0 px-6 pb-16" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+1.5rem)]'
                     : 'pt-6'" :style="{
-                        backgroundColor: layout?.app?.theme[4],
-                        color: layout?.app?.theme[5],
+                        backgroundColor: brandColor,
+                        color: brandTextColor,
                     }">
                     <button v-if="isMobile" @click="open = false"
                         class="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10">
@@ -922,7 +998,7 @@ if (isClient) {
                             {{ ctrans("Select") }}
                         </p>
 
-                        <div class="min-h-0 flex-1 overflow-y-auto pb-2" :class="isMobile ? '' : 'max-h-[300px]'">
+                        <div class="min-h-0 flex-1 overflow-y-auto pb-2" :class="isFullHeight ? '' : 'max-h-[300px]'">
                             <button v-for="(contactOption, index) in contactOptions" :key="index"
                                 @click="selectContactOption(contactOption)"
                                 class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
@@ -939,10 +1015,12 @@ if (isClient) {
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
-            <div v-if="open && !showContactOptions" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
-                ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
-                : ['bottom-[140px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
-                    (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+            <div v-if="open && !showContactOptions" ref="panelRef" :style="floatingPanelStyle" class="bg-[#f6f6f7] flex flex-col" :class="docked
+                ? 'h-full w-full'
+                : isMobile
+                ? 'fixed z-[70] border shadow-xl inset-0 rounded-none h-[100dvh]'
+                : ['fixed z-[70] border shadow-xl w-[350px] rounded-md',
+                    bundle.open.value ? 'right-[430px]' : 'right-3'
                 ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
@@ -968,8 +1046,8 @@ if (isClient) {
                                     ? 'text-white shadow-sm'
                                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'" :style="activeMenu === m
                                         ? {
-                                            backgroundColor: layout.app.theme[4],
-                                            color: layout.app.theme[5],
+                                            backgroundColor: brandColor,
+                                            color: brandTextColor,
                                         }
                                         : {}">
                                 {{ ctrans(m === 'chat' ? 'Chat' : 'History') }}
@@ -1009,15 +1087,15 @@ if (isClient) {
 
                     <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
                         :messages="messagesLocal" :session="chatSession" :loading="loading" :isRating="isRating"
-                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" :fullHeight="isFullHeight" @send-message="sendMessage"
                         @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
                         :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
-                        @session-created="handleOfflineSession" />
+                        :shopId="shopId" @session-created="handleOfflineSession" />
 
-                    <div v-if="activeMenu === 'history'" :class="isMobile
+                    <div v-if="activeMenu === 'history'" :class="isFullHeight
                         ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'
                         : 'bg-gray-50 scroll-smooth min-h-[350px] max-h-[calc(100vh-400px)] flex flex-col'">
                         <MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid"
@@ -1096,17 +1174,16 @@ if (isClient) {
 }
 
 .buttonPrimary {
-    background-color: v-bind("layout?.app?.theme[4]") !important;
-    color: v-bind("layout?.app?.theme[5]") !important;
-    border: v-bind("`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`");
+    background-color: v-bind("`color-mix(in srgb, ${brandColor} 90%, transparent)`") !important;
+    color: v-bind("brandTextColor") !important;
 
     &:hover {
-        background-color: v-bind("`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`"
+        background-color: v-bind("`color-mix(in srgb, ${brandColor} 85%, black)`"
         ) !important;
     }
 
-    &:focus {
-        box-shadow: 0 0 0 2px v-bind("layout?.app?.theme[4]") !important;
+    &:focus-visible {
+        box-shadow: 0 0 0 2px white, 0 0 0 4px v-bind("brandColor") !important;
     }
 }
 </style>

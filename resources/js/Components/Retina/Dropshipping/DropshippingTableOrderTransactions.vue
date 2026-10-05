@@ -9,7 +9,7 @@ import { Table as TableTS } from '@/types/Table'
 import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
@@ -112,7 +112,7 @@ const onUpdateQuantity = (
     {
       onError: (e: any) => {
         notify({
-          title: trans('Something went wrong'),
+          title: ctrans('Something went wrong'),
           text: e.message,
           type: 'error',
         })
@@ -170,8 +170,6 @@ async function onSave() {
     return
   }
 
-  console.log("🟢 changedItems:", changedItems)
-  console.log("🟡 newProducts:", newProducts)
 
   router.patch(
     route(props.modifyRoute.name, props.modifyRoute.parameters),
@@ -187,14 +185,14 @@ async function onSave() {
         Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
         editingIds.value.clear()
         notify({
-          title: trans('Success'),
-          text: trans('Changes saved successfully'),
+          title: ctrans('Success'),
+          text: ctrans('Changes saved successfully'),
           type: 'success',
         })
       },
       onError: (e: any) => {
         notify({
-          title: trans('Something went wrong'),
+          title: ctrans('Something went wrong'),
           text: e.message,
           type: 'error',
         })
@@ -299,7 +297,7 @@ defineExpose({
 
       <!-- Column: Quantity Ordered -->
       <template #cell(quantity_ordered)="{ item }">
-        <div class="flex items-center justify-end gap-2" v-tooltip="props.state == 'dispatched' && (item.quantity_dispatched < item.quantity_ordered) ? trans(':_order items ordered; :_dispatched items shipped', {_order: formatQuantity(item.quantity_ordered), _dispatched: formatQuantity(item.quantity_dispatched)}) : ''">
+        <div class="flex items-center justify-end gap-2" v-tooltip="props.state == 'dispatched' && (item.quantity_dispatched < item.quantity_ordered) ? ctrans(':_order items ordered; :_dispatched items shipped', {_order: formatQuantity(item.quantity_ordered), _dispatched: formatQuantity(item.quantity_dispatched)}) : ''">
           <!-- Editable when creating and not in edit mode -->
           <div v-if="state === 'creating' && !editingIds.has(item.id)" class="w-fit">
             <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
@@ -335,7 +333,7 @@ defineExpose({
       </template>
 
       <template #cell(net_amount)="{ item }">
-        <div class="flex justify-end" v-tooltip="props.state == 'dispatched' && (item.quantity_dispatched < item.quantity_ordered) ? trans('Order has been modified, price has been adjusted') : ''">
+        <div class="flex justify-end" v-tooltip="props.state == 'dispatched' && (item.quantity_dispatched < item.quantity_ordered) ? ctrans('Order has been modified, price has been adjusted') : ''">
           <div v-if="editingIds.has(item.id)" class="">
             <!-- Original price tag -->
             <div
@@ -372,7 +370,7 @@ defineExpose({
           <!-- Delete / Unselect -->
           <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
             as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
-            @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+            @finish="() => (isLoading = null)" v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
           <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
             :loading="isLoading === 'unselect' + item.id" />
           </Link>
@@ -398,7 +396,7 @@ defineExpose({
 
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
       <ProductsSelectorAutoSelect
-        :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
+        :headLabel="ctrans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
         :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false" withQuantity
         @submit="addNewProduct" />
     </Modal>

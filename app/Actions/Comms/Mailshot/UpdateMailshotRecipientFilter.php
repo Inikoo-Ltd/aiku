@@ -81,6 +81,24 @@ class UpdateMailshotRecipientFilter extends OrgAction
             'recipients_recipe.by_departments.value.behaviors' => ['sometimes', 'array'],
             'recipients_recipe.by_departments.value.behaviors.*' => ['sometimes', 'string'],
             'recipients_recipe.by_departments.value.combine_logic' => ['sometimes', 'boolean'],
+            'recipients_recipe.by_departments.value.date_range' => ['sometimes', 'nullable', 'array'],
+            'recipients_recipe.by_departments.value.date_range.*' => ['sometimes', 'nullable', 'date'],
+
+            'recipients_recipe.ordered_in_period' => ['sometimes', 'array'],
+            'recipients_recipe.ordered_in_period.value' => ['sometimes', 'array'],
+            'recipients_recipe.ordered_in_period.value.date_range' => ['sometimes', 'nullable', 'array'],
+            'recipients_recipe.ordered_in_period.value.date_range.*' => ['sometimes', 'nullable', 'date'],
+
+            'recipients_recipe.lapsed_customers' => ['sometimes', 'array'],
+            'recipients_recipe.lapsed_customers.value' => ['sometimes', 'array'],
+            'recipients_recipe.lapsed_customers.value.date_range' => ['sometimes', 'nullable', 'array'],
+            'recipients_recipe.lapsed_customers.value.date_range.*' => ['sometimes', 'nullable', 'date'],
+
+            'recipients_recipe.top_customers_by_revenue' => ['sometimes', 'array'],
+            'recipients_recipe.top_customers_by_revenue.value' => ['sometimes', 'array'],
+            'recipients_recipe.top_customers_by_revenue.value.date_range' => ['sometimes', 'nullable', 'array'],
+            'recipients_recipe.top_customers_by_revenue.value.date_range.*' => ['sometimes', 'nullable', 'date'],
+            'recipients_recipe.top_customers_by_revenue.value.percentage' => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:100'],
 
             // by_order_value filter
             'recipients_recipe.by_order_value' => ['sometimes', 'array'],
@@ -127,6 +145,10 @@ class UpdateMailshotRecipientFilter extends OrgAction
             // gold_reward_status filter
             'recipients_recipe.gold_reward_status' => ['sometimes', 'array'],
             'recipients_recipe.gold_reward_status.value' => ['sometimes', 'string'],
+
+            'recipients_recipe.due_to_reorder' => ['sometimes', 'array'],
+            'recipients_recipe.due_to_reorder.value' => ['sometimes', 'array'],
+            'recipients_recipe.due_to_reorder.value.value' => ['sometimes', 'boolean'],
 
             // by_family_never_ordered filter
             'recipients_recipe.by_family_never_ordered' => ['sometimes', 'array'],

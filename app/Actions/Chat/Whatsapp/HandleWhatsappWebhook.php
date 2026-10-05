@@ -7,7 +7,10 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Procurement\SupplierMessage\Whatsapp\StoreIncomingProcurementWhatsappMessage;
+use App\Actions\Procurement\SupplierMessage\Whatsapp\UpdateProcurementWhatsappStatus;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Actions\Chat\Whatsapp\Calls\HandleWhatsappCallEvent;
 use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateStatus;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\JsonResponse;
@@ -38,7 +41,25 @@ class HandleWhatsappWebhook
                     continue;
                 }
 
+                if (Arr::get($change, 'field') === 'calls') {
+                    HandleWhatsappCallEvent::dispatch($change['value']);
+
+                    continue;
+                }
+
                 if (Arr::get($change, 'field') !== 'messages') {
+                    continue;
+                }
+
+                if (StoreIncomingProcurementWhatsappMessage::organisationFor((string) Arr::get($change, 'value.metadata.phone_number_id'))) {
+                    if (filled(Arr::get($change, 'value.messages'))) {
+                        StoreIncomingProcurementWhatsappMessage::dispatch($change['value']);
+                    }
+
+                    if (filled(Arr::get($change, 'value.statuses'))) {
+                        UpdateProcurementWhatsappStatus::dispatch($change['value']);
+                    }
+
                     continue;
                 }
 
@@ -96,7 +117,10 @@ class HandleWhatsappWebhook
      */
     protected function webhookSecret(ActionRequest $request): string
     {
-        return $this->metaAppCredentials($this->webhookShop($request)?->organisation)['app_secret'];
+        $organisation = $this->webhookShop($request)?->organisation
+            ?? StoreIncomingProcurementWhatsappMessage::organisationFor((string) $request->json('entry.0.changes.0.value.metadata.phone_number_id'));
+
+        return $this->metaAppCredentials($organisation)['app_secret'];
     }
 
     /**

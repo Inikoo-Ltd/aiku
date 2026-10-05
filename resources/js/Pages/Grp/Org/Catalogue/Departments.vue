@@ -13,6 +13,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faFolderTree } from "@fal"
+library.add(faFolderTree)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -12,14 +12,19 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\WebUser;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaWebUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels {
+        authorize as customerOwnsRouteModels;
+    }
     use WithActionUpdate;
 
     private WebUser $webUserToUpdate;
@@ -28,6 +33,22 @@ class UpdateRetinaWebUser extends RetinaAction
     public function handle(WebUser $webUser, array $modelData): WebUser
     {
         return UpdateWebUser::run($webUser, $modelData);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if (!$this->customerOwnsRouteModels($request)) {
+            return false;
+        }
+
+        return $this->asAction || $request->user()->is_root;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->webUserToUpdate->is_root && $this->has('status') && !$this->get('status')) {
+            $validator->errors()->add('status', __('The main user can not be disabled'));
+        }
     }
 
 
@@ -64,6 +85,7 @@ class UpdateRetinaWebUser extends RetinaAction
             ],
             'contact_name' => ['sometimes', 'string', 'max:255'],
             'password'     => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)],
+            'status'       => ['sometimes', 'boolean'],
         ];
     }
 

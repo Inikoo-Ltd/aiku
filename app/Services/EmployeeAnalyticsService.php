@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\WorkSchedule;
@@ -621,25 +620,10 @@ class EmployeeAnalyticsService
 
     protected function getLeaveBalance(Employee $employee): array
     {
-        $currentYear = now()->year;
-
-        $balance = EmployeeLeaveBalance::query()
-            ->where('employee_id', $employee->id)
-            ->where('year', $currentYear)
-            ->first();
-
-        if (!$balance) {
-            return [
-                'annual_remaining'  => 0,
-                'medical_remaining' => 0,
-                'unpaid_remaining'  => 0,
-            ];
-        }
-
         return [
-            'annual_remaining'  => $balance->annual_remaining,
-            'medical_remaining' => $balance->medical_remaining,
-            'unpaid_remaining'  => $balance->unpaid_remaining,
+            'annual_remaining'  => $employee->currentLeaveBalance?->annual_remaining ?? 0,
+            'medical_remaining' => 0,
+            'unpaid_remaining'  => 0,
         ];
     }
 

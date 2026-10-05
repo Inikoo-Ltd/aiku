@@ -10,11 +10,11 @@ import { ref } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faGlobe, faImage } from '@fal'
+import { faGlobe, faImage, faSign } from '@fal'
 import TableBanners from "@/Components/Tables/Grp/Websites/TableBanner.vue"
 
 
-library.add(faGlobe, faImage)
+library.add(faGlobe, faImage, faSign)
 
 const props = defineProps<{
     pageHead: object

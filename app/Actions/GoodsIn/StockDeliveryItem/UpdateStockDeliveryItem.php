@@ -18,7 +18,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryItem extends OrgAction
@@ -29,6 +31,11 @@ class UpdateStockDeliveryItem extends OrgAction
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
+        if (Arr::has($modelData, 'net_amount')) {
+            data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount') * ($stockDeliveryItem->grp_exchange ?? 1));
+            data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount') * ($stockDeliveryItem->org_exchange ?? 1));
+        }
+
         $stockDeliveryItem = $this->update($stockDeliveryItem, $modelData, ['data']);
 
         StockDeliveriesHydrateItems::dispatch($stockDeliveryItem->stockDelivery)->delay($this->hydratorsDelay);
@@ -48,6 +55,7 @@ class UpdateStockDeliveryItem extends OrgAction
             $rules['state'] = ['sometimes','required', Rule::enum(StockDeliveryItemStateEnum::class)];
             $rules['unit_quantity_checked'] = ['sometimes', 'numeric', 'gte:0'];
             $rules['unit_quantity_placed'] = ['sometimes', 'numeric', 'gte:0'];
+            $rules['net_amount'] = ['sometimes', 'numeric'];
             $rules = $this->noStrictUpdateRules($rules);
         }
 
@@ -66,6 +74,10 @@ class UpdateStockDeliveryItem extends OrgAction
 
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
     {
+        if ($stockDeliveryItem->stockDelivery->isManagedByPartner()) {
+            throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
         $this->initialisation($stockDeliveryItem->organisation, $request);
 
         return $this->handle($stockDeliveryItem, $this->validatedData);

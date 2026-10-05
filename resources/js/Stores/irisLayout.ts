@@ -11,7 +11,6 @@ import { Colors } from "@/types/Color"
 import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { useFamilyPageBasket } from "@/Composables/useFamilyPageBasket"
-import { resolveIsLoggedIn } from "@/Composables/irisAuthFlag"
 
 
 interface User {
@@ -43,15 +42,6 @@ interface CategoryQuantityOrdered {
 	sub_department: Record<string, number>
 }
 
-const getLocalStorage = () => {
-	let storageIris = {}
-	if (typeof window !== "undefined" && window.localStorage) {
-		storageIris = JSON.parse(localStorage.getItem("iris") || "{}") // Get layout from localStorage
-		return storageIris
-	}
-
-	return storageIris
-}
 
 export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const user = ref<User | null>(null)
@@ -67,10 +57,10 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		isFetching: false,
 	}
 	const iris = {
-		is_logged_in: resolveIsLoggedIn(getLocalStorage().is_logged_in),
+		is_logged_in: false,
 	}
-	const iris_variables = getLocalStorage().iris_variables || {}
-	const offer_meters = getLocalStorage().offer_meters || {}
+	const iris_variables = {}
+	const offer_meters = {}
 	const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
 	const currentParams = ref<{ [key: string]: string }>({})
 	const currentQuery = ref<{ [key: string]: string }>({})

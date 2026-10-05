@@ -13,14 +13,14 @@ import { faRobot } from '@fal'
 import { faDiamond } from '@fas'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 
 library.add(faRobot, faDiamond)
 
 const props = defineProps<{
     data: {}
-    state: string
+    state?: string
     tab?: string
 }>()
 
@@ -64,7 +64,7 @@ function serviceRoute(service: {}) {
         <!-- Column: name -->
         <template #cell(name)="{ item: service }">
             {{ service.name }}
-            <FontAwesomeIcon v-if="service.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="service.is_pallet_handling" v-tooltip="ctrans('Special service')" icon="fas fa-diamond" class="text-teal-500" fixed-width aria-hidden="true" />
         </template>
 
         <!-- Column: Icon -->

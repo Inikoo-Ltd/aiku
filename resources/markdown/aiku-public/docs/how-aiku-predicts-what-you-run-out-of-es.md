@@ -1,8 +1,8 @@
 ---
 title: Cómo predice aiku lo que se te va a acabar
 summary: Qué significan de verdad "se acaba en ~12 días" y la cantidad sugerida, por qué un superventas sin stock pide tanto, y cuándo confiar en el número por encima de tu propio criterio.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-10-02
+source_date: 2026-10-02
 tags: procurement, stock, intercompany, shopping-list
 category: procurement
 ---
@@ -19,7 +19,7 @@ Dondequiera que estés comprando — las tarjetas de **Browse** de un socio, la 
 
 **Sugerida** es la cantidad que te llevaría hasta el próximo pedido y un poco más allá: lo suficiente para el plazo de entrega del proveedor, más el hueco hasta que normalmente volverías a pedir, más un colchón proporcional a lo errático que sea el artículo — y a eso se le resta lo que hay en la estantería y lo que ya viene de camino. Se redondea a unidades de envío completas, porque eso es lo que realmente puedes comprar.
 
-Los dos números se actualizan solos cada vez que el stock se mueve, así que están al día cuando los miras, no son los de anoche.
+Los dos números se actualizan solos cada vez que el stock se mueve, así que están al día cuando los miras: el ritmo al que se vende un artículo se calcula cada noche, y el stock entre el que se divide es el de hoy. En un pedido de compra el mismo pronóstico aparece bajo **Stock** como **Lasts** (dura), por ejemplo *Lasts: 6 weeks (out around 15 Nov) · could be 4 weeks*.
 
 ## La idea que lo hace funcionar: los días vacíos no cuentan
 
@@ -27,7 +27,7 @@ La forma obvia de medir lo rápido que se vende algo es promediar sus ventas de 
 
 Coge un artículo que se agotó en la primera semana y se quedó vacío el resto del trimestre. Promediado sobre noventa días parece que apenas se mueve — así que nunca se vuelve a pedir, así que sigue vacío, así que el trimestre siguiente parece aún peor. Cuanto mejor vende, más rápido desaparece, más invisible se vuelve. Casi todos los almacenes tienen unos cuantos artículos así, y suelen ser justo los que la gente está pidiendo.
 
-Por eso aiku no promedia sobre el calendario. Reconstruye, día a día, si el artículo estuvo realmente disponible, y mide el ritmo de venta **solo en los días en que lo tuviste para vender**. Los días con la estantería vacía se tratan como días sin información — no como días sin demanda.
+Por eso, en cualquier artículo que últimamente haya estado mucho tiempo sin stock, aiku no promedia sobre el calendario. Reconstruye, día a día, si el artículo estuvo realmente disponible, y mide el ritmo de venta **solo en los días en que lo tuviste para vender**. Los días con la estantería vacía se tratan como días sin información — no como días sin demanda.
 
 Esa única regla es la razón por la que un superventas a cero muestra un pedido sugerido grande en vez de pequeño. No es un fallo ni es el sistema entrando en pánico. Es el sistema viendo por fin la demanda que las semanas vacías estaban escondiendo.
 
@@ -35,14 +35,14 @@ Esa única regla es la razón por la que un superventas a cero muestra un pedido
 
 No todos los artículos tienen la misma calidad de evidencia detrás, y ayuda saber en qué caso estás.
 
-- **Su propio historial reciente.** El caso normal, y el que hay que fiarse. Los artículos estables reciben una estimación que sigue la tendencia; los artículos lentos e irregulares — los que salen de tres en tres cada varias semanas — se miden de otra forma, por lo grande que suele ser el pedido ocasional y lo largos que son los huecos de silencio, que es la manera honesta de describirlos.
-- **Su propio historial más largo.** No hay suficiente movimiento reciente, pero el artículo tiene pasado. Razonable, algo más lento en reaccionar.
-- **El mismo artículo en una organización hermana.** Tú apenas lo has vendido; en otra parte del grupo sí. aiku toma prestado su ritmo y lo divide entre dos, porque un mercado distinto es una pista, no una medición. Trátalo como punto de partida.
-- **La familia a la que pertenece.** El caso más débil: una línea nueva sin historial en ningún sitio, estimada a partir de sus vecinos y muy rebajada. Esto es un sustituto de tu criterio mientras lo tengas, no un reemplazo de él.
+- **Un pronóstico de sus propias ventas.** El caso normal, para los artículos que estuvieron en la estantería al menos siete días de cada diez en los últimos tres meses. Cada noche, un modelo de pronóstico lee hasta tres años de ventas semanales del artículo, con sus temporadas incluidas, y predice las próximas semanas. Después, los pronósticos de cada organización se comparan con lo que realmente despachó en las últimas seis semanas y se escalan para ajustarse, de modo que cuando la demanda sube o baja en general, los números la siguen en pocos días. Probado con nuestras propias ventas, se acercó un tercio más a lo que se vendió después que el método de abajo.
+- **Sus propios días recientes con stock.** Para los artículos que últimamente estuvieron sin stock más de tres días de cada diez, y para cuando el pronóstico nocturno no se ha ejecutado. Es la regla de los días vacíos de arriba. Los artículos estables reciben una estimación que sigue la tendencia; los artículos lentos e irregulares — los que salen de tres en tres cada varias semanas — se miden de otra forma, por lo grande que suele ser el pedido ocasional y lo largos que son los huecos de silencio, que es la manera honesta de describirlos.
+- **El mismo artículo en una organización hermana.** Aquí no se ha vendido en los últimos tres meses; en otra parte del grupo sí. aiku toma prestado su ritmo y lo divide entre dos, porque un mercado distinto es una pista, no una medición. Trátalo como punto de partida.
+- **La familia a la que pertenece.** El caso más débil: normalmente una línea nueva sin ventas recientes en ningún sitio, estimada a partir de sus vecinos y muy rebajada. Esto es un sustituto de tu criterio mientras lo tengas, no un reemplazo de él.
 
-También hay un ajuste estacional: aiku compara el mismo trimestre del año pasado contra la media de ese año y ajusta el ritmo al alza o a la baja, dentro de unos límites, para que un artículo navideño no se compre a su ritmo de agosto. Los límites importan — un trimestre atípico no puede desbocar el número por sí solo.
+Si ninguna de estas fuentes tiene nada en que basarse, no hay estimación: ni día de agotamiento ni cantidad sugerida. Fuera del pronóstico nocturno, el historial más antiguo del propio artículo no se usa — un artículo que se vendió bien el año pasado pero no en los últimos tres meses no se da por hecho que vuelva a venderse donde lo dejó. Cuando se probó, pedía de más.
 
-La regla de los días vacíos se aplica también aquí, y tiene que hacerlo. La Navidad pasada solo es evidencia sobre la Navidad si tenías el artículo para vender; un trimestre que pasaste sobre todo sin stock no dice nada de la temporada, solo del suministro. Así que cada trimestre se mide por día en que el artículo estuvo realmente disponible, y cualquier trimestre en el que estuviste sin stock más de la mitad del tiempo se descarta por completo de la comparación. Si eso deja menos de cuatro trimestres utilizables, aiku no hace ningún ajuste estacional en vez de hacer uno confiado construido sobre cuatro trimestres flojos.
+**Temporadas solo donde el propio historial del artículo las muestra.** El pronóstico nocturno ve hasta tres años, así que un artículo que ha tenido su pico cada Navidad se prevé con un pico otra vez. Los artículos con la regla de los días con stock, los artículos nuevos y los artículos demasiado pequeños para que se vea un patrón no reciben ningún empuje estacional: un artículo navideño en agosto se prevé entonces a su ritmo de agosto. Así que antes de un pico que sabes que llega — la subida hacia el Q4, una línea de verano, una feria — revisa la sugerencia y súbela a mano si no ha subido.
 
 ## Por qué un número puede parecer equivocado (y a menudo lo está)
 
@@ -51,6 +51,7 @@ El pronóstico lee historial. Cualquier cosa que pase fuera de ese historial, no
 - **Un pedido grande puntual.** Un cliente que te deja la estantería vacía de golpe parece exactamente popularidad repentina. Pásalo por alto.
 - **Una línea que estás descatalogando.** El historial dice que se vende; tu plan dice que pares. El sistema no conoce tu plan.
 - **Una promoción, una foto de catálogo, una ficha de marketplace que se publica.** Demanda a punto de cambiar por un motivo que todavía no ha ocurrido.
+- **Un pico conocido, como el Q4.** Solo los artículos cuyo propio pasado muestra el pico lo reciben; para el resto la sugerencia se calcula con los meses tranquilos de antes. Sube el pedido a mano, con tiempo suficiente para el plazo de entrega.
 - **Un producto totalmente nuevo.** Ver el caso de la familia más arriba — ese número es una estimación con cara de seguridad.
 - **Algo que no se mueve nada pero vale dinero.** Cae en **Dead stock** del panel, y pide una decisión de una persona, no un reabastecimiento.
 
@@ -60,11 +61,19 @@ La norma general: el pronóstico es mejor que tú en el aburrido grueso del cat�
 
 Auto-fill ordena los candidatos por lo pronto que se te acaban y va rellenando primero los más urgentes hasta que se agota el presupuesto. Cada línea propuesta lleva su motivo en palabras claras — *"Our sales/quarter ~48 · our stock 0 · we run out now"* — que es el pronóstico enseñando su trabajo. Lee los motivos antes de confirmar; ahí es donde un número equivocado es más fácil de pillar, y desmarcar una línea es un solo clic. No se pide nada hasta que pulsas **Add items to shopping list**.
 
+## Mirar hacia delante: qué se acaba si no se pide nada más
+
+En el panel de **Procurement** (compras), el gráfico de agotamientos de stock sigue más allá de ayer con dos líneas de puntos: cuántos SKO estarán sin stock cada día de las próximas ocho semanas, y las ventas que perderían al día. El stock de cada SKO se proyecta hacia delante con su pronóstico, y cada pedido de compra y cada entrega que ya están abiertos llegan en el día previsto. Los pedidos que ya han pasado su día previsto se dejan fuera hasta que reciben una fecha nueva, así que reclamar un pedido retrasado y volver a fecharlo devuelve su stock a la línea. No se cuenta nada que todavía no hayas pedido, así que las líneas muestran lo que pasa si nadie pide nada más. Pide hoy y la línea de mañana baja. Los SKO marcados como **On Demand** (bajo pedido) nunca se cuentan, ni aquí ni en el historial: se fabrican o se compran cuando se piden, así que una estantería vacía es normal para ellos.
+
+La lista de **Stock levels** (niveles de stock) que hay detrás de cada nivel del panel tiene una columna **Lost if not ordered** (perdido si no se pide): las ventas que perdería un SKO durante su plazo de entrega y el mes siguiente, si no se pide nada más. Ordénala por esa columna y los huecos que más cuestan salen primero.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
-<li><b>Ver los números por artículo:</b> <b>Procurement → Partners</b> (o <b>Suppliers</b>, o <b>Agents</b>) → abre uno → <b>Browse</b>: cada tarjeta muestra <i>our stock</i>, <i>our sales / quarter</i>, <i>we run out in</i> y una casilla <b>suggested</b> de líneas discontinuas que rellena la caja de cantidad.</li>
+<li><b>Ver los números por artículo:</b> <b>Procurement → Partners</b> (o <b>Suppliers</b>, o <b>Agents</b>) → abre uno → <b>Browse</b>: cada tarjeta muestra <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> y una casilla <b>suggested</b> de líneas discontinuas que rellena la caja de cantidad.</li>
 <li><b>Verlos en todo el catálogo:</b> el panel de <b>Shopping</b> del mismo socio → las casillas de stock en riesgo se construyen con el día de agotamiento; pulsa el número de una casilla para ver los artículos detrás.</li>
 <li><b>Verlos en un pedido abierto:</b> <b>Shopping list</b> → la columna <b>Info</b> lleva la historia del stock de cada línea.</li>
+<li><b>Ver qué se va a acabar:</b> <b>Procurement</b> → el gráfico de agotamientos de stock, líneas de puntos después de ayer; elige una fuente (agentes, proveedores…) encima. Pulsa un nivel de stock a la derecha y ordena la lista por <b>Lost if not ordered</b>.</li>
+<li><b>Verlos en un pedido de compra a un proveedor:</b> <b>Procurement → Suppliers</b> → abre uno → su pedido de compra → <b>Items</b> o <b>Products</b>: la línea <b>Lasts</b> bajo <b>Stock</b>, en rojo a menos de dos semanas, en ámbar a menos de seis.</li>
 <li><b>Pasar por encima de uno:</b> escribe tu propia cantidad en el contador de la tarjeta <b>Browse</b> — edita la línea abierta directamente. Nada se vuelve a sugerir por encima de ti.</li>
 <li><b>Corregir el plazo de entrega detrás de una sugerencia:</b> los ajustes del SKO, o los del producto de proveedor, mientras siga diciendo <i>estimate</i>.</li>
 </ul>

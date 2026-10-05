@@ -598,7 +598,7 @@ const saveRebel = async (rebel: PriceRebel) => {
             <span class="absolute bottom-0 left-3 top-1/2 w-px bg-gray-200" aria-hidden="true" />
             <span
                 class="absolute left-2 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full transition-colors"
-                :class="highlightedMajorCode === baseCurrency.code ? 'bg-sky-400' : 'bg-gray-300'"
+                :class="highlightedMajorCode === baseCurrency.code ? 'bg-[var(--app-accent)]' : 'bg-gray-300'"
                 v-tooltip="'Base Ratio'"
                 aria-hidden="true"
             />
@@ -655,12 +655,12 @@ const saveRebel = async (rebel: PriceRebel) => {
             <template v-if="!prices[currency.code].independent">
                 <span
                     class="absolute left-3 top-1/2 h-px w-3 transition-colors"
-                    :class="isHighlightedArrow(currency.code) ? 'bg-sky-400' : 'bg-gray-200'"
+                    :class="isHighlightedArrow(currency.code) ? 'bg-[var(--app-accent)]' : 'bg-gray-200'"
                     aria-hidden="true"
                 />
                 <span
                     class="absolute left-[1.25rem] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[3px] border-l-[4px] border-y-transparent transition-colors"
-                    :class="isHighlightedArrow(currency.code) ? 'border-l-sky-400' : 'border-l-gray-300'"
+                    :class="isHighlightedArrow(currency.code) ? 'border-l-[var(--app-accent)]' : 'border-l-gray-300'"
                     aria-hidden="true"
                 />
             </template>
@@ -755,12 +755,12 @@ const saveRebel = async (rebel: PriceRebel) => {
                     <template v-if="!prices[currency.code].independent">
                         <span
                             class="absolute left-3 top-1/2 h-px w-3 transition-colors"
-                            :class="isHighlightedArrow(currency.code) ? 'bg-sky-400' : 'bg-gray-200'"
+                            :class="isHighlightedArrow(currency.code) ? 'bg-[var(--app-accent)]' : 'bg-gray-200'"
                             aria-hidden="true"
                         />
                         <span
                             class="absolute left-[1.25rem] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[3px] border-l-[4px] border-y-transparent transition-colors"
-                            :class="isHighlightedArrow(currency.code) ? 'border-l-sky-400' : 'border-l-gray-300'"
+                            :class="isHighlightedArrow(currency.code) ? 'border-l-[var(--app-accent)]' : 'border-l-gray-300'"
                             aria-hidden="true"
                         />
                     </template>

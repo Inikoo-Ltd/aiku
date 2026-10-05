@@ -6,61 +6,119 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faDatabase } from "@fal"
+import { faChartLine, faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import CiRunCard, { CiRunDetail, CiRunSummary } from "@/Components/DevOps/CiRunCard.vue"
+import TestStats, { TestStatsData } from "@/Components/DevOps/TestStats.vue"
+import TelemetryPanel, { Telemetry } from "@/Components/DevOps/TelemetryPanel.vue"
+import { Trace } from "@/Components/DevOps/TraceWaterfall.vue"
+import { ExceptionDetailData } from "@/Components/DevOps/ExceptionDetail.vue"
+import { Logs } from "@/Components/DevOps/LogsView.vue"
+import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
+import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
-library.add(faDatabase)
+library.add(faChartLine, faDatabase, faFlask, faRocket, faServer, faSpinnerThird, faTools)
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    publicSiteVisits: {
-        daily: { day: string, views: number, visitors: number }[]
-        visitors: number
-        views: number
-        top_referrer: string | null
+    servers: ServerSummary[]
+    liveReadings: Record<string, LiveServerReading[]>
+    ciRuns: {
+        deploy: CiRunDetail | null
+        tests: CiRunDetail | null
+        recent_deploys: CiRunSummary[]
+        recent_tests: CiRunSummary[]
+        usual_deploy_seconds: number | null
+        usual_tests_seconds: number | null
+        test_stats: TestStatsData
     }
+    telemetry?: Telemetry | null
+    telemetryTrace?: Trace | null
+    telemetryException?: ExceptionDetailData | null
+    telemetryLogs?: Logs | null
 }>()
 
-const sparklinePoints = computed(() => {
-    const daily = props.publicSiteVisits.daily
-    if (!daily.length) return ""
-    const max = Math.max(...daily.map(d => Number(d.views)), 1)
-    return daily.map((d, i) =>
-        `${(i / Math.max(daily.length - 1, 1)) * 100},${28 - (Number(d.views) / max) * 26}`
-    ).join(" ")
+const { readings: liveReadings } = useLiveServerMetrics(props.liveReadings)
+
+const groupId = (usePage().props.layout as any)?.group?.id
+let ciReloadTimer: ReturnType<typeof setTimeout> | undefined
+const reloadCiRuns = () => {
+    clearTimeout(ciReloadTimer)
+    ciReloadTimer = setTimeout(() => router.reload({ only: ["ciRuns"] }), 500)
+}
+onMounted(() => groupId && window.Echo.private(`grp.${groupId}.devops.ci`).listen(".ci-run-updated", reloadCiRuns))
+onBeforeUnmount(() => {
+    clearTimeout(ciReloadTimer)
+    if (groupId) {
+        window.Echo.private(`grp.${groupId}.devops.ci`).stopListening(".ci-run-updated", reloadCiRuns)
+    }
 })
+
+const isRunning = (run: CiRunDetail | null) => run && run.status !== "completed" && !run.conclusion ? run : null
+const runningDeploy = computed(() => isRunning(props.ciRuns.deploy))
+const runningTests = computed(() => isRunning(props.ciRuns.tests))
+const spinning = { icon: "fal fa-spinner-third", iconClass: "animate-spin text-sky-500" }
+
+const tabs = computed(() => ({
+    servers: { title: ctrans("Servers"), icon: "fal fa-server" },
+    deployments: runningDeploy.value
+        ? {
+            title: runningDeploy.value.deploy_total
+                ? `${ctrans("Deploying")} ${runningDeploy.value.deploy_done}/${runningDeploy.value.deploy_total}`
+                : ctrans("Deploying"),
+            ...spinning,
+        }
+        : { title: ctrans("Deployments"), icon: "fal fa-rocket" },
+    tests: runningTests.value ? { title: ctrans("Testing"), ...spinning } : { title: ctrans("Tests"), icon: "fal fa-flask" },
+    telemetry: { title: ctrans("Telemetry"), icon: "fal fa-chart-line" },
+}))
+const requestedTab = new URLSearchParams(window.location.search).get("tab") ?? ""
+const currentTab = ref<string>(["deployments", "tests", "telemetry"].includes(requestedTab) ? requestedTab : "servers")
+const changeTab = (tab: string | number) => {
+    currentTab.value = String(tab)
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", currentTab.value)
+    window.history.replaceState(window.history.state, "", url)
+}
+
+const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSummary[]>>((groups, server) => {
+    (groups[server.group] ??= []).push(server)
+    return groups
+}, {}))
+
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs" @update:tab="changeTab" />
 
     <div class="p-4">
-        <div class="w-64 rounded-lg border border-gray-200 p-4">
-            <div class="flex items-baseline justify-between">
-                <span class="text-sm font-medium">aiku.io</span>
-                <span class="text-xs text-gray-500">{{ trans("Last 7 days") }}</span>
-            </div>
-            <div class="mt-2 flex items-baseline gap-3">
-                <span class="text-sm">{{ publicSiteVisits.visitors }} {{ trans("visitors") }}</span>
-                <span class="text-xs text-gray-500">{{ publicSiteVisits.views }} {{ trans("views") }}</span>
-            </div>
-            <svg v-if="sparklinePoints" viewBox="0 0 100 28" class="mt-2 h-7 w-full" preserveAspectRatio="none">
-                <polyline :points="sparklinePoints" fill="none" stroke="currentColor" stroke-width="1.5" class="text-indigo-500" />
-            </svg>
-            <div v-if="publicSiteVisits.top_referrer" class="mt-2 truncate text-xs text-gray-500">
-                {{ trans("Top referrer") }}: {{ publicSiteVisits.top_referrer }}
-            </div>
-            <Link :href="route('grp.devops.aiku-public-analytics')" class="mt-3 block text-xs text-indigo-600 hover:underline">
-                {{ trans("See more") }} →
-            </Link>
+        <div v-if="currentTab === 'servers'" class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <section v-for="(groupServers, group) in serverGroups" :key="group">
+                <h4 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans(group) }}</h4>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Link v-for="server in groupServers" :key="server.slug" :href="route('grp.devops.servers.show', [server.slug])" class="block hover:shadow">
+                        <ServerUsageCard :server="server" :live="liveReadings[server.slug]" />
+                    </Link>
+                </div>
+            </section>
         </div>
+        <div v-if="currentTab === 'deployments'" class="mb-6 max-w-4xl">
+            <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
+        </div>
+        <div v-if="currentTab === 'tests'" class="mb-6 max-w-4xl space-y-4">
+            <TestStats :stats="ciRuns.test_stats" />
+            <CiRunCard :title="ctrans('Tests on main')" :run="ciRuns.tests" :recent="ciRuns.recent_tests" :usual-seconds="ciRuns.usual_tests_seconds" />
+        </div>
+        <TelemetryPanel v-if="currentTab === 'telemetry'" :telemetry="telemetry" :trace="telemetryTrace" :exception="telemetryException" :logs="telemetryLogs" />
     </div>
 </template>

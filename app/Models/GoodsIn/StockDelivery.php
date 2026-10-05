@@ -179,8 +179,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'state',
         'cost_total',
         'cost_items',
+        'cost_extra',
         'cost_shipping',
         'cost_duties',
+        'is_costed',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -221,6 +223,29 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function placesInAiku(): bool
     {
         return $this->organisation->is_aiku_stock_control && $this->parent_type !== 'Production';
+    }
+
+    /**
+     * A partner delivery mirrors the seller's delivery note, and the seller owns it until the
+     * buyer receives the goods.
+     */
+    public function isInGoodsIn(): bool
+    {
+        return in_array($this->state, [
+            StockDeliveryStateEnum::RECEIVED,
+            StockDeliveryStateEnum::CHECKED,
+            StockDeliveryStateEnum::BOOKING_IN,
+        ], true);
+    }
+
+    public function isManagedByPartner(): bool
+    {
+        return $this->delivery_note_id !== null && in_array($this->state, [
+            StockDeliveryStateEnum::IN_PROCESS,
+            StockDeliveryStateEnum::CONFIRMED,
+            StockDeliveryStateEnum::READY_TO_SHIP,
+            StockDeliveryStateEnum::DISPATCHED,
+        ], true);
     }
 
     /**

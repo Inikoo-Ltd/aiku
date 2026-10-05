@@ -99,6 +99,9 @@ class Handler extends ExceptionHandler
         ) {
             $app = $this->getApp();
 
+            if ($app != 'iris') {
+                config(['inertia.ssr.enabled' => false]);
+            }
 
             if ($app == 'aiku-public' || $app == 'iris') {
                 return $this->renderErrorForLogOutWebpages($app, $request, $e, $response);

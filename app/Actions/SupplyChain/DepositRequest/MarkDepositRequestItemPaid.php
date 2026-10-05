@@ -22,7 +22,10 @@ class MarkDepositRequestItemPaid extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $request->user()->authTo([
+            "procurement.{$this->organisation->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
+        ]);
     }
 
     public function handle(DepositRequestItem $depositRequestItem): DepositRequestItem

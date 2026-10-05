@@ -24,8 +24,8 @@ class StockDeliveryUnderOverDeliveredItemResource extends JsonResource
             'id'                    => $item->id,
             'code'                  => $supplierProduct?->code,
             'name'                  => $supplierProduct?->name,
-            'units_per_pack'        => $supplierProduct?->units_per_pack,
-            'units_per_carton'      => $supplierProduct?->units_per_carton,
+            'units_per_pack'        => $supplierProduct?->units_per_pack ?? $item->org_stock_packed_in,
+            'units_per_carton'      => $supplierProduct?->units_per_carton ?? $item->org_stock_packed_in,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'org_stock_id'          => $item->org_stock_id,
@@ -35,6 +35,8 @@ class StockDeliveryUnderOverDeliveredItemResource extends JsonResource
             'difference_units'      => (float) $item->difference_units,
             'difference_skos'       => $item->difference_skos === null ? null : (float) $item->difference_skos,
             'difference_percentage' => $item->difference_percentage === null ? null : (float) $item->difference_percentage,
+            'difference_amount'     => $item->difference_amount === null ? null : (float) $item->difference_amount,
+            'currency_code'         => $item->currency_code,
         ];
     }
 }

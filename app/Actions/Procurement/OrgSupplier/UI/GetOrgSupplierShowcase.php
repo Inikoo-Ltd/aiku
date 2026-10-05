@@ -8,19 +8,23 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrgSupplierShowcase
 {
     use AsObject;
     use WithSupplierInfo;
+    use WithProcurementSerialReferences;
 
-    public function handle(OrgSupplier $orgSupplier): array
+    public function handle(OrgSupplier $orgSupplier, ?Organisation $organisation = null): array
     {
-        $supplier = $orgSupplier->supplier;
+        $supplier         = $orgSupplier->supplier;
+        $organisationSlug = ($organisation ?? $orgSupplier->organisation)->slug;
 
         return [
             'contactCard' => [
@@ -34,7 +38,11 @@ class GetOrgSupplierShowcase
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
                 'photo'      => $supplier->imageSources(320, 320),
-                'supplierInfo' => $this->supplierInfo($supplier),
+                'supplierInfo' => [
+                    ...$this->supplierInfo($supplier),
+                    'next_purchase_order_reference' => $this->nextPurchaseOrderReference($orgSupplier),
+                    'next_stock_delivery_reference' => $this->nextStockDeliveryReference($orgSupplier),
+                ],
             ],
             'stats'       => [
                 [
@@ -43,7 +51,7 @@ class GetOrgSupplierShowcase
                     'count' => $orgSupplier->stats->number_current_org_supplier_products,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
-                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                        'parameters' => [$organisationSlug, $orgSupplier->slug],
                     ],
                 ],
                 [
@@ -52,7 +60,7 @@ class GetOrgSupplierShowcase
                     'count' => $orgSupplier->stats->number_purchase_orders,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
-                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                        'parameters' => [$organisationSlug, $orgSupplier->slug],
                     ],
                 ],
                 [
@@ -61,7 +69,7 @@ class GetOrgSupplierShowcase
                     'count' => $orgSupplier->stats->number_stock_deliveries,
                     'route' => [
                         'name'       => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
-                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                        'parameters' => [$organisationSlug, $orgSupplier->slug],
                     ],
                 ],
             ],

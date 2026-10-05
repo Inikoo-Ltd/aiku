@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Tiktok\User;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\TiktokUser;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteTiktokUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

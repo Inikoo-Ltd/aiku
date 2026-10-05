@@ -31,6 +31,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
@@ -95,6 +96,7 @@ class UpdateInvoice extends OrgAction
 
 
         $updateTaxCategory = (bool)$billingAddressData;
+        $isTaxNumberEdited = Arr::has($modelData, 'formatted_tax_number');
 
         if (Arr::has($modelData, 'formatted_tax_number')) {
             $formattedTaxNumber = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
@@ -133,6 +135,10 @@ class UpdateInvoice extends OrgAction
 
         $invoice = $this->update($invoice, $modelData, ['data']);
 
+        if ($invoice->wasChanged('as_organisation_id')) {
+            InvoiceTransaction::where('invoice_id', $invoice->id)->update(['is_partner' => (bool)$invoice->as_organisation_id]);
+        }
+
         if ($updateTaxCategory) {
             $staleInvoice = clone $invoice;
 
@@ -156,12 +162,15 @@ class UpdateInvoice extends OrgAction
             if (!$this->strict) {
                 $taxNumber = $customer->taxNumber;
             }
+            if (!$isTaxNumberEdited) {
+                $taxNumber ??= $invoice->taxNumber ?? $this->invoiceTaxNumberSnapshot($invoice) ?? $customer->taxNumber;
+            }
 
             $taxCategoryInvoice = GetTaxCategory::run(
                 country: $invoice->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
-                deliveryAddress: $invoice->deliveryAddress,
+                deliveryAddress: $invoice->order?->collection_address_id ? $invoice->order->taxableDeliveryAddress($taxNumber) : $invoice->deliveryAddress,
                 isRe: $invoice->is_re,
             );
 
@@ -317,6 +326,21 @@ class UpdateInvoice extends OrgAction
         $parent->auditCustomNew = $newData;
 
         Event::dispatch(new AuditCustom($parent));
+    }
+
+    /**
+     * The tax number the invoice was issued with, so an edit does not re-tax it with whatever the customer has today
+     */
+    private function invoiceTaxNumberSnapshot(Invoice $invoice): ?TaxNumber
+    {
+        if (!$invoice->tax_number) {
+            return null;
+        }
+
+        return (new TaxNumber())->forceFill([
+            'number' => $invoice->tax_number,
+            'valid'  => (bool)$invoice->tax_number_valid,
+        ]);
     }
 
     public function rules(): array

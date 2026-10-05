@@ -18,14 +18,26 @@ enum ShopDashboardSalesTableTabsEnum: string
     use HasTabs;
 
     case DS_PLATFORMS = 'ds_platforms';
+    case DEPARTMENTS = 'departments';
+    case SUB_DEPARTMENTS = 'sub_departments';
     case BRANDS = 'brands';
 
     public function blueprint(): array
     {
         return match ($this) {
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS => [
+                'title' => __('Departments'),
+                'icon'  => 'fal fa-folder-tree',
+            ],
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => [
+                'title' => __('Sub-departments'),
+                'icon'  => 'fal fa-folder-tree',
+            ],
             ShopDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => [
                 'title' => __('DS Platforms'),
@@ -34,19 +46,35 @@ enum ShopDashboardSalesTableTabsEnum: string
         };
     }
 
+    public function dataKey(): string
+    {
+        return match ($this) {
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS    => 'platforms',
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS     => 'departments',
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => 'sub_departments',
+            ShopDashboardSalesTableTabsEnum::BRANDS          => 'brands',
+        };
+    }
+
     public function table(Shop $shop, array $timeSeriesData = []): array
     {
-        $brandTimeSeriesStats    = $timeSeriesData['brands'] ?? [];
-        $platformTimeSeriesStats = $timeSeriesData['platforms'] ?? [];
+        $brandTimeSeriesStats         = $timeSeriesData['brands'] ?? [];
+        $departmentTimeSeriesStats    = $timeSeriesData['departments'] ?? [];
+        $subDepartmentTimeSeriesStats = $timeSeriesData['sub_departments'] ?? [];
+        $platformTimeSeriesStats      = $timeSeriesData['platforms'] ?? [];
 
         $header = match ($this) {
-            ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true),
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS     => self::relabelHeader(json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true), __('Department')),
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => self::relabelHeader(json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true), __('Sub-department')),
+            ShopDashboardSalesTableTabsEnum::BRANDS          => json_decode(DashboardHeaderBrandSalesResource::make($shop)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS    => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
         };
 
         $body = match ($this) {
-            ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardBrandSalesResource::collection($brandTimeSeriesStats)->toJson(), true),
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS     => json_decode(DashboardBrandSalesResource::collection($departmentTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => json_decode(DashboardBrandSalesResource::collection($subDepartmentTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::BRANDS          => json_decode(DashboardBrandSalesResource::collection($brandTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS    => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
         $platformRowsWithoutChannelChildren = array_values(
@@ -54,8 +82,10 @@ enum ShopDashboardSalesTableTabsEnum: string
         );
 
         $totals = match ($this) {
-            ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformRowsWithoutChannelChildren)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS     => json_decode(DashboardTotalBrandSalesResource::make($departmentTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => json_decode(DashboardTotalBrandSalesResource::make($subDepartmentTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::BRANDS          => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS    => json_decode(DashboardTotalPlatformSalesResource::make($platformRowsWithoutChannelChildren)->toJson(), true),
         };
 
         return [
@@ -63,6 +93,14 @@ enum ShopDashboardSalesTableTabsEnum: string
             'body'   => $body,
             'totals' => $totals,
         ];
+    }
+
+    private static function relabelHeader(array $header, string $label): array
+    {
+        data_set($header, 'columns.label.formatted_value', $label);
+        data_set($header, 'columns.label_minified.formatted_value', $label);
+
+        return $header;
     }
 
     /**
@@ -107,19 +145,6 @@ enum ShopDashboardSalesTableTabsEnum: string
                 ],
             ]
         );
-    }
-
-    public static function tables(Shop $shop, array $timeSeriesData = []): array
-    {
-        return collect(self::cases())
-            ->filter(function ($case) use ($shop) {
-                if ($case === self::DS_PLATFORMS) {
-                    return $shop->type->value === 'dropshipping';
-                }
-                return !self::isBuriedBrands($case, $shop);
-            })
-            ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
-            ->all();
     }
 
     public static function tablesForTabs(Shop $shop, array $timeSeriesData, array $tabs): array

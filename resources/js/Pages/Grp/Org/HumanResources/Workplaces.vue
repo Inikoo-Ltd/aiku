@@ -4,6 +4,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableWorkplaces from "@/Components/Tables/Grp/Org/HumanResources/TableWorkplaces.vue";
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading";
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBuilding } from "@fal"
+library.add(faBuilding)
 
 defineProps <{
     pageHead: PageHeadingTypes

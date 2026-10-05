@@ -45,7 +45,6 @@ const productHasPortfolio = ref({
 
 
 const fetchProductHasPortfolio = async () => {
-    console.log("Fetching product portfolio for channels...");
     productHasPortfolio.value.isLoading = true;
     try {
         const apiUrl = route('retina.json.dropshipping.product.channels_list', { product: props.showcase.product.data.id })
@@ -55,7 +54,6 @@ const fetchProductHasPortfolio = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        console.log("Product portfolio response:", response);
         productHasPortfolio.value.list = response.data || [];
     } catch (error) {
         console.error(error);

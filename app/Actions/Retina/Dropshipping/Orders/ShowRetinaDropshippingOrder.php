@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -17,6 +18,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithOrderSummaryPackaging;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
@@ -48,6 +50,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
     use \App\Actions\Traits\WithLineTaxCategories;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithOrderSummaryPackaging;
 
     public function handle(Order $order): Order
     {
@@ -166,6 +169,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'order'     => OrderResource::make($order),
+                'pre_order' => $order->preOrder ? GetPreOrderShowcase::run($order->preOrder) : null,
 
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
                 'review_settings'   => Arr::get($order->shop->settings, 'reviews'),
@@ -343,7 +347,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             );
         }
 
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes->loadMissing('shipments.shipper');
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
@@ -359,7 +363,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'id'        => $deliveryNote->id,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments' => RetinaShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'routes'    => [
                         'download' => $routeDownload,
                     ],
@@ -429,18 +433,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
+                $this->buildChargesSummaryGroup($order),
                 [
                     [
                         'label'       => __('Net'),

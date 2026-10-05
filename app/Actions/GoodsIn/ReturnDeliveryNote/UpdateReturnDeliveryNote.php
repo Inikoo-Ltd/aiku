@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateReturnDeliveryNote extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -70,6 +72,7 @@ class UpdateReturnDeliveryNote extends OrgAction
 
     public function action(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
+        $this->asAction = true;
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $modelData);
 
         return $this->handle($returnDeliveryNote, $this->validatedData);

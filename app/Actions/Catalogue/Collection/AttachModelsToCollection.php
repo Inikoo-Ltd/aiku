@@ -17,10 +17,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachModelsToCollection extends OrgAction
 {
+    private Collection $collection;
+
     public function handle(Collection $collection, array $modelData): Collection
     {
         foreach (Arr::get($modelData, 'families', []) as $modelID) {
@@ -60,9 +63,19 @@ class AttachModelsToCollection extends OrgAction
         ];
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        if (!$this->asAction
+            && $this->collection->followsMasterItems()
+            && (Arr::get($validator->getData(), 'families') || Arr::get($validator->getData(), 'products'))) {
+            $validator->errors()->add('collection', __('This collection follows its master collection. Turn on "Do not follow master items" to change its families and products.'));
+        }
+    }
+
     public function action(Collection $collection, $modelData): Collection
     {
-        $this->asAction = true;
+        $this->asAction   = true;
+        $this->collection = $collection;
         $this->initialisationFromShop($collection->shop, $modelData);
 
         return $this->handle($collection, $modelData);
@@ -70,6 +83,7 @@ class AttachModelsToCollection extends OrgAction
 
     public function asController(Collection $collection, ActionRequest $request): Collection
     {
+        $this->collection = $collection;
         $this->initialisationFromShop($collection->shop, $request);
 
         return $this->handle($collection, $this->validatedData);

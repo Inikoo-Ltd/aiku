@@ -15,6 +15,9 @@ export const AROMA_ONLY_TABS: FamilyExtraDescriptionTabKey[] = [
 
 const hasValue = (value: unknown): boolean => String(value ?? "").trim() !== ""
 
+export const demoteHeadingOne = (html: unknown): string =>
+	String(html ?? "").replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2")
+
 export const hasRichTextContent = (html?: string | null): boolean =>
 	hasValue(
 		String(html ?? "")
@@ -97,16 +100,22 @@ export const isLabelInfoApproved = (product: any): boolean =>
 export const hasProductAboutContent = (tabs: any, product: any): boolean =>
 	hasRichTextContent(tabs?.description) || hasRichTextContent(product?.description_extra)
 
+export const hasProductAppointment = (fieldValue: any, isLoggedIn: boolean): boolean =>
+	Boolean(
+		isLoggedIn && fieldValue?.setting?.appointment && hasValue(fieldValue?.appointment_data?.link?.href)
+	)
+
 export const isProductTabVisible = (
 	tabKey: FamilyExtraDescriptionTabKey,
 	tabs: any,
 	product: any,
 	isLoggedIn: boolean,
-	isWorkshop = false
+	isWorkshop = false,
+	hasAppointment = false
 ): boolean => {
 	switch (tabKey) {
 		case "about":
-			return hasProductAboutContent(tabs, product)
+			return hasAppointment || hasProductAboutContent(tabs, product)
 
 		case "regulatory_label_information":
 			return (

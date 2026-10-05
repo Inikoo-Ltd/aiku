@@ -26,9 +26,13 @@ class ShowCatalogueInGroup extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function asController(ActionRequest $request): Group
     {
-        $this->asAction = true;
         $this->initialisationFromGroup(group(), $request)->withTab(CatalogueTabsEnum::valuesExcept([CatalogueTabsEnum::SHOWCASE]));
 
         return $this->group;

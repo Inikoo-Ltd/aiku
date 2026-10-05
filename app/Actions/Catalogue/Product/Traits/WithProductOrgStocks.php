@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Traits;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
@@ -115,6 +116,7 @@ trait WithProductOrgStocks
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);
         ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
         ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+        ProductHydrateTagsFromTradeUnits::run($product);
 
         foreach ($product->tradeUnits as $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitData->id);

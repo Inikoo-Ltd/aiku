@@ -8,19 +8,22 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\Helpers\Currency;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreStockDeliveryCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
 
     private StockDelivery $stockDelivery;
 
@@ -32,11 +35,17 @@ class StoreStockDeliveryCost extends OrgAction
             'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'received_at' => ['sometimes', 'nullable', 'date'],
             'is_na'       => ['sometimes', 'boolean'],
+            'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
+            'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
     }
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDelivery->is_costed) {
+            $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
+        }
+
         $type = StockDeliveryCostTypeEnum::tryFrom($this->get('type'));
 
         if ($type && $type !== StockDeliveryCostTypeEnum::EXTRA && $this->stockDelivery->costs()->where('type', $type)->exists()) {
@@ -47,7 +56,7 @@ class StoreStockDeliveryCost extends OrgAction
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDeliveryCost
     {
         $cost = $stockDelivery->costs()->create(
-            array_merge($modelData, [
+            array_merge(self::withExchange($stockDelivery, $modelData), [
                 'group_id'        => $stockDelivery->group_id,
                 'organisation_id' => $stockDelivery->organisation_id,
             ])
@@ -56,6 +65,27 @@ class StoreStockDeliveryCost extends OrgAction
         EvaluateStockDeliveryCosting::run($stockDelivery);
 
         return $cost;
+    }
+
+    public static function withExchange(StockDelivery $stockDelivery, array $modelData): array
+    {
+        if (!array_key_exists('currency_id', $modelData)) {
+            return $modelData;
+        }
+
+        if (!$modelData['currency_id'] || $modelData['currency_id'] == $stockDelivery->currency_id) {
+            return array_merge($modelData, ['currency_id' => null, 'exchange' => null]);
+        }
+
+        if (empty($modelData['exchange'])) {
+            $modelData['exchange'] = GetCurrencyExchange::run(Currency::find($modelData['currency_id']), $stockDelivery->currency);
+        }
+
+        if (!$modelData['exchange']) {
+            throw ValidationException::withMessages(['exchange' => __('The exchange rate could not be found, please enter it')]);
+        }
+
+        return $modelData;
     }
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDeliveryCost

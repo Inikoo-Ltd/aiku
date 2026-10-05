@@ -62,16 +62,31 @@ class ShowIncomingHub extends OrgAction
             [
                 'key'    => 'stock_deliveries',
                 'label'  => __('Stock Deliveries'),
-                'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse),
+                'short'  => __('SD'),
+                'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse, ['OrgSupplier', 'Production']),
+            ],
+            [
+                'key'    => 'partner_stock_deliveries',
+                'label'  => __('Partners'),
+                'short'  => __('PT'),
+                'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse, ['OrgPartner']),
+            ],
+            [
+                'key'    => 'agent_stock_deliveries',
+                'label'  => __('Agents'),
+                'short'  => __('AG'),
+                'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse, ['OrgAgent']),
             ],
             [
                 'key'    => 'pallet_deliveries',
                 'label'  => __('Fulfilment Deliveries'),
+                'short'  => __('FD'),
                 'widget' => GetIncomingHubPalletDeliveryWidget::run($warehouse),
             ],
             [
                 'key'    => 'return_delivery_notes',
                 'label'  => __('Returns'),
+                'short'  => __('RT'),
                 'widget' => GetIncomingHubReturnDeliveryNoteWidget::run($warehouse),
             ],
         ];
@@ -93,6 +108,7 @@ class ShowIncomingHub extends OrgAction
         }
 
         $metricOrder = [
+            'arriving',
             'received',
             'checked',
             'booking_in',
@@ -127,13 +143,13 @@ class ShowIncomingHub extends OrgAction
                     if (isset($entry['prefix'])) {
                         $columnTotals[$metricKey]['prefix']['value']        = ($columnTotals[$metricKey]['prefix']['value'] ?? 0) + ($entry['prefix']['value'] ?? 0);
                         $columnTotals[$metricKey]['prefix']['tooltip']      = $entry['prefix']['tooltip'] ?? null;
-                        $columnTotals[$metricKey]['prefix']['route_target'] = $entry['prefix']['route_target'] ?? null;
+                        $columnTotals[$metricKey]['prefix']['route_target'] = array_key_exists('route_target', $columnTotals[$metricKey]['prefix'] ?? []) ? null : ($entry['prefix']['route_target'] ?? null);
                     }
 
                     if (isset($entry['suffix'])) {
                         $columnTotals[$metricKey]['suffix']['value']        = ($columnTotals[$metricKey]['suffix']['value'] ?? 0) + ($entry['suffix']['value'] ?? 0);
                         $columnTotals[$metricKey]['suffix']['tooltip']      = $entry['suffix']['tooltip'] ?? null;
-                        $columnTotals[$metricKey]['suffix']['route_target'] = $entry['suffix']['route_target'] ?? null;
+                        $columnTotals[$metricKey]['suffix']['route_target'] = array_key_exists('route_target', $columnTotals[$metricKey]['suffix'] ?? []) ? null : ($entry['suffix']['route_target'] ?? null);
                     }
                 } else {
                     $data[$rowKey][$metricKey] = ['value' => null];
@@ -153,7 +169,7 @@ class ShowIncomingHub extends OrgAction
             'dimension' => [
                 'key'   => 'type',
                 'label' => __('Type'),
-                'items' => array_map(fn ($part) => ['key' => $part['key'], 'label' => $part['label']], $parts),
+                'items' => array_map(fn ($part) => ['key' => $part['key'], 'label' => $part['label'], 'short' => $part['short']], $parts),
             ],
             'metrics'     => $metrics,
             'data'        => $data,

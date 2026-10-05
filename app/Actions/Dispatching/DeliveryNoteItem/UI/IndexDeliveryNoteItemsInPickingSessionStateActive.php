@@ -68,6 +68,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.expiry_date',
                 'delivery_note_items.is_handled',
                 'delivery_note_items.is_dirty',
+                'delivery_note_items.transaction_id',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -97,7 +98,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                         $query->where('waiting_items.has_waiting_warehouse', true)
                             ->orWhere('waiting_items.has_waiting_crm', true);
                     })
-                    ->limit(1)
+                    ->limit(1),
+                'indivisible_set' => $this->getIndivisibleSetSubquery(),
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])

@@ -9,9 +9,8 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\AddToLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
@@ -63,12 +62,9 @@ class UpdateOrgStockMovement extends OrgAction
         $orgStockMovement->update($modelData);
 
         if ($oldQuantity != $orgStockMovement->quantity && $locationOrgStock) {
-            $currentLocationOrgStockQuantity = GetLocationOrgStockQuantity::run($orgStockMovement->orgStock, $orgStockMovement->location);
-            UpdateLocationOrgStock::run(
+            $currentLocationOrgStockQuantity = AddToLocationOrgStockQuantity::run(
                 $locationOrgStock,
-                [
-                    'quantity' => $currentLocationOrgStockQuantity
-                ]
+                (float)$orgStockMovement->quantity - (float)$oldQuantity
             );
 
             $runningQuantityOrg = DB::table('location_org_stocks')

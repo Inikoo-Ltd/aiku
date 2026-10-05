@@ -97,7 +97,7 @@ class StoreRentalAgreement extends OrgAction
 
 
         if ($this->sendEmail && $password) {
-            $webUser?->notify(new SendEmailRentalAgreementCreated($password));
+            $webUser?->notify(new SendEmailRentalAgreementCreated());
         }
 
 

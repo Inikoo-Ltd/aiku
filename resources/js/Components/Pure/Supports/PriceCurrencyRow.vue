@@ -71,7 +71,7 @@ const unitPrice = computed(() => {
     <div class="relative flex items-center gap-x-3">
         <div
             class="w-10 shrink-0 text-sm font-medium transition-colors"
-            :class="highlighted ? 'text-sky-500' : 'text-gray-600'"
+            :class="highlighted ? 'text-[var(--app-accent)]' : 'text-gray-600'"
         >{{ currency.code }}</div>
 
         <span
@@ -127,8 +127,8 @@ const unitPrice = computed(() => {
                 :disabled="readonly"
                 :aria-pressed="model.independent"
                 :aria-label="ctrans('Independent price')"
-                class="w-full rounded p-1.5 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                :class="model.independent ? 'text-green-500' : 'text-gray-300 hover:text-gray-500'"
+                class="w-full rounded p-1.5 transition-colors hover:bg-[var(--app-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+                :class="model.independent ? 'text-green-500' : 'text-gray-300 hover:text-[var(--app-accent)]'"
                 @click="toggleIndependent"
             >
                 <FontAwesomeIcon :icon="model.independent ? faUnlink : faLink" fixed-width aria-hidden="true" />

@@ -12,6 +12,7 @@ use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Web\Website;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
@@ -23,6 +24,10 @@ class HandleIrisInertiaRequests extends Middleware
 
     protected $rootView = 'app-iris';
 
+    public function version(Request $request): ?string
+    {
+        return Vite::manifestHash('iris');
+    }
 
     public function share(Request $request): array
     {

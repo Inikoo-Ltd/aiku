@@ -6,10 +6,10 @@ import { Intervals } from "@/types/Components/Dashboard"
 import { getDashboardDateRange } from "@/Composables/useDashboard"
 import Icon from "@/Components/Icon.vue"
 import { Icon as IconTS } from "@/types/Utils/Icon"
-import { faExternalLink } from "@fal"
+import { faExternalLink, faStoreAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faExternalLink)
+library.add(faExternalLink, faStoreAlt)
 
 interface RouteTarget {
     name?: string
@@ -33,6 +33,11 @@ const props = defineProps<{
             label?: string
             icon?: IconTS
             url: string
+        }
+        shop_link?: {
+            label: string
+            tooltip?: string
+            route: RouteTarget
         }
     }
     interval: Intervals
@@ -104,7 +109,7 @@ const getIntervalStateColor = (state?: string) => {
         </a>
 
         <component v-if="cell"
-            class="inline-flex gap-2 items-center tabular-nums text-xs md:text-base"
+            class="inline-flex gap-2 items-center tabular-nums text-xs md:text-sm 2xl:text-base"
             :class="[
                 cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
             ]"
@@ -142,5 +147,13 @@ const getIntervalStateColor = (state?: string) => {
                 aria-hidden="true"
             />
         </component>
+
+        <Link v-if="cell?.shop_link"
+            :href="route(cell.shop_link.route.name, cell.shop_link.route.parameters)"
+            v-tooltip="cell.shop_link.tooltip"
+            class="ml-2 inline-flex items-center gap-1 rounded border border-gray-300 px-1.5 py-0.5 text-xs text-gray-600 hover:border-[--app-accent] hover:text-[--app-accent]">
+            <FontAwesomeIcon icon="fal fa-store-alt" fixed-width aria-hidden="true" />
+            {{ cell.shop_link.label }}
+        </Link>
     </div>
 </template>

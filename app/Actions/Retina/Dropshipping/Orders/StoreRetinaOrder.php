@@ -38,6 +38,7 @@ class StoreRetinaOrder extends RetinaAction
             'delivery_address' => $customerClient->address,
         ]);
 
+
         CustomerSalesChannelsHydrateOrders::dispatch($customerClient->salesChannel);
 
         CustomerClientHydrateOrders::dispatch($customerClient);

@@ -35,20 +35,27 @@ class StoreMultiplePortfolios extends OrgAction
             ]);
         }
 
-        foreach (Arr::get($modelData, 'items') as $itemID) {
-            $itemID = (int)$itemID;
-            if ($customerSalesChannel->customer->is_fulfilment) {
-                /** @var StoredItem $item */
-                $item = StoredItem::find($itemID);
-                $checkPortfolio = $item->portfolio();
-            } else {
-                /** @var Product $item */
-                $item = Product::find($itemID);
-                $checkPortfolio = $item->portfolios();
+        $itemIds      = array_map(intval(...), Arr::get($modelData, 'items'));
+        $isFulfilment = $customerSalesChannel->customer->is_fulfilment;
+        $itemModel    = $isFulfilment ? new StoredItem() : new Product();
+
+        $items = $itemModel->newQuery()->whereIn('id', $itemIds)->get()->keyBy('id');
+
+        $existingPortfolios = $customerSalesChannel->portfolios()
+            ->where('item_type', $itemModel->getMorphClass())
+            ->whereIn('item_id', $itemIds)
+            ->get()
+            ->keyBy('item_id');
+
+        foreach ($itemIds as $itemID) {
+            /** @var Product|StoredItem $item */
+            $item = $items->get($itemID);
+            if (!$item) {
+                continue;
             }
 
-            if ($checkPortfolio->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
-                if ($portfolio = $item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->where('status', false)->first()) {
+            if ($portfolio = $existingPortfolios->get($itemID)) {
+                if (!$portfolio->status) {
                     UpdatePortfolio::make()->action($portfolio, [
                         'status' => true
                     ]);
@@ -60,10 +67,9 @@ class StoreMultiplePortfolios extends OrgAction
             StorePortfolio::make()->action(
                 customerSalesChannel: $customerSalesChannel,
                 item: $item,
-                modelData: []
+                modelData: [],
+                hydrateChannel: false
             );
-
-
         }
 
 

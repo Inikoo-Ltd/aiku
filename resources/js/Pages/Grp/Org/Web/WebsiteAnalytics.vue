@@ -13,9 +13,10 @@ import {
 	faUser,
 	faHdd,
 	faCloudDownload,
-    faMinus
+    faMinus, faAnalytics, faSatelliteDish, faChartNetwork
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Chart from "primevue/chart"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
@@ -26,9 +27,9 @@ import { computed } from "vue"
 import { capitalize } from "@/Composables/capitalize";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
-library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload, faMinus)
+library.add(faArrowUp, faArrowDown, faHandSparkles, faEnvelope, faUser, faHdd, faCloudDownload, faMinus, faAnalytics, faSatelliteDish, faChartNetwork)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -257,7 +258,6 @@ interface SummaryMetric {
 	change: string
 	changeType: "increase" | "decrease"
 }
-console.log(props.data.rumAnalyticsTimeseries)
 
 const reloadData = (until: string, since: string) => {
 	router.reload({
@@ -295,8 +295,6 @@ const handleSelectChange = () => {
 	since.setHours(today.getHours() - 24) // Get the time 24 hours ago
 	const until = today.toISOString().split("T")[0] // Use today's date as "until"
 
-	console.log("Since:", since)
-	console.log("Until:", until)
 
 	reloadData(until, since.toISOString().split("T")[0])
 }
@@ -556,13 +554,13 @@ watch(value, handleSelectChange)
 				<!-- Visits Card -->
 
 				<OverviewCard
-					:label="trans('Visitors')"
+					:label="ctrans('Visitors')"
 					:value="visitorsTotal"
 					:percentageChange="0"
 					:chartData="chartsData['Analytics Timeseries']" />
 
 				<OverviewCard
-					:label="trans('Page Views')"
+					:label="ctrans('Page Views')"
 					:value="pageViewsTotal"
 					:percentageChange="0"
 					:chartData="pageViewsChartData" />
@@ -600,14 +598,14 @@ watch(value, handleSelectChange)
 				</div>
 
                 <div v-if="props.data.pageConversionAnalytics" class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ trans("Page Conversion Rate") }}</h2>
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ ctrans("Page Conversion Rate") }}</h2>
                     <DataTable :value="props.data.pageConversionAnalytics" paginator :rows="10" :rowsPerPageOptions="[10, 20, 50]" sortMode="multiple" tableStyle="min-width: 50rem">
-                        <Column field="page_url" :header="trans('Page URL')" sortable style="width: 30%">
+                        <Column field="page_url" :header="ctrans('Page URL')" sortable style="width: 30%">
                             <template #body="{ data }">
                                 <a :href="data.page_url" target="_blank" class="text-blue-600 hover:underline truncate block max-w-xs" :title="data.page_url">{{ data.page_url }}</a>
                             </template>
                         </Column>
-                        <Column field="conversion_rate" :header="trans('Conversion Rate')" sortable style="width: 20%">
+                        <Column field="conversion_rate" :header="ctrans('Conversion Rate')" sortable style="width: 20%">
                             <template #body="{ data }">
                                 <div class="flex ite	ms-center gap-2">
                                     <span class="font-bold">{{ data.conversion_rate }}%</span>
@@ -623,9 +621,9 @@ watch(value, handleSelectChange)
                                 </div>
                             </template>
                         </Column>
-                        <Column field="total_conversions" :header="trans('Add to Basket')" sortable style="width: 15%"></Column>
-                        <Column field="total_visits" :header="trans('Visits')" sortable style="width: 15%"></Column>
-                        <Column field="avg_time_spent" :header="trans('Avg Time')" sortable style="width: 20%">
+                        <Column field="total_conversions" :header="ctrans('Add to Basket')" sortable style="width: 15%"></Column>
+                        <Column field="total_visits" :header="ctrans('Visits')" sortable style="width: 15%"></Column>
+                        <Column field="avg_time_spent" :header="ctrans('Avg Time')" sortable style="width: 20%">
                             <template #body="{ data }">
                                 {{ data.avg_time_spent }}s
                             </template>

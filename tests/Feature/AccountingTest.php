@@ -8,6 +8,11 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Payment\CancelPayment;
+use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Accounting\Payment\RefundPaymentManual;
+use App\Actions\Accounting\Payment\RefundPaymentToBalance;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
@@ -16,11 +21,18 @@ use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\OmegaInvoice;
 use App\Actions\Accounting\Invoice\OmegaManyInvoice;
+use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
+use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
+use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
+use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\Catalogue\Shop\UI\GetFormatedShopTimeSeriesStats;
+use App\Actions\UI\Dashboards\GetGroupDashboardTimeSeriesData;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
@@ -53,12 +65,22 @@ use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\GetOrderBacklog;
+use App\Actions\Dashboard\GetOrganisationDashboardTimeSeriesData;
+use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
+use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
+use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
+use Illuminate\Support\Facades\Event;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -99,6 +121,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 uses()->group('base');
 
@@ -805,9 +828,68 @@ test('UI show invoice category', function (InvoiceCategory $invoiceCategory) {
                 fn (AssertableInertia $page) => $page
                     ->where('title', $invoiceCategory->name)
                     ->etc()
-            );
+            )
+            ->has('overview.month')
+            ->has('overview.year')
+            ->has('overview.monthly')
+            ->missing('tabs');
     });
 })->depends('store invoice category');
+
+test('invoice category overview adds partner sales and compares with the same days last year', function (InvoiceCategory $invoiceCategory) {
+    $today  = Carbon::parse('2026-09-15', 'UTC');
+    $record = fn (TimeSeriesFrequencyEnum $frequency, string $from, string $period, float $external, float $internal, int $invoices) => [
+        'invoice_category_time_series_id' => $invoiceCategory->timeSeries()->firstOrCreate(['frequency' => $frequency->value])->id,
+        'frequency'                       => $frequency->singleLetter(),
+        'from'                            => $from,
+        'to'                              => $from,
+        'period'                          => $period,
+        'sales_external'                  => $external,
+        'sales_internal'                  => $internal,
+        'invoices'                        => $invoices,
+        'refunds'                         => 0,
+    ];
+
+    DB::table('invoice_category_time_series_records')->insert([
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-09-10 00:00:00', '2026-09-10', 100, 20, 2),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-09-16 00:00:00', '2026-09-16', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2026-02-01 00:00:00', '2026-02-01', 50, 0, 1),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2025-09-15 00:00:00', '2025-09-15', 60, 0, 1),
+        $record(TimeSeriesFrequencyEnum::DAILY, '2025-09-20 00:00:00', '2025-09-20', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2025-08-01 00:00:00', '2025-08', 999, 0, 9),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2025-09-01 00:00:00', '2025-09', 60, 0, 1),
+        $record(TimeSeriesFrequencyEnum::MONTHLY, '2026-09-01 00:00:00', '2026-09', 120, 0, 2),
+    ]);
+
+    $overview = GetInvoiceCategoryOverview::run($invoiceCategory, $today);
+
+    expect($overview['month'])->toMatchArray(['sales' => 120.0, 'invoices' => 2, 'sales_last_year' => 60.0, 'invoices_last_year' => 1])
+        ->and($overview['year'])->toMatchArray(['sales' => 170.0, 'invoices' => 3, 'sales_last_year' => 60.0])
+        ->and(array_column($overview['monthly'], 'period'))->toBe(['2025-09', '2026-09'])
+        ->and($overview['monthly'][1])->toMatchArray(['invoices' => 2, 'refunds' => 0]);
+})->depends('store invoice category');
+
+test('shop fallback invoice category links to its shop dashboard target tab', function (InvoiceCategory $invoiceCategory) {
+    $invoiceCategory->settings = ['shop_id' => $this->shop->id];
+
+    expect(ShowInvoiceCategory::make()->getShopTarget($invoiceCategory))->toMatchArray([
+        'shop_name' => $this->shop->name,
+        'url'       => route('grp.org.shops.show.dashboard.show', [$this->shop->organisation->slug, $this->shop->slug, 'section' => ShopDashboardSectionsEnum::TARGET->value]),
+    ])->toHaveKey('month.target')->toHaveKey('month.sales_so_far')->toHaveKey('month.remaining_days');
+
+    $invoiceCategory->type = InvoiceCategoryTypeEnum::IN_COUNTRY;
+    expect(ShowInvoiceCategory::make()->getShopTarget($invoiceCategory))->toBeNull();
+})->depends('store invoice category');
+
+test('dashboard invoice category row of a shop links to the shop dashboard target tab', function () {
+    $row = ['slug' => 'awgifts-romania', 'name' => 'AWGifts Romania', 'organisation_slug' => 'sk', 'shop_slug' => 'ro', 'shop_code' => 'RO'];
+
+    $columns = DashboardInvoiceCategoriesInOrganisationSalesResource::make($row)->resolve()['columns'];
+
+    expect($columns['label']['shop_link']['label'])->toBe('RO')
+        ->and(route($columns['label']['shop_link']['route']['name'], $columns['label']['shop_link']['route']['parameters'], false))->toBe('/org/sk/shops/ro/dashboard?section=target')
+        ->and(DashboardInvoiceCategoriesInOrganisationSalesResource::make([...$row, 'shop_slug' => null])->resolve()['columns']['label'])->not->toHaveKey('shop_link');
+});
 
 test('UI show invoice in invoice category', function (InvoiceCategory $invoiceCategory) {
     $response = get(route('grp.org.accounting.invoice-categories.show.invoices.index', [$this->organisation->slug, $invoiceCategory->slug]));
@@ -1658,17 +1740,60 @@ test('refund pdf lines include shipping and charge refunds', function () {
         ->and($invoiceLineTypes)->not->toContain('Charge')
         ->and($refundLineTypes)->toContain('ShippingZone')
         ->and($refundLineTypes)->toContain('Charge');
+
+    $renderedPdfHtml = function (Invoice $document): string {
+        $viewData = null;
+        Event::listen('composing: invoices.templates.pdf.invoice', function ($view) use (&$viewData) {
+            $viewData ??= $view->getData();
+        });
+        PdfInvoice::make()->getInvoicePdfContent($document);
+
+        return view('invoices.templates.pdf.invoice', $viewData)->render();
+    };
+
+    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>');
+});
+
+test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $customer    = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+    $invoice     = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $transaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 2,
+        'gross_amount'    => 200,
+        'net_amount'      => 200,
+    ]);
+
+    $firstRefund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($firstRefund, $transaction, ['net_amount' => 200]);
+    \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($firstRefund->refresh(), []);
+
+    $secondRefund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($secondRefund, $transaction->refresh(), ['net_amount' => 200]);
+    $secondRefund->refresh();
+
+    expect($secondRefund->invoiceTransactions()->count())->toBe(0)
+        ->and((float) $secondRefund->net_amount)->toBe(0.0)
+        ->and((float) $secondRefund->total_amount)->toBe(0.0);
+
+    \Pest\Laravel\post(route('grp.models.refund.finalise', [$secondRefund]))
+        ->assertSessionHasErrors('message');
+    expect($secondRefund->refresh()->in_process)->toBeTrue();
 });
 
 test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;
     $refundsBefore = $customer->stats->number_invoices_type_refund;
-    expect($refundsBefore)->toBeGreaterThanOrEqual(1);
+    expect($refund->in_process)->toBeTrue();
 
     ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
-    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore - 1);
+    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore)
+        ->and(Invoice::withTrashed()->find($refund->id))->toBeNull();
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {
@@ -2105,6 +2230,41 @@ test('accounting clerk without crm edit can decrease customer balance', function
     expect((float)$customer->refresh()->balance)->toBe(0.0);
 });
 
+test('only accounting managers set a customer credit line', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo([
+        "accounting.{$this->organisation->id}.edit",
+        "crm.{$this->shop->id}.edit",
+    ]);
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500])->assertForbidden();
+    patch(route('grp.models.customer.update', $customer->id), ['credit_limit' => 500])->assertSessionHasErrors('credit_limit');
+    expect((float)$customer->refresh()->credit_limit)->toBe(0.0);
+
+    $user->givePermissionTo("org-supervisor.{$this->organisation->id}.accounting");
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500, 'payment_terms_days' => 30], ['X-Inertia' => 'true'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+    patch(route('grp.models.customer.update', $customer->id), ['contact_name' => 'Credit Line Test'], ['X-Inertia' => 'true'])
+        ->assertRedirect();
+    $customer->refresh();
+    expect((float)$customer->credit_limit)->toBe(500.0)
+        ->and($customer->payment_terms_days)->toBe(30)
+        ->and($customer->spendableBalance())->toBe(500.0);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: MIT saved card store + update
@@ -2514,7 +2674,14 @@ test('UI refund action endpoints create tax finalise and delete', function () {
     $finalised = \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($refundA, []);
     expect($finalised->in_process)->toBeFalse();
 
-    // DeleteRefund (PATCH) on the tax refund of invoice B
+    // DeleteRefund (PATCH) on the tax refund of invoice B, refused without accounting edit
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('procurement-clerk', $this->organisation)]);
+    \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), ['deleted_note' => 'test delete'])->assertForbidden();
+    expect($taxRefund->refresh()->trashed())->toBeFalse();
+    actingAsUserWithRoles($user, $originalRoles);
+
     \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), [
         'deleted_note' => 'test delete',
     ])->assertRedirect();
@@ -3401,4 +3568,485 @@ test('balance increase for compensation issues a settled credit note', function 
 
     expect($plain->payment_id)->toBeNull()
         ->and(Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(1);
+});
+
+test('credit transaction exchange rates keep their precision below four decimals', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $creditTransaction = StoreCreditTransaction::make()->action($customer, [
+        'amount'       => 30784.30,
+        'type'         => CreditTransactionTypeEnum::PAYMENT->value,
+        'org_exchange' => 0.0026650912,
+        'grp_exchange' => 0.0023071834,
+    ], strict: false, notifyCustomer: false)->refresh();
+
+    expect($creditTransaction->org_exchange)->toBe('0.0026650912')
+        ->and($creditTransaction->grp_exchange)->toBe('0.0023071834')
+        ->and((float)$creditTransaction->org_amount)->toBe(82.04)
+        ->and((float)$creditTransaction->grp_amount)->toBe(71.03);
+});
+
+test('invoice category time series keep partner invoices and refunds apart and the dashboard can add them back', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Partner split category',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 1
+    ]);
+
+    $customer = createCustomer($this->shop);
+    $date     = now()->startOfDay()->addHour();
+
+    $invoiceSpecs = [
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 100, 'partner' => false],
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 300, 'partner' => true],
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 200, 'partner' => true],
+        ['type' => InvoiceTypeEnum::REFUND, 'amount' => -50, 'partner' => true],
+    ];
+
+    foreach ($invoiceSpecs as $spec) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        DB::table('invoices')->where('id', $invoice->id)->update([
+            'invoice_category_id' => $invoiceCategory->id,
+            'type'                => $spec['type']->value,
+            'in_process'          => false,
+            'date'                => $date,
+            'net_amount'          => $spec['amount'],
+            'org_net_amount'      => $spec['amount'],
+            'grp_net_amount'      => $spec['amount'],
+            'as_organisation_id'  => $spec['partner'] ? $this->organisation->id : null,
+        ]);
+    }
+
+    ProcessInvoiceCategoryTimeSeriesRecords::run($invoiceCategory->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+
+    $record = DB::table('invoice_category_time_series_records')
+        ->join('invoice_category_time_series', 'invoice_category_time_series.id', '=', 'invoice_category_time_series_records.invoice_category_time_series_id')
+        ->where('invoice_category_time_series.invoice_category_id', $invoiceCategory->id)
+        ->where('invoice_category_time_series_records.from', '>=', $date->copy()->startOfDay())
+        ->first();
+
+    expect((int)$record->invoices)->toBe(1)
+        ->and((int)$record->refunds)->toBe(0)
+        ->and((int)$record->invoices_internal)->toBe(2)
+        ->and((int)$record->refunds_internal)->toBe(1)
+        ->and((float)$record->sales_org_currency_external)->toBe(100.0)
+        ->and((float)$record->sales_org_currency_internal)->toBe(450.0);
+
+    $statsFor = fn (bool $includePartners) => collect(GetInvoiceCategoryTimeSeriesStats::run($this->organisation, $date, $date, $includePartners))
+        ->firstWhere('id', $invoiceCategory->id);
+
+    $withoutPartners = $statsFor(false);
+    $withPartners    = $statsFor(true);
+
+    expect((int)$withoutPartners['invoices_ctm'])->toBe(1)
+        ->and((float)$withoutPartners['sales_org_currency_external_ctm'])->toBe(100.0)
+        ->and((int)$withPartners['invoices_ctm'])->toBe(3)
+        ->and((int)$withPartners['refunds_ctm'])->toBe(1)
+        ->and((float)$withPartners['sales_org_currency_external_ctm'])->toBe(550.0);
+
+    ProcessShopTimeSeriesRecords::run($this->shop->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+
+    $shopWithoutPartners = GetFormatedShopTimeSeriesStats::run($this->shop->fresh(), null, null, false);
+    $shopWithPartners    = GetFormatedShopTimeSeriesStats::run($this->shop->fresh(), null, null, true);
+
+    expect($shopWithPartners['invoices']['tdy']['raw_value'] - $shopWithoutPartners['invoices']['tdy']['raw_value'])->toEqual(2)
+        ->and($shopWithPartners['refunds']['tdy']['raw_value'] - $shopWithoutPartners['refunds']['tdy']['raw_value'])->toEqual(1)
+        ->and($shopWithPartners['sales_org_currency_external']['tdy']['raw_value'] - $shopWithoutPartners['sales_org_currency_external']['tdy']['raw_value'])->toEqual(450);
+
+    $groupCategory = fn (bool $includePartners) => collect(GetGroupDashboardTimeSeriesData::run($this->group, null, null, false, $includePartners)['invoiceCategories'])
+        ->firstWhere('id', $invoiceCategory->id);
+
+    expect((int)$groupCategory(false)['invoices_tdy'])->toBe(1)
+        ->and((int)$groupCategory(true)['invoices_tdy'])->toBe(3)
+        ->and((int)$groupCategory(true)['refunds_tdy'])->toBe(1);
+});
+
+test('dashboards show the backlog of orders not invoiced yet', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Backlog category',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'settings'    => ['shop_id' => $this->shop->id],
+        'priority'    => 30000
+    ]);
+
+    $customer    = createCustomer($this->shop);
+    $orderSpecs  = [
+        ['state' => OrderStateEnum::IN_WAREHOUSE, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 100, 'partner' => false],
+        ['state' => OrderStateEnum::PACKED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 40, 'partner' => false],
+        ['state' => OrderStateEnum::PICKED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 25, 'partner' => true],
+        ['state' => OrderStateEnum::SUBMITTED, 'pay_status' => OrderPayStatusEnum::UNPAID, 'amount' => 500, 'partner' => false],
+        ['state' => OrderStateEnum::FINALISED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 700, 'partner' => false],
+    ];
+
+    foreach ($orderSpecs as $spec) {
+        $order = StoreOrder::make()->action($customer, []);
+        DB::table('orders')->where('id', $order->id)->update([
+            'state'              => $spec['state']->value,
+            'pay_status'         => $spec['pay_status']->value,
+            'net_amount'         => $spec['amount'],
+            'org_net_amount'     => $spec['amount'],
+            'grp_net_amount'     => $spec['amount'],
+            'as_organisation_id' => $spec['partner'] ? $this->organisation->id : null,
+        ]);
+    }
+
+    $backlogFor = fn (bool $includePartners) => GetOrderBacklog::run($this->organisation, $includePartners);
+
+    expect((float)$backlogFor(false)['invoiceCategories'][$invoiceCategory->id]['backlog_org_currency_external_all'])->toBe(640.0)
+        ->and((float)$backlogFor(false)['shops'][$this->shop->id]['backlog_tdy'])->toBe(640.0)
+        ->and((float)$backlogFor(true)['invoiceCategories'][$invoiceCategory->id]['backlog_org_currency_external_mtd'])->toBe(665.0);
+
+    $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($this->organisation, null, null, false);
+    $table          = OrganisationDashboardSalesTableTabsEnum::SHOPS->table($this->organisation, $timeSeriesData);
+    $bodyRow        = collect($table['body'])->firstWhere('slug', $this->shop->slug);
+
+    expect($table['header']['columns'])->toHaveKeys(['backlog', 'backlog_org_currency_external_minified'])
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+
+    $categoryTable = OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES->table($this->organisation, $timeSeriesData);
+    $categoryRow   = collect($categoryTable['body'])->firstWhere('slug', $invoiceCategory->slug);
+
+    expect($categoryRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+
+    $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+});
+
+test('sales analysis follows the saved include partners setting unless the page asks otherwise', function () {
+    $user = $this->adminGuest->getUser();
+    $user->update(['settings' => array_merge($user->settings ?? [], ['partners_type' => 'all'])]);
+    actingAs($user->fresh());
+
+    expect(GetShopSalesAnalysis::run($this->shop, [])['include_partners'])->toBeTrue()
+        ->and(GetShopSalesAnalysis::run($this->shop, ['partners' => '0'])['include_partners'])->toBeFalse();
+
+    $user->update(['settings' => array_merge($user->settings ?? [], ['partners_type' => 'external'])]);
+    actingAs($user->fresh());
+
+    expect(GetShopSalesAnalysis::run($this->shop, [])['include_partners'])->toBeFalse()
+        ->and(GetShopSalesAnalysis::run($this->shop, ['partners' => '1'])['include_partners'])->toBeTrue();
+});
+
+test('UI invoice pages are only open to staff who can see the invoice', function () {
+    $customer = createCustomer($this->shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $route    = route('grp.org.accounting.invoices.show', [$this->organisation->slug, $invoice->slug]);
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    actingAs($user);
+
+    get($route)->assertForbidden();
+
+    $customer->update(['as_organisation_id' => $this->organisation->id]);
+    $user->givePermissionTo("procurement.{$this->organisation->id}.view");
+    actingAs($user->fresh());
+
+    get($route)->assertOk();
+    get(route('grp.org.accounting.invoices.edit', [$this->organisation->slug, $invoice->slug]))->assertForbidden();
+});
+
+test('only staff who can edit the customer or the accounts can refund a payment', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    setPermissionsTeamId($this->group->id);
+    $newStaffUser = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $user = $newStaffUser();
+    actingAs($user);
+
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertForbidden();
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'no-permission'])->assertForbidden();
+
+    $otherShop = StoreShop::run($this->organisation, Shop::factory()->definition());
+    $wrongScopeUser = $newStaffUser();
+    $wrongScopeUser->givePermissionTo(["crm.{$otherShop->id}.edit", "accounting.{$this->organisation->id}.view"]);
+    actingAs($wrongScopeUser->refresh());
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertForbidden();
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'wrong-scope'])->assertForbidden();
+
+    expect((float) $payment->refresh()->total_refund)->toBe(0.0);
+
+    actingAs($user);
+
+    $user->givePermissionTo("crm.{$this->shop->id}.edit");
+    actingAs($user->refresh());
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertSessionHasNoErrors()->assertRedirect();
+
+    $accountsUser = $newStaffUser();
+    $accountsUser->givePermissionTo("accounting.{$this->organisation->id}.edit");
+    actingAs($accountsUser->refresh());
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'accounting-edit'])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect((float) $payment->refresh()->total_refund)->toBe(10.0);
+});
+
+test('a payment refund counts every refund already made, even from a copy of the payment read before them', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+    $staleCopy = Payment::find($payment->id);
+
+    $toBalance = RefundPaymentToBalance::make()->handle($payment, ['amount' => 10]);
+    $byHand    = RefundPaymentManual::make()->handle($staleCopy, ['amount' => 15, 'reference' => 'stale-copy']);
+
+    expect($toBalance->invoices()->count())->toBe(0)
+        ->and($byHand->invoices()->count())->toBe(0)
+        ->and((float) $payment->refresh()->total_refund)->toBe(25.0)
+        ->and(fn () => RefundPaymentToBalance::make()->handle($staleCopy, ['amount' => 25.01]))->toThrow(ValidationException::class, 'left to refund on this payment')
+        ->and(fn () => RefundPaymentManual::make()->handle($staleCopy, ['amount' => 25.01, 'reference' => 'over']))->toThrow(ValidationException::class, 'left to refund on this payment');
+
+    RefundPaymentToBalance::make()->handle($staleCopy, ['amount' => 25]);
+    expect((float) $payment->refresh()->total_refund)->toBe(50.0);
+});
+
+test('a payment can not be refunded against another customer\'s invoice, when it did not succeed, or when it is itself a refund', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $otherCustomer  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $newPayment     = fn (array $data) => StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ], $data));
+
+    $payment      = $newPayment([]);
+    $otherInvoice = StoreInvoice::make()->action($otherCustomer, Invoice::factory()->definition());
+    $pending      = $newPayment(['status' => PaymentStatusEnum::IN_PROCESS->value, 'state' => PaymentStateEnum::IN_PROCESS->value]);
+    $refund       = RefundPaymentToBalance::make()->handle($payment, ['amount' => 5]);
+
+    expect(fn () => RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => 1, 'invoice_id' => $otherInvoice->id]))->toThrow(ValidationException::class, 'another customer')
+        ->and(fn () => RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => 1, 'reference' => 'other', 'invoice_id' => $otherInvoice->id]))->toThrow(ValidationException::class, 'another customer')
+        ->and(fn () => RefundPaymentToBalance::make()->handle($pending, ['amount' => 1]))->toThrow(ValidationException::class, 'Only a successful payment can be refunded, this one is In Process')
+        ->and(fn () => RefundPaymentManual::make()->handle($refund, ['amount' => 1, 'reference' => 'refund-of-refund']))->toThrow(ValidationException::class, 'not a refund')
+        ->and((float) $payment->refresh()->total_refund)->toBe(5.0)
+        ->and((float) $pending->refresh()->total_refund)->toBe(0.0);
+
+    try {
+        RefundPaymentToBalance::make()->handle($pending, ['amount' => 1]);
+    } catch (ValidationException $e) {
+        expect($e->errors())->toBe(['amount' => ['Only a successful payment can be refunded, this one is In Process']]);
+    }
+});
+
+test('money paid out to a refund by any route stops at what the refund still owes, and a refused payment leaves nothing behind', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 100]);
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -20, 'in_process' => false]);
+
+    $refundPayment = fn (float $amount) => [
+        'amount' => -$amount,
+        'type'   => PaymentTypeEnum::REFUND->value,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ];
+
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(12));
+
+    $paymentsBefore           = Payment::count();
+    $creditTransactionsBefore = CreditTransaction::count();
+    $balanceBefore            = (float) $customer->refresh()->balance;
+
+    expect(fn () => PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8.01)))->toThrow(ValidationException::class, 'left to pay on this refund')
+        ->and(Payment::count())->toBe($paymentsBefore)
+        ->and(CreditTransaction::count())->toBe($creditTransactionsBefore)
+        ->and((float) $customer->refresh()->balance)->toBe($balanceBefore)
+        ->and(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(12.0);
+
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8));
+
+    expect(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(20.0)
+        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID);
+});
+
+test('money coming in to a refund, and money going out on an ordinary invoice, are not held back by the refund limit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 100]);
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -20, 'in_process' => false]);
+
+    $payment = fn (float $amount, PaymentTypeEnum $type) => [
+        'amount' => $amount,
+        'type'   => $type->value,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ];
+
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $payment(-20, PaymentTypeEnum::REFUND));
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $payment(5, PaymentTypeEnum::PAYMENT));
+    PayInvoice::make()->action($invoice->refresh(), $paymentAccount, $payment(-150, PaymentTypeEnum::REFUND));
+
+    expect(round((float) $refund->refresh()->payment_amount, 2))->toBe(-15.0)
+        ->and(round((float) $invoice->refresh()->payment_amount, 2))->toBe(-150.0);
+});
+
+test('the repair of unlinked refunds lists a payment bigger than the refund owes instead of stopping, and still links the others', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $accountsPaymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $unlinkedRefund         = function (float $refundTotal, float $paid) use ($accountsPaymentAccount) {
+        $customer = createCustomer($this->shop);
+        $order    = StoreOrder::make()->action($customer, []);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['order_id' => $order->id, 'total_amount' => 500]);
+        $refund = StoreRefund::make()->action($invoice, []);
+        $refund->update(['order_id' => $order->id, 'total_amount' => -$refundTotal, 'in_process' => false]);
+
+        $payment = StorePayment::make()->action($customer, $accountsPaymentAccount, [
+            'amount'    => -$paid,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]);
+        AttachPaymentToOrder::make()->action($order, $payment, []);
+
+        return $refund;
+    };
+
+    $slightlyOverpaid = $unlinkedRefund(10.00, 10.04);
+    $exact            = $unlinkedRefund(30.00, 30.00);
+
+    $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')
+        ->expectsOutputToContain('Needs a human')
+        ->assertOk();
+
+    expect((float) $slightlyOverpaid->refresh()->payment_amount)->toBe(0.0)
+        ->and((float) $exact->refresh()->payment_amount)->toBe(-30.0);
+});
+
+test('cancelling a refund to balance gives the money back to the payment once, even when the cancel is sent twice', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    $refund       = RefundPaymentToBalance::make()->handle($payment, ['amount' => 20]);
+    $balanceAfter = (float) $customer->refresh()->balance;
+    $firstCopy    = Payment::find($refund->id);
+    $secondCopy   = Payment::find($refund->id);
+
+    CancelPayment::make()->handle($firstCopy);
+
+    expect(fn () => CancelPayment::make()->handle($secondCopy))->toThrow(ValidationException::class, 'already cancelled')
+        ->and($refund->refresh()->state)->toBe(PaymentStateEnum::CANCELLED)
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
+        ->and(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceAfter - 20, 2));
+});
+
+test('a credit note whose balance entry fails leaves no credit note and no payment behind', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $invoices = Invoice::where('customer_id', $customer->id)->count();
+    $payments = Payment::where('customer_id', $customer->id)->count();
+
+    StoreCreditTransaction::mock()->shouldReceive('action')->andThrow(new RuntimeException('balance entry failed'));
+
+    expect(fn () => IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount'            => 12,
+        'reason'            => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'issue_credit_note' => true,
+    ]))->toThrow(RuntimeException::class, 'balance entry failed')
+        ->and(Invoice::where('customer_id', $customer->id)->count())->toBe($invoices)
+        ->and(Payment::where('customer_id', $customer->id)->count())->toBe($payments);
+});
+
+test('an order payment that can not be linked to its order leaves no payment behind', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $payments       = Payment::where('customer_id', $customer->id)->count();
+    $entries        = CreditTransaction::where('customer_id', $customer->id)->count();
+
+    AttachPaymentToOrder::mock()->shouldReceive('action')->andThrow(new RuntimeException('link failed'));
+
+    expect(fn () => PayOrder::make()->action($order, $paymentAccount, ['amount' => 10]))->toThrow(RuntimeException::class, 'link failed')
+        ->and(Payment::where('customer_id', $customer->id)->count())->toBe($payments)
+        ->and(CreditTransaction::where('customer_id', $customer->id)->count())->toBe($entries);
+});
+
+test('cancelling a payment made from the balance gives the money back to the balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $balanceBefore  = (float) $customer->refresh()->balance;
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 15,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+    expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore - 15, 2));
+
+    CancelPayment::make()->handle($payment);
+
+    expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore, 2));
+});
+
+test('categorise invoices command dry run shows changes without saving them', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    $invoice->update(['invoice_category_id' => null]);
+
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'     => 'Dry run fallback',
+        'type'     => 'shop_fallback',
+        'state'    => 'active',
+        'priority' => 250,
+        'settings' => ['shop_id' => $this->shop->id],
+    ]);
+
+    $this->artisan('categorise:invoices --dry-run --id='.$invoice->id)
+        ->expectsOutputToContain('Dry run: nothing was saved')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBeNull();
+
+    $this->artisan('categorise:invoices --id='.$invoice->id)
+        ->doesntExpectOutputToContain('Dry run')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBe($invoiceCategory->id);
 });

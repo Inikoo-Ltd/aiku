@@ -3,7 +3,7 @@ import { inject, ref, watch } from 'vue'
 import Modal from '../Utils/Modal.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
@@ -42,12 +42,11 @@ const fetchBaysList = async () => {
             )
         )
         
-        console.log('Response axios:', response.data)
         listBays.value = response.data.data
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     } finally {
@@ -87,15 +86,15 @@ const submitSelectBay = (bayId?: number|null) => {
             onSuccess: () => {
                 isOpenModal.value = false
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans("Successfully submit the data"),
+                //     title: ctrans("Success"),
+                //     text: ctrans("Successfully submit the data"),
                 //     type: "success"
                 // })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit picked bay"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to submit picked bay"),
                     type: "error"
                 })
             },
@@ -115,11 +114,11 @@ const submitSelectBay = (bayId?: number|null) => {
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center mb-8">
-                {{ trans("Select picked bay to start packing") }}
+                {{ ctrans("Select picked bay to start packing") }}
             </div>
 
             <div class="mb-1">
-                {{ trans("Available picked bays") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
+                {{ ctrans("Available picked bays") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
             </div>
             
             <div class="h-64 overflow-y-auto">
@@ -147,7 +146,7 @@ const submitSelectBay = (bayId?: number|null) => {
                     <!-- Section: no bays found -->
                     <div v-else class="flex items-center justify-center w-full col-span-3 pt-3">
                         <div class="text-center border-gray-200 p-14">
-                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No picked bays found") }}</h3>
+                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ ctrans("No picked bays found") }}</h3>
                             <a :href="route('grp.org.warehouses.show.dispatching.picked_bays.create', {
                                     organisation: layout.currentParams.organisation,
                                     warehouse: props.warehouse.slug
@@ -166,7 +165,7 @@ const submitSelectBay = (bayId?: number|null) => {
 
             <Button
                 @click="() => submitSelectBay(null)"
-                :label="trans('Unassign picked bay')"
+                :label="ctrans('Unassign picked bay')"
                 full
                 iconRight="fal fa-trash-undo-alt"
                 class="mt-4"

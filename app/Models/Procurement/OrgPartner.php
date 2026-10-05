@@ -12,9 +12,11 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -45,6 +47,7 @@ class OrgPartner extends Model
     protected $casts = [
         'sources'           => 'array',
         'data'              => 'array',
+        'split_cosmetics'   => 'boolean',
     ];
 
     protected $attributes = [
@@ -77,6 +80,50 @@ class OrgPartner extends Model
         return $this->belongsTo(\App\Models\Inventory\Location::class, 'goods_out_location_id');
     }
 
+    public function cosmeticGoodsOutLocation(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventory\Location::class, 'cosmetic_goods_out_location_id');
+    }
+
+    /**
+     * The bay a SKO of this partner is gathered in: the cosmetic bay for cosmetic SKOs when the
+     * partner's cosmetics are split off and that bay is set, the partner's goods out bay otherwise.
+     */
+    public function bayIdFor(bool $isCosmetic): ?int
+    {
+        if ($isCosmetic && $this->split_cosmetics && $this->cosmetic_goods_out_location_id) {
+            return $this->cosmetic_goods_out_location_id;
+        }
+
+        return $this->goods_out_location_id;
+    }
+
+    public function bayFor(bool $isCosmetic): ?\App\Models\Inventory\Location
+    {
+        $bayId = $this->bayIdFor($isCosmetic);
+
+        return $bayId && $bayId === $this->cosmetic_goods_out_location_id ? $this->cosmeticGoodsOutLocation : $this->goodsOutLocation;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function bayIds(): array
+    {
+        return array_values(array_filter([$this->goods_out_location_id, $this->cosmetic_goods_out_location_id]));
+    }
+
+    public function scopeWithBay(Builder $query, int $locationId): Builder
+    {
+        return $query->where(fn (Builder $inner) => $inner->where('goods_out_location_id', $locationId)->orWhere('cosmetic_goods_out_location_id', $locationId));
+    }
+
+    public static function bayIdSql(string $orgPartnerAlias, string $isCosmeticExpression): string
+    {
+        return "(case when {$orgPartnerAlias}.split_cosmetics and {$isCosmeticExpression} and {$orgPartnerAlias}.cosmetic_goods_out_location_id is not null
+            then {$orgPartnerAlias}.cosmetic_goods_out_location_id else {$orgPartnerAlias}.goods_out_location_id end)";
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(\App\Models\CRM\Customer::class);
@@ -98,7 +145,8 @@ class OrgPartner extends Model
      */
     public function exchangeToOrgCurrency(): float
     {
-        return GetCurrencyExchange::run($this->partner->currency, $this->organisation->currency) ?? 1;
+        return GetCurrencyExchange::run($this->partner->currency, $this->organisation->currency)
+            ?? throw new RuntimeException("No exchange rate from {$this->partner->currency->code} to {$this->organisation->currency->code}");
     }
 
 }

@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
+import NotesDisplay from "@/Components/NotesDisplay.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart, faHourglassStart } from "@fal"
@@ -229,8 +230,12 @@ const productQuantityInput = (product: Record<string, any>): number => {
     return isProductCutView(product) ? packsToUnits(quantity, productPackedIn(product)) : quantity
 }
 
+const productShelfStock = (product: Record<string, any>): number => (
+    Number(product?.is_on_demand ? product?.shelf_quantity : product?.stock) || 0
+)
+
 const productStockInView = (product: Record<string, any>): number => {
-    const stock = Number(product?.stock) || 0
+    const stock = productShelfStock(product)
     return isProductCutView(product) ? packsToUnits(stock, productPackedIn(product)) : stock
 }
 
@@ -263,7 +268,7 @@ const onUpdateProductQuantity = (product: Record<string, any>, value: number | n
 }
 
 const isProductOverStock = (product: Record<string, any>): boolean => (
-    (productQuantities[product.id]?.quantity ?? 0) > (Number(product?.stock) || 0)
+    (productQuantities[product.id]?.quantity ?? 0) > productShelfStock(product)
 )
 
 // Outside cut view the quantity was typed in whole packs, so it reads as a plain count.
@@ -337,7 +342,7 @@ const fetchModalProducts = debounce(async () => {
                     quantity: 0,
                     code: product.code,
                     name: product.name,
-                    stock: product.stock ?? 0,
+                    stock: productShelfStock(product),
                     units: productPackedIn(product),
                     image: productImage(product),
                 }
@@ -483,6 +488,14 @@ const submitSendBackWarehouse = () => {
                     fixed-width
                     aria-hidden="true"
                 />
+                <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
+                    internal: 'delivery_note_internal_notes',
+                    customer: 'delivery_note_customer_notes',
+                    public: 'delivery_note_public_notes',
+                    shipping: 'delivery_note_shipping_notes',
+                    warehouse: 'delivery_note_private_warehouse_note',
+                    credit_transaction_note: '',
+                }" />
             </div>
             <div v-if="item.order_reference" class="mt-1 text-xs text-gray-500">
                 <Link v-if="orderRoute(item)" :href="orderRoute(item)!" class="primaryLink">
@@ -521,11 +534,16 @@ const submitSendBackWarehouse = () => {
                             />
                             <template v-else>{{ Number(subItem.quantity_waiting_crm) }}</template>
                             {{ ctrans("SKO") }}
+                            <template v-if="subItem.waiting_net_amount !== null && subItem.waiting_net_amount !== undefined">
+                                {{ ctrans("of :count", { count: String(Number(subItem.quantity_required)) }) }}
+                                · {{ locale.currencyFormat(subItem.currency_code, subItem.waiting_net_amount) }} {{ ctrans("net") }}
+                                · <span class="font-semibold text-gray-700">{{ locale.currencyFormat(subItem.currency_code, subItem.waiting_net_amount_with_tax) }}</span> {{ ctrans("inc. VAT") }}
+                            </template>
                         </div>
-                        <div v-if="subItem.net_amount !== null && subItem.net_amount !== undefined" class="tabular-nums text-sm text-gray-500">
-                            {{ ctrans("Product") }} <span class="font-semibold">{{ subItem.product_code }}</span>: {{ Number(subItem.quantity_ordered) }} ×
-                            {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount) }} {{ ctrans("net") }}
-                            · <span class="font-semibold">{{ locale.currencyFormat(subItem.currency_code, subItem.net_amount_with_tax) }}</span> {{ ctrans("inc. VAT") }}
+                        <div v-if="subItem.net_amount !== null && subItem.net_amount !== undefined" class="tabular-nums text-xs text-gray-400">
+                            {{ ctrans("Whole order line") }} <span class="font-semibold">{{ subItem.product_code }}</span>: {{ ctrans(":count ordered", { count: String(Number(subItem.quantity_ordered)) }) }}
+                            · {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount) }} {{ ctrans("net") }}
+                            · {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
                             <span v-if="subItem.number_skos_in_product > 1" class="italic">({{ ctrans("whole product, made of :count SKOs", { count: String(subItem.number_skos_in_product) }) }})</span>
                         </div>
                         <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
@@ -643,9 +661,9 @@ const submitSendBackWarehouse = () => {
                                 />
                                 <span class="ml-1">{{ ctrans("SKO") }}</span>
                             </div>
-                            <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
-                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }} {{ ctrans("net") }}
-                                · {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
+                            <div v-if="selectedItem?.waiting_net_amount != null" class="tabular-nums text-xs opacity-70 mt-0.5">
+                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.waiting_net_amount) }} {{ ctrans("net") }}
+                                · {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.waiting_net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
                             </div>
                         </div>
                     </div>
@@ -747,7 +765,7 @@ const submitSendBackWarehouse = () => {
                             v-for="product in modalProducts"
                             :key="product.id"
                             :class="productQuantities[product.id]?.quantity > 0 ? 'bg-green-100'
-                            : product.stock > 0
+                            : product.is_on_demand || product.stock > 0
                                 ? ''
                                 : 'bg-gray-100 opacity-60'
                             "
@@ -769,16 +787,17 @@ const submitSendBackWarehouse = () => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
-                                <template v-if="product.stock > 0">
+                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.is_on_demand && !productShelfStock(product) ? 'text-red-500' : 'text-gray-600'">
+                                <template v-if="productShelfStock(product) > 0">
                                     <FractionDisplay
                                         v-if="isProductCutView(product)"
-                                        :fractionData="toMixedFractionData(Number(product.stock), productPackedIn(product))"
+                                        :fractionData="toMixedFractionData(productShelfStock(product), productPackedIn(product))"
                                         class="justify-end"
                                     />
                                     <template v-else>{{ locale.number(productStockInView(product)) }}</template>
                                 </template>
                                 <template v-else>{{ ctrans('Empty stock') }}</template>
+                                <div v-if="product.is_on_demand" class="text-xs italic text-gray-500">{{ ctrans('Made on demand') }}</div>
                             </td>
                             <td class="px-4 py-3 flex justify-end">
                                 <div class="flex flex-col items-end gap-y-1">
@@ -963,9 +982,6 @@ const submitSendBackWarehouse = () => {
                                 :fractionData="toFractionData(successContext.replacedQuantity, Number(successContext.replacedItem.packed_in) || 1)"
                             />
                             {{ ctrans('SKO') }}
-                        </div>
-                        <div v-if="successContext.replacedItem.net_amount" class="text-xs opacity-70 mt-0.5">
-                            {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.net_amount) }}
                         </div>
                     </div>
                 </div>

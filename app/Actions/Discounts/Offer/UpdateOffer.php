@@ -37,6 +37,13 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        if (array_key_exists('show_on_customer_dashboard', $modelData)) {
+            $modelData['settings'] = array_merge(
+                $offer->settings ?? [],
+                ['show_on_customer_dashboard' => (bool) Arr::pull($modelData, 'show_on_customer_dashboard')]
+            );
+        }
+
         $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
@@ -192,7 +199,8 @@ class UpdateOffer extends OrgAction
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
             'edit_offer_trigger'         => ['sometimes', 'nullable'],
-            'edit_offer_discount'        => ['sometimes', 'nullable']
+            'edit_offer_discount'        => ['sometimes', 'nullable'],
+            'show_on_customer_dashboard' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

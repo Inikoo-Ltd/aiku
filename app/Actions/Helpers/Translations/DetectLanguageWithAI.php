@@ -10,11 +10,11 @@ namespace App\Actions\Helpers\Translations;
 
 use Throwable;
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry\Laravel\Facade as Sentry;
@@ -25,6 +25,7 @@ class DetectLanguageWithAI extends OrgAction
 {
     use AsAction;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
 
     /**
@@ -42,14 +43,10 @@ class DetectLanguageWithAI extends OrgAction
         }
 
         try {
-            $driverName = config('auto-translations.default_driver_detect_language', 'gpt-5-nano');
-
-            $driverConfig = config("auto-translations.drivers.$driverName");
-
-            $apiKey = $driverConfig['api_key'] ?? null;
+            $apiKey = $this->aiApiKey();
 
             if (empty($apiKey)) {
-                Log::error("DetectLanguageWithAI: Missing API Key for driver $driverName");
+                Log::error('DetectLanguageWithAI: Missing API Key');
 
                 return null;
             }
@@ -62,11 +59,11 @@ class DetectLanguageWithAI extends OrgAction
                 $systemPrompt .= " The text is likely in $languageHint->name ($languageHint->code); only override this if you are confident the text is in a different language.";
             }
 
-            $response = Http::withToken($apiKey)
+            $response = $this->aiRequest($apiKey)
                 ->connectTimeout(10)
                 ->timeout(30)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model'       => $model,
+                ->post('chat/completions', [
+                    'model'       => $this->aiModel($model),
                     'messages'    => [
                         [
                             'role'    => 'system',

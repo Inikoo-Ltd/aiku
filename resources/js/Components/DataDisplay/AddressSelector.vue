@@ -38,7 +38,6 @@ const onSelectAddress = (selectedAddress) => {
 // props.boxStats.fulfilment_customer.address.value = selectedAddress
 }
 
-console.log('fff', props.addressList)
 
 
 const xxxx = [

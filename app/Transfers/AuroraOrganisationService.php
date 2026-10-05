@@ -24,20 +24,17 @@ use App\Transfers\Aurora\FetchAuroraRawMaterial;
 use App\Transfers\Aurora\FetchAuroraBackInStockReminder;
 use App\Transfers\Aurora\FetchAuroraBarcode;
 use App\Transfers\Aurora\FetchAuroraCharge;
-use App\Transfers\Aurora\FetchAuroraClockingMachine;
 use App\Transfers\Aurora\FetchAuroraCollection;
 use App\Transfers\Aurora\FetchAuroraCredit;
 use App\Transfers\Aurora\FetchAuroraCustomer;
 use App\Transfers\Aurora\FetchAuroraCustomerClient;
 use App\Transfers\Aurora\FetchAuroraCustomerNote;
 use App\Transfers\Aurora\FetchAuroraDeletedCustomer;
-use App\Transfers\Aurora\FetchAuroraDeletedEmployee;
 use App\Transfers\Aurora\FetchAuroraDeletedInvoice;
 use App\Transfers\Aurora\FetchAuroraDeletedLocation;
 use App\Transfers\Aurora\FetchAuroraDeletedStock;
 use App\Transfers\Aurora\FetchAuroraDeletedSupplier;
 use App\Transfers\Aurora\FetchAuroraDeletedSupplierProduct;
-use App\Transfers\Aurora\FetchAuroraDeletedUser;
 use App\Transfers\Aurora\FetchAuroraDeliveryNote;
 use App\Transfers\Aurora\FetchAuroraDeliveryNoteItem;
 use App\Transfers\Aurora\FetchAuroraDispatchedEmail;
@@ -46,7 +43,6 @@ use App\Transfers\Aurora\FetchAuroraEmailBulkRun;
 use App\Transfers\Aurora\FetchAuroraEmailCopy;
 use App\Transfers\Aurora\FetchAuroraEmailOngoingRun;
 use App\Transfers\Aurora\FetchAuroraEmailTrackingEvent;
-use App\Transfers\Aurora\FetchAuroraEmployee;
 use App\Transfers\Aurora\FetchAuroraFamily;
 use App\Transfers\Aurora\FetchAuroraFavourite;
 use App\Transfers\Aurora\FetchAuroraFeedback;
@@ -81,6 +77,7 @@ use App\Transfers\Aurora\FetchAuroraProductHasOrgStock;
 use App\Transfers\Aurora\FetchAuroraProspect;
 use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrder;
+use App\Transfers\Aurora\FetchAuroraPurchaseOrderNote;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrderTransaction;
 use App\Transfers\Aurora\FetchAuroraPurge;
 use App\Transfers\Aurora\FetchAuroraQuery;
@@ -97,14 +94,12 @@ use App\Transfers\Aurora\FetchAuroraStockFamily;
 use App\Transfers\Aurora\FetchAuroraSubscriptionEvent;
 use App\Transfers\Aurora\FetchAuroraSupplier;
 use App\Transfers\Aurora\FetchAuroraSupplierProduct;
-use App\Transfers\Aurora\FetchAuroraTimesheet;
 use App\Transfers\Aurora\FetchAuroraTopUp;
 use App\Transfers\Aurora\FetchAuroraTradeUnit;
 use App\Transfers\Aurora\FetchAuroraTradeUnitImages;
 use App\Transfers\Aurora\FetchAuroraTransaction;
 use App\Transfers\Aurora\FetchAuroraTransactionHasOfferComponent;
 use App\Transfers\Aurora\FetchAuroraUpload;
-use App\Transfers\Aurora\FetchAuroraUser;
 use App\Transfers\Aurora\FetchAuroraWarehouse;
 use App\Transfers\Aurora\FetchAuroraWarehouseArea;
 use App\Transfers\Aurora\FetchAuroraWebpage;
@@ -137,11 +132,6 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchOrganisation(Organisation $organisation): ?array
     {
         return (new FetchAuroraOrganisation($this))->fetch();
-    }
-
-    public function fetchEmployee($id): ?array
-    {
-        return (new FetchAuroraEmployee($this))->fetch($id);
     }
 
     public function fetchShop($id): ?array
@@ -298,10 +288,6 @@ class AuroraOrganisationService implements SourceOrganisationService
      */
     public function allowsFetchOnMiss(string $fetchActionClass): bool
     {
-        if (FetchAuroraAction::fetcherForbidden($fetchActionClass)) {
-            return false;
-        }
-
         if ($this->forcedFetch) {
             return true;
         }
@@ -365,11 +351,6 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraDeletedSupplier($this))->fetch($id);
     }
 
-    public function fetchDeletedEmployee($id): ?array
-    {
-        return (new FetchAuroraDeletedEmployee($this))->fetch($id);
-    }
-
     public function fetchDeletedSupplierProduct($id): ?array
     {
         return (new FetchAuroraDeletedSupplierProduct($this))->fetch($id);
@@ -389,7 +370,6 @@ class AuroraOrganisationService implements SourceOrganisationService
     {
         return (new FetchAuroraPayment($this))->fetch($id);
     }
-
 
     public function fetchMailshot($id): ?array
     {
@@ -421,6 +401,11 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraPurchaseOrder($this))->fetch($id);
     }
 
+    public function fetchPurchaseOrderNote($id): ?array
+    {
+        return (new FetchAuroraPurchaseOrderNote($this))->fetch($id);
+    }
+
     public function fetchAgentSupplierPurchaseOrder($id): ?array
     {
         return (new FetchAuroraAgentSupplierPurchaseOrder($this))->fetch($id);
@@ -429,16 +414,6 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchStockDelivery($id): ?array
     {
         return (new FetchAuroraStockDelivery($this))->fetch($id);
-    }
-
-    public function fetchTimesheet($id): ?array
-    {
-        return (new FetchAuroraTimesheet($this))->fetch($id);
-    }
-
-    public function fetchClockingMachine($id): ?array
-    {
-        return (new FetchAuroraClockingMachine($this))->fetch($id);
     }
 
     public function fetchArtefact($id): array
@@ -524,16 +499,6 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchCustomerNote($id): ?array
     {
         return (new FetchAuroraCustomerNote($this))->fetch($id);
-    }
-
-    public function fetchDeletedUser($id): ?array
-    {
-        return (new FetchAuroraDeletedUser($this))->fetch($id);
-    }
-
-    public function fetchUser($id): ?array
-    {
-        return (new FetchAuroraUser($this))->fetch($id);
     }
 
     public function fetchHistory($id): ?array

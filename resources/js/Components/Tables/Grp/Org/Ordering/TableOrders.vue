@@ -90,6 +90,7 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.org.accounting.invoice-categories.show.backlog.index":
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [order.organisation_slug, order.shop_slug, order.slug])
@@ -154,6 +155,7 @@ function customerRoute(order: Order) {
         case "grp.overview.ordering.orders_in_basket.index":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.org.accounting.invoice-categories.show.backlog.index":
         case "grp.marketing.channels.show":
             return route(
                 "grp.org.shops.show.crm.customers.show",
@@ -290,6 +292,10 @@ const setNewMarkerDate = (newVal: Date) => {
                 <span v-if="order.is_intercompany"
                     v-tooltip="ctrans('Partner order: raised from the partner shopping list, not placed by an outside customer')"
                     class="rounded bg-sky-100 border border-sky-300 px-1 text-xs font-semibold text-sky-700 leading-tight">Partner</span>
+
+                <span v-if="order.is_pre_order"
+                    v-tooltip="ctrans('Pre-order: held until its goods arrive, then sent')"
+                    class="rounded bg-amber-100 border border-amber-300 px-1 text-xs font-semibold text-amber-700 leading-tight">{{ ctrans("Pre-order") }}</span>
 
                 <span v-if="order.is_dropshipping"
                     v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"

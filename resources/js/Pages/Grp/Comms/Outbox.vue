@@ -33,7 +33,6 @@ const props = defineProps<{
     email_runs?: {}
 }>()
 
-console.log(props.email_runs)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)

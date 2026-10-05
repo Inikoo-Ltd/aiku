@@ -23,7 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
+import { faForklift, faCheck, faHandPaper, faUnlink, faShoppingCart } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
@@ -42,14 +42,16 @@ const props = defineProps<{
     data: object
     tab?: string
     canMoveAllSku?:boolean,
-    location_id: number,
+    location_id?: number,
     transfer_reason?: {}
     discontinue_preview_route?: routeType | null
     discontinue_route?: routeType | null
+    create_order_route?: routeType | null
 }>()
 
 const isDiscontinuePreviewOpen = ref(false)
-const isSelectable = computed(() => !!props.canMoveAllSku || !!props.discontinue_preview_route)
+const isSelectable = computed(() => !!props.canMoveAllSku || !!props.discontinue_preview_route || !!props.create_order_route)
+const isCreatingOrder = ref(false)
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
@@ -91,6 +93,27 @@ const selectedOrgStockIds = computed(() => selectedStocks.value.map((stock) => s
 
 function onSelectRow(value: Record<string, boolean>) {
     selectedRows.value = { ...value }
+}
+
+function onCreateOrder() {
+    if (!props.create_order_route || !hasSelection.value || isCreatingOrder.value) return
+    isCreatingOrder.value = true
+    router.post(
+        route(props.create_order_route.name, props.create_order_route.parameters),
+        { org_stock_ids: selectedOrgStockIds.value },
+        {
+            onError: (errors) => {
+                notify({
+                    title: ctrans("Order not created"),
+                    text: Object.values(errors).flat().join(" "),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                isCreatingOrder.value = false
+            },
+        }
+    )
 }
 
 const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[]; reason: string | null; note: string | null }>({
@@ -137,7 +160,6 @@ function onToggleRemoveAfterMove(row: PartialMoveRow) {
 
 function onSavePartialMoveSku() {
     const params = route().params as RouteParams
-    console.log(partialForm)
     partialForm
         .transform((data) => ({
             location_id: data.location_id,
@@ -362,6 +384,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <Button v-if="canMoveAllSku" :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
                 <Button v-if="canMoveAllSku && hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
                 <Button v-if="discontinue_preview_route" :label="ctrans('Discontinue')" type="white" :icon="faBan" size="xs" :disabled="!hasSelection" @click="isDiscontinuePreviewOpen = true"></Button>
+                <Button v-if="create_order_route" :label="ctrans('Create Order')" type="white" :icon="faShoppingCart" size="xs" :disabled="!hasSelection" :loading="isCreatingOrder" @click="onCreateOrder"></Button>
           </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>

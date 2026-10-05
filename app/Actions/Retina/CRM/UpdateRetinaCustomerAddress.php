@@ -36,7 +36,7 @@ class UpdateRetinaCustomerAddress extends RetinaAction
         }
 
         if ($request->user() instanceof WebUser) {
-            return true;
+            return $request->route()->parameter('customer')->id === $request->user()->customer_id;
         }
 
         return false;

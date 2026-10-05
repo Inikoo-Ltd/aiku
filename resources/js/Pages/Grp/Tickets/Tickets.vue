@@ -15,21 +15,26 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
+import { ticketKindIcon } from "@/Composables/useTicketKindIcons"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import { useLiveTicketRows } from "@/Composables/useLiveTicketRows"
 import { useTicketStatusActions, type TicketStatusAction } from "@/Composables/useTicketStatusActions"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import TicketsQaSummary from "@/Components/Tickets/TicketsQaSummary.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle } from "@fal"
+import { faVial, faShieldCheck, faShield, faForward, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faFlag } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle)
+library.add(faVial, faShieldCheck, faShield, faForward, faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faFlag)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -40,6 +45,9 @@ const props = defineProps<{
     createdIntervals: Record<string, string>
     createdInterval: string
     searchHelp: string[]
+    listTip?: string | null
+    listTipTitle?: string | null
+    listSummary?: { done: number, passed: number, failed: number, skipped: number, in_qa: number, not_checked: number } | null
     updateRoute: string
     can_assign: boolean
     can_manage?: boolean
@@ -54,7 +62,8 @@ const props = defineProps<{
     }
 }>()
 
-useLiveTickets(["data"])
+const { isShown: isTicketShown } = useLiveTicketRows(["data.data"])
+useLiveTickets(["data"], undefined, undefined, undefined, (event) => isTicketShown(event.id))
 
 const { statusActions, assigneeStatusActions, actionsFor } = useTicketStatusActions()
 
@@ -72,6 +81,15 @@ const statusActionsFor = (item: { status: string; assignee_id: number | null }):
 const canEditKind = (item: any) => canEditRow(item) && item.type === "help" && item.kind !== "escalation"
 
 const canEditModule = (item: any) => canEditRow(item) && item.type === "help"
+
+const qaBadgeClasses: Record<string, string> = {
+    gray: "bg-gray-100 text-gray-700",
+    green: "bg-green-100 text-green-700",
+    amber: "bg-amber-100 text-amber-700",
+    red: "bg-red-100 text-red-700",
+}
+
+const showQaTarget = (item: { qa_status?: string | null; qa_user?: string | null }) => item.qa_status === "requested" || Boolean(item.qa_user)
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 
@@ -173,8 +191,15 @@ const closeQuickLook = () => {
     router.reload({ only: ["data"] })
 }
 
+const loadingType = ref<string | null | undefined>(undefined)
+
 const filterByType = (type: string | null) =>
-    router.reload({ data: { "elements[type]": type ?? undefined, page: 1 }, preserveScroll: true })
+    router.reload({
+        data: { "elements[type]": type ?? undefined, page: 1 },
+        preserveScroll: true,
+        onStart: () => (loadingType.value = type),
+        onFinish: () => (loadingType.value = undefined),
+    })
 
 const savedMineFilter = ref(props.mineFilter)
 
@@ -192,14 +217,17 @@ watch(
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <TicketsQaSummary v-if="listSummary" :summary="listSummary" :periodLabel="createdIntervals[createdInterval]" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
     <div v-if="typeOptions?.length" class="mx-4 mt-2 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
         <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
         <button
             type="button"
-            class="rounded-md px-3 py-1 transition duration-200"
+            class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
             :class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :disabled="loadingType !== undefined"
             @click="filterByType(null)">
+            <LoadingIcon v-if="loadingType === null" />
             {{ ctrans("All") }}
         </button>
         <button
@@ -208,12 +236,17 @@ watch(
             type="button"
             class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
             :class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :disabled="loadingType !== undefined"
             @click="filterByType(option.value)">
-            <Icon v-if="option.icon" :data="option.icon" />
+            <LoadingIcon v-if="loadingType === option.value" />
+            <Icon v-else-if="option.icon" :data="option.icon" />
             {{ option.label }}
         </button>
     </div>
-    <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
+    <p v-if="listTip" class="mx-4 mt-2 text-xs text-gray-500">
+        <span class="font-medium">{{ listTipTitle }}:</span> {{ listTip }}
+    </p>
+    <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 pb-3 text-xs text-gray-400">
         <span class="mr-1">{{ ctrans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
     </div>
@@ -239,6 +272,15 @@ watch(
                 <span class="block w-56 truncate md:w-auto" :title="item.subject">{{ item.subject }}</span>
                 <span v-if="item.search_snippet" class="block w-56 truncate md:w-auto text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
             </template>
+            <template #cell(qa_status)="{ item }">
+                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_label + (item.qa_user ? ' · ' + item.qa_user : '')" class="relative inline-flex items-center">
+                    <span class="inline-flex h-6 items-center justify-center rounded-md text-sm" :class="[qaBadgeClasses[item.qa_status_icon.color], showQaTarget(item) ? 'pl-1.5 pr-4' : 'w-7']">
+                        <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />
+                    </span>
+                    <TicketQaTarget v-if="showQaTarget(item)" class="-ml-2.5" :name="item.qa_user" :avatar="item.qa_user_avatar" size="sm" />
+                </span>
+                <span v-else class="text-gray-300">-</span>
+            </template>
             <template #cell(priority)="{ item }">
                 <button
                     v-if="canEditRow(item)"
@@ -256,14 +298,17 @@ watch(
                 <button
                     v-if="canEditKind(item)"
                     type="button"
-                    :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
-                    :title="ctrans('Change kind')"
+                    v-tooltip="item.kind_label ? ctrans(':kind · click to change', { kind: item.kind_label }) : ctrans('No kind · click to set')"
+                    :class="[editableCellClass, item.kind ? 'text-gray-700' : 'text-gray-300', isEditing('kind', item) && '!bg-gray-200']"
+                    :aria-label="ctrans('Change kind')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('kind', item, $event)">
-                    {{ item.kind_label || ctrans("No kind") }}
-                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
+                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" fixed-width />
+                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
-                <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
+                <span v-else v-tooltip="item.kind_label || ctrans('No kind')" :class="[readOnlyCellClass, item.kind ? 'text-gray-600' : 'text-gray-300']">
+                    <FontAwesomeIcon :icon="ticketKindIcon(item.kind)" fixed-width />
+                </span>
             </template>
             <template #cell(module)="{ item }">
                 <button
@@ -277,6 +322,36 @@ watch(
                     <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.module_label || "-" }}</span>
+            </template>
+            <template #cell(kind_module)="{ item }">
+                <div class="flex flex-col items-start gap-0.5">
+                    <button
+                        v-if="canEditKind(item)"
+                        type="button"
+                        :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
+                        :title="ctrans('Change kind')"
+                        :disabled="isRowSaving(item)"
+                        @click="openEditor('kind', item, $event)">
+                        <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" :class="!item.kind && 'text-gray-300'" fixed-width />
+                        {{ item.kind_label || ctrans("No kind") }}
+                        <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
+                    </button>
+                    <span v-else :class="[readOnlyCellClass, 'text-gray-600']">
+                        <FontAwesomeIcon :icon="ticketKindIcon(item.kind)" :class="!item.kind && 'text-gray-300'" fixed-width />
+                        {{ item.kind_label || "-" }}
+                    </span>
+                    <button
+                        v-if="canEditModule(item)"
+                        type="button"
+                        :class="[editableCellClass, 'text-xs text-gray-500', isEditing('module', item) && '!bg-gray-200']"
+                        :title="ctrans('Change module')"
+                        :disabled="isRowSaving(item)"
+                        @click="openEditor('module', item, $event)">
+                        {{ item.module_label || ctrans("No module") }}
+                        <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
+                    </button>
+                    <span v-else :class="[readOnlyCellClass, 'text-xs text-gray-500']">{{ item.module_label || "-" }}</span>
+                </div>
             </template>
             <template #cell(reporter)="{ item }">
                 <div class="mx-auto flex w-20 flex-col items-center gap-0.5 p-2 text-center" :title="item.customer ? `${item.reporter} · ${item.customer}` : item.reporter">
@@ -354,7 +429,11 @@ watch(
         </div>
     </Popover>
     <Popover ref="kindPopover" @show="onEditorShown('kind')" @hide="onEditorHidden('kind')">
-        <Listbox :model-value="activeItem?.kind" :options="selectableKinds" option-label="label" option-value="value" class="border-0" @update:model-value="chooseValue('kind', $event)" />
+        <Listbox :model-value="activeItem?.kind" :options="selectableKinds" option-label="label" option-value="value" class="border-0" @update:model-value="chooseValue('kind', $event)">
+            <template #option="{ option }">
+                <FontAwesomeIcon :icon="ticketKindIcon(option.value)" fixed-width class="mr-2 text-gray-500" />{{ option.label }}
+            </template>
+        </Listbox>
     </Popover>
     <Popover ref="modulePopover" @show="onEditorShown('module')" @hide="onEditorHidden('module')">
         <Listbox :model-value="activeItem?.module" :options="options.modules" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="chooseValue('module', $event)" />

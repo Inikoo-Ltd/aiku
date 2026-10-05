@@ -35,7 +35,8 @@ class StoreOfflineMessage
         $data = $this->withWebUserContact($data);
 
         return DB::transaction(function () use ($shop, $data) {
-            $session = $this->findSession($shop, $data['session_ulid'] ?? null);
+            $session = $this->findSession($shop, $data['session_ulid'] ?? null)
+                ?? $this->findOpenGuestSessionByEmail($shop, $data);
 
             if ($session) {
                 $this->reopenSessionIfNeeded($session, $data);
@@ -82,6 +83,25 @@ class StoreOfflineMessage
             ->first();
     }
 
+    /**
+     * A guest who writes again without the widget's chat id, from another browser or a form sent
+     * twice, joins the conversation still waiting under their email instead of opening another.
+     * A scanner that never kept the id opened 318 conversations saying "e" this way (HELP-3467).
+     */
+    private function findOpenGuestSessionByEmail(Shop $shop, array $data): ?ChatSession
+    {
+        if (!blank($data['web_user_id'] ?? null) || blank($data['email'] ?? null)) {
+            return null;
+        }
+
+        return ChatSession::where('shop_id', $shop->id)
+            ->whereNull('web_user_id')
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->whereRaw("lower(metadata->>'email') = ?", [strtolower($data['email'])])
+            ->latest('id')
+            ->first();
+    }
+
     private function reopenSessionIfNeeded(ChatSession $session, array $data): void
     {
         if (! $session->isClosed()) {
@@ -99,7 +119,11 @@ class StoreOfflineMessage
             ->latest('resolved_at')
             ->first();
 
-        if ($lastAssignment) {
+        $isAlreadyHeld = $session->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->exists();
+
+        if ($lastAssignment && !$isAlreadyHeld) {
             $lastAssignment->update([
                 'status'      => ChatAssignmentStatusEnum::ACTIVE->value,
                 'resolved_at' => null,
@@ -150,6 +174,8 @@ class StoreOfflineMessage
             'metadata' => array_merge($old, [
                 'name'  => $data['name']  ?? $old['name']  ?? null,
                 'email' => $data['email'] ?? $old['email'] ?? null,
+                // The form has just told them we are offline and will get back to them.
+                SendOutOfHoursReply::SENT_KEY => now()->toISOString(),
             ]),
         ]);
     }
@@ -225,10 +251,11 @@ class StoreOfflineMessage
             'web_user_id' => [
                 Rule::requiredIf(fn () => $request->input('sender_type') === ChatSenderTypeEnum::USER->value),
                 'nullable',
+                'integer',
                 'exists:web_users,id',
             ],
 
-            'shop_id' => ['required', 'exists:shops,id'],
+            'shop_id' => ['required', 'integer', 'exists:shops,id'],
             'session_ulid' => ['nullable', 'string'],
             'name' => [
                 Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
@@ -243,7 +270,7 @@ class StoreOfflineMessage
                 'max:150',
             ],
             'message' => ['required', 'string', 'max:5000'],
-            'language_id' => ['required', 'exists:languages,id'],
+            'language_id' => ['required', 'integer', 'exists:languages,id'],
             'sender_type' => [
                 'required',
                 Rule::enum(ChatSenderTypeEnum::class),

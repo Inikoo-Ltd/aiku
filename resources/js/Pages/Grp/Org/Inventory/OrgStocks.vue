@@ -14,6 +14,9 @@ import { computed, ref } from "vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { routeType } from "@/types/route";
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBox } from "@fal"
+library.add(faBox)
 
 const props = defineProps<{
     title: string;

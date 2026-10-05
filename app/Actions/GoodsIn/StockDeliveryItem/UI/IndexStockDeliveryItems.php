@@ -9,17 +9,21 @@
 namespace App\Actions\GoodsIn\StockDeliveryItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexStockDeliveryItems extends OrgAction
 {
@@ -43,7 +47,7 @@ class IndexStockDeliveryItems extends OrgAction
         ];
     }
 
-    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null): LengthAwarePaginator
+    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null, ?int $numberOfRecords = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -84,7 +88,10 @@ class IndexStockDeliveryItems extends OrgAction
             'supplierProduct.currency',
             'supplierProduct.supplier',
             'organisation.currency',
+            'organisation.warehouses',
+            'orgStock:id,packed_in',
             'stockDelivery.currency',
+            'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -98,10 +105,11 @@ class IndexStockDeliveryItems extends OrgAction
                 end
             ');
 
-        return $query
+        $paginator = $query
             ->defaultSort('org_stocks.code')
             ->select([
                 'stock_delivery_items.id',
+                'stock_delivery_items.organisation_id',
                 'stock_delivery_items.stock_delivery_id',
                 'stock_delivery_items.state',
                 'stock_delivery_items.cost_items',
@@ -121,21 +129,38 @@ class IndexStockDeliveryItems extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.has_been_in_warehouse',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])
             ->selectSub($weight, 'weight')
             ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume')
             ->allowedSorts([
-                AllowedSort::field('code', 'sp.code'),
+                AllowedSort::custom('code', new class () implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property): void
+                    {
+                        $query->orderByRaw('coalesce(sp.code, org_stocks.code) '.($descending ? 'desc' : 'asc'));
+                    }
+                }),
                 AllowedSort::field('part', 'org_stocks.code'),
                 'org_stock_code',
                 'org_stock_name',
                 'unit_quantity',
             ])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $locationsByOrgStock = StockDeliveryItemResource::locationsQuery()
+            ->whereIn('location_org_stocks.org_stock_id', $paginator->getCollection()->pluck('org_stock_id')->filter()->unique())
+            ->get()
+            ->groupBy('org_stock_id');
+
+        foreach ($paginator->getCollection() as $item) {
+            $item->setRelation('orgStockLocations', $locationsByOrgStock->get($item->org_stock_id, collect()));
+        }
+
+        return $paginator;
     }
 
     public function tableStructure(StockDelivery $stockDelivery, ?string $prefix = null): Closure
@@ -189,7 +214,7 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'delivered_quantity', label: __('Delivered Quantity'), canBeHidden: false)
                     ->column(key: 'sowings', label: __('Sowings'), canBeHidden: false)
-                    ->column(key: 'checked_unit', label: __('Checked Unit'), canBeHidden: false, align: 'right')
+                    ->column(key: 'checked_unit', label: __('Checked SKOs'), canBeHidden: false, align: 'right')
                     ->column(key: 'placement', label: __('Placement'), canBeHidden: false, align: 'right')
                     ->defaultSort('part');
             } else {
@@ -225,7 +250,8 @@ class IndexStockDeliveryItems extends OrgAction
             ->column(key: 'cost_shipping', label: $costLabel(__('Shipping')), canBeHidden: false)
             ->column(key: 'cost_duties', label: $costLabel(__('Duties')), canBeHidden: false)
             ->column(key: 'cost_tax', label: $costLabel(__('Tax')), canBeHidden: false)
-            ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right');
+            ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right')
+            ->column(key: 'cost_per_sko_org', label: __('Landed cost / SKO').' ('.$stockDelivery->organisation->currency->code.')', canBeHidden: false, align: 'right');
 
         if (!$stockDelivery->is_costed) {
             $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');

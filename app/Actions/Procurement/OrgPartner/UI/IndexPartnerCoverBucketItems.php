@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -64,7 +65,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $products = DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->whereIn('product_has_org_stocks.org_stock_id', $sellerOrgStockIds)
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($this->orgPartner->partner)))
             ->select([
                 'product_has_org_stocks.org_stock_id',
                 'products.web_images',

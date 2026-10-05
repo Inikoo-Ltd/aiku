@@ -161,7 +161,6 @@ defineExpose({
     setToNewTemplate: setToNewTemplate,
     ready: isUnlayerLoading
 })
-console.log(props,'dsad');
 
 </script>
 

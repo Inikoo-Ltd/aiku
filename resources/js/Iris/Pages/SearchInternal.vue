@@ -122,7 +122,7 @@ const priceMin = ref('')
 const priceMax = ref('')
 const sortBy = ref('')
 
-const isInternalLoading = ref(false)
+const isInternalLoading = ref(!!searchQuery.value.trim())
 const isLoadingMore = ref(false)
 const isResultsRefreshing = ref(false)
 let internalAbort: AbortController | null = null
@@ -508,6 +508,7 @@ const isMobileFilterOpen = ref(false)
                         </div>
 
                         <!-- Quick searches: tabs + card rail -->
+                        <div v-if="isInternalLoading" class="my-4 h-[315px] skeleton rounded" />
                         <div v-if="!isInternalLoading && quickSearchTabs.length" class="my-4">
                             <!-- Section: Result box categories, collections, etc -->
                             <div class="mb-2 pb-2 flex flex-wrap justify-end gap-y-2.5 gap-x-3 border-b border-[color-mix(in_srgb,var(--iris-color-0)_30%,transparent)]">
@@ -607,7 +608,7 @@ const isMobileFilterOpen = ref(false)
                         </div>
 
                         <!-- Section: Loading skeleton -->
-                        <div v-if="isInternalLoading" xstyle="gridColsVars" class="xproducts-grid grid-cols-4 grid gap-x-6 gap-y-10">
+                        <div v-if="isInternalLoading" class="grid-cols-2 lg:grid-cols-4 grid gap-x-6 gap-y-10 p-4">
                             <div v-for="i in 10" :key="i">
                                 <div class="aspect-square skeleton rounded mb-2"></div>
                                 <div class="h-4 w-4/5 skeleton rounded mb-1.5"></div>

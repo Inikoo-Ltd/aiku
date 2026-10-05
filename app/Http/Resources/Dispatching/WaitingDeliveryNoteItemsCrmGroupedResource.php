@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $delivery_note_customer_notes
  * @property mixed $delivery_note_public_notes
  * @property mixed $delivery_note_internal_notes
+ * @property mixed $delivery_note_private_warehouse_note
  * @property mixed $delivery_note_shipping_notes
  * @property mixed $delivery_note_is_premium_dispatch
  * @property mixed $delivery_note_has_extra_packing
@@ -49,6 +50,7 @@ class WaitingDeliveryNoteItemsCrmGroupedResource extends JsonResource
             'delivery_note_customer_notes'      => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'        => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
+            'delivery_note_private_warehouse_note' => $this->delivery_note_private_warehouse_note,
             'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
             'order_id'                          => $this->order_id,
             'order_slug'                        => $this->order_slug,

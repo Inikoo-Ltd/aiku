@@ -2,7 +2,7 @@
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faAtomAlt, faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt } from "@fal"
+import { faAtomAlt, faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt, faChartLine } from "@fal"
 import { computed, onMounted, ref, inject } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -15,7 +15,7 @@ import ListSelector from "@/Components/ListSelector.vue"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
@@ -26,12 +26,16 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import Tag from '@/Components/Tag.vue'
 import { Message } from "primevue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import BulkEditSectionsModal from "@/Components/Forms/BulkEditSectionsModal.vue"
+import { TradeUnit } from "@/types/trade-unit"
+import { faPencil, faAtom } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
 library.add(
     faAtomAlt,faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
-  faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt
+  faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt, faChartLine
 )
 
 const props = defineProps<{
@@ -50,13 +54,29 @@ const props = defineProps<{
     brand?: {}
     tags?: []
   },
+  sales_analysis?: object
+  sales_analysis_teaser?: object
   trade_units?: Object
   attachments?:any
   history?: Object
+  bulk_edit?: {
+    sections: Record<string, any>
+  } | null
 }>()
-console.log(props)
+
+const _tableTradeUnits = ref<InstanceType<typeof TableTradeUnits> | null>(null)
+const selectedTradeUnits = ref<TradeUnit[]>([])
+const isBulkEditVisible = ref(false)
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug: string) => {
+  selectedTradeUnits.value = []
+  useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
+}
+
+const breakdownRoute = (row: { slug: string | null }) => {
+  return row.slug ? route("grp.trade_units.units.show", [row.slug]) : null
+}
 
 const tradeUnits = ref<any[]>([])
 const loadingAttach = ref(false)
@@ -67,6 +87,7 @@ const isModalOpenMassAssign = ref(false)
 const component = computed(() => {
   const components = {
     showcase: TradeUnitFamiliesShowcase,
+    sales_analysis: SalesAnalysis,
     trade_units: TableTradeUnits,
     attachments : AttachmentManagement,
     history: TableHistories
@@ -105,8 +126,8 @@ const attachTradeUnit = () => {
       },
       onError: (error) => {
         notify({
-          title: trans("Something went wrong"),
-          text: error?.response?.data?.message || trans("Please try again"),
+          title: ctrans("Something went wrong"),
+          text: error?.response?.data?.message || ctrans("Please try again"),
           type: "error",
         })
       },
@@ -150,8 +171,8 @@ const handleMassAssign = () => {
       onError: (error) => {
         console.error("ERR", error)
         notify({
-          title: trans("Something went wrong"),
-          text: error?.response?.data?.message || trans("Please try again"),
+          title: ctrans("Something went wrong"),
+          text: error?.response?.data?.message || ctrans("Please try again"),
           type: "error",
         })
       },
@@ -167,13 +188,42 @@ const handleMassAssign = () => {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #otherBefore>
+      <Button
+        v-if="bulk_edit && currentTab === 'trade_units'"
+        v-tooltip="selectedTradeUnits.length ? '' : ctrans('Select trade units in the table first')"
+        :icon="faPencil"
+        :label="selectedTradeUnits.length ? `${ctrans('Bulk Edit')} (${selectedTradeUnits.length})` : ctrans('Bulk Edit')"
+        type="secondary"
+        :disabled="!selectedTradeUnits.length"
+        @click="isBulkEditVisible = true"
+      />
       <Button @click="isModalOpenMassAssign = true" :icon="faHandHoldingMagic" label="Edit Brand/Tag" :style="'secondary'"/>
       <Button @click="isModalOpen = true" :icon="faPlus" label="Trade Unit"/>
     </template>
   </PageHeading>
 
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+  <component
+    :is="component"
+    ref="_tableTradeUnits"
+    :data="props[currentTab]"
+    :tab="currentTab"
+    :isCheckBox="!!bulk_edit && currentTab === 'trade_units'"
+    :salesAnalysisTeaser="sales_analysis_teaser"
+    :breakdownRoute="breakdownRoute"
+    @onSelectTradeUnits="(tradeUnits: TradeUnit[]) => selectedTradeUnits = tradeUnits"
+  />
+
+  <BulkEditSectionsModal
+    v-if="bulk_edit"
+    v-model:visible="isBulkEditVisible"
+    :sections="bulk_edit.sections"
+    :items="selectedTradeUnits"
+    itemsKey="trade_units"
+    :itemsLabel="ctrans('trade units')"
+    :itemsIcon="faAtom"
+    @removeItem="(tradeUnitId: number) => _tableTradeUnits?.deselectTradeUnit(tradeUnitId)"
+  />
   
   <!-- PrimeVue Dialog -->
   <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :contentClass="'w-[40vw] lg:w-[35vw]'"
@@ -182,12 +232,12 @@ const handleMassAssign = () => {
     <Message :severity="'warn'" xclosable="true" class="mb-3 !bg-yellow-100 !text-sm">
       <span class="!text-sm">
         <FontAwesomeIcon :icon="faWarning" fixed-width />
-        {{ trans('Modifying this value would affect all of the corresponding children Trade Units') }}
+        {{ ctrans('Modifying this value would affect all of the corresponding children Trade Units') }}
       </span>
     </Message>
     <div class="mb-3 font-medium">Brands</div>
     <PureMultiselectInfiniteScroll v-model="brands" :fetchRoute="{ name: 'grp.json.brands.index', parameters: {} }"
-      :placeholder="trans('Select brand')" valueProp="id" :mode="'single'" :object="true" />
+      :placeholder="ctrans('Select brand')" valueProp="id" :mode="'single'" :object="true" />
 
     <!-- TAGS -->
     <div class="mt-5 mb-3 font-medium">Tags</div>
@@ -205,7 +255,7 @@ const handleMassAssign = () => {
 
     <!-- Tag Selector -->
     <PureMultiselectInfiniteScroll v-model="tags" :fetchRoute="{ name: 'grp.trade_units.tags.index', parameters: {} }"
-      :placeholder="trans('Select tag')" :mode="'multiple'" :object="true" />
+      :placeholder="ctrans('Select tag')" :mode="'multiple'" :object="true" />
 
     <!-- Footer -->
     <template #footer>

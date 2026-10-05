@@ -275,6 +275,15 @@ test('iris search only returns hits flagged is_in_website', function () {
     expect($response->json('results.products'))->toBe([]);
 });
 
+test('a product whose webpage goes live after it was indexed gets its search entry refreshed', function () {
+    [, $product] = createProduct($this->shop);
+    $product = $product->fresh();
+
+    $product->update(['is_in_website' => !$product->is_in_website]);
+
+    expect($product->searchIndexShouldBeUpdated())->toBeTrue();
+});
+
 test('order search hydrate never returns another customer\'s order', function () {
     $customer      = createCustomer($this->shop);
     $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());

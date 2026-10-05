@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Helpers\Upload\UI;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\UploadRecordsResource;
 use App\Models\Helpers\Upload;
 use Inertia\Inertia;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class ShowRetinaUpload extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

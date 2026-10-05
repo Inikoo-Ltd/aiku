@@ -9,6 +9,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateTradeUnitFamily extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(['goods.edit', 'masters.edit']);
+    }
+
     public function asController(ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);

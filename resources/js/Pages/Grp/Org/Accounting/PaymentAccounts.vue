@@ -11,15 +11,15 @@ import TablePaymentAccounts from '@/Components/Tables/Grp/Org/Accounting/TablePa
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Shop } from "@/types/shop"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faMoneyCheckAlt } from "@fal"
+library.add(faMoneyCheckAlt)
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     data: {
         data: {}
-    }
-    shops_list: {
-        data: Shop[]
     }
 }>()
 

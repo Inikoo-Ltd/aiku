@@ -73,6 +73,40 @@ trait WithUnitsChangeConfirmation
         );
     }
 
+    /**
+     * The toggle asks which way it is going, so each direction says what the warehouse
+     * and the refund will do from then on. On a master it also says how many shop
+     * products change with it: the ones that follow the master trade units.
+     *
+     * @return array{warnOn: array{title: string, text: string, confirmLabel: string}, warnOff: array{title: string, text: string, confirmLabel: string}}
+     */
+    public function getIndivisibleToggleConfirmations(Product|MasterAsset $model): array
+    {
+        $cascade = '';
+        if ($model instanceof MasterAsset) {
+            $followers = $model->products()->whereNot('products.not_follow_master_trade_units', true)->count();
+            if ($followers) {
+                $cascade = ' '.trans_choice(
+                    '{1} The 1 shop product following this master changes with it.|[2,*] The :count shop products following this master change with it.',
+                    $followers
+                );
+            }
+        }
+
+        return [
+            'warnOn'  => [
+                'title'        => __('Sell :code only as a complete set?', ['code' => $model->code]),
+                'text'         => __('If one part can not be picked, the warehouse puts the other parts back and the customer is refunded the whole product. Orders not picked yet follow this too.').$cascade,
+                'confirmLabel' => __('Yes, only complete sets'),
+            ],
+            'warnOff' => [
+                'title'        => __('Let :code be sent with parts missing?', ['code' => $model->code]),
+                'text'         => __('If one part can not be picked, the parts found are sent and the customer is refunded only the value of the missing ones. Orders not picked yet follow this too.').$cascade,
+                'confirmLabel' => __('Yes, allow missing parts'),
+            ],
+        ];
+    }
+
     private function countMasterFollowers(MasterAsset $masterAsset): int
     {
         return $masterAsset->products()

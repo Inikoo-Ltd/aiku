@@ -11,10 +11,10 @@ import type { Component } from "vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume } from "@fal";
+import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish } from "@fal";
 import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 
-library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume);
+library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish);
 
 const props = defineProps<{
     title: string,

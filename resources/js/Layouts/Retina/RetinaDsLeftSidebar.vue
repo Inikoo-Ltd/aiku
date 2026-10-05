@@ -10,8 +10,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faCopy } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
-import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { useCopyText } from "@/Composables/useCopyText"
 import { set } from "lodash-es"
@@ -39,7 +38,7 @@ const handleToggleLeftBar = () => {
         <!-- Reference -->
         <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris_variables?.reference}`">
             <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
-                {{ trans("Customer reference:") }}
+                {{ ctrans("Customer reference:") }}
             </div>
             <div class=" text-xl text-[#1d252e] font-semibold flex items-center gap-2">
                 <Transition name="slide-to-left">
@@ -50,7 +49,7 @@ const handleToggleLeftBar = () => {
                     @click="useCopyText(layout?.iris_variables?.reference)" 
                     icon="far fa-copy"
                     class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                    v-tooltip="trans('Copy reference to clipboard')" fixed-width
+                    v-tooltip="ctrans('Copy reference to clipboard')" fixed-width
                 />
             </div>
         </div>
@@ -61,22 +60,9 @@ const handleToggleLeftBar = () => {
                 'color': layout.app.theme[1]
             }"
         >
-            <!-- Switch Language -->
-            <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="md:hidden bg-gray-100/50 text-white px-4 mb-3 flex justify-between items-center text-xs">
-                <div>{{ trans("Language") }}:</div>
-                <SwitchLanguage>
-                    <template #default="{ isLoadingChangeLanguage }">
-                        <div class="underline text-xs py-2">
-                            {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                            <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
-                        </div>
-                    </template>
-                </SwitchLanguage>
-            </div>
-
             <div class="md:hidden bottom-full left-3 px-4 border-b border-gray-300/30 pb-1">
                 <div class="text-xxs opacity-50 -mb-1 italic">
-                    {{ trans("Customer reference:") }}
+                    {{ ctrans("Customer reference:") }}
                 </div>
                 <div class=" text-xl font-semibold flex items-center gap-2">
                     <span>#{{layout?.iris_variables?.reference ?? '-'}}</span>
@@ -85,7 +71,7 @@ const handleToggleLeftBar = () => {
                         @click="useCopyText(layout?.iris_variables?.reference)" 
                         icon="far fa-copy"
                         class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                        v-tooltip="trans('Copy reference to clipboard')" fixed-width
+                        v-tooltip="ctrans('Copy reference to clipboard')" fixed-width
                     />
                 </div>
             </div>
@@ -116,7 +102,7 @@ const handleToggleLeftBar = () => {
                         :class="
                             layout.leftSidebar.show ? 'px-2' : 'px-3'
                         "
-                        v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                        v-tooltip="{ content: ctrans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
                         :style="{
                             color: layout?.app?.theme[1],
                         }"
@@ -127,7 +113,7 @@ const handleToggleLeftBar = () => {
                         <Transition name="slide-to-left">
                             <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "
                                 :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
-                                {{ trans('Help') }}
+                                {{ ctrans('Help') }}
                             </span>
                         </Transition>
 

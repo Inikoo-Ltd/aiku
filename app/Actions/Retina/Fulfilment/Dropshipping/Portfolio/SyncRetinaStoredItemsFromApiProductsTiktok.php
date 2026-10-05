@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
@@ -26,11 +27,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -145,8 +148,10 @@ class SyncRetinaStoredItemsFromApiProductsTiktok extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(CustomerSalesChannel $customerSalesChannel): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        abort_unless($this->authorize($request), 403);
+
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $customerSalesChannel->user;
 

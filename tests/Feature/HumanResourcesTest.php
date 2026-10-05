@@ -91,6 +91,9 @@ use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
 use App\Models\HumanResources\JobPosition;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\HolidayYear;
@@ -2207,7 +2210,7 @@ test('an employee without a remote policy still gets coordinate validation on an
     actingAs($user);
 
     expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
-        ->toThrow(Exception::class, 'Your phone reports a location outside the workplace.');
+        ->toThrow(Exception::class, 'This is the Onsite Policy QR Machine ' . $employee->id . ' QR code');
 });
 
 test('a phone without location policy clocks in on a geofenced machine when the handset sends no coordinates', function () {
@@ -2719,6 +2722,8 @@ test('profile timesheets tab returns timesheets beyond today', function () {
         'password' => 'secret123',
     ]);
 
+    $this->travelTo(now()->startOfMonth()->addDays(14));
+
     StoreTimesheet::make()->action($employee, ['date' => now()]);
     StoreTimesheet::make()->action($employee, ['date' => now()->subDays(3)]);
 
@@ -3064,4 +3069,295 @@ test('a staff avatar is not offered in the group image gallery', function () {
                 ->pluck('id')
                 ->all()
         )->not->toContain($employee->image_id);
+});
+
+test('job positions on an employee record that has left give its user no roles', function () {
+    setPermissionsTeamId($this->group->id);
+
+    $jobPosition = StoreJobPosition::make()->action($this->organisation, [
+        'code'  => 'LFT'.rand(1000, 9999),
+        'name'  => 'Left record position',
+        'scope' => \App\Enums\HumanResources\JobPosition\JobPositionScopeEnum::ORGANISATION,
+    ]);
+    $role = \App\Models\SysAdmin\Role::where('name', RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation))->first();
+    $jobPosition->roles()->attach($role->id);
+
+    $user = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+
+    $leftRecord = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($leftRecord, [$jobPosition->id => []]);
+    $user->employees()->attach($leftRecord->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeFalse();
+
+    $leftRecord->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeTrue();
+
+    $positionsAudit = $leftRecord->audits()->where('event', 'job_positions')->latest('id')->first();
+    $rolesAudit     = $user->audits()->where('event', 'roles')->latest('id')->first();
+    expect($positionsAudit->new_values)->toHaveKey('Left record position')
+        ->and($positionsAudit->old_values)->toBe([])
+        ->and($rolesAudit->new_values['added'])->toContain($role->name);
+});
+
+test('a worker position is dropped on the shops where the employee is already supervisor of the same department', function () {
+    setPermissionsTeamId($this->group->id);
+    $positionIds = JobPosition::where('organisation_id', $this->organisation->id)
+        ->whereIn('code', ['shk-m', 'shk-c', 'cus-m', 'cus-c', 'hr-m', 'hr-c', 'dist-pik', 'dist-pak'])
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['shk-m']    => ['Shop' => [1, 2]],
+        $positionIds['shk-c']    => ['Shop' => [1, 2]],
+        $positionIds['cus-m']    => ['Shop' => [1]],
+        $positionIds['cus-c']    => ['Shop' => [1, 2]],
+        $positionIds['hr-m']     => [],
+        $positionIds['hr-c']     => ['Organisation' => [$this->organisation->id]],
+        $positionIds['dist-pik'] => ['Warehouse' => [1]],
+        $positionIds['dist-pak'] => ['Warehouse' => [1]],
+    ]);
+
+    $scopes = $employee->jobPositions()->get()->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->code => $jobPosition->pivot->scopes]);
+
+    expect($scopes->keys()->sort()->values()->all())->toBe(['cus-c', 'cus-m', 'dist-pak', 'dist-pik', 'hr-m', 'shk-m'])
+        ->and($scopes['cus-c'])->toBe(['Shop' => [2]])
+        ->and($scopes['shk-m'])->toBe(['Shop' => [1, 2]]);
+});
+
+test('pickers handle returns in goods in without seeing stock deliveries', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+
+    $picker          = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'dist-pik')->firstOrFail();
+    $returnsRoleName = RolesEnum::getRoleName(RolesEnum::RETURNS_CLERK->value, $warehouse);
+
+    expect($picker->name)->toBe('Picker/Returns')
+        ->and($picker->roles()->pluck('name')->all())->toContain($returnsRoleName);
+
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $user->assignRole($returnsRoleName);
+
+    $goodsIn  = \App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $user->fresh())['incoming'];
+    $sections = collect($goodsIn['topMenu']['subSections'])->filter()->pluck('label')->values()->all();
+
+    expect($user->hasPermissionTo("incoming.$warehouse->id.view"))->toBeFalse()
+        ->and($goodsIn['route']['name'])->toBe('grp.org.warehouses.show.incoming.return_delivery_notes.state.received')
+        ->and($sections)->toBe(['Returns']);
+
+    $this->withoutVite();
+    $returnsRoute        = route('grp.org.warehouses.show.incoming.return_delivery_notes.index', [$warehouse->organisation->slug, $warehouse->slug]);
+    $stockDeliveriesRoute = route('grp.org.warehouses.show.incoming.stock_deliveries.index', [$warehouse->organisation->slug, $warehouse->slug]);
+
+    $this->actingAs($user)->get($returnsRoute)->assertOk();
+    $this->actingAs($user)->get($stockDeliveriesRoute)->assertForbidden();
+
+    $userWithoutReturns = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
+});
+
+test('an admin holds no other position below them, so a customer service position does not make them a chat agent', function () {
+    [$organisation, , $shop] = createShop();
+    setPermissionsTeamId($organisation->group_id);
+
+    $positionIds = $organisation->group->jobPositions()
+        ->where(fn ($query) => $query->where('organisation_id', $organisation->id)->whereIn('code', ['org-admin', 'cus-m', 'hr-c'])->orWhere('code', 'group-admin'))
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+    ]);
+    $user = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['org-admin'] => [],
+        $positionIds['cus-m']     => ['Shop' => [$shop->id]],
+        $positionIds['hr-c']      => ['Organisation' => [$organisation->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain("org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id", "human-resources-clerk-$organisation->id")
+        ->and($user->fresh()->hasPermissionTo("chat.$shop->id"))->toBeFalse();
+
+    SyncEmployeeJobPositions::make()->handle($employee->fresh(), [
+        $positionIds['group-admin'] => [],
+        $positionIds['cus-m']       => ['Shop' => [$shop->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain('group-admin', "org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id");
+});
+
+test('only accounting staff given the accounts orders position on a shop can create orders there', function () {
+    [$organisation, , $shop] = createShop();
+    setPermissionsTeamId($organisation->group_id);
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions::run($shop);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($organisation);
+
+    $employee = Employee::factory()->create(['organisation_id' => $organisation->id, 'group_id' => $organisation->group_id]);
+    $user     = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+
+    \App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions::make()->action($user, $organisation, ['permissions' => ['acc-m' => []]]);
+    expect($user->fresh()->authTo("orders.$shop->id.edit"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions::make()->action($user, $organisation, ['permissions' => ['acc-m' => [], 'acc-o' => ['shops' => [$shop->slug]]]]);
+    $user = $user->fresh();
+
+    expect($employee->fresh()->jobPositions()->where('code', 'acc-o')->first()->pivot->scopes)->toBe(['Shop' => [$shop->id]])
+        ->and($user->roles()->pluck('name'))->toContain(RolesEnum::getRoleName(RolesEnum::ACCOUNTING_ORDERS->value, $shop))
+        ->and($user->authTo("orders.$shop->id.edit"))->toBeTrue()
+        ->and($user->authTo("chat.$shop->id"))->toBeFalse();
+});
+
+test('staff attachment downloads need permission on what the file is attached to', function () {
+    Storage::fake('local');
+    setPermissionsTeamId($this->group->id);
+    $customer = createCustomer(createShop()[2]);
+
+    $employee   = Employee::factory()->create(['organisation_id' => $this->organisation->id, 'group_id' => $this->group->id]);
+    $employeeCv = createAttachedMedia('Employee', $employee->id, 'CV');
+    $customerNote = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
+    $productSds   = createAttachedMedia('Product', 1, 'sds');
+
+    $hrClerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $hrClerk->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation));
+    $colleague = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser   = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser->employees()->attach($employee->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    $download = fn (User $user, $media) => $this->actingAs($user)->get(route('grp.media.download', $media->ulid));
+
+    $download($hrClerk, $employeeCv)->assertOk();
+    $download($ownUser, $employeeCv)->assertOk();
+    $download($colleague, $employeeCv)->assertNotFound();
+    $download($hrClerk, $customerNote)->assertNotFound();
+    $download($colleague, $productSds)->assertOk();
+
+    $warehouse = createWarehouse();
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $warehouse->organisation_id)->first();
+    $stockDelivery = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'INI021-'.rand(1000, 9999), 'date' => date('Y-m-d')]);
+    $deliveryPaperwork = createAttachedMedia('StockDelivery', $stockDelivery->id, 'Delivery Paperwork');
+
+    $goodsIn = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $goodsIn->givePermissionTo("incoming.$warehouse->id.view");
+
+    $download($goodsIn, $deliveryPaperwork)->assertOk();
+    $download($colleague, $deliveryPaperwork)->assertNotFound();
+});
+
+test('marketing job positions can create and edit offers', function () {
+    $roles = fn (string $code) => config("blueprint.job_positions.positions.$code.roles");
+
+    expect($roles('mrk-m'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_SUPERVISOR)
+        ->and($roles('mrk-c'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_CLERK);
+});
+
+test('the new employee form shows login errors on its own fields', function () {
+    $orgAdmin = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'org-admin')->firstOrFail();
+    $administrator = StoreEmployee::make()->action($this->organisation, [
+        'worker_number'   => 'hr-form-admin',
+        'alias'           => 'hr-form-admin',
+        'contact_name'    => 'Hr Form Admin',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $orgAdmin->slug, 'scopes' => []]],
+        'username'        => 'hr-form-admin',
+        'password'        => 'secret-password-123',
+    ]);
+    actingAs($administrator->getUser());
+
+    $newEmployee = fn (string $username) => [
+        'contact_name'    => 'Bicky Shrestha',
+        'type'            => EmployeeTypeEnum::EMPLOYEE->value,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME->value,
+        'worker_number'   => 'AWN01',
+        'alias'           => 'Bicky',
+        'state'           => EmployeeStateEnum::WORKING->value,
+        'username'        => $username,
+        'password'        => 'Abcdefgh1234',
+    ];
+
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('Bicky'))
+        ->assertSessionHasErrors('username');
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
+
+    $administrator->getUser()->update(['email' => 'taken-by-a-user@example.com']);
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), array_merge($newEmployee('bicky'), ['work_email' => 'taken-by-a-user@example.com']))
+        ->assertSessionHasErrors('work_email');
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->exists())->toBeFalse();
+
+    $this->post(route('grp.models.org.employee.store', $this->organisation->id), $newEmployee('bicky'))
+        ->assertSessionHasNoErrors();
+    expect(Employee::where('organisation_id', $this->organisation->id)->where('alias', 'Bicky')->firstOrFail()->getUser()->username)->toBe('bicky');
+});
+
+test('a human resources supervisor can open the organisation clockings and employee analytics pages', function () {
+    config(['employee-analytics.enabled' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $user->forgetWildcardPermissionIndex();
+    actingAs($user);
+
+    $employee = StoreEmployee::make()->action($this->organisation, array_merge(Employee::factory()->make()->toArray(), [
+        'worker_number'   => 'analytics-1',
+        'alias'           => 'analytics-1',
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'state'           => EmployeeStateEnum::WORKING,
+    ]));
+    $contract = StoreEmployeeContract::make()->action($employee, [
+        'start_date'        => now()->subMonth()->toDateString(),
+        'annual_leave_days' => 20,
+    ]);
+    EmployeeLeaveBalance::updateOrCreate(['employee_id' => $employee->id, 'employee_contract_id' => $contract->id], ['annual_used' => 3]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Analytics Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, ['type' => 'in', 'at' => now()->toDateTimeString()], 0, true);
+
+    get(route('grp.org.hr.clockings.index', $this->organisation->slug))->assertOk();
+    get(route('grp.org.hr.clockings.show', [$this->organisation->slug, $clocking->id]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('pageHead.actions.1.key', 'delete')->where('pageHead.actions.1.route.name', 'grp.models.clocking-machine.clocking.delete'));
+    get(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('formData.args.updateRoute.name', 'grp.models.clocking-machine.clocking.notes.update'));
+
+    \Pest\Laravel\from(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]))
+        ->patch(route('grp.models.clocking-machine.clocking.notes.update', $clocking->id), ['notes' => 'forgot to clock in'], ['X-Inertia' => 'true'])
+        ->assertRedirect(route('grp.org.hr.clockings.edit', [$this->organisation->slug, $clocking->id]));
+    expect($clocking->fresh()->notes)->toBe('forgot to clock in');
+
+    \Pest\Laravel\delete(route('grp.models.clocking-machine.clocking.delete', ['clocking' => $clocking->id, 'from_clocking_page' => 1]))
+        ->assertRedirect(route('grp.org.hr.clockings.index', $this->organisation->slug));
+    expect(\App\Models\HumanResources\Clocking::find($clocking->id))->toBeNull();
+    get(route('grp.org.hr.analytics.show', [$this->organisation->slug, $employee->slug]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('analytics.leave.leave_balance.annual_remaining', 17));
 });

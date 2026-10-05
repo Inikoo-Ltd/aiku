@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -20,6 +21,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
 {
+    use WithDeliveryNotePackaging;
+
     public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -64,6 +67,31 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * Which of the packaging columns this session has anything to put in.
+     *
+     * A session can hold delivery notes from several shops, so a column earns its place as soon
+     * as one of them has something to show; the rest come back empty. Asked per column rather
+     * than once for the feature, or a session of orders that happen to carry no packaging still
+     * gets three empty columns.
+     *
+     * @return array{packaging: bool, leaflets: bool}
+     */
+    protected function sessionPackagingColumns(PickingSession $pickingSession): array
+    {
+        $deliveryNotes = $pickingSession->deliveryNotes()->with(['shop', 'packaging', 'leaflets'])->get();
+
+        return [
+            'packaging' => $deliveryNotes->contains(
+                fn (DeliveryNote $deliveryNote) => $this->effectivePackaging($deliveryNote) !== null
+            ),
+            'leaflets'  => $deliveryNotes->contains(
+                fn (DeliveryNote $deliveryNote) => $deliveryNote->shop?->hasPackagingAndInserts()
+                    && $deliveryNote->leaflets->isNotEmpty()
+            ),
+        ];
+    }
+
     public function tableStructure(PickingSession $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
@@ -85,6 +113,16 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
             if ($parent->state != PickingSessionStateEnum::HANDLING) {
                 $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false);
+            }
+            $packagingColumns = $this->sessionPackagingColumns($parent);
+
+            if ($packagingColumns['packaging']) {
+                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            }
+
+            if ($packagingColumns['leaflets']) {
+                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             }
         };
     }

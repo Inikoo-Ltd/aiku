@@ -8,18 +8,15 @@ import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
-import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
-import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
-import { clearIrisSession } from "@/Composables/clearIrisSession"
-import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
+import { useOpenBasketPanelOnClick } from "@/Iris/Composables/useSidePanel"
+import { useIrisLogout } from "@/Iris/Composables/useIrisLogout"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird, faCog)
 
@@ -74,35 +71,8 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
 // Section: Logout
-const isLoadingLogout = ref(false)
-let restoreIrisSession: (() => void) | null = null
-const onClickLogout = () => {
-    router.post(
-        '/app/logout',
-        {
-            
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingLogout.value = true
-                restoreIrisSession = clearIrisSession(layout)
-            },
-            onError: errors => {
-                restoreIrisSession?.()
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to logout"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingLogout.value = false
-            },
-        }
-    )
-}
+const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
+const openBasketPanelOnClick = useOpenBasketPanelOnClick()
 
 const buttonClass = ref(getStyles(model.value?.button?.container?.properties, screenTypeInject, false))
 const buttonHoverClass = ref(getStyles(model.value?.button?.hover?.container?.properties, screenTypeInject,false))
@@ -141,7 +111,7 @@ const goToBundle = () => {
             <!-- Section: Main title -->
             <div v-if="layout.offer_data && isLoggedIn" class="text-center md:text-left md:flex md:gap-4">
                 <span>
-                    {{ trans("Hello") }}, 
+                    {{ ctrans("Hello") }}, 
                     <LinkIris href="/app/dashboard" :type="'internal'" class="inline-flex items-center justify-center hover:underline">
                         <span class="font-bold">{{ layout.iris_variables?.name }}</span>
                     </LinkIris>!
@@ -202,14 +172,11 @@ const goToBundle = () => {
             <!-- Reserve the greeting row while the first-hit data is still on the wire,
                  so the bar doesn't grow when "Hello, name" arrives -->
             <div v-else-if="layout.iris?.is_logged_in" class="invisible text-center md:text-left" aria-hidden="true">
-                <span>{{ trans("Hello") }}!</span>
+                <span>{{ ctrans("Hello") }}!</span>
             </div>
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-            <SwitchLanguage
-                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
-
             <!-- v-if="!layout.offer_data" -->
             <!-- Section: Profile -->
             <LinkIris  v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
@@ -221,13 +188,13 @@ const goToBundle = () => {
                     class="button min-w-max"
                 >
                     <template #icon>
-                        <span v-tooltip="trans('My Account')">
+                        <span v-tooltip="ctrans('My Account')">
                             <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width aria-hidden="true" />
                         </span>
                     </template>
                     <template #label>
-                        <!-- <span v-tooltip="trans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
-                        <!-- <span v-tooltip="trans('My Account')" class="button">{{ trans("My Account") }}</span> -->
+                        <!-- <span v-tooltip="ctrans('Profile')" class="button" v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" /> -->
+                        <!-- <span v-tooltip="ctrans('My Account')" class="button">{{ ctrans("My Account") }}</span> -->
                         <!-- <GoldReward v-if="layout.offer_data?.type === 'gr'" /> -->
                     </template>
                 </Button>
@@ -236,7 +203,7 @@ const goToBundle = () => {
             <!-- Section: My Interest -->
             <LinkIris v-if="layout.retina?.type !== 'dropshipping' && checkVisible(model?.favourite?.visible || null, isLoggedIn)" href="/app/interest/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-tooltip="trans('My Interest')"
+                    v-tooltip="ctrans('My Interest')"
                     type="transparent"
                     :loading="isLoading"
                     icon="fal fa-heart"
@@ -250,7 +217,7 @@ const goToBundle = () => {
                             v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
                         <div class="button" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
                             {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
-                            trans("favourites") : trans("favourite") }}
+                            ctrans("favourites") : ctrans("favourite") }}
                         </div> -->
                     </template>
                 </Button>
@@ -258,7 +225,7 @@ const goToBundle = () => {
 
             <LinkIris v-if="isLoggedIn" href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-tooltip="trans('Reminder back in stock')"
+                    v-tooltip="ctrans('Reminder back in stock')"
                     type="transparent"
                     :loading="isLoading"
                     class="button"
@@ -274,7 +241,7 @@ const goToBundle = () => {
                 </Button>
             </LinkIris>
             <!-- section redirect to bundle -->
-            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
+            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="ctrans('Add Bundles')" type="transparent" class="button"
                 @click="goToBundle" :loading="isLoadingBundle">
                 <template #isLoadingBundle>
                     <span v-show="false" class="button"></span>
@@ -287,15 +254,16 @@ const goToBundle = () => {
 
             <!-- Section: Basket (cart) -->
             <LinkIris v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')" href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+                <span class="contents" @click="openBasketPanelOnClick">
                 <Button
                     
-                    v-tooltip="trans('Cart count and amount')"  
+                    v-tooltip="ctrans('Cart count and amount')"  
                     :loading="isLoading"
                     type="transparent"
                     class="button min-w-max"
                 >
                     <template #label="{ isLoadingVisit }">
-                        <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap"
+                        <span v-tooltip="ctrans('Number of products line')" class="button -mr-1.5 whitespace-nowrap"
                             v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
                         </span>
                         <LoadingIcon v-if="isLoadingVisit" />
@@ -306,6 +274,7 @@ const goToBundle = () => {
                         </span>
                     </template>
                 </Button>
+                </span>
             </LinkIris>
 
             <!-- Section: Register -->
@@ -322,7 +291,7 @@ const goToBundle = () => {
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">
-                            {{ trans("Register") }}
+                            {{ ctrans("Register") }}
                         </span>
                     </template>
                 </Button>
@@ -341,7 +310,7 @@ const goToBundle = () => {
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">
-                            {{ trans("Login") }}
+                            {{ ctrans("Login") }}
                         </span>
                     </template>
                 </Button>
@@ -361,7 +330,7 @@ const goToBundle = () => {
                 </template>
                 <template #label>
                     <span class="button whitespace-nowrap">
-                        {{ trans("Logout") }}
+                        {{ ctrans("Logout") }}
                     </span>
                 </template>
             </Button>

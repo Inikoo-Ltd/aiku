@@ -1,4 +1,5 @@
 import type { TicketBadges } from '@/types/TicketBadges'
+import type { TaskBadges } from '@/types/TaskBadges'
 import { useColorTheme } from '@/Composables/useStockList'
 
 import { OrganisationsData, Group, OrganisationState, StackedComponent, Shop } from '@/types/LayoutRules'
@@ -18,6 +19,8 @@ export const layoutStructure = {
         name: "",  // For styling navigation depend on which App
         color: null as unknown | Colors,  // Styling layout color
         theme: useColorTheme[0] as string[],  // For styling app color
+        navigation_theme: useColorTheme[0] as string[],  // Left navigation color, can be set per organisation
+        organisation_colours: {} as { [key: string]: string },  // Left navigation color per organisation slug, sent on first load only
         url: null as string | null, // For url on logo top left
         environment: null as string | null, // 'local' | 'staging'
         last_deployment_at: null as string | null, // created_at of the latest app deployment
@@ -78,10 +81,14 @@ export const layoutStructure = {
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
-    isShopPage: false as boolean,
-    isFulfilmentPage: false as boolean,
+    order_alerts: null as {
+        shops: Record<number, string[]>
+        sounds: Record<string, string>
+        popup: { show: boolean }
+    } | null,
 
     ticket_badges: null as TicketBadges | null,
+    task_badges: null as TaskBadges | null,
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,

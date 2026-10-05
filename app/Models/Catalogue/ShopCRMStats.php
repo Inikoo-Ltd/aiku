@@ -128,6 +128,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_opt_out_prospects_success_status_registered
  * @property int $number_opt_out_prospects_success_status_invoiced
  * @property int $number_opt_out_prospects_dont_contact_me
+ * @property array<array-key, mixed>|null $customers_dashboard
+ * @property \Illuminate\Support\Carbon|null $customers_dashboard_hydrated_at
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCRMStats newModelQuery()
  * @method static Builder<static>|ShopCRMStats newQuery()
@@ -139,6 +141,11 @@ class ShopCRMStats extends Model
     protected $table = 'shop_crm_stats';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'customers_dashboard'            => 'array',
+        'customers_dashboard_hydrated_at' => 'datetime',
+    ];
 
     public function shop(): BelongsTo
     {

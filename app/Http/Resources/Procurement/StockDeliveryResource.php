@@ -19,6 +19,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $parent_name
  * @property mixed $state
  * @property mixed $date
+ * @property mixed $estimated_receiving_date
+ * @property mixed $number_new_org_stocks
  * @property mixed $organisation_name
  * @property mixed $number_stock_delivery_items_except_cancelled
  * @property mixed $number_stock_delivery_items
@@ -40,12 +42,16 @@ class StockDeliveryResource extends JsonResource
             'slug'               => $this->slug,
             'reference'          => $this->reference,
             'parent_name'        => $this->parent_name,
+            'parent_type'        => $this->parent_type,
+            'parent_route_key'   => $this->parent_route_key,
             'state'              => $this->state,
             'state_icon'         => $this->state->stateIcon()[$this->state->value],
             'state_label'        => StockDeliveryStateEnum::labels()[$this->state->value],
             'date'               => $this->date,
+            'estimated_receiving_date' => $this->estimated_receiving_date,
             'organisation_name'  => $this->organisation_name,
             'organisation_slug'  => $this->organisation_slug,
+            'number_new_org_stocks' => (int) $this->number_new_org_stocks,
         ];
 
         if (isset($this->currency_code)) {

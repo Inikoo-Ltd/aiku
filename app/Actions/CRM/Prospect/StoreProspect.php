@@ -103,11 +103,6 @@ class StoreProspect extends OrgAction
         OrganisationHydrateProspects::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProspects::dispatch($shop)->delay($this->hydratorsDelay);
 
-        if ($prospect->shop->is_aiku) {
-            SaveProspectInAurora::dispatch($prospect);
-        }
-
-
         return $prospect;
     }
 
@@ -183,6 +178,7 @@ class StoreProspect extends OrgAction
                 'nullable',
                 'exists:customers,id,shop_id,'.$this->shop->id,
             ];
+            $rules['user_id'] = ['sometimes', 'nullable', 'exists:users,id'];
         }
 
         if (!$this->strict) {

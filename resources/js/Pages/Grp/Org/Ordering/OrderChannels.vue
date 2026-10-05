@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { useLocaleStore } from '@/Stores/locale'
@@ -15,6 +15,9 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { routeType } from '@/types/route'
 import { Intervals, Settings } from '@/types/Components/Dashboard'
 import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCodeBranch } from "@fal"
+library.add(faCodeBranch)
 
 type ChannelRow = {
     platform_type: string
@@ -73,7 +76,7 @@ const expandable = (g: any) => g.children.length > 1
 
 const money = (value: number) => locale.currencyFormat(props.data.currency_code, value)
 const share = (part: number) => totals.value.total_sales > 0 ? (part / totals.value.total_sales * 100).toFixed(1) + '%' : '—'
-const periodText = computed(() => props.data.period_from ? props.data.period_label.toLowerCase() : trans('all time'))
+const periodText = computed(() => props.data.period_from ? props.data.period_label.toLowerCase() : ctrans('all time'))
 </script>
 
 <template>
@@ -87,12 +90,12 @@ const periodText = computed(() => props.data.period_from ? props.data.period_lab
         <div class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('By platform and channel') }}</span>
-                    <span class="ml-2 text-xs text-gray-400">{{ trans('where orders came from, and how they were placed') + ' · ' + periodText + ', ' + data.currency_code }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('By platform and channel') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ ctrans('where orders came from, and how they were placed') + ' · ' + periodText + ', ' + data.currency_code }}</span>
                 </div>
                 <button type="button" @click="showDetail = !showDetail"
                     class="shrink-0 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
-                    {{ showDetail ? trans('Collapse') : trans('Expand') }}
+                    {{ showDetail ? ctrans('Collapse') : ctrans('Expand') }}
                 </button>
             </div>
 
@@ -100,12 +103,12 @@ const periodText = computed(() => props.data.period_from ? props.data.period_lab
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-xs text-gray-400 border-b border-gray-200">
-                            <th class="py-1.5 pr-2 text-left font-normal">{{ trans('Platform') }}</th>
-                            <th class="py-1.5 px-2 text-right font-normal">{{ trans('Orders') }}</th>
-                            <th class="py-1.5 px-2 text-right font-normal" v-tooltip="trans('Orders sitting at submitted and unpaid right now, waiting for payment before the warehouse sees them. Not a period metric.')">{{ trans('Held unpaid') }}</th>
-                            <th class="py-1.5 px-2 text-right font-normal">{{ trans('Sales') }}</th>
+                            <th class="py-1.5 pr-2 text-left font-normal">{{ ctrans('Platform') }}</th>
+                            <th class="py-1.5 px-2 text-right font-normal">{{ ctrans('Orders') }}</th>
+                            <th class="py-1.5 px-2 text-right font-normal" v-tooltip="ctrans('Orders sitting at submitted and unpaid right now, waiting for payment before the warehouse sees them. Not a period metric.')">{{ ctrans('Held unpaid') }}</th>
+                            <th class="py-1.5 px-2 text-right font-normal">{{ ctrans('Sales') }}</th>
                             <th class="py-1.5 px-2 text-right font-normal">%</th>
-                            <th class="py-1.5 pl-2 text-right font-normal">{{ trans('Last order') }}</th>
+                            <th class="py-1.5 pl-2 text-right font-normal">{{ ctrans('Last order') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -130,7 +133,7 @@ const periodText = computed(() => props.data.period_from ? props.data.period_lab
                             </template>
                         </template>
                         <tr class="text-gray-800 font-medium">
-                            <td class="py-1.5 pr-2">{{ trans('All') }}</td>
+                            <td class="py-1.5 pr-2">{{ ctrans('All') }}</td>
                             <td class="py-1.5 px-2 text-right">{{ locale.number(totals.number_orders) }}</td>
                             <td class="py-1.5 px-2 text-right" :class="totals.number_held_unpaid > 0 ? 'text-orange-600 font-semibold' : 'text-gray-300'">{{ totals.number_held_unpaid > 0 ? locale.number(totals.number_held_unpaid) : '—' }}</td>
                             <td class="py-1.5 px-2 text-right">{{ money(totals.total_sales) }}</td>

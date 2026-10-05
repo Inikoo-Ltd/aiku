@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Http\Resources\SupplyChain\SuppliersResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -45,6 +44,7 @@ class CreateOrgSupplier extends OrgAction
             ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id')
             ->where('suppliers.group_id', $organisation->group_id)
             ->where('suppliers.status', true)
+            ->where(fn ($query) => $query->where('suppliers.scope_type', '!=', 'Organisation')->orWhere('suppliers.scope_id', $organisation->id))
             ->whereDoesntHave('orgSuppliers', fn ($query) => $query->where('organisation_id', $organisation->id));
 
         return $queryBuilder
@@ -120,16 +120,16 @@ class CreateOrgSupplier extends OrgAction
                         'title' => __('Suppliers'),
                     ],
                     'actions' => [
-                        Agent::where('organisation_id', $this->organisation->id)->exists() ? [
+                        [
                             'type' => 'button',
                             'style' => 'create',
                             'tooltip' => __('New supplier'),
                             'label' => __('New supplier'),
                             'route' => [
-                                'name' => 'grp.org.procurement.org_suppliers.create_for_agent',
+                                'name' => 'grp.org.procurement.org_suppliers.create_new',
                                 'parameters' => [$this->organisation->slug],
                             ],
-                        ] : false,
+                        ],
                     ],
                 ],
                 'data' => SuppliersResource::collection($suppliers),

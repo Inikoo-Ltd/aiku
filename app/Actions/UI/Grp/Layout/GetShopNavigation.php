@@ -8,10 +8,12 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,11 +36,29 @@ class GetShopNavigation
 
             'route' => [
                 'name'       => 'grp.org.shops.show.dashboard.show',
-                'parameters' => [$shop->organisation->slug, $shop->slug]
+                'parameters' => [
+                    'organisation' => $shop->organisation->slug,
+                    'shop'         => $shop->slug,
+                    'section'      => ShopDashboardSectionsEnum::TARGET->value,
+                ]
             ],
 
             'topMenu' => [
                 'subSections' => [
+                    [
+                        "label"   => __("Target"),
+                        "tooltip" => __("Sales target"),
+                        "icon"    => ["fal", "fa-bullseye-arrow"],
+                        "root"    => "grp.org.shops.show.dashboard.show",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.show",
+                            "parameters" => [
+                                "organisation" => $shop->organisation->slug,
+                                "shop"         => $shop->slug,
+                                "section"      => ShopDashboardSectionsEnum::TARGET->value,
+                            ],
+                        ],
+                    ],
                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
@@ -194,6 +214,16 @@ class GetShopNavigation
                                 'root' => 'grp.org.shops.show.billables.services.',
                                 "route" => [
                                     "name" => "grp.org.shops.show.billables.services.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label" => __("Packagings"),
+                                "tooltip" => __("Packagings"),
+                                "icon" => ["fal", "fa-box-open"],
+                                'root' => 'grp.org.shops.show.billables.packagings.',
+                                "route" => [
+                                    "name" => "grp.org.shops.show.billables.packagings.index",
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
@@ -404,16 +434,6 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        // [
-                        //     "label"   => __("Suggestions"),
-                        //     "tooltip" => __("Changes worth making to your advertising, found in your own figures"),
-                        //     "icon"    => ["fal", "fa-lightbulb"],
-                        //     'root'    => 'grp.org.shops.show.marketing.ad_proposals.',
-                        //     "route"   => [
-                        //         "name"       => "grp.org.shops.show.marketing.ad_proposals.index",
-                        //         "parameters" => [$shop->organisation->slug, $shop->slug],
-                        //     ],
-                        // ],
 
 
                     ],
@@ -743,6 +763,15 @@ class GetShopNavigation
                         ],
                     ],
                     [
+                        "label" => __("ETA map"),
+                        "icon"  => ["fal", "fa-calendar-alt"],
+                        "root"  => "grp.org.shops.show.tasks.eta_map",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.eta_map",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
                         "label" => __("Reports"),
                         "icon"  => ["fal", "fa-chart-line"],
                         "root"  => "grp.org.shops.show.tasks.reports",
@@ -775,7 +804,7 @@ class GetShopNavigation
                         ],
                     ],
                     [
-                        "label" => __("List"),
+                        "label" => __("Ticket List"),
                         "icon"  => ["fal", "fa-list"],
                         "root"  => "grp.org.shops.show.tickets.list",
                         "route" => [
@@ -783,6 +812,15 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        "label" => __("QA List"),
+                        "icon"  => ["fal", "fa-vial"],
+                        "root"  => "grp.org.shops.show.tickets.qa_list",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.qa_list",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ]] : []),
                     [
                         "label" => __("Board"),
                         "icon"  => ["fal", "fa-columns"],

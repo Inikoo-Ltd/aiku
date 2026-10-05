@@ -177,3 +177,38 @@ interface PiniaVariables {
     cart_amount: string
     reference: string
 }
+export interface ScriptBase64File {
+    key: string
+    modelHasWebBlockId: number
+    blockLabel: string
+    dataUri: string
+    mimeType: string
+    size: number
+}
+
+export const findScriptBase64Files = (webBlocks: any[]): ScriptBase64File[] => {
+    const files: ScriptBase64File[] = []
+
+    webBlocks.forEach((block, blockIndex) => {
+        if (block.type !== 'script') return
+
+        const code = String(block.web_block?.layout?.data?.fieldValue?.value ?? '')
+        const dataUris = new Set(code.match(/data:[a-z0-9.+\/-]+;base64,[A-Za-z0-9+/=\s]+/gi) ?? [])
+
+        dataUris.forEach(dataUri => {
+            const [header, base64] = dataUri.split(';base64,')
+            const base64Length = base64.replace(/\s/g, '').length
+
+            files.push({
+                key: `${block.id}-${files.length}`,
+                modelHasWebBlockId: block.id,
+                blockLabel: `${block.name || block.type} #${blockIndex + 1}`,
+                dataUri,
+                mimeType: header.slice('data:'.length).toLowerCase(),
+                size: Math.floor(base64Length * 3 / 4),
+            })
+        })
+    })
+
+    return files
+}

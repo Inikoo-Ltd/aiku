@@ -6,14 +6,15 @@
 -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
+import RetinaPreOrderPanel, { PreOrderShowcase } from "@/Components/Retina/PreOrder/RetinaPreOrderPanel.vue"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, inject, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
@@ -45,6 +46,8 @@ library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign
 
 
 const props = defineProps<{
+    pre_order?: PreOrderShowcase | null
+    split_pre_order?: { reference: string, slug: string } | null
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
@@ -72,6 +75,7 @@ const props = defineProps<{
             customer_order_ordinal: string
             customer_order_ordinal_tooltip: string
         }
+        delivery_notes: { slug: string, reference: string, has_packing_list: boolean }[]
     }
     balance: string
     address_management: AddressManagement
@@ -115,7 +119,6 @@ const component = computed(() => {
 })
 
 const locale = inject("locale", aikuLocaleStructure)
-console.log("DS Orders", props)
 
 
 const noteToSubmit = ref(props?.data?.data?.customer_notes || "")
@@ -143,8 +146,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error"
         })
     }
@@ -170,17 +173,31 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
                 <Button
 
                     type="tertiary"
-                    :label="trans('Proforma Invoice')"
+                    :label="ctrans('Proforma Invoice')"
                     icon="fal fa-file-pdf"
                 />
             </a>
+            <template v-for="deliveryNote in props.summary?.delivery_notes" :key="deliveryNote.slug">
+                <a v-if="deliveryNote.has_packing_list"
+                   :href="route('retina.ecom.packing_lists.pdf', { deliveryNote: deliveryNote.slug })"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="inline-block"
+                >
+                    <Button
+                        type="tertiary"
+                        :label="props.summary.delivery_notes.length > 1 ? ctrans('Packing list :reference', { reference: deliveryNote.reference }) : ctrans('Packing list')"
+                        icon="fal fa-file-pdf"
+                    />
+                </a>
+            </template>
         </template>
     </PageHeading>
 
     <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="data?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="data?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <!-- Section: Timelines -->
@@ -198,16 +215,25 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
 
         <div class="ml-2 font-normal flex justify-between w-full">
             <div class="flex items-center gap-x-2">
-                {{ trans("You have unpaid amount of the order") }}: <span class="font-bold">{{ locale.currencyFormat(locale.currencyInertia?.code, data?.data.unpaid_amount) }}</span>
+                {{ ctrans("You have unpaid amount of the order") }}: <span class="font-bold">{{ locale.currencyFormat(locale.currencyInertia?.code, data?.data.unpaid_amount) }}</span>
             </div>
             <ButtonWithLink
                 :routeTarget="routes.route_to_pay_unpaid"
-                :label="trans('Click to pay')"
+                :label="ctrans('Click to pay')"
                 type="positive"
                 class="bg-green-100"
             />
         </div>
     </Message>
+
+    <div v-if="pre_order" class="mx-4 mt-4">
+        <RetinaPreOrderPanel :pre_order :orderId="data?.data?.id" :orderSlug="data?.data?.slug" showPayButton />
+    </div>
+
+    <div v-if="split_pre_order" class="mx-4 mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        {{ ctrans("The pre-order items of this order are in order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
+        <Link :href="route('retina.ecom.orders.show', { order: split_pre_order.slug })" class="underline">{{ ctrans("View") }}</Link>
+    </div>
 
     <EcomCheckoutSummary
         :summary
@@ -230,13 +256,13 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #AAAAAA" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
-                    {{ trans("Notes from Staff") }}
+                    {{ ctrans("Notes from Staff") }}
                     :
                 </div>
                 <PureTextarea
                     :modelValue="props.data?.data?.public_notes || ''"
                     @update:modelValue="() => debounceDeliveryInstructions()"
-                    :placeholder="trans('No notes from staff')"
+                    :placeholder="ctrans('No notes from staff')"
                     rows="4"
                     disabled
                     xloading="isLoadingNote.includes('shipping_notes')"
@@ -249,7 +275,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
-                    {{ trans("Delivery Instructions") }}
+                    {{ ctrans("Delivery Instructions") }}
                     :
                 </div>
                 <PureTextarea
@@ -268,7 +294,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                    {{ trans("Other Instructions") }}:
+                    {{ ctrans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"

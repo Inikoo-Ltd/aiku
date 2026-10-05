@@ -4,7 +4,7 @@ summary: Čo si pripraviť z Meta, na ktorú z dvoch nastavovacích stránok ka�
 date: 2026-09-10
 source_date: 2026-09-10
 tags: marketing, whatsapp, shop
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 1
 ---

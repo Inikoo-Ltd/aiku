@@ -2,10 +2,15 @@
 
 namespace App\Actions\Dispatching\PickingSession\UI;
 
+use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -37,6 +42,9 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+        $pickingSession->deliveryNotes()->get()->each(
+            fn ($deliveryNote) => AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)
+        );
 
         return $pickingSession;
     }
@@ -116,6 +124,24 @@ class ShowPickingSession extends OrgAction
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
 
+        if ($pickingSession->state == PickingSessionStateEnum::HANDLING_BLOCKED && UndoWaitingPickingSession::canStepBack($request->user(), $pickingSession)) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'icon'    => 'fal fa-undo-alt',
+                'tooltip' => __('Give the items waiting for the warehouse, and the parts of a set that were not found, back to the picker'),
+                'label'   => __('Back to picking'),
+                'key'     => 'undo-waiting',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.picking_session.undo_waiting',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id
+                    ]
+                ]
+            ];
+        }
+
         /*
          * A tab the session no longer offers still arrives in the url, kept by the link the picker
          * followed or by the tab they were reading before the session moved on, and it would leave
@@ -189,6 +215,7 @@ class ShowPickingSession extends OrgAction
             'data' => PickingSessionResource::make($pickingSession),
 
             'scan_to_pack'                => $scanToPack,
+            'incomplete_sets'             => $this->getIncompleteSets($pickingSession),
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
 
@@ -234,6 +261,23 @@ class ShowPickingSession extends OrgAction
         }
 
         return $inertiaResponse;
+    }
+
+    /**
+     * @return array<int, array{delivery_note_reference: string, action: array}>
+     */
+    public function getIncompleteSets(PickingSession $pickingSession): array
+    {
+        return $pickingSession->deliveryNotes()
+            ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+            ->get()
+            ->filter(fn (DeliveryNote $deliveryNote) => $deliveryNote->hasIncompleteSets())
+            ->map(fn (DeliveryNote $deliveryNote) => [
+                'delivery_note_reference' => $deliveryNote->reference,
+                'action'                  => ShowDeliveryNote::make()->getPutBackIncompleteSetsAction($deliveryNote),
+            ])
+            ->values()
+            ->all();
     }
 
     public function getItems(PickingSession $pickingSession): array

@@ -14,7 +14,6 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
@@ -47,10 +46,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowInvoice extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     use IsInvoiceUI;
     use WithMarginData;
     use WithInvoicePayBox;
@@ -164,11 +165,19 @@ class ShowInvoice extends OrgAction
                     ]
                 )
             ),
-            [
+            array_values(array_filter([
                 [
                     'label'       => __('Charges'),
                     'price_total' => $invoice->charges_amount
                 ],
+                (float) $invoice->packaging_amount > 0 ? [
+                    'label'       => __('Packaging'),
+                    'price_total' => $invoice->packaging_amount
+                ] : null,
+                (float) $invoice->leaflet_amount > 0 ? [
+                    'label'       => __('Add-ons'),
+                    'price_total' => $invoice->leaflet_amount
+                ] : null,
                 [
                     'label'       => __('Shipping'),
                     'price_total' => $invoice->shipping_amount
@@ -184,7 +193,7 @@ class ShowInvoice extends OrgAction
                         'price_total' => $adjustmentsNet
                     ],
                 ] : []),
-            ],
+            ])),
             [
                 [
                     'label'       => __('Net'),
@@ -441,7 +450,6 @@ class ShowInvoice extends OrgAction
                 'billing_address_form'          => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
                     'options' => [
-                        'countriesAddressData' => GetAddressData::run()
                     ],
                 ] : [],
                 'box_stats'                     => $this->getBoxStats($invoice),

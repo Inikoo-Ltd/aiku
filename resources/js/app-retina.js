@@ -9,7 +9,7 @@ import "./bootstrap";
 import "../css/app.css";
 
 import { createApp, h } from "vue";
-import { createInertiaApp } from "@inertiajs/vue3";
+import { createInertiaApp, router } from "@inertiajs/vue3";
 import { ZiggyVue } from "ziggy-js";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
@@ -84,6 +84,48 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
+const THEME_FONT_WEIGHTS = ["400", "700"];
+const THEME_FONT_WAIT_LIMIT_MS = 2000;
+
+const loadThemeFonts = (iris) => {
+  const fontFamilies = new Set([
+    iris?.theme?.container?.properties?.text?.fontFamily,
+    iris?.header?.topBar?.data?.fieldValue?.container?.properties?.text?.fontFamily
+  ].filter(Boolean));
+
+  if (!fontFamilies.size || !document.fonts) {
+    return null;
+  }
+
+  const fontsLoaded = Promise.allSettled(
+    [...fontFamilies].flatMap((fontFamily) => THEME_FONT_WEIGHTS.map((weight) => document.fonts.load(`${weight} 1em ${fontFamily}`)))
+  );
+  const waitLimitReached = new Promise((resolve) => setTimeout(resolve, THEME_FONT_WAIT_LIMIT_MS));
+
+  return Promise.race([fontsLoaded, waitLimitReached]);
+};
+
+const startWebpagePreload = (page) => {
+  const webBlocks = page?.props?.web_blocks;
+  if (!webBlocks) {
+    return null;
+  }
+  const iris = page.props.iris;
+  const headerBlocks = [iris?.header?.topBar?.code, iris?.header?.header?.code, iris?.menu?.code].filter(Boolean).map((type) => ({ type }));
+
+  return {
+    webBlocks : [...Object.values(webBlocks), ...headerBlocks],
+    shopType  : page.props.retina?.type,
+    fontsReady: loadThemeFonts(iris)
+  };
+};
+
+let nextWebpagePreload = startWebpagePreload(JSON.parse(document.getElementById("app")?.dataset.page ?? "null"));
+
+router.on("beforeUpdate", (event) => {
+  nextWebpagePreload = startWebpagePreload(event.detail.page);
+});
+
 createInertiaApp(
   {
     resolve: async name => {
@@ -91,6 +133,12 @@ createInertiaApp(
       let page = await pages?.[`./Pages/Retina/${name}.vue`]?.();
       if (!page) console.error(`File './Pages/Retina/${name}.vue' is not exist`);
       page.default.layout = page.default?.layout || Layout;
+      if (name === "RetinaWebpage" && nextWebpagePreload?.webBlocks) {
+        const { webBlocks, shopType, fontsReady } = nextWebpagePreload;
+        nextWebpagePreload = null;
+        const { preloadIrisBlocks } = await import("@/Iris/Composables/getIrisComponents");
+        await Promise.all([preloadIrisBlocks(webBlocks, shopType), fontsReady]);
+      }
       return page;
     },
     setup({ el, App, props, plugin }) {

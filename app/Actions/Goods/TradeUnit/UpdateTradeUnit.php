@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
@@ -20,6 +21,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromT
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Actions\Goods\Stock\SyncStockCosmeticFromCpnp;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -34,7 +36,7 @@ use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
-use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Goods\TradeUnitResource;
@@ -46,13 +48,14 @@ use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnit extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithGoodsEditAuthorisation;
+    use WithComplianceEditing;
     use HasDangerousGoodsFields;
     use HasProductInformation;
 
@@ -154,6 +157,10 @@ class UpdateTradeUnit extends OrgAction
             data_set($modelData, 'label_info.label_info_approved', (bool) Arr::pull($modelData, 'label_info_approved'));
         }
 
+        if (Arr::has($modelData, 'show_net_quantity')) {
+            data_set($modelData, 'label_info.show_net_quantity', (bool) Arr::pull($modelData, 'show_net_quantity'));
+        }
+
         if (Arr::has($modelData, 'packaging_material_codes')) {
             data_set($modelData, 'label_info.packaging_material_codes.value', Arr::pull($modelData, 'packaging_material_codes') ?? []);
         }
@@ -167,6 +174,10 @@ class UpdateTradeUnit extends OrgAction
 
         if (Arr::has($modelData, 'description')) {
             GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(10);
+        }
+
+        if ($tradeUnit->wasChanged('cpnp_number')) {
+            SyncStockCosmeticFromCpnp::run($tradeUnit);
         }
 
         if ($tradeUnit->wasChanged('type')) {
@@ -238,6 +249,9 @@ class UpdateTradeUnit extends OrgAction
                 TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
             TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);
+            foreach ($tradeUnit->products as $product) {
+                CloneProductAttachmentsFromTradeUnits::dispatch($product);
+            }
         }
 
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
@@ -298,6 +312,23 @@ class UpdateTradeUnit extends OrgAction
         return $tradeUnit;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $this->canEdit           = $request->user()->authTo('goods.edit');
+        $this->canEditCompliance = $request->user()->authTo('compliance.edit');
+
+        return $this->canEdit || $this->canEditCompliance;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $this->rejectNonComplianceFields($validator);
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -324,9 +355,9 @@ class UpdateTradeUnit extends OrgAction
             'description'                  => ['sometimes', 'required', 'string', 'max:1024'],
             'barcode_id'                   => ['sometimes', 'nullable', 'exists:barcodes,id'],
             'barcode'                      => ['sometimes', 'nullable'],
-            'gross_weight'                 => ['sometimes', 'required', 'numeric'],
-            'net_weight'                   => ['sometimes', 'required', 'numeric'],
-            'marketing_weight'             => ['sometimes', 'required', 'numeric'],
+            'gross_weight'                 => ['sometimes', 'required', 'integer', 'min:0'],
+            'net_weight'                   => ['sometimes', 'required', 'integer', 'min:0'],
+            'marketing_weight'             => ['sometimes', 'required', 'integer', 'min:0'],
             'marketing_dimensions'         => ['sometimes', 'required'],
             'type'                         => ['sometimes', 'required'],
             'is_divisible'                 => ['sometimes', 'boolean'],
@@ -364,6 +395,7 @@ class UpdateTradeUnit extends OrgAction
             'sorting_recycling_information' => ['sometimes', 'boolean'],
             'safety_icons'                  => ['sometimes', 'boolean'],
             'batch_number'                  => ['sometimes', 'boolean'],
+            'show_net_quantity'             => ['sometimes', 'boolean'],
             'markets'                       => ['sometimes', 'nullable', 'array'],
             'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
             'languages'                     => ['sometimes', 'nullable', 'array'],

@@ -3,8 +3,8 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\OrgAction;
-use Illuminate\Support\Facades\Http;
 use App\Exceptions\AICreditException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -12,6 +12,7 @@ use Throwable;
 class AskToAi extends OrgAction
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     /**
      * Send a prompt to AI and get a string response.
@@ -19,9 +20,10 @@ class AskToAi extends OrgAction
      *
      * @param string $prompt
      * @param string $model (Optional, default 'gpt-4o-mini')
+     * @param array<string, mixed> $options extra request fields, such as OpenRouter's reasoning or provider
      * @return string|null
      */
-    public function handle(string $prompt, string $model = 'gpt-4o-mini'): ?string
+    public function handle(string $prompt, string $model = 'gpt-4o-mini', array $options = []): ?string
     {
         if (empty($prompt)) {
             return null;
@@ -35,7 +37,7 @@ class AskToAi extends OrgAction
                 return null;
             }
 
-            return $this->sendRequest($apiKey, $model, $prompt);
+            return $this->sendRequest($apiKey, $model, $prompt, $options);
         } catch (AICreditException $e) {
             throw $e;
         } catch (Throwable $e) {
@@ -48,26 +50,16 @@ class AskToAi extends OrgAction
 
     private function getApiKey(): ?string
     {
-        $driverName = config('auto-translations.default_driver', 'gpt-5-nano');
-        $driverConfig = config("auto-translations.drivers.$driverName");
-        $apiKey = $driverConfig['api_key'] ?? null;
-
-        if (empty($apiKey)) {
-            $apiKey = config('askbot-laravel.openai_api_key');
-        }
-
-        return $apiKey;
+        return $this->aiApiKey(config('askbot-laravel.openai_api_key'));
     }
 
-    private function sendRequest(string $apiKey, string $model, string $prompt): ?string
+    private function sendRequest(string $apiKey, string $model, string $prompt, array $options = []): ?string
     {
-        $url = 'https://api.openai.com/v1/chat/completions';
-
-        $response = Http::withToken($apiKey)
+        $response = $this->aiRequest($apiKey)
             ->connectTimeout(10)
             ->timeout(30)
-            ->post($url, [
-                'model' => $model,
+            ->post('chat/completions', array_merge([
+                'model' => $this->aiModel($model),
                 'messages' => [
                     [
                         'role' => 'system',
@@ -78,8 +70,7 @@ class AskToAi extends OrgAction
                         'content' => $prompt
                     ],
                 ],
-                'temperature' => 0.3,
-            ]);
+            ], str_starts_with($model, 'gpt-4') || str_starts_with($model, 'gpt-3') ? ['temperature' => 0.3] : [], $this->usesOpenRouter() ? $options + (config('services.openrouter.model_options')[$model] ?? []) : []));
 
         if (!$response->successful()) {
             Log::error("AskToAi API Error: " . $response->body());

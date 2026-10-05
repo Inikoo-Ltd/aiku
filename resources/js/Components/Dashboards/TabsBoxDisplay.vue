@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { inject, ref, computed } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
-import { trans } from "laravel-vue-i18n"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
+import { ctrans } from "@/Composables/useTrans"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router, Link } from '@inertiajs/vue3'
@@ -23,7 +24,7 @@ library.add(
 const layoutStore = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     tabs_box: {
         label: string
         show_total?: boolean
@@ -75,7 +76,10 @@ const props = defineProps<{
         }[]
     }[]
     current?: string | number
-}>()
+    gutterClass?: string
+}>(), {
+    gutterClass: "px-3 sm:px-6",
+})
 
 const isAllExpanded = ref(false)
 
@@ -181,9 +185,9 @@ const boxAmountTotal = (box: { tabs: { information?: { label?: string | number, 
     box.tabs.reduce((sum, t) => sum + (t.information?.type === 'currency' ? Number(t.information.label || 0) : 0), 0)
 
 const childrenLabel = computed(() => {
-    if (layoutStore.currentRoute === 'grp.dashboard.show') return trans('Organisation')
-    if (layoutStore.currentRoute === 'grp.org.dashboard.show') return trans('Shop')
-    return trans('Name')
+    if (layoutStore.currentRoute === 'grp.dashboard.show') return ctrans('Organisation')
+    if (layoutStore.currentRoute === 'grp.org.dashboard.show') return ctrans('Shop')
+    return ctrans('Name')
 })
 
 const getRoute = (tabSlug) => {
@@ -227,24 +231,9 @@ const clickVisitRoute = (visitRoute: {
     <div>
         <!-- TabsBoxDisplay Desktop -->
         <div class="hidden md:block mt-4 mb-4">
-        <div class="relative px-3 sm:px-6">
-            <!-- Left overflow indicator -->
-            <transition name="fade">
-                <div v-if="hasOverflowLeft"
-                     @click="scrollBoxesLeft"
-                     class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
-                </div>
-            </transition>
-
-            <!-- Right overflow indicator -->
-            <transition name="fade">
-                <div v-if="hasOverflowRight"
-                     @click="scrollBoxesRight"
-                     class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
-                </div>
-            </transition>
+        <div class="relative isolate" :class="gutterClass">
+            <ScrollFadeArrow direction="left" rounded :visible="hasOverflowLeft" @click="scrollBoxesLeft" />
+            <ScrollFadeArrow direction="right" rounded :visible="hasOverflowRight" @click="scrollBoxesRight" />
 
             <div
                 ref="boxesElement"
@@ -385,24 +374,9 @@ const clickVisitRoute = (visitRoute: {
 
         <!-- Mobile -->
         <div class="md:hidden mt-2 mb-4">
-        <div class="relative px-3 sm:px-6">
-            <!-- Left overflow indicator -->
-            <transition name="fade">
-                <div v-if="hasMobileOverflowLeft"
-                     @click="scrollMobileBoxesLeft"
-                     class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
-                </div>
-            </transition>
-
-            <!-- Right overflow indicator -->
-            <transition name="fade">
-                <div v-if="hasMobileOverflowRight"
-                     @click="scrollMobileBoxesRight"
-                     class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
-                </div>
-            </transition>
+        <div class="relative isolate" :class="gutterClass">
+            <ScrollFadeArrow direction="left" rounded :visible="hasMobileOverflowLeft" @click="scrollMobileBoxesLeft" />
+            <ScrollFadeArrow direction="right" rounded :visible="hasMobileOverflowRight" @click="scrollMobileBoxesRight" />
 
             <div
                 ref="mobileBoxesElement"

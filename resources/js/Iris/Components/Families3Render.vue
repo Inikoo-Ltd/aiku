@@ -28,6 +28,7 @@ defineProps<{
     }
   }
   isLoading?: boolean
+  imageSizes?: string
 }>()
 </script>
 
@@ -42,6 +43,7 @@ defineProps<{
         <Image
           :src="data.web_images.main.gallery"
           :alt="data?.name"
+          :sizes="imageSizes"
         />
       </template>
 

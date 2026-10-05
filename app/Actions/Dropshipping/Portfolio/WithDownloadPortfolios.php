@@ -40,7 +40,9 @@ trait WithDownloadPortfolios
             array_splice($headers, 2, 0, [$referenceHeader]);
         }
 
-        $csvData[] = $headers;
+        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
+        $file     = fopen($tempFile, 'w');
+        fputcsv($file, $headers, ',', '"', '');
 
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
@@ -85,25 +87,17 @@ trait WithDownloadPortfolios
 
         $portfolios
             ->orderBy('portfolios.id')
-            ->chunk(100, function ($products) use (&$csvData, $isExtendedProperties, $columns) {
+            ->chunk(500, function ($products) use ($file, $isExtendedProperties, $columns) {
                 foreach ($products as $row) {
                     if ($isExtendedProperties) {
-                        $csvData[] = $this->mapExtendedProperties($row, $columns);
+                        $mappedData = $this->mapExtendedProperties($row, $columns);
                     } else {
                         $mappedData = $this->map($row);
                         array_splice($mappedData, 2, 0, [$row->reference ?? '']);
-                        $csvData[] = $mappedData;
                     }
+                    fputcsv($file, $mappedData, ',', '"', '');
                 }
             });
-
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
-        $file     = fopen($tempFile, 'w');
-
-        foreach ($csvData as $row) {
-            fputcsv($file, $row, ',', '"', '');
-        }
 
         fclose($file);
 

@@ -8,12 +8,15 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\UploadedFile;
@@ -24,7 +27,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with a QA username or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -41,6 +44,7 @@ class TicketWriteTool extends Tool
             'comment'     => ['sometimes', 'string'],
             'comment_id'  => ['sometimes', 'integer'],
             'internal'    => ['sometimes', 'boolean'],
+            'post_mortem' => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
@@ -50,7 +54,9 @@ class TicketWriteTool extends Tool
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
             'acting_as'   => ['sometimes', 'nullable', 'string'],
+            'ask_qa'      => ['sometimes', 'string'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'commit'        => ['sometimes', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
             'attachments'   => ['sometimes', 'array', 'max:5'],
             'attachments.*.name'   => ['required', 'string', 'max:255'],
             'attachments.*.base64' => ['required', 'string', 'max:14000000'],
@@ -103,8 +109,14 @@ class TicketWriteTool extends Tool
         if ($request->has('tags') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the people working on the ticket can change its tags. You can comment on it.');
         }
+        if ($request->boolean('post_mortem') && !$ticket->canContributeBy($user)) {
+            return Response::error('Only the assignee, collaborators and lead engineers can write incident post-mortems.');
+        }
         if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write internal notes.');
+        }
+        if ($request->filled('ask_qa') && !$ticket->canRequestQaBy($user)) {
+            return Response::error('Only the assignee, collaborators and help desk supervisors can ask QA to check a ticket.');
         }
         if (!Ticket::canBeAssignedBy($user) && $request->has('assignee') && !($ticket->assignee_id === $user->id && $request->filled('assignee'))) {
             return Response::error('Only a help desk supervisor hands out unassigned tickets. You can pass a ticket assigned to you on to a colleague.');
@@ -130,9 +142,24 @@ class TicketWriteTool extends Tool
             $changes['assignee_id'] = $assignee?->id;
         }
 
+        $isAskingQa = $request->filled('ask_qa');
+        if ($isAskingQa) {
+            $qaUsername = $request->string('ask_qa')->toString();
+            $qaUser     = $qaUsername === 'anyone' ? null : GetTicketBadgeData::qaUsers($user->group_id)->firstWhere('username', $qaUsername);
+            if ($qaUsername !== 'anyone' && !$qaUser) {
+                return Response::error("$qaUsername is not in QA. Pass a QA username or anyone.");
+            }
+            $changes['qa_status']  = TicketQaStatusEnum::REQUESTED->value;
+            $changes['qa_user_id'] = $qaUser?->id;
+            $changes['qa_note']    = $request->get('comment');
+        }
+
         $isClosingAfterDeployment = $request->get('status') === 'pending_deploy';
         if ($isClosingAfterDeployment && $request->filled('comment')) {
             $changes['question'] = $request->string('comment')->toString();
+        }
+        if ($isClosingAfterDeployment && $request->filled('commit')) {
+            $changes['deploy_commit'] = $request->string('commit')->toString();
         }
 
         if ($changes) {
@@ -160,13 +187,14 @@ class TicketWriteTool extends Tool
             return Response::error('An attachment is not valid base64.');
         }
 
-        if (($request->filled('comment') || $attachments) && !$isClosingAfterDeployment) {
+        if (($request->filled('comment') || $attachments) && !$isClosingAfterDeployment && !$isAskingQa) {
             if (!$ticket->assignee_id) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
             StoreTicketComment::make()->action($ticket, $user, [
                 'body'        => $request->string('comment')->toString(),
                 'is_internal' => $request->boolean('internal'),
+                'type'        => $request->boolean('post_mortem') ? TicketCommentTypeEnum::POST_MORTEM->value : TicketCommentTypeEnum::COMMENT->value,
                 'images'      => $attachments,
             ]);
         }
@@ -206,14 +234,17 @@ class TicketWriteTool extends Tool
             'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
             'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
-            'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
+            'post_mortem' => $schema->boolean()->description('true = the comment is an incident post-mortem (what broke, who was affected, root cause, fix, how it is prevented), shown highlighted in red on the ticket. Combine with internal for a help-desk-only post-mortem'),
+            'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket. Pass commit too'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'type'        => $schema->string()->description('New tickets only: help (HELP-n, default) or engineer (INI-n, engineering work such as upgrades, refactors and tech debt)'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
+            'ask_qa'      => $schema->string()->description('Ask QA to check the ticket: a QA username, or anyone for the whole QA team. comment becomes the note telling them what to check; it is posted and they are notified'),
             'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
+            'commit'        => $schema->string()->description('With status pending_deploy: hash of the commit that fixes the ticket. Only a deployment that includes it closes the ticket; without it the next deployment does'),
             'waiting_hours' => $schema->integer()->description('With status waiting: hours before the ticket resurfaces (1-720). Defaults to the ticket kind\'s waiting period'),
             'attachments'   => $schema->array()->description('Up to 5 files to attach to the comment (images, PDF, Word, Excel, CSV, video, archives; 10 MB each), each as {name, base64}')->items(
                 $schema->object(['name' => $schema->string()->description('File name with extension, e.g. proof.png'), 'base64' => $schema->string()->description('Base64-encoded file content')])

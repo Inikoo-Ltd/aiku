@@ -27,10 +27,12 @@ use App\Models\SysAdmin\Organisation;
 use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithAccountingShopAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
 {
+    use WithAccountingShopAuthorisation;
     use IsInvoiceUI;
     use WithFulfilmentCustomerSubNavigation;
 

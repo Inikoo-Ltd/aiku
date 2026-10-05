@@ -32,6 +32,7 @@ use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreProductDiscount;
 use App\Actions\Discounts\Offer\StoreProductStepDiscount;
+use App\Actions\Discounts\Offer\StoreProductsStepDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\SuspendOffer;
@@ -3719,4 +3720,70 @@ test('a line added by staff through the order page can never be flagged as a gif
     expect($transaction)->not->toBeNull()
         ->and($transaction->is_gift)->toBeFalse()
         ->and((float)$transaction->net_amount)->toBeGreaterThan(0);
+});
+
+test('store step discount for multiple products creates one offer per product', function () {
+    if (!$this->shop->offerCampaigns()->exists()) {
+        SeedShopOfferCampaigns::run($this->shop);
+    }
+
+    $products = collect(['STEP-MULTI-1', 'STEP-MULTI-2'])->map(fn (string $code) => StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => $code,
+                'price'       => 50,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        )
+    ));
+
+    $this->postJson(route('grp.models.products_step_discount.store', ['shop' => $this->shop->id]), [
+        'product_ids' => $products->pluck('id')->all(),
+        'name'        => 'Family step discount',
+        'steps'       => [
+            ['min_quantity' => 1, 'percentage_off' => 0.10, 'is_popular' => false],
+            ['min_quantity' => 10, 'percentage_off' => 0.20, 'is_popular' => true],
+        ],
+        'duration'    => 'permanent',
+        'start_at'    => now()->toDateString(),
+    ])->assertOk()->assertJsonPath('number_offers', 2);
+
+    $offers = Offer::where('trigger_type', 'Product')
+        ->whereIn('trigger_id', $products->pluck('id'))
+        ->get();
+
+    expect($offers)->toHaveCount(2)
+        ->and($offers->pluck('name')->unique()->all())->toBe(['Family step discount'])
+        ->and($offers->every(fn (Offer $offer) => $offer->offerCampaign->type === OfferCampaignTypeEnum::STEP_OFFERS))->toBeTrue()
+        ->and(Arr::get($offers->first()->offerAllowances->first()->data, 'steps.1.min_quantity'))->toBe(10)
+        ->and(Arr::get($offers->first()->offerAllowances->first()->data, 'steps.1.is_popular'))->toBeTrue();
+
+    expect(fn () => StoreProductsStepDiscount::make()->action($this->shop, [
+        'product_ids' => [$products->first()->id],
+        'steps'       => [['min_quantity' => 1, 'percentage_off' => 0.10]],
+        'duration'    => 'permanent',
+        'start_at'    => now(),
+    ]))->toThrow(ValidationException::class, 'STEP-MULTI-1');
+
+    $offers->each(fn (Offer $offer) => SuspendOffer::run($offer));
+
+    $replacementOffers = StoreProductsStepDiscount::make()->action($this->shop, [
+        'product_ids' => $products->pluck('id')->all(),
+        'steps'       => [['min_quantity' => 5, 'percentage_off' => 0.05]],
+        'duration'    => 'permanent',
+        'start_at'    => now(),
+    ]);
+
+    expect($replacementOffers)->toHaveCount(2)
+        ->and($replacementOffers->every(fn (Offer $offer) => $offer->state === OfferStateEnum::ACTIVE))->toBeTrue()
+        ->and($offers->every(fn (Offer $offer) => $offer->refresh()->state === OfferStateEnum::FINISHED))->toBeTrue();
+
+    $replacementOffers->each(fn (Offer $offer) => SuspendOffer::run($offer));
 });

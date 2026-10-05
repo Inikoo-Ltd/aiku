@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -261,7 +262,86 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'marketing_dimensions',
         'volume',
         'type',
+        'gpsr_manufacturer',
+        'gpsr_eu_responsible',
+        'gpsr_warnings',
+        'gpsr_manual',
+        'gpsr_class_category_danger',
+        'pictogram_toxic',
+        'pictogram_corrosive',
+        'pictogram_explosive',
+        'pictogram_flammable',
+        'pictogram_gas',
+        'pictogram_environment',
+        'pictogram_health',
+        'pictogram_oxidising',
+        'pictogram_danger',
+        'label_info',
     ];
+
+    /**
+     * label_info is one JSON column, the history shows each changed key of it as its own line, lists as text.
+     * The auditing package already splits it into label_info.* keys, the whole column is split here when it does not.
+     */
+    public function transformAudit(array $data): array
+    {
+        if (array_key_exists('label_info', $data['old_values'] ?? []) || array_key_exists('label_info', $data['new_values'] ?? [])) {
+            $oldLabelInfo = $this->flattenLabelInfoForAudit(Arr::pull($data['old_values'], 'label_info'));
+            $newLabelInfo = $this->flattenLabelInfoForAudit(Arr::pull($data['new_values'], 'label_info'));
+
+            foreach (array_unique(array_merge(array_keys($oldLabelInfo), array_keys($newLabelInfo))) as $labelInfoKey) {
+                $oldValue = $oldLabelInfo[$labelInfoKey] ?? null;
+                $newValue = $newLabelInfo[$labelInfoKey] ?? null;
+
+                if ($oldValue === $newValue) {
+                    continue;
+                }
+
+                $data['old_values']['label_info.'.$labelInfoKey] = $oldValue;
+                $data['new_values']['label_info.'.$labelInfoKey] = $newValue;
+            }
+        }
+
+        foreach (['old_values', 'new_values'] as $valuesKey) {
+            foreach ($data[$valuesKey] ?? [] as $key => $value) {
+                if (str_starts_with($key, 'label_info.')) {
+                    $data[$valuesKey][$key] = $this->labelInfoAuditValue($value);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function flattenLabelInfoForAudit(mixed $labelInfo): array
+    {
+        if (is_string($labelInfo)) {
+            $labelInfo = json_decode($labelInfo, true);
+        }
+
+        $flattenedLabelInfo = [];
+
+        foreach ((array) $labelInfo as $key => $value) {
+            if (is_array($value) && !array_is_list($value)) {
+                foreach ($value as $subKey => $subValue) {
+                    $flattenedLabelInfo[$key.'.'.$subKey] = $this->labelInfoAuditValue($subValue);
+                }
+            } else {
+                $flattenedLabelInfo[$key] = $this->labelInfoAuditValue($value);
+            }
+        }
+
+        return $flattenedLabelInfo;
+    }
+
+    private function labelInfoAuditValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return $value === [] ? null : implode(', ', $value);
+        }
+
+        return $value;
+    }
 
     public function getSlugOptions(): SlugOptions
     {

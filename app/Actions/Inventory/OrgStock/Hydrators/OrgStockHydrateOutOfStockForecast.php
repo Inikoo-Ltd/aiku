@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
@@ -19,21 +18,24 @@ use Illuminate\Support\Facades\DB;
  * Predicts when an org stock will run out.
  *
  * The pipeline, in order:
- *  1. Rebuild the daily demand series over the last 91 days, counting ONLY days the stock
+ *  0. Use the nightly TimesFM forecast of ForecastOrgStockDemand when it is fresh and the stock
+ *     was on the shelf at least 70% of the window: the expected demand of the next six weeks,
+ *     already scaled to what the organisation really dispatched. It was a third more accurate per
+ *     SKO than steps 1 to 3 on production dispatches. TimesFM reads empty weeks as weeks nobody
+ *     wanted it, so an item that was out of stock a lot keeps step 1, which only counts the days
+ *     it could be sold, as do SKOs with too little history or no forecast that night.
+ *  1. Rebuild the daily demand series over the last 91 days from delivery_note_items.created_at
+ *     (delivery_note_items.date is only set on Aurora-fetched rows), counting ONLY days the stock
  *     was actually on the shelf (running balance > 0 from org_stock_movements). An item that
  *     was out of stock 90% of the window still gets its true selling rate.
  *  2. Pick a model for that series: Croston with the Syntetos-Boylan correction for
  *     intermittent demand (most days zero), Holt's damped-trend smoothing on weekly rates for
  *     steady movers. Both produce a demand-per-in-stock-day.
- *  3. Scale by a seasonality factor: what the coming quarter did last year relative to a
- *     normal quarter, from the quarterly time series — own history first, all sister
- *     organisations' history for the same stock when ours is thin. Quarterly usage is
- *     normalised per in-stock day and quarters spent mostly out of stock are dropped, so a
- *     supply gap last year cannot masquerade as a season.
- *  4. If there is no local signal at all, borrow: own quarterly time series → the same stock
- *     in sister organisations (damped) → other stocks of the same family in this
- *     organisation (heavily damped).
- *  5. Convert to days of cover, plus a pessimistic bound: solve
+ *  3. If there is no local signal at all, borrow: the same stock in sister organisations
+ *     (damped) → other stocks of the same family in this organisation (heavily damped).
+ *     Neither the item's own older history nor a seasonality factor is used: both were
+ *     backtested on prod dispatches (Sep 2026) and made per-SKU forecasts worse, not better.
+ *  4. Convert to days of cover, plus a pessimistic bound: solve
  *     qty = days*mu + 1.28*sigma*sqrt(days) so the P90 demand path is also on record.
  */
 class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
@@ -43,8 +45,10 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     public string $commandSignature = 'hydrate:org-stock-out-of-stock-forecast {organisations?*} {--s|slugs=}';
 
     private const int WINDOW = 91;
-    private const int MINIMUM_SEASONAL_QUARTERS = 4;
-    private const float MINIMUM_IN_STOCK_SHARE = 0.5;
+
+    private const float TIMESFM_MINIMUM_IN_STOCK_SHARE = 0.7;
+
+    private const float IN_STOCK_RATE_CAP_MULTIPLE = 2.0;
 
     public function __construct()
     {
@@ -60,10 +64,13 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     {
         $quantityAvailable = (float) $orgStock->quantity_available;
 
-        [$dailyUsage, $sigma, $source] = $this->predictedDailyUsage($orgStock);
+        [$dailyUsage, $sigma, $source, $inStockShare] = $this->predictedDailyUsage($orgStock);
+        if ($inStockShare >= self::TIMESFM_MINIMUM_IN_STOCK_SHARE && $timesFm = $this->timesFmDailyUsage($orgStock)) {
+            [$dailyUsage, $sigma, $source] = $timesFm;
+        }
 
         if ($dailyUsage !== null) {
-            $dailyUsage = round($dailyUsage * $this->seasonalityFactor($orgStock), 4);
+            $dailyUsage = round($dailyUsage, 4);
         }
 
         $daysOfCover = null;
@@ -134,7 +141,33 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
-     * @return array{0: float|null, 1: float|null, 2: string|null} [demand per in-stock day, daily sigma, source]
+     * The next six weeks of the TimesFM forecast as a daily rate and daily spread, when it was made
+     * today or yesterday.
+     *
+     * @return array{0: float, 1: float, 2: string}|null
+     */
+    private function timesFmDailyUsage(OrgStock $orgStock): ?array
+    {
+        $forecast = $orgStock->stats->demand_forecast;
+        if (!is_array($forecast['weeks'] ?? null) || !isset($forecast['from']) || Carbon::parse($forecast['from'])->lt(now()->subDay()->startOfDay())) {
+            return null;
+        }
+
+        $weeks = array_slice($forecast['weeks'], 0, 6);
+        $days  = count($weeks) * 7;
+        if ($days === 0) {
+            return null;
+        }
+
+        return [
+            array_sum(array_column($weeks, 0)) / $days,
+            sqrt(array_sum(array_column($weeks, 1)) / $days),
+            'timesfm',
+        ];
+    }
+
+    /**
+     * @return array{0: float|null, 1: float|null, 2: string|null, 3: float} [demand per in-stock day, daily sigma, source, share of the window in stock]
      */
     private function predictedDailyUsage(OrgStock $orgStock): array
     {
@@ -143,40 +176,49 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatchedByDay = DB::table('delivery_note_items')
             ->where('org_stock_id', $orgStock->id)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', $from)
-            ->selectRaw('date(date) as day, sum(quantity_dispatched) as dispatched')
+            ->where('created_at', '>=', $from)
+            ->selectRaw('date(created_at) as day, sum(quantity_dispatched) as dispatched')
             ->groupBy('day')
             ->pluck('dispatched', 'day');
 
         $series = [];
-        foreach ($this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available) as $day => $inStock) {
+        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available);
+        foreach ($days as $day => $inStock) {
             if ($inStock) {
                 $series[$day] = (float) ($dispatchedByDay[$day] ?? 0);
             }
         }
+        $inStockShare = $days ? count($series) / count($days) : 0.0;
 
         if (array_sum($series) <= 0) {
-            if ($rate = $this->usageFromTimeSeries($orgStock)) {
-                return [$rate, null, 'time_series'];
-            }
             if ($rate = $this->usageFromSiblingOrganisations($orgStock)) {
-                return [$rate, null, 'siblings'];
+                return [$rate, null, 'siblings', $inStockShare];
             }
             if ($rate = $this->usageFromFamily($orgStock)) {
-                return [$rate, null, 'family'];
+                return [$rate, null, 'family', $inStockShare];
             }
 
-            return [null, null, null];
+            return [null, null, null, $inStockShare];
         }
 
         $sigma = $this->standardDeviation(array_values($series));
 
         $nonZeroShare = count(array_filter($series)) / count($series);
         if ($nonZeroShare < 0.3) {
-            return [$this->crostonSba(array_values($series)), $sigma, 'croston'];
+            $rate   = $this->crostonSba(array_values($series));
+            $source = 'croston';
+        } else {
+            $rate   = $this->holtDamped($series);
+            $source = 'holt';
         }
 
-        return [$this->holtDamped($series), $sigma, 'holt'];
+        $cap = $dispatchedByDay->sum() / self::WINDOW * self::IN_STOCK_RATE_CAP_MULTIPLE;
+        if ($rate > $cap) {
+            $sigma = $sigma !== null ? $sigma * $cap / $rate : null;
+            $rate  = $cap;
+        }
+
+        return [$rate, $sigma, $source, $inStockShare];
     }
 
     /**
@@ -280,19 +322,6 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         return $days;
     }
 
-    private function usageFromTimeSeries(OrgStock $orgStock): ?float
-    {
-        $avgQuarter = DB::table('org_stock_time_series')
-            ->join('org_stock_time_series_records', 'org_stock_time_series_records.org_stock_time_series_id', 'org_stock_time_series.id')
-            ->where('org_stock_time_series.org_stock_id', $orgStock->id)
-            ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::QUARTERLY->value)
-            ->where('org_stock_time_series_records.from', '>=', now()->subMonths(15))
-            ->selectRaw('avg(org_stock_time_series_records.sales_external + org_stock_time_series_records.sales_internal) as avg_usage')
-            ->value('avg_usage');
-
-        return $avgQuarter > 0 ? (float) $avgQuarter / self::WINDOW : null;
-    }
-
     /**
      * No history here: borrow the demand of the SAME stock sold by sister organisations,
      * damped to half — their market is similar, not ours.
@@ -310,7 +339,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatched = (float) DB::table('delivery_note_items')
             ->whereIn('org_stock_id', $siblingIds)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', now()->subDays(self::WINDOW))
+            ->where('created_at', '>=', now()->subDays(self::WINDOW))
             ->sum('quantity_dispatched');
 
         if ($dispatched <= 0) {
@@ -341,7 +370,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatched = (float) DB::table('delivery_note_items')
             ->whereIn('org_stock_id', $familyStockIds)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', now()->subDays(self::WINDOW))
+            ->where('created_at', '>=', now()->subDays(self::WINDOW))
             ->sum('quantity_dispatched');
 
         if ($dispatched <= 0) {
@@ -349,107 +378,6 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         }
 
         return round($dispatched / self::WINDOW / $familyStockIds->count() * 0.25, 4);
-    }
-
-    /**
-     * The coming quarter last year, relative to a normal quarter — own time series first,
-     * every sister organisation's series for this stock when ours has fewer than 4 quarters.
-     * Clamped so a thin history cannot swing the forecast wildly.
-     */
-    private function seasonalityFactor(OrgStock $orgStock): float
-    {
-        $factor = $this->seasonalityFromSeries([$orgStock->id]);
-        if ($factor !== null) {
-            return $factor;
-        }
-
-        $allIds = OrgStock::where('stock_id', $orgStock->stock_id)->pluck('id')->all();
-        return $this->seasonalityFromSeries($allIds) ?? 1;
-    }
-
-    /**
-     * Quarterly usage normalised per in-stock day, the same masking the 91-day series uses.
-     * A quarter the stock spent mostly off the shelf is not a season, it is a supply gap, so
-     * quarters below MINIMUM_IN_STOCK_SHARE are dropped rather than averaged in.
-     *
-     * @param array<int, int> $orgStockIds
-     */
-    private function seasonalityFromSeries(array $orgStockIds): ?float
-    {
-        $from = now()->subMonths(16);
-
-        $records = DB::table('org_stock_time_series')
-            ->join('org_stock_time_series_records', 'org_stock_time_series_records.org_stock_time_series_id', 'org_stock_time_series.id')
-            ->whereIn('org_stock_time_series.org_stock_id', $orgStockIds)
-            ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::QUARTERLY->value)
-            ->whereBetween('org_stock_time_series_records.from', [$from, now()->subMonths(3)])
-            ->selectRaw('org_stock_time_series_records.from, org_stock_time_series_records.to, sum(org_stock_time_series_records.sales_external + org_stock_time_series_records.sales_internal) as usage')
-            ->groupBy('org_stock_time_series_records.from', 'org_stock_time_series_records.to')
-            ->orderBy('org_stock_time_series_records.from')
-            ->get();
-
-        if ($records->count() < self::MINIMUM_SEASONAL_QUARTERS) {
-            return null;
-        }
-
-        $inStockDaysByDay = [];
-        foreach ($orgStockIds as $orgStockId) {
-            foreach ($this->inStockDays($orgStockId, $from->copy(), 0) as $day => $inStock) {
-                if ($inStock) {
-                    $inStockDaysByDay[$day] = ($inStockDaysByDay[$day] ?? 0) + 1;
-                }
-            }
-        }
-
-        $rates = [];
-        foreach ($records as $record) {
-            [$windowDays, $availableDays] = $this->quarterCoverage($record, $orgStockIds, $inStockDaysByDay);
-
-            if (!$windowDays || $availableDays / $windowDays < self::MINIMUM_IN_STOCK_SHARE) {
-                continue;
-            }
-
-            $rates[$record->from] = (float) $record->usage / $availableDays;
-        }
-
-        if (count($rates) < self::MINIMUM_SEASONAL_QUARTERS) {
-            return null;
-        }
-
-        $average = array_sum($rates) / count($rates);
-        if ($average <= 0) {
-            return null;
-        }
-
-        foreach ($rates as $quarterFrom => $rate) {
-            if (abs(Carbon::parse($quarterFrom)->diffInDays(now()->subYear())) <= 50) {
-                return max(0.6, min(1.8, $rate / $average));
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Stock-days in a quarter: the window length times the stocks compared, and how many of
-     * those were actually on the shelf.
-     *
-     * @param  array<int, int>       $orgStockIds
-     * @param  array<string, int>    $inStockDaysByDay
-     * @return array{0: int, 1: int}
-     */
-    private function quarterCoverage(object $record, array $orgStockIds, array $inStockDaysByDay): array
-    {
-        $windowDays    = 0;
-        $availableDays = 0;
-        $end           = Carbon::parse($record->to);
-
-        for ($day = Carbon::parse($record->from); $day->lte($end); $day->addDay()) {
-            $windowDays    += count($orgStockIds);
-            $availableDays += $inStockDaysByDay[$day->toDateString()] ?? 0;
-        }
-
-        return [$windowDays, $availableDays];
     }
 
     /**

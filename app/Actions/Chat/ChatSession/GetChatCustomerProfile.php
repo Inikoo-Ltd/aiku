@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,6 +22,8 @@ use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Chat\MetaChatSession;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\CRM\CustomerComms\GetCustomerSubscriptions;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -49,6 +52,7 @@ class GetChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...$this->contactAndLastOrders($customer),
             ...$this->previousContact($customer, $chatSession),
+            'claim'       => GetChatClaimCase::run($chatSession, $customer),
 
             'tags'  => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
@@ -90,6 +94,18 @@ class GetChatCustomerProfile
             'phone'        => $customer->phone,
             'location'     => is_array($location) && Arr::get($location, 0) ? array_values($location) : null,
             'address'      => $customer->address ? GetFormattedAddress::run($customer->address) : null,
+            'erasure' => [
+                'orders'       => $customer->orders()->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])->count(),
+                'invoices'     => $customer->invoices()->count(),
+                'confirmation' => AnonymiseCustomer::confirmationText($customer),
+                'route'        => request()->user() && AnonymiseCustomer::canBeAnonymisedBy(request()->user(), $customer)
+                    ? ['name' => 'grp.models.customer.anonymise', 'parameters' => ['customer' => $customer->id]]
+                    : null,
+            ],
+            'subscriptions' => [
+                ...GetCustomerSubscriptions::run($customer),
+                'unsubscribe' => ['name' => 'grp.models.customer.unsubscribe_marketing', 'parameters' => ['customer' => $customer->id]],
+            ],
             'last_orders'  => $customer->orders()
                 ->where('state', '!=', OrderStateEnum::CREATING)
                 ->latest('date')
@@ -130,7 +146,7 @@ class GetChatCustomerProfile
      *
      * @return Collection<int, ChatSession|MetaChatSession>
      */
-    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession $current): Collection
+    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession|null $current = null): Collection
     {
         $columns = ['id', 'ulid', 'topic', 'status', 'metadata', 'created_at', 'closed_at', 'last_visitor_message_at', 'last_agent_message_at'];
 
@@ -205,6 +221,7 @@ class GetChatCustomerProfile
             $organisation->slug,
             $shop->slug,
             $customer->slug,
+            'tab' => CustomerTabsEnum::COMMUNICATIONS->value,
         ]);
     }
 

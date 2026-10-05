@@ -54,6 +54,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property bool $is_cut_view
  * @property string|null $batch_codes
+ * @property string|null $un_numbers
  * @property mixed $is_gift
  * @property mixed $is_follow_on
  */
@@ -103,14 +104,15 @@ class TransactionsResource extends JsonResource
 
         $media = null;
         if ($this->product_image_id) {
-            $media = Media::find($this->product_image_id);
+            $media = $this->resource->relationLoaded('productImage') ? $this->resource->getRelation('productImage') : Media::find($this->product_image_id);
         }
 
         $webpageUrl = null;
         $webpage = null;
         if ($this->model_type === class_basename(Product::class)) {
-            $webpage = Webpage::where('model_id', $this->product_id)
-                ->where('model_type', class_basename(Product::class))->first();
+            $webpage = $this->resource->relationLoaded('productWebpage')
+                ? $this->resource->getRelation('productWebpage')
+                : Webpage::where('model_id', $this->product_id)->where('model_type', class_basename(Product::class))->first();
             $webpageUrl = $webpage?->getUrl();
         }
 
@@ -154,6 +156,7 @@ class TransactionsResource extends JsonResource
             'is_gift'                        => $this->is_gift,
             'is_follow_on'                   => $this->is_follow_on,
             'batch_codes'                    => $this->batch_codes,
+            'un_numbers'                     => $this->un_numbers ? json_decode($this->un_numbers) : null,
             'margin'                         => $this->when(
                 array_key_exists('margin_actual_cost', $this->resource->getAttributes()),
                 fn () => $this->marginFields($this->model_type, $this->net_amount, $this->org_net_amount, $this->margin_actual_cost, $this->margin_estimated_cost, $this->margin_quantity_picked, $this->margin_quantity_ordered)

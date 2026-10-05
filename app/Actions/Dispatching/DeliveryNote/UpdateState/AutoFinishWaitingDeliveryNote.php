@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSessionStateFromHandlingBlocked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,6 +21,7 @@ use Illuminate\Console\Command;
 
 class AutoFinishWaitingDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     /**
      * A note is blocked by a line waiting on the warehouse, a line waiting on CRM, or a line gone

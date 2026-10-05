@@ -57,13 +57,20 @@ class FetchIrisEcomBasket extends IrisAction
             'is_premium_dispatch' => $order->is_premium_dispatch,
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
+            'has_gift_message'    => $order->has_gift_message,
+            'gift_message'        => $order->gift_message,
+            'has_gift_message_pdf' => $order->attachments()->wherePivot('scope', 'GiftMessage')->exists(),
+            'gift_message_pdf_name' => $order->giftMessagePdfName(),
             'voucher_code'        => data_get($order->data, 'voucher_code'),
+            'customer_notes'      => $order->customer_notes,
+            'shipping_notes'      => $order->shipping_notes,
         ];
 
         $charges         = $this->getBasketCharges($order);
         $premiumDispatch = $charges['premium_dispatch'];
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
+        $giftMessage     = $charges['gift_message'];
 
         $hasDiscounts = $order->goods_amount != $order->gross_amount;
 
@@ -143,6 +150,7 @@ class FetchIrisEcomBasket extends IrisAction
         ];
 
         $orderArr['order_summary'] = $orderSummary;
+        $orderArr['balance']       = $order->customer->balance;
 
         $productsData = DB::table('transactions')
             ->select(
@@ -184,8 +192,8 @@ class FetchIrisEcomBasket extends IrisAction
                 'id'                   => $productData->product_id,
                 'net_amount'           => $productData->net_amount,
                 'gross_amount'         => $productData->gross_amount,
-                'quantity_ordered'     => $productData->quantity_ordered,
-                'quantity_ordered_new' => $productData->quantity_ordered,
+                'quantity_ordered'     => (float) $productData->quantity_ordered,
+                'quantity_ordered_new' => (float) $productData->quantity_ordered,
                 'available_quantity'   => $productData->available_quantity,
                 'canonical_url'        => $productData->canonical_url,
                 'offers_data'          => json_decode($productData->offers_data, 1),
@@ -269,6 +277,20 @@ class FetchIrisEcomBasket extends IrisAction
                 'amount'       => Arr::get($insurance->settings, 'amount', 0),
                 'label'        => $insurance->label ?? $insurance->name,
                 'name'         => $insurance->name,
+            ] : null,
+            'gift_message'     => $giftMessage ? [
+                'id'           => $giftMessage->id,
+                'key_db'       => 'has_gift_message',
+                'route_update' => [
+                    'name'       => 'iris.models.order.update_gift_message',
+                    'parameters' => [
+                        'order' => $order->id
+                    ]
+                ],
+                'description'  => $giftMessage->description,
+                'amount'       => Arr::get($giftMessage->settings, 'amount', 0),
+                'label'        => $giftMessage->label ?? $giftMessage->name,
+                'name'         => $giftMessage->name,
             ] : null,
         ];
 

@@ -19,10 +19,13 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class DetachModelFromCollection extends OrgAction
 {
+    private Collection $collection;
+
     public function handle(Collection $collection, Product|ProductCategory|Collection $model): Collection
     {
         if ($model instanceof Product) {
@@ -51,9 +54,17 @@ class DetachModelFromCollection extends OrgAction
     }
 
 
+    public function afterValidator(Validator $validator): void
+    {
+        if (!$this->asAction && $this->collection->followsMasterItems()) {
+            $validator->errors()->add('collection', __('This collection follows its master collection. Turn on "Do not follow master items" to change its families and products.'));
+        }
+    }
+
     public function action(Collection $collection, Product|ProductCategory $model): Collection
     {
-        $this->asAction = true;
+        $this->asAction   = true;
+        $this->collection = $collection;
         $this->initialisationFromShop($collection->shop, []);
 
         return $this->handle($collection, $model);
@@ -61,6 +72,7 @@ class DetachModelFromCollection extends OrgAction
 
     public function asController(Collection $collection, ActionRequest $request): Collection
     {
+        $this->collection = $collection;
         $this->initialisationFromShop($collection->shop, $request);
 
         $modelData = $this->validatedData;

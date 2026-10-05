@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
@@ -99,7 +99,6 @@ const deleteStoredItems = async (closeModal : boolean) => {
 		if(closeModal) emits('closeModal')
 		else disabledSelect.value.disabled = false
 	} catch (error: any) {
-		console.log(error)
 		props.form.errors.id = error?.response?.data?.message
 		isDeleteStoredItem.value = false
 		notify({
@@ -173,12 +172,11 @@ const onSaveNameForNewStoredItem = async () => {
 			{ name: newStoredItemName.value }
 		)
 	} catch (error: any) {
-		console.log(error)
 		errorNewStoredItemName.value = error?.response?.data?.message
 
 		notify({
-			title: trans("Something went wrong."),
-			text: error.message ? error.message : trans('Failed to set name for new stored item'),
+			title: ctrans("Something went wrong."),
+			text: error.message ? error.message : ctrans('Failed to set name for new stored item'),
 			type: "error",
 		})
 	}
@@ -188,10 +186,10 @@ const onSaveNameForNewStoredItem = async () => {
 <template>
 	<div v-if="!messageMode">
 		<div class="text-center font-semibold text-2xl mb-4">
-			{{ title ? title : disabledSelect.edit ? trans("Edit customer's SKOs") : trans("Set up Customer's SKOs") }}
+			{{ title ? title : disabledSelect.edit ? ctrans("Edit customer's SKOs") : ctrans("Set up Customer's SKOs") }}
 		</div>
 		<div class="grid grid-cols-3 gap-x-4">
-			<label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Reference") }}</label>
+			<label class="mt-1 block text-sm font-medium text-gray-700">{{ ctrans("Reference") }}</label>
 
 			<div class="mt-1 col-span-2">
 				<SelectQuery ref="_selectQuery"
@@ -217,7 +215,7 @@ const onSaveNameForNewStoredItem = async () => {
 					<template #nooptions="{ search }: { search: string }">
 						<div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
 							<font-awesome-icon v-if="search !== '' || search" :icon="['fas', 'plus']" class="mr-3" fixed-width />
-							{{ search !== "" || search ? `${trans(`Create`)} : ${search}` : trans("No Result") }}
+							{{ search !== "" || search ? `${ctrans(`Create`)} : ${search}` : ctrans("No Result") }}
 						</div>
 					</template>
 
@@ -227,7 +225,7 @@ const onSaveNameForNewStoredItem = async () => {
 							<!-- {{ [...options.options.map(options => options.reference)] }} === -->
 							<div v-if="!options?.some(option => option.reference === search)" class="bg-indigo-100 hover:bg-indigo-200 px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
 								<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" fixed-width />
-								{{ `${trans(`Create`)}: ` }} <Tag :label="search" no-hover-color /> <br>
+								{{ `${ctrans(`Create`)}: ` }} <Tag :label="search" no-hover-color /> <br>
 							</div>
 						</div>
 					</template>
@@ -239,7 +237,7 @@ const onSaveNameForNewStoredItem = async () => {
 					<template #noresults="{ search }: { search: string }">
 						<div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
 							<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" fixed-width />
-							{{ `${trans(`Create`)} : ${search}` }}
+							{{ `${ctrans(`Create`)} : ${search}` }}
 						</div>
 					</template>
 
@@ -277,7 +275,7 @@ const onSaveNameForNewStoredItem = async () => {
 		<!-- Section: input Name -->
 		<div v-if="form.id && newStoredItem" class="mt-4 grid grid-cols-3 gap-x-4">
 			<label class="mt-1 text-sm font-medium text-gray-700 inline-flex items-start py-0">
-					<span class="leading-none">{{ trans("Name") }}</span>
+					<span class="leading-none">{{ ctrans("Name") }}</span>
 					<FontAwesomeIcon
 						icon="fas fa-asterisk"
 						class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" fixed-width />
@@ -288,7 +286,7 @@ const onSaveNameForNewStoredItem = async () => {
 				@update:modelValue="() => errorNewStoredItemName = ''"
 				:class="errorNewStoredItemName ? 'errorShake' : ''"
 				class="col-span-2"
-				:placeholder="trans(`Customer's SKO name`)"
+				:placeholder="ctrans(`Customer's SKO name`)"
 			/>
 		</div>
 		<p v-if="errorNewStoredItemName" class="mt-2 text-sm text-red-500">
@@ -298,7 +296,7 @@ const onSaveNameForNewStoredItem = async () => {
 
 		<!-- Quantity: Input number -->
 		<div class="mt-4 grid grid-cols-3 gap-x-4">
-			<label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Quantity") }}</label>
+			<label class="mt-1 block text-sm font-medium text-gray-700">{{ ctrans("Quantity") }}</label>
 			<!--
 			<div class=" mt-1 flex items-center gap-2">
 				<input v-model="form.quantity" id="quantity" name="quantity" :autofocus="true" type="number"
@@ -352,12 +350,12 @@ const onSaveNameForNewStoredItem = async () => {
 		<div class="flex justify-center mb-6"><font-awesome-icon :icon="['far', 'exclamation-triangle']" class="text-8xl text-yellow-500" fixed-width/></div>
 
 		<div class="text-center font-semibold text-2xl mb-6">
-			{{ trans('Do you want to delete') }} {{ newStoredItem?.reference }} ?
+			{{ ctrans('Do you want to delete') }} {{ newStoredItem?.reference }} ?
 		</div>
 	</div>
 
 	<div v-if="!messageMode" class="flex gap-3 mt-5">
-		<Button type="tertiary" :label="trans('Cancel')" @click="onCancel" class="select-none" />
+		<Button type="tertiary" :label="ctrans('Cancel')" @click="onCancel" class="select-none" />
 		<Button
 			full
 			@click="onSaved"

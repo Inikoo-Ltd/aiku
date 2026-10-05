@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { inject, ref, computed, watch, defineAsyncComponent } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
-import Popover from 'primevue/popover'
+import { ctrans } from '@/Composables/useTrans'
+import Dialog from 'primevue/dialog'
 
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
@@ -20,7 +20,7 @@ const productCardComponents: Record<string, any> = {
     "products-2": ProductCardEcom2,
 }
 import axios from "axios"
-import VariantDialogContent from "@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"
+const VariantDialogContent = defineAsyncComponent(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"))
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -83,9 +83,14 @@ const isLoadingRemindBackInStock = ref(false)
 const variant = ref<any>(null)
 const selectedVariantProduct = ref<any>(null)
 const _render_components = ref(null)
-const popoverRef = ref<any>(null)
+const isVariantDialogOpen = ref(false)
 const isLoadingFavourite = ref(false)
 const loadingGetVariants = ref(false)
+
+watch(() => props.product, () => {
+    selectedVariantProduct.value = null
+    variant.value = null
+})
 
 const displayedProduct = computed<ProductResource>(() => {
     if (!selectedVariantProduct.value) return props.product
@@ -121,8 +126,8 @@ const onAddFavourite = (product: ProductResource) => {
             onError: errors => {
                 console.error(errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to favourites"),
                     type: "error"
                 })
             },
@@ -148,8 +153,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
+                //     title: ctrans("Success"),
+                //     text: ctrans("Added to portfolio"),
                 //     type: "success"
                 // })
                 layout.reload_handle()
@@ -157,8 +162,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from favourites"),
                     type: "error"
                 })
             },
@@ -189,8 +194,8 @@ const onAddBackInStock = async (product: ProductResource) => {
 		emits("afterOnAddBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to add the product to remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to add the product to remind back in stock"),
 			type: "error"
 		})
 	} finally {
@@ -214,8 +219,8 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 		emits("afterOnUnselectBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to remove the product from remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to remove the product from remind back in stock"),
 			type: "error"
 		})
 	} finally {
@@ -223,66 +228,11 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 	}
 }
 
-const popoverTarget = ref<HTMLElement | null>(null)
+const getAllProductFromVariant = async (variant_id: string) => {
+  if (!variant_id) return
 
-const POPOVER_ARROW_GAP = 22
-const POPOVER_VIEWPORT_PADDING = 12
-
-const alignPopoverAboveTarget = () => {
-  const panel = popoverRef.value?.container as HTMLElement | undefined
-  const target = popoverTarget.value
-
-  if (!panel || !target) return
-
-  const targetRect = target.getBoundingClientRect()
-  const panelRect = panel.getBoundingClientRect()
-
-  const availableWidth = document.documentElement.clientWidth
-  const maxLeft = Math.max(POPOVER_VIEWPORT_PADDING, availableWidth - panelRect.width - POPOVER_VIEWPORT_PADDING)
-  const centeredLeft = targetRect.left + targetRect.width / 2 - panelRect.width / 2
-
-  const left = Math.min(Math.max(POPOVER_VIEWPORT_PADDING, centeredLeft), maxLeft)
-  const top = Math.max(POPOVER_VIEWPORT_PADDING, targetRect.top - panelRect.height - POPOVER_ARROW_GAP)
-
-  panel.style.position = 'absolute'
-  panel.style.left = `${left + window.scrollX}px`
-  panel.style.top = `${top + window.scrollY}px`
-  panel.style.bottom = 'auto'
-  panel.style.transformOrigin = 'bottom center'
-}
-
-const closePopover = () => {
-  popoverRef.value?.hide()
-}
-
-const bindPopoverViewportListeners = () => {
-  window.addEventListener('scroll', closePopover, true)
-  window.addEventListener('resize', closePopover)
-}
-
-const unbindPopoverViewportListeners = () => {
-  window.removeEventListener('scroll', closePopover, true)
-  window.removeEventListener('resize', closePopover)
-}
-
-const getAllProductFromVariant = async (
-  variant_id: string,
-  event: MouseEvent
-) => {
-  if (!variant_id || !event) return
-
-  const target = event.currentTarget as HTMLElement
-  if (!target) return
-
-  popoverTarget.value = target
+  isVariantDialogOpen.value = true
   loadingGetVariants.value = true
-
-  popoverRef.value?.show({ currentTarget: target } as any)
-
-  await nextTick()
-  alignPopoverAboveTarget()
-
-  bindPopoverViewportListeners()
 
   try {
     const response = await axios.get(
@@ -291,13 +241,23 @@ const getAllProductFromVariant = async (
     variant.value = response.data
   } catch (e) {
     console.error(e)
-    popoverRef.value?.hide()
+    isVariantDialogOpen.value = false
+    notify({
+      title: ctrans("Something went wrong"),
+      text: ctrans("Failed to load the product variants"),
+      type: "error"
+    })
   } finally {
     loadingGetVariants.value = false
-    await nextTick()
-    alignPopoverAboveTarget()
   }
 }
+
+const variantAxisLabel = computed<string>(() =>
+  (variant.value?.variant_data?.variants || [])
+    .map((v: any) => v?.label)
+    .filter(Boolean)
+    .join(" / ")
+)
 
 const getVariantLabel = (entry: number) => {
   if (!entry) return null
@@ -340,29 +300,6 @@ const listProducts = computed(() => {
     })
 })
 
-const onClickOutside = (e: MouseEvent) => {
-  const popoverEl = popoverRef.value?.container
-  if (!popoverEl) return
-
-  if (!popoverEl.contains(e.target as Node) && !popoverTarget.value?.contains(e.target as Node)) {
-    popoverRef.value.hide()
-  }
-}
-
-const onPopoverHide = () => {
-  unbindPopoverViewportListeners()
-  popoverTarget.value = null
-}
-
-onMounted(() => {
-  document.addEventListener('click', onClickOutside, true)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onClickOutside, true)
-  unbindPopoverViewportListeners()
-})
-
 </script>
 
 <template>
@@ -387,50 +324,34 @@ onBeforeUnmount(() => {
         :screenType
         :ref="(e)=> _render_components = e"
     />
-       <Popover ref="popoverRef" appendTo="body" dismissable
-           @hide="onPopoverHide"
-          class="popover-custom w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
-            <div class="p-4 text-sm break-words">
-                <loading-icon v-if="loadingGetVariants" />
-                <variant-dialog-content 
-                    v-else :variants="listProducts"
-                    :hasInBasketList="hasInBasketList"
-                    :selectedProductId="selectedVariantProduct?.id"
-                    @setBackInStock="onAddBackInStock"
-                    @unsetBackInStock="onUnselectBackInStock"
-                    @selectVariant="onSelectVariant"
-                    :isLoadingRemindBackInStock="isLoadingRemindBackInStock" />
+        <Dialog v-model:visible="isVariantDialogOpen" modal dismissableMask :draggable="false"
+            :style="{ width: '56rem' }" :breakpoints="{ '960px': '92vw' }"
+            :pt="{ header: { class: '!items-start' } }">
+            <template #header>
+                <div class="min-w-0">
+                    <div class="text-xs font-semibold uppercase tracking-wider text-primary">
+                        {{ ctrans('Choose :axis & quantities', { axis: variantAxisLabel || ctrans('variant') }) }}
+                    </div>
+                    <div class="mt-1 text-xl font-bold leading-tight text-gray-900 md:text-2xl">
+                        {{ displayedProduct.name }}
+                    </div>
+                </div>
+            </template>
+
+            <div v-if="loadingGetVariants" class="flex justify-center py-16">
+                <LoadingIcon class="text-2xl" />
             </div>
-        </Popover>
+
+            <VariantDialogContent v-else-if="listProducts.length"
+                :variants="listProducts"
+                :variantAxisLabel="variantAxisLabel"
+                :hasInBasketList="hasInBasketList"
+                :selectedProductId="selectedVariantProduct?.id ?? product.id"
+                :isLoadingRemindBackInStock="isLoadingRemindBackInStock"
+                @setBackInStock="onAddBackInStock"
+                @unsetBackInStock="onUnselectBackInStock"
+                @selectVariant="onSelectVariant"
+                @close="isVariantDialogOpen = false" />
+        </Dialog>
     </div>
 </template>
-
-<style>
-.popover-custom.p-popover {
-    margin-block-start: 0;
-    margin-block-end: 0;
-}
-
-.popover-custom.p-popover::before,
-.popover-custom.p-popover::after {
-    top: 100%;
-    bottom: auto;
-    left: 50%;
-    margin-left: 0;
-    transform: translateX(-50%);
-    border-style: solid;
-    border-color: transparent;
-    border-bottom-color: transparent;
-}
-
-.popover-custom.p-popover::before {
-    border-width: 7px;
-    border-top-color: var(--p-popover-border-color, #e5e7eb);
-}
-
-.popover-custom.p-popover::after {
-    border-width: 6px;
-    border-top-color: var(--p-popover-background, #fff);
-    z-index: 1;
-}
-</style>

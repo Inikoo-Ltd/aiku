@@ -68,9 +68,15 @@ defineExpose({ reset: () => (target.value = null) })
         <Link
             v-if="createRoute"
             :href="route(createRoute.name, createRoute.parameters)"
-            class="flex items-center gap-1.5 whitespace-nowrap text-sm underline underline-offset-2 hover:text-blue-500">
+            class="create-link flex items-center gap-1.5 whitespace-nowrap text-sm underline underline-offset-2">
             <FontAwesomeIcon icon="fal fa-folder-plus" fixed-width aria-hidden="true" />
             {{ createLabel }}
         </Link>
     </div>
 </template>
+
+<style scoped>
+.create-link:hover {
+    color: var(--theme-color-4);
+}
+</style>

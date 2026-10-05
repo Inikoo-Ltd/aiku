@@ -308,7 +308,9 @@ trait WithLineTaxCategories
      */
     public function getOrderTaxBreakdown(Order $order): array
     {
-        $modelTypes = ['Product', 'Service', 'Charge', 'Adjustment'];
+        // Packaging and add-ons are billed on the order, so they carry tax and belong in
+        // the net the same way charges do.
+        $modelTypes = ['Product', 'Service', 'Charge', 'Adjustment', 'Packaging', 'Leaflet'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }
@@ -392,8 +394,10 @@ trait WithLineTaxCategories
      *
      * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
      */
-    public function getTaxBreakdown(Collection $transactions, float $amountOff = 0): array
+    public function getTaxBreakdown(Collection $transactions, ?float $amountOff = 0): array
     {
+        $amountOff ??= 0;
+
         $netPerCategory = $transactions
             ->groupBy('tax_category_id')
             ->map(fn (Collection $lines) => round($lines->sum('net_amount'), 2));

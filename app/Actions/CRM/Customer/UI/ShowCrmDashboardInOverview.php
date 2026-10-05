@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowCrmDashboardInOverview extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use WithDashboardTopCustomersLimitSettings;
     use WithDashboardIntervalOption;
     use WithPerformanceDateResolution;

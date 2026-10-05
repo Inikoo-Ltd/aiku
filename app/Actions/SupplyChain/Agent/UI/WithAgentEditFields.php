@@ -2,9 +2,9 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Support\Arr;
@@ -59,7 +59,6 @@ trait WithAgentEditFields
                         'label'   => __('Address'),
                         'value'   => AddressResource::make($agent->organisation->address)->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
                         ]
                     ],
                 ]
@@ -102,12 +101,6 @@ trait WithAgentEditFields
                         'value'   => Arr::get($agent->data, 'delivery_time'),
                         'options' => ['inputType' => 'number']
                     ],
-                    'production_lead_days' => [
-                        'type'    => 'input',
-                        'label'   => __('Production lead time (days)'),
-                        'value'   => $agent->production_lead_days,
-                        'options' => ['inputType' => 'number']
-                    ],
                     'payment_terms' => [
                         'type'  => 'input',
                         'label' => __('Payment terms'),
@@ -126,7 +119,22 @@ trait WithAgentEditFields
                         'options' => ['inputType' => 'number']
                     ],
                 ]
-            ]
+            ],
+            [
+                'title'  => __('PO journey'),
+                'icon'   => 'fal fa-route',
+                'fields' => collect(PurchaseOrderJourneyStageEnum::cases())
+                    ->mapWithKeys(fn (PurchaseOrderJourneyStageEnum $stage) => [
+                        'journey_days_'.$stage->value => [
+                            'type'        => 'input',
+                            'label'       => __('Days for :stage', ['stage' => PurchaseOrderJourneyStageEnum::labels()[$stage->value]]),
+                            'information' => __('Days after the previous stage. Leave empty to fit the delivery time; default :days', ['days' => $stage->defaultDays('agent')]),
+                            'value'       => Arr::get($agent->settings, 'journey_stage_days.'.$stage->value),
+                            'options'     => ['inputType' => 'number']
+                        ],
+                    ])
+                    ->all(),
+            ],
         ];
     }
 }

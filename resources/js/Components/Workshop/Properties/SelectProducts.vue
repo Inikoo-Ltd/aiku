@@ -8,7 +8,7 @@ import { faTimes, faGripVertical } from '@fas'
 import axios from 'axios'
 import { set } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Image from "@common/Components/Image.vue"
 import { Select } from 'primevue'
 import { isFutureDatePassed } from '@/Composables/useFormatTime'
@@ -80,7 +80,6 @@ const normalizedModelValue = computed(() => {
 
 const isLoadingOtherFamily = ref(false)
 const fetchProductFromFamily = async (idFamily: number | null) => {
-    console.log('Fetching products for family ID:', idFamily)
     isLoadingOtherFamily.value = true
     if (!idFamily) {
         isLoadingOtherFamily.value = false
@@ -90,7 +89,6 @@ const fetchProductFromFamily = async (idFamily: number | null) => {
     try {
         const response = await axios.get(route('grp.json.product_category.products.index', { productCategory: idFamily }))
 
-        console.log('Fetched Products:', response.data)
         if (response.data.data && response.data.data.length > 5) {
             set(normalizedModelValue.value, ['other_family', 'option'], response.data.data.slice(0, 6))
         } else {
@@ -122,7 +120,6 @@ onMounted(() => {
 const localType = computed({
   get: () => normalizedModelValue.value.type ?? '',
   set: (newType: string) => {
-    console.log('Setting localType to:', newType)
     if (newType === 'other-family') {
         fetchProductFromFamily(normalizedModelValue.value.other_family?.id)
     }
@@ -183,23 +180,23 @@ function removeProduct(index: number) {
 
 const listType = [
     {
-        label: trans('Custom'),
+        label: ctrans('Custom'),
         value: 'custom',
-        information: trans('Choose specific products to display.')
+        information: ctrans('Choose specific products to display.')
     },
     {
-        label: trans('Best Seller'),
+        label: ctrans('Best Seller'),
         value: 'best-seller',
-        information: trans('Displays the top-selling products from the current family (:_family)', { _family: props.family?.name || '' })
+        information: ctrans('Displays the top-selling products from the current family (:_family)', { _family: props.family?.name || '' })
     },
     {
-        label: trans('Other Family'),
+        label: ctrans('Other Family'),
         value: 'other-family'
     },
     {
-        label: trans('Current Family'),
+        label: ctrans('Current Family'),
         value: 'current-family',
-        information: trans('Displays random products from the current family (:_family)', { _family: props.family?.name || '' })
+        information: ctrans('Displays random products from the current family (:_family)', { _family: props.family?.name || '' })
     },
 ]
 </script>
@@ -244,7 +241,7 @@ const listType = [
                         class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
                     >
                         <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
-                        {{ trans("New") }}
+                        {{ ctrans("New") }}
                     </div>
                 </div>
             </template>
@@ -316,7 +313,7 @@ const listType = [
                 <div class="w-full border-t border-gray-300" />
             </div>
             <div class="relative flex justify-center">
-                <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+                <span class="bg-white px-2 text-sm text-gray-500">{{ ctrans("Products example") }}</span>
             </div>
         </div>
 
@@ -350,7 +347,7 @@ const listType = [
         </template>
 
         <div v-else class="text-gray-500 text-sm text-center py-2 bg-gray-200">
-            {{ trans("No best seller products in family :_family", { _family: modelValue?.current_family?.name }) }}
+            {{ ctrans("No best seller products in family :_family", { _family: modelValue?.current_family?.name }) }}
         </div>
     </div>
 
@@ -360,7 +357,7 @@ const listType = [
         <div>
             <div class="xmb-2 text-gray-700 text-sm">
                 <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-                {{ trans("Select family to show products from:") }}
+                {{ ctrans("Select family to show products from:") }}
             </div>
 
             <PureMultiselectInfiniteScroll
@@ -376,7 +373,6 @@ const listType = [
                     onChangeOtherFamilyId(val)
                 }"
                 @selectedObject="(selectedObject) => {
-                    console.log('selectedObject', e)
                     set(normalizedModelValue, ['other_family'], selectedObject)
                 }"
                 :fetch-route="{
@@ -395,7 +391,7 @@ const listType = [
                         <div class="w-full border-t border-gray-300" />
                     </div>
                     <div class="relative flex justify-center">
-                        <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+                        <span class="bg-white px-2 text-sm text-gray-500">{{ ctrans("Products example") }}</span>
                     </div>
                 </div>
                 
@@ -427,7 +423,7 @@ const listType = [
             </template>
 
             <div v-else-if="!isLoadingOtherFamily" class="text-gray-500 text-sm text-center py-2 bg-gray-200">
-                {{ trans("No products found in this family.") }}
+                {{ ctrans("No products found in this family.") }}
             </div>
 
             <div v-if="isLoadingOtherFamily" class="flex items-center justify-center absolute bg-black/40 text-white text-3xl top-0 inset-0">
@@ -444,7 +440,7 @@ const listType = [
                     <div class="w-full border-t border-gray-300" />
                 </div>
                 <div class="relative flex justify-center">
-                    <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+                    <span class="bg-white px-2 text-sm text-gray-500">{{ ctrans("Products example") }}</span>
                 </div>
             </div>
 
@@ -477,7 +473,7 @@ const listType = [
         </template>
 
         <div v-else-if="!isLoadingOtherFamily" class="text-gray-500 text-sm text-center py-2 bg-gray-200">
-            {{ trans("No products found in this family.") }}
+            {{ ctrans("No products found in this family.") }}
         </div>
     </div>
   </div>

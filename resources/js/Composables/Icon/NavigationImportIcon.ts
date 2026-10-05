@@ -7,12 +7,19 @@
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowSquareLeft, faHouseLeave } from "@fas"
-import { faColumns, faInfoCircle, faSignInAlt, faHome, faCalendarMinus, faClock, faInbox, faAd } from "@fal"
+import {
+	faColumns, faVial, faInfoCircle, faSignInAlt, faHome, faCalendarMinus, faClock, faInbox, faAd,
+	faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faInventory, faConveyorBeltAlt,
+	faChevronDown, faPalletAlt, faAbacus, faCloudRainbow, faShoppingCart, faMountains, faTasksAlt, faTruck,
+	faFlaskPotion, faFillDrip, faBullhorn, faBadgePercent, faChargingStation, faBallot, faSlidersH, faChartLineDown,
+	faArrowFromLeft, faArrowToBottom, faWarehouse, faFax
+} from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 library.add(
 	faArrowSquareLeft,
 	faHouseLeave,
 	faColumns,
+	faVial,
 	faInfoCircle,
 	faSignInAlt,
 	faHome,
@@ -20,5 +27,9 @@ library.add(
 	faClock,
 	faInbox,
 	faAd,
-	faWhatsapp
+	faWhatsapp,
+	faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faInventory, faConveyorBeltAlt,
+	faChevronDown, faPalletAlt, faAbacus, faCloudRainbow, faShoppingCart, faMountains, faTasksAlt, faTruck,
+	faFlaskPotion, faFillDrip, faBullhorn, faBadgePercent, faChargingStation, faBallot, faSlidersH, faChartLineDown,
+	faArrowFromLeft, faArrowToBottom, faWarehouse, faFax
 )

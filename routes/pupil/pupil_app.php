@@ -9,11 +9,14 @@
 
 use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
 use App\Actions\Pupil\Auth\AuthShopifyUser;
+use App\Actions\Pupil\Chat\StorePupilChatSession;
 use App\Actions\Pupil\Dashboard\ShowPupilDashboard;
 
 Route::middleware(['verify.shopify'])->group(function () {
     Route::get('/', ShowPupilDashboard::class)->name('home');
     Route::post('shopify-user/{shopifyUser:id}/get-started', SetupShopifyAccount::class)->name('shopify_user.get_started.store')->withoutScopedBindings();
+
+    Route::post('chat/sessions', StorePupilChatSession::class)->name('chat.sessions.store');
 
     Route::prefix("dashboard")->name("dashboard.")->group(__DIR__."/dashboard.php");
 

@@ -18,6 +18,7 @@ enum StockFamilyTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case SALES    = 'sales';
     case STOCKS   = 'stocks';
     case HISTORY  = 'history';
@@ -63,6 +64,10 @@ enum StockFamilyTabsEnum: string
             StockFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            StockFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
         };
     }

@@ -8,9 +8,8 @@
 
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Helpers\Media\UI\ShowIrisAudio;
-use App\Actions\Retina\Media\DownloadRetinaAttachment;
+use App\Actions\Iris\Media\DownloadIrisAttachment;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
@@ -18,7 +17,6 @@ use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisFavicon;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
-use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
@@ -33,6 +31,8 @@ use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
 use App\Actions\Iris\Reviews\ShowIrisFamilyReview;
 use App\Actions\Iris\Reviews\ShowIrisProductReview;
 use App\Actions\Iris\Reviews\ShowIrisReviews;
+use App\Actions\Iris\Docs\ShowIrisDoc;
+use App\Actions\Iris\Docs\ShowIrisDocs;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
@@ -76,14 +76,13 @@ Route::middleware(Sample::always())->prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
-Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::get('audio/{media:ulid}', ShowIrisAudio::class)->name('audio');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::middleware(Sample::always())->prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
 
-    Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
+    Route::get('attachment/{media:ulid}/download', DownloadIrisAttachment::class)->name('attach.download')->withoutScopedBindings();
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
     Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
@@ -106,10 +105,12 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/warming_products.txt', [ShowIrisWebpagesList::class, 'products'])->name('warming.products');
 
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
-        Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
+        Route::get('/attachment/{media:ulid}', DownloadIrisAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
         Route::get('/david-aw-news', ShowIrisNewslettersDashboard::class)->name('iris_newsletters');
         Route::get('/product-guides', ShowIrisProductGuidesDashboard::class)->name('iris_product_guides');
+        Route::get('/docs', ShowIrisDocs::class)->name('iris_docs');
+        Route::get('/docs/{slug}', ShowIrisDoc::class)->name('iris_doc')->where('slug', '[a-z0-9-]+');
         Route::get('/business-tips', ShowIrisBusinessTipsDashboard::class)->name('iris_business_tips');
         Route::get('/integrations-guides', ShowIrisIntegrationsGuidesDashboard::class)->name('iris_integrations_guides');
         Route::get('/dropshipping-guides', ShowIrisDropshippingGuidesDashboard::class)->name('iris_dropshipping_guides');

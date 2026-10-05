@@ -24,7 +24,7 @@ class TranslationsFill extends Command
 {
     protected $signature = 't:fill
                             {locales* : Language codes to fill, e.g. hi ne}
-                            {--driver=gpt-4o-mini : Translation driver}';
+                            {--driver=catalogue : Translation driver}';
 
     protected $description = 'Machine-translate the strings missing from a locale, then strip empties and apply the glossary';
 

@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Amazon\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\AmazonUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetRetinaOrdersFromAmazon extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

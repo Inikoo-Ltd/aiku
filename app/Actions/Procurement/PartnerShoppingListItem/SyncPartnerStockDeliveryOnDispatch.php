@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -20,13 +21,18 @@ class SyncPartnerStockDeliveryOnDispatch
 
     public function handle(DeliveryNote $deliveryNote): ?StockDelivery
     {
-        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first();
+        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first()
+            ?? StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote);
         if (!$stockDelivery) {
             return null;
         }
 
+        if (!$stockDelivery->isManagedByPartner()) {
+            return $stockDelivery;
+        }
+
         $order   = $deliveryNote->orders()->first();
-        $invoice = $order?->invoices()->latest('id')->first();
+        $invoice = $order?->invoices()->where('type', InvoiceTypeEnum::INVOICE)->latest('id')->first();
 
         $stockDelivery->update([
             'state'         => StockDeliveryStateEnum::DISPATCHED,
@@ -38,7 +44,7 @@ class SyncPartnerStockDeliveryOnDispatch
             ->with('orgStock')
             ->get()
             ->groupBy(fn ($item) => $item->orgStock?->stock_id)
-            ->map(fn ($items) => (float) $items->sum('quantity_dispatched'));
+            ->map(fn ($items) => (float) $items->sum(fn ($item) => (float) $item->quantity_dispatched * (float) ($item->orgStock?->packed_in ?: 1)));
 
         foreach ($stockDelivery->items as $item) {
             $item->update([

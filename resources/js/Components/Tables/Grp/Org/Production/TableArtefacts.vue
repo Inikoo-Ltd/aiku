@@ -7,20 +7,22 @@
 <script setup lang="ts">
 import Icon from "@/Components/Icon.vue"
 import { Link, router } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Table from '@/Components/Table/Table.vue'
 import BulkMoveBar from '@/Components/Production/BulkMoveBar.vue'
+import ModalUnifiedManufactureTask, { SetRecipeProps, UnifiedRecipeArtefact } from '@/Components/Production/ModalUnifiedManufactureTask.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCheckSquare, faExclamationTriangle, faChevronDown } from '@fal'
+import { faCheckSquare, faExclamationTriangle, faChevronDown, faTasks } from '@fal'
 import Modal from '@/Components/Utils/Modal.vue'
 import Popover from '@/Components/Popover.vue'
 import '@/Composables/Icon/ArtefactStateEnum'
 
-library.add(faCheckSquare, faExclamationTriangle, faChevronDown)
+library.add(faCheckSquare, faExclamationTriangle, faChevronDown, faTasks)
 
 type MoveTarget = { id: number, code: string, name: string }
 type MoveProps = { families_route: routeType, move_route: routeType, create_route: routeType }
@@ -33,6 +35,7 @@ const props = defineProps<{
     setBatchSize?: { set_route: routeType }
     setShelfLife?: { set_route: routeType }
     setState?: { set_state_route: routeType }
+    setRecipe?: SetRecipeProps
 }>()
 
 const routeCurrent = route().current()
@@ -46,11 +49,13 @@ const isMoving = ref(false)
 const batchSize = ref<number | null>(null)
 const shelfLifeDays = ref<number | null>(null)
 const confirmingDiscontinue = ref(false)
+const isRecipeModalOpen = ref(false)
 const bulkAction = ref('batch_size')
 
 const bulkActions = computed(() => [
     props.setBatchSize ? { value: 'batch_size', label: ctrans('Batch size') } : null,
     props.setShelfLife ? { value: 'shelf_life', label: ctrans('Shelf life') } : null,
+    props.setRecipe ? { value: 'manufacture_task', label: ctrans('Manufacture task') } : null,
     props.moveToFamily ? { value: 'move_family', label: ctrans('Move to family') } : null,
     props.moveToDepartment ? { value: 'move_department', label: ctrans('Move to department') } : null,
     props.setState ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
@@ -60,7 +65,24 @@ const bulkActions = computed(() => [
 const currentAction = computed(() => bulkActions.value.find(action => action.value === bulkAction.value))
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setShelfLife || props.setState) && selectedIds.value.length > 0)
+const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setShelfLife || props.setState || props.setRecipe) && selectedIds.value.length > 0)
+
+const knownArtefacts = ref<Record<number, UnifiedRecipeArtefact>>({})
+
+watch([selectedIds, () => props.data], () => {
+    const rows = ((props.data as { data?: UnifiedRecipeArtefact[] })?.data ?? [])
+    rows.filter(row => selectedIds.value.includes(row.id))
+        .forEach(row => knownArtefacts.value[row.id] = { id: row.id, code: row.code, name: row.name })
+}, { immediate: true })
+
+const selectedArtefacts = computed<UnifiedRecipeArtefact[]>(() =>
+    selectedIds.value.map(id => knownArtefacts.value[id] ?? { id: id, code: null, name: null })
+)
+
+const onRecipeSaved = () => {
+    isRecipeModalOpen.value = false
+    clearSelection()
+}
 
 const clearSelection = () => {
     confirmingDiscontinue.value = false
@@ -205,7 +227,7 @@ function productionRoute(artefact: { slug: string }) {
 <template>
     <div
         v-if="showBulkBar"
-        class="sticky top-0 z-10 xmx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 xrounded-md bg-slate-50 border-y border-slate-300 px-4 py-2.5 xshadow-lg mb-2"
+        class="sticky top-0 z-10 mx-4 mt-4 mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-slate-300 bg-slate-50 px-4 py-2.5"
         role="region"
         :aria-label="ctrans('Bulk actions')">
         <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
@@ -213,7 +235,7 @@ function productionRoute(artefact: { slug: string }) {
             {{ selectedIds.length === 1 ? ctrans('1 artefact selected') : ctrans(':count artefacts selected', { count: selectedIds.length }) }}
         </span>
 
-        <button type="button" class="text-xs xtext-indigo-100 underline underline-offset-2 hover:text-red-500" @click="clearSelection">
+        <button type="button" class="text-xs underline underline-offset-2 hover:text-red-500" @click="clearSelection">
             {{ ctrans('Clear') }}
         </button>
 
@@ -228,13 +250,13 @@ function productionRoute(artefact: { slug: string }) {
                     class="w-24 rounded border-gray-300 py-1 text-sm"
                     :placeholder="ctrans('Units')"
                     @keyup.enter="submitBatchSize" />
-                <button
-                    type="button"
-                    class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                    :disabled="isMoving || batchSize === null || batchSize < 1"
-                    @click="submitBatchSize">
-                    {{ ctrans('Set') }}
-                </button>
+                <Button
+                    type="primary"
+                    size="s"
+                    :label="ctrans('Set')"
+                    :loading="isMoving"
+                    :disabled="batchSize === null || batchSize < 1"
+                    @click="submitBatchSize" />
             </div>
 
             <div v-if="setShelfLife && bulkAction === 'shelf_life'" class="flex items-center gap-2">
@@ -246,32 +268,38 @@ function productionRoute(artefact: { slug: string }) {
                     class="w-24 rounded border-gray-300 py-1 text-sm"
                     :placeholder="ctrans('Days')"
                     @keyup.enter="submitShelfLife" />
-                <button
-                    type="button"
-                    class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                    :disabled="isMoving || shelfLifeDays === null || shelfLifeDays < 1"
-                    @click="submitShelfLife">
-                    {{ ctrans('Set') }}
-                </button>
+                <Button
+                    type="primary"
+                    size="s"
+                    :label="ctrans('Set')"
+                    :loading="isMoving"
+                    :disabled="shelfLifeDays === null || shelfLifeDays < 1"
+                    @click="submitShelfLife" />
             </div>
 
-            <button
-                v-if="setState && bulkAction === 'activate'"
-                type="button"
-                class="whitespace-nowrap rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                :disabled="isMoving"
-                @click="submitActivate">
-                {{ ctrans('Make active') }}
-            </button>
+            <Button
+                v-if="setRecipe && bulkAction === 'manufacture_task'"
+                type="primary"
+                size="s"
+                icon="fal fa-tasks"
+                :label="ctrans('Make a unified manufacture task')"
+                @click="isRecipeModalOpen = true" />
 
-            <button
+            <Button
+                v-if="setState && bulkAction === 'activate'"
+                type="primary"
+                size="s"
+                :label="ctrans('Make active')"
+                :loading="isMoving"
+                @click="submitActivate" />
+
+            <Button
                 v-if="setState && bulkAction === 'discontinue'"
-                type="button"
-                class="whitespace-nowrap rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                :disabled="isMoving"
-                @click="confirmingDiscontinue = true">
-                {{ ctrans('Discontinue') }}
-            </button>
+                type="red"
+                size="s"
+                :label="ctrans('Discontinue')"
+                :loading="isMoving"
+                @click="confirmingDiscontinue = true" />
 
             <BulkMoveBar
                 v-if="moveToFamily && bulkAction === 'move_family'"
@@ -315,7 +343,7 @@ function productionRoute(artefact: { slug: string }) {
                                 :key="action.value"
                                 type="button"
                                 class="rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100"
-                                :class="action.value === bulkAction ? 'font-medium text-indigo-600' : 'text-gray-700'"
+                                :class="action.value === bulkAction ? 'bulk-action-current font-medium' : 'text-gray-700'"
                                 @click="bulkAction = action.value; close()">
                                 {{ action.label }}
                             </button>
@@ -341,21 +369,21 @@ function productionRoute(artefact: { slug: string }) {
             </div>
 
             <div class="mt-5 flex justify-end gap-2">
-                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm" @click="confirmingDiscontinue = false">
-                    {{ ctrans('Cancel') }}
-                </button>
-                <button
-                    type="button"
-                    class="rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-                    :disabled="isMoving"
-                    @click="submitDiscontinue">
-                    {{ ctrans('Yes, discontinue') }}
-                </button>
+                <Button type="tertiary" size="s" :label="ctrans('Cancel')" @click="confirmingDiscontinue = false" />
+                <Button type="red" size="s" :label="ctrans('Yes, discontinue')" :loading="isMoving" @click="submitDiscontinue" />
             </div>
         </div>
     </Modal>
 
-    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || setState)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+    <ModalUnifiedManufactureTask
+        v-if="setRecipe"
+        :isOpen="isRecipeModalOpen"
+        :artefacts="selectedArtefacts"
+        :setRecipe="setRecipe"
+        @close="isRecipeModalOpen = false"
+        @saved="onRecipeSaved" />
+
+    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || setShelfLife || setState || setRecipe)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">
             <Icon :data="artefact.state" />
         </template>
@@ -394,3 +422,9 @@ function productionRoute(artefact: { slug: string }) {
         </template>
     </Table>
 </template>
+
+<style scoped>
+.bulk-action-current {
+    color: var(--theme-color-4);
+}
+</style>

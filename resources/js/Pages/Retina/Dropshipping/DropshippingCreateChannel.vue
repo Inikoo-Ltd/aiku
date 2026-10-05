@@ -2,16 +2,17 @@
 import { Head, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { inject, ref, watch, onMounted, provide } from "vue"
+import { inject, ref, computed, watch, onMounted, provide } from "vue"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 
-import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import Dialog from "primevue/dialog"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -106,6 +107,26 @@ const props = defineProps<{
 
 const layout = inject("layout", layoutStructure)
 
+const confirm = useConfirm()
+
+const confirmCancel = (onAccept: () => void) => {
+	confirm.require({
+		message: ctrans("Are you sure you want to cancel? Your progress will be lost."),
+		header: ctrans("Cancel connection?"),
+		icon: "pi pi-exclamation-triangle",
+		rejectProps: {
+			label: ctrans("No, keep going"),
+			severity: "secondary",
+			outlined: true,
+		},
+		acceptProps: {
+			label: ctrans("Yes, cancel"),
+			severity: "danger",
+		},
+		accept: onAccept,
+	})
+}
+
 const isModalOpen = ref<string | boolean>(false)
 const isPlatformCreateLoading = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
@@ -130,12 +151,20 @@ const onCreateStoreShopify = async () => {
 	} catch (error) {
 		errorShopify.value = error.response?.data?.message
 		notify({
-			title: trans("Something went wrong"),
+			title: ctrans("Something went wrong"),
 			text: error.response?.data?.message,
 			type: "error",
 		})
 	}
 	isLoading.value = false
+}
+
+const cancelShopifyModal = () => {
+	confirmCancel(() => {
+		isModalOpen.value = false
+		websiteInput.value = null
+		errorShopify.value = ""
+	})
 }
 
 // Section: Woocommerce
@@ -164,8 +193,8 @@ const onSubmitManual = async () => {
 		manualInput.value.name = null
 
 		notify({
-			title: trans("Success!"),
-			text: trans("Your Manual store has been created."),
+			title: ctrans("Success!"),
+			text: ctrans("Your Manual store has been created."),
 			type: "success",
 		})
 		router.get(
@@ -176,12 +205,20 @@ const onSubmitManual = async () => {
 	} catch (error) {
 		errManual.value = error.response?.data?.message
 		notify({
-			title: trans("Something went wrong"),
+			title: ctrans("Something went wrong"),
 			text: error.response?.data?.message,
 			type: "error",
 		})
 	}
 	isLoading.value = false
+}
+
+const cancelManualModal = () => {
+	confirmCancel(() => {
+		isModalManual.value = false
+		manualInput.value.name = null
+		errManual.value = ""
+	})
 }
 
 // Section: amazon
@@ -211,7 +248,6 @@ interface Modal {
 watch(
 	() => usePage().props?.flash?.modal,
 	(modal: Modal) => {
-		console.log("modal ret", modal)
 		if (!modal) return
 	}
 )
@@ -228,8 +264,8 @@ const onSubmitMagento = async () => {
 		magentoInput.value.name = null
 
 		notify({
-			title: trans("Success!"),
-			text: trans("Your Magento store has been created."),
+			title: ctrans("Success!"),
+			text: ctrans("Your Magento store has been created."),
 			type: "success",
 		})
 
@@ -241,13 +277,21 @@ const onSubmitMagento = async () => {
 	} catch (error) {
 		errMagento.value = error.response?.data?.message
 		notify({
-			title: trans("Something went wrong"),
+			title: ctrans("Something went wrong"),
 			text: error.response?.data?.message,
 			type: "error",
 		})
 	}
 
 	isLoading.value = false
+}
+
+const cancelMagentoModal = () => {
+	confirmCancel(() => {
+		isModalMagento.value = false
+		magentoInput.value = { username: null, password: null, url: null }
+		errMagento.value = ""
+	})
 }
 
 // Section: Ebay
@@ -286,26 +330,49 @@ const tiktokUserId = ref<int | null>(null)
 const customerSalesChannelId = ref<int | null>(null)
 const ebayName = ref<string | null>(null)
 
-watch(
-	customerSalesChannelId,
-	(value) => {
-		console.log("customerSalesChannelId", value)
-	},
-	{ immediate: true }
-)
+
+const resetStepArray = (stepArray) => {
+	stepArray.forEach((step, index) => {
+		step.status = index === 0 ? "current" : "upcoming"
+	})
+}
+
+const resetStepper = () => {
+	currentStep.value = 0
+	resetStepArray(stepsEbay.value)
+	resetStepArray(stepsWoo.value)
+	resetStepArray(stepsTiktok.value)
+}
 
 const closeCreateEbayModal = () => {
+	resetStepper()
 	isModalCreateEbay.value = false
 	ebayId.value = null
 	ebayName.value = null
 }
 
 const closeCreateWooModal = () => {
+	resetStepper()
 	isModalWooCommerce.value = false
 }
 
 const closeCreateTiktokModal = () => {
+	resetStepper()
 	isModalTiktok.value = false
+}
+
+const cancelCreateEbayModal = () => confirmCancel(closeCreateEbayModal)
+const cancelCreateWooModal = () => confirmCancel(closeCreateWooModal)
+const cancelCreateTiktokModal = () => confirmCancel(closeCreateTiktokModal)
+
+const openCreateWooModal = () => {
+	resetStepper()
+	isModalWooCommerce.value = true
+}
+
+const openCreateTiktokModal = () => {
+	resetStepper()
+	isModalTiktok.value = true
 }
 
 const openCreateEbayModal = async () => {
@@ -314,6 +381,8 @@ const openCreateEbayModal = async () => {
 		const { data } = await axios.get(
 			route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
 		)
+
+		resetStepper()
 
 		if (data) {
 			ebayId.value = data.id
@@ -338,11 +407,6 @@ const openCreateEbayModal = async () => {
 					steps.value[1].status = "complete"
 					steps.value[2].status = "current"
 					break
-				default:
-					currentStep.value = 0
-					steps.value[0].status = "current"
-					steps.value[1].status = "upcoming"
-					steps.value[2].status = "upcoming"
 			}
 		}
 
@@ -361,18 +425,45 @@ const openCreateEbayModal = async () => {
 provide("closeCreateEbayModal", closeCreateEbayModal)
 provide("closeCreateWooModal", closeCreateWooModal)
 provide("closeCreateTiktokModal", closeCreateTiktokModal)
+provide("cancelCreateEbayModal", cancelCreateEbayModal)
+provide("cancelCreateWooModal", cancelCreateWooModal)
+provide("cancelCreateTiktokModal", cancelCreateTiktokModal)
 provide("ebayId", ebayId)
 provide("tiktokUserId", tiktokUserId)
 provide("ebayName", ebayName)
 provide("customerSalesChannelId", customerSalesChannelId)
 
-const steps = ref([
+const stepsEbay = ref([
 	{ name: "Account Name", status: "current" },
 	// { name: "Ebay Site", status: "upcoming" },
 	{ name: "Auth Key", status: "upcoming" },
 	// { name: "Ebay Listing Profile Name", status: "upcoming" },
 	{ name: "Listing Profile Confirmation", status: "upcoming" },
 ])
+
+const stepsWoo = ref([
+	{ name: "Account Name", status: "current" },
+	{ name: "Auth Key", status: "upcoming" },
+	{ name: "Connected", status: "upcoming" },
+])
+
+const stepsTiktok = ref([
+	{ name: "Auth Key", status: "current" },
+	{ name: "Business Accounts", status: "upcoming" },
+	{ name: "Connected", status: "upcoming" },
+])
+
+const steps = computed(() => {
+	if (isModalWooCommerce.value) {
+		return stepsWoo.value
+	}
+
+	if (isModalTiktok.value) {
+		return stepsTiktok.value
+	}
+
+	return stepsEbay.value
+})
 
 provide("steps", steps)
 
@@ -405,9 +496,14 @@ provide("goNext", goNext)
 
 <template>
 	<Head :title="capitalize(title)" />
+	<ConfirmDialog>
+		<template #icon>
+			<FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl text-amber-500" fixed-width />
+		</template>
+	</ConfirmDialog>
 	<PageHeading :data="pageHead" />
 	<div class="mt-4 px-4 md:px-6">
-		<div class="text-base py-2 w-fit">{{ trans("Select channel you want to create") }}:</div>
+		<div class="text-base py-2 w-fit">{{ ctrans("Select channel you want to create") }}:</div>
 		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
 			<!-- Section: Manual -->
 			<div
@@ -420,16 +516,16 @@ provide("goNext", goNext)
 						class="h-9 sm:h-12" loading="lazy" decoding="async" />
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
-							{{ trans("Manual") }}/API
+							{{ ctrans("Manual") }}/API
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.manual }} {{ trans("Channels") }}
+							{{ total_channels?.manual }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
 
 				<div class="w-full flex justify-end">
-					<Button @click="() => (isModalManual = true)" :label="trans('Create')" full />
+					<Button @click="() => (isModalManual = true)" :label="ctrans('Create')" full />
 				</div>
 			</div>
 
@@ -448,7 +544,7 @@ provide("goNext", goNext)
 							Shopify
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.shopify }} {{ trans("Channels") }}
+							{{ total_channels?.shopify }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
@@ -475,14 +571,14 @@ provide("goNext", goNext)
                     />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
-                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ ctrans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                        <Button @click="() => (isModalTiktok = true)"
-								:label="trans('Connect')"
+                        <Button @click="openCreateTiktokModal"
+								:label="ctrans('Connect')"
                             type="primary"
                             full
                         />
@@ -505,17 +601,17 @@ provide("goNext", goNext)
 							Woocommerce
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.woocommerce }} {{ trans("Channels") }}
+							{{ total_channels?.woocommerce }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
 
 				<div class="w-full flex justify-end">
 					<Button
-						:label="trans('Connect')"
+						:label="ctrans('Connect')"
 						type="primary"
 						full
-						@click="() => (isModalWooCommerce = true)" />
+						@click="openCreateWooModal" />
 				</div>
 			</div>
 			<!-- Section: Ebay -->
@@ -533,7 +629,7 @@ provide("goNext", goNext)
 							Ebay
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.ebay }} {{ trans("Channels") }}
+							{{ total_channels?.ebay }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
@@ -542,13 +638,13 @@ provide("goNext", goNext)
 					<Button
 						:loading="isPlatformCreateLoading"
 						v-if="type_ebay.is_active"
-						:label="trans('Connect')"
+						:label="ctrans('Connect')"
 						xtype="primary"
 						type="primary"
 						full
 						@click="openCreateEbayModal" />
 
-					<Button v-else :label="trans('Maintenance')" type="tertiary" disabled full />
+					<Button v-else :label="ctrans('Maintenance')" type="tertiary" disabled full />
 				</div>
 			</div>
 
@@ -577,7 +673,7 @@ provide("goNext", goNext)
 								layout?.app?.environment === 'staging'
 							"
 							class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
+							{{ total_channels?.amazon ?? 0 }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
@@ -588,13 +684,13 @@ provide("goNext", goNext)
 							layout?.app?.environment === 'local' ||
 							layout?.app?.environment === 'staging'
 						"
-						:label="trans('Connect')"
+						:label="ctrans('Connect')"
 						type="primary"
 						full
 						iconRight="fal fa-external-link-alt"
 						@click="onSubmitAmazon" />
 
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+					<Button v-else :label="ctrans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
 
@@ -614,7 +710,7 @@ provide("goNext", goNext)
 							Magento
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.magento ?? 0 }} {{ trans("Channels") }}
+							{{ total_channels?.magento ?? 0 }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
@@ -622,11 +718,11 @@ provide("goNext", goNext)
 				<div class="w-full flex justify-end">
 					<Button
 						v-if="layout?.app?.environment === 'local'"
-						:label="trans('Connect')"
+						:label="ctrans('Connect')"
 						type="primary"
 						full
 						@click="() => (isModalMagento = true)" />
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+					<Button v-else :label="ctrans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
 
@@ -646,7 +742,7 @@ provide("goNext", goNext)
 							Allegro
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.allegro ?? 0 }} {{ trans("Channels") }}
+							{{ total_channels?.allegro ?? 0 }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
@@ -654,7 +750,7 @@ provide("goNext", goNext)
 				<div class="w-full flex justify-end">
 					<a :href="props.allegroAuth?.url" :target="'_blank'" class="w-full">
 						<Button
-							:label="trans('Connect')"
+							:label="ctrans('Connect')"
 							type="primary"
 							full
 							xclick="() => (isModalAllegro = true)"
@@ -679,14 +775,14 @@ provide("goNext", goNext)
 							Wix
 						</div>
 						<div class="text-xs text-gray-500 text-center sm:text-left">
-							{{ total_channels?.wix ?? 0 }} {{ trans("Channels") }}
+							{{ total_channels?.wix ?? 0 }} {{ ctrans("Channels") }}
 						</div>
 					</div>
 				</div>
 
 				<div class="w-full flex justify-end">
 					<a :href="props.wixAuth?.url" :target="'_blank'" class="w-full">
-						<Button :label="trans('Connect')" type="primary" full />
+						<Button :label="ctrans('Connect')" type="primary" full />
 					</a>
 				</div>
 			</div>
@@ -694,16 +790,16 @@ provide("goNext", goNext)
 	</div>
 
 	<!-- Modal: Shopify -->
-	<Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
+	<Modal :isOpen="!!isModalOpen" :isClosableInBackground="false" @onClose="cancelShopifyModal" width="w-[600px]">
 		<div class="h-fit">
 			<div class="mb-6">
 				<div class="text-center font-semibold text-xl">
-					{{ trans("Please enter your Shopify unique domain name") }}
+					{{ ctrans("Please enter your Shopify unique domain name") }}
 				</div>
 
 				<div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
 					{{
-						trans(
+						ctrans(
 							"You will be able to find it in your Shopify settings under domains section."
 						)
 					}}
@@ -722,12 +818,12 @@ provide("goNext", goNext)
 				@keydown.enter="() => onCreateStoreShopify()" />
 
 			<div class="mt-1 text-xs text-gray-500">
-				{{ trans("Not sure which is your Shopify store name?") }}
+				{{ ctrans("Not sure which is your Shopify store name?") }}
 				<a
-					href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view"
+					href="/docs/connecting-shopify"
 					target="_blank"
 					class="underline hover:text-gray-700"
-					>Click here</a
+					>{{ ctrans("Click here") }}</a
 				>
 			</div>
 
@@ -737,27 +833,29 @@ provide("goNext", goNext)
 				</div>
 			</Transition>
 
-			<Button
-				@click="() => onCreateStoreShopify()"
-				full
-				:label="trans('Connect')"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelShopifyModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onCreateStoreShopify()"
+					full
+					:label="ctrans('Connect')"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
 	<!-- Modal: Manual -->
-	<Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
+	<Modal :isOpen="isModalManual" :isClosableInBackground="false" @onClose="cancelManualModal" width="w-full max-w-lg">
 		<div class="">
 			<div class="mb-4">
 				<div class="text-center font-semibold text-xl">
-					{{ trans("Create platform manual") }}
+					{{ ctrans("Create platform manual") }}
 				</div>
 
 				<div class="text-center text-xs text-gray-500">
-					{{ trans("Enter the name of manual platform") }}
+					{{ ctrans("Enter the name of manual platform") }}
 					<FontAwesomeIcon
-						v-tooltip="trans('You can change the name later in Edit section')"
+						v-tooltip="ctrans('You can change the name later in Edit section')"
 						icon="fal fa-info-circle"
 						class="text-gray-400 hover:text-gray-600 cursor-pointer"
 						fixed-width
@@ -769,26 +867,29 @@ provide("goNext", goNext)
 				<PureInput
 					v-model="manualInput.name"
 					@update:modelValue="() => (errManual = '')"
-					:placeholder="trans('Enter new store name')"
+					:placeholder="ctrans('Enter new store name')"
 					:maxLength="28"
 					@onEnter="() => onSubmitManual()"></PureInput>
 			</div>
 
 			<div v-if="errManual" class="text-red-500 italic text-sm mt-2">*{{ errManual }}</div>
 
-			<Button
-				@click="() => onSubmitManual()"
-				full
-				label="Create"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelManualModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onSubmitManual()"
+					full
+					label="Create"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
 	<!-- Modal: Woocommerce -->
 	<Modal
 		:isOpen="isModalWooCommerce"
-		@onClose="isModalWooCommerce = false"
+		:isClosableInBackground="false"
+		@onClose="cancelCreateWooModal"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
@@ -799,12 +900,13 @@ provide("goNext", goNext)
 	<!-- Modal: Tiktok -->
 	<Modal
 		:isOpen="isModalTiktok"
-		@onClose="isModalTiktok = false"
+		:isClosableInBackground="false"
+		@onClose="cancelCreateTiktokModal"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<div>
 				<div class="text-center font-semibold text-xl">
-					{{ trans('Connect to Tiktok channel') }}
+					{{ ctrans('Connect to Tiktok channel') }}
 				</div>
 			</div>
 			<div class="flex flex-col gap-1 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
@@ -815,7 +917,7 @@ provide("goNext", goNext)
 				<ul class="list-disc list-outside space-y-1 pl-6">
 					<li>{{ ctrans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</li>
 					<li>{{ ctrans("When you use TikTok Shipping, you must update your logistical preferences to Pick Up.") }}</li>
-					<li>{{ ctrans("See the full guide") }} <a href="https://aw-dropship.info/knowledge-base/tiktok-shop-sales-channel-warehouse-setup-guide/" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:text-amber-900">{{ ctrans("here") }}</a></li>
+					<li>{{ ctrans("See the full guide") }} <a href="/docs/tiktok-shop-warehouse" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:text-amber-900">{{ ctrans("here") }}</a></li>
 				</ul>
 			</div>
 			<ProgressBar />
@@ -826,6 +928,7 @@ provide("goNext", goNext)
 	<!-- Modal: Allegro -->
 	<Modal
 		:isOpen="isModalAllegro"
+		:isClosableInBackground="false"
 		@onClose="isModalAllegro = false"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
@@ -860,12 +963,17 @@ provide("goNext", goNext)
 				</div>
 			</div>
 			<div class="mt-5 sm:mt-6">
-				<Button @click="() => onSubmitEbay()" :label="trans('Connect')" full />
+				<Button @click="() => onSubmitEbay()" :label="ctrans('Connect')" full />
 			</div>
 		</div>
 	</Modal>
 
-	<Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
+	<Dialog
+		:visible="isModalCreateEbay"
+		:closable="false"
+		:closeOnEscape="false"
+		:dismissableMask="false"
+		modal header="eBay" class="max-w-[90%] w-full">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
 			<component :is="stepComponents[currentStep]" :props="props" />
@@ -873,25 +981,25 @@ provide("goNext", goNext)
 	</Dialog>
 
 	<!-- Modal: Magento -->
-	<Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
+	<Modal :isOpen="isModalMagento" :isClosableInBackground="false" @onClose="cancelMagentoModal" width="w-full max-w-lg">
 		<div class="">
 			<div class="mb-4">
 				<div class="text-center font-semibold text-xl">
-					{{ trans("Magento store detail") }}
+					{{ ctrans("Magento store detail") }}
 				</div>
 
 				<div class="text-center text-xs text-gray-500">
-					{{ trans("Enter your Magento store detail") }}
+					{{ ctrans("Enter your Magento store detail") }}
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-y-2">
 				<PureInput
 					v-model="magentoInput.username"
-					:placeholder="trans('Username')"></PureInput>
+					:placeholder="ctrans('Username')"></PureInput>
 				<PurePassword
 					v-model="magentoInput.password"
-					:placeholder="trans('Password')"></PurePassword>
+					:placeholder="ctrans('Password')"></PurePassword>
 				<PureInputWithAddOn
 					v-model="magentoInput.url"
 					:leftAddOn="{
@@ -901,12 +1009,14 @@ provide("goNext", goNext)
 					@keydown.enter="() => onSubmitMagento()" />
 			</div>
 
-			<Button
-				@click="() => onSubmitMagento()"
-				full
-				label="Create"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelMagentoModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onSubmitMagento()"
+					full
+					label="Create"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
@@ -921,14 +1031,14 @@ provide("goNext", goNext)
 		<div>
 			<div class="mb-4">
 				<div class="text-center font-semibold text-xl">
-					{{ trans("eBay Account Already Connected") }}
+					{{ ctrans("eBay Account Already Connected") }}
 				</div>
 				<div class="text-center text-xs text-gray-500 mt-2">
-					{{ trans("To resolve this, try one of the following:") }}
+					{{ ctrans("To resolve this, try one of the following:") }}
 					<ul class="list-disc list-inside mt-2 text-left text-gray-500">
-						<li>{{ trans("Log out from your current eBay account.") }}</li>
-						<li>{{ trans("Switch to another browser.") }}</li>
-						<li>{{ trans("Use a separate browser profile.") }}</li>
+						<li>{{ ctrans("Log out from your current eBay account.") }}</li>
+						<li>{{ ctrans("Switch to another browser.") }}</li>
+						<li>{{ ctrans("Use a separate browser profile.") }}</li>
 					</ul>
 				</div>
 			</div>

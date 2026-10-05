@@ -19,6 +19,8 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Helpers\Media;
+use App\Models\Web\Webpage;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Organisation;
@@ -79,7 +81,7 @@ class IndexTransactions extends OrgAction
          */
         $query->leftJoin('historic_assets', 'transactions.historic_asset_id', '=', 'historic_assets.id');
 
-        return $query->defaultSort('transactions.id')
+        $transactions = $query->defaultSort('transactions.id')
             ->select([
                 'transactions.id',
                 'transactions.state',
@@ -129,7 +131,16 @@ class IndexTransactions extends OrgAction
                     JOIN batch_codes bc ON bc.id = p.batch_code_id
                     WHERE dni2.transaction_id = transactions.id
                     AND p.batch_code_id IS NOT NULL
-                ) as batch_codes")
+                ) as batch_codes"),
+                DB::raw("(
+                    SELECT jsonb_object_agg(trade_units.id, jsonb_build_object('number', trade_units.un_number, 'shipping_name', trade_units.proper_shipping_name))
+                    FROM model_has_trade_units
+                    JOIN trade_units ON trade_units.id = model_has_trade_units.trade_unit_id
+                    WHERE model_has_trade_units.model_type = 'Product'
+                    AND model_has_trade_units.model_id = products.id
+                    AND trade_units.un_number IS NOT NULL
+                    AND trade_units.un_number <> 'None'
+                ) as un_numbers")
             ])
             ->when($withMargins, fn ($q) => $q->addSelect([
                 'transactions.org_net_amount',
@@ -142,6 +153,17 @@ class IndexTransactions extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $rows       = $transactions->getCollection();
+        $images     = Media::whereIn('id', $rows->pluck('product_image_id')->filter()->unique())->get()->keyBy('id');
+        $productIds = $rows->where('model_type', 'Product')->pluck('product_id')->filter()->unique();
+        $webpages   = Webpage::where('model_type', 'Product')->whereIn('model_id', $productIds)->with('website')->get()->keyBy('model_id');
+        foreach ($rows as $transaction) {
+            $transaction->setRelation('productImage', $images->get($transaction->product_image_id));
+            $transaction->setRelation('productWebpage', $transaction->model_type === 'Product' ? $webpages->get($transaction->product_id) : null);
+        }
+
+        return $transactions;
     }
 
     private function orderHasBatchCodes(Order $order): bool

@@ -12,6 +12,10 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
+use App\Actions\Masters\MasterAsset\GenerateMasterAssetPriceTips;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
+use App\Models\Masters\MasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
@@ -70,6 +74,12 @@ use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
 use App\Models\Masters\MasterCollectionStats;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
+use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
+use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
+use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
@@ -485,6 +495,40 @@ test('UI Show Master Department', function (MasterProductCategory $masterDepartm
     });
 })->depends('create master department');
 
+test('UI Show Master Department sales analysis tab', function (MasterProductCategory $masterDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show', [
+            'masterDepartment' => $masterDepartment->slug,
+            'tab'              => MasterDepartmentTabsEnum::SALES_ANALYSIS->value,
+            'from'             => '2026-01-01',
+            'to'               => '2026-03-31',
+            'compareFrom'      => '2025-01-01',
+            'compareTo'        => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterDepartment')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create master department');
+
 test('create master family', function (MasterProductCategory $masterDepartment) {
     $masterFamily = StoreMasterProductCategory::make()->action(
         $masterDepartment,
@@ -519,6 +563,73 @@ test('UI Show Master Family in Department', function (MasterProductCategory $mas
             ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
             ->has('tabs');
     });
+})->depends('create master family');
+
+test('UI Show Master Family history tab, all scope', function (MasterProductCategory $masterFamily) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_families.show', [
+            'masterDepartment' => $masterFamily->masterDepartment->slug,
+            'masterFamily'     => $masterFamily->slug,
+            'tab'              => MasterFamilyTabsEnum::HISTORY->value,
+            'history_scope'    => 'all',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->has('history');
+    });
+})->depends('create master family');
+
+
+test('UI Show Master Family attachments tab lists trade unit documents read only', function (MasterProductCategory $masterFamily) {
+    get(route('grp.masters.master_departments.show.master_families.show', [
+        'masterDepartment' => $masterFamily->masterDepartment->slug,
+        'masterFamily'     => $masterFamily->slug,
+        'tab'              => MasterFamilyTabsEnum::ATTACHMENTS->value,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Masters/MasterFamily')
+        ->has('attachments.documents'));
+})->depends('create master family');
+
+test('UI Show Master Family sales analysis tab', function (MasterProductCategory $masterFamily) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_families.show', [
+            'masterDepartment' => $masterFamily->masterDepartment->slug,
+            'masterFamily'     => $masterFamily->slug,
+            'tab'              => MasterFamilyTabsEnum::SALES_ANALYSIS->value,
+            'from'             => '2026-01-01',
+            'to'               => '2026-03-31',
+            'compareFrom'      => '2025-01-01',
+            'compareTo'        => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.totals.current', fn (AssertableInertia $totals) => $totals->where('sales', 0)->where('stock_outs', 0)->etc())
+                ->has('sales_analysis.shops')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->where('sales_analysis.filters.selected_organisations', [])
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown'])
+        ->and($teaser['totals']['current']['sales'])->toEqual(0);
 })->depends('create master family');
 
 test("UI Show master shop", function (MasterShop $masterShop) {
@@ -809,6 +920,40 @@ test('UI Show Master Family mismatch with null master department', function (Mas
         $page
             ->component('Masters/MasterFamily')
             ->where('mini_breadcrumbs.1.to.parameters.masterDepartment', $masterDepartment->slug)
+            ->where('pageHead.subNavigation.3.route.name', 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales')
+            ->etc();
+    });
+})->depends('create master department');
+
+test('UI Show Master Family in master sub department links sales sub navigation without department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SN_SUBDEPT1',
+            'name' => 'sub navigation sub department',
+        ]
+    );
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterSubDepartment,
+        [
+            'code' => 'SN_FAM1',
+            'name' => 'sub navigation family',
+        ]
+    );
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_sub_departments.master_families.show', [
+            'masterShop'          => $masterFamily->masterShop->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug,
+            'masterFamily'        => $masterFamily->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->where('pageHead.subNavigation.3.route.name', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales')
             ->etc();
     });
 })->depends('create master department');
@@ -905,6 +1050,41 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             )
             ->has("tabs");
     });
+})->depends('create master sub department');
+
+test('UI Show Master SubDepartment sales analysis tab', function (MasterProductCategory $masterSubDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_sub_departments.show', [
+            'masterDepartment'    => $masterSubDepartment->parent->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug,
+            'tab'                 => MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value,
+            'from'                => '2026-01-01',
+            'to'                  => '2026-03-31',
+            'compareFrom'         => '2025-01-01',
+            'compareTo'           => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterSubDepartment')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterSubDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 })->depends('create master sub department');
 
 test('master hydrator', function () {
@@ -1466,6 +1646,52 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
     });
 })->depends('create master asset');
 
+test('UI Show Master Product sales analysis tab', function (MasterAsset $masterAsset) {
+    $response = get(
+        route('grp.masters.master_shops.show.master_products.show', [
+            'masterShop'    => $masterAsset->masterShop->slug,
+            'masterProduct' => $masterAsset->slug,
+            'tab'           => MasterAssetTabsEnum::SALES_ANALYSIS->value,
+            'from'          => '2026-01-01',
+            'to'            => '2026-03-31',
+            'compareFrom'   => '2025-01-01',
+            'compareTo'     => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterProduct')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create master asset');
+
+
+test('UI Show Master Product attachments tab lists trade unit documents read only', function (MasterAsset $masterAsset) {
+    get(route('grp.masters.master_shops.show.master_products.show', [
+        'masterShop'    => $masterAsset->masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+        'tab'           => MasterAssetTabsEnum::ATTACHMENTS->value,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Masters/MasterProduct')
+        ->has('attachments.documents'));
+})->depends('create master asset');
+
 test('UI Index Master Products bulk edit tab lists products with their tax preset', function () {
     $masterShop = createFreshMasterShop();
 
@@ -1555,6 +1781,55 @@ test('UI Index Master Products in family has pricing tab', function () {
             ->etc()
     );
 });
+
+test('master product RRP is edited per outer in dropshipping and per unit elsewhere', function (ShopTypeEnum $shopType, string $rrpLabel, bool $isDropship) {
+    $masterShop = StoreMasterShop::make()->action(group(), [
+        'type' => $shopType,
+        'code' => 'RRPO-'.uniqid(),
+        'name' => 'RRP Outer Master Shop',
+    ]);
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPO-DEP-'.uniqid(),
+        'name' => 'RRP Outer Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPO-FAM-'.uniqid(),
+        'name' => 'RRP Outer Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPO-AST-'.uniqid(),
+        'name'    => 'RRP Outer Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 4.8,
+        'rrp'     => 9.6,
+        'units'   => 2,
+        'stocks'  => [],
+    ]);
+
+    get(route('grp.masters.master_shops.show.master_products.composition', [
+        'masterShop'    => $masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.2.fields.master_rrps.label', $rrpLabel)
+            ->where('formData.blueprint.2.fields.master_rrps.perUnits', fn ($perUnits) => $isDropship ? $perUnits === null : $perUnits == $masterAsset->units)
+            ->etc()
+    );
+
+    get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pricing.data.0.is_dropship', $isDropship)
+            ->etc()
+    );
+})->with([
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 'RRP / Outer', true],
+    'b2b'          => [ShopTypeEnum::B2B, 'RRP / Unit', false],
+]);
 
 test('UI Show Master Variant has pricing tab listing all variant products', function () {
     $masterShop = createFreshMasterShop();
@@ -1941,7 +2216,7 @@ test('CheckMasterAssetTradeUnitOrgStockExistence returns true when no trade unit
     expect($isValid)->toBeTrue();
 });
 
-test('UpdateBulkMasterProduct updates rrp and price for multiple master products', function () {
+test('UpdateBulkMasterProduct updates rrp, price and unit label for multiple master products', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'UBP-DEPT-'.uniqid(),
@@ -1972,15 +2247,90 @@ test('UpdateBulkMasterProduct updates rrp and price for multiple master products
 
     UpdateBulkMasterProduct::make()->handle([
         'products' => [
-            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12],
-            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22],
+            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12, 'unit' => 'ball'],
+            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22, 'unit' => 'ball'],
         ],
     ]);
 
     expect((int)$masterAssetOne->refresh()->price)->toBe(12)
         ->and((int)$masterAssetOne->rrp)->toBe(15)
         ->and((int)$masterAssetTwo->refresh()->price)->toBe(22)
-        ->and((int)$masterAssetTwo->rrp)->toBe(25);
+        ->and((int)$masterAssetTwo->rrp)->toBe(25)
+        ->and($masterAssetOne->unit)->toBe('ball')
+        ->and($masterAssetTwo->unit)->toBe('ball');
+});
+
+test('bulk trade unit quantity sets units through the master update and reports no open orders', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BTQ-DEPT-'.uniqid(),
+        'name' => 'Bulk Quantity Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BTQ-FAM-'.uniqid(),
+        'name' => 'Bulk Quantity Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BTQ-AST-'.uniqid(),
+        'name'    => 'Bulk Quantity Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 10]]]);
+
+    expect((float) $masterAsset->refresh()->units)->toBe(10.0)
+        ->and((float) $masterAsset->price)->toBe(10.0)
+        ->and($masterAsset->unit)->toBe('piece');
+
+    getJson(route('grp.json.master_assets.open_orders_affected_by_units_change', ['ids' => [$masterAsset->id]]))
+        ->assertSuccessful()
+        ->assertExactJson([(string) $masterAsset->id => 0]);
+});
+
+test('changing the composition flags the master price for review until prices are saved, HELP-3496', function () {
+    Queue::fake();
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PRV-DEPT-'.uniqid(),
+        'name' => 'Price Review Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PRV-FAM-'.uniqid(),
+        'name' => 'Price Review Family',
+    ]);
+    $masterAssets = collect([9, 10, 11, 157.19])->map(fn ($price) => StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRV-AST-'.uniqid(),
+        'name'    => 'Price Review Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => $price,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]));
+    $masterAsset = $masterAssets->first();
+    $tradeUnitA  = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $tradeUnitB  = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    expect(\App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier::familyUnitPriceMedian($masterFamily->id))->toBe(10.5);
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBe('composition_changed');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => ['EUR' => ['value' => 10, 'independent' => false]],
+    ]);
+    expect($masterAsset->refresh()->price_review)->toBeNull();
+
+    UpdateMasterAsset::make()->action($masterAsset, ['name' => 'Renamed', 'trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBeNull();
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1], ['id' => $tradeUnitB->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBe('composition_changed');
 });
 
 test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
@@ -2597,7 +2947,7 @@ test('updating master prices merges per currency, skips nulls and syncs legacy c
         ->and((float) $masterAsset->price)->toBe(20.0);
 });
 
-test('reprocessing a master asset time series with a mid period window keeps the whole period total', function () {
+test('reprocessing a master asset time series with a mid period window keeps the whole period total and leaves out draft invoices', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'TS-DEP-'.uniqid(),
@@ -2620,7 +2970,7 @@ test('reprocessing a master asset time series with a mid period window keeps the
     $taxCategoryId = DB::table('tax_categories')->value('id');
     $monthStart    = now()->subMonth()->startOfMonth();
 
-    foreach ([[2, 100], [20, 250]] as [$dayOffset, $amount]) {
+    foreach ([[2, 100, false], [20, 250, false], [10, 999, true]] as [$dayOffset, $amount, $inProcess]) {
         DB::table('invoice_transactions')->insert([
             'group_id'        => $this->shop->group_id,
             'organisation_id' => $this->shop->organisation_id,
@@ -2630,6 +2980,7 @@ test('reprocessing a master asset time series with a mid period window keeps the
             'master_asset_id' => $masterAsset->id,
             'date'            => $monthStart->copy()->addDays($dayOffset),
             'quantity'        => 1,
+            'in_process'      => $inProcess,
             'net_amount'      => $amount,
             'grp_net_amount'  => $amount,
             'data'            => '{}',
@@ -2768,7 +3119,10 @@ test('master product creation seeds minor prices from the official exchange, not
         ->and(data_get($data, 'currencies.EUR.is_major'))->toBeFalse()
         ->and(data_get($data, 'currencies.EUR.major'))->toBe('GBP')
         ->and(data_get($data, 'currencies.GBP.ratio_eur'))->toBe(1.0)
-        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
+        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue()
+        ->and($data)->toHaveKey('family_unit_price_median')
+        ->and(data_get($data, 'family_unit_price_median'))->toBeNull()
+        ->and(data_get($data, 'base_currency_code'))->toBe('GBP');
 });
 
 test('master product creation data refuses a trade unit quantity of zero instead of dividing by it', function () {
@@ -2786,6 +3140,76 @@ test('master product creation data refuses a trade unit quantity of zero instead
     post(route('grp.models.master_product_category.product_creation_data', [$masterFamily->id]), [
         'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 0]],
     ])->assertSessionHasErrors('trade_units.0.quantity');
+});
+
+test('master product creation suggests price and RRP from the master shop ratios, editable per master shop', function (ShopTypeEnum $type, float $defaultCostPriceRatio, float $defaultRrpPriceRatio) {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['type' => $type]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPDEP-'.uniqid(),
+        'name' => 'RRP ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPFAM-'.uniqid(),
+        'name' => 'RRP ratio family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $creationData = fn () => \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily->refresh(),
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    expect(data_get($creationData(), 'rrp_price_ratio'))->toBe($defaultRrpPriceRatio)
+        ->and($masterShop->costPriceRatio())->toBe($defaultCostPriceRatio);
+
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 2.8, 'rrp_price_ratio' => 1.9]);
+
+    expect($masterShop->costPriceRatio())->toBe(2.8)
+        ->and(data_get($creationData(), 'rrp_price_ratio'))->toBe(1.9);
+})->with([
+    'wholesale'    => [ShopTypeEnum::B2B, 2.0, 2.4],
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 3.5, 2.0],
+]);
+
+test('master product creation prices a new product at cost times the price ratio and its RRP at price times the RRP ratio', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 3, 'rrp_price_ratio' => 2]);
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => Currency::where('code', 'GBP')->firstOrFail()->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CPRDEP-'.uniqid(),
+        'name' => 'Cost price ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CPRFAM-'.uniqid(),
+        'name' => 'Cost price ratio family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\StoreStock::make()->action(group(), \App\Models\Goods\Stock::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\UpdateStock::make()->action($stock, ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]);
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['lpp_per_sku' => 10, 'packed_in' => 1]);
+    $tradeUnit->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    $cost = data_get($data, 'avg_org_cost');
+
+    expect($cost)->toBeGreaterThan(0)
+        ->and(data_get($data, 'master_prices.GBP.value'))->toEqual(round($cost * 3, 2))
+        ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(round($cost * 3 * 2, 2));
 });
 
 test('minor currency recalculation includes variant master assets', function () {
@@ -3243,6 +3667,32 @@ test('creating a master asset queues its effective cost hydration', function (Ma
     );
 })->depends("create master family");
 
+test('changing a master composition queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_2',
+        'name'    => 'effective cost 2',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    Queue::fake();
+
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 1],
+        ],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");
+
 test('upload and delete sound sample on master asset', function () {
     $masterDepartment = ensureMasterProductCategory();
     $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [
@@ -3467,4 +3917,725 @@ test('master products can be looked up by the codes pasted into the ordering tab
     ]))->assertOk()->json('data'))->pluck('code');
 
     expect($shopCodes->all())->toContain($first->code, $outsider->code);
+});
+
+function createShopCollectionUnderMaster(Shop $shop): array
+{
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'NFM-DEPT-'.uniqid(), 'name' => 'Not Follow Master Department']);
+    $masterFamilyA    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FA-'.uniqid(), 'name' => 'Not Follow Master Family A']);
+    $masterFamilyB    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FB-'.uniqid(), 'name' => 'Not Follow Master Family B']);
+    $masterAsset      = StoreMasterAsset::make()->action($masterFamilyA, [
+        'code'    => 'NFM-MA-'.uniqid(),
+        'name'    => 'Not Follow Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($shop);
+    $department  = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $familyA     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyB     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyA->updateQuietly(['master_product_category_id' => $masterFamilyA->id]);
+    $familyB->updateQuietly(['master_product_category_id' => $masterFamilyB->id]);
+    $product->updateQuietly(['master_product_id' => $masterAsset->id]);
+
+    $masterCollection = StoreMasterCollection::make()->action($masterDepartment, ['code' => 'NFM-MC-'.uniqid(), 'name' => 'Master name'], createChildren: false);
+    $collection       = StoreCollection::make()->action($shop, [
+        'code'                 => 'NFM-C-'.uniqid(),
+        'name'                 => 'Shop name',
+        'master_collection_id' => $masterCollection->id,
+    ]);
+
+    return [$masterCollection, $collection->refresh(), $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product];
+}
+
+test('collection items follow master unless not_follow_master_items, and mirror it again when switched off', function () {
+    [$masterCollection, $collection, $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+
+    expect($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse();
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id])
+        ->and($collection->products()->count())->toBe(0);
+
+    // The shop edits it on its own: the product comes in through its family
+    \App\Actions\Catalogue\Collection\AttachModelsToCollection::make()->action($collection, ['families' => [$product->family_id]]);
+    expect($collection->families()->pluck('product_categories.id')->sort()->values()->all())->toBe(collect([$familyA->id, $product->family_id])->sort()->values()->all())
+        ->and($collection->products()->wherePivot('type', 'indirect')->pluck('products.id')->all())->toContain($product->id);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($collection->products()->wherePivot('type', 'direct')->pluck('products.id')->all())->toBe([$product->id])
+        ->and($collection->products()->wherePivot('type', 'indirect')->count())->toBe(0);
+
+    // Following again, so master changes reach it
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    expect($collection->families()->count())->toBe(0);
+});
+
+test('shop cannot attach or detach items of a collection that follows master items', function () {
+    [, $collection, , , , $familyA] = createShopCollectionUnderMaster($this->shop);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasErrors('collection');
+    expect($collection->families()->count())->toBe(0);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasNoErrors();
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasErrors('collection');
+});
+
+test('collection content follows master unless not_follow_master_content, and is taken from master again when switched off', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $shop   = $collection->shop;
+    $locale = $shop->language->code;
+    UpdateShop::make()->action($shop, ['collection_follow_master' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 2']);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 3']);
+    \App\Actions\Masters\MasterCollection\UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+        'translations' => ['name' => [$locale => 'Master name translated']]
+    ]);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    // Local texts stay local
+    UpdateCollection::make()->action($collection, ['description' => 'Local description']);
+    expect($masterCollection->refresh()->getTranslations('description_i8n'))->not->toHaveKey($locale)
+        ->and($collection->refresh()->description)->toBe('Local description');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => false]);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Master name translated')
+        ->and($collection->name_i8n)->toBe([$locale => 'Master name translated']);
+});
+
+test('updating a collection the old way leaves its follow master flags and items alone', function () {
+    [$masterCollection, $collection, $masterFamilyA, , , $familyA] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    UpdateCollection::make()->action($collection, ['name' => 'Renamed in shop']);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Renamed in shop')
+        ->and($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse()
+        ->and($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+});
+
+test('UI collection under master shows the follow master toggles and opens item editing only when not following', function () {
+    [, $collection] = createShopCollectionUnderMaster($this->shop);
+    $parameters = [$this->organisation->slug, $this->shop->slug, $collection->slug];
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', false)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', false));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Catalogue/Collection')->where('can_edit_items', false));
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true, 'not_follow_master_content' => true]);
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', true)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', true));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_items', true)->where('not_follow_master_items', true));
+
+    request()->merge(['filter' => ['global' => $collection->code]]);
+    $listed = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollections::run($this->shop)
+    )->resolve())->firstWhere('id', $collection->id);
+    $listedInMaster = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection::run($collection->masterCollection)
+    )->resolve())->firstWhere('id', $collection->id);
+    expect($listed['not_follow_master_items'])->toBeTrue()
+        ->and($listedInMaster['not_follow_master_items'])->toBeTrue();
+});
+
+test('shop editing items of a collection that does not follow master items leaves the master untouched', function () {
+    [$masterCollection, $collection, $masterFamilyA, , $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+
+    $masterItems = fn () => DB::table('master_collection_has_models')
+        ->where('master_collection_id', $masterCollection->id)
+        ->orderBy('model_type')->orderBy('model_id')
+        ->get(['model_type', 'model_id', 'type', 'created_at', 'updated_at'])
+        ->toArray();
+    $masterBefore = $masterItems();
+    $masterRowBefore = (array) DB::table('master_collections')->where('id', $masterCollection->id)->first();
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), [
+        'families' => [$familyB->id],
+        'products' => [$product->id],
+    ])->assertSessionHasNoErrors();
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasNoErrors();
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($masterItems())->toEqual($masterBefore)
+        ->and((array) DB::table('master_collections')->where('id', $masterCollection->id)->first())->toEqual($masterRowBefore);
+});
+
+test('master collection counts its shop collections that do not follow master items or content', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $stats = fn () => $masterCollection->stats()->first(['total_collections_rebel_items', 'total_collections_rebel_content'])->toArray();
+
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 1]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 1]);
+
+    // Moving to another master takes the count along
+    [$otherMasterCollection] = createShopCollectionUnderMaster($this->shop);
+    UpdateCollection::make()->action($collection, ['master_collection_id' => $otherMasterCollection->id]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0])
+        ->and($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(1);
+
+    \App\Actions\Catalogue\Collection\DeleteCollection::make()->handle($collection->refresh());
+    expect($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(0);
+
+    $this->artisan('hydrate:master_collections')->assertSuccessful();
+});
+
+test('masters staff view and edit the catalogue of shops under a master and view any organisation stock', function () {
+    $masterShop = createFreshMasterShop();
+    DB::table('shops')->where('id', $this->shop->id)->update(['master_shop_id' => $masterShop->id]);
+    $shopWithoutMaster = Shop::where('group_id', $this->group->id)->whereNull('master_shop_id')->first();
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeFalse()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeFalse();
+
+    $user->assignRole('masters-viewer');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}.edit"))->toBeFalse()
+        ->and($user->authTo(["crm.{$this->shop->id}.view", "products.{$this->shop->id}.view"]))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.edit"))->toBeFalse()
+        ->and($user->authTo("crm.{$this->shop->id}.view"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+    expect($user->authorisedShops()->where('shops.id', $this->shop->id)->exists())->toBeTrue()
+        ->and($user->authorisedOrganisations()->where('organisations.id', $this->organisation->id)->exists())->toBeTrue()
+        ->and($user->authorisedWarehouses()->where('warehouses.organisation_id', $this->organisation->id)->count())
+        ->toBe($this->organisation->warehouses()->count());
+
+    $user->assignRole('masters-manager');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.edit"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}"))->toBeTrue();
+
+    if ($shopWithoutMaster) {
+        expect($user->authTo("products.{$shopWithoutMaster->id}.view"))->toBeFalse();
+    }
+});
+
+describe('price tips from Jev, HELP-2331', function () {
+    beforeEach(function () {
+        Config::set('services.openrouter.api_key', 'test-key');
+
+        $this->tipMasterShop = createFreshMasterShop();
+        $masterDepartment    = StoreMasterDepartment::make()->action($this->tipMasterShop, [
+            'code' => 'PTD-'.uniqid(),
+            'name' => 'Price tips department',
+        ]);
+        $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+            'code' => 'PTF-'.uniqid(),
+            'name' => 'Price tips family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+
+        $this->tipMasterAsset = StoreMasterAsset::make()->action($masterFamily, [
+            'code'    => 'PT-'.uniqid(),
+            'name'    => 'Price tip product',
+            'is_main' => true,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 10,
+            'stocks'  => [],
+        ]);
+        $this->tipMasterAsset->updateQuietly(['master_prices' => ['GBP' => ['value' => '10', 'independent' => false], 'EUR' => ['value' => '12', 'independent' => false]]]);
+
+        $this->tipSignals = [
+            'product'             => 'PT Price tip product',
+            'currency'            => 'GBP',
+            'price'               => 10.0,
+            'units'               => 1.0,
+            'cost'                => 2.0,
+            'margin_pct'          => 80,
+            'family_median_price' => 11.0,
+            'sales'               => 80.0,
+            'sales_last_year'     => 100.0,
+            'new'                 => false,
+            'days_on_sale'        => 700,
+            'cover'               => 400.0,
+            'monthly_sales'       => [],
+            'organisations'       => [['organisation' => 'aw', 'days_of_cover' => 400, 'stock' => 50, 'sold_last_year' => 40, 'incoming' => 20, 'days_out_of_stock' => ['2026Q3' => 4]]],
+            'offers'              => [],
+            'price_changes'       => [['date' => '2025-03-10', 'change_pct' => -10.0, 'sales_change_pct' => 25.0]],
+        ];
+    });
+
+    $fakeJev = function (string $choice, float $probability, float $temporaryDrop = 0.1) {
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['answers' => [
+                'change'         => ['choice' => $choice, 'probabilities' => [$choice => $probability, 'hold' => round(1 - $probability, 2)]],
+                'temporary_drop' => ['noul' => $temporaryDrop],
+            ]]),
+        ]);
+    };
+
+    test('a confident markdown on an overstocked product is stored with a reason built from the signals', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        expect($tip->status)->toBe(MasterAssetPriceTipStatusEnum::OPEN)
+            ->and($tip->change)->toBe(-10)
+            ->and((float) $tip->confidence)->toBe(0.72)
+            ->and((float) $tip->temporary_drop_probability)->toBe(0.1)
+            ->and($tip->reason)->toContain('400 days')
+            ->and($tip->reason)->toContain('sales down 20%')
+            ->and($tip->reason)->toContain('20 more on the way')
+            ->and($tip->reason)->toContain('moved sales +25%')
+            ->and($tip->state['cover'])->toEqual(400)
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check['outcome'])->toBe('tip');
+
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request['state']['product'] === 'PT Price tip product'
+            && array_keys($request['questions']) === ['change', 'temporary_drop']);
+
+        $fakeJev('down_5', 0.8);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals)->change)->toBe(-10);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+
+        $this->travel(GenerateMasterAssetPriceTips::RECHECK_DAYS + 1)->days();
+        $refreshed = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        expect($refreshed->id)->toBe($tip->id)->and($refreshed->change)->toBe(-5);
+
+        $fakeJev('hold', 0.9);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'price' => 9.5]))->toBeNull()
+            ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::EXPIRED)
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check['outcome'])->toBe('ai_hold');
+    });
+
+    test('guard rails turn down picks against the stock, unsure picks, temporary drops and markdowns below cost floor', function () {
+        $answers = fn (string $choice, float $probability, float $temporaryDrop = 0.1) => [
+            'change'         => ['choice' => $choice, 'probabilities' => [$choice => $probability]],
+            'temporary_drop' => ['noul' => $temporaryDrop],
+        ];
+        $signals = $this->tipSignals;
+
+        expect(GenerateMasterAssetPriceTips::decide($signals, $answers('up_5', 0.9)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_10', 0.4)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_10', 0.9, 0.7)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cost' => 7.6], $answers('down_15', 0.9)))->toMatchArray(['change' => -5, 'capped' => true])
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cost' => 7.9], $answers('down_15', 0.9)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 80.0], $answers('down_10', 0.9)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('up_10', 0.8)))->toMatchArray(['change' => 10])
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('down_5', 0.8)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('down_10', 0.9, 0.7))['check']['outcome'])->toBe('temporary_drop')
+            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('down_10', 0.4))['check']['text'])->toBe('No tip: the AI is only 40% sure of -10%');
+    });
+
+    test('lines on sale under 60 days and products with stock about right are never sent to Jev, and say why', function () {
+        \Illuminate\Support\Facades\Http::fake();
+
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 30]))->toBeNull()
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'too_new', 'text' => 'No tip yet: new, on sale for 30 days'])
+            ->and(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'cover' => 80.0]))->toBeNull()
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'stock_balanced', 'text' => 'No tip: stock for 80 days, no change needed']);
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    });
+
+    test('a new line on sale long enough gets a markdown without the temporary drop check, judged on its family', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.7, 0.9);
+
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 120]);
+
+        expect($tip->change)->toBe(-10)
+            ->and($tip->reason)->toContain('new, on sale for 120 days')
+            ->and($tip->reason)->not->toContain('on last year');
+    });
+
+    test('stock cover is averaged over the organisations by what each sold in the last year', function () {
+        $organisations = [
+            ['organisation' => 'aw', 'days_of_cover' => 600, 'sold_last_year' => 90],
+            ['organisation' => 'es', 'days_of_cover' => 0, 'sold_last_year' => 10],
+            ['organisation' => 'sk', 'days_of_cover' => 730, 'sold_last_year' => 0],
+        ];
+
+        expect(GenerateMasterAssetPriceTips::salesWeightedCover($organisations))->toBe(540.0)
+            ->and(GenerateMasterAssetPriceTips::salesWeightedCover(array_map(fn ($organisation) => [...$organisation, 'sold_last_year' => 0], $organisations)))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::salesWeightedCover([]))->toBeNull();
+    });
+
+    test('when Jev cannot answer the open tip is kept and nothing new is stored', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/*' => \Illuminate\Support\Facades\Http::response('down', 503)]);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals)?->id)->toBe($tip->id)
+            ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::OPEN);
+
+        Config::set('services.openrouter.api_key', null);
+        $tip->update(['status' => MasterAssetPriceTipStatusEnum::EXPIRED]);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals))->toBeNull()
+            ->and(MasterAssetPriceTip::where('master_asset_id', $this->tipMasterAsset->id)->where('status', MasterAssetPriceTipStatusEnum::OPEN)->exists())->toBeFalse();
+    });
+
+    test('applying a tip moves every currency through the master price update, audited, and it is measured later', function () use ($fakeJev) {
+        Queue::fake();
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        ApplyMasterAssetPriceTip::make()->action($tip, [], $this->adminGuest->getUser());
+
+        $masterAsset = $this->tipMasterAsset->fresh();
+        $tip->refresh();
+        expect((float) $masterAsset->master_prices['GBP']['value'])->toBe(9.0)
+            ->and((float) $masterAsset->master_prices['EUR']['value'])->toBe(10.8)
+            ->and($tip->status)->toBe(MasterAssetPriceTipStatusEnum::APPLIED)
+            ->and((float) $tip->applied_price)->toBe((float) $masterAsset->price)
+            ->and($tip->applied_by_user_id)->toBe($this->adminGuest->getUser()->id)
+            ->and($tip->audits()->where('new_values->status', 'applied')->exists())->toBeTrue();
+
+        expect(fn () => ApplyMasterAssetPriceTip::make()->action($tip, []))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $tip->update(['applied_at' => now()->subDays(GenerateMasterAssetPriceTips::MEASURE_AFTER_DAYS + 1)]);
+        GenerateMasterAssetPriceTips::make()->measureOutcomes();
+        expect($tip->fresh()->measured_at)->not->toBeNull()
+            ->and($tip->fresh()->outcome)->toHaveKeys(['sales_before', 'sales_after', 'sales_after_last_year', 'sales_change_pct']);
+    });
+
+    test('staff dismiss a tip with a reason', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => ''])
+            ->assertSessionHasErrors('dismissed_reason');
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => 'Christmas stock, sells in December'])
+            ->assertSessionHasNoErrors();
+
+        $tip->refresh();
+        expect($tip->status)->toBe(MasterAssetPriceTipStatusEnum::DISMISSED)
+            ->and($tip->dismissed_reason)->toBe('Christmas stock, sells in December')
+            ->and($tip->dismissed_by_user_id)->toBe($this->adminGuest->getUser()->id)
+            ->and($tip->audits()->where('new_values->status', 'dismissed')->exists())->toBeTrue();
+    });
+
+    test('the master shop lists every open price tip in one place', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        $masterShop = $this->tipMasterAsset->masterShop;
+
+        get(route('grp.masters.master_shops.show.master_products.index', [$masterShop->slug, 'tab' => 'pricing']))
+            ->assertOk()
+            ->assertInertia(
+                fn (AssertableInertia $page) => $page
+                    ->where('tabs.navigation.pricing.title', 'Price tips')
+                    ->where('tabs.navigation.pricing.number', 1)
+                    ->has('pricing.data', 1)
+                    ->where('pricing.data.0.code', $this->tipMasterAsset->code)
+                    ->where('pricing.data.0.price_tip.change', -10)
+                    ->where('pricing.data.0.master_family_code', $this->tipMasterAsset->masterFamily->code)
+                    ->etc()
+            );
+
+        \Pest\Laravel\post(route('grp.json.master_shop.pricing_sales', $masterShop->slug), ['interval' => 'quarter', 'ids' => [$this->tipMasterAsset->id]])
+            ->assertOk();
+    });
+
+    test('a markdown is not tipped when the website is the problem, and the reason says how the website is doing', function () {
+        $answers = ['change' => ['choice' => 'down_10', 'probabilities' => ['down_10' => 0.9]], 'temporary_drop' => ['noul' => 0.1]];
+        $healthy = ['shops' => 20, 'online' => 20, 'online_without_images' => 0, 'family_visitors' => 900, 'family_visitors_change_pct' => 5];
+
+        expect(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => $healthy], $answers))->toMatchArray(['change' => -10])
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online' => 14]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online_without_images' => 2]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'family_visitors_change_pct' => -40]], $answers))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::websiteReason($healthy))->toBe('website OK: online in 20 of 20 shops, family page visitors +5%')
+            ->and(GenerateMasterAssetPriceTips::websiteReason([...$healthy, 'online' => 14, 'family_visitors_change_pct' => -40]))->toBe('website problem: offline in 6 of 20 shops, family page visitors -40%')
+            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'offers' => ['Autumn 10% off', 'Older offer']], ['change' => -10, 'capped' => false]))->toContain('2 offers running, latest: Autumn 10% off')
+            ->and(GenerateMasterAssetPriceTips::make()->websiteHealth([0]))->toBe([]);
+    });
+
+    test('the reason puts the product among its family', function () {
+        $family = ['rank' => 26, 'products' => 31, 'products_selling' => 31, 'share_pct' => 1, 'family_change_pct' => -12];
+
+        expect(GenerateMasterAssetPriceTips::familyReason($family, -10))->toBe('in the family: #26 of 31 by sales, 1% of family sales, family -12% vs this product -10%')
+            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'family' => $family], ['change' => -10, 'capped' => false]))->toContain('in the family: #26 of 31')
+            ->and(GenerateMasterAssetPriceTips::make()->familyContext([], collect()))->toBe([]);
+    });
+
+    test('why staff said a tip was wrong goes back to the AI for that product and its family', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => 'Christmas stock, sells in December'])
+            ->assertRedirect();
+
+        $feedback = GenerateMasterAssetPriceTips::make()->staffFeedback([], [$this->tipMasterAsset->master_family_id]);
+
+        expect($feedback)->toHaveCount(1)
+            ->and($feedback->first()->dismissed_reason)->toBe('Christmas stock, sells in December')
+            ->and((int) $feedback->first()->change)->toBe(-10)
+            ->and(GenerateMasterAssetPriceTips::make()->staffFeedback([], [0]))->toBeEmpty();
+    });
+});
+
+describe('competitor prices, HELP-3605', function () {
+    beforeEach(function () {
+        Config::set('services.openrouter.api_key', 'test-key');
+        Config::set('services.discord.webhook_url');
+
+        $this->competitorMasterShop = createFreshMasterShop();
+        $masterDepartment           = StoreMasterDepartment::make()->action($this->competitorMasterShop, [
+            'code' => 'CPD-'.uniqid(),
+            'name' => 'Competitor department',
+        ]);
+        $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+            'code' => 'CPF-'.uniqid(),
+            'name' => 'Competitor family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+        $this->competitorMasterAsset = StoreMasterAsset::make()->action($masterFamily, [
+            'code'    => 'CP-'.uniqid(),
+            'name'    => 'Brass singing bowl 10cm',
+            'is_main' => true,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 10,
+            'stocks'  => [],
+        ]);
+
+        $this->competitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name'        => 'Rival',
+            'website'     => 'https://rival.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://rival.example.com/search?q={query}',
+        ]);
+    });
+
+    $fakeBrowserAndAi = function (array $browser, array $aiProducts) {
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode($browser))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['products' => $aiProducts])]]]]),
+        ]);
+    };
+
+    test('staff add a competitor whose trade login is kept encrypted and never shown back', function () {
+        get(route('grp.masters.master_shops.show.competitors.create', $this->competitorMasterShop->slug))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel')->etc());
+
+        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+            'name'        => 'Trade rival',
+            'website'     => 'https://trade.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://trade.example.com/search?q={query}',
+            'login_url'   => 'https://trade.example.com/login',
+            'username'    => 'buyer@example.com',
+            'password'    => 'trade-secret',
+        ])->assertRedirect();
+
+        $competitor = $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->firstOrFail();
+        expect($competitor->password)->toBe('trade-secret')
+            ->and(DB::table('competitors')->where('id', $competitor->id)->value('password'))->not->toContain('trade-secret');
+
+        $competitor->update(['cookies' => [['name' => 'session', 'value' => 'x']]]);
+        \Pest\Laravel\patch(route('grp.models.competitor.update', $competitor->id), ['username' => 'buyer@example.com', 'password' => ''])->assertSessionHasNoErrors();
+        $competitor->refresh();
+        expect($competitor->password)->toBe('trade-secret')
+            ->and($competitor->cookies)->toBeNull();
+
+        get(route('grp.masters.master_shops.show.competitors.edit', [$this->competitorMasterShop->slug, $competitor->id]))
+            ->assertOk()
+            ->assertDontSee('trade-secret');
+
+        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+            'name'        => 'No query',
+            'website'     => 'https://x.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'search_url'  => 'https://x.example.com/search',
+        ])->assertSessionHasErrors('search_url');
+    });
+
+    test('a search keeps only links that were on the page and staff confirm the match', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [[
+                'url'     => 'https://rival.example.com/search?q=Brass',
+                'status'  => 200,
+                'blocked' => false,
+                'text'    => 'Brass bowl 10cm pack of 2 £16.00',
+                'links'   => [['href' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'text' => 'Brass bowl 10cm']],
+            ]],
+        ], [
+            ['url' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'name' => 'Brass bowl 10cm', 'price' => 16, 'units' => 2, 'minimum_order' => null, 'same_item' => true],
+            ['url' => 'https://rival.example.com/p/made-up', 'name' => 'Made up', 'price' => 1, 'units' => 1, 'same_item' => true],
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(1);
+
+        $this->competitor->refresh();
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->sole();
+        expect($this->competitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK)
+            ->and($this->competitor->number_products)->toBe(1)
+            ->and($match->competitorProduct->url)->toBe('https://rival.example.com/p/brass-bowl')
+            ->and($match->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::SUGGESTED);
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('competitor_prices.data', 1)
+                ->where('competitor_prices.data.0.competitor_unit_price', 8)
+                ->where('competitor_prices.data.0.difference', -20)
+                ->etc());
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitors']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('competitors.data.0.name', 'Rival')->missing('competitors.data.0.password')->etc());
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
+        expect($match->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id))
+            ->toBe([['competitor' => 'Rival', 'sells_to' => 'wholesale', 'same_item' => true, 'difference_pct' => -20]]);
+    });
+
+    test('a failed login marks the competitor and reads nothing', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi(['login_error' => 'wrong login', 'cookies' => [], 'pages' => []], []);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(0)
+            ->and($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::LOGIN_FAILED)
+            ->and($this->competitor->last_error)->toBe('wrong login');
+    });
+    test('a product feed is read and Jev picks the same item from the closest names', function () {
+        $feed = implode("\r\n", [
+            "Item No\tStock Level\tItem Name\tPrice\tBarcode\tMin Order Qty\tRRP\tDiscontinued\tURL Links\tMaterial\tHeight\tWidth\tDepth\tCommodity Code\tDescription",
+            "SB-12\t10\tSet of 12 Brass Singing Bowls 10cm\t96.00\t111\t1\t15.99\tFalse\thttps://rival.example.com/i/sb-12.jpg\tBrass\t5\t10\t10\t8306290000\t<p>Hand hammered bowls</p>",
+            "SB-RED\t4\tRed Brass Singing Bowl 10cm Stand\t5.00\t222\t1\t\tFalse\t\t\t\t\t\t\t",
+            "OLD-1\t0\tBrass Singing Bowl 10cm Old\t3.00\t333\t1\t\tTrue\t\t\t\t\t\t\t",
+            "MUG-1\t9\tWhite Mug\t2.00\t444\t6\t5.99\tFalse\t\t\t\t\t\t\t",
+        ]);
+
+        $this->competitor->update(['feed_url' => 'https://feeds.example.com/stock.txt']);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'feeds.example.com/*'        => \Illuminate\Support\Facades\Http::response($feed),
+            'openrouter.ai/api/alpha/*'  => function (\Illuminate\Http\Client\Request $request) {
+                $choice = array_search('Set of 12 Brass Singing Bowls 10cm: the same item', $request['questions']['answer']['criteria'], true);
+
+                return \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => $choice, 'probabilities' => [$choice => 0.9, 'none' => 0.1]]]]);
+            },
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::make()->handle($this->competitor))->toBe(3)
+            ->and($this->competitor->refresh()->number_products)->toBe(3)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+
+        $matches = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->get()->keyBy('competitorProduct.code');
+        expect($matches['SB-12']->competitorProduct->data)->toEqual(['description' => 'Hand hammered bowls', 'material' => 'Brass', 'size_cm' => '5 x 10 x 10', 'tariff_code' => '8306290000']);
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'decisions') && ($request['state']['competitor'][0]['material'] ?? $request['state']['competitor'][1]['material'] ?? null) === 'Brass');
+        expect($matches->keys()->sort()->values()->all())->toBe(['SB-12', 'SB-RED'])
+            ->and($matches['SB-12']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($matches['SB-12']->is_same_item)->toBeTrue()
+            ->and((float) $matches['SB-12']->competitorProduct->units)->toBe(12.0)
+            ->and($matches['SB-RED']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(0)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(-20);
+
+        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('competitor_prices.data', 1)
+                ->where('competitor_prices.data.0.is_auto_confirmed', true)
+                ->where('competitor_prices.data.0.confidence', 90)
+                ->etc());
+    });
+
+    test('pack sizes are read from the name unless ours is a set too', function () {
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set Of 4 Skull Coasters', 'Set of 4 Square Coasters'))->toBe(1.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0);
+    });
+});
+
+test('the seo title, meta description and url typed on a family edit page reach its webpage', function () {
+    createProduct($this->shop);
+    createWebsite($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $url     = 'seo-family-'.strtolower(substr(uniqid(), -6));
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), [
+        'webpage_title'       => 'Velas de cera de soja',
+        'webpage_description' => 'Velas aromáticas al por mayor',
+        'webpage_url'         => $url,
+    ])->assertRedirect();
+
+    $webpage->refresh();
+    expect($webpage->title)->toBe('Velas de cera de soja')
+        ->and($webpage->description)->toBe('Velas aromáticas al por mayor')
+        ->and($webpage->url)->toBe($url);
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), ['webpage_description' => ''])
+        ->assertRedirect();
+
+    expect($webpage->refresh()->description)->toBe('');
 });

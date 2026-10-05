@@ -9,10 +9,12 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\PayInvoice;
-use App\Actions\Accounting\Invoice\RefundToCredit;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
+use App\Actions\Accounting\Payment\RefundPaymentManual;
+use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilmentInvoice;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\DeleteStandaloneFulfilmentInvoiceTransaction;
@@ -92,6 +94,7 @@ use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Actions\Traits\WithGetRecurringBillEndDate;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -123,6 +126,7 @@ use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\Payment;
@@ -161,6 +165,7 @@ use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
 
@@ -3496,24 +3501,66 @@ test('refund to credit balance', function (array $data) {
     /** @var Invoice $refund */
     [$invoice, $refund] = $data;
 
-    $invoice = RefundToCredit::make()->action($invoice, [
-        'amount' => $refund->total_amount
-    ]);
+    $refundTotal = abs((float) $refund->total_amount);
+    $halfAmount  = round($refundTotal / 2, 2);
+    $balance     = (float) $refund->customer->balance;
+    $payment     = RefundClaimToBalance::paymentToRefundFrom($invoice, $refundTotal);
 
-    $invoice->refresh();
+    RefundPaymentToBalance::make()->handle($payment, ['amount' => $halfAmount, 'invoice_id' => $refund->id]);
+    expect($refund->refresh()->pay_status)->not->toBe(InvoicePayStatusEnum::PAID);
+
+    RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => round($refundTotal - $halfAmount, 2), 'invoice_id' => $refund->id]);
+
     $refund->refresh();
-
     $refundPayment = $refund->payments->first();
+    $credit        = CreditTransaction::where('payment_id', $refundPayment->id)->first();
 
-    expect($refund)->toBeInstanceOf(Invoice::class)
-        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
-        ->and($refund->payments->count())->toBe(1)
-        ->and($refundPayment->amount)->toBe($refund->total_amount)
+    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($refund->payments->count())->toBe(2)
+        ->and(round($refund->payments->sum('amount'), 2))->toBe(round((float) $refund->total_amount, 2))
+        ->and($refundPayment->payment_account_id)->toBe($invoice->shop->getPaymentAccountTypeAccount()->id)
         ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
         ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
-        ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);
+        ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED)
+        ->and($refundPayment->original_payment_id)->toBe($payment->id)
+        ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
+        ->and(round((float) $refund->customer->refresh()->balance - $balance, 2))->toBe(round($refundTotal, 2));
+
+    return [$payment, $refund];
 })->depends('finalise refund');
 
+test('a paid refund can not be paid again to balance or by a manual refund', function (array $data) {
+    /** @var Payment $payment */
+    /** @var Invoice $refund */
+    [$payment, $refund] = $data;
+    $totalRefund = (float) $payment->refresh()->total_refund;
+
+    expect(fn () => RefundPaymentToBalance::make()->handle($payment, ['amount' => 0.01, 'invoice_id' => $refund->id]))->toThrow(ValidationException::class)
+        ->and(fn () => RefundPaymentManual::make()->handle($payment, ['amount' => 0.01, 'reference' => 'manual-0.01', 'invoice_id' => $refund->id]))->toThrow(ValidationException::class)
+        ->and($refund->refresh()->payments->count())->toBe(2)
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund);
+})->depends('refund to credit balance');
+
+test('a refund paid by hand in parts is paid up to what it owes, not beyond', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $invoice = $payment->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->first(), ['net_amount' => round($invoice->invoiceTransactions()->first()->net_amount * 0.1, 2)]);
+    $refund      = FinaliseRefund::make()->action($refund->refresh(), [])->refresh();
+    $refundTotal = abs((float) $refund->total_amount);
+    $firstPart   = round($refundTotal / 3, 2);
+
+    RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => $firstPart, 'reference' => 'manual-part-1', 'invoice_id' => $refund->id]);
+    expect($refund->refresh()->pay_status)->not->toBe(InvoicePayStatusEnum::PAID)
+        ->and(round(abs((float) $refund->payment_amount), 2))->toBe($firstPart)
+        ->and(fn () => RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => round($refundTotal - $firstPart + 0.01, 2), 'reference' => 'manual-over', 'invoice_id' => $refund->id]))->toThrow(ValidationException::class, 'left to pay on this refund');
+
+    RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => round($refundTotal - $firstPart, 2), 'reference' => 'manual-part-2', 'invoice_id' => $refund->id]);
+    expect($refund->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and(round(abs((float) $refund->payment_amount), 2))->toBe(round($refundTotal, 2));
+})->depends('refund to credit balance');
 
 test('store audit for pallet 6th customer', function () {
     $fulfilmentCustomer = FulfilmentCustomer::find(6);

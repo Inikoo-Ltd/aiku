@@ -22,6 +22,7 @@ enum TradeAttachmentScopeEnum: string
     case DOC = 'doc';
     case CPSR = 'cpsr';
     case TEST_REPORTS = 'test_reports';
+    case HOW_TO_USE = 'how_to_use';
     case OTHER = 'other';
 
     case IFRA_PRIVATE = 'ifra_private';
@@ -46,6 +47,7 @@ enum TradeAttachmentScopeEnum: string
             'doc'                           => __('Declaration of Conformity'),
             'cpsr'                          => 'CPSR',
             'test_reports'                  => __('Test Reports'),
+            'how_to_use'                    => __('How to use'),
             'other'                         => __('Other'),
             'ifra_private'                  => 'UFRA'.' ('.__('Private').')',
             'sds_private'                   => 'SDS'.' ('.__('Private').')',
@@ -59,5 +61,16 @@ enum TradeAttachmentScopeEnum: string
         ];
     }
 
-
+    public static function publicScopes(): array
+    {
+        return [
+            self::IFRA->value,
+            self::SDS->value,
+            self::ALLERGEN_DECLARATIONS->value,
+            self::DOC->value,
+            self::CPSR->value,
+            self::TEST_REPORTS->value,
+            self::HOW_TO_USE->value,
+        ];
+    }
 }

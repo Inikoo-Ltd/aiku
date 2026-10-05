@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\Ebay\CheckEbayUserCreating;
 use App\Actions\Dropshipping\Ebay\IndexEbayUserPolicies;
 use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
@@ -106,6 +107,7 @@ Route::prefix('support')->as('tickets.')->group(function () {
 
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
+    Route::get('shopify-user/claim', ClaimShopifyUser::class)->name('shopify_user.claim');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
     Route::patch('shopify-user/{order:id}/sync-cancelled-status', SyncOrderCancellationToShopify::class)->name('shopify_user.order.sync-cancellation')->whereNumber('order');
 

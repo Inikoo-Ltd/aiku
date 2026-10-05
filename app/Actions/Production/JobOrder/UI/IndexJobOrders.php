@@ -126,9 +126,12 @@ class IndexJobOrders extends OrgAction
                             'tooltip' => __('New job order'),
                             'label'   => __('job order'),
                             'route'   => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.production.job-order.store',
-                                'parameters' => ['production' => $this->production->id],
+                                'name'       => 'grp.org.productions.show.to_produce.index',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'production'   => $this->production->slug,
+                                    'create'       => 1,
+                                ],
                             ],
                         ] : null,
                     ],

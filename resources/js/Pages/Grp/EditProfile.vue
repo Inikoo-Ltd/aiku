@@ -2,7 +2,7 @@
 import Editmodel from '@/Pages/Grp/EditModel.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -22,8 +22,8 @@ onMounted(async () => {
         dataEditProfile.value = data
     } catch (error) {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch this page.'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch this page.'),
             type: 'error',
         })
     }
@@ -33,7 +33,7 @@ onMounted(async () => {
 <template>
     <Editmodel v-if="dataEditProfile" v-bind="dataEditProfile" :embedded="embedded" />
 
-    <div v-else-if="embedded" class="animate-pulse lg:grid lg:grid-cols-12" role="status" :aria-label="trans('Loading personal settings')">
+    <div v-else-if="embedded" class="animate-pulse lg:grid lg:grid-cols-12" role="status" :aria-label="ctrans('Loading personal settings')">
         <div class="hidden lg:block lg:col-span-3 space-y-3 border-r border-gray-200 bg-gray-50/50 p-4">
             <div v-for="row in 4" :key="`nav-${row}`" class="h-5 rounded bg-gray-200" :class="row % 2 ? 'w-2/3' : 'w-1/2'" />
         </div>

@@ -8,7 +8,9 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Ordering\Order\GetOrderBacklog;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
+use App\Actions\Comms\Mailshot\GetShopMailshotsSentStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
@@ -23,31 +25,32 @@ class GetGroupDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Group $group, $fromDate = null, $toDate = null, ?bool $useCache = null): array
+    public function handle(Group $group, $fromDate = null, $toDate = null, ?bool $useCache = null, bool $includePartners = false): array
     {
         $useCache = $useCache ?? true;
 
         if (!$useCache) {
-            return $this->fetchData($group, $fromDate, $toDate);
+            return $this->fetchData($group, $fromDate, $toDate, $includePartners);
         }
 
-        $cacheKey = $this->getCacheKey($group, $fromDate, $toDate);
+        $cacheKey = $this->getCacheKey($group, $fromDate, $toDate, $includePartners);
 
         return Cache::tags(["dashboard-group-{$group->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
-                return $this->fetchData($group, $fromDate, $toDate);
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate, $includePartners) {
+                return $this->fetchData($group, $fromDate, $toDate, $includePartners);
             });
     }
 
-    protected function getCacheKey(Group $group, $fromDate, $toDate): string
+    protected function getCacheKey(Group $group, $fromDate, $toDate, bool $includePartners): string
     {
         [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
 
         return sprintf(
-            'dashboard:group_timeseries:%s:%s:%s',
+            'dashboard:group_timeseries:%s:%s:%s%s',
             $group->id,
             $normalizedFromDate,
-            $normalizedToDate
+            $normalizedToDate,
+            $includePartners ? ':partners' : ''
         );
     }
 
@@ -76,10 +79,12 @@ class GetGroupDashboardTimeSeriesData
         return Carbon::parse((string) $date)->toDateString();
     }
 
-    protected function fetchData(Group $group, $fromDate, $toDate): array
+    protected function fetchData(Group $group, $fromDate, $toDate, bool $includePartners): array
     {
-        $allShops = GetShopTimeSeriesStats::run($group, $fromDate, $toDate);
-        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate);
+        $backlog = GetOrderBacklog::run($group, $includePartners);
+
+        $allShops = GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($group, $fromDate, $toDate, null, $includePartners), $backlog['shops']);
+        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']);
 
         $shopsByType = [
             'all' => $allShops,
@@ -108,13 +113,14 @@ class GetGroupDashboardTimeSeriesData
             ->all();
 
         return [
-            'organisations' => GetOrganisationTimeSeriesStats::run($group, $fromDate, $toDate),
+            'organisations' => GetOrderBacklog::addTo(GetOrganisationTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['organisations']),
             'shops' => $shopsByType,
             'invoiceCategories' => $allInvoiceCategories,
             'faire' => $faireInvoiceCategories,
-            'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate),
-            'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate),
-            'brands' => GetBrandTimeSeriesStats::run($group, $fromDate, $toDate),
+            'platforms' => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['platforms']),
+            'salesChannels' => GetOrderBacklog::addTo(GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['salesChannels']),
+            'brands' => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['brands']),
+            'mailshots' => GetShopMailshotsSentStats::run($group, $fromDate, $toDate),
         ];
     }
 

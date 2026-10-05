@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
@@ -172,6 +173,7 @@ class StoreCustomer extends OrgAction
         CustomerHydrateIsStaff::run($customer);
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);
+        ShopHydrateCustomersDashboard::dispatch($customer->shop)->delay(now()->addMinutes(2));
         ShopHydrateCustomerInvoices::dispatch($customer->shop)->delay($this->hydratorsDelay);
         GroupHydrateCustomers::dispatch($customer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
@@ -197,10 +199,6 @@ class StoreCustomer extends OrgAction
             } catch (Throwable $e) {
                 report($e);
             }
-        }
-
-        if ($customer->shop->is_aiku) {
-            SaveCustomerInAurora::dispatch($customer);
         }
 
         if ($customer->shop->is_aiku) {

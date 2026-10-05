@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
+import { useElementSize } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -20,22 +22,32 @@ import {
     faLifeRing,
     faEye,
     faBan,
+    faListCheck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
+import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
+import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
+import { useWhatsappCall } from "@/Composables/useWhatsappCall"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -91,9 +103,11 @@ const lastMessageStamp = computed(() => {
     return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
 })
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success", "task-created"])
 
 const isSpamMarking = ref(false)
+
+const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
 
 const markSpam = async () => {
     if (!props.session?.ulid || isSpamMarking.value) return
@@ -119,7 +133,47 @@ const baseUrl = layout?.appUrl ?? ""
 
 const isTicketModalOpen = ref(false)
 
+type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
+
+const isTaskDialogOpen = ref(false)
+
+const openTasks = computed<ChatOpenTask[]>(() => (props.session as any)?.open_tasks ?? [])
+
+const onTaskCreated = (task: any) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tasks = [...(session.open_tasks ?? []), {
+        reference: task.reference,
+        subject: task.subject,
+        who: task.assignee?.name ?? task.department_label,
+        url: route("grp.tasks.index", { task: task.reference }),
+    }]
+    emit("task-created")
+}
+
 const chatSession = computed(() => props.session)
+
+const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
+)
+const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
+)
+const onSuggestedAction = async (action: "close" | "wait") => {
+    if (action === "wait") {
+        setWaiting(72)
+        return
+    }
+    if (!chatSession.value?.ulid) return
+    await axios.patch(route("grp.org.chat.agents.whatsapp.sessions.close", [(chatSession.value as any)?.organisation?.id, chatSession.value.ulid]))
+    emit("close-session")
+}
+const onWaitPicked = (event: Event) => {
+    const select = event.target as HTMLSelectElement
+    const hours = Number(select.value)
+    select.value = ""
+    if (hours) setWaiting(hours)
+}
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
@@ -138,6 +192,14 @@ const canDispose = computed(() => {
 const canReportSpam = computed(() =>
     !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly && canDispose.value
 )
+
+// The header goes to two rows by the width it actually has, not the screen's: on a tablet the
+// app menu and the conversation list leave the thread a phone's width on an lg screen.
+const headerRef = ref<HTMLElement | null>(null)
+const { width: headerWidth } = useElementSize(headerRef)
+const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.value < 600)
+
+const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
 const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
@@ -200,7 +262,12 @@ const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
-const messageInput = ref<HTMLTextAreaElement>()
+watch(newMessage, (text) => {
+    if (text) keepOpen()
+})
+useComposerDraft(() => props.session?.ulid, newMessage)
+
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 const messagesContainer = ref<HTMLDivElement>()
 
 const imageInput = ref<HTMLInputElement>()
@@ -399,17 +466,11 @@ const scrollBottom = () =>
 
 const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
-const autoResize = () => {
-    if (!messageInput.value) return
-    messageInput.value.style.height = "auto"
-    messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
-}
-
 const replyingTo = ref<LocalChatMessage | null>(null)
 
 const startReply = (message: LocalChatMessage) => {
     replyingTo.value = message
-    nextTick(() => messageInput.value?.focus())
+    nextTick(() => messageEditor.value?.focus())
 }
 
 const cancelReply = () => {
@@ -425,23 +486,7 @@ const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
 
 const pickEmoji = (emoji: string) => {
-    const el = messageInput.value
-
-    if (!el) {
-        newMessage.value += emoji
-        return
-    }
-
-    const start = el.selectionStart ?? newMessage.value.length
-    const end = el.selectionEnd ?? newMessage.value.length
-    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
-
-    nextTick(() => {
-        el.focus()
-        const pos = start + emoji.length
-        el.setSelectionRange(pos, pos)
-        autoResize()
-    })
+    messageEditor.value?.insertText(emoji)
 }
 
 const handleClickOutsideEmoji = (event: MouseEvent) => {
@@ -578,6 +623,11 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 const sendMessage = async () => {
     if (isSending.value) return
 
+    if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
+        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        return
+    }
+
     if (hasTemplate.value) {
         await sendTemplateMessage()
         return
@@ -635,7 +685,6 @@ const sendMessage = async () => {
     newMessage.value = ""
     removeFile()
     cancelReply()
-    autoResize()
 
     await postMessage(formData, optimisticMessage)
 }
@@ -802,14 +851,20 @@ let chatChannel: any = null
 let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
+let onClosing: ((payload: any) => void) | null = null
+let onCall: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
+    onClosing = null
+    if (onCall) chatChannel?.stopListening(".call", onCall)
     onMessage = null
     onReaction = null
     onStatus = null
+    onCall = null
     chatChannel = null
 }
 
@@ -844,6 +899,9 @@ const initSocket = () => {
             canSendNonTemplate.value = can_send_non_template_message
         }
 
+        closingAt.value = null
+        onCustomerWaitMessage(message)
+
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
@@ -864,8 +922,12 @@ const initSocket = () => {
         scrollBottom()
     }
 
-    onReaction = ({ message }: any) => {
+    onReaction = ({ message, can_send_non_template_message }: any) => {
         if (!message?.id) return
+
+        if (can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = can_send_non_template_message
+        }
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 
@@ -894,9 +956,19 @@ const initSocket = () => {
         }
     }
 
+    onCall = (payload: any) => {
+        if (!payload?.id) return
+        const isCustomerService = (layout.user?.customer_service_shops ?? []).includes(chatSession.value?.shop?.id)
+        if (payload.direction === "user_initiated" && !isCustomerService) return
+        applyCallBroadcast(payload, props.organisationSlug)
+    }
+
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
+    onClosing = onClosingEvent
+    chatChannel.listen(".closing", onClosing)
+    chatChannel.listen(".call", onCall)
 }
 
 watch(
@@ -928,13 +1000,16 @@ onUnmounted(() => {
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b">
+        <!-- When the thread is too narrow for the name and the buttons side by side, the name
+             keeps the first row and the buttons drop to a second one beneath it. -->
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-1.5 border-b"
+            :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
             <button type="button"
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
+                class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
                 @click="emit('view-profile')">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
@@ -968,12 +1043,40 @@ onUnmounted(() => {
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
                     </span>
+                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
+                        👍 {{ closingIn }}
+                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
+                    </span>
+                    <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
+                        v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
+                        ⏳ {{ ctrans("Waiting for customer, closes in :time", { time: waitingIn }) }}
+                        <button v-if="isMyChat && !isClosed && !readOnly" type="button" class="ml-1 underline hover:text-amber-800" @click="setWaiting(null)">{{ ctrans("Stop waiting") }}</button>
+                    </span>
+                    <select v-else-if="isMyChat && !isClosed && !readOnly" value=""
+                        class="shrink-0 cursor-pointer border-0 bg-transparent py-0 pl-0 pr-6 text-[11px] text-gray-400 hover:text-gray-600 focus:ring-0"
+                        v-tooltip="ctrans('Keep it open while the customer gets back to us: it shows here as waiting and closes by itself if they write nothing.')"
+                        @change="onWaitPicked">
+                        <option value="" disabled>⏳ {{ ctrans("Wait for reply") }}</option>
+                        <option v-for="option in waitingOptions" :key="option.hours" :value="option.hours">{{ option.label() }}</option>
+                    </select>
                 </div>
             </div>
 
+            <!-- The line between the two rows: it spans the header edge to edge, and being a whole
+                 row on its own is also what pushes the buttons onto the second one. -->
+            <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
+
+            <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
+                v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-6 px-2 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
+                <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
+            </a>
+
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam">
                 <FontAwesomeIcon :icon="faBan" class="text-[11px]" fixed-width />
                 {{ ctrans("Spam") }}
@@ -990,7 +1093,7 @@ onUnmounted(() => {
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
-                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
                         {{ ctrans("End chat") }}
@@ -998,6 +1101,10 @@ onUnmounted(() => {
                 </template>
             </ModalConfirmationDelete>
         </header>
+
+        <div v-if="!readOnly" class="px-3 pt-2 empty:hidden">
+            <WhatsappCallBar :organisation="props.organisationSlug" />
+        </div>
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
@@ -1025,6 +1132,7 @@ onUnmounted(() => {
                             translateUrlBase="/app/api/chats/meta/messages"
                             disable-slack-forward
                             disable-image-verification
+                            flagChannel="whatsapp"
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup
@@ -1033,6 +1141,7 @@ onUnmounted(() => {
                     </div>
                 </template>
             </template>
+            <ChatBackToNewest :target="messagesContainer" />
         </div>
 
         <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
@@ -1065,6 +1174,7 @@ onUnmounted(() => {
 
         <!-- Footer: closed banner -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1089,6 +1199,7 @@ onUnmounted(() => {
 
         <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ ctrans('Assign this chat to yourself to start the conversation') }}
@@ -1159,6 +1270,8 @@ onUnmounted(() => {
                 </button>
             </div>
 
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" @action="onSuggestedAction" />
+
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"
                     class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
@@ -1189,11 +1302,10 @@ onUnmounted(() => {
                     </template>
                 </div>
 
-                <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
-                    @paste="onPasteAttachment"
-                    @keydown.enter.exact.prevent="sendMessage" rows="1" :disabled="templateOnly"
+                <ChatMessageEditor v-if="!hasTemplate" ref="messageEditor" v-model="newMessage"
+                    @paste="onPasteAttachment" @submit="sendMessage" enter-sends :disabled="templateOnly"
                     :placeholder="templateOnly ? ctrans('24h window closed, send a template message') : ctrans('Type message...')"
-                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+                    class="px-4 pt-3 pb-1 rounded-t-xl [&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
@@ -1226,6 +1338,14 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
+                        <button @click="isTaskDialogOpen = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-gray-500 hover:text-amber-600 transition-colors" v-tooltip="ctrans('Ask a colleague (task)')" :aria-label="ctrans('Ask a colleague (task)')">
+                            <FontAwesomeIcon :icon="faListCheck" class="text-sm" fixed-width />
+                        </button>
+                        <template v-if="!hasTemplate && !templateOnly">
+                            <div class="mx-1 h-5 w-px bg-gray-200" />
+                            <ChatFormattingToolbar :editor="messageEditor?.editor" />
+                        </template>
                     </div>
                     <Button @click="sendMessage" :loading="isSending"
                         :disabled="hasTemplate ? !canSendTemplate : templateOnly"
@@ -1250,6 +1370,12 @@ onUnmounted(() => {
             :organisation="organisationSlug"
             channel="whatsapp"
             @close="isTicketModalOpen = false" />
+
+        <StaffTaskDialog
+            :is-open="isTaskDialogOpen"
+            :store-url="session?.ulid ? route('grp.org.chat.agents.whatsapp.sessions.task', [organisationSlug, session.ulid]) : undefined"
+            @created="onTaskCreated"
+            @close="isTaskDialogOpen = false" />
 
         <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
              the drop still lands. -->

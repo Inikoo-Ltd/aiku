@@ -1,8 +1,15 @@
 <!DOCTYPE html>
-<html class="h-full text-[14px] lg:text-[16px]" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html class="h-full" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        try {
+            if (document.cookie.split(';').some(c => c.trim().split('=')[0] === 'iris_vua') || JSON.parse(localStorage.getItem('iris') || '{}').is_logged_in) {
+                document.documentElement.classList.add('iris-logged-in')
+            }
+        } catch (e) {}
+    </script>
     <meta name="app-release" content="{{ config('sentry.release') }}">
     <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
 
@@ -55,7 +62,7 @@
         'Laila'            => 'Laila',
         'Lobster'          => 'Lobster',
         'Playfair'         => 'Playfair',
-        'Playfair Display' => 'Playfair',
+        'Playfair Display' => 'Playfair+Display',
         'Port Lligat Slab' => 'Port+Lligat+Slab',
         'Quicksand'        => 'Quicksand',
         'Yatra One'        => 'Yatra+One',

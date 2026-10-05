@@ -21,6 +21,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Str;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexExternalLinks extends OrgAction
@@ -92,14 +93,14 @@ class IndexExternalLinks extends OrgAction
                         'description' => __('Nor any website exist 🤭'),
                     ],
                 )
-                ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_websites_shown', label: __('websites shown'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_webpages_shown', label: __('webpages shown'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_web_blocks_shown', label: __('web blocks shown'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_websites_hidden', label: __('websites hidden'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_webpages_hidden', label: __('webpages hidden'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'number_web_blocks_hidden', label: __('web blocks hidden'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'url', label: __('URL'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_websites_shown', label: Str::ucfirst(__('websites shown')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_webpages_shown', label: Str::ucfirst(__('webpages shown')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_web_blocks_shown', label: Str::ucfirst(__('web blocks shown')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_websites_hidden', label: Str::ucfirst(__('websites hidden')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_webpages_hidden', label: Str::ucfirst(__('webpages hidden')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_web_blocks_hidden', label: Str::ucfirst(__('web blocks hidden')), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, searchable: false)
                 ->defaultSort('url');
         };
     }

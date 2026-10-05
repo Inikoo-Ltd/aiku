@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -55,7 +56,7 @@ class PingActiveWooChannel
     /**
      * A channel that failed eight pings in a row, two days at the six hour cadence, is parked so a dead store is not hit every six
      * hours forever. The first run of each day asks the parked ones whether the store answers
-     * again, and only reports the ones that do: reviving them here would import every order the
+     * again, records why the others still fail, and only reports the ones that do: reviving them here would import every order the
      * store still shows as processing, orders the owner has most likely handled by hand while the
      * channel was dark. A person revives with woo:check once the customer has closed those orders.
      */
@@ -73,9 +74,14 @@ class PingActiveWooChannel
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 if ($customerSalesChannel->ping_error_count >= self::PARKED_AFTER_FAILURES) {
-                    if (!self::hasLiveSiblingForSameStore($customerSalesChannel) && $customerSalesChannel->user->checkConnection()) {
-                        $answeringAgain[] = [$customerSalesChannel->slug, $customerSalesChannel->number_portfolios, $customerSalesChannel->number_orders, $customerSalesChannel->user->store_url];
-                        Sentry::captureMessage('Parked WooCommerce channel '.$customerSalesChannel->slug.' answers again, revive with woo:check once the customer has closed the orders they handled themselves');
+                    if (!self::hasLiveSiblingForSameStore($customerSalesChannel)) {
+                        $probe = $customerSalesChannel->user->probeConnection();
+                        UpdateCustomerSalesChannel::run($customerSalesChannel, CheckWooChannel::connectionFailureData($probe['failure']));
+
+                        if ($probe['success']) {
+                            $answeringAgain[] = [$customerSalesChannel->slug, $customerSalesChannel->number_portfolios, $customerSalesChannel->number_orders, $customerSalesChannel->user->store_url];
+                            Sentry::captureMessage('Parked WooCommerce channel '.$customerSalesChannel->slug.' answers again, revive with woo:check once the customer has closed the orders they handled themselves');
+                        }
                     }
 
                     continue;

@@ -10,7 +10,9 @@ import "@vueform/multiselect/themes/default.css"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Checkbox, ToggleButton, ToggleSwitch } from 'primevue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
+import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
+import { computed } from 'vue'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import Toggle from '@/Components/Pure/Toggle.vue'
@@ -24,7 +26,7 @@ const props = defineProps<{
             key_payload: string
             payload: number
         }
-        countriesAddressData: any
+        countriesAddressData?: any
     }
     fieldData: {
         placeholder: string
@@ -33,22 +35,27 @@ const props = defineProps<{
     updateRoute: routeType
 }>()
 
-console.log('props', props)
 
 
 let addressValues = props.form[props.fieldName]?.address
-const countries = {};
 
-for (const item in props.options.countriesAddressData) {
-    countries[item] = props.options.countriesAddressData[item]['label']
-}
+const fetchedCountriesAddressData = props.options?.countriesAddressData ? null : useCountriesAddressData()
+const countriesAddressData = computed(() => props.options?.countriesAddressData ?? fetchedCountriesAddressData?.value ?? {})
 
-const administrativeAreas = (countryID: number) => props.options.countriesAddressData[countryID]['administrativeAreas']
+const countries = computed(() => {
+    const labels = {}
+    for (const item in countriesAddressData.value) {
+        labels[item] = countriesAddressData.value[item]['label']
+    }
+    return labels
+})
+
+const administrativeAreas = (countryID: number) => countriesAddressData.value[countryID]?.administrativeAreas ?? []
 const inAdministrativeAreas = (administrativeArea: string, countryID: number) => {
-    !!props.options.countriesAddressData[countryID]['administrativeAreas'].find(c => c.name === administrativeArea);
+    !!administrativeAreas(countryID).find(c => c.name === administrativeArea);
 }
 const addressFields = (countryID: number) => {
-    return props.options.countriesAddressData[countryID]['fields'];
+    return countriesAddressData.value[countryID]?.fields;
 }
 const handleChange = () => props.form.clearErrors(props.fieldName);
 
@@ -67,8 +74,8 @@ const submitForm = () => {
             preserveScroll: true,
             onError: (e) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: e?.message || trans("Please try again later or contact administrator."),
+                    title: ctrans("Something went wrong"),
+                    text: e?.message || ctrans("Please try again later or contact administrator."),
                     type: "error",
                 })
             }
@@ -84,7 +91,7 @@ const submitForm = () => {
                 <div>
                     <label for="same_as_contact_address" class="block cursor-pointer">
                         {{ options.same_as_contact?.label }}
-                        <InformationIcon :information="trans('If checked, the delivery address will be the same as the contact address')"/>
+                        <InformationIcon :information="ctrans('If checked, the delivery address will be the same as the contact address')"/>
                     </label>
                 </div>
                 <Toggle 

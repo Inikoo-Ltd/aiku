@@ -50,6 +50,10 @@ class TicketNotification extends Notification implements ShouldQueue
             ->markdown('notifications::email', ['shop' => $this->ticket->group->name, 'shop_url' => config('app.url')])
             ->greeting(__('Hello :name,', ['name' => $notifiable->contact_name ?: $notifiable->username]));
 
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from('help@aiku.io', 'Aiku Help');
+        }
+
         foreach ($this->lines as $line) {
             $message->line($line);
         }

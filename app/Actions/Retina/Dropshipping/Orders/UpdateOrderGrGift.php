@@ -9,11 +9,14 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderGrGift extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Order $order, array $modelData): void
     {
         $orderData = $order->data;

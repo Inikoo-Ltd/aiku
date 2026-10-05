@@ -16,11 +16,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 import { useTabChange } from "@/Composables/tab-change";
 import {
-    faCube,faFolder,faFolderTree
+    faCube,faFolder,faFolderTree, faBars
 } from '@fal';
 
 library.add(
-    faCube,faFolder,faFolderTree
+    faCube,faFolder,faFolderTree, faBars
 );
 
 const props = defineProps <{

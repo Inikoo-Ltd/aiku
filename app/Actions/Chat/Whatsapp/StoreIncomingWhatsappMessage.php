@@ -8,6 +8,9 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
+use App\Actions\Chat\ChatSession\DraftChatReply;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
@@ -116,8 +119,8 @@ class StoreIncomingWhatsappMessage
         $isMedia  = in_array($type, DownloadWhatsappMedia::MEDIA_TYPES, true);
 
         if ($type === 'reaction') {
-            $this->storeReaction($metaChatSession, $waMessageId, (array) $waNode);
             $metaChatSession->update(['last_visitor_message_at' => now()]);
+            $this->storeReaction($metaChatSession, $waMessageId, (array) $waNode);
 
             return;
         }
@@ -135,6 +138,7 @@ class StoreIncomingWhatsappMessage
                 'profile_name' => $profileName,
                 'wa_payload'   => $type !== 'text' ? $waNode : null,
                 'wa_context'   => Arr::get($message, 'context'),
+                'wa_referral'  => Arr::get($message, 'referral'),
                 'wa_errors'    => Arr::get($message, 'errors'),
             ],
         ]);
@@ -153,6 +157,13 @@ class StoreIncomingWhatsappMessage
 
         if (ClassifyChatSessionNoise::isCandidate($metaChatSession)) {
             ClassifyChatSessionNoise::dispatch($metaChatSession);
+        }
+
+        SendOutOfHoursReply::dispatch($metaChatSession);
+        FlagUrgentChatRequest::dispatch($metaChatSession);
+
+        if (config('chat.ai_drafts')) {
+            DraftChatReply::dispatch($metaChatSession);
         }
 
         $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
@@ -282,9 +293,11 @@ class StoreIncomingWhatsappMessage
         // ponytail: customers.phone has no index, so try the exact E.164 form first (~97% of rows)
         // and only fall back to the full digit-stripped scan. Add an index on the normalised phone
         // if inbound volume makes the fallback hurt.
-        return Customer::where('shop_id', $shop->id)->where('phone', '+'.$digits)->first()
-            ?? Customer::where('shop_id', $shop->id)
-                ->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])
-                ->first();
+        $customers = fn () => Customer::where('shop_id', $shop->id)
+            ->orderByRaw('last_invoiced_at desc nulls last')
+            ->orderByDesc('id');
+
+        return $customers()->where('phone', '+'.$digits)->first()
+            ?? $customers()->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])->first();
     }
 }

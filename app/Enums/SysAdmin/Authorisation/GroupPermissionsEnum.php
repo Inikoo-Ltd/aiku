@@ -24,19 +24,23 @@ enum GroupPermissionsEnum: string
     case GROUP_WEBMASTER_PROPERTIES_EDIT = 'group-webmaster.properties-edit';
 
     case ORGANISATIONS = 'organisations';
-    case ORGANISATIONS_VIEW = 'organisations.edit';
-
-    case ORGANISATIONS_EDIT = 'organisations.view';
+    case ORGANISATIONS_VIEW = 'organisations.view';
+    case ORGANISATIONS_EDIT = 'organisations.edit';
 
     case GOODS = 'goods';
-    case GOODS_VIEW = 'goods.edit';
-    case GOODS_EDIT = 'goods.view';
+    case GOODS_VIEW = 'goods.view';
+    case GOODS_EDIT = 'goods.edit';
 
     case MASTERS = 'masters';
     case MASTERS_VIEW = 'masters.view';
     case MASTERS_EDIT = 'masters.edit';
     case MASTER_PRICE_EDIT = 'masters.price_edit';
     case MASTER_OFFER_EDIT = 'masters.offer_edit';
+
+    case COMPLIANCE = 'compliance';
+    case COMPLIANCE_VIEW = 'compliance.view';
+    case COMPLIANCE_EDIT = 'compliance.edit';
+    case COMPLIANCE_PUBLISH = 'compliance.publish';
 
     case SUPPLY_CHAIN = 'supply-chain';
 

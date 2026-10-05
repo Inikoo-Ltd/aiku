@@ -1,0 +1,199 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { ctrans } from "@/Composables/useTrans"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { LiveServerReading } from "@/Composables/useLiveServerMetrics"
+
+export interface ServerSummary {
+    slug: string
+    name: string
+    recorded_at: string | null
+    cpu_percent: number | null
+    memory_percent: number | null
+    swap_percent: number | null
+    disk_percent: number | null
+    load_1: number | null
+    iowait_percent: number | null
+    inode_percent: number | null
+    net_rx_mbps: number | null
+    net_tx_mbps: number | null
+    disk_read_mbps: number | null
+    disk_write_mbps: number | null
+    processes: number | null
+    tcp_connections: number | null
+    cpu_cores: number | null
+    memory_total_mb: number | null
+    swap_total_mb: number | null
+    disks: string | null
+    top_processes: string | null
+    cpu_24h_max: number | null
+    memory_24h_max: number | null
+    group: string
+    role: string | null
+}
+
+const props = defineProps<{ server: ServerSummary, live?: LiveServerReading[] }>()
+
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | undefined
+onMounted(() => (clock = setInterval(() => (now.value = Date.now()), 2000)))
+onBeforeUnmount(() => clearInterval(clock))
+
+const latestLive = computed(() => {
+    const reading = props.live?.at(-1)
+    return reading && now.value - reading.t < 15 * 1000 ? reading : null
+})
+
+const liveCpuCeiling = computed(() => Math.max(10, Math.ceil(Math.max(...(props.live ?? []).map(reading => Number(reading.cpu_percent))) / 10) * 10))
+
+const sparklineColours = computed(() => {
+    const cpu = Number(latestLive.value?.cpu_percent ?? props.server.cpu_percent ?? 0)
+    if (cpu >= 90) return { area: "fill-red-500/15", line: "text-red-500" }
+    if (cpu >= 75) return { area: "fill-amber-500/15", line: "text-amber-500" }
+    return { area: "fill-emerald-500/15", line: "text-emerald-600" }
+})
+
+const liveSparkline = computed(() => {
+    const points = props.live ?? []
+    if (points.length < 2) return null
+    const line = points.map((reading, index) => `${(index / (points.length - 1)) * 100},${30 - (Number(reading.cpu_percent) / liveCpuCeiling.value) * 28}`).join(" ")
+    return { line, area: `0,30 ${line} 100,30` }
+})
+
+const isStale = computed(() => !latestLive.value && (!props.server.recorded_at || now.value - new Date(props.server.recorded_at).getTime() > 5 * 60 * 1000))
+
+const disks = computed<{ mount: string, percent: number, size_gb: number, inode_percent: number | null }[]>(() => props.server.disks ? JSON.parse(props.server.disks) : [])
+
+export interface TopProcess { name: string, cpu_percent: number, max_core_percent: number, processes: number }
+
+const topProcesses = computed<TopProcess[]>(() => props.server.top_processes ? JSON.parse(props.server.top_processes) : [])
+
+const totalCores = (process: TopProcess) => props.server.cpu_cores ? (Number(process.cpu_percent) / 100) * props.server.cpu_cores : null
+
+const isPinned = (process: TopProcess) => process.max_core_percent >= 95 && process.max_core_percent <= 105
+
+const dataDisks = computed(() => disks.value.filter(disk => !disk.mount.startsWith("/boot")))
+
+const mainDiskGb = computed(() => dataDisks.value.reduce<{ percent: number, size_gb: number } | null>((main, disk) => !main || disk.percent > main.percent ? disk : main, null)?.size_gb ?? null)
+
+const formatSize = (gb: number) => gb >= 1000 ? `${(gb / 1024).toFixed(1)} TB` : `${gb.toFixed(gb < 10 ? 1 : 0)} GB`
+
+const amount = (percent: number | null | undefined, totalGb: number | null) => {
+    if (percent == null || !totalGb) return null
+    const unitGb = totalGb >= 1000 ? 1024 : 1
+    const unit = totalGb >= 1000 ? "TB" : "GB"
+    const used = (Number(percent) / 100) * totalGb / unitGb
+    const total = totalGb / unitGb
+    const digits = total < 10 ? 1 : 0
+    return `${used.toFixed(digits)} / ${total.toFixed(digits)} ${unit}`
+}
+
+const details = computed(() => {
+    const server = props.server
+    const rows: { label: string, value: string }[] = []
+    if (server.load_1 != null) rows.push({ label: ctrans("Load"), value: `${server.load_1} / ${server.cpu_cores} ${ctrans("cores")}` })
+    if (server.memory_total_mb) rows.push({ label: ctrans("RAM"), value: formatSize(server.memory_total_mb / 1024) })
+    const rx = latestLive.value?.net_rx_mbps ?? server.net_rx_mbps
+    if (rx != null) rows.push({ label: ctrans("Network in / out"), value: `${rx} / ${latestLive.value?.net_tx_mbps ?? server.net_tx_mbps} MB/s` })
+    if (server.disk_read_mbps != null) rows.push({ label: ctrans("Disk read / write"), value: `${server.disk_read_mbps} / ${server.disk_write_mbps} MB/s` })
+    if (server.processes != null) rows.push({ label: ctrans("Processes"), value: `${server.processes}` })
+    if (server.tcp_connections != null) rows.push({ label: ctrans("Connections"), value: `${server.tcp_connections}` })
+    return rows
+})
+
+const meters = computed(() => [
+    { label: ctrans("CPU"), value: latestLive.value?.cpu_percent ?? props.server.cpu_percent, peak: props.server.cpu_24h_max },
+    { label: ctrans("I/O wait"), value: latestLive.value?.iowait_percent ?? props.server.iowait_percent, peak: null },
+    { label: ctrans("Memory"), value: latestLive.value?.memory_percent ?? props.server.memory_percent, peak: props.server.memory_24h_max,
+        amount: amount(latestLive.value?.memory_percent ?? props.server.memory_percent, props.server.memory_total_mb ? props.server.memory_total_mb / 1024 : null) },
+    { label: ctrans("Swap"), value: props.server.swap_percent, peak: null, amount: amount(props.server.swap_percent, props.server.swap_total_mb ? props.server.swap_total_mb / 1024 : null) },
+    { label: ctrans("Disk"), value: props.server.disk_percent, peak: null, amount: amount(props.server.disk_percent, mainDiskGb.value) },
+    { label: ctrans("Inodes"), value: props.server.inode_percent, peak: null },
+])
+
+const barColour = (value: number | null | undefined) => value == null ? "bg-gray-200" : value >= 90 ? "bg-red-500" : value >= 75 ? "bg-amber-500" : "bg-emerald-500"
+</script>
+
+<template>
+    <div class="rounded-lg border border-gray-200 p-4" :class="isStale ? 'opacity-60' : ''">
+        <div class="flex items-baseline justify-between">
+            <span class="text-sm font-medium">{{ server.name }}<span v-if="server.role" class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-600">{{ ctrans(server.role) }}</span></span>
+            <span v-if="latestLive" class="flex items-center gap-1 text-xs text-emerald-600">
+                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />{{ ctrans("Live") }}
+            </span>
+            <span v-else class="text-xs" :class="isStale ? 'text-red-600' : 'text-gray-500'">
+                {{ server.recorded_at ? useFormatTime(server.recorded_at, { formatTime: "hm" }) : ctrans("No data yet") }}
+            </span>
+        </div>
+        <div v-if="liveSparkline" class="mt-2">
+            <svg viewBox="0 0 100 30" class="h-10 w-full" preserveAspectRatio="none">
+                <polygon :points="liveSparkline.area" :class="sparklineColours.area" />
+                <polyline :points="liveSparkline.line" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" :class="sparklineColours.line" />
+            </svg>
+        </div>
+        <div v-if="liveSparkline" class="text-[10px] leading-none text-gray-400">{{ ctrans("CPU, last 2 min") }} · {{ ctrans("scale") }} 0–{{ liveCpuCeiling }}%</div>
+        <div class="mt-3 space-y-2">
+            <div v-for="meter in meters" :key="meter.label">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-600">{{ meter.label }}</span>
+                    <span class="tabular-nums">
+                        {{ meter.value == null ? "-" : `${Number(meter.value).toFixed(0)}%` }}
+                        <span v-if="meter.amount" class="text-gray-400"> · {{ meter.amount }}</span>
+                        <span v-if="meter.peak != null" class="text-gray-400"> · {{ ctrans("24h peak") }} {{ Number(meter.peak).toFixed(0) }}%</span>
+                    </span>
+                </div>
+                <div class="mt-0.5 h-1.5 rounded bg-gray-100">
+                    <div class="h-1.5 rounded" :class="barColour(meter.value)" :style="{ width: `${Math.min(Number(meter.value ?? 0), 100)}%` }" />
+                </div>
+            </div>
+        </div>
+        <table class="mt-3 w-full text-xs tabular-nums">
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="row in details" :key="row.label">
+                    <td class="py-1 text-gray-500">{{ row.label }}</td>
+                    <td class="py-1 text-right">{{ row.value }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <table v-if="topProcesses.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
+            <colgroup><col><col class="w-16"><col class="w-14"></colgroup>
+            <thead class="text-gray-400">
+                <tr>
+                    <th class="pb-1 text-left font-normal">{{ ctrans("Busiest, last minute") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Server") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Cores") }}</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="process in topProcesses" :key="process.name">
+                    <td class="py-1 text-gray-600">
+                        <div class="truncate" :title="process.name">{{ process.name }}<span v-if="process.processes > 1" class="text-gray-400"> ×{{ process.processes }}</span></div>
+                        <div v-if="isPinned(process)" class="text-red-600">{{ ctrans("1 process at 100% of a core") }}</div>
+                    </td>
+                    <td class="py-1 text-right align-top">{{ Number(process.cpu_percent).toFixed(1) }}%</td>
+                    <td class="py-1 text-right align-top text-gray-500">{{ totalCores(process)?.toFixed(1) ?? "-" }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <table v-if="dataDisks.length" class="mt-3 w-full text-xs tabular-nums">
+            <thead class="text-gray-400">
+                <tr>
+                    <th class="pb-1 text-left font-normal">{{ ctrans("Mount") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Used") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Free") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Size") }}</th>
+                    <th class="pb-1 text-right font-normal">{{ ctrans("Inodes") }}</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="disk in dataDisks" :key="disk.mount">
+                    <td class="max-w-0 truncate py-1 text-gray-500">{{ disk.mount }}</td>
+                    <td class="py-1 text-right">{{ disk.percent }}%</td>
+                    <td class="py-1 text-right">{{ formatSize(disk.size_gb * (100 - disk.percent) / 100) }}</td>
+                    <td class="py-1 text-right">{{ formatSize(disk.size_gb) }}</td>
+                    <td class="py-1 text-right">{{ disk.inode_percent != null ? `${disk.inode_percent}%` : "-" }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</template>

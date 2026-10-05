@@ -8,8 +8,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -22,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 class IndexDeliveryNoteItems extends OrgAction
 {
     use WithDeliveryNoteItemUI;
+    use WithDeliveryNotePackaging;
 
     public function handle(DeliveryNote $parent, $prefix = null, DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
@@ -91,6 +95,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'un_numbers'              => $this->getUnNumbersSubquery(),
                 'pickings'                => $this->getPickingsSubquery(),
                 'is_returned_to_location' => $this->getIsReturnedToLocationSubquery(),
+                'indivisible_set'         => $this->getIndivisibleSetSubquery(),
             ])
             ->allowedSorts($this->getDeliveryNoteItemBaseSorts())
             ->allowedFilters([$globalSearch])
@@ -123,7 +128,6 @@ class IndexDeliveryNoteItems extends OrgAction
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
-
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
 
             if ($allowAction) {
@@ -132,8 +136,23 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             }
 
+            if (in_array($parent->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])
+                && DeliveryNoteBoxPackingList::make()->isRequired($parent)) {
+                $table->column(key: 'boxes', label: __('Box'), canBeHidden: false);
+            }
+
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
+            }
+
+
+            if ($this->effectivePackaging($parent)) {
+                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            }
+
+            if ($parent->shop?->hasPackagingAndInserts() && $parent->leaflets->isNotEmpty()) {
+                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             }
         };
     }

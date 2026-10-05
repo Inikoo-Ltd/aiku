@@ -1,7 +1,7 @@
 ---
 title: Sending a mailshot
 summary: Build a marketing email, choose who receives it, design it in the email workshop, and take it from draft through to sent — with a look at what "publish" and "send" actually trigger.
-date: 2026-09-01
+date: 2026-09-29
 tags: marketing, mailshots, email
 category: marketing
 help_routes: grp.org.shops.show.marketing.mailshots, grp.org.shops.show.marketing.newsletters
@@ -23,7 +23,7 @@ Press **Mailshot** at the top of the Mailshots list (or **New Newsletter** on th
 
 ## Choosing recipients
 
-The recipients screen lets you filter who the mailshot goes to. By default a new mailshot is set to reach **all customers**, but you can narrow it down instead — by family, by interest, by location (country, postcode, or a radius around a point), by department or sub-department, by order value, by items currently sitting in a basket, by past order collections, by showroom orders, by gold reward status, or to customers who registered but never ordered. As you adjust the filter, the screen shows an estimated recipient count so you can see the audience size before you commit.
+The recipients screen lets you filter who the mailshot goes to. By default a new mailshot is set to reach **all customers**, but you can narrow it down instead — by family, by interest, by location (country, postcode, or a radius around a point), by department or sub-department, by order value, by items currently sitting in a basket, by past order collections, by showroom orders, by gold reward status, to customers due to reorder, or to customers who registered but never ordered. As you adjust the filter, the screen shows an estimated recipient count so you can see the audience size before you commit.
 
 From here, press **Compose email** to move on to designing the email itself.
 

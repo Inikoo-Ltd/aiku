@@ -164,7 +164,20 @@ class EditFamily extends OrgAction
                     'title'   => __('Edit'),
                     'icon'     => 'fal fa-folder',
                     'model'     => __('Family :codeFamily', ['codeFamily' => $family->code]),
-                    'actions' => [
+                    'actions' => array_values(array_filter([
+                        $family->shop->language->code !== 'en' && $family->masterProductCategory ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => ['fal', 'fa-language'],
+                            'label'   => __('Translate all from master'),
+                            'tooltip' => __('Translate again every text here that nobody has reviewed yet'),
+                            'key'     => 'translate_from_master',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.product_category.translate_from_master',
+                                'parameters' => ['productCategory' => $family->id],
+                            ],
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -173,7 +186,7 @@ class EditFamily extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ],
+                    ])),
                     'iconLinks' => $iconLinks
                 ],
                 'formData' => [
@@ -231,7 +244,8 @@ class EditFamily extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $family->name,
-                                            'reviewed'      => $family->is_name_reviewed
+                                            'reviewed'      => $family->is_name_reviewed,
+                                            'review_route'     => ['name' => 'grp.models.product_category.translation_review.store', 'parameters' => ['productCategory' => $family->id]],
                                         ]
                                         : [
                                             'type'        => 'input',
@@ -250,7 +264,8 @@ class EditFamily extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $family->description_title,
-                                            'reviewed'      => $family->is_description_title_reviewed
+                                            'reviewed'      => $family->is_description_title_reviewed,
+                                            'review_route'     => ['name' => 'grp.models.product_category.translation_review.store', 'parameters' => ['productCategory' => $family->id]],
                                         ]
                                         : [
                                             'type'  => 'input',
@@ -268,6 +283,7 @@ class EditFamily extends OrgAction
                                             'mode'                  => 'single',
                                             'value'                 => $family->description,
                                             'reviewed'              => $family->is_description_reviewed,
+                                            'review_route'             => ['name' => 'grp.models.product_category.translation_review.store', 'parameters' => ['productCategory' => $family->id]],
                                             'routeGetInternalLink' => [
                                                     'name' => 'grp.org.shops.show.web.webpages.index',
                                                     'parameters' => [
@@ -311,6 +327,7 @@ class EditFamily extends OrgAction
                                             'mode'          => 'single',
                                             'value'         => $family->description_extra,
                                             'reviewed'      => $family->is_description_extra_reviewed,
+                                            'review_route'     => ['name' => 'grp.models.product_category.translation_review.store', 'parameters' => ['productCategory' => $family->id]],
                                             'routeGetInternalLink' => [
                                                     'name' => 'grp.org.shops.show.web.webpages.index',
                                                     'parameters' => [

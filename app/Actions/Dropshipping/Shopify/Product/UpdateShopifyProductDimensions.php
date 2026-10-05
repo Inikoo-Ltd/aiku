@@ -36,9 +36,7 @@ class UpdateShopifyProductDimensions
                 $variantId = $this->getDefaultVariantId($shopifyUser, $portfolio->platform_product_id);
 
                 if ($variantId) {
-                    $portfolio->update([
-                        'platform_product_variant_id' => $variantId
-                    ]);
+                    LinkShopifyPortfolio::run($portfolio, null, $variantId);
                 }
             }
 

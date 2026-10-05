@@ -46,6 +46,31 @@ trait WithDeliveryNoteItemUI
             )");
     }
 
+    protected function getIndivisibleSetSubquery(): Builder
+    {
+        return DB::table('transactions')
+            ->join('products', 'products.id', '=', 'transactions.model_id')
+            ->whereColumn('transactions.id', 'delivery_note_items.transaction_id')
+            ->where('transactions.model_type', 'Product')
+            ->where('products.is_indivisible', true)
+            ->selectRaw("jsonb_build_object(
+                'product_code', products.code,
+                'product_name', products.name,
+                'sets_ordered', transactions.quantity_ordered + COALESCE(transactions.quantity_bonus, 0),
+                'parts', (
+                    SELECT jsonb_agg(DISTINCT jsonb_build_object(
+                        'code', trade_units.code,
+                        'name', trade_units.name,
+                        'quantity', model_has_trade_units.quantity
+                    ))
+                    FROM model_has_trade_units
+                    JOIN trade_units ON trade_units.id = model_has_trade_units.trade_unit_id
+                    WHERE model_has_trade_units.model_type = 'Product'
+                    AND model_has_trade_units.model_id = products.id
+                )
+            )");
+    }
+
     protected function getPickingsSubquery(): Builder
     {
         return DB::table('pickings')
@@ -167,6 +192,7 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.quantity_packed',
             'delivery_note_items.quantity_dispatched',
             'delivery_note_items.quantity_not_picked',
+            'delivery_note_items.boxes',
             'delivery_note_items.is_handled',
             'delivery_note_items.is_dirty',
             'delivery_note_items.batch_code_id',

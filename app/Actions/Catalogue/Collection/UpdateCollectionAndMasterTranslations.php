@@ -53,7 +53,8 @@ class UpdateCollectionAndMasterTranslations extends OrgAction
 
         $collection->save();
 
-        if ($collection->masterCollection) {
+        // A collection that does not follow master content keeps its texts to itself
+        if ($collection->followsMasterContent()) {
             $this->updateMaster($collection->masterCollection, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
         }
 

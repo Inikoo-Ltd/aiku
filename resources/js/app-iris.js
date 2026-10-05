@@ -8,7 +8,7 @@ import "./bootstrap_iris";
 import "../css/app.css";
 
 import { createSSRApp, h } from "vue";
-import { createInertiaApp } from "@inertiajs/vue3";
+import { createInertiaApp, router } from "@inertiajs/vue3";
 import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { i18nVue, loadLanguageAsync } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
@@ -42,11 +42,22 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
+const IRIS_PAGE_PRELOAD_LIMIT_MS = 3000;
+
+const appElement = document.getElementById("app");
+const initialPage = JSON.parse(appElement?.dataset.page ?? "null");
+let nextPageProps = appElement?.childElementCount ? null : initialPage?.props;
+
+router.on("beforeUpdate", (event) => {
+  nextPageProps = event.detail.page.props;
+});
+
 const irisLocale = normalizeLocale(document.documentElement.lang);
 const irisLocaleMessages = loadLocaleMessages(irisLocale);
 
 createInertiaApp(
   {
+    page   : initialPage ?? undefined,
     resolve: async (name) => {
         const pages = import.meta.glob([
             './Pages/Iris/**/*.{vue,js}',
@@ -65,10 +76,18 @@ createInertiaApp(
             throw new Error(`Page not found: ${name}`)
         }
 
+        const pageProps = nextPageProps
+        nextPageProps = null
+        const pagePreload = pageProps
+            ? import("@/Iris/Composables/getIrisComponents").then(({ preloadIrisPage }) => preloadIrisPage(pageProps))
+            : null
+
         const page = await path()
 
         page.default.layout =
             page.default.layout || IrisLayout
+
+        await Promise.race([pagePreload, new Promise((resolve) => setTimeout(resolve, IRIS_PAGE_PRELOAD_LIMIT_MS))])
 
         return page
     },

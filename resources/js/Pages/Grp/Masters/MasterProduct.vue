@@ -9,6 +9,7 @@ import {
 import { faCheckCircle, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import IndivisibleSetIcon from "@/Components/Catalogue/IndivisibleSetIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref, inject, onMounted, watch } from "vue"
@@ -20,17 +21,18 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
-import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import EditProductPriceAllShop from "@/Components/EditProductPriceAllShop.vue";
 import { cloneDeep } from "lodash-es";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import MasterAnomalyBlocks from "@/Components/Masters/MasterAnomalyBlocks.vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -53,6 +55,8 @@ const props = defineProps<{
     sales?: {}
     trade_units?: {}
     salesData?: {}
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     images?: {}
     mini_breadcrumbs?: any[]
     attachments?: {}
@@ -60,6 +64,10 @@ const props = defineProps<{
     masterAsset: {}
     tradeUnits : {}
     is_single_trade_unit?: boolean
+    indivisible_set?: {
+        parts: { code: string, name: string, quantity: number }[]
+        route: routeType | null
+    } | null
     trade_unit_slug?: string
     masterVariant?: {}
     is_variant_leader?: boolean
@@ -80,7 +88,8 @@ const props = defineProps<{
 
 const layout = inject('layout', {});
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 const showDialog = ref(false)
 const tableData = ref(cloneDeep(props.shopsData))
 const currency = props.masterCurrency ?? layout.group.currency;
@@ -92,8 +101,9 @@ const component = computed(() => {
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
-        attachments: AttachmentManagement,
+        attachments: TradeUnitDocuments,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
     }
     return components[currentTab.value]
 })
@@ -128,26 +138,24 @@ const routeVariant = () => {
 }
 
 const repairTradeUnitToChildren = async () => {
-    console.log("REPAIRING");
     await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
         masterAsset: props.masterAsset.id,
     })).then((response) => {
         notify({
-            title: trans("Success!"),
-            text: trans("Successfully repaired the product details"),
+            title: ctrans("Success!"),
+            text: ctrans("Successfully repaired the product details"),
             type: "success"
         })
         router.visit(route('grp.masters.master_shops.show.master_products.show', route().params))
     }).catch((errors) => {
         notify({
-            title: trans("Something went wrong"),
-            text: errors.message || trans("Failed to update product quantity in basket"),
+            title: ctrans("Something went wrong"),
+            text: errors.message || ctrans("Failed to update product quantity in basket"),
             type: "error"
         })
     })
 }
 
-console.log(props)
 
 watch(() => currentTab.value, (value) => {
     if (value === "products") {
@@ -180,13 +188,15 @@ onMounted(() => {
                     </div>
                 </div>
             </component>
-            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
+            <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="ctrans('Go to Trade Unit')">
                 <FontAwesomeIcon
                     icon="fal fa-atom" fixed-width
                 />
             </Link>
+            <IndivisibleSetIcon v-if="indivisible_set" :set="indivisible_set"
+                :note="ctrans('Shop products that follow this master\'s trade units are sold the same way.')" />
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
-            <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
+            <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="ctrans('Go to Master Variant')">
                 <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />
             </Link>
         </template>
@@ -196,16 +206,16 @@ onMounted(() => {
                 v-if="mismatch_detected" 
                 :icon="faWarning" 
                 class="text-red-500" 
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')" fixed-width
+                v-tooltip="ctrans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')" fixed-width
             />
         </template>
 
         <template #button-repair-mismatch="{ action }">
-            <Button v-if="mismatch_detected" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
+            <Button v-if="mismatch_detected" :icon="faTools" :label="ctrans('Repair trade units')" v-tooltip="ctrans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
 
         <template #button-assign="{ action }">
-            <Button :disabled="tableData.data.length == 0" v-tooltip="tableData.data.length == 0 ? trans('Product already exists on all shops under this master shop') : ''" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
+            <Button :disabled="tableData.data.length == 0" v-tooltip="tableData.data.length == 0 ? ctrans('Product already exists on all shops under this master shop') : ''" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -225,11 +235,11 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <div v-if="anomalies?.items?.length" class="px-4 py-4 sm:px-6 lg:px-8">
+    <div v-if="anomalies?.items?.length" class="px-4 py-3">
         <MasterAnomalyBlocks :anomalies="anomalies" />
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :anomalies="anomalies" :handleTabUpdate :currency="currency" />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :salesAnalysisTeaser="sales_analysis_teaser" :anomalies="anomalies" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog 

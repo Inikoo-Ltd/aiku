@@ -15,7 +15,7 @@ import {
     faBuilding
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject, ref, computed } from "vue"
 import { Address } from "@/types/PureComponent/Address"
 import Tag from "primevue/tag"
@@ -136,7 +136,6 @@ const props = defineProps<{
     handleTabUpdate?: Function
 }>()
 
-console.log(props.data)
 
 const layout = inject("layout")
 
@@ -179,12 +178,12 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const getStatusText = (status: string, valid: boolean) => {
     if (status === "invalid" || !valid) {
-        return trans("Invalid")
+        return ctrans("Invalid")
     }
     if (status === "valid" || valid) {
-        return trans("Valid")
+        return ctrans("Valid")
     }
-    return trans("Pending")
+    return ctrans("Pending")
 }
 
 // Map prospect state to PrimeVue Tag severity
@@ -208,26 +207,26 @@ const contactPreferencesData = computed(() => {
             parameters: [props.data.update_route.parameters.prospect]
         },
         dont_contact_me: {
-            label: trans(`Don't Contact Me`),
+            label: ctrans(`Don't Contact Me`),
             is_active: props.data.prospect.dont_contact_me || false,
             activated_at: props.data.prospect.dont_contact_me_at,
             reason: null
         },
         preferences: {
             email: {
-                label: trans("Email"),
+                label: ctrans("Email"),
                 field: "can_contact_by_email",
                 is_allowed: props.data.prospect.can_contact_by_email || false,
                 updated_at: null
             },
             phone: {
-                label: trans("Phone Calls"),
+                label: ctrans("Phone Calls"),
                 field: "can_contact_by_phone",
                 is_allowed: props.data.prospect.can_contact_by_phone || false,
                 updated_at: null
             },
             address: {
-                label: trans("Postal Mail"),
+                label: ctrans("Postal Mail"),
                 field: "can_contact_by_address",
                 is_allowed: props.data.prospect.can_contact_by_address || false,
                 updated_at: null
@@ -251,7 +250,7 @@ const contactPreferencesData = computed(() => {
                         <Tag :severity="prospectStateSeverity" :value="data.prospect.state_label" class="text-sm font-medium" />
                         <div v-if="data.prospect.state === 'success' || data.prospect.state === 'fail' || data.prospect.state === 'contacted'"
                              class="flex items-center gap-2 px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-200">
-                            <span class="text-sm text-gray-600">{{ trans("Status") }}:</span>
+                            <span class="text-sm text-gray-600">{{ ctrans("Status") }}:</span>
                             <span class="text-sm font-semibold text-gray-900">
                                 {{ data.prospect.state === "success" ? data.prospect.success_status_label :
                                 data.prospect.state === "fail" ? data.prospect.fail_status_label :
@@ -267,7 +266,7 @@ const contactPreferencesData = computed(() => {
                         <!-- Field: Contact name -->
                         <div v-if="data?.prospect?.customer?.data?.contact_name"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Contact name')" class="flex-none">
+                            <dt v-tooltip="ctrans('Contact name')" class="flex-none">
                                 <span class="sr-only">Contact name</span>
                                 <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -278,7 +277,7 @@ const contactPreferencesData = computed(() => {
                         <!-- Field: Company name -->
                         <div v-if="data?.prospect?.customer?.data?.company_name"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Company name')" class="flex-none">
+                            <dt v-tooltip="ctrans('Company name')" class="flex-none">
                                 <span class="sr-only">Company name</span>
                                 <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -288,7 +287,7 @@ const contactPreferencesData = computed(() => {
 
                         <!-- Field: Created at -->
                         <div v-if="data?.prospect?.created_at" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Created at')" class="flex-none">
+                            <dt v-tooltip="ctrans('Created at')" class="flex-none">
                                 <span class="sr-only">Created at</span>
                                 <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -301,7 +300,7 @@ const contactPreferencesData = computed(() => {
                         <!-- Field: Email -->
                         <div v-if="data?.prospect?.customer?.data?.email"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Email')" class="flex-none">
+                            <dt v-tooltip="ctrans('Email')" class="flex-none">
                                 <span class="sr-only">Email</span>
                                 <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -315,7 +314,7 @@ const contactPreferencesData = computed(() => {
                         <!-- Field: Phone -->
                         <div v-if="data?.prospect?.customer?.data?.phone"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Phone')" class="flex-none">
+                            <dt v-tooltip="ctrans('Phone')" class="flex-none">
                                 <span class="sr-only">Phone</span>
                                 <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -341,7 +340,7 @@ const contactPreferencesData = computed(() => {
                                     <div v-if="data?.address_management?.can_open_address_management"
                                          @click="() => isModalAddress = true"
                                          class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                                        <span>{{ trans("Edit") }}</span>
+                                        <span>{{ ctrans("Edit") }}</span>
                                     </div>
                                 </div>
                             </dd>
@@ -350,7 +349,7 @@ const contactPreferencesData = computed(() => {
                         <!-- Field: Last Contacted -->
                         <div v-if="data?.prospect?.last_contacted_at"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Last contacted')" class="flex-none">
+                            <dt v-tooltip="ctrans('Last contacted')" class="flex-none">
                                 <span class="sr-only">Last contacted</span>
                                 <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width
                                                  aria-hidden="true" />
@@ -368,7 +367,7 @@ const contactPreferencesData = computed(() => {
             <!-- Field: Tax Number -->
             <div v-if="data?.prospect?.customer?.tax_number && data?.prospect?.customer?.tax_number?.number"
                  class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
-                <dt v-tooltip="trans('Tax Number')" class="flex-none pt-1">
+                <dt v-tooltip="ctrans('Tax Number')" class="flex-none pt-1">
                     <span class="sr-only">Tax Number</span>
                     <FontAwesomeIcon icon="fal fa-receipt" class="text-gray-400" fixed-width aria-hidden="true" />
                 </dt>
@@ -404,12 +403,12 @@ const contactPreferencesData = computed(() => {
                                                     <div class="p-1 max-w-xs">
                                                         <div class="space-y-2">
                                                             <div class="text-sm space-y-1">
-                                                                <p><span class="font-medium">{{ trans("Country")
+                                                                <p><span class="font-medium">{{ ctrans("Country")
                                                                     }}:</span> {{
                                                                         data?.prospect?.customer?.tax_number?.country?.name
                                                                     }}
                                                                 </p>
-                                                                <p><span class="font-medium">{{ trans("Country Code")
+                                                                <p><span class="font-medium">{{ ctrans("Country Code")
                                                                     }}:</span> {{
                                                                         data?.prospect?.customer?.tax_number?.country?.code
                                                                     }}
@@ -422,7 +421,7 @@ const contactPreferencesData = computed(() => {
 
                                             <!-- Last checked date -->
                                             <span v-if="data?.prospect?.customer?.tax_number?.checked_at"
-                                                  v-tooltip="trans('Last checked :date', { date: formatDate(data?.prospect?.customer?.tax_number?.checked_at) })"
+                                                  v-tooltip="ctrans('Last checked :date', { date: formatDate(data?.prospect?.customer?.tax_number?.checked_at) })"
                                                   class="ml-1 cursor-default hover:underline">
                                                 {{ formatDate(data?.prospect?.customer?.tax_number?.checked_at) }}
                                             </span>

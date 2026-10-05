@@ -15,6 +15,7 @@ use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
@@ -38,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->useProcessReadHosts();
+        $this->useProcessOctaneStateFile();
+
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
         /**
@@ -86,6 +90,34 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Only supervisor programs that may read the replica set PROCESS_DB_READ_HOSTS, read at runtime so it
+     * survives config:cache; every other process keeps the configured read hosts.
+     * Queue workers never reset sticky, so each job starts reading the replica again; reads after a write
+     * inside the same job still go to the primary.
+     */
+    private function useProcessReadHosts(): void
+    {
+        $readHosts = array_values(array_filter(array_map('trim', explode(',', (string) getenv('PROCESS_DB_READ_HOSTS')))));
+        if (!$readHosts) {
+            return;
+        }
+
+        foreach (['aiku', 'aiku_no_sticky'] as $connection) {
+            config(["database.connections.$connection.read.host" => $readHosts]);
+        }
+
+        Event::listen(JobProcessing::class, fn () => DB::connection('aiku')->forgetRecordModificationState());
+    }
+
+    private function useProcessOctaneStateFile(): void
+    {
+        $stateFile = trim((string) getenv('PROCESS_OCTANE_STATE_FILE'));
+        if ($stateFile !== '') {
+            config(['octane.state_file' => storage_path($stateFile)]);
+        }
+    }
+
 
     public function boot(): void
     {
@@ -130,13 +162,10 @@ class AppServiceProvider extends ServiceProvider
 
             if (str_contains($testCasePath, 'Tests\Feature\\')) {
                 config(['database.connections.aiku.database' => $databaseName]);
-                DB::connection('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::purge('aiku_no_sticky');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
-                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
-                DB::connection('aiku_no_sticky');
-                DB::purge('aiku_no_sticky');
-                DB::reconnect('aiku_no_sticky');
             }
         });
 
@@ -251,6 +280,8 @@ class AppServiceProvider extends ServiceProvider
                 // Goods
                 'Ingredient'                       => 'App\Models\Goods\Ingredient',
                 'MasterAsset'                      => 'App\Models\Masters\MasterAsset',
+                'MasterAssetPriceTip'              => 'App\Models\Masters\MasterAssetPriceTip',
+                'MasterAssetCompetitorProduct'     => 'App\Models\Masters\MasterAssetCompetitorProduct',
                 'MasterVariant'                    => 'App\Models\Masters\MasterVariant',
                 'MasterCollection'                 => 'App\Models\Masters\MasterCollection',
                 'MasterProductCategory'            => 'App\Models\Masters\MasterProductCategory',
@@ -340,6 +371,11 @@ class AppServiceProvider extends ServiceProvider
                 'Product'                          => 'App\Models\Catalogue\Product',
                 'Collection'                       => 'App\Models\Catalogue\Collection',
                 'Shipping'                         => 'App\Models\Catalogue\Shipping',
+                'Packaging'                        => 'App\Models\Billables\Packaging',
+                'Leaflet'                          => 'App\Models\Billables\Leaflet',
+                'ModelHasLeaflet'                  => 'App\Models\Billables\ModelHasLeaflet',
+                'CustomerHasPackaging'             => 'App\Models\CRM\CustomerHasPackaging',
+                'DeliveryNoteLeaflet'              => 'App\Models\Dispatching\DeliveryNoteLeaflet',
 
                 // Discounts
                 'Offer'                            => 'App\Models\Discounts\Offer',

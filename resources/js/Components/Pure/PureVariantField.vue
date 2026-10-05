@@ -6,7 +6,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faTrashAlt } from "@far"
 import { faPlus } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import type { routeType } from "@/types/route"
 import Image from "@common/Components/Image.vue"
 
@@ -369,7 +369,6 @@ const addOption = async (vi: number) => {
 
 
   const inputs = optionRefs.value[vi]
-  console.log('inputs', inputs)
   inputs?.[inputs.length - 1]?.focus()
 }
 const removeOption = (vi: number, oi: number) => {
@@ -411,11 +410,11 @@ const noLeader = computed(() => {
       <!-- VARIANTS -->
       <div>
         <label class="text-xs font-medium block">
-          {{ trans('Variant Options') }} <span class="text-red-500">*</span>
+          {{ ctrans('Variant Options') }} <span class="text-red-500">*</span>
         </label>
         <span v-if="model.variants.length < 1"
           class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
-          {{ trans('Variant option must be present') }}
+          {{ ctrans('Variant option must be present') }}
         </span>
 
         <div v-for="(v, vi) in model.variants" :key="vi" class="border rounded mt-2">
@@ -426,7 +425,7 @@ const noLeader = computed(() => {
               {{ v.label || "Untitled Variant" }}
             </div>
             <div class="text-xs text-gray-500">
-              {{ v.options.filter(Boolean).join(", ") || trans("No options") }}
+              {{ v.options.filter(Boolean).join(", ") || ctrans("No options") }}
             </div>
           </div>
 
@@ -434,20 +433,20 @@ const noLeader = computed(() => {
           <div v-else class="p-3 bg-gray-50 space-y-2">
             <div>
               <label class="text-xs font-medium">
-                {{ trans('Option type name') }} <span class="text-red-500">*</span>
+                {{ ctrans('Option type name') }} <span class="text-red-500">*</span>
               </label>
-              <PureInput v-model="v.label" :placeholder="trans('e.g. color, size')" />
+              <PureInput v-model="v.label" :placeholder="ctrans('e.g. color, size')" />
             </div>
 
             <div>
               <label class="text-xs font-medium">
-                {{ trans('Option value') }} <span class="text-red-500">*</span>
+                {{ ctrans('Option value') }} <span class="text-red-500">*</span>
               </label>
 
               <div v-for="(opt, oi) in v.options" :key="oi" class="flex gap-2 mt-2">
                 <PureInput v-model="v.options[oi]" class="flex-1"
                   @keydown.tab.prevent="oi === v.options.length - 1 && v.options[oi].trim() ? addOption(vi) : null"
-                  :placeholder="trans('e.g. blue, red or S, M, L, XL')" @keydown.enter.prevent="toggleActive(vi)" :ref="el => {
+                  :placeholder="ctrans('e.g. blue, red or S, M, L, XL')" @keydown.enter.prevent="toggleActive(vi)" :ref="el => {
                     if (!optionRefs[vi]) optionRefs[vi] = []
                     optionRefs[vi][oi] = el
                   }" />
@@ -459,16 +458,16 @@ const noLeader = computed(() => {
 
             <div class="flex justify-between mt-3">
               <Button type="dashed" size="xs" @click="addOption(vi)">
-                + {{ trans('Add') }}
+                + {{ ctrans('Add') }}
               </Button>
 
               <div class="flex gap-2">
                 <Button type="red_outline" size="xs" @click="deleteVariant(vi)">
-                  {{ trans('Delete') }}
+                  {{ ctrans('Delete') }}
                 </Button>
                 <Button size="xs" :class="!isVariantValid(v) && 'opacity-50 cursor-not-allowed'"
                   :disabled="!isVariantValid(v)" @click="toggleActive(vi)">
-                  {{ trans('Done') }}
+                  {{ ctrans('Done') }}
                 </Button>
               </div>
             </div>
@@ -479,7 +478,7 @@ const noLeader = computed(() => {
         <div>
           <Button v-if="model.variants.length < 2 && !lockStructure" type="dashed" size="xs" class="mt-2" :icon="faPlus"
             @click="addVariant">
-            {{ trans('Add Option') }}
+            {{ ctrans('Add Option') }}
           </Button>
         </div>
 
@@ -487,7 +486,7 @@ const noLeader = computed(() => {
         <!-- GROUP BY -->
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
-            <span class="text-sm"> {{ trans('Group by') }} </span>
+            <span class="text-sm"> {{ ctrans('Group by') }} </span>
             <select v-model="model.groupBy" :disabled="lockStructure"
               class="border rounded px-2 py-1 text-sm w-[90px] disabled:opacity-60">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
@@ -499,10 +498,10 @@ const noLeader = computed(() => {
 
         <div class="mt-5" v-if="model.variants.length > 0">
           <label class="text-xs font-medium block">
-            {{ trans('List of Variants') }} <span class="text-red-500">*</span>
+            {{ ctrans('List of Variants') }} <span class="text-red-500">*</span>
           </label>
           <span v-if="noLeader" class="text-xs text-gray-500 font-medium italic w-full block text-red-500">
-            {{ trans('One of the products must be leader, it will show as default in webpage') }}
+            {{ ctrans('One of the products must be leader, it will show as default in webpage') }}
           </span>
 
 
@@ -520,16 +519,16 @@ const noLeader = computed(() => {
                   </th>
 
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2 text-start">
-                    {{ trans('Variant') }}
+                    {{ ctrans('Variant') }}
                   </th>
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
-                    {{ trans('Leader') }}
+                    {{ ctrans('Leader') }}
                   </th>
                   <th v-if="withIsHide" class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
-                    {{ trans('Hidden') }}
+                    {{ ctrans('Hidden') }}
                   </th>
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
-                    {{ trans('Product') }}
+                    {{ ctrans('Product') }}
                   </th>
                 </tr>
               </thead>
@@ -555,7 +554,7 @@ const noLeader = computed(() => {
                     <!-- Leader -->
                     <td class="px-4 text-center">
                       <input v-if="!node.children" type="checkbox" :disabled="!node.product || lockStructure" :checked="node.is_leader"
-                        v-tooltip="!node.product ? '' : (!node.all_child_has_webpage ? trans(`One or more of it's child in a shop has no webpage. Choosing this product as a leader would create webpage under said shop`) : '')"
+                        v-tooltip="!node.product ? '' : (!node.all_child_has_webpage ? ctrans(`One or more of it's child in a shop has no webpage. Choosing this product as a leader would create webpage under said shop`) : '')"
                         @change="setLeader(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
@@ -580,14 +579,14 @@ const noLeader = computed(() => {
                           </div>
                         </template>
                         <span v-else-if="!node.children" class="text-xs italic text-gray-400">
-                          {{ trans('No product') }}
+                          {{ ctrans('No product') }}
                         </span>
                       </div>
 
                       <PureMultiselectInfiniteScroll v-else-if="!node.children" :model-value="node.product"
                         @update:model-value="val => setProduct(node, val)" :fetchRoute="masterAssetsRoute"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')">
+                        :placeholder="ctrans('Select Product')">
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="value.image_thumbnail?.main?.original" :src="value.image_thumbnail.main.original"
@@ -639,7 +638,7 @@ const noLeader = computed(() => {
                         :disabled="!child.product || !child.all_child_has_webpage || lockStructure"
                         :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
-                         v-tooltip="!child.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
+                         v-tooltip="!child.all_child_has_webpage ? ctrans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
                          class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
@@ -663,14 +662,14 @@ const noLeader = computed(() => {
                           </div>
                         </template>
                         <span v-else class="text-xs italic text-gray-400">
-                          {{ trans('No product') }}
+                          {{ ctrans('No product') }}
                         </span>
                       </div>
 
                       <PureMultiselectInfiniteScroll v-else :model-value="child.product"
                         @update:model-value="val => setProduct(child, val)" :fetchRoute="masterAssetsRoute"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
-                        :placeholder="trans('Select Product')">
+                        :placeholder="ctrans('Select Product')">
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
                             <Image v-if="value.image_thumbnail?.main?.original" :src="value.image_thumbnail.main.original"

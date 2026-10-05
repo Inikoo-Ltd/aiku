@@ -101,7 +101,7 @@ class PutAwayFinishedJobOrder extends OrgAction
      */
     private function allocationsFor(JobOrder $jobOrder, Location $location, ?array $itemIds, bool $allowNewLocations): array
     {
-        $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->pluck('goods_out_location_id');
+        $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->get()->flatMap(fn ($orgPartner) => $orgPartner->bayIds());
         $isPartnerBay       = $partnerLocationIds->contains($location->id);
 
         $allocations    = [];
@@ -160,7 +160,7 @@ class PutAwayFinishedJobOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("dispatching.{$this->organisation->id}.edit");
+        return $request->user()->authTo("dispatching.{$this->warehouse->id}.edit");
     }
 
     /**

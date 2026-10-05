@@ -10,7 +10,7 @@ namespace App\Actions\Billables\Service\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Actions\Fulfilment\UI\Catalogue\Services\GetFulfilmentServiceShowcase;
 use App\Enums\UI\Fulfilment\FulfilmentServiceTabsEnum;
 use App\Http\Resources\Fulfilment\ServicesResource;
@@ -23,7 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShopService extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Service $service): Service
     {

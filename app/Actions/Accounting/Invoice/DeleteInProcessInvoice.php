@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
@@ -41,7 +42,10 @@ class DeleteInProcessInvoice extends OrgAction
 
     public function rules(): array
     {
-        return DeleteInvoice::make()->rules();
+        return [
+            'deleted_note' => ['required', 'string', 'max:4000'],
+            'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+        ];
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): void

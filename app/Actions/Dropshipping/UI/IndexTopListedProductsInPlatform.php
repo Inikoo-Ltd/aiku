@@ -43,10 +43,11 @@ class IndexTopListedProductsInPlatform extends OrgAction
                 DB::raw('COUNT(portfolios.id) as total_listed'),
                 DB::raw('COUNT(DISTINCT portfolios.customer_id) as total_customers')
             )
-            ->join('assets', function ($join) {
-                $join->on('portfolios.item_id', '=', 'assets.id')
+            ->join('products', function ($join) {
+                $join->on('portfolios.item_id', '=', 'products.id')
                     ->where('portfolios.item_type', '=', 'Product');
             })
+            ->join('assets', 'assets.id', '=', 'products.asset_id')
             ->where('portfolios.platform_id', $platform->id)
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')

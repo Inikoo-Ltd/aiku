@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * Specialised save path for master price/rrp edits: cascades to child products with the
@@ -83,6 +84,10 @@ class UpdateMasterAssetPrices extends OrgAction
             }
             if ($baseRRP = data_get($modelData, "master_rrps.$baseCurrencyCode.value")) {
                 data_set($modelData, 'rrp', $baseRRP);
+            }
+
+            if (Arr::has($modelData, 'master_prices')) {
+                data_set($modelData, 'price_review', null);
             }
 
             return $this->update($lockedMasterAsset, $modelData);
@@ -188,5 +193,10 @@ class UpdateMasterAssetPrices extends OrgAction
         $this->initialisationFromGroup($masterAsset->group, $modelData);
 
         return $this->handle($masterAsset, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

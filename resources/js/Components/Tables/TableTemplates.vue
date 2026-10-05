@@ -31,6 +31,13 @@ const locale = inject("locale", aikuLocaleStructure);
 function mailshotRoute(mailshot: Mailshot) {
     // console.log(route().current())
     switch (route().current()) {
+        case "grp.org.shops.show.dashboard.comms.templates.index":
+            return route(
+                "grp.org.shops.show.dashboard.comms.templates.workshop",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    mailshot.slug]);
         case "grp.org.shops.show.marketing.templates.index":
             return route(
                 "grp.org.shops.show.marketing.templates.workshop",

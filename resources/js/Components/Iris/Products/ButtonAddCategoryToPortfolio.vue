@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref, toRaw, watch, computed, onMounted } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
@@ -87,15 +88,15 @@ const onAddToAllPortfolios = (product: ProductResource) => {
                 categoryHasChannelsList.value = keys
 
                 notify({
-                    title: trans("Success"),
-                    text: trans("Added to all portfolios"),
+                    title: ctrans("Success"),
+                    text: ctrans("Added to all portfolios"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add to portfolio"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add to portfolio"),
                     type: "error"
                 })
             },
@@ -139,16 +140,16 @@ const onAddCategoryToChannel = (channel: {}) => {
                 }
 
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans(`Added product ${product.name}`),
+                //     title: ctrans("Success"),
+                //     text: ctrans(`Added product ${product.name}`),
                 //     type: "success"
                 // })
             },
             onError: (errors) => {
                 console.error(errors)
 /*                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add to portfolio"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add to portfolio"),
                     type: "error"
                 }) */
             },
@@ -188,7 +189,6 @@ watch(() => props.categoryHasChannels, (newVal) => {
 const isLoadingFetchExistenceChannels = ref(false)
 // const categoryExistenceInChannels = ref<number[]>([])
 const fetchProductExistInChannel = async () => {
-    console.log('Fetching product existence in channels for category ID:', props.categoryId)
     isLoadingFetchExistenceChannels.value = true
     try {
         const response = await axios.get(
@@ -200,17 +200,15 @@ const fetchProductExistInChannel = async () => {
                 }
             )
         )
-                console.log('Xxx product exist in channel response:', response.data)
         if (response.status !== 200) {
             throw new Error('Failed to fetch product existence in channel')
         }
 
-        console.log('Xxx product exist in channel response:', response.data)
         categoryHasChannelsList.value = response.data || []
     } catch (error: any) {
         console.error(error)
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: error.message,
             type: 'error'
         })
@@ -220,9 +218,7 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
-    if(layout?.iris?.is_logged_in) {
-        fetchProductExistInChannel()
-    }
+    whenIrisLoggedIn(layout, fetchProductExistInChannel)
 })
 
 </script>
@@ -245,8 +241,8 @@ onMounted(() => {
 
                     <Button
                         v-else
-                        v-tooltip="trans('All products in this category exist on portfolios in all channels')"
-                        :label="trans('This category exists in all channels')"
+                        v-tooltip="ctrans('All products in this category exist on portfolios in all channels')"
+                        :label="ctrans('This category exists in all channels')"
                         type="positive"
                         icon="fal fa-check-double"
                         noHover
@@ -260,18 +256,18 @@ onMounted(() => {
         </div>
 
         <div v-else>
-            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+            <Button :label="ctrans('Out of stock')" type="tertiary" disabled full />
         </div>
     </div>
 
     <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-        {{ trans("Login / Register to Start") }}
+        {{ ctrans("Login / Register to Start") }}
     </a>
 
     <Popover ref="_popover">
         <div class="w-64 relative">
             <div class="text-sm mb-2">
-                {{ trans("Add all products in this category to portfolios in channel") }}:
+                {{ ctrans("Add all products in this category to portfolios in channel") }}:
             </div>
 
             <div class="space-y-2">

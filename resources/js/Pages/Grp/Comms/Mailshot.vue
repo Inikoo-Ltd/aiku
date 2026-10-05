@@ -26,7 +26,7 @@ import { routeType } from "@/types/route";
 import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
@@ -61,6 +61,8 @@ const props = defineProps<{
     setSecondWaveRoute?: routeType
     updateSecondWaveRoute?: routeType
     isSecondWaveActive: boolean
+    canCancelSecondWave?: boolean
+    secondWaveSendsAt?: string | null
     secondwaveSubject?: string
     secondwaveDelayHours?: number
     isHasParentMailshot: boolean
@@ -207,7 +209,6 @@ const handleSendNow = async () => {
 
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -249,7 +250,7 @@ const confirmSchedule = async () => {
         notify({
             type: 'error',
             title: 'Error',
-            text: trans('Pick a date and time in the future before scheduling'),
+            text: ctrans('Pick a date and time in the future before scheduling'),
         })
         return;
     }
@@ -282,7 +283,6 @@ const confirmSchedule = async () => {
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -396,7 +396,6 @@ const handleDelete = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -452,7 +451,6 @@ const handleCancelSchedule = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -467,50 +465,49 @@ const handleCancelSchedule = async () => {
 }
 
 const isSavingToggle = ref(false)
+const waveToggleKey = ref(0)
+const resyncWaveToggle = () => waveToggleKey.value++
+
+const requestErrorMessage = (exception: any, key: string, fallback: string): string =>
+    exception?.response?.data?.errors?.[key]?.[0] ?? fallback
+
 const handleToggleSecondWave = async (value: boolean) => {
     if (!props.setSecondWaveRoute) {
         return
     }
-    const previous = false
+    const previous = !value
+    checked.value = value
     isSavingToggle.value = true
 
     await axios.post(route(props.setSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
         status: value
     })
         .then((response) => {
-            if (response.data) {
-                isSavingToggle.value = false
-            } else {
+            if (!response.data) {
                 checked.value = previous
-                isSavingToggle.value = false
                 notify({
                     type: 'error',
-                    title: 'Error',
-                    text: 'Failed to update second wave status',
+                    title: ctrans('Error'),
+                    text: ctrans('Failed to update second wave status'),
                 })
             }
         })
         .catch((exception) => {
-            console.log(exception);
             checked.value = previous
-            isSavingToggle.value = false
             notify({
                 type: 'error',
-                title: 'Error',
-                text: 'Failed to update second wave status',
+                title: ctrans('Error'),
+                text: requestErrorMessage(exception, 'status', ctrans('Failed to update second wave status')),
             })
         })
         .finally(() => {
             isSavingToggle.value = false
-            router.reload()
-            if (!props.indexRoute) {
-                notify({
-                    type: 'error',
-                    title: 'Error',
-                    text: 'Mailshot index route not configured',
-                })
-                return;
-            }
+            router.reload({
+                onFinish: () => {
+                    checked.value = props.isSecondWaveActive
+                    resyncWaveToggle()
+                }
+            })
         })
 }
 
@@ -521,8 +518,8 @@ const handleSaveSecond = async () => {
     if (!subject.value.trim() || hour.value === null) {
         notify({
             type: 'error',
-            title: 'Validation',
-            text: 'Subject or delay hours are required',
+            title: ctrans('Validation'),
+            text: ctrans('Subject or delay hours are required'),
         })
         return
     }
@@ -540,24 +537,23 @@ const handleSaveSecond = async () => {
                 isEditingSecond.value = false
                 notify({
                     type: 'success',
-                    title: 'Success',
-                    text: 'Second wave data updated successfully',
+                    title: ctrans('Success'),
+                    text: ctrans('Second wave data updated successfully'),
                 })
 
             } else {
                 notify({
                     type: 'error',
-                    title: 'Error',
-                    text: 'Failed to delete mailshot',
+                    title: ctrans('Error'),
+                    text: ctrans('Failed to update second wave'),
                 })
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
-                title: 'Error',
-                text: 'Failed to delete mailshot',
+                title: ctrans('Error'),
+                text: requestErrorMessage(exception, 'subject', ctrans('Failed to update second wave')),
             })
         })
         .finally(() => {
@@ -617,6 +613,18 @@ const isWaveContext = computed(() =>
     props.isHasParentMailshot || props.isSecondWaveActive
 )
 
+const secondWaveCancelText = computed(() => {
+    if (props.secondWaveSendsAt) {
+        return ctrans('2nd wave: sends to people who have not opened it, on :date', {
+            date: new Date(props.secondWaveSendsAt).toLocaleString()
+        })
+    }
+
+    return ctrans('2nd wave: sends to people who have not opened it, :hours hours after this one', {
+        hours: hour.value
+    })
+})
+
 const showWaveSettings = computed(() =>
     ['in_process', 'ready'].includes(props.status ?? '') && !props.isSecondWave
 )
@@ -659,46 +667,46 @@ watch(
         </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
-                <ModalConfirmation :title="trans('Are you sure you want to send this mailshot?')"
-                    :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
+                <ModalConfirmation :title="ctrans('Are you sure you want to send this mailshot?')"
+                    :description="ctrans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
+                        <Button :label="ctrans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                     <template #btn-yes>
-                        <Button :label="trans('Send now')" :loading="inProgress" :disabled="inProgress"
+                        <Button :label="ctrans('Send now')" :loading="inProgress" :disabled="inProgress"
                             @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
-                <Button :label="trans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
+                <Button :label="ctrans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
                     type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
             </div>
         </template>
         <template #other>
             <ModalConfirmation v-if="shouldShowDeleteButton"
-                :title="trans('Are you sure you want to delete this mailshot?')"
-                :description="trans('This action cannot be undone. This will permanently delete this mailshot')"
+                :title="ctrans('Are you sure you want to delete this mailshot?')"
+                :description="ctrans('This action cannot be undone. This will permanently delete this mailshot')"
                 isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
                     <Button :disabled="inProgress" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
                 </template>
                 <template #btn-yes>
-                    <Button :label="trans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                    <Button :label="ctrans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
                         type="negative" icon="fal fa-trash-alt" />
                 </template>
             </ModalConfirmation>
 
             <ModalConfirmation @onYes="handleCancelSchedule" v-if="shouldShowCancelScheduleButton"
-                :title="trans('Are you sure you want to cancel this schedule?')"
-                :description="trans('This action will cancel the scheduled mailshot')" isFullLoading>
+                :title="ctrans('Are you sure you want to cancel this schedule?')"
+                :description="ctrans('This action will cancel the scheduled mailshot')" isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
-                    <Button :label="trans('Cancel Schedule')" :disabled="inProgress"
+                    <Button :label="ctrans('Cancel Schedule')" :disabled="inProgress"
                         class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative" @click="changeModel"
-                        :tooltip="trans('This can still be canceled before it starts sending')" />
+                        :tooltip="ctrans('This can still be canceled before it starts sending')" />
                 </template>
                 <template #btn-yes>
-                    <Button :label="trans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
+                    <Button :label="ctrans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
                         @click="handleCancelSchedule" type="negative" icon="fal fa-clock" />
                 </template>
             </ModalConfirmation>
@@ -710,14 +718,14 @@ watch(
     <!-- Schedule DateTime Picker Popover -->
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
+            <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ ctrans('Timezone') }}: <span
                     class="text-red-600">{{ selectedTimezone }}</span>
             </h3>
             <div class="min-w-0 w-full mb-3">
 
                 <PureMultiselect
                     v-model="selectedTimezone"
-                    :placeholder="trans('Select timezone...')"
+                    :placeholder="ctrans('Select timezone...')"
                     :options="props.timeZoneOptions || []"
                     :searchable="true"
                     :required="true"
@@ -733,25 +741,25 @@ watch(
             <div class="w-full mb-4 rounded-md border px-3 py-2"
                 :class="schedulePreview ? 'border-gray-300 bg-gray-50' : 'border-dashed border-gray-300'">
                 <template v-if="schedulePreview">
-                    <div class="text-gray-500">{{ trans('This email will be sent on') }}</div>
+                    <div class="text-gray-500">{{ ctrans('This email will be sent on') }}</div>
                     <div class="text-gray-900">
                         {{ schedulePreview.inSelectedTimezone }}
                         <span class="text-gray-500">({{ selectedTimezone }})</span>
                     </div>
-                    <div class="text-gray-500">{{ schedulePreview.inUtc }} {{ trans('UTC') }}</div>
+                    <div class="text-gray-500">{{ schedulePreview.inUtc }} {{ ctrans('UTC') }}</div>
                     <div v-if="schedulePreview.isInThePast" class="text-red-600">
-                        {{ trans('That time has already passed, pick a later one') }}
+                        {{ ctrans('That time has already passed, pick a later one') }}
                     </div>
                 </template>
                 <div v-else class="text-gray-500">
-                    {{ trans('Pick a date and time above to see when this email will be sent') }}
+                    {{ ctrans('Pick a date and time above to see when this email will be sent') }}
                 </div>
             </div>
 
             <div class="flex gap-2 justify-end w-full">
-                <Button :label="trans('Cancel')" @click="cancelSchedule"
+                <Button :label="ctrans('Cancel')" @click="cancelSchedule"
                     class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md" type="secondary" />
-                <Button :label="trans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
+                <Button :label="ctrans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
                     :disabled="!canConfirmSchedule || scheduleInProgress" :loading="scheduleInProgress"
                     type="negative" />
             </div>
@@ -769,26 +777,54 @@ watch(
                 </span>
                 <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
                     v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent' && props.secondWaveStatus === 'sent'">
-                    Recipients: {{ numberSecondWaveRecipients }}
+                    {{ ctrans('Recipients:') }} {{ numberSecondWaveRecipients }}
                 </span>
             </template>
+            <template v-if="canCancelSecondWave && !isSecondWave">
+                <span class="text-sm text-gray-700">{{ secondWaveCancelText }}</span>
+                <ModalConfirmation
+                    :title="ctrans('Cancel the 2nd wave?')"
+                    :description="ctrans('The 2nd wave will not be sent. This cannot be turned back on.')"
+                    @modalClosedAction="resyncWaveToggle">
+                    <template #default="{ changeModel }">
+                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked"
+                            @update:modelValue="() => changeModel()" :disabled="isSavingToggle" />
+                    </template>
+                    <template #btn-yes="{ closeModal }">
+                        <Button :label="ctrans('Yes, cancel it')"
+                            @click="() => { closeModal(); handleToggleSecondWave(false) }" />
+                    </template>
+                </ModalConfirmation>
+            </template>
             <template v-if="showWaveSettings">
-                <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave"
-                    :disabled="isSavingToggle" />
+                <ModalConfirmation
+                    :title="ctrans('Send this email again?')"
+                    :description="ctrans('The same email will be sent again, :hours hours after this one, to everyone who has not opened it.', { hours: hour })"
+                    @modalClosedAction="resyncWaveToggle">
+                    <template #default="{ changeModel }">
+                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked"
+                            @update:modelValue="(value: boolean) => value ? changeModel() : handleToggleSecondWave(false)"
+                            :disabled="isSavingToggle" />
+                    </template>
+                    <template #btn-yes="{ closeModal }">
+                        <Button :label="ctrans('Yes, send it again')"
+                            @click="() => { closeModal(); handleToggleSecondWave(true) }" />
+                    </template>
+                </ModalConfirmation>
 
-                <Button v-if="checked" type="edit" label="Edit" class="!px-2 !py-1 text-xs h-8"
+                <Button v-if="checked" type="edit" :label="ctrans('Edit')" class="!px-2 !py-1 text-xs h-8"
                     @click="isEditingSecond = !isEditingSecond" />
 
                 <span class="h-4 w-px bg-gray-300"></span>
                 <template v-if="checked">
-                    <label class="block text-sm text-gray-600 mb-1 font-medium">Subject</label>
-                    <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
+                    <label class="block text-sm text-gray-600 mb-1 font-medium">{{ ctrans('Subject') }}</label>
+                    <InputText v-model="subject" :placeholder="ctrans('Subject')" :disabled="!checked || !isEditingSecond"
                         class="!h-8 !py-1 !text-sm w-44" />
 
                     <div class="flex items-center gap-1 shrink-0">
                         <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
                             inputClass="!h-8 !py-1 !text-sm text-center w-20" />
-                        <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
+                        <span class="text-sm font-medium text-gray-700 whitespace-nowrap">{{ ctrans('hours') }}</span>
                     </div>
 
                     <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />

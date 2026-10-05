@@ -24,6 +24,7 @@ use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
 use App\Models\Web\Redirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -39,6 +40,12 @@ class UpdateVariant extends OrgAction
      */
     public function handle(Variant $variant, array $modelData): Variant
     {
+        if (!Arr::hasAny($modelData, ['status', 'data', 'leader_id'])) {
+            $variant->update($modelData);
+
+            return $variant;
+        }
+
         /** @var Variant $variant */
         $variant = DB::transaction(function () use ($modelData, $variant) {
             $variant->update($modelData);
@@ -172,6 +179,14 @@ class UpdateVariant extends OrgAction
             unset($this->variants);
         }
 
+        if (!$this->asAction && $this->has('label')) {
+            $this->set('is_label_reviewed', true);
+        }
+
+        if (!$this->has('status') && !$this->has('data')) {
+            return;
+        }
+
         $this->prepareForVariantUpdate();
     }
 
@@ -187,7 +202,9 @@ class UpdateVariant extends OrgAction
             'data.variants'                 =>  ['required_with:leader_id', 'array'],
             'data.groupBy'                  =>  ['required_with:leader_id', 'string'],
             'data.products'                 =>  ['required_with:leader_id', 'array', 'min:1'],
-            'status'                        =>  ['sometimes', 'boolean']
+            'status'                        =>  ['sometimes', 'boolean'],
+            'label'                         =>  ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_label_reviewed'             =>  ['sometimes', 'boolean'],
         ];
     }
 

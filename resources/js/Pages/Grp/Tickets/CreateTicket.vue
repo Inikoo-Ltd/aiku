@@ -18,6 +18,7 @@ defineProps<{
     kinds: { label: string; value: string }[]
     types?: { label: string; value: string }[]
     modules: { label: string; value: string }[]
+    project?: { id: number; name: string } | null
 }>()
 </script>
 
@@ -25,6 +26,6 @@ defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 -mb-6 md:-mb-24">
-        <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" />
+        <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" :project="project" />
     </div>
 </template>

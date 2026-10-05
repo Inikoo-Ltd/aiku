@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
@@ -24,7 +25,7 @@ class PrepareMailshotSecondWaveRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'ses';
+    public string $jobQueue = 'ses-low';
     protected int $countRecipients = 0;
 
     public function tags(): array
@@ -45,6 +46,15 @@ class PrepareMailshotSecondWaveRecipients
             return;
         }
 
+        $mailshot->refresh();
+        $parentMailshot->refresh();
+
+        if ($mailshot->trashed() || !$parentMailshot->is_second_wave_enabled) {
+            return;
+        }
+
+        SyncMailshotSecondWaveSubject::run($parentMailshot);
+        $mailshot->refresh();
 
         $baseQuery = DB::table('customers');
         $baseQuery->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
@@ -54,6 +64,18 @@ class PrepareMailshotSecondWaveRecipients
 
         $baseQuery->whereIn('dispatched_emails.state', [ DispatchedEmailStateEnum::SENT->value, DispatchedEmailStateEnum::DELIVERED->value]);
         $baseQuery->whereNotNull('dispatched_emails.sent_at');
+        $baseQuery->whereNotExists(function ($query) {
+            $query->select(DB::raw(1))
+                ->from('email_tracking_events')
+                ->whereColumn('email_tracking_events.dispatched_email_id', 'dispatched_emails.id')
+                ->where(function ($events) {
+                    $events->where('email_tracking_events.type', EmailTrackingEventTypeEnum::OPENED->value)
+                        ->orWhere(function ($clicks) {
+                            $clicks->where('email_tracking_events.type', EmailTrackingEventTypeEnum::CLICKED->value)
+                                ->where('email_tracking_events.is_scanner', false);
+                        });
+                });
+        });
 
         $baseQuery->where('customers.shop_id', $mailshot->shop_id);
         $baseQuery->where('mailshot_recipients.recipient_type', 'Customer');
@@ -89,7 +111,7 @@ class PrepareMailshotSecondWaveRecipients
             }
 
             if (!empty($customerIds)) {
-                ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+                ProcessSendMailshot::dispatch($mailshotId, $customerIds)->onQueue('ses-low');
                 $this->countRecipients += $numValidEmails;
             }
         });

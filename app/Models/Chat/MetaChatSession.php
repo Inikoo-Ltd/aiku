@@ -3,6 +3,7 @@
 namespace App\Models\Chat;
 
 use App\Models\Helpers\Ticket;
+use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
@@ -130,6 +131,8 @@ class MetaChatSession extends Model
             ? $this->lastVisitorMessage->first()?->created_at
             : $this->lastVisitorMessage()->latest()->first()?->created_at;
 
+        $lastInboundAt = collect([$lastInboundAt, $this->last_visitor_message_at])->filter()->max();
+
         return $lastInboundAt !== null && $lastInboundAt->gt(now()->subDay());
     }
 
@@ -139,6 +142,14 @@ class MetaChatSession extends Model
     public function tickets(): MorphMany
     {
         return $this->morphMany(Ticket::class, 'source');
+    }
+
+    /**
+     * Colleagues asked to do something for this conversation, e.g. chase a supplier for a document; the chat waits on the open ones.
+     */
+    public function staffTasks(): MorphMany
+    {
+        return $this->morphMany(StaffTask::class, 'model');
     }
 
     public function assignments(): HasMany

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, computed, inject, watch } from "vue"
 import { get, isNull, cloneDeep } from "lodash-es"
 import { faLock } from "@fas"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import CornersType from "./CornersType.vue"
 import type { BlueprintFieldFocus } from "@/Composables/useBlueprintFieldFocus"
 
@@ -54,32 +55,32 @@ const section = ref<any>(null)
 
 const cornersSection = computed(() => [
     {
-        label: trans("Top left"),
+        label: ctrans("Top left"),
         valueForm: get(cornersValue.value, "topLeft"),
         id: "topLeft",
     },
     {
-        label: trans("Top middle"),
+        label: ctrans("Top middle"),
         valueForm: get(cornersValue.value, "topMiddle"),
         id: "topMiddle",
     },
     {
-        label: trans("Top right"),
+        label: ctrans("Top right"),
         valueForm: get(cornersValue.value, "topRight"),
         id: "topRight",
     },
     {
-        label: trans("Bottom left"),
+        label: ctrans("Bottom left"),
         valueForm: get(cornersValue.value, "bottomLeft"),
         id: "bottomLeft",
     },
     {
-        label: trans("Bottom middle"),
+        label: ctrans("Bottom middle"),
         valueForm: get(cornersValue.value, "bottomMiddle"),
         id: "bottomMiddle",
     },
     {
-        label: trans("Bottom right"),
+        label: ctrans("Bottom right"),
         valueForm: get(cornersValue.value, "bottomRight"),
         id: "bottomRight",
     },
