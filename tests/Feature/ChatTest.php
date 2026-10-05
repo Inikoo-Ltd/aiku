@@ -12622,6 +12622,20 @@ test('staff flag an AI summary of an email or of a chat as wrong, saying why, on
     $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Still wrong'])->assertOk();
     expect(Arr::get($session->refresh()->metadata, 'ai_summary_flags'))->toHaveCount(2);
 
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp'])->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+421900003676',
+        'status'          => ChatSessionStatusEnum::CLOSED,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+        'metadata'        => ['ai_summary' => ['summary' => 'Customer asks for a catalogue']],
+    ]);
+    $this->postJson(route('grp.chat.ai.summaries.meta_session.flag', [$whatsappSession->ulid]), ['reason' => 'They asked for prices'])->assertOk();
+    expect(\App\Http\Resources\CRM\Livechat\MetaChatSessionListResource::make($whatsappSession->refresh())->resolve()['ai_summary']['flagged'])->toBeTrue();
+    $whatsappSession->delete();
+
     $email->delete();
     $plain->delete();
     $session->delete();

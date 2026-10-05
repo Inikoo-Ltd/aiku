@@ -32,6 +32,7 @@ Route::post('/ai/drafts/{chatAiDraft}/flag', FlagChatAiDraft::class)->name('ai.d
 Route::post('/ai/sent/{channel}/{messageId}/flag', FlagChatAutomatedMessage::class)->where('channel', 'chat|whatsapp')->name('ai.sent.flag');
 Route::post('/ai/summaries/messages/{chatMessage}/flag', FlagChatAiSummary::class)->name('ai.summaries.message.flag');
 Route::post('/ai/summaries/sessions/{chatSession:ulid}/flag', [FlagChatAiSummary::class, 'inChatSession'])->name('ai.summaries.session.flag');
+Route::post('/ai/summaries/meta-sessions/{metaChatSession:ulid}/flag', [FlagChatAiSummary::class, 'inMetaChatSession'])->name('ai.summaries.meta_session.flag');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');

@@ -16,6 +16,7 @@ import Icon from '@/Components/Icon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
+import FlagWrongButton from '@/Components/Chat/FlagWrongButton.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone } from '@fal'
@@ -52,6 +53,7 @@ interface PanelSession {
         summary?: string
         key_points?: string[]
         sentiment?: string
+        flagged?: boolean
     } | null
 }
 
@@ -111,6 +113,9 @@ watch(() => props.session.ulid, () => {
 
 // WhatsApp has no route for handing a conversation to a named agent yet, so there it stays
 // what it was: the name of whoever holds it.
+const summaryFlagUrl = computed(() => props.session.channel === 'whatsapp'
+    ? route('grp.chat.ai.summaries.meta_session.flag', [props.session.ulid])
+    : route('grp.chat.ai.summaries.session.flag', [props.session.ulid]))
 const canAssignAgent = computed(() => props.session.channel !== 'whatsapp')
 const pendingAgent = ref<{ id: number; name: string } | null>(null)
 const currentAgentName = computed(() => pendingAgent.value?.name ?? props.session.assigned_agent ?? null)
@@ -1258,6 +1263,11 @@ const copyChatId = async () => {
                             </li>
                         </ul>
                     </template>
+                    <div class="mt-2">
+                        <FlagWrongButton :key="session.ulid + session.ai_summary.summary" :url="summaryFlagUrl" :flagged="!!session.ai_summary.flagged"
+                            :question="ctrans('Why is this summary wrong? We use this to improve the summaries.')"
+                            :placeholder="ctrans('e.g. longer than the chat itself, or it missed what the customer asked')" />
+                    </div>
                 </div>
             </div>
 
