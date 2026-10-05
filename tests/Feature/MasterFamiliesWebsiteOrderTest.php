@@ -254,9 +254,13 @@ test('the families order lists the families brought in by the active collections
 
 test('a shop department lists the families of its collections after its own families on the order tab and the website', function () {
     createWebsite($this->shop);
-    [, $product] = createProduct($this->shop);
-    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
-    $ownFamily   = $product->family;
+    $departmentData = ProductCategory::factory()->definition();
+    data_set($departmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $department = StoreProductCategory::make()->action($this->shop, $departmentData);
+
+    $ownFamilyData = ProductCategory::factory()->definition();
+    data_set($ownFamilyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+    $ownFamily = StoreProductCategory::make()->action($department, $ownFamilyData);
 
     $otherDepartmentData = ProductCategory::factory()->definition();
     data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
