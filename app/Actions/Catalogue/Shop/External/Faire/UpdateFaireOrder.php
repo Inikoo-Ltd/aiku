@@ -371,33 +371,39 @@ class UpdateFaireOrder extends OrgAction
 
     /**
      * Faire only adds the VAT on shipping once the shipment is pushed at dispatch, after the last full
-     * sync, so dispatched orders kept the items-only tax (HELP-3694). Only the tax is re-asserted here:
-     * a full sync on a dispatched order rewrites its lines.
+     * sync, so dispatched orders kept the items-only tax (HELP-3694). Only that exact case is fixed:
+     * any other difference from Faire on an issued invoice is left alone, never rewritten.
      */
     public function syncFaireTax(Order $order): void
     {
         $orderFaireData = $order->shop->getFaireOrder($order->external_id);
-        if (empty(Arr::get($orderFaireData, 'payout_costs.taxes'))) {
+        $taxes          = collect(Arr::get($orderFaireData, 'payout_costs.taxes', []));
+        if ($taxes->isEmpty()) {
             return;
         }
 
+        $itemsTaxData = ['payout_costs' => ['taxes' => $taxes->where('taxable_item_type', 'ORDER_ITEM')->values()->all()]];
+        $itemsTax     = $this->getFaireTaxAmount($itemsTaxData, $order->shop);
+        $faireTax     = $this->getFaireTaxAmount($orderFaireData, $order->shop);
+
         $order->refresh();
-        $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $order->shop);
-        if (abs($faireTaxAmount - (float)$order->tax_amount) < 0.01) {
+        if ($faireTax - $itemsTax < 0.01 || abs((float)$order->tax_amount - $itemsTax) >= 0.01) {
             return;
         }
 
         $order->update([
-            'data->marketplace_tax_amount' => $faireTaxAmount,
-            'tax_amount'                   => $faireTaxAmount,
-            'total_amount'                 => $order->net_amount + $faireTaxAmount,
+            'data->marketplace_tax_amount' => $faireTax,
+            'tax_amount'                   => $faireTax,
+            'total_amount'                 => $order->net_amount + $faireTax,
         ]);
 
         $invoice = $this->getInvoiceToDiscount($order);
-        $invoice?->update([
-            'tax_amount'   => $faireTaxAmount,
-            'total_amount' => $invoice->net_amount + $faireTaxAmount,
-        ]);
+        if ($invoice && abs((float)$invoice->tax_amount - $itemsTax) < 0.01) {
+            $invoice->update([
+                'tax_amount'   => $faireTax,
+                'total_amount' => $invoice->net_amount + $faireTax,
+            ]);
+        }
     }
 
     public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
