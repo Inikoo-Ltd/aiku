@@ -4687,7 +4687,7 @@ test('organisation navigation shows the warehouse section above production', fun
     expect(array_search('warehouses_navigation', $sections))->toBeLessThan(array_search('productions_navigation', $sections));
 });
 
-test('surplus made beyond its lines is flagged on the backlog and booking it in fulfils the oldest lines', function () {
+test('production for stock is flagged on the backlog and booking it in fulfils the oldest lines', function () {
     $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
         $this->group,
         array_merge(\App\Models\Goods\Stock::factory()->definition(), [
@@ -4743,14 +4743,14 @@ test('surplus made beyond its lines is flagged on the backlog and booking it in 
 
     $items = collect($backlog())->keyBy('id');
     expect($items[$older->id]['pipeline']['pending_booking'])->toBe(1.0)
-        ->and($items[$newer->id]['pipeline']['pending_booking'])->toBe(8.0)
+        ->and($items[$newer->id]['pipeline']['pending_booking'])->toBe(9.0)
         ->and(collect($backlog(['ignore_pipeline' => 1]))->pluck('pipeline')->filter()->all())->toBe([]);
 
     \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
 
     expect($older->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
         ->and($newer->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
-        ->and((float) $newer->quantity)->toBe(4.0);
+        ->and((float) $newer->quantity)->toBe(3.0);
 });
 
 test('a job order planned by hand is one job with its lines on the board, even for a product already there', function () {

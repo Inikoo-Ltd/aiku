@@ -156,6 +156,7 @@ class SettleShortJobOrderItemTask
                     'priority',
                     'needed_by',
                     'notes',
+                    'transaction_id',
                     'added_by_user_id',
                     'state',
                 ]),

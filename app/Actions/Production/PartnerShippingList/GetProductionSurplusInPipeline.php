@@ -81,12 +81,14 @@ class GetProductionSurplusInPipeline
 
     /**
      * A partner line takes everything it asked to be made to its bay; an own customer line only
-     * needs what its order asked for, anything made on top is stock.
+     * needs what its order asked for, anything made on top is stock. A restock line has no order:
+     * everything it makes is stock, free for the backlog.
      */
     private function claimedSkos(JobOrderItem $item): float
     {
         return (float) PartnerShoppingListItem::where('job_order_id', $item->job_order_id)
             ->where('stock_id', $item->artefact->orgStock?->stock_id)
+            ->where(fn ($query) => $query->whereNotNull('partner_organisation_id')->orWhereNotNull('transaction_id'))
             ->get()
             ->sum(fn (PartnerShoppingListItem $line) => $line->partner_organisation_id
                 ? (float) ($line->quantity_to_produce ?? $line->quantity)
