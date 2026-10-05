@@ -15,6 +15,10 @@ declare global {
 }
 
 export const setComponentDebugInfo = () => {
+    if (typeof window === 'undefined') {
+        return
+    }
+
     const page = usePage()
     const phpComponent = page.props?.phpComponent as string | null | undefined
 
