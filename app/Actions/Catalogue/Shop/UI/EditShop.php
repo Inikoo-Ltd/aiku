@@ -1212,6 +1212,10 @@ class EditShop extends OrgAction
                 $formData['blueprint'] = [];
             }
 
+            if (Arr::get($shop->settings, 'chat.enabled', false)) {
+                $allowedBlueprintLabels[] = __('Customer mailbox');
+            }
+
             $filteredBlueprint = [];
 
             foreach ($formData['blueprint'] as $section) {
