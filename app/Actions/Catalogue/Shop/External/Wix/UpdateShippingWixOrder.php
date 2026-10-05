@@ -10,6 +10,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Sentry;
 
 class UpdateShippingWixOrder extends OrgAction
@@ -45,9 +46,9 @@ class UpdateShippingWixOrder extends OrgAction
 
         try {
             $lineItems = $order->transactions
-                ->whereNotNull('external_id')
+                ->whereNotNull('marketplace_id')
                 ->map(fn ($transaction) => [
-                    'id'       => $transaction->external_id,
+                    'id'       => Str::afterLast($transaction->marketplace_id, ':'),
                     'quantity' => (int) $transaction->quantity_dispatched ?: (int) $transaction->quantity_ordered,
                 ])
                 ->filter(fn ($lineItem) => $lineItem['quantity'] > 0)

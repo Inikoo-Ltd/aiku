@@ -34,7 +34,7 @@ class StoreOrderFromWix extends OrgAction
             return null;
         }
 
-        $result = $this->processWixLineItems($shop, Arr::get($wixOrder, 'lineItems', []));
+        $result = $this->processWixLineItems($shop, $externalId, Arr::get($wixOrder, 'lineItems', []));
 
         if (!empty($result['errors']) || empty($result['transactions'])) {
             \Sentry\withScope(function ($scope) use ($shop, $wixOrder, $result) {
@@ -57,7 +57,7 @@ class StoreOrderFromWix extends OrgAction
                 'is_shipping_by_external' => false,
                 'external_id'             => $externalId,
                 'marketplace_id'          => $externalId,
-                'reference'               => (string) (Arr::get($wixOrder, 'number') ?: $externalId),
+                'reference'               => $this->getOrderReference($shop, $wixOrder),
                 'created_at'              => Carbon::parse(Arr::get($wixOrder, 'createdDate'))->toDateTimeString(),
                 'billing_address'         => $address,
                 'delivery_address'        => $address,
@@ -98,7 +98,7 @@ class StoreOrderFromWix extends OrgAction
     /**
      * @return array{transactions: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
      */
-    public function processWixLineItems(Shop $shop, array $lineItems): array
+    public function processWixLineItems(Shop $shop, string $wixOrderId, array $lineItems): array
     {
         $transactions = [];
         $errors       = [];
@@ -123,8 +123,7 @@ class StoreOrderFromWix extends OrgAction
             $transactions[] = [
                 'historic_asset'   => $product->currentHistoricProduct,
                 'quantity_ordered' => $quantity,
-                'external_id'      => Arr::get($lineItem, 'id'),
-                'marketplace_id'   => Arr::get($lineItem, 'id'),
+                'marketplace_id'   => $this->getTransactionMarketplaceId($wixOrderId, Arr::get($lineItem, 'id')),
                 'net_amount'       => $netAmount,
                 'gross_amount'     => $unitPrice * $quantity,
             ];
@@ -134,6 +133,23 @@ class StoreOrderFromWix extends OrgAction
             'transactions' => $transactions,
             'errors'       => $errors,
         ];
+    }
+
+    /**
+     * Every Wix site numbers its orders from 10001, and the delivery note takes the order reference and must be
+     * unique in the organisation, so the shop code keeps two Wix shops from colliding.
+     */
+    public function getOrderReference(Shop $shop, array $wixOrder): string
+    {
+        return $shop->code.'-'.(Arr::get($wixOrder, 'number') ?: Arr::get($wixOrder, 'id'));
+    }
+
+    /**
+     * Wix numbers line items per order (…0001, …0002), so the order id is prefixed to keep them unique in the group.
+     */
+    public function getTransactionMarketplaceId(string $wixOrderId, string $lineItemId): string
+    {
+        return $wixOrderId.':'.$lineItemId;
     }
 
     public function findProduct(Shop $shop, array $lineItem): ?Product
