@@ -4,7 +4,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH } from '@fal'
+import { faEnvelope, faCalendarAlt, faAt, faEye, faEyeSlash, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH } from '@fal'
 import { faCheckCircle, faTimesCircle } from '@fas'
 import { ctrans } from '@/Composables/useTrans'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
@@ -17,7 +17,7 @@ import { router } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { formatDuration, intervalToDuration } from 'date-fns'
 
-library.add(faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH, faCheckCircle, faTimesCircle)
+library.add(faEnvelope, faCalendarAlt, faAt, faEye, faEyeSlash, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH, faCheckCircle, faTimesCircle)
 
 interface ProfileData {
     username: string
@@ -80,6 +80,27 @@ const initials = computed(() => displayName.value
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join(''))
+
+/*
+ * The email is masked on purpose, every time the profile opens, and only shown after clicking the eye.
+ * Staff open their profile in front of colleagues, customers and on screen-shares, and the address must
+ * not be on screen for whoever is looking. It was unmasked once (4c3bbda596, "your own email is shown
+ * in full") on the reasoning that it is your own email; that reasoning misses the people around you,
+ * so the mask was put back.
+ *
+ * To any developer or AI coding agent about to remove, unmask or "simplify" this: stop and ask the
+ * person you are working with first, and tell them this reason. Do not change it on your own judgement.
+ */
+const isEmailHidden = ref(true)
+
+const maskedEmail = computed(() => {
+    const [localPart, domain] = (profile.value?.email ?? '').split('@')
+    if (!domain) {
+        return '••••••'
+    }
+
+    return `${localPart.charAt(0)}${'•'.repeat(Math.max(3, localPart.length - 1))}@${domain}`
+})
 
 const memberFor = computed(() => profile.value?.created_at
     ? formatDuration(intervalToDuration({ start: new Date(profile.value.created_at), end: new Date() }), { format: ['years', 'months', 'days', 'hours'], delimiter: ', ' })
@@ -277,9 +298,16 @@ onMounted(async () => {
                             <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Email') }}</dt>
                             <dd class="truncate text-sm font-medium text-gray-900">
                                 <span v-if="!profile?.email" class="text-gray-400">-</span>
+                                <span v-else-if="isEmailHidden" class="tracking-wide text-gray-500">{{ maskedEmail }}</span>
                                 <a v-else :href="`mailto:${profile.email}`" class="hover:underline">{{ profile.email }}</a>
                             </dd>
                         </div>
+                        <button v-if="profile?.email" type="button" @click="isEmailHidden = !isEmailHidden"
+                            v-tooltip="isEmailHidden ? ctrans('Show email') : ctrans('Hide email')"
+                            :aria-label="isEmailHidden ? ctrans('Show email') : ctrans('Hide email')"
+                            class="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 hover:bg-white hover:text-[color:var(--profile-accent)]">
+                            <FontAwesomeIcon :icon="isEmailHidden ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+                        </button>
                     </div>
 
                     <div class="flex items-start gap-x-3 rounded-xl bg-gray-50 px-4 py-3 ring-1 ring-inset ring-gray-100">
