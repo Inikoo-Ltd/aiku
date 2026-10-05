@@ -23,6 +23,7 @@ class MailshotTemplatesInDashboardResource extends JsonResource
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
             'has_compiled_layout' => $hasCompiledLayout,
+            'is_dynamic_block'    => (bool) $this->is_dynamic_block,
 
         ];
     }
