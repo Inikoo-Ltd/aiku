@@ -136,6 +136,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -5899,6 +5900,24 @@ test('organisation orders hydrator counts orders in a single scan', function () 
 
     expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "orders"')))->toHaveCount(1)
         ->and($stats->number_orders)->toBe(Order::withTrashed()->where('organisation_id', $this->organisation->id)->count())
+        ->and($stats->number_orders_state_creating)->toBe((clone $liveOrders)->where('state', OrderStateEnum::CREATING)->count())
+        ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
+        ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
+});
+
+test('group orders hydrator counts orders in a single scan', function () {
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    GroupHydrateOrders::run($this->group);
+
+    $stats = $this->group->orderingStats()->first();
+    $liveOrders = Order::where('group_id', $this->group->id);
+
+    expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "orders"')))->toHaveCount(1)
+        ->and($stats->number_orders)->toBe(Order::withTrashed()->where('group_id', $this->group->id)->count())
         ->and($stats->number_orders_state_creating)->toBe((clone $liveOrders)->where('state', OrderStateEnum::CREATING)->count())
         ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
         ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
