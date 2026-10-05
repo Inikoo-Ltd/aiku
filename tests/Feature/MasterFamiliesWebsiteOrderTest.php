@@ -162,8 +162,8 @@ test('a shop that does not follow the master order keeps its own positions', fun
 });
 
 test('reordering a shop department is refused while it follows the master order', function () {
-    [, $product] = createProduct($this->shop);
-    $department = $product->department;
+    createProduct($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
 
     $familyData = ProductCategory::factory()->definition();
     data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
@@ -175,8 +175,8 @@ test('reordering a shop department is refused while it follows the master order'
 });
 
 test('a shop department that has opted out orders its own families', function () {
-    [, $product] = createProduct($this->shop);
-    $department = $product->department;
+    createProduct($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
 
     $families = [];
     foreach (['first', 'second'] as $label) {
@@ -250,7 +250,7 @@ test('the families order lists the families brought in by the active collections
 
 test('a shop department lists the families of its collections after its own families on the order tab and the website', function () {
     [, $product] = createProduct($this->shop);
-    $department  = $product->department;
+    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
     $ownFamily   = $product->family;
 
     $otherDepartmentData = ProductCategory::factory()->definition();

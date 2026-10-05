@@ -4892,7 +4892,7 @@ test('the orders backlog can be filtered to partner or direct orders and counts 
 
     $sisterOrganisationCustomer = freshCustomerLike($this->shop, $this->customer);
     $sisterOrganisationCustomer->update([
-        'as_organisation_id' => (int) DB::table('organisations')->max('id') + 1,
+        'as_organisation_id' => $this->organisation->id,
     ]);
     $phonedInPartnerOrder = StoreOrder::make()->action($sisterOrganisationCustomer, Order::factory()->definition());
 
