@@ -1036,6 +1036,26 @@ test('all supplier products list shows the other open purchase orders each produ
         ->and($rowMatchedByOrgStock->other_open_purchase_orders->pluck('reference')->all())->toBe([$purchaseOrder->reference]);
 })->depends('add more items to purchase order');
 
+test('add items search finds a supplier product by its SKO code', function (PurchaseOrder $purchaseOrder) {
+    /** @var OrgSupplier $orgSupplier */
+    $orgSupplier = $purchaseOrder->parent;
+    $transaction = $purchaseOrder->purchaseOrderTransactions()->first();
+    $orgStock    = OrgStock::find($transaction->org_stock_id);
+    $linkId      = DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $transaction->supplier_product_id]);
+
+    $search = fn (string $value) => collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $purchaseOrder)->items())->pluck('id');
+
+    request()->merge(['filter' => ['global' => $orgStock->code]]);
+    $foundBySkoCode = $search($orgStock->code);
+    request()->merge(['filter' => ['global' => 'zz-no-such-code']]);
+    $foundByNonsense = $search('zz-no-such-code');
+    request()->offsetUnset('filter');
+    DB::table('stock_has_supplier_products')->delete($linkId);
+
+    expect($foundBySkoCode)->toContain($transaction->org_supplier_product_id)
+        ->and($foundByNonsense)->toBeEmpty();
+})->depends('add more items to purchase order');
+
 test('all supplier products list leaves out products whose SKO is discontinuing or discontinued or the supplier does not have, unless already ordered', function (PurchaseOrder $purchaseOrder) {
     /** @var OrgSupplier $orgSupplier */
     $orgSupplier = $purchaseOrder->parent;

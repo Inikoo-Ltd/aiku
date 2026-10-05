@@ -49,7 +49,13 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('supplier_products.code', $value)
-                    ->orWhereStartWith('supplier_products.name', $value);
+                    ->orWhereStartWith('supplier_products.name', $value)
+                    ->orWhereExists(fn ($query) => $query->selectRaw('1')
+                        ->from('org_stocks')
+                        ->join('stock_has_supplier_products', 'stock_has_supplier_products.stock_id', 'org_stocks.stock_id')
+                        ->whereColumn('stock_has_supplier_products.supplier_product_id', 'supplier_products.id')
+                        ->whereColumn('org_stocks.organisation_id', 'org_supplier_products.organisation_id')
+                        ->where('org_stocks.code', 'ilike', addcslashes($value, '%_\\').'%'));
             });
         });
 
