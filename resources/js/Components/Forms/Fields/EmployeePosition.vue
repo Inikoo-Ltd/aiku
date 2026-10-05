@@ -150,8 +150,11 @@ const onSubmitNewForm = () => {
 }
 
 
+const selectableShopStates = ["open", "in_process"]
+const isShopSelectable = (shop: { state: string }) => selectableShopStates.includes(shop.state)
+
 const optionsList = {
-    shops: props.options.shops.data?.filter(shop => shop.state == "open"),
+    shops: props.options.shops.data?.filter(shop => isShopSelectable(shop)),
     fulfilments: props.options.fulfilments?.data || [],
     warehouses: props.options.warehouses?.data || [],
     positions: props.options.positions?.data || [],
@@ -256,8 +259,8 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == "acc-o")?.number_employees || 0
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != "open"),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == "open").map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1
     },
 
@@ -299,8 +302,8 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == "web-c")?.number_employees || 0
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != "open"),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == "open").map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1
         // value: null
     },
@@ -326,8 +329,8 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == "mrk-c")?.number_employees || 0
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != "open"),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == "open").map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1
         // value: null
     },
@@ -377,8 +380,8 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == "cus-v")?.number_employees || 0
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != "open"),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == "open").map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1
         // value: null
     },
