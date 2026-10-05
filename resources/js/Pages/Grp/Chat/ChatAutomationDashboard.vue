@@ -243,8 +243,8 @@ const colorOf = (index: number) => donutChart.value.datasets[0].backgroundColor[
                 </template>
                 <div v-if="dashboard.checks" class="flex items-center gap-4">
                     <div class="relative h-40 w-40 shrink-0">
-                        <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
-                        <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="relative z-10 h-full" />
+                        <div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
                             <span class="text-2xl font-bold">{{ dashboard.checks }}</span>
                             <span class="text-xs text-gray-500">{{ ctrans("Checked") }}</span>
                         </div>
