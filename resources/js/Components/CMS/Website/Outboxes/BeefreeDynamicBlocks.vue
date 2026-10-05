@@ -11,6 +11,8 @@ interface DynamicBlock {
     id: number
     name: string
     compiled_layout: string
+    workshop_url: string
+    shop_name: string
 }
 
 const props = defineProps<{
@@ -19,6 +21,7 @@ const props = defineProps<{
 
 const isModalOpen = ref(false)
 const searchQuery = ref('')
+const isFromOtherShops = ref(false)
 const dynamicBlocks = ref<DynamicBlock[]>([])
 const isLoading = ref(false)
 const currentPage = ref(1)
@@ -38,7 +41,7 @@ const fetchDynamicBlocks = async (page: number = 1) => {
     try {
         const response = await axios.get(
             route('grp.json.shop.dynamic_block_email_templates', { shop: props.shopSlug }),
-            { params: { search: searchQuery.value.trim(), per_page: 10, page } }
+            { params: { search: searchQuery.value.trim(), other_shops: isFromOtherShops.value ? 1 : 0, per_page: 10, page } }
         )
         dynamicBlocks.value = response.data.data || []
         currentPage.value = response.data.meta?.current_page || 1
@@ -58,6 +61,11 @@ const onSearchInput = () => {
     searchDebounceTimeout = setTimeout(() => fetchDynamicBlocks(1), 300)
 }
 
+const setSource = (fromOtherShops: boolean) => {
+    isFromOtherShops.value = fromOtherShops
+    fetchDynamicBlocks(1)
+}
+
 const extractBodyHtml = (compiledLayout: string): string => {
     return new DOMParser().parseFromString(compiledLayout, 'text/html').body.innerHTML.trim()
 }
@@ -67,6 +75,7 @@ const resetModal = () => {
     rejectSelection = null
     isModalOpen.value = false
     searchQuery.value = ''
+    isFromOtherShops.value = false
     dynamicBlocks.value = []
 }
 
@@ -103,6 +112,13 @@ defineExpose({
         <div class="p-4">
             <h3 class="text-lg font-semibold mb-4">{{ ctrans('Dynamic Blocks') }}</h3>
 
+            <div class="mb-3 flex gap-2">
+                <Button :key="`this-shop-${isFromOtherShops}`" :type="isFromOtherShops ? 'tertiary' : 'primary'" :label="ctrans('This shop')" size="sm"
+                    @click="setSource(false)" />
+                <Button :key="`other-shops-${isFromOtherShops}`" :type="isFromOtherShops ? 'yellow' : 'tertiary'" :label="ctrans('Other shops')" size="sm"
+                    @click="setSource(true)" />
+            </div>
+
             <div class="mb-4">
                 <PureInput v-model="searchQuery" :placeholder="ctrans('Search dynamic block name...')"
                     @input="onSearchInput" :autofocus="true" />
@@ -121,9 +137,20 @@ defineExpose({
                                 class="w-[200%] h-96 origin-top-left scale-50 border-0" />
                         </div>
                         <div class="flex items-center justify-between gap-2">
-                            <div class="font-medium text-gray-900 truncate">{{ dynamicBlock.name }}</div>
-                            <Button type="secondary" :label="ctrans('Select')" size="sm"
-                                @click.stop="selectDynamicBlock(dynamicBlock)" />
+                            <div class="min-w-0">
+                                <div class="font-medium text-gray-900 truncate">{{ dynamicBlock.name }}</div>
+                                <div v-if="isFromOtherShops" class="text-xs text-gray-500 truncate">
+                                    {{ dynamicBlock.shop_name }}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <a :href="dynamicBlock.workshop_url" target="_blank" rel="noopener"
+                                    class="primaryLink text-sm">
+                                    {{ ctrans('Edit') }}
+                                </a>
+                                <Button type="secondary" :label="ctrans('Select')" size="sm"
+                                    @click.stop="selectDynamicBlock(dynamicBlock)" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -132,7 +159,9 @@ defineExpose({
             <div v-else class="text-center py-8 text-gray-500">
                 {{ searchQuery.trim()
                     ? ctrans('No dynamic blocks found matching :search', { search: searchQuery })
-                    : ctrans('No dynamic blocks yet. Create a template in Comms → Templates with Dynamic block turned on.') }}
+                    : isFromOtherShops
+                        ? ctrans('No dynamic blocks in other shops yet.')
+                        : ctrans('No dynamic blocks yet. Create a template in Comms → Templates with Dynamic block turned on.') }}
             </div>
 
             <div v-if="lastPage > 1" class="mt-4 flex items-center justify-between border-t pt-4">

@@ -23,14 +23,22 @@ class GetDynamicBlockEmailTemplates extends OrgAction
 {
     use WithMarketingEditAuthorisation;
 
-    public function handle(Shop $shop, ?string $search = null): LengthAwarePaginator
+    public function handle(Shop $shop, ?string $search = null, bool $fromOtherShops = false): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class)
-            ->where('email_templates.shop_id', $shop->id)
+            ->join('shops', 'shops.id', '=', 'email_templates.shop_id')
+            ->join('organisations', 'organisations.id', '=', 'shops.organisation_id')
             ->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value)
             ->whereRaw("coalesce(email_templates.data->>'dynamic_block', 'false') = 'true'")
             ->whereNotNull('email_templates.compiled_layout')
             ->where('email_templates.compiled_layout', '!=', '');
+
+        if ($fromOtherShops) {
+            $queryBuilder->where('email_templates.group_id', $shop->group_id)
+                ->where('email_templates.shop_id', '!=', $shop->id);
+        } else {
+            $queryBuilder->where('email_templates.shop_id', $shop->id);
+        }
 
         if ($search) {
             $queryBuilder->whereWith('email_templates.name', $search);
@@ -39,8 +47,12 @@ class GetDynamicBlockEmailTemplates extends OrgAction
         return $queryBuilder
             ->select([
                 'email_templates.id',
+                'email_templates.slug',
                 'email_templates.name',
                 'email_templates.compiled_layout',
+                'shops.slug as shop_slug',
+                'shops.name as shop_name',
+                'organisations.slug as organisation_slug',
             ])
             ->defaultSort('-email_templates.updated_at')
             ->withPaginator(null, queryName: 'per_page')
@@ -50,7 +62,8 @@ class GetDynamicBlockEmailTemplates extends OrgAction
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string', 'max:255'],
+            'search'      => ['nullable', 'string', 'max:255'],
+            'other_shops' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -58,11 +71,25 @@ class GetDynamicBlockEmailTemplates extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $this->validatedData['search'] ?? null);
+        return $this->handle(
+            $shop,
+            $this->validatedData['search'] ?? null,
+            $this->validatedData['other_shops'] ?? false
+        );
     }
 
     public function jsonResponse(LengthAwarePaginator $emailTemplates): AnonymousResourceCollection
     {
-        return JsonResource::collection($emailTemplates);
+        return JsonResource::collection($emailTemplates->through(fn (EmailTemplate $emailTemplate) => [
+            'id'              => $emailTemplate->id,
+            'name'            => $emailTemplate->name,
+            'compiled_layout' => $emailTemplate->compiled_layout,
+            'shop_name'       => $emailTemplate->shop_name,
+            'workshop_url'    => route('grp.org.shops.show.dashboard.comms.templates.workshop', [
+                $emailTemplate->organisation_slug,
+                $emailTemplate->shop_slug,
+                $emailTemplate->slug,
+            ]),
+        ]));
     }
 }
