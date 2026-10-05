@@ -2226,8 +2226,21 @@ test('UI Index invoices in org stock family', function () {
 
 test('UI Show inventory dashboard', function () {
     $warehouse = Warehouse::first();
-    get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
-        ->assertStatus(200);
+    $warehouse->stats->update([
+        'number_org_stocks_low_stock_audits'            => 4,
+        'number_org_stocks_replenishments_wholesale'    => 3,
+        'number_org_stocks_replenishments_dropshipping' => 2,
+    ]);
+
+    $gauges = collect(get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
+        ->assertStatus(200)
+        ->inertiaProps()['actionGauges'])->keyBy('key');
+
+    expect($gauges->keys()->all())->toBe(['urgent_audit', 'to_replenish'])
+        ->and($gauges['urgent_audit']['value'])->toBe(4)
+        ->and($gauges['urgent_audit']['total'])->toBe($this->organisation->inventoryStats->number_current_org_stocks)
+        ->and($gauges['to_replenish']['value'])->toBe(3)
+        ->and($gauges['to_replenish']['secondary']['value'])->toBe(2);
 })->depends('create warehouse');
 
 test('UI Index and Show OrganisationStockHistory', function () {
