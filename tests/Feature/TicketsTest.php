@@ -170,13 +170,19 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
         ->and($answered->fresh()->status)->toBe(TicketStatusEnum::WAITING);
 
     $stale = $stale->fresh();
+    expect($stale->isCancelledForNoReply())->toBeTrue();
     StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'sorry, was on holiday']);
-    expect($stale->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
         ->and($stale->fresh()->closed_at)->toBeNull();
 
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
     StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'thanks!']);
     expect($stale->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::CANCELLED->value]);
+    expect($stale->fresh()->isCancelledForNoReply())->toBeFalse();
+    StoreTicketComment::make()->action($stale->fresh(), $this->webUser, ['body' => 'thank you for checking']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED);
 
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::WAITING->value]);
     StoreTicketComment::make()->action($stale, $this->user, ['body' => 'any news?']);
@@ -249,6 +255,11 @@ test('reporter reopens their own done ticket into reporter replied, nobody else 
     actingAs($reporter);
     post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'A reply does not reopen'])->assertRedirect();
     expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'No problem, thank you for checking'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open', 'status_comment' => 'Still wrong'])->assertForbidden();

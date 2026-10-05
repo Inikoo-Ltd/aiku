@@ -54,8 +54,7 @@ class StoreTicketComment extends OrgAction
         }
 
         if ($this->replyReopens($ticket, $author)) {
-            $status = $ticket->status === TicketStatusEnum::WAITING ? TicketStatusEnum::ANSWERED : TicketStatusEnum::OPEN;
-            UpdateTicket::make()->action($ticket, ['status' => $status->value]);
+            UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::ANSWERED->value]);
         }
 
         if ($author instanceof User && $notifyUsers && !$comment->is_internal && $isStatusNote) {
@@ -75,9 +74,13 @@ class StoreTicketComment extends OrgAction
         return $comment;
     }
 
+    /**
+     * A reply only answers a question that was asked: waiting on the reporter, or cancelled
+     * because they never answered. A ticket someone cancelled stays cancelled.
+     */
     private function replyReopens(Ticket $ticket, User|WebUser $author): bool
     {
-        if (!in_array($ticket->status, [TicketStatusEnum::WAITING, TicketStatusEnum::CANCELLED], true)) {
+        if ($ticket->status !== TicketStatusEnum::WAITING && !$ticket->isCancelledForNoReply()) {
             return false;
         }
 
