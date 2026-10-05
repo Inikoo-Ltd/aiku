@@ -89,6 +89,7 @@ interface Message {
     retraction_reason?: string | null
     retracted_count?: number
     is_ai_generated?: boolean | null
+    ai_summary_flagged?: boolean
     is_validated?: boolean | null
     is_verifiable_image?: boolean
     ai_verification?: {
@@ -529,6 +530,8 @@ const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
+const summaryFlagQuestion = ctrans("Why is this summary wrong? We use this to improve the summaries.")
+const summaryFlagPlaceholder = ctrans("e.g. longer than the email itself, or it missed what the customer asked")
 const emailSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
 const showFullEmail = ref(false)
 
@@ -1151,9 +1154,13 @@ watch(selectedLanguage, async (val) => {
                 </div>
                 <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-indigo-500">{{ ctrans("Summary") }}</div>
                 <p class="whitespace-pre-wrap break-words">{{ emailSummary }}</p>
-                <button type="button" class="mt-1.5 text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = true">
-                    {{ ctrans("Show full email") }}
-                </button>
+                <div class="mt-1.5 flex items-start gap-3">
+                    <button type="button" class="text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = true">
+                        {{ ctrans("Show full email") }}
+                    </button>
+                    <FlagWrongButton v-if="viewerType === 'agent' && message.id" :url="route('grp.chat.ai.summaries.message.flag', [message.id])"
+                        :flagged="!!message.ai_summary_flagged" :question="summaryFlagQuestion" :placeholder="summaryFlagPlaceholder" />
+                </div>
             </div>
 
             <!-- A received email keeps its layout; everything else is text. -->

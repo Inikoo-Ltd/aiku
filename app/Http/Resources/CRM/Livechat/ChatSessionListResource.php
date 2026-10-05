@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -67,6 +68,7 @@ class ChatSessionListResource extends JsonResource
                 'status'      => Arr::get($summaryData, 'status'),
                 'topic'       => $this->topic,
                 'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
+                'flagged'     => FlagChatAiSummary::isFlagged($this->resource),
             ];
         }
 
