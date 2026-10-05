@@ -4,6 +4,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,4 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::get('link/{customer:id}', AuthenticateWixAccount::class)->name('link')->whereNumber('customer');
+Route::get('link-external-shop/{shop:id}', AuthenticateWixExternalShop::class)->name('link_external_shop')->whereNumber('shop');

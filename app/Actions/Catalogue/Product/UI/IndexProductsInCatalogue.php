@@ -498,7 +498,15 @@ class IndexProductsInCatalogue extends OrgAction
                                 'name'       => 'grp.org.shops.show.catalogue.products.all_products.faire_products.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                        ] : []
+                        ] : ($shop->engine === ShopEngineEnum::WIX ? [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Fetch Wix Products'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.wix_products.index',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ] : [])
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),
