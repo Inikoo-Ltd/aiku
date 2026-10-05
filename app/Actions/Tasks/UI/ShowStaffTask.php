@@ -95,6 +95,35 @@ class ShowStaffTask extends OrgAction
     }
 
     /**
+     * @return array{can_add_department: bool, can_remove_department: bool, department_options: array<int, array{value: string, label: string}>}
+     */
+    public function departmentControls(StaffTask $staffTask, User $viewer): array
+    {
+        $canAdd = $staffTask->canAddDepartmentBy($viewer);
+
+        return [
+            'can_add_department'    => $canAdd,
+            'can_remove_department' => $staffTask->canRemoveDepartmentBy($viewer),
+            'department_options'    => $canAdd ? StaffTask::departments($staffTask->group_id) : [],
+        ];
+    }
+
+    public function departmentHistoryText(?string $old, ?string $new, ?string $reason): ?string
+    {
+        if ($new) {
+            return __('Sent to :department', ['department' => StaffTask::departmentLabel($new)]);
+        }
+
+        if (!$old) {
+            return null;
+        }
+
+        $removed = __('Removed from :department', ['department' => StaffTask::departmentLabel($old)]);
+
+        return $reason ? $removed.': '.$reason : $removed;
+    }
+
+    /**
      * @return array<int, array{at: mixed, icon: string, text: string, by: string|null}>
      */
     public function timeline(StaffTask $staffTask): array
@@ -119,7 +148,7 @@ class ShowStaffTask extends OrgAction
                 $text = match ($field) {
                     'status'      => __('Status: :from → :to', ['from' => $statuses[$old] ?? '—', 'to' => $statuses[$value] ?? $value]),
                     'assignee_id' => $value ? __('Assigned to :name', ['name' => $names[$value] ?? '?']) : __('Unassigned'),
-                    'department'  => $value ? __('Sent to :department', ['department' => StaffTask::departmentLabel($value)]) : null,
+                    'department'  => $this->departmentHistoryText($old, $value, $audit->new_values['department_note'] ?? null),
                     'priority'    => __('Priority: :from → :to', ['from' => $priorities[$old] ?? '—', 'to' => $priorities[$value] ?? $value]),
                     'due_at'      => $value ? __('Due date set to :date', ['date' => Carbon::parse($value)->toFormattedDateString()]) : __('Due date removed'),
                     'subject'     => __('Subject edited'),
@@ -137,6 +166,7 @@ class ShowStaffTask extends OrgAction
                             'due_at'      => 'fal fa-calendar',
                             'priority'    => 'fal fa-flag',
                             'attachments' => 'fal fa-paperclip',
+                            'department'  => 'fal fa-building',
                             default       => 'fal fa-pencil',
                         },
                         'text'   => $text,
@@ -174,6 +204,7 @@ class ShowStaffTask extends OrgAction
             'can_reassign' => $staffTask->canReassignBy($viewer),
             'can_ask_for_help' => $staffTask->canAskForHelpBy($viewer),
             'can_edit_content' => $staffTask->canEditContentBy($viewer),
+            ...$this->departmentControls($staffTask, $viewer),
             'timeline'     => $this->timeline($staffTask),
             'options'      => $this->staffTaskEditOptions(),
             'listRoute'    => $this->tasksRoute('list_all'),

@@ -15,6 +15,7 @@ use App\Actions\Tasks\DecideStaffTaskEta;
 use App\Actions\Tasks\ProposeStaffTaskEta;
 use App\Actions\Tasks\RequestStaffTaskHelp;
 use App\Actions\Tasks\UpdateStaffTaskContent;
+use App\Actions\Tasks\RemoveStaffTaskDepartment;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Actions\Tasks\StoreStaffTasksFromList;
 use App\Actions\Tasks\SyncStaffTaskCollaborators;
@@ -46,6 +47,7 @@ Route::get('/{staffTask}/attachments/{media:ulid}', ShowStaffTaskAttachment::cla
 Route::get('/{staffTask}/conversation', GetStaffTaskConversation::class)->name('conversation');
 Route::patch('/{staffTask}/collaborators', SyncStaffTaskCollaborators::class)->name('collaborators.update');
 Route::patch('/{staffTask}/content', UpdateStaffTaskContent::class)->name('content.update');
+Route::post('/{staffTask}/department/removal', RemoveStaffTaskDepartment::class)->name('department.remove');
 Route::patch('/{staffTask}/project', [AssignWorkToProject::class, 'inStaffTask'])->name('project.update');
 Route::patch('/{staffTask}/subtasks', UpdateStaffTaskSubtasks::class)->name('subtasks.update');
 Route::post('/{staffTask}/eta-proposal', ProposeStaffTaskEta::class)->name('eta_proposal.store');
