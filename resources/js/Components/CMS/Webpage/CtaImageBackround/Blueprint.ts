@@ -40,6 +40,7 @@ export default {
 		},
 		{
 			name: "Block Properties",
+			accordion_key: "block_properties",
 			key: ["container", "properties"],
 			replaceForm: [
 				{

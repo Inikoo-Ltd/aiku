@@ -60,7 +60,6 @@ const emits = defineEmits<{
 /* -------------------------------------------------------------------------- */
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 /* -------------------------------------------------------------------------- */
 /*                            Helpers / Computed                              */
@@ -132,7 +131,7 @@ watch(
 
 			<div @click="() => {
 				sendMessageToParent('activeBlock', indexBlock)
-				sendMessageToParent('activeChildBlock', bKeys[0])
+				sendMessageToParent('activeChildBlock', 'video')
 			}" :class="!isVideoRight ? 'order-1' : 'order-2'">
 				<div class="w-full flex justify-center items-center min-h-[200px]"
 					:style="getStyles(modelValue?.video?.video_setup?.container?.properties, screenType)">
@@ -180,7 +179,7 @@ watch(
 						<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 							:label="modelValue?.button?.text" @click.stop="() => {
 								sendMessageToParent('activeBlock', indexBlock)
-								sendMessageToParent('activeChildBlock', bKeys[1])
+								sendMessageToParent('activeChildBlock', 'button')
 							}" />
 					</div>
 				</div>
