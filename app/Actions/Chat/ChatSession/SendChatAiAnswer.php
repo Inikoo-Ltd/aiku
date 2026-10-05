@@ -46,7 +46,7 @@ class SendChatAiAnswer
             || !$session
             || $draft->status !== ChatAiDraftStatusEnum::PENDING
             || data_get($draft->facts, 'mode') === DraftChatReply::SUGGESTION
-            || IsWithinWorkingHours::run($shop, now())
+            || IsWithinWorkingHours::make()->chatHours()->handle($shop, now())
             || !GetChatAutoSendGate::run($shop, $draft->topic)['earned']) {
             return false;
         }

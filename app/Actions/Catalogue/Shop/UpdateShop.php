@@ -452,6 +452,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.chat.unclaimed_after_seconds.$chatChannel", $seconds > 0 ? $seconds : null);
         }
 
+        foreach (['start', 'end'] as $edge) {
+            if (Arr::exists($modelData, "chat_hours_$edge")) {
+                data_set($modelData, "settings.chat.hours.$edge", Arr::pull($modelData, "chat_hours_$edge") ?: null);
+            }
+        }
+
         if (Arr::exists($modelData, 'chat_email_offline_replies')) {
             data_set($modelData, 'settings.chat.email_offline_replies', (bool) Arr::pull($modelData, 'chat_email_offline_replies'));
         }
@@ -991,6 +997,8 @@ class UpdateShop extends OrgAction
                     }
                 },
             ],
+            'chat_hours_start'                                        => ['sometimes', 'nullable', 'date_format:H:i'],
+            'chat_hours_end'                                          => ['sometimes', 'nullable', 'date_format:H:i'],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],

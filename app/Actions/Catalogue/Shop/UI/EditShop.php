@@ -14,7 +14,9 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\OrgAction;
+use Illuminate\Support\Carbon;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
@@ -844,6 +846,24 @@ class EditShop extends OrgAction
                             'label'       => __('Enable Chat Feature'),
                             'value'       => Arr::get($shop->settings, 'chat.enable_chat', false),
                         ],
+                        'chat_hours_start'    => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat opens at'),
+                            'placeholder' => __('When work starts'),
+                            'information' => __('Leave empty to open the chat when the working hours start.'),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.start'),
+                        ],
+                        'chat_hours_end'      => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat closes at'),
+                            'placeholder' => __(':minutes minutes before work ends', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'information' => __('Leave empty to close the chat :minutes minutes before the working hours end, so the team can sign off for the day.', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.end'),
+                        ],
                         'chat_slack_token'    => [
                             'type'        => 'input',
                             'label'       => __('Slack Bot Token'),
@@ -1256,6 +1276,21 @@ class EditShop extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * Every quarter of an hour, written the way the shop's organisation writes times.
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function chatTimeOptions(Shop $shop): array
+    {
+        $midnight = Carbon::today();
+
+        return collect(range(0, 95))
+            ->map(fn (int $quarter) => $midnight->copy()->addMinutes($quarter * 15))
+            ->map(fn (Carbon $time) => ['value' => $time->format('H:i'), 'label' => $shop->organisation->formatClockTime($time)])
+            ->all();
     }
 
     private function loadReviewRatingLabels(Shop $shop): array

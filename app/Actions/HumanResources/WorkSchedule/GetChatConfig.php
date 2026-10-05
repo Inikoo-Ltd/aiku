@@ -45,17 +45,19 @@ class GetChatConfig
             return $config;
         }
 
-        $config['is_online'] = IsWithinWorkingHours::run($shop, now());
+        $chatHours           = IsWithinWorkingHours::make()->chatHours();
+        $config['is_online'] = $chatHours->handle($shop, now());
 
         $now = Carbon::now($timezone);
         $dayOfWeek = $now->dayOfWeekIso;
         $days = collect($schedule->days ?? []);
         $todaySchedule = $days->firstWhere('day_of_week', $dayOfWeek);
+        $todayChatHours = $chatHours->hoursOn($shop, $dayOfWeek);
 
-        if ($todaySchedule && $todaySchedule->is_working_day) {
+        if ($todaySchedule && $todaySchedule->is_working_day && $todayChatHours) {
             $config['schedule'] = [
-                'start'    => $this->formatTime($shop, $todaySchedule->start_time),
-                'end'      => $this->formatTime($shop, $todaySchedule->end_time),
+                'start'    => $this->formatTime($shop, $todayChatHours['s']),
+                'end'      => $this->formatTime($shop, $todayChatHours['e']),
                 'timezone' => $timezone,
             ];
         }
@@ -80,7 +82,7 @@ class GetChatConfig
     ): array {
         $isTodayWorkingDay = (bool) ($todaySchedule?->is_working_day ?? false);
         $reason = $isTodayWorkingDay ? 'outside_working_hours' : 'non_working_day';
-        $nextOpening = IsWithinWorkingHours::make()->nextOpening($shop, now());
+        $nextOpening = IsWithinWorkingHours::make()->chatHours()->nextOpening($shop, now());
 
         return [
             'reason' => $reason,
