@@ -22,7 +22,6 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
-use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
