@@ -109,12 +109,7 @@ watch(() => props.isOpen, (open) => {
 
 watch(() => form.value.assignee_id, (assigneeId) => {
     if (!assigneeId) return
-    form.value.department = null
     form.value.collaborator_ids = form.value.collaborator_ids.filter((id) => id !== assigneeId)
-})
-
-watch(() => form.value.department, (department) => {
-    if (department) form.value.assignee_id = null
 })
 
 const pickMe = () => {
@@ -142,7 +137,7 @@ const submit = async () => {
         const { data } = await axios.postForm(props.storeUrl ?? route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
-            department: form.value.assignee_id ? null : form.value.department,
+            department: form.value.department,
             assignee_id: form.value.assignee_id,
             collaborator_ids: form.value.collaborator_ids,
             subtasks: form.value.subtasks.map((title) => ({ title, status: "todo" })),
@@ -279,7 +274,7 @@ const labelClass = "block text-sm font-semibold text-gray-700 mb-1"
                                 </Select>
                             </div>
                             <div>
-                                <label for="staff-task-department" :class="labelClass">{{ ctrans('or a department') }}</label>
+                                <label for="staff-task-department" :class="labelClass">{{ form.assignee_id ? ctrans('and include a department') : ctrans('or a department') }}</label>
                                 <Select
                                     v-model="form.department"
                                     input-id="staff-task-department"
@@ -292,7 +287,8 @@ const labelClass = "block text-sm font-semibold text-gray-700 mb-1"
                                     placeholder="—" />
                             </div>
                         </div>
-                        <small v-if="errors.assignee_id || errors.department" class="mt-1 block text-red-600">{{ ctrans('Pick a person or a department') }}</small>
+                        <small v-if="errors.assignee_id || errors.department" class="mt-1 block text-red-600">{{ ctrans('Pick a person, a department, or both') }}</small>
+                        <small v-else-if="form.assignee_id && form.department" class="mt-1 block text-gray-500">{{ ctrans('It is on their list and in the department agenda. Only the department can take itself off, with a reason.') }}</small>
                     </div>
 
                     <div>

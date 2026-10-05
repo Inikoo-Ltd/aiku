@@ -44,6 +44,7 @@ class GetStaffTaskQuickLook
             'can_reassign' => $task->canReassignBy($request->user()),
             'can_ask_for_help' => $task->canAskForHelpBy($request->user()),
             'can_edit_content' => $task->canEditContentBy($request->user()),
+            ...$show->departmentControls($task, $request->user()),
             'options'       => StaffTask::editOptions(),
             ...$show->projectControls($task, $request->user()),
             'messages'      => $canReadChat

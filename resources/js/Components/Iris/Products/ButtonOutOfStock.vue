@@ -17,11 +17,13 @@ const expectedBackLabel = computed(() => useExpectedBackInStockLabel(props.produ
     <div
         role="status"
         aria-disabled="true"
-        class="w-full cursor-not-allowed select-none rounded border border-gray-300 bg-gray-100 px-4 py-2 text-center text-gray-500">
-        <div class="text-sm font-semibold">
+        class="w-full cursor-not-allowed select-none rounded-md border border-gray-200 bg-gray-50 px-4 py-2.5 text-center">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
             {{ label ?? ctrans("Out of stock") }}
         </div>
-        <div v-if="expectedBackLabel" class="mt-0.5 text-xs font-normal text-gray-500">
+
+        <div v-if="expectedBackLabel"
+            class="mt-1.5 inline-block rounded-full bg-emerald-700 px-3 py-0.5 text-sm font-semibold text-white shadow-sm">
             {{ expectedBackLabel }}
         </div>
     </div>
