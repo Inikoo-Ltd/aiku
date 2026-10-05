@@ -54,7 +54,7 @@ class GetProductPreOrder
     }
 
     /**
-     * @return array{type: string, type_label: string, lead_time_days: int, dispatch_from_weeks: int, dispatch_to_weeks: int, dispatch_label: string, max_quantity: int|null, deposit_percentage: float, is_pallet_delivery: bool}|null
+     * @return array{type: string, lead_time_days: int, dispatch_from_weeks: int, dispatch_to_weeks: int, label: string, available_label: string, dispatch_label: string, payment_label: string, terms_label: string, max_quantity: int|null, deposit_percentage: float, is_pallet_delivery: bool, terms: array<int, string>}|null
      */
     public function handle(Product $product): ?array
     {
@@ -124,22 +124,28 @@ class GetProductPreOrder
      */
     private function describe(Product $product, PreOrderTypeEnum $type, int $leadTimeDays): array
     {
-        $fromWeeks = max(1, (int) ceil($leadTimeDays / 7));
-        $toWeeks   = $fromWeeks + (int) $product->shop->preOrderSetting('dispatch_range_weeks');
+        $shop              = $product->shop;
+        $texts             = GetPreOrderText::make();
+        $fromWeeks         = max(1, (int) ceil($leadTimeDays / 7));
+        $toWeeks           = $fromWeeks + (int) $shop->preOrderSetting('dispatch_range_weeks');
+        $depositPercentage = $this->depositPercentage($product, $type);
 
         return [
             'type'                => $type->value,
-            'type_label'          => $type->label(),
             'lead_time_days'      => $leadTimeDays,
             'dispatch_from_weeks' => $fromWeeks,
             'dispatch_to_weeks'   => $toWeeks,
-            'dispatch_label'      => $fromWeeks == $toWeeks
-                ? __('Estimated dispatch :weeks weeks', ['weeks' => $fromWeeks])
-                : __('Estimated dispatch :from–:to weeks', ['from' => $fromWeeks, 'to' => $toWeeks]),
+            'label'               => $texts->handle($shop, 'label'),
+            'available_label'     => $texts->handle($shop, 'available'),
+            'dispatch_label'      => $texts->handle($shop, 'dispatch', ['weeks' => $texts->weeks($fromWeeks, $toWeeks)]),
+            'payment_label'       => $depositPercentage < 100
+                ? $texts->handle($shop, 'pay_deposit', ['deposit_percent' => trimDecimalZeros($depositPercentage)])
+                : $texts->handle($shop, 'pay_in_full'),
+            'terms_label'         => $texts->handle($shop, 'terms_link'),
             'max_quantity'        => $product->max_quantity_per_order,
-            'deposit_percentage'  => $this->depositPercentage($product, $type),
+            'deposit_percentage'  => $depositPercentage,
             'is_pallet_delivery'  => $isPalletDelivery = $this->isPalletDelivery($product),
-            'terms'               => $this->terms($product->shop, [$type], $isPalletDelivery),
+            'terms'               => $this->terms($shop, [$type], $isPalletDelivery),
         ];
     }
 
@@ -149,19 +155,16 @@ class GetProductPreOrder
      *
      * @param  array<string, mixed>|null  $linePreOrder  transaction data pre_order
      */
-    public function lineNote(?array $linePreOrder): ?string
+    public function lineNote(Shop $shop, ?array $linePreOrder): ?string
     {
-        $type = PreOrderTypeEnum::tryFrom((string) ($linePreOrder['type'] ?? ''));
-        if (!$type) {
+        if (!PreOrderTypeEnum::tryFrom((string) ($linePreOrder['type'] ?? ''))) {
             return null;
         }
 
         $from = (int) ($linePreOrder['dispatch_from_weeks'] ?? 0);
         $to   = (int) ($linePreOrder['dispatch_to_weeks'] ?? $from);
 
-        return $type->label().' · '.($from == $to
-            ? __('Estimated dispatch :weeks weeks', ['weeks' => $from])
-            : __('Estimated dispatch :from–:to weeks', ['from' => $from, 'to' => $to]));
+        return GetPreOrderText::make()->handle($shop, 'line_note', ['weeks' => GetPreOrderText::make()->weeks($from, $to)]);
     }
 
     /**
@@ -174,41 +177,33 @@ class GetProductPreOrder
      */
     public function terms(Shop $shop, array $types, bool $hasPalletDelivery): array
     {
+        $texts          = GetPreOrderText::make();
         $isTrade        = $shop->type === ShopTypeEnum::B2B;
         $hasMadeToOrder = in_array(PreOrderTypeEnum::MADE_TO_ORDER, $types);
         $hasBackOrder   = in_array(PreOrderTypeEnum::BACK_ORDER, $types);
 
-        $terms = [__('The dispatch time is an estimate, not a guaranteed date.')];
+        $terms = [$texts->handle($shop, 'terms_estimate')];
 
         if (!$isTrade) {
-            $terms[] = __('Pre-order items are paid in full at checkout, and the payment is not refundable once the order is placed.');
+            $terms[] = $texts->handle($shop, 'terms_paid_in_full_retail');
         } else {
             if ($hasBackOrder) {
-                $terms[] = __('Back-order items are paid in full at checkout. To cancel them before dispatch, contact us for a full refund.');
+                $terms[] = $texts->handle($shop, 'terms_paid_in_full');
             }
             if ($hasMadeToOrder) {
-                $terms[] = __(':percentage% deposit on made-to-order items at checkout (orders under :amount are paid in full). The balance is requested by email when the goods reach our warehouse and is due within :days days; if it is not paid within :cancel_days days the order is cancelled and the deposit kept.', [
-                    'percentage'  => trimDecimalZeros($shop->preOrderSetting('deposit_percentage')),
-                    'amount'      => $shop->currency->symbol.trimDecimalZeros($shop->preOrderSetting('full_payment_below')),
-                    'days'        => $shop->preOrderSetting('balance_due_days'),
-                    'cancel_days' => $shop->preOrderSetting('balance_cancel_after_days'),
-                ]);
-                $terms[] = __('To cancel made-to-order items, contact us. Within :days working days of ordering, and until we place the order with our supplier, it is free of charge. After that the deposit is not refunded.', [
-                    'days' => $shop->preOrderSetting('free_cancellation_working_days'),
-                ]);
+                $terms[] = $texts->handle($shop, 'terms_deposit');
+                $terms[] = $texts->handle($shop, 'terms_deposit_cancel');
             }
         }
 
-        $terms[] = __('If our supplier cannot supply, or we are more than :days days past the estimated dispatch, contact us to cancel for a full refund.', [
-            'days' => $shop->preOrderSetting('late_cancellation_days'),
-        ]);
+        $terms[] = $texts->handle($shop, 'terms_late');
 
         if ($hasMadeToOrder) {
-            $terms[] = __('Handmade items vary in size, colour, grain and finish, and the photos show a typical example. Dimensions are approximate.');
+            $terms[] = $texts->handle($shop, 'terms_handmade');
         }
 
         if ($hasPalletDelivery) {
-            $terms[] = __('Pallet delivery is to the kerb only; you must be able to unload heavy items.');
+            $terms[] = $texts->handle($shop, 'terms_pallet');
         }
 
         return $terms;

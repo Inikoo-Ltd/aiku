@@ -313,11 +313,11 @@ onMounted(async () => {
                             <LabelComingSoon v-if="product.status === 'coming-soon' && !product.pre_order" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width />
+                                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
                                 <span>
                                     {{ product?.stock >= 250
                                         ? ctrans("Unlimited quantity available")
-                                        : (product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock"))
+                                        : (product.stock > 0 ? ctrans("In stock") : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock")))
                                     }}
                                 </span>
                             </div>
@@ -430,7 +430,7 @@ onMounted(async () => {
                     @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
-                <PreOrderInfo v-if="product.pre_order && layout?.iris?.is_logged_in" class="mt-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
+                <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="mt-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
@@ -576,7 +576,7 @@ onMounted(async () => {
                 <FontAwesomeIcon
                     :icon="faCircle"
                     class="text-[10px]"
-                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width
+                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width
                 />
                 <span>
                     {{
@@ -584,7 +584,7 @@ onMounted(async () => {
                             ? ctrans("Unlimited quantity available")
                             : product.stock > 0
                                 ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
-                                : ctrans("Out of stock")
+                                : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
                     }}
                 </span>
             </div>
@@ -738,7 +738,7 @@ onMounted(async () => {
         
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
-            <PreOrderInfo v-if="product.pre_order && layout?.iris?.is_logged_in" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
+            <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
 
             <EcomAddToBasketv2
                 v-if="layout?.iris?.is_logged_in && ((product.stock && product.status !== 'coming-soon') || product.pre_order)"

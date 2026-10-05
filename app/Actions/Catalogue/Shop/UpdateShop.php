@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 use App\Actions\Chat\Widget\EnableShopChatWidget;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
@@ -229,6 +230,13 @@ class UpdateShop extends OrgAction
         foreach (array_keys(Shop::PRE_ORDER_DEFAULTS) as $preOrderSetting) {
             if (Arr::has($modelData, "pre_order_$preOrderSetting")) {
                 data_set($modelData, "settings.pre_orders.$preOrderSetting", Arr::pull($modelData, "pre_order_$preOrderSetting"));
+            }
+        }
+
+        foreach ($this->preOrderTextFields($shop) as $field => $path) {
+            if (array_key_exists($field, $modelData)) {
+                $text = trim((string) Arr::pull($modelData, $field));
+                data_set($modelData, "settings.$path", $text === '' ? null : $text);
             }
         }
 
@@ -1129,11 +1137,36 @@ class UpdateShop extends OrgAction
             $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
         }
 
+        foreach ($this->preOrderTextFields($this->shop) as $field => $path) {
+            $rules[$field] = ['sometimes', 'nullable', 'string', 'max:5000'];
+        }
+
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
+    }
+
+    /**
+     * One field per customer pre-order text and shop language (HELP-3678).
+     *
+     * @return array<string, string> field => settings path
+     */
+    public function preOrderTextFields(?Shop $shop): array
+    {
+        if (!$shop) {
+            return [];
+        }
+
+        $fields = [];
+        foreach (GetPreOrderText::make()->locales($shop) as $locale) {
+            foreach (array_keys(GetPreOrderText::TEXTS) as $key) {
+                $fields["pre_order_text__{$locale}__$key"] = "pre_orders.texts.$locale.$key";
+            }
+        }
+
+        return $fields;
     }
 
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Shop
