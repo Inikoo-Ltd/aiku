@@ -90,6 +90,7 @@ enum RolesEnum: string
     case SHOP_PPC = 'shop-ppc';
 
     case CUSTOMER_SERVICE_CLERK = 'customer-service-clerk';
+    case CUSTOMER_SERVICE_CALLER = 'customer-service-caller';
     case CUSTOMER_SERVICE_SUPERVISOR = 'customer-service-supervisor';
     case CUSTOMER_SERVICE_VIEWER = 'customer-service-viewer';
     case ACCOUNTING_ORDERS = 'accounting-orders';
@@ -158,7 +159,8 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_WAREHOUSE_WORKER => __('Fulfilment warehouse worker'),
             RolesEnum::WAREHOUSE_ADMIN => __('Warehouse admin'),
             RolesEnum::WAREHOUSE_VIEWER => __('Warehouse viewer'),
-            RolesEnum::CUSTOMER_SERVICE_CLERK => __('Customer service clerk'),
+            RolesEnum::CUSTOMER_SERVICE_CLERK => __('Customer service chat'),
+            RolesEnum::CUSTOMER_SERVICE_CALLER => __('Customer service calls'),
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => __('Customer service supervisor'),
             RolesEnum::ORGANISATIONS_MANAGER => __('Organisations manager'),
             RolesEnum::GOODS_MANAGER => __('Goods manager'),
@@ -516,6 +518,14 @@ enum RolesEnum: string
                 ShopPermissionsEnum::MARKETING_VIEW,
 
             ],
+            RolesEnum::CUSTOMER_SERVICE_CALLER => [
+                ShopPermissionsEnum::CRM,
+                ShopPermissionsEnum::ORDERS,
+                ShopPermissionsEnum::PRODUCTS_VIEW,
+                ShopPermissionsEnum::WEB_VIEW,
+                ShopPermissionsEnum::DISCOUNTS_VIEW,
+                ShopPermissionsEnum::MARKETING_VIEW,
+            ],
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => [
                 ShopPermissionsEnum::CHAT,
                 ShopPermissionsEnum::CHAT_MANAGER,
@@ -607,6 +617,7 @@ enum RolesEnum: string
 
             RolesEnum::SHOP_ADMIN,
             RolesEnum::CUSTOMER_SERVICE_CLERK,
+            RolesEnum::CUSTOMER_SERVICE_CALLER,
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR,
             RolesEnum::CUSTOMER_SERVICE_VIEWER,
             RolesEnum::ACCOUNTING_ORDERS,
