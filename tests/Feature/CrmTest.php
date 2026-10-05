@@ -1147,7 +1147,9 @@ test('can show list of prospects', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Shop/CRM/Prospects')
-            ->has('title');
+            ->has('title')
+            ->where('upload_spreadsheet.required_fields', array_keys(\App\Imports\CRM\ProspectImport::HEADER_ALIASES))
+            ->where('upload_spreadsheet.column_aliases.email', \App\Imports\CRM\ProspectImport::HEADER_ALIASES['email']);
     });
 });
 
