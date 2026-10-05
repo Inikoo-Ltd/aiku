@@ -500,11 +500,18 @@ class SendChatMessage
         ];
     }
 
+    private function isAuthenticatedChatAgent(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && ChatAgent::where('user_id', $user->id)->exists();
+    }
+
     protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
         $senderType = $validated['sender_type'] ?? null;
 
-        if ($senderType === ChatSenderTypeEnum::SYSTEM->value) {
+        if ($senderType === ChatSenderTypeEnum::SYSTEM->value && $this->isAuthenticatedChatAgent()) {
             return [
                 'ok'   => true,
                 'data' => [

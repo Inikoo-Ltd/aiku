@@ -12640,3 +12640,21 @@ test('staff flag an AI summary of an email or of a chat as wrong, saying why, on
     $plain->delete();
     $session->delete();
 });
+
+test('unauthenticated request cannot post as system', function () {
+    \Illuminate\Support\Facades\Auth::logout();
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_test_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $senderData = (fn () => $this->determineSenderData(['sender_type' => ChatSenderTypeEnum::SYSTEM->value], $chatSession))
+        ->call(SendChatMessage::make());
+
+    expect($senderData['data']['sender_type'] ?? null)->not->toBe(ChatSenderTypeEnum::SYSTEM->value);
+});
