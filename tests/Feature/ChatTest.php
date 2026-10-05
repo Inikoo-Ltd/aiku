@@ -5425,6 +5425,32 @@ test('an external shop with chat enabled gets chat permissions', function () {
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
 });
 
+test('an external shop offers offline email replies and a customer mailbox only once its chat is enabled', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    actingAs($this->user);
+    $sectionLabels = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $externalShop->slug]))
+            ->assertOk()
+            ->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label');
+
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies')
+        ->and($sections->has('Customer mailbox'))->toBeFalse();
+
+    $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
+
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->toHaveKey('chat_email_offline_replies')
+        ->and($sections->get('Customer mailbox')['fields'])->toHaveKey('mailbox')
+        ->and($sections->has('Chat'))->toBeFalse();
+});
+
 test('a non external shop with chat disabled loses chat permissions', function () {
     $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
     $this->shop->refresh();
@@ -8348,7 +8374,16 @@ test('chat hours come from the work schedule, and the next opening skips closed 
 
     expect($config['is_online'])->toBeFalse()
         ->and($config['offline_info']['next_opening']['day_of_week'])->toBe(2)
-        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00:00');
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['time_format' => '12h_short']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10am');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '12h']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10:00 am')
+        ->and($this->organisation->fresh()->formatClockTime(\Illuminate\Support\Carbon::parse('16:30')))->toBe('4:30 pm');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '24h']);
 
     $closedLine = fn (bool $saidWhatTheyNeed) => \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($shop, true, null, $saidWhatTheyNeed);
 
