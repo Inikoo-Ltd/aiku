@@ -306,6 +306,7 @@ return [
     'send_email_in_non_production_env'    => env('SEND_EMAIL_IN_NON_PRODUCTION_ENV', false),
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
+    'send_password_reset_to_recipient_in_non_production_env' => env('SEND_PASSWORD_RESET_TO_RECIPIENT_IN_NON_PRODUCTION_ENV', false),
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
     'payment_settlement_tolerance'        => env('PAYMENT_SETTLEMENT_TOLERANCE', 0.05),
 

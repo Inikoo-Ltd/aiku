@@ -110,7 +110,7 @@ class EmailOngoingRun extends Model
 
     public function sender(): string
     {
-        if (app()->environment('production')) {
+        if (app()->environment('production') || $this->isPasswordResetSentToRecipientOutsideProduction()) {
             /** @var Shop $parent */
             $parent = $this->shop;
             $sender = $parent->senderEmail?->email_address ?? $parent->email;
@@ -119,6 +119,12 @@ class EmailOngoingRun extends Model
         }
 
         return $sender;
+    }
+
+    public function isPasswordResetSentToRecipientOutsideProduction(): bool
+    {
+        return config('app.send_password_reset_to_recipient_in_non_production_env')
+            && $this->code === EmailOngoingRunCodeEnum::PASSWORD_REMINDER;
     }
 
     public function senderName(): string
