@@ -1528,6 +1528,25 @@ test('delivery note finalise and dispatch', function () {
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
 });
 
+test('printing the label of a packed replacement dispatches it', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    $deliveryNote->update(['type' => DeliveryNoteTypeEnum::REPLACEMENT]);
+    $orderState = $deliveryNote->orders()->first()->state;
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote->refresh(), $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->orders()->first()->state)->toBe($orderState)
+        ->and($deliveryNote->orders()->first()->invoices()->count())->toBe(0);
+});
+
 test('dispatching an intra-EU delivery note queues the intrastat export time series', function () {
     [$deliveryNote] = finalisedDeliveryNote($this);
     $france = \App\Models\Helpers\Country::where('code', 'FR')->first();
