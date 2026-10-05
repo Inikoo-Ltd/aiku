@@ -8,45 +8,16 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\GetOrderPurchaseEcommerceData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
 trait WithRetinaOrderPlacedRedirection
 {
     public function htmlResponse(array $arr): RedirectResponse
     {
-        $itemsToPushLayer = [];
-
-        /** @var Order $order */
-        $order = Arr::get($arr, 'order');
-
-        if ($order) {
-            $transactionsData = DB::table('transactions')
-                ->select('webpages.slug', 'products.name', 'products.price', 'transactions.quantity_ordered')
-                ->where('transactions.order_id', $order->id)
-                ->where('transactions.deleted_at', null)
-                ->where('transactions.model_type', 'Product')
-                ->whereNotNull('webpages.slug')
-                ->leftJoin('products', 'transactions.model_id', '=', 'products.id')
-                ->leftJoin('webpages', 'products.webpage_id', '=', 'webpages.id')
-                ->get();
-
-            $index = 1;
-            foreach ($transactionsData as $transactionData) {
-                $itemsToPushLayer[] = (object)[
-                    'item_id'   => 'webpage-'.$transactionData->slug,
-                    'item_name' => $transactionData->name,
-                    'index'     => $index++,
-                    'price'     => (float)$transactionData->price,
-                    'quantity'  => (float)$transactionData->quantity_ordered,
-                ];
-            }
-        }
-
         if (Arr::get($arr, 'success')) {
             $notification = [
                 'status'      => 'success',
@@ -58,14 +29,7 @@ trait WithRetinaOrderPlacedRedirection
                 'key'            => 'retina_dropshipping_order_placed',
                 'event'          => 'purchase',
                 'data_to_submit' => [
-                    'ecommerce' => [
-                        'transaction_id' => $arr['order']->id,
-                        'value'          => (float)$arr['order']->total_amount,
-                        'tax'            => (float)$arr['order']->tax_amount,
-                        'shipping'       => (float)$arr['order']->shipping_amount,
-                        'currency'       => $arr['order']->shop->currency->code,
-                        'items'          => $itemsToPushLayer
-                    ]
+                    'ecommerce' => GetOrderPurchaseEcommerceData::run($arr['order'])
                 ]
             ];
 

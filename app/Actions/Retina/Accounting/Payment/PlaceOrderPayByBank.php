@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
+use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithBasketStateWarning;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
@@ -46,6 +47,10 @@ class PlaceOrderPayByBank extends RetinaAction
     public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
+
+        if ($this->customer->orderInBasket) {
+            CaptureOrderGoogleAnalyticsClient::run($this->customer->orderInBasket, $request);
+        }
 
         return $this->handle($this->customer);
     }
