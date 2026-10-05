@@ -115,6 +115,7 @@ class ShowTicket extends OrgAction
                     'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
                     'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
                     'ticket_project_id' => $value ? __('Added to project :name', ['name' => $projects[$value] ?? '?']) : __('Removed from its project'),
+                    'comment'         => __('Removed a comment by :name', ['name' => $old]),
                     default           => null,
                 };
                 if ($text) {
@@ -127,6 +128,7 @@ class ShowTicket extends OrgAction
                             'pull_request_url' => 'fal fa-code-branch',
                             'ticket_project_id' => 'fal fa-project-diagram',
                             'attachments' => 'fal fa-paperclip',
+                            'comment'   => 'fal fa-trash-alt',
                             default     => 'fal fa-pencil',
                         },
                         'text'   => $text,

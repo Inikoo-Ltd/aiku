@@ -336,8 +336,8 @@ const submit = () => {
                         </button>
                         <ModalConfirmation
                             v-if="comment.can_delete"
-                            :title="ctrans('Delete this comment?')"
-                            :description="ctrans('The comment will be removed from the ticket.')">
+                            :title="comment.can_edit ? ctrans('Delete this comment?') : ctrans('Delete :author\'s comment?', { author: comment.author ?? ctrans('this person') })"
+                            :description="comment.can_edit ? ctrans('The comment will be removed from the ticket.') : ctrans('This is not your comment. It will be removed for everyone, including its images and files, and cannot be undone. The ticket history will note that you removed it.')">
                             <template #default="{ changeModel }">
                                 <button v-tooltip="ctrans('Delete')" type="button" class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="changeModel">
                                     <FontAwesomeIcon :icon="deletingId === comment.id ? 'fal fa-spinner' : 'fal fa-trash-alt'" :spin="deletingId === comment.id" fixed-width />

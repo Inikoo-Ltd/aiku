@@ -332,6 +332,26 @@ test('comment author edits and deletes their own comment', function () {
     expect(TicketComment::find($comment->id))->toBeNull();
 });
 
+test('a lead engineer deletes someone else\'s comment and the history notes it', function () {
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Wrong name comment']);
+    $poster   = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['contact_name' => 'Posting Guest']))->getUser();
+    $bystander = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $comment  = StoreTicketComment::make()->action($ticket, $poster, ['body' => 'Posted under the wrong account'], false);
+
+    actingAs($bystander);
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertForbidden();
+
+    actingAs($this->user);
+    $thread = collect(get(route('grp.tickets.show', $ticket->reference))->inertiaProps()['comments']);
+    expect($thread->firstWhere('id', $comment->id))->toMatchArray(['can_delete' => true, 'can_edit' => false]);
+
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertRedirect();
+    expect(TicketComment::find($comment->id))->toBeNull();
+
+    $timeline = collect(get(route('grp.tickets.show', $ticket->reference))->inertiaProps()['timeline']);
+    expect($timeline->firstWhere('text', 'Removed a comment by '.$poster->contact_name))->not->toBeNull();
+});
+
 test('asking the reporter posts the question and cancels the ticket when its own deadline passes', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Need info']);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);

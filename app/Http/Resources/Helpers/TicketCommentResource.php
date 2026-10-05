@@ -40,7 +40,7 @@ class TicketCommentResource extends JsonResource
             'images'      => $this->ticketImageSources(),
             'attachments' => $this->ticketAttachments(),
             'can_edit'    => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
-            'can_delete'  => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
+            'can_delete'  => $request->user() instanceof \App\Models\SysAdmin\User && $this->canBeDeletedBy($request->user()),
         ];
     }
 
