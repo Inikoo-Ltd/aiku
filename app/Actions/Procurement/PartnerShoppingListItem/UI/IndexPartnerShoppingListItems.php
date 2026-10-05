@@ -225,6 +225,34 @@ class IndexPartnerShoppingListItems extends OrgAction
                         'orgPartner' => $this->orgPartner->id,
                     ],
                 ],
+                'upload_excel'       => [
+                    'title'               => [
+                        'label'       => __('Upload SKOs'),
+                        'information' => __('Columns: code (our SKO code) and quantity (in SKOs). SKOs already on the list get the new quantity, raised to whole production batches.'),
+                    ],
+                    'progressDescription' => __('Adding SKOs to the shopping list'),
+                    'preview_template'    => [
+                        'header' => ['code', 'quantity'],
+                        'rows'   => [
+                            ['code' => 'SKO-001', 'quantity' => '24'],
+                        ],
+                    ],
+                    'upload_spreadsheet'  => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$request->user()->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'route'           => [
+                            'upload'  => [
+                                'name'       => 'grp.org.procurement.org_partners.show.shopping_list.upload',
+                                'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                            ],
+                            'history' => [
+                                'name'       => 'grp.json.org_partner.shopping_list.recent_uploads',
+                                'parameters' => ['orgPartner' => $this->orgPartner->id],
+                            ],
+                        ],
+                    ],
+                ],
                 'data' => $items,
             ]
         )->table($this->tableStructure($this->orgPartner));

@@ -14,9 +14,11 @@ import Image from "@common/Components/Image.vue"
 import ModalPartnerStockList from "@/Components/Procurement/ModalPartnerStockList.vue"
 import ModalAutoFillShoppingList from "@/Components/Procurement/ModalAutoFillShoppingList.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCut } from "@fal"
-library.add(faCut)
+import { faCut, faUpload } from "@fal"
+library.add(faCut, faUpload)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -32,7 +34,15 @@ const props = defineProps<{
 	data: object
 	orgPartner: { id: number; slug: string; currency: string }
 	orgStockFetchRoute: { name: string; parameters: object }
+	upload_excel: {
+		title: { label: string; information: string }
+		progressDescription: string
+		preview_template: { header: string[]; rows: object[] }
+		upload_spreadsheet: Upload
+	}
 }>()
+
+const isUploadOpen = ref(false)
 
 const isModalOpen = ref(false)
 const isAutoFillOpen = ref(false)
@@ -153,11 +163,23 @@ function deleteItem(item: { id: number }) {
 				icon="fal fa-magic"
 				:label="ctrans('Auto-fill')"
 				@click="isAutoFillOpen = true" />
+			<Button
+				type="secondary"
+				icon="fal fa-upload"
+				:label="ctrans('Upload')"
+				@click="isUploadOpen = true" />
 			<Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
 		</template>
 	</PageHeading>
 
 	<ConfirmDialog group="partner-shopping-list" />
+	<UploadExcel
+		v-model="isUploadOpen"
+		:title="upload_excel.title"
+		:progressDescription="upload_excel.progressDescription"
+		:upload_spreadsheet="upload_excel.upload_spreadsheet"
+		:preview_template="upload_excel.preview_template"
+		:propsRefreshAfterFinish="['data']" />
 	<ModalPartnerStockList v-model="isModalOpen" :fetchRoute="orgStockFetchRoute" />
 	<ModalAutoFillShoppingList
 		v-model="isAutoFillOpen"

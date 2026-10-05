@@ -139,6 +139,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListIte
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -4522,6 +4523,32 @@ describe('partner shopping list', function () {
 
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    });
+
+    test('the shopping list and a partner purchase order take a spreadsheet of our SKO codes and SKOs', function () {
+        $csv  = tempnam(sys_get_temp_dir(), 'partner-skos').'.csv';
+        $file = function (string $rows) use ($csv) {
+            file_put_contents($csv, "code,quantity\n".$rows);
+
+            return new \Illuminate\Http\UploadedFile($csv, 'skos.csv', 'text/csv', null, true);
+        };
+
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $upload = ImportPartnerShoppingListItems::make()->action($this->orgPartner->refresh(), $file(strtolower($this->buyerOrgStock->code).",3\nNOT-A-SKO,2\n"));
+
+        expect($upload->number_success)->toBe(1)
+            ->and($upload->number_fails)->toBe(1)
+            ->and((float) PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->value('quantity'))->toBe(3.0);
+
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
+        $this->buyerOrgStock->updateQuietly(['packed_in' => 6]);
+        $this->sellerProduct->orgStocks()->first()->updateQuietly(['packed_in' => 6]);
+        $purchaseOrder = $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first()
+            ?? StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $upload        = ImportPurchaseOrderTransactions::make()->action($purchaseOrder, $file($this->buyerOrgStock->code.",2\n"));
+
+        expect($upload->number_success)->toBe(1)
+            ->and((float) $purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $this->buyerOrgStock->id)->value('quantity_ordered'))->toBe(12.0);
     });
 
     test('hub quantities go up to whole batches unless the batch is broken on purpose', function () {

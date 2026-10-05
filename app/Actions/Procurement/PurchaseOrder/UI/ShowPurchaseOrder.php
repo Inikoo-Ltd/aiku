@@ -112,7 +112,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $showProductsTab = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
             && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier);
-        $uploadExcel = $this->canEdit && $showProductsTab;
+        $uploadExcel = $this->canEdit && $this->acceptsSpreadsheet($purchaseOrder);
 
         $orderer = [];
         $productListRoute = [];
@@ -356,12 +356,20 @@ class ShowPurchaseOrder extends OrgAction
     /**
      * @return array<string, mixed>
      */
+    private function acceptsSpreadsheet(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier || $purchaseOrder->parent instanceof OrgPartner);
+    }
+
     private function uploadExcel(PurchaseOrder $purchaseOrder): array
     {
         return [
             'title'               => [
                 'label'       => __('Upload products'),
-                'information' => __('Columns: code (the supplier product code) and quantity. Products already on the order get the new quantity.'),
+                'information' => $purchaseOrder->parent_type === 'OrgPartner'
+                    ? __('Columns: code (our SKO code) and quantity (in SKOs). SKOs already on the order get the new quantity.')
+                    : __('Columns: code (the supplier product code) and quantity. Products already on the order get the new quantity.'),
             ],
             'progressDescription' => __('Adding products'),
             'preview_template'    => [
@@ -440,8 +448,8 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                 ] : [],
-                $showProductsTab ? $this->downloadExcelAction($purchaseOrder) : [],
-                $showProductsTab ? [
+                $this->acceptsSpreadsheet($purchaseOrder) ? $this->downloadExcelAction($purchaseOrder) : [],
+                $this->acceptsSpreadsheet($purchaseOrder) ? [
                     'label'   => __('Upload products'),
                     'tooltip' => __('Add products, or change their quantities, from a spreadsheet'),
                     'type'    => 'button',

@@ -10,7 +10,9 @@ namespace App\Imports\Procurement;
 
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Imports\WithImport;
+use App\Models\Inventory\OrgStock;
 use App\Models\Helpers\Upload;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -36,6 +38,12 @@ class PurchaseOrderTransactionImport implements ToCollection, WithHeadingRow, Sk
         $code     = trim((string) $row->get('code'));
         $quantity = (float) $row->get('quantity');
 
+        if ($this->purchaseOrder->parent_type === 'OrgPartner') {
+            $this->storePartnerLine($code, $quantity, $uploadRecord);
+
+            return;
+        }
+
         $orgSupplierProduct = $this->findOrgSupplierProduct($code);
 
         if (!$orgSupplierProduct) {
@@ -51,6 +59,41 @@ class PurchaseOrderTransactionImport implements ToCollection, WithHeadingRow, Sk
                 UpdatePurchaseOrderTransaction::make()->action($transaction, ['quantity_ordered' => $quantity]);
             } else {
                 StorePurchaseOrderTransaction::make()->addOrgSupplierProduct($this->purchaseOrder, $orgSupplierProduct, ['quantity_ordered' => $quantity]);
+            }
+
+            $this->setRecordAsCompleted($uploadRecord);
+        } catch (ValidationException $e) {
+            $this->setRecordAsFailed($uploadRecord, collect($e->errors())->flatten()->all());
+        } catch (Throwable $e) {
+            $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
+        }
+    }
+
+    /**
+     * A partner order is filled with our own SKO codes and quantities in SKOs; order lines are units.
+     */
+    private function storePartnerLine(string $code, float $skos, $uploadRecord): void
+    {
+        $orgStock = $code === '' ? null : OrgStock::where('organisation_id', $this->purchaseOrder->organisation_id)
+            ->whereRaw('lower(code) = lower(?)', [$code])
+            ->orderByRaw("state = '".OrgStockStateEnum::ACTIVE->value."' desc")
+            ->first();
+
+        if (!$orgStock) {
+            $this->setRecordAsFailed($uploadRecord, [__('SKO :code not found', ['code' => $code])]);
+
+            return;
+        }
+
+        $units = $skos * max(1, (int) $orgStock->packed_in);
+
+        try {
+            $transaction = $this->purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $orgStock->id)->first();
+
+            if ($transaction) {
+                UpdatePurchaseOrderTransaction::make()->action($transaction, ['quantity_ordered' => $units]);
+            } else {
+                StorePurchaseOrderTransaction::make()->addPartnerOrgStock($this->purchaseOrder, $orgStock, ['quantity_ordered' => $units]);
             }
 
             $this->setRecordAsCompleted($uploadRecord);
