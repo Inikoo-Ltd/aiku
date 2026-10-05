@@ -147,7 +147,7 @@ class StorePurchaseOrder extends OrgAction
         if ($openPurchaseOrder) {
             $validator->errors()->add(
                 'purchase_order',
-                __('There is already an open purchase order (:reference). Add the products to it, or submit or cancel it before creating a new one.', ['reference' => $openPurchaseOrder->reference])
+                __('There is already an open purchase order (:reference). Add the products to it, or submit or delete it before creating a new one.', ['reference' => $openPurchaseOrder->reference])
             );
         }
 

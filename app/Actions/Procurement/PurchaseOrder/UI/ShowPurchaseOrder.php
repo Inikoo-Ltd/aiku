@@ -595,6 +595,20 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                 ],
+                $purchaseOrder->stockDeliveries()->exists() ? [] : [
+                    'label'   => __('Cancel'),
+                    'tooltip' => __('Cancel Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'key'     => 'cancel_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.cancel',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
             ],
             default => []
         };
