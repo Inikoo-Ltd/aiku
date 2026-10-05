@@ -81,17 +81,5 @@ export default {
 				},
             ],
         },
-        {
-			name: "Display Families in Department",
-			key: ["department"],
-			replaceForm: [
-				{
-					key: ["number_visible"],
-					label: "Number of Items to Display",
-					type: "number",
-                    defaultValue : 20
-				},
-			],
-		},
     ],
 }
