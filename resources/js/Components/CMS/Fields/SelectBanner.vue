@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { faCopy } from '@fal'
+import { faCopy, faExternalLink } from '@fal'
 import { faEye, faEyeSlash } from '@far'
 import { faTimesCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { routeType } from '@/types/route'
 import Image from "@common/Components/Image.vue"
-import ListItem from '@tiptap/extension-list-item'
+import { ctrans } from '@/Composables/useTrans'
 
-library.add(faCopy, faEye, faEyeSlash, faTimesCircle, faSpinnerThird)
+library.add(faCopy, faExternalLink, faEye, faEyeSlash, faTimesCircle, faSpinnerThird)
 
 const props = defineProps<{
   modelValue: string | number | null | undefined
@@ -28,13 +29,46 @@ const value = computed({
   set: v => emits('update:modelValue', { id: v?.id, name: v?.name, slug: v?.slug })
 })
 
-const setOptionList = (data) =>{
+const getBannerRoute = (routeSuffix: string, extraParams: Record<string, string> = {}): string => {
+  const routeParams = route().params
 
+  if (routeParams.fulfilment) {
+    return route(`grp.org.fulfilments.show.web.banners.${routeSuffix}`, {
+      organisation: routeParams.organisation,
+      fulfilment: routeParams.fulfilment,
+      website: routeParams.website,
+      ...extraParams,
+    })
+  }
+
+  return route(`grp.org.shops.show.web.banners.${routeSuffix}`, {
+    organisation: routeParams.organisation,
+    shop: routeParams.shop,
+    website: routeParams.website,
+    ...extraParams,
+  })
 }
+
+const selectedBannerSlug = computed(() => (props.modelValue as { slug?: string } | null | undefined)?.slug ?? null)
+
+const bannerLink = computed(() => {
+  if (selectedBannerSlug.value) {
+    return {
+      url: getBannerRoute('workshop', { banner: selectedBannerSlug.value }),
+      label: ctrans('Edit this banner in Banner Workshop'),
+    }
+  }
+
+  return {
+    url: getBannerRoute('index'),
+    label: ctrans('Go to Banners to create a new banner'),
+  }
+})
 
 </script>
 
 <template>
+  <div>
   <PureMultiselectInfiniteScroll 
       v-model="value" 
       :fetch-route="fetchRoute" 
@@ -81,4 +115,11 @@ const setOptionList = (data) =>{
     </template>
 
   </PureMultiselectInfiniteScroll>
+
+  <a :href="bannerLink.url" target="_blank" rel="noopener"
+    class="mt-1.5 inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline">
+    <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
+    {{ bannerLink.label }}
+  </a>
+  </div>
 </template>
