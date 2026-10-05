@@ -5438,6 +5438,7 @@ test('a product made of parts counts complete sets when indivisible and each par
 function deliveryNoteWithOnePartNotFound($ctx): array
 {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->delete();
     StoreDeliveryNoteItem::make()->action($deliveryNote, [
         'delivery_note_id'  => $deliveryNote->id,
         'org_stock_id'      => makeOrgStock($ctx)->id,
