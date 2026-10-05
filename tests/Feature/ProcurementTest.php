@@ -2761,6 +2761,40 @@ test('a sku on a rescue being prepared for another sister company is not offered
     expect($isComing())->toBeFalse();
 });
 
+test('other open orders count only lines for the same sko still waiting for a delivery', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'OTHER-OPEN-PO',
+        'name'             => 'Other open orders',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $deliveredLine = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 20]));
+
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+    StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), ['purchase_order_transaction_ids' => [$deliveredLine->id]]);
+    $purchaseOrder->purchaseOrderTransactions()->update(['supplier_product_id' => null]);
+
+    $rows = collect([$this->orgStocks[0], $this->orgStocks[1], $this->orgStocks[2]])
+        ->map(fn ($orgStock) => (object) ['supplier_product_id' => null, 'org_stock_id' => $orgStock->id]);
+    $paginator = new \Illuminate\Pagination\LengthAwarePaginator($rows, 3, 10);
+    IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, new PurchaseOrder(['organisation_id' => $this->organisation->id]));
+    [$delivered, $waiting, $notOrdered] = $paginator->items();
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
+
+    expect($delivered->other_open_purchase_orders)->toBeEmpty()
+        ->and($waiting->other_open_purchase_orders->pluck('quantity_ordered')->all())->toBe([20.0])
+        ->and($notOrdered->other_open_purchase_orders)->toBeEmpty();
+});
+
 test('without a live exchange rate the latest stored one is used, never a rate of 1', function () {
     $pound = Currency::where('code', 'GBP')->firstOrFail();
     $euro  = Currency::where('code', 'EUR')->firstOrFail();
