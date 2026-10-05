@@ -69,11 +69,7 @@ class ShowOrdersBacklog extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
                 ],
-                'scope_filter' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : [
-                    'prefix'  => $this->tab,
-                    'current' => request()->input($this->tab.'_elements.scope'),
-                    'counts'  => IndexOrders::make()->scopeCounts($parent, $this->tab),
-                ],
+                'backlog_filters' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : $this->getBacklogFilters($parent, $request),
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
@@ -140,6 +136,26 @@ class ShowOrdersBacklog extends OrgAction
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
 
             ->table(IndexReturnDeliveryNotes::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value));
+    }
+
+    /**
+     * @return array{prefix: string, current: array{scope: ?string, channel: ?string}, counts: array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}}}
+     */
+    protected function getBacklogFilters(Group|Organisation|Shop $parent, ActionRequest $request): array
+    {
+        $currentScope   = $request->input($this->tab.'_elements.scope');
+        $currentScope   = in_array($currentScope, ['domestic', 'export']) ? $currentScope : null;
+        $currentChannel = $request->input($this->tab.'_elements.channel');
+        $currentChannel = in_array($currentChannel, ['direct', 'partner']) ? $currentChannel : null;
+
+        return [
+            'prefix'  => $this->tab,
+            'current' => [
+                'scope'   => $currentScope,
+                'channel' => $currentChannel,
+            ],
+            'counts'  => IndexOrders::make()->backlogFilterCounts($parent, $this->tab, $currentScope, $currentChannel),
+        ];
     }
 
     public function getBreadcrumbs(Group|Organisation|Shop $parent, array $routeParameters): array
