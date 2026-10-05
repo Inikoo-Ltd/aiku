@@ -52,7 +52,11 @@ Dodacia lehota sa berie v tomto poradí: najprv vlastná lehota produktu, potom 
 
 ## Čo zákazník vidí a platí
 
-Na stránke produktu a v zoznamoch produktov zákazník vidí typ a odhad, napríklad „Made to order · Estimated dispatch 9–11 weeks“, spolu s podmienkami predobjednávky. Košík označí každý riadok s predobjednávkou a podmienky uvedie znova.
+Zákazník vidí len slovo **Pre-order** (predobjednávka): back-order a made-to-order zostávajú v aiku, kde určujú, ako zákazník platí.
+
+Kým je produkt **na sklade**, web ukazuje bežný stav skladu a žiadnu správu o predobjednávke. Keď sa **vypredá**, „Out of stock“ nahradí „Available to pre-order · Estimated dispatch 13–15 weeks“, spolu s tým, čo sa platí teraz („Pay in full now“ alebo „30% deposit now, balance when the goods arrive“), a odkazom na podmienky predobjednávky.
+
+Keď je na sklade len časť toho, čo zákazník chce, košík to uvedie pri riadku, napríklad „2 will be sent now, 3 are pre-ordered (estimated dispatch 13–15 weeks)“. Platba a podmienky predobjednávky platia len pre 3 predobjednané kusy.
 
 Pri pokladni musí zákazník pred zobrazením platby **zaškrtnúť súhlas s podmienkami predobjednávky**. Ide o podmienky, ktoré sa naňho vzťahujú, napríklad:
 
@@ -67,7 +71,7 @@ Pri pokladni musí zákazník pred zobrazením platby **zaškrtnúť súhlas s p
 - **Trade, made-to-order** — len záloha, alebo všetko, ak je objednávka v hodnote nižšej, než je hranica obchodu.
 - **Dropshipping** — vždy všetko.
 
-Pastpay a dobierka sa pri košíku s predobjednávkou neponúkajú a bankový prevod sa neponúka, ak je splatná záloha, pretože žiadny z nich nedokáže vziať teraz zálohu a zvyšok neskôr.
+Pastpay, dobierka a bankový prevod sa pri košíku s predobjednávkou neponúkajú: predobjednávka sa platí pri pokladni, celá alebo záloha, a žiadny z nich pri pokladni neplatí.
 
 Tie isté podmienky sa zopakujú v e-maile s potvrdením objednávky a na faktúre.
 
@@ -75,7 +79,7 @@ Tie isté podmienky sa zopakujú v e-maile s potvrdením objednávky a na faktú
 
 Keď je objednávka zadaná, skladové položky a položky na predobjednávku sa stanú **dvoma objednávkami**. Skladová objednávka ide do skladu hneď, s bežným doručením. Položky na predobjednávku tvoria vlastnú objednávku, s vlastným poplatkom za doručenie, ktorá čaká, kým tovar nedorazí. Na oboch objednávkach je poznámka odkazujúca na tú druhú.
 
-Zákazník môže namiesto toho zaškrtnúť **Hold my order and send everything together**: vtedy sa nič nerozdelí a celá objednávka čaká na tovar z predobjednávky.
+Pri pokladni zmiešaný košík uvádza „We'll send your in-stock items now and your pre-order items as soon as they arrive.“ Zákazník môže namiesto toho zaškrtnúť **Hold my order and send everything together**: vtedy sa nič nerozdelí a celá objednávka čaká na tovar z predobjednávky. Košík len s predobjednanými položkami uvádza „We'll dispatch your order as soon as the goods arrive.“
 
 Zákazník platí raz, pri pokladni. Časť tejto platby, ktorá patrí predobjednávke, sa na ňu presunie cez zostatok na účte zákazníka, takže samotný zostatok sa nemení.
 
@@ -113,6 +117,7 @@ Zákazník nemôže zrušiť predobjednávku sám: kontaktuje zákaznícky servi
 ### Kam kliknúť v aiku
 
 - **Zapnutie predobjednávok pre obchod** — otvorte obchod, **Settings**, potom **Pre-orders** › **Enable pre-orders**. Ostatné podmienky sú v tej istej sekcii.
+- **Zmena textov pre zákazníka** — otvorte obchod, **Settings**, potom **Pre-order texts**. Je tam každý text, ktorý zákazník vidí, v každom jazyku obchodu: označenia, správy na stránke produktu, v košíku a pri pokladni, podmienky a zaškrtávacie políčko, e-maily a text v potvrdení objednávky a na faktúre. Prázdne pole použije predvolený text zobrazený sivou. Slová v zložených zátvorkách, ako {weeks}, {deposit_percent}, {balance_due_date} a {order_number}, sa vyplnia samy. Už zadané objednávky si ponechajú podmienky, ktoré zákazník prijal.
 - **Označenie produktu** — **Masters**, otvorte hlavný produkt, **Edit**, potom **Pre-order**. Vlastný produkt obchodu má rovnakú sekciu pod **Edit**.
 - **Nastavenie dodacej lehoty dodávateľa** — otvorte dodávateľa, **Edit**, potom **Pre-orders**: **Pre-order lead time**, **Lead time in** (days or weeks) a **Order by date**.
 - **Sledovanie predobjednávky** — otvorte objednávku. Panel **Pre-order** hore má **Supplier ordered**, **Goods arrived**, **Pallet quote**, **Change dispatch dates**, **Send to warehouse** a **Cancel pre-order**.

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -701,6 +702,8 @@ class EditShop extends OrgAction
 
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderSettingsFields($shop) : [],
 
+                in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderTextFields($shop) : [],
+
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Packaging & Inserts'),
                     'icon'   => 'fa-light fa-box-open',
@@ -1380,6 +1383,53 @@ class EditShop extends OrgAction
             ),
             default => []
         };
+    }
+
+    /**
+     * Every pre-order text customers read, per shop language. Empty uses the default shown greyed
+     * out (HELP-3678).
+     *
+     * @return array<string, mixed>
+     */
+    private function preOrderTextFields(Shop $shop): array
+    {
+        $texts   = GetPreOrderText::make();
+        $locales = $texts->locales($shop);
+        $fields  = [];
+
+        foreach ($locales as $locale) {
+            foreach (GetPreOrderText::TEXTS as $key => [$label, $default]) {
+                $fields["pre_order_text__{$locale}__$key"] = [
+                    'type'        => 'textarea',
+                    'label'       => __($label).(count($locales) > 1 ? ' ('.$locale.')' : ''),
+                    'placeholder' => $texts->default($key, $locale),
+                    'rows'        => substr_count($default, "\n") + max(2, (int) ceil(strlen($default) / 90)),
+                    'value'       => (string) Arr::get($shop->settings, "pre_orders.texts.$locale.$key", ''),
+                    'information' => $this->preOrderTextInformation($default),
+                ];
+            }
+        }
+
+        return [
+            'label'  => __('Pre-order texts'),
+            'icon'   => 'fa-light fa-language',
+            'fields' => $fields,
+        ];
+    }
+
+    private function preOrderTextInformation(string $default): string
+    {
+        $information = __('Leave empty to use the default shown in grey. Orders already placed keep the terms they accepted.');
+        if (str_contains($default, "\n")) {
+            $information .= ' '.__('Separate paragraphs with an empty line.');
+        }
+
+        preg_match_all('/\{\w+\}/', $default, $placeholders);
+        if ($placeholders[0]) {
+            $information .= ' '.__('Filled in automatically: :placeholders', ['placeholders' => implode(' ', array_unique($placeholders[0]))]);
+        }
+
+        return $information;
     }
 
     /**
