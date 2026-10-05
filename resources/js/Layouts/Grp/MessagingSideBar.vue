@@ -9,7 +9,7 @@ import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounte
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube } from "@fal"
+import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
@@ -24,7 +24,7 @@ import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
@@ -632,6 +632,10 @@ onUnmounted(() => {
                                 v-tooltip="ctrans('Rings only when you are mentioned')"
                                 class="shrink-0 rounded bg-[var(--chat-line)] px-1 text-[9px] uppercase tracking-wide text-[var(--chat-label)]">
                                 {{ workThreadLabel(conversation) }}
+                            </span>
+                            <span v-if="conversation.task?.status_label" v-tooltip="ctrans('Task status')" class="inline-flex shrink-0 items-center gap-0.5 text-[var(--chat-label)]">
+                                <FontAwesomeIcon v-if="conversation.task.status_icon" :icon="conversation.task.status_icon.icon" :class="conversation.task.status_icon.class" fixed-width aria-hidden="true" />
+                                {{ conversation.task.status_label }}
                             </span>
                             <span class="truncate" :class="!conversation.last_message && 'italic opacity-70'">{{ lastMessagePreview(conversation) }}</span>
                         </div>

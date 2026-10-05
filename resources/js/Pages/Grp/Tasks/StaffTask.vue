@@ -359,7 +359,7 @@ onUnmounted(() => {
                                 v-for="member in members.slice(0, 3)"
                                 :key="member.id"
                                 v-tooltip="`${member.name} · ${member.presence.isOnline ? ctrans('Online') : ctrans('Offline')}`"
-                                class="rounded-full ring-2"
+                                class="flex shrink-0 rounded-full ring-2"
                                 :class="member.presence.isOnline ? 'ring-green-500' : 'ring-gray-300'">
                                 <TicketUserAvatar :name="member.name" :avatar="member.avatar" size="sm" class="ring-2 ring-white" />
                             </span>

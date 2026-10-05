@@ -65,6 +65,9 @@ export interface StaffConversation {
 export interface StaffConversationTask {
     reference: string
     is_open: boolean
+    status?: string
+    status_label?: string
+    status_icon?: { icon: string; class: string; tooltip?: string; color?: string } | null
     requester_id: number
     assignee_id: number | null
     collaborator_ids: number[]

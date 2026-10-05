@@ -3048,7 +3048,11 @@ describe('staff messaging archive', function () {
         $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the blue mugs', 'department' => 'warehouse']);
         $conversation = $task->conversation;
 
-        expect((new \App\Http\Resources\Chat\StaffConversationResource($conversation))->resolve()['task']['is_open'])->toBeTrue();
+        $conversationTask = (new \App\Http\Resources\Chat\StaffConversationResource($conversation))->resolve()['task'];
+        expect($conversationTask['is_open'])->toBeTrue()
+            ->and($conversationTask['status'])->toBe('todo')
+            ->and($conversationTask['status_label'])->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::labels()['todo'])
+            ->and($conversationTask['status_icon']['icon'])->not->toBeEmpty();
 
         actingAs($this->user)
             ->get(route('grp.chat.staff.show', $conversation))
@@ -3060,6 +3064,7 @@ describe('staff messaging archive', function () {
             ->assertJsonValidationErrors('conversation');
 
         $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+        expect((new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()))->resolve()['task']['status'])->toBe('done');
 
         actingAs($this->user)
             ->postJson(route('grp.chat.staff.conversations.archive', $conversation))
@@ -8334,6 +8339,44 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
     }
     outOfHoursTestCleanUp($schedule, [$answered, $closedFirst]);
+});
+
+test('chat closes 15 minutes before work ends unless the shop sets its own chat hours, while reports keep the working hours', function () {
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $shop = $this->shop->fresh();
+    $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+    $at       = fn (string $when) => \Illuminate\Support\Carbon::parse($when, 'Europe/London');
+    $chatOpen = fn (\App\Models\Catalogue\Shop $shop, string $when) => IsWithinWorkingHours::make()->chatHours()->handle($shop, $at($when));
+
+    expect($chatOpen($shop, '2026-09-23 13:40'))->toBeTrue()
+        ->and($chatOpen($shop, '2026-09-23 13:50'))->toBeFalse()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-23 13:50')))->toBeTrue();
+
+    \Illuminate\Support\Carbon::setTestNow($at('2026-09-23 10:30'));
+    $config = GetChatConfig::run($this->web->fresh());
+    expect($config['is_online'])->toBeTrue()
+        ->and($config['schedule']['start'])->toBe('10:00')
+        ->and($config['schedule']['end'])->toBe('13:45');
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['chat_hours_start' => '10:45', 'chat_hours_end' => '13:30']);
+    $shop = $shop->fresh();
+    expect($shop->settings['chat']['hours'])->toEqual(['start' => '10:45', 'end' => '13:30'])
+        ->and($chatOpen($shop, '2026-09-23 10:30'))->toBeFalse()
+        ->and($chatOpen($shop, '2026-09-23 13:35'))->toBeFalse()
+        ->and($chatOpen($shop, '2026-09-23 11:00'))->toBeTrue();
+
+    $config = GetChatConfig::run($this->web->fresh());
+    expect($config['is_online'])->toBeFalse()
+        ->and($config['schedule']['start'])->toBe('10:45')
+        ->and($config['schedule']['end'])->toBe('13:30')
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:45');
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['chat_hours_start' => null]);
+    expect($chatOpen($shop->fresh(), '2026-09-23 10:30'))->toBeTrue();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop->fresh(), ['chat_hours_end' => null]);
+    \Illuminate\Support\Carbon::setTestNow();
+    outOfHoursTestCleanUp($schedule);
 });
 
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
