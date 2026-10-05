@@ -19,6 +19,7 @@ use App\Actions\Chat\Agent\UI\ShowGroupAgents;
 use App\Actions\Chat\ChatSession\UI\RedirectToOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
 use App\Actions\Chat\UI\FlagChatAiDraft;
+use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Chat\UI\FlagChatAutomatedMessage;
 use App\Actions\Chat\UI\ShowGroupChatAutomation;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,8 @@ Route::get('/ai/sent', [ShowGroupChatAutomation::class, 'inSent'])->name('ai.sen
 Route::get('/ai/noise-checks', [ShowGroupChatAutomation::class, 'inNoiseChecks'])->name('ai.noise_checks');
 Route::post('/ai/drafts/{chatAiDraft}/flag', FlagChatAiDraft::class)->name('ai.drafts.flag');
 Route::post('/ai/sent/{channel}/{messageId}/flag', FlagChatAutomatedMessage::class)->where('channel', 'chat|whatsapp')->name('ai.sent.flag');
+Route::post('/ai/summaries/messages/{chatMessage}/flag', FlagChatAiSummary::class)->name('ai.summaries.message.flag');
+Route::post('/ai/summaries/sessions/{chatSession:ulid}/flag', [FlagChatAiSummary::class, 'inChatSession'])->name('ai.summaries.session.flag');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');

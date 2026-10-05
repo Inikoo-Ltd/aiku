@@ -127,7 +127,7 @@ class EditWebsite extends OrgAction
                     'required'    => false,
                 ],
                 'ga4_api_secret'        => [
-                    'type'        => 'input',
+                    'type'        => 'purePassword',
                     'information' => __('GA4 Admin → Data streams → Measurement Protocol API secrets'),
                     'label'       => __('GA4 Measurement Protocol API secret'),
                     'value'       => Arr::get($website->settings, "ga4_api_secret"),

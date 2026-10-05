@@ -5430,7 +5430,7 @@ test('an external shop with chat enabled gets chat permissions', function () {
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
 });
 
-test('an external shop offers offline email replies in its chat widget settings only once its chat is enabled', function () {
+test('an external shop offers offline email replies and a customer mailbox only once its chat is enabled', function () {
     $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
     $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
     $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
@@ -5442,13 +5442,17 @@ test('an external shop offers offline email replies in its chat widget settings 
             ->viewData('page')['props']['formData']['blueprint']
     )->keyBy('label');
 
-    expect($sectionLabels()->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies');
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies')
+        ->and($sections->has('Customer mailbox'))->toBeFalse();
 
     $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
 
     $sections = $sectionLabels();
 
     expect($sections->get('Chat widget')['fields'])->toHaveKey('chat_email_offline_replies')
+        ->and($sections->get('Customer mailbox')['fields'])->toHaveKey('mailbox')
         ->and($sections->has('Chat'))->toBeFalse();
 });
 
@@ -12573,4 +12577,52 @@ test('a mailbox whose Gmail access was revoked does not stop the other shops bei
 
     expect(Arr::get($otherShop->fresh()->settings, 'gmail.history_id'))->toBe('2')
         ->and(Arr::get($this->shop->fresh()->settings, 'gmail.history_id'))->toBe('1');
+});
+
+test('staff flag an AI summary of an email or of a chat as wrong, saying why, once per summary', function () {
+    $session = ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::CLOSED,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['ai_summary' => ['summary' => 'Customer asks about an order', 'key_points' => []]],
+    ]);
+    $email = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => 'A long email',
+        'metadata'        => ['ai_summary' => 'Longer than the email itself'],
+    ]);
+    $plain = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => 'Short',
+    ]);
+
+    actingAs($this->user);
+
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$plain->id]), ['reason' => 'x'])->assertNotFound();
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]))->assertUnprocessable()->assertJsonValidationErrors('reason');
+
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]), ['reason' => 'Too long'])->assertOk();
+    expect(Arr::get($email->refresh()->metadata, 'ai_summary_flags.0'))->toMatchArray(['summary' => 'Longer than the email itself', 'reason' => 'Too long', 'user_id' => $this->user->id])
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($email)->resolve())->toMatchArray(['ai_summary_flagged' => true])
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($email)->resolve()['metadata'])->not->toHaveKey('ai_summary_flags');
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]), ['reason' => 'Again'])->assertStatus(422);
+
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Missed the refund'])->assertOk();
+    expect(\App\Actions\Chat\UI\FlagChatAiSummary::isFlagged($session->refresh()))->toBeTrue();
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Again'])->assertStatus(422);
+
+    $session->update(['metadata' => array_merge($session->metadata, ['ai_summary' => ['summary' => 'Customer wants a refund']])]);
+    expect(\App\Actions\Chat\UI\FlagChatAiSummary::isFlagged($session->refresh()))->toBeFalse()
+        ->and(Arr::get($session->metadata, 'ai_summary_flags.0.summary'))->toBe('Customer asks about an order');
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Still wrong'])->assertOk();
+    expect(Arr::get($session->refresh()->metadata, 'ai_summary_flags'))->toHaveCount(2);
+
+    $email->delete();
+    $plain->delete();
+    $session->delete();
 });
