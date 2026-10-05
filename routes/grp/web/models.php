@@ -489,6 +489,7 @@ use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\JobOrderItem\SplitJobOrderItem;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
+use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -1455,6 +1456,7 @@ Route::patch('/job-order-item/{jobOrderItem:id}/split', SplitJobOrderItem::class
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
+Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.attach')->withoutScopedBindings();

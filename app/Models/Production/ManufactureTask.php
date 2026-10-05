@@ -33,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string $name
+ * @property string|null $description
  * @property numeric $task_materials_cost
  * @property numeric $task_energy_cost
  * @property numeric $task_other_cost
@@ -88,6 +89,7 @@ class ManufactureTask extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
+        'description',
         'status',
         'task_lower_target',
         'task_upper_target',

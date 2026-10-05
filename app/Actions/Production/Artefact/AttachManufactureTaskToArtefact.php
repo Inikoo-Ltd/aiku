@@ -22,12 +22,15 @@ class AttachManufactureTaskToArtefact extends OrgAction
 {
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
-        $artefact->manufactureTasks()->syncWithoutDetaching([
-            $modelData['manufacture_task_id'] => [
-                'position'           => $modelData['position'] ?? 1,
-                'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
-            ],
-        ]);
+        $step = [
+            'position'           => $modelData['position'] ?? 1,
+            'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
+        ];
+        if (array_key_exists('standard_rate', $modelData)) {
+            $step['standard_rate'] = $modelData['standard_rate'];
+        }
+
+        $artefact->manufactureTasks()->syncWithoutDetaching([$modelData['manufacture_task_id'] => $step]);
 
         JobOrderItem::where('artefact_id', $artefact->id)
             ->whereHas('jobOrder', fn ($query) => $query->whereNotIn('state', [JobOrderStateEnum::RECEIVED, JobOrderStateEnum::NOT_RECEIVED]))
@@ -45,6 +48,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             ],
             'position'            => ['sometimes', 'integer', 'min:1'],
             'units_per_artefact'  => ['sometimes', 'numeric', 'gt:0'],
+            'standard_rate'       => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
     }
 
@@ -52,6 +56,10 @@ class AttachManufactureTaskToArtefact extends OrgAction
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($request->has('standard_rate')) {
+            return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         }
 
         return $request->user()->authTo([

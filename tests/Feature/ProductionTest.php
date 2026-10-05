@@ -310,6 +310,19 @@ test('can update a raw material', function ($rawMaterial) {
 
 })->depends('can store a raw material');
 
+test('a manufacture task can be created with only code, name, description and status', function (Production $production) {
+    $manufactureTask = StoreManufactureTask::make()->action($production, [
+        'code'        => 'POURDESC',
+        'name'        => 'Pouring',
+        'description' => 'Pouring the mix into moulds',
+        'status'      => false,
+    ]);
+
+    expect($manufactureTask->description)->toBe('Pouring the mix into moulds')
+        ->and($manufactureTask->status)->toBeFalse()
+        ->and((float) $manufactureTask->task_work_cost)->toBe(0.0);
+})->depends('create production');
+
 test('create manufacture task', function (Production $production) {
     $data = [
         'code'                            => 'MT001',
@@ -708,7 +721,7 @@ test('UI edit manufacture task', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 13)
+            ->has('formData.blueprint.0.fields', 5)
             ->has('pageHead')
             ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
@@ -2408,6 +2421,81 @@ describe('production reward pay bands', function () {
         foreach ($ratios as $ratio) {
             expect(abs($ratio - $reference) / $reference)->toBeLessThan(0.02);
         }
+    });
+
+    test('a recipe step target overrides the task target, sets the pay band and is snapshotted when the session closes', function () {
+        $this->manufactureTask->update(['standard_rate' => 10000]);
+
+        SetArtefactsRecipe::make()->action($this->production, [
+            'artefacts' => [$this->artefact->id],
+            'steps'     => [[
+                'manufacture_task_id' => $this->manufactureTask->id,
+                'position'            => 1,
+                'units_per_artefact'  => 1,
+                'standard_rate'       => 152,
+            ]],
+        ]);
+
+        $session = makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333);
+        expect($session->recipeStandardRate())->toBe(152.0);
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+        expect($session->band_code)->toBe('3');
+
+        $openSession = makePayBandSession($this->payBandJobOrderItemTask, 0, 1);
+        $openSession->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN, 'started_at' => now()->subHour(), 'ended_at' => null]);
+
+        $closed = CloseManufactureTaskSession::make()->action($openSession, ['quantity_made' => 200])->refresh();
+
+        expect((float) $closed->standard_rate)->toBe(152.0)
+            ->and($closed->is_under_target)->toBeFalse();
+    });
+
+    test('a session closed below its step target is flagged and a manager logs the reason', function () {
+        AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+            'manufacture_task_id' => $this->manufactureTask->id,
+            'position'            => 1,
+            'units_per_artefact'  => 1,
+            'standard_rate'       => 152,
+        ]);
+
+        $openSession = makePayBandSession($this->payBandJobOrderItemTask, 0, 1);
+        $openSession->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN, 'started_at' => now()->subHour(), 'ended_at' => null]);
+
+        $closed = CloseManufactureTaskSession::make()->action($openSession, ['quantity_made' => 40])->refresh();
+
+        expect($closed->is_under_target)->toBeTrue()
+            ->and($closed->band_code)->toBe('0');
+
+        $reviewed = \App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession::make()->action($closed, auth()->user(), [
+            'under_target_reason' => 'machine_breakdown',
+            'under_target_note'   => 'Shrink tunnel down 30 minutes',
+        ]);
+
+        expect($reviewed->under_target_reason)->toBe(\App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum::MACHINE_BREAKDOWN)
+            ->and($reviewed->under_target_note)->toBe('Shrink tunnel down 30 minutes')
+            ->and($reviewed->under_target_reviewed_by)->toBe(auth()->user()->id)
+            ->and($reviewed->under_target_reviewed_at)->not->toBeNull();
+
+        $onTarget = makePayBandSession($this->payBandJobOrderItemTask, 200, 1);
+
+        expect(fn () => \App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession::make()->action($onTarget, auth()->user(), [
+            'under_target_reason' => 'other',
+        ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    });
+
+    test('changing a recipe step position keeps its target', function () {
+        AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+            'manufacture_task_id' => $this->manufactureTask->id,
+            'position'            => 1,
+            'standard_rate'       => 152,
+        ]);
+        AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+            'manufacture_task_id' => $this->manufactureTask->id,
+            'position'            => 2,
+        ]);
+
+        expect((float) $this->artefact->manufactureTasks()->first()->pivot->standard_rate)->toBe(152.0);
     });
 });
 

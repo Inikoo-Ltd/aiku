@@ -61,7 +61,7 @@ class GetArtefactShowcase
                 'name'               => $task->name,
                 'position'           => $task->pivot->position,
                 'units_per_artefact' => $task->pivot->units_per_artefact,
-                'task_work_cost'     => $task->task_work_cost,
+                'standard_rate'      => $task->pivot->standard_rate ?? $task->standard_rate,
             ]),
         ];
     }

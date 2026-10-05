@@ -47,6 +47,7 @@ interface DraftStep {
     key: number
     manufacture_task_id: number | null
     units_per_artefact: number
+    standard_rate: number | null
     raw_materials: DraftRawMaterial[]
     artefact_raw_materials: Record<number, DraftRawMaterial[]>
     newRawMaterial: RawMaterialOption | null
@@ -69,6 +70,7 @@ const newStep = (): DraftStep => ({
     key: nextKey++,
     manufacture_task_id: null,
     units_per_artefact: 1,
+    standard_rate: null,
     raw_materials: [],
     artefact_raw_materials: {},
     newRawMaterial: null,
@@ -229,6 +231,7 @@ const save = () => {
                 manufacture_task_id: step.manufacture_task_id,
                 position: index + 1,
                 units_per_artefact: step.units_per_artefact,
+                standard_rate: step.standard_rate || null,
                 raw_materials: toPayloadMaterials(step.raw_materials),
                 artefact_raw_materials: artefactsWithOwnMaterials(step).map(artefact => ({
                     artefact_id: artefact.id,
@@ -313,6 +316,21 @@ const save = () => {
                                     :min="0.001"
                                     :minFractionDigits="0"
                                     :maxFractionDigits="3"
+                                    :useGrouping="false"
+                                    size="small"
+                                    inputClass="w-24" />
+                            </label>
+
+                            <label class="block">
+                                <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                                    {{ ctrans('Target units per hour') }}
+                                    <InformationIcon :information="ctrans('The lower target: units per hour an artisan makes on this step at the base pay rate. The higher pay tiers are worked out from it.')" />
+                                </span>
+                                <InputNumber
+                                    v-model="step.standard_rate"
+                                    :min="0.01"
+                                    :minFractionDigits="0"
+                                    :maxFractionDigits="2"
                                     :useGrouping="false"
                                     size="small"
                                     inputClass="w-24" />

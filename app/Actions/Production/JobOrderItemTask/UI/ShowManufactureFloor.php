@@ -221,7 +221,7 @@ class ShowManufactureFloor extends OrgAction
 
     protected function bandFeedback(ManufactureTaskSession $session): ?array
     {
-        $standardRate = $session->manufactureTask?->standard_rate;
+        $standardRate = $session->recipeStandardRate();
         if ($standardRate === null) {
             return null;
         }
