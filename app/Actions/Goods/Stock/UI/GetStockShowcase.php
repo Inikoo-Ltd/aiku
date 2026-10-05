@@ -43,6 +43,7 @@ class GetStockShowcase
             'currency_code' => $stock->group->currency->code,
             'sales_data'    => GetStockTimeSeriesData::run($stock),
             'org_stocks'    => $this->getOrgStocksData($stock),
+            'barcodes'      => $this->getBarcodes($stock),
              'contactCard' => [
                  'id'                 => $stock->id,
                  'slug'               => $stock->slug,
@@ -80,6 +81,32 @@ class GetStockShowcase
                 'method'    => 'patch',
                 'name'      => 'grp.models.location_org_stock.move',
             ]
+        ];
+    }
+
+    /**
+     * Read only here: barcodes are edited from an organisation's SKO, which writes them back to this stock.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getBarcodes(Stock $stock): array
+    {
+        $card = fn (string $level, string $label, ?string $number, ?float $weight = null) => [
+            'level'      => $level,
+            'label'      => $label,
+            'number'     => $number,
+            'quantity'   => null,
+            'weight'     => $weight,
+            'dimensions' => null,
+            'packs'      => null,
+            'editable'   => false,
+            'warning'    => null,
+        ];
+
+        return [
+            $card('sko', 'SKO (outer packing, CODE 128)', $stock->barcode, $stock->gross_weight),
+            $card('unit', 'Unit EAN13', $stock->unit_barcode),
+            $card('carton', 'Carton (supplier outer box, same in every organisation)', $stock->carton_barcode),
         ];
     }
 
