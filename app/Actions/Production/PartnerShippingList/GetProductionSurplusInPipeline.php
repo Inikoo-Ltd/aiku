@@ -43,12 +43,15 @@ class GetProductionSurplusInPipeline
 
         $surplus = [];
 
-        foreach ($items as $item) {
+        foreach ($items->groupBy(fn (JobOrderItem $item) => $item->job_order_id.'-'.$item->artefact_id) as $jobItems) {
+            /** @var JobOrderItem $item */
+            $item     = $jobItems->first();
             $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
             $claimed  = $this->claimedSkos($item);
-            $made     = max(0, min((float) $item->quantity, GetJobOrderDestinationAllocation::make()->producedArtefacts($item)) / $packedIn - $claimed);
-            $planned  = max(0, (float) $item->quantity / $packedIn - $claimed);
-            $received = $this->surplusReceived($item, (float) $item->quantity_received);
+            $quantity = (float) $jobItems->sum('quantity');
+            $made     = max(0, $jobItems->sum(fn (JobOrderItem $jobItem) => min((float) $jobItem->quantity, GetJobOrderDestinationAllocation::make()->producedArtefacts($jobItem))) / $packedIn - $claimed);
+            $planned  = max(0, $quantity / $packedIn - $claimed);
+            $received = max(0, (float) $jobItems->sum('quantity_received') / $packedIn - $claimed);
 
             $pendingBooking = max(0, $made - $received);
             $inProduction   = max(0, $planned - max($made, $received));
@@ -69,14 +72,19 @@ class GetProductionSurplusInPipeline
     }
 
     /**
-     * SKOs of this item already received into stock beyond what its own lines claimed.
-     * Claims are filled first, so surplus only starts once they are covered.
+     * SKOs of this artefact already received into stock from the job order beyond what its lines
+     * claimed. Claims are filled first, so surplus only starts once they are covered; a line split
+     * between artisans shares one set of claims, so the other parts' receipts count too.
      */
     public function surplusReceived(JobOrderItem $item, float $receivedUnits): float
     {
-        $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
+        $packedIn       = max(1, (int) $item->artefact->orgStock?->packed_in);
+        $othersReceived = (float) JobOrderItem::where('job_order_id', $item->job_order_id)
+            ->where('artefact_id', $item->artefact_id)
+            ->where('id', '!=', $item->id)
+            ->sum('quantity_received');
 
-        return max(0, $receivedUnits / $packedIn - $this->claimedSkos($item));
+        return max(0, ($receivedUnits + $othersReceived) / $packedIn - $this->claimedSkos($item));
     }
 
     /**

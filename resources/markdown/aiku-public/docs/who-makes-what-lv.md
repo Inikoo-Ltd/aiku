@@ -2,7 +2,7 @@
 title: Kurš ko izgatavo
 summary: Iemāci aiku, kuri amatnieki parasti izgatavo katru kategoriju vai artefaktu, lai saraksts To produce sakārtotos pats. Ieteikums, nekad ne slēdzene.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefacts
@@ -36,6 +36,16 @@ Katrā nodaļas lapā un katrā artefakta lapā zem virsraksta ir rinda: **Usual
 aiku to lasa šādi. Rindai sarakstā To produce vispirms paskatās uz artefaktu. Ja artefaktam ir amatnieki, pirmais no tiem ir rindas īpašnieks. Ja nav, paskatās uz artefakta nodaļu un ņem tās pirmo amatnieku. Ja neviens no tiem nav norādīts, rinda paliek zem *Unassigned* (Nepiešķirts), un dēlī jautājums *Who makes it?* (Kurš izgatavo?) parādās bez piedāvāta vārda.
 
 Tāpēc lētākais veids, kā iestatīt ražotni: piesaisti amatniekus nodaļām un atsevišķus artefaktus rediģē tikai izņēmumiem. Viens cilvēks izgatavo visas ziepes, izņemot vienu klucīti, kam vajadzīgs cits pāris roku.
+
+## Viena darba dalīšana starp amatniekiem
+
+Lielu rindu var dalīt. Darba uzdevumā blakus rindas daudzumam noklikšķini uz **Split / Assign multiple artisans** (Sadalīt / Piešķirt vairākus amatniekus). Katrai rindai izvēlies amatnieku un vienību skaitu, ko viņš izgatavo; ar **Add artisan** (Pievienot amatnieku) pievieno jaunu rindu. Rindu summai precīzi jāsakrīt ar kopējo rindas daudzumu; kad tā sakrīt, lodziņš kļūst zaļš. Pēc tam **Save assignments** (Saglabāt piešķīrumus).
+
+- Katra rinda kļūst par apakšdarbu, kura nosaukums ir darba uzdevuma nosaukums ar burtu: JOaroma-0101-A, -B, -C. Visiem ir viens un tas pats partijas kods, tāpēc krājumi nonāk kā viena partija.
+- Ražotnē katrs amatnieks kā savu redz tikai savu daļu. Laiks, vienības un atalgojums tiek ieskaitīti tam, kas reģistrē sesiju, kā vienmēr.
+- Rindā redzams visu tās daļu kopējais progress un apakšdarbu tabula ar katra amatnieka mērķi, paveiktajām vienībām, statusu, laiku un atlīdzību.
+- Atver to pašu pogu vēlreiz, lai pārvietotu vienības vai nomainītu vārdus. Daļu, ko kāds jau sācis, nevar noņemt vai iestatīt zem jau izgatavotā daudzuma. Pirmā rinda vienmēr paliek.
+- Tiklīdz kaut kas no rindas ir pieņemts krājumos, to vairs nevar sadalīt.
 
 ## Kas tas nav
 

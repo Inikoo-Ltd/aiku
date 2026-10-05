@@ -2,7 +2,7 @@
 title: Quién hace qué
 summary: Enseña a aiku qué artesanos hacen normalmente cada categoría o artefacto, para que la lista To produce se reparta sola en montones por persona. Una recomendación, nunca un candado.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -35,6 +35,16 @@ En cada página de departamento y en cada página de artefacto hay una fila bajo
 Así lo lee aiku. Para una línea de To produce, mira primero el artefacto. Si el artefacto tiene artesanos, el primero es el dueño de la línea. Si no, mira el departamento del artefacto y toma el primer artesano de ahí. Si ninguno de los dos tiene a nadie, la línea queda bajo *Unassigned*, y en el Board la pregunta *¿Quién lo hace?* no propone ningún nombre.
 
 Así que la forma barata de configurar una fábrica es: asignar artesanos a los departamentos, y tocar artefactos individuales solo para las excepciones. Una persona hace todo el jabón salvo la única hornada que necesita otras manos.
+
+## Repartir un trabajo entre varios artesanos
+
+Una línea grande se puede repartir. En la orden de trabajo, junto a la cantidad de una línea, haz clic en **Split / Assign multiple artisans** (Dividir / Asignar varios artesanos). Elige un artesano en cada fila y las unidades que hace; **Add artisan** (Añadir artesano) añade una fila. Las filas deben sumar exactamente el total de la línea; la casilla se pone en verde cuando coinciden. Pulsa **Save assignments** (Guardar asignaciones).
+
+- Cada fila se convierte en un subtrabajo, con el nombre de la orden de trabajo más una letra: JOaroma-0101-A, -B, -C. Todos llevan el mismo código de lote, así que el stock entra como un solo lote.
+- En el taller, cada artesano ve como suya solo su parte. El tiempo, las unidades y el pago se acreditan a quien registra la sesión, como siempre.
+- La línea muestra el progreso total de todas sus partes, y una tabla de subtrabajos con el objetivo de cada artesano, las unidades hechas, el estado, el tiempo y la recompensa.
+- Abre el mismo botón otra vez para mover unidades o cambiar nombres. Una parte que alguien ya empezó no se puede quitar ni bajar por debajo de lo ya fabricado. La primera fila siempre se queda.
+- Cuando algo de la línea ya se ha recibido en stock, ya no se puede dividir.
 
 ## Lo que no es
 

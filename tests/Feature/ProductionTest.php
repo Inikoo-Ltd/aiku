@@ -93,6 +93,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 use function Pest\Laravel\delete;
 
 beforeAll(function () {
@@ -1396,6 +1397,103 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
         ->and($artisans->firstWhere('id', $worker->id)['assigned'])->toBe(0)
         ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
         ->and($artisans->firstWhere('id', $idle->id)['assigned'])->toBe(1);
+});
+
+test('a job order line is split between artisans who each work, and are paid for, their own part', function () {
+    [$artisanA, $artisanB, $artisanC] = collect(range(1, 3))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    })->all();
+
+    $this->guest->getUser()->employees()->sync([$artisanA->id => [
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+    ]]);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $line     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 1000, 'data' => ['demand_skos' => 1000, 'batch_code' => 'B-1']]);
+    $splitUrl = route('grp.models.job-order-item.split', ['jobOrderItem' => $line->id]);
+
+    patch($splitUrl, ['assignments' => [
+        ['id' => $line->id, 'employee_id' => $artisanA->id, 'quantity' => 400],
+        ['employee_id' => $artisanB->id, 'quantity' => 300],
+    ]])->assertSessionHasErrors('assignments');
+
+    patch($splitUrl, ['assignments' => [
+        ['id' => $line->id, 'employee_id' => $artisanA->id, 'quantity' => 400],
+        ['employee_id' => $artisanB->id, 'quantity' => 300],
+        ['employee_id' => $artisanC->id, 'quantity' => 300],
+    ]])->assertSessionHasNoErrors();
+
+    $subJobs = JobOrderItem::where('id', $line->id)->orWhere('split_from_id', $line->id)->orderBy('id')->get();
+    expect($subJobs->pluck('employee_id')->all())->toBe([$artisanA->id, $artisanB->id, $artisanC->id])
+        ->and($subJobs->pluck('quantity')->map(fn ($quantity) => (int) $quantity)->all())->toBe([400, 300, 300])
+        ->and($subJobs->map(fn (JobOrderItem $subJob) => (float) $subJob->tasks()->first()->quantity_required)->all())->toBe([400.0, 300.0, 300.0])
+        ->and($subJobs->map(fn (JobOrderItem $subJob) => data_get($subJob->data, 'batch_code'))->unique()->all())->toBe(['B-1'])
+        ->and(data_get($subJobs->first()->data, 'demand_skos'))->toBeNull();
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $floorTasks = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks'])->where('job_order_reference', $jobOrder->reference);
+    expect($floorTasks->where('is_mine', true)->pluck('quantity_required')->all())->toBe([400.0])
+        ->and($floorTasks->pluck('artisan')->sort()->values()->all())->toBe(collect([$artisanA, $artisanB, $artisanC])->pluck('contact_name')->sort()->values()->all());
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $subJobs[0]->tasks()->first());
+    $session = CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 400]);
+    expect($session->employee_id)->toBe($artisanA->id);
+
+    $item = collect(get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $jobOrder->slug]))
+        ->viewData('page')['props']['items'])->firstWhere('id', $line->id);
+    expect($item['quantity'])->toBe(1000)
+        ->and($item['produced_quantity'])->toBe(400.0)
+        ->and($item['update_route'])->toBeNull()
+        ->and($item['tasks'][0]['quantity_made'])->toBe(400.0)
+        ->and($item['tasks'][0]['quantity_required'])->toBe(1000.0)
+        ->and(collect($item['sub_jobs'])->pluck('reference')->all())->toBe([$jobOrder->reference.'-A', $jobOrder->reference.'-B', $jobOrder->reference.'-C'])
+        ->and(collect($item['sub_jobs'])->pluck('state')->all())->toBe(['complete', 'assigned', 'assigned'])
+        ->and(collect($item['sub_jobs'])->pluck('can_remove')->all())->toBe([false, true, true]);
+
+    $artisans = collect(get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['artisans']);
+    expect($artisans->firstWhere('id', $artisanB->id)['queued'])->toBe(1);
+
+    patch($splitUrl, ['assignments' => [
+        ['id' => $subJobs[0]->id, 'employee_id' => $artisanA->id, 'quantity' => 300],
+        ['id' => $subJobs[1]->id, 'employee_id' => $artisanB->id, 'quantity' => 700],
+    ]])->assertSessionHasErrors('assignments');
+
+    patch($splitUrl, ['assignments' => [
+        ['id' => $subJobs[1]->id, 'employee_id' => $artisanB->id, 'quantity' => 1000],
+    ]])->assertSessionHasErrors('assignments');
+
+    patch($splitUrl, ['assignments' => [
+        ['id' => $subJobs[0]->id, 'employee_id' => $artisanA->id, 'quantity' => 400],
+        ['id' => $subJobs[1]->id, 'employee_id' => $artisanB->id, 'quantity' => 600],
+    ]])->assertSessionHasNoErrors();
+
+    expect(JobOrderItem::find($subJobs[2]->id))->toBeNull()
+        ->and((float) $subJobs[1]->refresh()->tasks()->first()->quantity_required)->toBe(600.0)
+        ->and((int) $jobOrder->jobOrderItems()->sum('quantity'))->toBe(1000);
+
+    $taskB    = $subJobs[1]->tasks()->first();
+    $sessionB = StartManufactureTaskSession::make()->action($this->guest->getUser(), $taskB);
+    CloseManufactureTaskSession::make()->action($sessionB, ['quantity_made' => 100]);
+    $carried = \App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask::run($taskB->refresh(), true);
+    expect($carried->employee_id)->toBe($artisanB->id)
+        ->and((int) $carried->jobOrderItems()->first()->quantity)->toBe(500)
+        ->and((int) $subJobs[1]->refresh()->quantity)->toBe(100);
+
+    $this->guest->getUser()->employees()->detach($artisanA->id);
 });
 
 test('UI show artisans dashboard', function () {
