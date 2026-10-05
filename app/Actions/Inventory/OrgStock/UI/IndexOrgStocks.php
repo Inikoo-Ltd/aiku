@@ -293,6 +293,8 @@ class IndexOrgStocks extends OrgAction
             $allowedSorts[] = 'sales_org_currency_external';
             $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
+        } else {
+            $allowedSorts[] = 'stock_cover';
         }
 
         return $queryBuilder
@@ -411,7 +413,7 @@ class IndexOrgStocks extends OrgAction
                     ->column(key: 'stock_value', label: __('Value'), tooltip: __('Stock value — valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')', tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'potential_sales', label: __('Pot. sales'), tooltip: __('Potential sales'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __('OTW'), tooltip: __("On the way (submitted purchase orders)"), canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: true, align: 'right');
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), sortable: true, searchable: true, type: 'date');

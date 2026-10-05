@@ -1119,6 +1119,17 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
+test("UI Org Stock Family stocks sortable by cover", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+
+    get(route("grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStockFamily->slug
+    ]).'?index_sort=-stock_cover')->assertOk();
+})->depends('create org stock family');
+
 test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {
     $warehouse = Warehouse::first();
 
