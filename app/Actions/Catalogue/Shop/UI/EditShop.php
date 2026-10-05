@@ -129,7 +129,7 @@ class EditShop extends OrgAction
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
-            __('Wix Keys'),
+            __('Wix Settings'),
             __('Chat widget'),
         ];
         $salesChannels          = SalesChannel::orderBy('id')->get();
