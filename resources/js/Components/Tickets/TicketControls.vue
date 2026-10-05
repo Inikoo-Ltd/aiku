@@ -752,7 +752,7 @@ const saveDeployComment = () => {
             </div>
         </div>
     </Dialog>
-    <TicketAskReporterDialog v-model:visible="isAskReporterOpen" :update-route="routes.update" :default-waiting-hours="ticket.default_waiting_hours" @updated="emit('updated')" />
+    <TicketAskReporterDialog v-model:visible="isAskReporterOpen" :update-route="routes.update" :default-waiting-hours="ticket.default_waiting_hours" :mentionable="options.mentionable" @updated="emit('updated')" />
     <TicketStatusNoteDialog
         v-model:visible="isStatusNoteOpen"
         :status="statusNoteAction"

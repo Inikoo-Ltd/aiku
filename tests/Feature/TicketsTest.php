@@ -371,6 +371,24 @@ test('asking the reporter posts the question and cancels the ticket when its own
         ->and($ticket->fresh()->waiting_until)->toBeNull();
 });
 
+test('asking the reporter can attach a screenshot to the question', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Which upload']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'       => 'patch',
+        'status'        => 'waiting',
+        'question'      => 'Is it this upload box?',
+        'waiting_hours' => 72,
+        'images'        => [UploadedFile::fake()->image('where.png')],
+    ])->assertRedirect();
+
+    $question = $ticket->comments()->where('body', 'Is it this upload box?')->first();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($question)->not->toBeNull()
+        ->and($question->getMedia('ticket_images'))->toHaveCount(1);
+});
+
 test('staff reporter is told of the question by email and slack as their profile prefers', function () {
     Notification::fake();
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
