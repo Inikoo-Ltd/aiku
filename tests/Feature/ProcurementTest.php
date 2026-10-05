@@ -1981,6 +1981,12 @@ test('purchase order delivered in two parts stays open for the remaining items',
 
     $place($firstDelivery);
 
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $table = new \App\InertiaTable\InertiaTable(request());
+    IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder->refresh())($table);
+
+    expect((new ReflectionProperty(\App\InertiaTable\InertiaTable::class, 'columns'))->getValue($table)->pluck('key'))->toContain('actions');
+
     expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
         ->and($firstLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
         ->and($secondLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
@@ -1989,6 +1995,13 @@ test('purchase order delivered in two parts stays open for the remaining items',
 
     expect($secondDelivery->items()->pluck('org_stock_id')->all())->toBe([$this->orgStocks[1]->id])
         ->and(fn () => CancelPurchaseOrderTransaction::make()->action($secondLine->refresh()))->toThrow(HttpException::class);
+
+    $cancelRoutes = IndexPurchaseOrderTransactions::run($purchaseOrder->refresh())->getCollection()
+        ->mapWithKeys(fn (PurchaseOrderTransaction $line) => [$line->id => (new \App\Http\Resources\Procurement\PurchaseOrderTransactionResource($line))->toArray(request())['cancelRoute']]);
+
+    expect($cancelRoutes[$firstLine->id])->toBeNull()
+        ->and($cancelRoutes[$secondLine->id])->toBeNull()
+        ->and($cancelRoutes[$thirdLine->id])->not->toBeNull();
 
     $place($secondDelivery);
 

@@ -243,7 +243,9 @@ function confirmCancelItem(event: MouseEvent, item: any) {
 
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: ctrans('Cancel this item?'),
+        message: props.state === 'confirmed'
+            ? ctrans('Only cancel if the supplier has not sent it. If it is already on its way, wait for it and deal with it on the delivery. Cancel this item?')
+            : ctrans('Cancel this item?'),
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: ctrans('Cancel item'),
         rejectLabel: ctrans('Keep'),

@@ -14,6 +14,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelPurchaseOrderTransaction extends OrgAction
@@ -25,35 +26,43 @@ class CancelPurchaseOrderTransaction extends OrgAction
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        if ($purchaseOrderTransaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED) {
-            $isAwaitingDelivery = StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)
-                ->whereKey($purchaseOrderTransaction->id)
-                ->exists();
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction) {
+            $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
+            $purchaseOrderTransaction->refresh();
 
-            if (!$isAwaitingDelivery) {
-                abort(422, __('This item is on a stock delivery, deal with it there'));
+            if ($purchaseOrderTransaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED) {
+                $isAwaitingDelivery = StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)
+                    ->whereKey($purchaseOrderTransaction->id)
+                    ->exists();
+
+                if (!$isAwaitingDelivery) {
+                    abort(422, __('This item is on a stock delivery, deal with it there'));
+                }
+            } elseif ($purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
+                abort(422, __('Only submitted or confirmed items can be cancelled'));
             }
-        } elseif ($purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
-            abort(422, __('Only submitted or confirmed items can be cancelled'));
-        }
 
-        $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, [
-            'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
-            'net_amount'     => 0,
-            'grp_net_amount' => 0,
-            'org_net_amount' => 0,
-        ]);
-
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
-
-        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
-            && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()
-            && !$purchaseOrder->purchaseOrderTransactions()->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)->exists()) {
-            $purchaseOrder->update([
-                'state'      => PurchaseOrderStateEnum::SETTLED,
-                'settled_at' => now(),
+            $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, [
+                'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
+                'net_amount'     => 0,
+                'grp_net_amount' => 0,
+                'org_net_amount' => 0,
             ]);
-        }
+
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+
+            if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+                && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()
+                && !$purchaseOrder->purchaseOrderTransactions()->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)->exists()) {
+                $purchaseOrder->update([
+                    'state'      => PurchaseOrderStateEnum::SETTLED,
+                    'settled_at' => now(),
+                ]);
+            }
+
+            return $purchaseOrderTransaction;
+        });
+
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;
