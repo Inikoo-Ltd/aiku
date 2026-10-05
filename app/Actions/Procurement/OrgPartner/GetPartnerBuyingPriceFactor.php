@@ -22,6 +22,10 @@ class GetPartnerBuyingPriceFactor
      */
     public function handle(OrgPartner $orgPartner): float
     {
+        if (GetPartnerLandedCost::appliesTo($orgPartner)) {
+            return 1.0;
+        }
+
         return Cache::remember("partner-buying-price-factor:$orgPartner->id", now()->addMinutes(10), fn () => $this->factor($orgPartner));
     }
 

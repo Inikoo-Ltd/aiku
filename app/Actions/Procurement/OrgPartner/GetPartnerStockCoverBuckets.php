@@ -362,8 +362,9 @@ class GetPartnerStockCoverBuckets
     private function partnerSkoPrice(OrgPartner $orgPartner): string
     {
         $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
+        $landed  = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
 
-        return "coalesce((select pr.price / nullif(phos.quantity, 0)
+        return "coalesce($landed(select pr.price / nullif(phos.quantity, 0)
             from product_has_org_stocks phos
             join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', $shopIds).")
             where phos.org_stock_id = p.id

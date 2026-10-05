@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 {
@@ -197,7 +198,10 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $buyingPricePerSko = GetPartnerLandedCost::appliesTo($orgPartner)
+            ? 'coalesce('.GetPartnerLandedCost::perSkoSql('seller_org_stocks.id').", $pricePerSko)"
+            : "$pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner);
 
         $paginator = QueryBuilder::for(OrgStock::class)
             ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {
@@ -228,7 +232,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'purchase_order_transactions.org_exchange',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
             ])
-            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner)." / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
+            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $buyingPricePerSko / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
             ->selectRaw('null as units_per_carton')
             ->selectRaw('true as is_partner_org_stock')
             ->selectRaw('? as supplier_name', [$orgPartner->partner->name])

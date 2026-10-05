@@ -4931,11 +4931,28 @@ describe('partner shopping list', function () {
         $this->buyerOrgStock->update(['packed_in' => $sellerOrgStock->packed_in]);
         $unitsPerProduct = (float) $sellerOrgStock->pivot->quantity * (float) ($sellerOrgStock->packed_in ?: 1);
 
+        $landedHistoryDate        = '2099-01-01';
+        $organisationStockHistoryId = DB::table('organisation_stock_histories')->insertGetId([
+            'group_id'                       => $seller->group_id,
+            'organisation_id'                => $seller->id,
+            'date'                           => $landedHistoryDate,
+            'number_org_stocks'              => 1,
+            'number_out_of_stock_org_stocks' => 0,
+            'number_location_org_stocks'     => 1,
+        ]);
+        DB::table('org_stock_histories')->insert([
+            'organisation_stock_history_id' => $organisationStockHistoryId,
+            'organisation_id'               => $seller->id,
+            'org_stock_id'                  => $sellerOrgStock->id,
+            'date'                          => $landedHistoryDate,
+            'fifo_per_sku'                  => 0.4 * (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity,
+        ]);
+
         $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, []);
         $line          = StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $this->buyerOrgStock->refresh(), ['quantity_ordered' => 3 * $unitsPerProduct]);
 
         expect($purchaseOrder->currency_id)->toBe($seller->currency_id)
-            ->and((float) $line->net_amount)->toBe(round(3 * (float) $this->sellerProduct->price, 2));
+            ->and((float) $line->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2));
 
         $row = collect($this->getJson(route('grp.json.org-partner.purchase-order-org-stocks', [$this->orgPartner->id, $purchaseOrder->slug]))->assertOk()->json('data'))
             ->firstWhere('id', $this->buyerOrgStock->id);
@@ -4952,9 +4969,15 @@ describe('partner shopping list', function () {
             ->and($order->customer_reference)->toBe($purchaseOrder->reference)
             ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
             ->and((float) $order->transactions()->first()->quantity_ordered)->toBe(3.0)
+            ->and((float) $order->transactions()->first()->gross_amount)->toBe(round(3 * (float) $this->sellerProduct->price, 2))
+            ->and((float) $order->transactions()->first()->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2))
+            ->and($order->transactions()->first()->historic_asset_id)->toBe($this->sellerProduct->current_historic_asset_id)
             ->and($stockDelivery)->not->toBeNull()
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+
+        DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->delete();
+        DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
 
         $seller->update(['is_manufacturing_hub' => true]);
         expect(fn () => StorePurchaseOrder::make()->action($this->orgPartner, []))->toThrow(ValidationException::class);
