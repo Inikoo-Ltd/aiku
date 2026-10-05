@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
+use App\Actions\Helpers\Ticket\ClassifyTicket;
 use App\Actions\Helpers\Ticket\CloseTicketsAfterDeployment;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
@@ -49,6 +50,8 @@ use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
+use App\Models\Helpers\TicketProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -1667,8 +1670,8 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     setPermissionsTeamId($this->group->id);
     $engineer->assignRole('help-desk-clerk');
 
-    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support'])
-        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support']);
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support', 'aurora'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support', 'aurora']);
 
     $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
 
@@ -3715,4 +3718,177 @@ test('a ticket list refetches one changed row, and a confidential ticket is not 
 
     actingAs($outsider);
     get(route('grp.json.ticket.row', $confidential->id))->assertForbidden();
+});
+
+test('jev fills in the kind and module nobody set, replaces a set one only when sure, and the reports chart tickets by module', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    Http::fake(['openrouter.ai/api/alpha/decisions' => Http::sequence()
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'feature', 'probabilities' => ['feature' => 0.8, 'bug' => 0.2]],
+            'module' => ['choice' => 'procurement', 'probabilities' => ['procurement' => 0.9]],
+        ]])
+        ->push(['answers' => ['module' => ['choice' => 'crm', 'probabilities' => ['crm' => 0.3, 'chat' => 0.3]]]])
+        ->push(['answers' => [
+            'kind'   => ['choice' => 'aurora', 'probabilities' => ['aurora' => 0.7]],
+            'module' => ['choice' => 'websites', 'probabilities' => ['websites' => 0.2]],
+        ]])]);
+
+    $classified = StoreTicket::make()->action($this->group, ['subject' => 'Add supplier lead times to purchase orders']);
+    $unsure     = StoreTicket::make()->action($this->group, ['subject' => 'Something odd', 'kind' => TicketKindEnum::BUG->value]);
+    $setByStaff = StoreTicket::make()->action($this->group, ['subject' => 'Chat lag', 'kind' => TicketKindEnum::BUG->value, 'module' => TicketModuleEnum::CHAT->value]);
+
+    expect($classified->refresh()->kind)->toBe(TicketKindEnum::FEATURE)
+        ->and($classified->module)->toBe(TicketModuleEnum::PROCUREMENT)
+        ->and($unsure->refresh()->kind)->toBe(TicketKindEnum::BUG)
+        ->and($unsure->module)->toBe(TicketModuleEnum::CRM)
+        ->and($setByStaff->refresh()->module)->toBe(TicketModuleEnum::CHAT);
+    Http::assertSentCount(2);
+
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
+    $rows  = collect($stats['breakdown']);
+
+    expect($rows->where(1, 'procurement')->where(2, 'feature')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and($rows->where(1, 'crm')->where(3, 'open')->sum(5))->toBeGreaterThanOrEqual(1)
+        ->and(collect($stats['modules'])->firstWhere('value', 'chat')['label'])->toBe('Chat')
+        ->and(collect($stats['kinds'])->sum('total'))->toBe($stats['created'])
+        ->and($rows->sum(5))->toBe($stats['created']);
+
+    ClassifyTicket::make()->handle($setByStaff, reclassify: true);
+
+    expect($setByStaff->refresh()->kind)->toBe(TicketKindEnum::AURORA)
+        ->and($setByStaff->module)->toBe(TicketModuleEnum::CHAT);
+});
+
+test('a project gathers tickets, tasks, milestones, commits and progress updates its team can edit', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $first    = StoreTicket::make()->action($this->group, ['subject' => 'Move moulds to the new unit']);
+    $second   = StoreTicket::make()->action($this->group, ['subject' => 'Train the new packers']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Label the new shelves', 'department' => 'warehouse']);
+    $first->update(['data' => [...$first->data, 'commits' => [['hash' => 'abc1234def', 'subject' => 'Moulds page', 'version' => 'v9.1.0', 'deployed_at' => now()->toIso8601String()]]]]);
+
+    actingAs($member);
+    post(route('grp.models.ticket_project.store'), [
+        'name'        => 'Warehouse move',
+        'description' => 'Move all production and reorganise the organisation',
+        'start_date'  => now()->subWeek()->toDateString(),
+        'target_date' => now()->subWeek()->addMonths(3)->toDateString(),
+        'member_ids'  => [$member->id, $this->user->id],
+    ])->assertRedirect(route('grp.projects.show', 'warehouse-move'));
+
+    $project = TicketProject::where('slug', 'warehouse-move')->firstOrFail();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['name' => 'Moulds moved', 'due_date' => now()->toDateString(), 'done' => true], ['name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    [$moved, $trained] = $project->milestones()->get()->all();
+
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => 'HELP-0'])->assertSessionHasErrors('references');
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => strtolower($first->reference).", {$second->reference} {$task->reference}", 'ticket_project_milestone_id' => $moved->id])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $trained->id])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::fake();
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'Moulds are in, packers next week', 'health' => 'at_risk'])->assertRedirect()->assertSessionHasNoErrors();
+    Notification::assertSentTo($this->user, \App\Notifications\TicketProjectNotification::class, fn ($notification) => $notification->title === 'Warehouse move: At risk' && str_contains($notification->body, 'packers next week') && str_contains((string) $notification->toMail($this->user)->render(), 'Open the project'));
+    Notification::assertNotSentTo($member, \App\Notifications\TicketProjectNotification::class);
+    Notification::assertNotSentTo($outsider, \App\Notifications\TicketProjectNotification::class);
+    UpdateTicket::make()->action($first->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $moved->id, 'name' => 'Moulds moved', 'done' => true], ['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($moved->fresh()->done_at)->not->toBeNull()
+        ->and($task->fresh()->ticket_project_milestone_id)->toBe($moved->id)
+        ->and($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Tickets/TicketProject')
+        ->where('can_edit', true)
+        ->where('project.health', 'at_risk')
+        ->where('progress.total', 3)
+        ->where('progress.done', 1)
+        ->where('progress.percent', 33)
+        ->where('progress.week', 2)
+        ->has('work', 3)
+        ->where('milestones.0.total', 2)
+        ->where('milestones.0.done', 1)
+        ->where('milestones.1.total', 1)
+        ->where('commits.0.hash', 'abc1234def')
+        ->where('commits.0.reference', $first->reference)
+        ->where('updates.0.health', 'at_risk')
+        ->has('burn_up', 2)
+        ->has('workload')
+        ->has('activity'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(str_replace('/projects', '/tickets/projects', route('grp.projects.show', $project->slug)))->assertRedirect(route('grp.projects.show', $project->slug))->assertStatus(301);
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['projects']['route']['name'])->toBe('grp.projects.index')
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['tickets']['topMenu']['subSections'])->pluck('label'))->not->toContain('Projects');
+    get(route('grp.tickets.show', $first->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.project.slug', $project->slug)->where('can_change_project', true)->has('options.milestones', 2));
+
+    $otherProject = StoreTicketProject::make()->action($this->group, ['name' => 'Other', 'start_date' => now()->toDateString()]);
+    $otherMilestone = $otherProject->milestones()->create(['name' => 'Elsewhere']);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_milestone_id' => $otherMilestone->id])->assertSessionHasErrors('ticket_project_milestone_id');
+    expect($second->fresh()->ticket_project_milestone_id)->toBe($trained->id);
+    patch(route('grp.models.ticket.project.update', $second->id), ['ticket_project_id' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect($second->fresh()->ticket_project_id)->toBeNull();
+
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [['id' => $trained->id, 'name' => 'Packers trained']]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id)
+        ->and($task->fresh()->ticket_project_milestone_id)->toBeNull();
+
+    patchJson(route('grp.tasks.project.update', $task->reference), ['ticket_project_milestone_id' => $trained->id])
+        ->assertOk()
+        ->assertJson(['ticket_project_id' => $project->id, 'ticket_project_milestone_id' => $trained->id]);
+
+    actingAs($outsider);
+    $otherProject->update(['owner_id' => $outsider->id]);
+    post(route('grp.models.ticket_project.work.attach', $otherProject->id), ['references' => $first->reference])->assertSessionHasErrors('references');
+    expect($first->fresh()->ticket_project_id)->toBe($project->id);
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
+    patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
+});
+
+test('the project tools let a team member run a project through the AI assistant', function () {
+    $member   = User::factory()->create(['group_id' => $this->group->id, 'username' => 'projmember'.Str::random(4)]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Move the filling line']);
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($member, ['subject' => 'Book the movers', 'department' => 'warehouse']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'create', 'name' => 'Factory move', 'goal' => 'Move production', 'start_date' => now()->subWeek()->toDateString(), 'target_date' => now()->addWeeks(11)->toDateString(), 'team' => $member->username])->assertOk()->assertSee('factory-move');
+    $project = TicketProject::where('slug', 'factory-move')->firstOrFail();
+    expect($project->owner_id)->toBe($member->id);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => now()->addWeeks(4)->toDateString()])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'Factory move', 'milestone' => 'Staff trained'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'staff trained', 'position' => 1, 'rename' => 'Staff ready'])->assertOk();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved']);
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => "{$ticket->reference} {$task->reference}", 'milestone' => 'Line moved'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Staff ready'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'milestone' => 'Nope'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'none'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Ghost', 'rename' => 'Real'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'start_date' => now()->addWeeks(5)->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'next friday'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved'])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => 'factory-move', 'target_date' => now()->subMonth()->toDateString()])->assertHasErrors();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_work', 'project' => 'factory-move', 'references' => ' '])->assertHasErrors();
+    expect($project->milestones()->pluck('name')->all())->toBe(['Staff ready', 'Line moved'])
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready');
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'due_date' => 'none'])->assertOk();
+    expect($project->milestones()->where('name', 'Line moved')->first()->due_date)->toBeNull();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'Movers booked', 'health' => 'on_track'])->assertOk();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Staff ready', 'done' => true])->assertOk();
+
+    expect($ticket->fresh()->milestone->name)->toBe('Line moved')
+        ->and($task->fresh()->milestone->name)->toBe('Staff ready')
+        ->and($project->milestones()->where('name', 'Staff ready')->first()->done_at)->not->toBeNull();
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => 'factory-move'])->assertOk()->assertSee(['Movers booked', 'on_track', $ticket->reference, 'Staff ready']);
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectsTool::class, [])->assertOk()->assertSee('factory-move');
+
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'milestone', 'project' => 'factory-move', 'milestone' => 'Line moved', 'delete' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBe($project->id)->and($ticket->fresh()->ticket_project_milestone_id)->toBeNull();
+    AikuServer::actingAs($member)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $ticket->reference, 'remove' => true])->assertOk();
+    expect($ticket->fresh()->ticket_project_id)->toBeNull();
+
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
+    expect($task->fresh()->ticket_project_id)->toBe($project->id);
 });

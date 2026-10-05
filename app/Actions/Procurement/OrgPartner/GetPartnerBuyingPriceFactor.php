@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Models\Procurement\OrgPartner;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPartnerBuyingPriceFactor
@@ -18,13 +17,13 @@ class GetPartnerBuyingPriceFactor
 
     public function handle(OrgPartner $orgPartner): float
     {
-        $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
-        if (!$shopId) {
-            return 1.0;
+        foreach (GetPartnerSellingShopIds::run($orgPartner->partner) as $shopId) {
+            $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shopId);
+            if ($customer) {
+                return GetPartnerCustomerDiscount::run($customer);
+            }
         }
 
-        $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shopId);
-
-        return $customer ? GetPartnerCustomerDiscount::run($customer) : 1.0;
+        return 1.0;
     }
 }

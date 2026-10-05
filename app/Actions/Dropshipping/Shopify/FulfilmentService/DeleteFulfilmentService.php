@@ -15,7 +15,14 @@ class DeleteFulfilmentService
 {
     use AsAction;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, string $fulfilmentServiceId): array
+    /**
+     * $inventoryAction DELETE removes the location and its inventory levels with it: right for a
+     * stale aiku location, whose quantities are only mirrors of our warehouse stock that the live
+     * location already carries. Shopify refuses to transfer them to the new aiku location (the
+     * destination must be merchant managed), and KEEP would hand the merchant a location with
+     * phantom stock of our products. Null leaves Shopify's own default.
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $fulfilmentServiceId, ?string $inventoryAction = null): array
     {
         $shopifyUser = $customerSalesChannel->user;
         if (!$shopifyUser) {
@@ -31,8 +38,8 @@ class DeleteFulfilmentService
         try {
             // GraphQL mutation to delete a fulfillment service
             $mutation = <<<'MUTATION'
-            mutation fulfillmentServiceDelete($id: ID!) {
-              fulfillmentServiceDelete(id: $id) {
+            mutation fulfillmentServiceDelete($id: ID!, $inventoryAction: FulfillmentServiceDeleteInventoryAction) {
+              fulfillmentServiceDelete(id: $id, inventoryAction: $inventoryAction) {
                 deletedId
                 userErrors {
                   field
@@ -42,9 +49,10 @@ class DeleteFulfilmentService
             }
             MUTATION;
 
-            $variables = [
-                'id' => $fulfilmentServiceId
-            ];
+            $variables = array_filter([
+                'id'              => $fulfilmentServiceId,
+                'inventoryAction' => $inventoryAction,
+            ]);
 
             $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
                 'json' => [

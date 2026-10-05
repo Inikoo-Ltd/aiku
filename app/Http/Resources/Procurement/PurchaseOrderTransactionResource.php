@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -36,18 +37,14 @@ class PurchaseOrderTransactionResource extends JsonResource
             'image_preview'        => $tradeUnit?->imageSources(480, 480),
             'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
-            'stock_cover'          => $orgStock?->stats ? [
-                'days'            => $orgStock->stats->days_of_cover === null ? null : (float) $orgStock->stats->days_of_cover,
-                'days_worst_case' => $orgStock->stats->days_of_cover_pessimistic === null ? null : (float) $orgStock->stats->days_of_cover_pessimistic,
-                'out_of_stock_at' => $orgStock->stats->predicted_out_of_stock_at,
-            ] : null,
+            'stock_cover'          => $transaction->buying_signals ?? GetOrgStockBuyingSignals::run($orgStock, $supplierProduct),
             'stock_deliveries'     => $transaction->stock_deliveries,
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,
             'can_update_supplier_cost' => $supplierProduct !== null && $request->user()?->authTo('supply-chain.edit'),
-            'units_per_pack'       => $supplierProduct?->units_per_pack,
-            'units_per_carton'     => $supplierProduct?->units_per_carton,
+            'units_per_pack'       => $supplierProduct ? $supplierProduct->units_per_pack : $orgStock?->packed_in,
+            'units_per_carton'     => $supplierProduct ? $supplierProduct->units_per_carton : $orgStock?->packed_in,
             'quantity_ordered'     => $transaction->quantity_ordered,
 
             'net_amount'           => $transaction->net_amount,
@@ -83,7 +80,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
-            'cancelRoute'          => $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED ? [
+            'cancelRoute'          => in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true) ? [
                 'name'       => 'grp.models.purchase-order.transaction.cancel',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,

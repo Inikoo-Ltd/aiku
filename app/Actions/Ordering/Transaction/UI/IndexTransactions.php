@@ -131,7 +131,16 @@ class IndexTransactions extends OrgAction
                     JOIN batch_codes bc ON bc.id = p.batch_code_id
                     WHERE dni2.transaction_id = transactions.id
                     AND p.batch_code_id IS NOT NULL
-                ) as batch_codes")
+                ) as batch_codes"),
+                DB::raw("(
+                    SELECT jsonb_object_agg(trade_units.id, jsonb_build_object('number', trade_units.un_number, 'shipping_name', trade_units.proper_shipping_name))
+                    FROM model_has_trade_units
+                    JOIN trade_units ON trade_units.id = model_has_trade_units.trade_unit_id
+                    WHERE model_has_trade_units.model_type = 'Product'
+                    AND model_has_trade_units.model_id = products.id
+                    AND trade_units.un_number IS NOT NULL
+                    AND trade_units.un_number <> 'None'
+                ) as un_numbers")
             ])
             ->when($withMargins, fn ($q) => $q->addSelect([
                 'transactions.org_net_amount',

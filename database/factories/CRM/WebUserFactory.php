@@ -8,6 +8,7 @@
 
 namespace Database\Factories\CRM;
 
+use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class WebUserFactory extends Factory
@@ -18,6 +19,7 @@ class WebUserFactory extends Factory
             'username'             => fake()->userName,
             'password'             => fake()->password,
             'email'                => fake()->email,
+            'type'                 => WebUserTypeEnum::WEB->value,
         ];
     }
 }

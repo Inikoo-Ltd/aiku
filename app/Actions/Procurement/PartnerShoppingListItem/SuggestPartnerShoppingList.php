@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
@@ -200,7 +201,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.packed_in',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query));
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($orgPartner->partner)));
     }
 
     /**

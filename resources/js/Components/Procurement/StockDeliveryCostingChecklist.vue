@@ -62,6 +62,14 @@ const props = defineProps<{
             available: AvailableDeposit[]
             applyRoute: routeType
         }
+        partner_invoice: {
+            reference: string
+            net_amount: number
+            refunds: { reference: string, date: string, net_amount: number }[]
+            refunded: number
+            missing_amount: number
+            to_refund: number
+        } | null
     }
     canEdit: boolean
     canEditPayments: boolean
@@ -185,6 +193,29 @@ const removeExtra = (row: CostRow) => {
                 {{ ctrans("Agent invoice not received") }}
             </span>
             <span v-if="costing.is_partner" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
+        </div>
+
+        <div v-if="costing.partner_invoice" class="mb-3 grid gap-1 text-sm">
+            <div class="flex gap-3">
+                <span class="w-40 shrink-0">{{ ctrans("Partner invoice :reference", { reference: costing.partner_invoice.reference }) }}</span>
+                <span>{{ locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.net_amount) }}</span>
+            </div>
+            <div v-for="refund in costing.partner_invoice.refunds" :key="refund.reference" class="flex gap-3 text-green-700">
+                <span class="w-40 shrink-0">{{ ctrans("Refund :reference", { reference: refund.reference }) }}</span>
+                <span>-{{ locale.currencyFormat(costing.currency ?? "", refund.net_amount) }}</span>
+            </div>
+            <div v-if="costing.partner_invoice.missing_amount > 0" class="flex gap-3">
+                <span class="w-40 shrink-0">{{ ctrans("Not received") }}</span>
+                <span>{{ locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.missing_amount) }}</span>
+            </div>
+            <div v-if="costing.partner_invoice.to_refund > 0" class="flex items-center gap-1 text-orange-500">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                {{ ctrans("Still to be refunded by the partner: :amount", { amount: String(locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.to_refund)) }) }}
+            </div>
+            <div v-else-if="costing.partner_invoice.missing_amount > 0" class="flex items-center gap-1 text-green-700">
+                <FontAwesomeIcon icon="fas fa-check-circle" fixed-width aria-hidden="true" />
+                {{ ctrans("Refunded by the partner") }}
+            </div>
         </div>
 
         <div v-for="(totals, field) in costing.unbalanced" :key="field" class="mb-2 flex items-center gap-1 text-sm text-red-600">

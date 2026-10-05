@@ -66,6 +66,7 @@ interface PartnerCard {
 		last_submitted_at?: string | null
 		current?: CurrentItem[]
 		rescuable?: {
+			order: { lines: number; cost: number }
 			buckets: {
 				bucket: string
 				label: string
@@ -73,6 +74,10 @@ interface PartnerCard {
 				count: number
 				bestsellers: number
 				lost: number
+				cost: number
+				order_lines: number
+				order_cost: number
+				left_out: Record<string, number>
 			}[]
 			top: {
 				code: string
@@ -92,6 +97,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	currency_code: string
+	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
 }>()
 
@@ -140,6 +146,15 @@ const hasRescuable = (partner: PartnerCard) =>
 	partner.stats.rescuable?.buckets.some((bucket) => bucket.count > 0)
 
 const creatingFor = ref<number | null>(null)
+const purchaseOrderInProcess = (partner: PartnerCard) =>
+	partner.stats.current?.find(
+		(item) => item.type === "purchase_order" && item.state === "in_process"
+	)
+
+const olderPurchaseOrders = (partner: PartnerCard) =>
+	(partner.stats.purchase_orders ?? 0) -
+	(partner.stats.current?.filter((item) => item.type === "purchase_order").length ?? 0)
+
 const createPurchaseOrder = (partner: PartnerCard) => {
 	router.post(
 		route("grp.models.org-partner.purchase-order.store", { orgPartner: partner.id }),
@@ -159,11 +174,6 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 		}
 	)
 }
-
-const draftPurchaseOrder = (partner: PartnerCard) =>
-	partner.stats.current?.find(
-		(item) => item.type === "purchase_order" && item.state === "in_process"
-	)
 </script>
 
 <template>
@@ -253,31 +263,64 @@ const draftPurchaseOrder = (partner: PartnerCard) =>
 							{{ ctrans("They can rescue") }}
 						</div>
 						<div class="space-y-1.5 px-2 py-2">
-							<div class="flex flex-wrap gap-1.5">
-								<span
-									v-for="bucket in partner.stats.rescuable!.buckets.filter(
-										(bucket) => bucket.count
-									)"
-									:key="bucket.bucket"
-									v-tooltip="
-										bucket.label +
-										' · ' +
-										ctrans(':count bestsellers (A/B)', {
-											count: bucket.bestsellers,
-										})
-									"
-									class="rounded px-1.5 py-0.5 text-xs tabular-nums"
-									:class="bucketClass[bucket.bucket]">
-									{{ bucketShortLabel(bucket.bucket) }}
-									<span class="font-medium">{{
-										locale.number(bucket.count)
-									}}</span>
-									<span v-if="bucket.lost" class="opacity-75">
-										·
-										{{ wholeMoney(bucket.lost) }}</span
-									>
-								</span>
-							</div>
+							<table class="w-full text-xs tabular-nums">
+								<thead>
+									<tr
+										class="text-left text-gray-500 [&_th]:pb-1 [&_th]:font-normal">
+										<th />
+										<th class="text-right">{{ ctrans("SKOs") }}</th>
+										<th
+											v-tooltip="
+												ctrans(
+													'Sales lost over the lead time and a month after, if nothing more is ordered'
+												)
+											"
+											class="text-right">
+											{{ ctrans("Lost sales") }}
+										</th>
+										<th
+											v-tooltip="
+												ctrans(
+													'What the suggested order costs at their price, in our currency'
+												)
+											"
+											class="text-right">
+											{{ ctrans("Cost to reorder") }}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr
+										v-for="bucket in partner.stats.rescuable!.buckets.filter(
+											(bucket) => bucket.count
+										)"
+										:key="bucket.bucket"
+										v-tooltip="
+											bucket.label +
+											' · ' +
+											ctrans(':count bestsellers (A/B)', {
+												count: bucket.bestsellers,
+											})
+										">
+										<td class="py-0.5">
+											<span
+												class="rounded px-1.5 py-0.5"
+												:class="bucketClass[bucket.bucket]">
+												{{ bucketShortLabel(bucket.bucket) }}
+											</span>
+										</td>
+										<td class="py-0.5 text-right font-medium text-gray-900">
+											{{ locale.number(bucket.count) }}
+										</td>
+										<td class="py-0.5 text-right">
+											{{ bucket.lost ? wholeMoney(bucket.lost) : "-" }}
+										</td>
+										<td class="py-0.5 text-right">
+											{{ bucket.cost ? wholeMoney(bucket.cost) : "-" }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
 							<div
 								v-if="partner.stats.rescuable!.top.length"
 								class="pt-1 text-xs text-gray-500">
@@ -355,9 +398,30 @@ const draftPurchaseOrder = (partner: PartnerCard) =>
 							</table>
 							<div class="flex items-center gap-3 border-t border-gray-100 pt-2">
 								<RescueOrderButton
+									v-if="can_create_purchase_orders"
 									:orgPartnerId="partner.id"
 									:partnerName="partner.name"
+									:draftReference="purchaseOrderInProcess(partner)?.reference"
+									:currencyCode="currency_code"
+									:buckets="partner.stats.rescuable!.buckets"
 									size="xs" />
+								<span
+									v-if="partner.stats.rescuable!.order.lines"
+									v-tooltip="
+										ctrans(
+											'Lines that would lose sales, and A/B bestsellers, at the suggested order'
+										)
+									"
+									class="text-xs tabular-nums text-gray-500">
+									{{
+										ctrans(":lines lines ≈ :cost", {
+											lines: locale.number(
+												partner.stats.rescuable!.order.lines
+											),
+											cost: wholeMoney(partner.stats.rescuable!.order.cost),
+										})
+									}}
+								</span>
 								<Link
 									:href="
 										partnerUrl(
@@ -450,21 +514,8 @@ const draftPurchaseOrder = (partner: PartnerCard) =>
 					">
 					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" />
 				</Link>
-				<Link
-					v-else-if="draftPurchaseOrder(partner)"
-					:href="draftPurchaseOrder(partner)!.url">
-					<Button
-						:label="
-							ctrans('Continue :reference', {
-								reference: draftPurchaseOrder(partner)!.reference,
-							})
-						"
-						icon="fal fa-pencil"
-						size="s"
-						class="whitespace-nowrap" />
-				</Link>
 				<Button
-					v-else
+					v-else-if="can_create_purchase_orders && !purchaseOrderInProcess(partner)"
 					:label="ctrans('New purchase order')"
 					icon="fal fa-plus"
 					size="s"
@@ -483,7 +534,7 @@ const draftPurchaseOrder = (partner: PartnerCard) =>
 					{{ ctrans("Shopping list") }}
 				</Link>
 				<Link
-					v-else-if="partner.stats.purchase_orders"
+					v-else-if="olderPurchaseOrders(partner)"
 					:href="
 						partnerUrl(
 							partner,
@@ -491,9 +542,9 @@ const draftPurchaseOrder = (partner: PartnerCard) =>
 						)
 					"
 					class="ml-auto whitespace-nowrap text-gray-500 hover:text-gray-900 hover:underline">
-					{{ ctrans("All orders") }}
+					{{ ctrans("Older purchase orders") }}
 					<span class="tabular-nums"
-						>({{ locale.number(partner.stats.purchase_orders) }})</span
+						>({{ locale.number(olderPurchaseOrders(partner)) }})</span
 					>
 				</Link>
 			</div>

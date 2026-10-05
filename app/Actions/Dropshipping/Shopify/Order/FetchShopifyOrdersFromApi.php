@@ -74,6 +74,10 @@ class FetchShopifyOrdersFromApi
             list($success, $response) = $this->doPost($shopifyUser, $query, $variables);
 
             if (!$success) {
+                if ($acceptedOnly && is_string($response) && preg_match('/^Error in API response: HTTP (402|404) /', $response)) {
+                    return $failed;
+                }
+
                 throw new \Exception(is_string($response) ? $response : 'Shopify refused the request.');
             }
 

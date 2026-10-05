@@ -526,6 +526,9 @@ const isOffersData = (offersData: any): boolean => {
                     <div xclass="item.offers_data ? 'text-pink-600' : ''">
                         <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
                         {{ item.asset_name }}
+                        <span v-for="un_number in item.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                            {{ un_number.number }}
+                        </span>
                     </div>
                     <div v-if="item.model_type === 'Product' && item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"

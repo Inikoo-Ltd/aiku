@@ -1,0 +1,227 @@
+
+networks:
+  ################################################################################
+  default:
+    driver: bridge
+
+
+services:
+  ################################################################################
+
+  imgproxy:
+    restart: unless-stopped
+    image: darthsim/imgproxy@sha256:c1250eeb8efb8b3946e9393f4b1e2871cf15e74e3a546e4110568c147b1a8628
+    container_name: aiku_production_imgproxy
+    healthcheck:
+      test: [ "CMD", "imgproxy", "health" ]
+      timeout: "10s"
+      interval: "10s"
+      retries: 3
+    ports:
+        - "{{IMGPROXY_PUBLISH}}:8080"
+    volumes:
+      - /home/aiku/aiku/shared/storage/media:/media:cached
+    environment:
+      ### Server
+      ### See: https://docs.imgproxy.net/configuration/options#server
+      IMGPROXY_NETWORK: "tcp"
+      IMGPROXY_BIND: ":8080"
+
+      ### Image sources
+      ### See: https://docs.imgproxy.net/configuration/options#image-sources
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /media
+
+      ### Debug
+      ### See: https://docs.imgproxy.net/configuration/options#log
+      IMGPROXY_LOG_LEVEL: "warn"
+      IMGPROXY_LOG_FORMAT: "pretty"
+      IMGPROXY_DEVELOPMENT_ERRORS_MODE: false
+      IMGPROXY_ENABLE_DEBUG_HEADERS: false
+      IMGPROXY_REPORT_DOWNLOADING_ERRORS: false
+
+      ### Client
+      IMGPROXY_READ_REQUEST_TIMEOUT: 10
+      IMGPROXY_TIMEOUT: 10
+      IMGPROXY_KEEP_ALIVE_TIMEOUT: 10
+      IMGPROXY_CLIENT_KEEP_ALIVE_TIMEOUT: 90
+      IMGPROXY_DOWNLOAD_TIMEOUT: 10
+      IMGPROXY_BASE_URL: ""
+      IMGPROXY_CACHE_CONTROL_PASSTHROUGH: false
+      IMGPROXY_ETAG_BUSTER: ""
+      IMGPROXY_HEALTH_CHECK_PATH: ""
+      IMGPROXY_IGNORE_SSL_VERIFICATION: true
+      IMGPROXY_MAX_CLIENTS: 2048
+      IMGPROXY_MAX_REDIRECTS: 10
+      IMGPROXY_PATH_PREFIX: ""
+      IMGPROXY_REQUESTS_QUEUE_SIZE: 0
+      IMGPROXY_SET_CANONICAL_HEADER: true
+      IMGPROXY_SO_REUSEPORT: true
+      IMGPROXY_TTL: 31536000
+      IMGPROXY_USE_ETAG: false
+      IMGPROXY_USE_LAST_MODIFIED: false
+
+      ### Memory usage tweaks
+      ### See: https://docs.imgproxy.net/configuration/options#memory-usage-tweaks
+      IMGPROXY_FREE_MEMORY_INTERVAL: 10
+      IMGPROXY_DOWNLOAD_BUFFER_SIZE: 0
+      IMGPROXY_BUFFER_POOL_CALIBRATION_THRESHOLD: 1024
+
+      ### Security
+      ### See: https://docs.imgproxy.net/configuration/options#security
+      IMGPROXY_KEY: "{{IMGPROXY_KEY}}"
+      IMGPROXY_SALT: "{{IMGPROXY_SALT}}"
+      IMGPROXY_SECRET: "{{IMGPROXY_SECRET}}"
+      IMGPROXY_SOURCE_URL_ENCRYPTION_KEY: "{{IMGPROXY_SOURCE_URL_ENCRYPTION_KEY}}"
+      IMGPROXY_SIGNATURE_SIZE: 32
+      IMGPROXY_ALLOW_ORIGIN: ""
+      IMGPROXY_ALLOWED_SOURCES: ""
+      IMGPROXY_ALLOW_LINK_LOCAL_SOURCE_ADDRESSES: false
+      IMGPROXY_ALLOW_LOOPBACK_SOURCE_ADDRESSES: true
+      IMGPROXY_ALLOW_PRIVATE_SOURCE_ADDRESSES: true
+      IMGPROXY_ALLOW_SECURITY_OPTIONS: false
+      IMGPROXY_MAX_ANIMATION_FRAME_RESOLUTION: 0
+      IMGPROXY_MAX_ANIMATION_FRAMES: 1024
+      IMGPROXY_MAX_SRC_FILE_SIZE: 0
+      IMGPROXY_MAX_SRC_RESOLUTION: 100
+      IMGPROXY_MAX_SVG_CHECK_BYTES: 32768 # 32KB
+
+      ### Cookies
+      ### See: https://docs.imgproxy.net/configuration/options#cookies
+      IMGPROXY_COOKIE_PASSTHROUGH: false
+      IMGPROXY_COOKIE_BASE_URL: ""
+
+      ### Compression
+      ### See: https://docs.imgproxy.net/configuration/options#compression
+      IMGPROXY_QUALITY: 80
+      IMGPROXY_FORMAT_QUALITY: jpeg=80,webp=70,avif=50
+      IMGPROXY_JPEG_PROGRESSIVE: false
+      IMGPROXY_PNG_INTERLACED: false
+      IMGPROXY_PNG_QUANTIZATION_COLORS: 256
+      IMGPROXY_PNG_QUANTIZE: false
+      IMGPROXY_AVIF_SPEED: 9
+      IMGPROXY_ENABLE_AVIF_DETECTION: false
+      IMGPROXY_ENFORCE_AVIF: false
+      IMGPROXY_ENABLE_WEBP_DETECTION: false
+      IMGPROXY_ENFORCE_WEBP: false
+
+      ### Preferred formats
+      ### See: https://docs.imgproxy.net/configuration/options#preferred-formats
+      IMGPROXY_PREFERRED_FORMATS: jpeg,png,gif
+
+      ### Skip processing
+      ### https://docs.imgproxy.net/configuration/options#skip-processing
+      IMGPROXY_SKIP_PROCESSING_FORMATS: "svg"
+
+      ### Client Hints support
+      ### See: https://docs.imgproxy.net/configuration/options#client-hints-support
+      IMGPROXY_ENABLE_CLIENT_HINTS: false
+
+      ### Watermark
+      ### See: https://docs.imgproxy.net/configuration/options#watermark
+#      IMGPROXY_WATERMARK_OPACITY: 1
+#      IMGPROXY_WATERMARK_PATH: "/home/watermark.jpg"
+#      IMGPROXY_WATERMARK_DATA: ""
+#      IMGPROXY_WATERMARK_URL: ""
+
+      ### Fallback image
+      ### See: https://docs.imgproxy.net/configuration/options#fallback-image
+#      IMGPROXY_FALLBACK_IMAGE_TTL: 0
+#      IMGPROXY_FALLBACK_IMAGE_HTTP_CODE: 404
+#      IMGPROXY_FALLBACK_IMAGE_PATH: "/home/noimage.jpg"
+#      IMGPROXY_FALLBACK_IMAGE_DATA: ""
+#      IMGPROXY_FALLBACK_IMAGE_URL: ""
+
+      ### Presets
+      ### See: https://docs.imgproxy.net/configuration/options#presets
+#      IMGPROXY_PRESETS: "default=resizing_type:fit/gravity:sm,logo=watermark:0.8:soea:20:20:0.15,repeated_logo=watermark:0.25:re:0:0:0.2"
+#      IMGPROXY_ONLY_PRESETS: false
+
+      ### Miscellaneous
+      ### See: https://docs.imgproxy.net/configuration/options#miscellaneous
+      IMGPROXY_AUTO_ROTATE: true
+      IMGPROXY_DISABLE_SHRINK_ON_LOAD: false
+      IMGPROXY_ENFORCE_THUMBNAIL: false
+      IMGPROXY_KEEP_COPYRIGHT: false
+      IMGPROXY_RETURN_ATTACHMENT: false
+      IMGPROXY_SANITIZE_SVG: true
+      IMGPROXY_STRIP_COLOR_PROFILE: true
+      IMGPROXY_STRIP_METADATA: true
+      IMGPROXY_SVG_FIX_UNSUPPORTED: false
+      IMGPROXY_USE_LINEAR_COLORSPACE: false
+
+      # ### Amazon S3
+      # ### See: https://docs.imgproxy.net/configuration/options#amazon-s3
+      # IMGPROXY_USE_S3: false
+      # IMGPROXY_S3_REGION: ""
+      # IMGPROXY_S3_ENDPOINT: ""
+      # IMGPROXY_S3_MULTI_REGION: false
+
+      # ### Google Cloud Storage
+      # ### See: https://docs.imgproxy.net/configuration/options#google-cloud-storage
+      # IMGPROXY_USE_GCS: false
+      # IMGPROXY_GCS_KEY: ""
+
+      # ### Azure Blob Storage
+      # ### See: https://docs.imgproxy.net/configuration/options#azure-blob-storage
+      # IMGPROXY_USE_ABS: false
+      # IMGPROXY_ABS_NAME: ""
+      # IMGPROXY_ABS_KEY: ""
+      # IMGPROXY_ABS_ENDPOINT: ""
+
+      # ### OpenStack Object Storage
+      # ### See: https://docs.imgproxy.net/configuration/options#serving-files-from-openstack-object-storage-swift
+      # IMGPROXY_USE_SWIFT: false
+      # IMGPROXY_SWIFT_USERNAME: ""
+      # IMGPROXY_SWIFT_API_KEY: ""
+      # IMGPROXY_SWIFT_AUTH_URL: ""
+      # IMGPROXY_SWIFT_AUTH_VERSION: 0
+      # IMGPROXY_SWIFT_TENANT: ""
+      # IMGPROXY_SWIFT_DOMAIN: ""
+      # IMGRPOXY_SWIFT_CONNECT_TIMEOUT_SECONDS: 10
+      # IMGRPOXY_SWIFT_TIMEOUT_SECONDS: 60
+
+      # ### New Relic
+      # ### See: https://docs.imgproxy.net/configuration/options#new-relic
+      # IMGPROXY_NEW_RELIC_APP_NAME: ""
+      # IMGPROXY_NEW_RELIC_KEY: ""
+
+      # ### Prometheus
+      # ### See: https://docs.imgproxy.net/configuration/options#prometheus
+      # IMGPROXY_PROMETHEUS_BIND: ""
+      # IMGPROXY_PROMETHEUS_NAMESPACE: ""
+
+      # ### OpenTelemetry
+      # ### See: https://docs.imgproxy.net/configuration/options#opentelemetry
+      # IMGPROXY_OPEN_TELEMETRY_ENABLE_METRICS: false
+      # IMGPROXY_OPEN_TELEMETRY_SERVER_CERT: ""
+      # IMGPROXY_OPEN_TELEMETRY_CLIENT_CERT: ""
+      # IMGPROXY_OPEN_TELEMETRY_CLIENT_KEY: ""
+      # IMGPROXY_OPEN_TELEMETRY_TRACE_ID_GENERATOR: "xray"
+
+      # ### Amazon CloudWatch metrics
+      # ### See: https://docs.imgproxy.net/configuration/options#amazon-cloudwatch-metrics
+      # IMGPROXY_CLOUD_WATCH_SERVICE_NAME: ""
+      # IMGPROXY_CLOUD_WATCH_NAMESPACE: "imgproxy"
+      # IMGPROXY_CLOUD_WATCH_REGION: ""
+
+      # ### Bugsnag
+      # ### See: https://docs.imgproxy.net/configuration/options#bugsnag
+      # IMGPROXY_BUGSNAG_KEY: ""
+      # IMGPROXY_BUGSNAG_STAGE: "production"
+
+      # ### Honeybadger
+      # ### See: https://docs.imgproxy.net/configuration/options#honeybadger
+      # IMGPROXY_HONEYBADGER_KEY: ""
+      # IMGPROXY_HONEYBADGER_ENV: "production"
+
+      # ### Sentry
+      # ### See: https://docs.imgproxy.net/configuration/options#sentry
+      # IMGPROXY_SENTRY_DSN: ""
+      # IMGPROXY_SENTRY_ENVIRONMENT: "production"
+
+      # ### Airbrake
+      # ### See: https://docs.imgproxy.net/configuration/options#airbrake
+      # IMGPROXY_AIRBRAKE_PROJECT_ID: 0
+      # IMGPROXY_AIRBRAKE_PROJECT_KEY: ""
+      # IMGPROXY_AIRBRAKE_ENVIRONMENT: "production"
+

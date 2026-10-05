@@ -103,13 +103,6 @@ class AttachAttachmentToModel extends OrgAction
         $this->handle($tradeUnitFamily, $this->validatedData);
     }
 
-    public function inProduct(Product $product, ActionRequest $request): void
-    {
-        $this->initialisation($product->organisation, $request);
-
-        $this->handle($product, $this->validatedData);
-    }
-
     public function inEmployee(Employee $employee, ActionRequest $request): void
     {
         $this->initialisation($employee->organisation, $request);

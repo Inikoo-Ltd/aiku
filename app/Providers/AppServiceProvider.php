@@ -15,6 +15,7 @@ use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
@@ -38,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->useProcessReadHosts();
+        $this->useProcessOctaneStateFile();
+
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
         /**
@@ -84,6 +88,34 @@ class AppServiceProvider extends ServiceProvider
                 new $sdClass()
             );
         });
+    }
+
+    /**
+     * Only supervisor programs that may read the replica set PROCESS_DB_READ_HOSTS, read at runtime so it
+     * survives config:cache; every other process keeps the configured read hosts.
+     * Queue workers never reset sticky, so each job starts reading the replica again; reads after a write
+     * inside the same job still go to the primary.
+     */
+    private function useProcessReadHosts(): void
+    {
+        $readHosts = array_values(array_filter(array_map('trim', explode(',', (string) getenv('PROCESS_DB_READ_HOSTS')))));
+        if (!$readHosts) {
+            return;
+        }
+
+        foreach (['aiku', 'aiku_no_sticky'] as $connection) {
+            config(["database.connections.$connection.read.host" => $readHosts]);
+        }
+
+        Event::listen(JobProcessing::class, fn () => DB::connection('aiku')->forgetRecordModificationState());
+    }
+
+    private function useProcessOctaneStateFile(): void
+    {
+        $stateFile = trim((string) getenv('PROCESS_OCTANE_STATE_FILE'));
+        if ($stateFile !== '') {
+            config(['octane.state_file' => storage_path($stateFile)]);
+        }
     }
 
 

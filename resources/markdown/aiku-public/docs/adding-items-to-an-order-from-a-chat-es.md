@@ -4,7 +4,7 @@ summary: Un cliente en el chat olvidó algo. Añádelo al pedido que ya hizo, o 
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, orders, payments, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

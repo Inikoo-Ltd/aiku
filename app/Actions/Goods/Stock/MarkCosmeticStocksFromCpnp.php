@@ -20,7 +20,7 @@ class MarkCosmeticStocksFromCpnp
 
     public function handle(): int
     {
-        return $this->stocksToMark()->update(['is_cosmetic' => true]);
+        return $this->stocksToMark()->get()->each(fn (Stock $stock) => $stock->update(['is_cosmetic' => true]))->count();
     }
 
     public function stocksToMark(): Builder

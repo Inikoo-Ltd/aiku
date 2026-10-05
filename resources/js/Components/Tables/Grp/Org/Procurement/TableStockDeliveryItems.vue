@@ -52,7 +52,7 @@ function reloadStockDelivery() {
     })
 }
 
-function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, message: string, acceptLabel: string) {
+function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, message: string, acceptLabel: string, body: Record<string, unknown> = {}) {
     if (!stateRoute) {
         return
     }
@@ -65,11 +65,11 @@ function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, messa
         rejectLabel: ctrans('Cancel'),
         acceptClass: 'p-button-success',
         rejectClass: 'p-button-text',
-        accept: () => changeState(item, stateRoute),
+        accept: () => changeState(item, stateRoute, body),
     })
 }
 
-async function changeState(item: any, stateRoute: any) {
+async function changeState(item: any, stateRoute: any, body: Record<string, unknown> = {}) {
     if (!stateRoute) {
         return
     }
@@ -77,7 +77,7 @@ async function changeState(item: any, stateRoute: any) {
     changingId.value = item.id
     try {
         const method = String(stateRoute.method ?? 'patch').toLowerCase()
-        await axios[method](route(stateRoute.name, stateRoute.parameters))
+        await axios[method](route(stateRoute.name, stateRoute.parameters), body)
         notify({ title: ctrans('Success'), text: ctrans('Item state updated'), type: 'success' })
         reloadStockDelivery()
     } catch (error: any) {
@@ -379,7 +379,18 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         </template>
 
         <template #cell(units_in)="{ item }">
-            <span class="text-gray-500">{{ formatQuantity(Number(item.unit_quantity_placed)) }}</span>
+            <Button
+                v-if="item.receivedAfterAllRoute"
+                :label="ctrans('Received after all')"
+                :tooltip="ctrans('Check the delivered quantity and take the delivery back to booking in')"
+                icon="fal fa-check"
+                type="secondary"
+                size="xs"
+                :loading="changingId === item.id"
+                :disabled="changingId === item.id"
+                @click="confirmChangeState($event, item, item.receivedAfterAllRoute, ctrans('Check :code as received? The delivery goes back to booking in so it can be placed.', { code: item.code }), ctrans('Received'))"
+            />
+            <span v-else class="text-gray-500">{{ formatQuantity(Number(item.unit_quantity_placed)) }}</span>
         </template>
 
         <template v-for="field in costFields" :key="field" #[`cell(${field})`]="{ item }">
@@ -433,6 +444,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 >
                     <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
                 </Link>
+
+                <span v-if="item.is_new_org_stock"
+                    v-tooltip="ctrans('Never been in stock')"
+                    class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    {{ ctrans('New') }}
+                </span>
             </div>
         </template>
 
@@ -621,21 +638,15 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                                     </div>
                                 </template>
                             </ButtonWithLink>
-                            <ButtonWithLink
+                            <Button
                                 v-if="item.state === 'received'"
                                 v-tooltip="ctrans('Not received')"
                                 icon="fal fa-times"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="negative"
-                                :loading="isProcessing"
+                                :loading="isProcessing || changingId === item.id"
                                 class="py-0"
-                                :routeTarget="item.checkedRoute"
-                                :body="{ sko_quantity_checked: 0 }"
-                                :bind-to-link="{
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                }"
-                                isWithError
+                                @click="confirmChangeState($event, item, item.checkedRoute, ctrans('Mark :code as not received? The delivery closes without it once everything else is booked in.', { code: item.code }), ctrans('Not received'), { sko_quantity_checked: 0 })"
                             />
                         </div>
                     </template>
@@ -746,9 +757,10 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     />
                     <span v-else class="text-red-500 italic text-xs">{{ ctrans('No location yet') }}</span>
                     <Button
-                        v-tooltip="ctrans('Choose another location')"
+                        v-tooltip="ctrans('Book in to any location in the warehouse')"
+                        :label="item.locations?.length || selectedOtherLocation[item.id] ? ctrans('Other location') : ctrans('Choose location')"
                         icon="fal fa-inventory"
-                        type="tertiary"
+                        :type="item.locations?.length || selectedOtherLocation[item.id] ? 'tertiary' : 'secondary'"
                         size="xs"
                         @click="() => { isModalLocation = true; selectedItemValue = item }"
                     />
@@ -783,7 +795,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ overflow: 'visible' }"
-        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+        :header="ctrans('Where to put :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
     >
         <SelectPickingLocation
             v-if="selectedItemValue?.locations?.length"
@@ -793,7 +805,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             :ignoreNoQty="true"
         />
         <div v-if="selectedItemValue?.searchLocationsRoute" class="mt-4">
-            <div class="text-sm text-gray-500 mb-1">{{ ctrans('Or book in to any other location in the warehouse') }}</div>
+            <div class="text-sm text-gray-700 mb-1">{{ selectedItemValue?.locations?.length ? ctrans('Or book in to any other location in the warehouse') : ctrans('Book in to any location in the warehouse') }}</div>
             <PureMultiselectInfiniteScroll
                 :key="`other-location-${selectedItemValue?.id}`"
                 :modelValue="selectedOtherLocation[selectedItemValue?.id]?.id ?? null"

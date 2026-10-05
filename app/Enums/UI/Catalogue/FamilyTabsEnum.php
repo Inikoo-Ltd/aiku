@@ -26,6 +26,7 @@ enum FamilyTabsEnum: string
     case OFFERS = 'offers';
     case REVIEWS = 'reviews';
     case HISTORY = 'history';
+    case ATTACHMENTS = 'attachments';
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCTS    = 'related_products';
     case RELATED_PRODUCT_CATEGORY    = 'related_product_category';
@@ -62,6 +63,12 @@ enum FamilyTabsEnum: string
             FamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
+            ],
+            FamilyTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             FamilyTabsEnum::HISTORY => [
                 'title' => __('History'),

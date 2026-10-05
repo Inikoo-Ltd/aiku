@@ -15,6 +15,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
+import { ticketKindIcon } from "@/Composables/useTicketKindIcons"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { useLiveTicketRows } from "@/Composables/useLiveTicketRows"
@@ -272,11 +273,11 @@ watch(
                 <span v-if="item.search_snippet" class="block w-56 truncate md:w-auto text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
             </template>
             <template #cell(qa_status)="{ item }">
-                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_icon.tooltip" class="relative inline-flex items-center">
-                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-0.5 pl-2 text-sm font-medium" :class="[qaBadgeClasses[item.qa_status_icon.color], showQaTarget(item) ? 'pr-5' : 'pr-2']">
-                        <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />{{ item.qa_status_label }}
+                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_label + (item.qa_user ? ' · ' + item.qa_user : '')" class="relative inline-flex items-center">
+                    <span class="inline-flex h-6 items-center justify-center rounded-md text-sm" :class="[qaBadgeClasses[item.qa_status_icon.color], showQaTarget(item) ? 'pl-1.5 pr-4' : 'w-7']">
+                        <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />
                     </span>
-                    <TicketQaTarget v-if="showQaTarget(item)" class="-ml-3" :name="item.qa_user" :avatar="item.qa_user_avatar" size="sm" />
+                    <TicketQaTarget v-if="showQaTarget(item)" class="-ml-2.5" :name="item.qa_user" :avatar="item.qa_user_avatar" size="sm" />
                 </span>
                 <span v-else class="text-gray-300">-</span>
             </template>
@@ -297,14 +298,17 @@ watch(
                 <button
                     v-if="canEditKind(item)"
                     type="button"
-                    :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
-                    :title="ctrans('Change kind')"
+                    v-tooltip="item.kind_label ? ctrans(':kind · click to change', { kind: item.kind_label }) : ctrans('No kind · click to set')"
+                    :class="[editableCellClass, item.kind ? 'text-gray-700' : 'text-gray-300', isEditing('kind', item) && '!bg-gray-200']"
+                    :aria-label="ctrans('Change kind')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('kind', item, $event)">
-                    {{ item.kind_label || ctrans("No kind") }}
-                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
+                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" fixed-width />
+                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
-                <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
+                <span v-else v-tooltip="item.kind_label || ctrans('No kind')" :class="[readOnlyCellClass, item.kind ? 'text-gray-600' : 'text-gray-300']">
+                    <FontAwesomeIcon :icon="ticketKindIcon(item.kind)" fixed-width />
+                </span>
             </template>
             <template #cell(module)="{ item }">
                 <button
@@ -421,7 +425,11 @@ watch(
         </div>
     </Popover>
     <Popover ref="kindPopover" @show="onEditorShown('kind')" @hide="onEditorHidden('kind')">
-        <Listbox :model-value="activeItem?.kind" :options="selectableKinds" option-label="label" option-value="value" class="border-0" @update:model-value="chooseValue('kind', $event)" />
+        <Listbox :model-value="activeItem?.kind" :options="selectableKinds" option-label="label" option-value="value" class="border-0" @update:model-value="chooseValue('kind', $event)">
+            <template #option="{ option }">
+                <FontAwesomeIcon :icon="ticketKindIcon(option.value)" fixed-width class="mr-2 text-gray-500" />{{ option.label }}
+            </template>
+        </Listbox>
     </Popover>
     <Popover ref="modulePopover" @show="onEditorShown('module')" @hide="onEditorHidden('module')">
         <Listbox :model-value="activeItem?.module" :options="options.modules" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="chooseValue('module', $event)" />

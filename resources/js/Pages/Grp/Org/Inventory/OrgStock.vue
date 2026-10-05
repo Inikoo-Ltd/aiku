@@ -108,6 +108,8 @@ const props = defineProps<{
         transfer: [],
     }
     org_stock_id: number
+    can_link_supplier_products?: boolean
+    can_create_supplier_products?: boolean
     discontinue_preview_route: routeType
     discontinue_route: routeType
 }>()
@@ -233,7 +235,7 @@ const component = computed(() => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id :salesAnalysisTeaser="sales_analysis_teaser"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id :can_link_supplier_products :can_create_supplier_products :salesAnalysisTeaser="sales_analysis_teaser"></component>
 
     <OrgStockDiscontinuePreviewModal
         :isOpen="isDiscontinuePreviewOpen"

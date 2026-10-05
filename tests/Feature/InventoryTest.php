@@ -3073,6 +3073,22 @@ describe('aurora provisional cost fix', function () {
         expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
     });
 
+    test('recalculating a sko history keeps its organisation day totals until they are hydrated again', function () {
+        [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFK');
+        \Illuminate\Support\Facades\Queue::fake();
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+        $organisationStockHistory = \App\Models\Inventory\OrganisationStockHistory::where('organisation_id', $this->organisation->id)->where('date', today()->toDateString())->firstOrFail();
+        $organisationStockHistory->update(['number_org_stocks' => 50, 'number_out_of_stock_org_stocks' => 5, 'org_stock_lpp_value' => 100]);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+
+        $organisationStockHistory->refresh();
+        expect($organisationStockHistory->number_org_stocks)->toBe(50)
+            ->and($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(5)
+            ->and((float) $organisationStockHistory->org_stock_lpp_value)->toBe(100.0);
+    });
+
     test('stock history exports carry the three valuations with legends', function () {
         [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFH');
         $headings   = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
@@ -4397,4 +4413,99 @@ describe('out of stock forecast', function () {
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
         expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
     });
+
+    test('an item that is almost never in stock cannot forecast more than twice its calendar dispatch rate', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $orgStock             = $deliveryNoteItem->orgStock;
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0]);
+        DB::table('delivery_note_items')->where('org_stock_id', $orgStock->id)->delete();
+
+        $movementBase = [
+            'group_id'        => $orgStock->group_id,
+            'organisation_id' => $orgStock->organisation_id,
+            'warehouse_id'    => $this->warehouse->id,
+            'org_stock_id'    => $orgStock->id,
+            'class'           => OrgStockMovementClassEnum::MOVEMENT->value,
+            'type'            => OrgStockMovementTypeEnum::PURCHASE->value,
+            'flow'            => OrgStockMovementFlowEnum::IN->value,
+            'quantity'        => 1,
+            'org_amount'      => 0,
+            'grp_amount'      => 0,
+            'data'            => '{}',
+        ];
+        DB::table('org_stock_movements')->insert([
+            [...$movementBase, 'date' => now()->subDays(60)->startOfDay()->addHours(8), 'running_quantity_org_stock' => 9000],
+            [...$movementBase, 'date' => now()->subDays(57)->startOfDay()->addHours(8), 'running_quantity_org_stock' => 0],
+        ]);
+        foreach ([60, 59, 58] as $daysAgo) {
+            DB::table('delivery_note_items')->insert([
+                'group_id'            => $deliveryNoteItem->group_id,
+                'organisation_id'     => $deliveryNoteItem->organisation_id,
+                'shop_id'             => $deliveryNoteItem->shop_id,
+                'delivery_note_id'    => $deliveryNoteItem->delivery_note_id,
+                'org_stock_id'        => $orgStock->id,
+                'quantity_required'   => 3000,
+                'quantity_dispatched' => 3000,
+                'data'                => '{}',
+                'created_at'          => now()->subDays($daysAgo)->startOfDay()->addHours(10),
+                'updated_at'          => now(),
+            ]);
+        }
+
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        $stats = $orgStock->stats->refresh();
+
+        $calendarRate = 9000 / 91;
+        expect($stats->forecast_source)->toBe('holt')
+            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta($calendarRate * 2, 0.01);
+    });
 });
+
+test('move stock to other locations from the SKO page', function ($warehouseArea) {
+    $orgStock   = LocationOrgStock::first()->orgStock;
+    $newSlot    = fn () => StoreLocationOrgStock::make()->action(
+        $orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
+    $sourceSlot = $newSlot();
+    $targetSlot = $newSlot();
+    DB::table('location_org_stocks')->where('id', $sourceSlot->id)->update(['quantity' => 64]);
+    DB::table('location_org_stocks')->where('id', $targetSlot->id)->update(['quantity' => 30.996666]);
+
+    $this->withoutVite()->patch(route('grp.models.location_org_stock.multi_move', $sourceSlot->id), [
+        'targets' => [['location_org_stock_id' => $targetSlot->id, 'quantity' => 64]],
+    ])->assertSessionHasNoErrors();
+
+    expect((float) $sourceSlot->refresh()->quantity)->toBe(0.0)
+        ->and((float) $targetSlot->refresh()->quantity)->toBe(94.996666);
+
+    $warehouse = $warehouseArea->warehouse;
+    $user      = $this->guest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $skoUrl        = route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $sourceSlot->orgStock->slug]);
+    $locationUrl   = route('grp.org.warehouses.show.infrastructure.locations.show', [$this->organisation->slug, $warehouse->slug, $targetSlot->location->slug]);
+
+    $controlsShown = function () use ($skoUrl, $locationUrl) {
+        $skoPage = $this->get($skoUrl)->assertOk()->viewData('page')['props'];
+
+        return [
+            $skoPage['showcase']['stocks_management']['can_edit'],
+            $skoPage['can_move_stock'],
+            $skoPage['can_link_supplier_products'],
+            $skoPage['can_create_supplier_products'],
+            $this->get($locationUrl)->assertOk()->viewData('page')['props']['can_move_location_stock'],
+        ];
+    };
+
+    expect($controlsShown())->toBe([true, true, true, true, true]);
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    expect($controlsShown())->toBe([false, false, false, false, false]);
+    $this->patch(route('grp.models.location_org_stock.multi_move', $targetSlot->id), [
+        'targets' => [['location_org_stock_id' => $sourceSlot->id, 'quantity' => 1]],
+    ])->assertForbidden();
+
+    actingAsUserWithRoles($user, $originalRoles);
+})->depends('create warehouse area');

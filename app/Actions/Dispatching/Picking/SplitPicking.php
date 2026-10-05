@@ -74,11 +74,6 @@ class SplitPicking extends OrgAction
                 StorePickingOrgStockMovement::dispatch($newPicking->id, $this->user?->id)->afterCommit();
             }
 
-            if (app()->environment('production')) {
-                SavePickingInAurora::dispatch($picking);
-                SavePickingInAurora::dispatch($newPicking);
-            }
-
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 

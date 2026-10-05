@@ -48,6 +48,8 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
 
     private const float TIMESFM_MINIMUM_IN_STOCK_SHARE = 0.7;
 
+    private const float IN_STOCK_RATE_CAP_MULTIPLE = 2.0;
+
     public function __construct()
     {
         $this->model = OrgStock::class;
@@ -203,10 +205,20 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
 
         $nonZeroShare = count(array_filter($series)) / count($series);
         if ($nonZeroShare < 0.3) {
-            return [$this->crostonSba(array_values($series)), $sigma, 'croston', $inStockShare];
+            $rate   = $this->crostonSba(array_values($series));
+            $source = 'croston';
+        } else {
+            $rate   = $this->holtDamped($series);
+            $source = 'holt';
         }
 
-        return [$this->holtDamped($series), $sigma, 'holt', $inStockShare];
+        $cap = $dispatchedByDay->sum() / self::WINDOW * self::IN_STOCK_RATE_CAP_MULTIPLE;
+        if ($rate > $cap) {
+            $sigma = $sigma !== null ? $sigma * $cap / $rate : null;
+            $rate  = $cap;
+        }
+
+        return [$rate, $sigma, $source, $inStockShare];
     }
 
     /**

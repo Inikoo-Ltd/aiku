@@ -30,7 +30,6 @@ class FetchModels
     {
         FetchAuroraShippers::dispatch($organisationSource);
         FetchAuroraShops::dispatch($organisationSource);
-        FetchAuroraEmployees::dispatch($organisationSource);
         Bus::chain([
                        FetchAuroraWarehouses::makeJob($organisationSource),
                        FetchAuroraWarehouseAreas::makeJob($organisationSource),

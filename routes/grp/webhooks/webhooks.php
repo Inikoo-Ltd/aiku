@@ -32,10 +32,12 @@ use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerc
 use App\Actions\Helpers\Ticket\ReceiveSlackInteraction;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
+use App\Actions\DevOps\CiRun\ReceiveGitHubWorkflowWebhook;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
+    Route::post('github', ReceiveGitHubWorkflowWebhook::class)->name('github')->middleware(Sample::rate(0.1));
     Route::post('slack-ticket', ReceiveSlackTicketCommand::class)->name('slack_ticket');
     Route::post('slack-events', ReceiveSlackTicketReaction::class)->name('slack_events');
     Route::post('slack-interactivity', ReceiveSlackInteraction::class)->name('slack_interactivity');

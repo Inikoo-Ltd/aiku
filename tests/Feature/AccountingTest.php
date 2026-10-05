@@ -2674,7 +2674,14 @@ test('UI refund action endpoints create tax finalise and delete', function () {
     $finalised = \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($refundA, []);
     expect($finalised->in_process)->toBeFalse();
 
-    // DeleteRefund (PATCH) on the tax refund of invoice B
+    // DeleteRefund (PATCH) on the tax refund of invoice B, refused without accounting edit
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('procurement-clerk', $this->organisation)]);
+    \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), ['deleted_note' => 'test delete'])->assertForbidden();
+    expect($taxRefund->refresh()->trashed())->toBeFalse();
+    actingAsUserWithRoles($user, $originalRoles);
+
     \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), [
         'deleted_note' => 'test delete',
     ])->assertRedirect();
@@ -4017,4 +4024,29 @@ test('cancelling a payment made from the balance gives the money back to the bal
     CancelPayment::make()->handle($payment);
 
     expect(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceBefore, 2));
+});
+
+test('categorise invoices command dry run shows changes without saving them', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    $invoice->update(['invoice_category_id' => null]);
+
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'     => 'Dry run fallback',
+        'type'     => 'shop_fallback',
+        'state'    => 'active',
+        'priority' => 250,
+        'settings' => ['shop_id' => $this->shop->id],
+    ]);
+
+    $this->artisan('categorise:invoices --dry-run --id='.$invoice->id)
+        ->expectsOutputToContain('Dry run: nothing was saved')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBeNull();
+
+    $this->artisan('categorise:invoices --id='.$invoice->id)
+        ->doesntExpectOutputToContain('Dry run')
+        ->assertOk();
+    expect($invoice->refresh()->invoice_category_id)->toBe($invoiceCategory->id);
 });

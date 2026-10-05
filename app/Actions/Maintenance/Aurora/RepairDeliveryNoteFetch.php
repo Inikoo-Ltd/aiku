@@ -30,9 +30,9 @@ class RepairDeliveryNoteFetch
 
     private int $count = 0;
     /**
-     * @var \App\Transfers\AuroraOrganisationService|\App\Transfers\WowsbarOrganisationService|null
+     * @var \App\Transfers\AuroraOrganisationService|null
      */
-    private \App\Transfers\WowsbarOrganisationService|null|AuroraOrganisationService $organisationSource;
+    private AuroraOrganisationService|null $organisationSource;
 
     /**
      * @throws \Throwable

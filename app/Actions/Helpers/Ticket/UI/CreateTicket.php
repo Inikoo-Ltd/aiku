@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketProject;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateTicket extends OrgAction
@@ -73,6 +74,9 @@ class CreateTicket extends OrgAction
                     ],
                 ],
                 'storeRoute'  => ['name' => 'grp.models.ticket.store'],
+                'project'     => $request->filled('project')
+                    ? TicketProject::where('group_id', $this->group->id)->where('slug', $request->query('project'))->first(['id', 'name'])?->only(['id', 'name'])
+                    : null,
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy($request->user()),

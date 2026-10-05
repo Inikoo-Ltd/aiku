@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\CustomerComms;
 
 use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
-use App\Actions\CRM\Customer\SaveCustomerInAurora;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,7 +22,7 @@ class UpdateCustomerComms extends OrgAction
     use WithCRMEditAuthorisation;
 
 
-    public function handle(CustomerComms $customerComms, array $modelData, bool $updateAurora = true): CustomerComms
+    public function handle(CustomerComms $customerComms, array $modelData): CustomerComms
     {
         foreach ($modelData as $column => $subscribed) {
             if (str_starts_with($column, 'is_subscribed_to_') && !$subscribed && $customerComms->{$column}) {
@@ -34,20 +33,6 @@ class UpdateCustomerComms extends OrgAction
         $this->update($customerComms, $modelData);
 
         $changes = Arr::except($customerComms->getChanges(), ['updated_at', 'last_fetched_at']);
-
-        if (Arr::hasAny($changes, [
-                'is_subscribed_to_newsletter',
-                'is_subscribed_to_marketing',
-                'is_subscribed_to_abandoned_cart',
-                'is_subscribed_to_reorder_reminder',
-                'is_subscribed_to_basket_low_stock',
-                'is_subscribed_to_basket_reminder',
-                'is_subscribed_to_whatsapp_newsletter',
-            ])
-            && $customerComms->customer->shop->is_aiku
-            && $updateAurora) {
-            SaveCustomerInAurora::dispatch($customerComms->customer);
-        }
 
         if (Arr::has($changes, 'is_subscribed_to_whatsapp_newsletter')) {
             SyncCustomerWhatsappSubscriber::run($customerComms->customer);

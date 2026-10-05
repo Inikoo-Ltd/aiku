@@ -92,6 +92,7 @@ enum RolesEnum: string
     case CUSTOMER_SERVICE_CLERK = 'customer-service-clerk';
     case CUSTOMER_SERVICE_SUPERVISOR = 'customer-service-supervisor';
     case CUSTOMER_SERVICE_VIEWER = 'customer-service-viewer';
+    case ACCOUNTING_ORDERS = 'accounting-orders';
 
 
     // fulfilment roles
@@ -185,6 +186,7 @@ enum RolesEnum: string
             RolesEnum::MARKETING_CLERK => __('Marketing clerk'),
             RolesEnum::MARKETING_SUPERVISOR => __('Marketing supervisor'),
             RolesEnum::CUSTOMER_SERVICE_VIEWER => __('Customer service viewer'),
+            RolesEnum::ACCOUNTING_ORDERS => __('Accounting orders'),
             RolesEnum::MANUFACTURING_ADMIN => __('Production admin'),
             RolesEnum::MANUFACTURING_ORCHESTRATOR => __('Production orchestrator'),
             RolesEnum::MANUFACTURING_LINE_MANAGER => __('Production line manager'),
@@ -537,6 +539,14 @@ enum RolesEnum: string
                 ShopPermissionsEnum::MARKETING_VIEW,
 
             ],
+            RolesEnum::ACCOUNTING_ORDERS => [
+                ShopPermissionsEnum::CRM_VIEW,
+                ShopPermissionsEnum::ORDERS,
+                ShopPermissionsEnum::PRODUCTS_VIEW,
+                ShopPermissionsEnum::WEB_VIEW,
+                ShopPermissionsEnum::DISCOUNTS_VIEW,
+                ShopPermissionsEnum::MARKETING_VIEW,
+            ],
             RolesEnum::MANUFACTURING_ADMIN => [
                 ProductionPermissionsEnum::PRODUCTION_OPERATIONS,
                 ProductionPermissionsEnum::PRODUCTION_RD,
@@ -599,6 +609,7 @@ enum RolesEnum: string
             RolesEnum::CUSTOMER_SERVICE_CLERK,
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR,
             RolesEnum::CUSTOMER_SERVICE_VIEWER,
+            RolesEnum::ACCOUNTING_ORDERS,
 
             RolesEnum::WEBMASTER_CLERK,
             RolesEnum::WEBMASTER_SUPERVISOR,

@@ -100,6 +100,7 @@ const props = defineProps<{
 			total_items: number
 			total_received_checked_items: number
 			total_placed_items: number
+			total_new_org_stocks: number
 			show_delivery_discrepancy: boolean
 			total_under_delivered_items: number
 			total_over_delivered_items: number
@@ -772,6 +773,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 					<FontAwesomeIcon v-tooltip="ctrans('Placed items')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
 					<span>{{ box_stats.second_block.total_placed_items }}</span>
 				</div>
+
+				<span v-if="box_stats.second_block.total_new_org_stocks > 0"
+					v-tooltip="ctrans('Items that have never been in stock')"
+					class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+					{{ ctrans(':count new', { count: box_stats.second_block.total_new_org_stocks }) }}
+				</span>
 			</div>
 
 			<div class="mt-2 grid grid-cols-2 gap-2 text-sm">

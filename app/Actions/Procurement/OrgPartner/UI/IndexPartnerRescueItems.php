@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -65,10 +66,13 @@ class IndexPartnerRescueItems extends OrgAction
                     'subNavigation' => $this->getOrgPartnerNavigation($this->orgPartner),
                 ],
                 'currency_code' => $this->orgPartner->organisation->currency->code,
+                'can_create_purchase_orders' => $this->canEdit,
                 'orgPartner'    => [
                     'id'   => $this->orgPartner->id,
                     'name' => $this->orgPartner->partner->name,
                 ],
+                'rescueBuckets' => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0)['buckets'],
+                'draftReference' => $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->value('reference'),
                 'items'         => $items,
             ]
         );

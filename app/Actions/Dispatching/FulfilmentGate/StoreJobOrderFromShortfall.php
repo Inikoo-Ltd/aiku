@@ -11,19 +11,17 @@ namespace App\Actions\Dispatching\FulfilmentGate;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
-use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreJobOrderFromShortfall extends OrgAction
 {
-    use WithDispatchingAuthorisation;
-
     /**
      * @param array<int, array{org_stock_id: int, quantity: float|int}> $lines
      *
@@ -110,6 +108,24 @@ class StoreJobOrderFromShortfall extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return static::userCanCreateIn($request->user(), $this->warehouse);
+    }
+
+    public static function userCanCreateIn(User $user, Warehouse $warehouse): bool
+    {
+        return $user->authTo([
+            "dispatching.$warehouse->id.edit",
+            "supervisor-dispatching.$warehouse->id",
+            "org-admin.$warehouse->organisation_id",
+        ]);
+    }
+
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): array
     {
         $this->initialisationFromWarehouse($warehouse, $request);

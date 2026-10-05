@@ -53,7 +53,7 @@ class EditPurchaseOrder extends OrgAction
                             'style' => 'exitEdit',
                             'route' => [
                                 'name'       => 'grp.org.procurement.purchase_orders.show',
-                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug]
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug]
                             ]
                         ]
                     ],
@@ -87,6 +87,7 @@ class EditPurchaseOrder extends OrgAction
                                 ],
                             ]
                         ],
+                        ...$this->termsSections($purchaseOrder),
                         [
                             'label'  => __('Payments'),
                             'title'  => __('Payments'),
@@ -132,4 +133,32 @@ class EditPurchaseOrder extends OrgAction
             suffix: '('.__('Editing').')'
         );
     }
+
+    /**
+     * The delivery, payment and label terms staff used to edit from the purchase order page.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function termsSections(PurchaseOrder $purchaseOrder): array
+    {
+        $icons = [
+            'delivery_type'             => 'fal fa-truck-container',
+            'estimated_production_date' => 'fal fa-calendar-check',
+            'payment_terms'             => 'fal fa-file-invoice',
+            'incoterm'                  => 'fal fa-file-signature',
+            'terms_and_conditions'      => 'fal fa-tags',
+        ];
+
+        return collect(GetPurchaseOrderData::run($purchaseOrder)['blueprint'])
+            ->map(fn (array $section) => [
+                'label'  => $section['title'],
+                'title'  => $section['title'],
+                'icon'   => $icons[array_key_first($section['fields'])] ?? 'fal fa-info-circle',
+                'fields' => Arr::except($section['fields'], ['reference', 'delivery_address']),
+            ])
+            ->filter(fn (array $section) => $section['fields'])
+            ->values()
+            ->all();
+    }
+
 }

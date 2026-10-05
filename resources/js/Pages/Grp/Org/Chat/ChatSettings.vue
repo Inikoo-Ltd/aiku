@@ -60,6 +60,7 @@ const props = defineProps<{
         copied: { kind: string; total: number; at: string | null }[]
         learned: { id: number; title: string; body: string; status: "active" | "proposed" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
         knowledge_route: Record<string, any>
+        can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
     couriers: {
@@ -281,7 +282,7 @@ const saveCouriers = () => {
             {{ ctrans("What the AI answers customers from. Pages and shop settings are copied in every night. Add a note for anything that is on no page, like a country we cannot ship to or a product that is not available for now; notes win when they disagree with a page.") }}
         </p>
 
-        <div class="rounded-lg border border-gray-200 p-4">
+        <div v-if="policies.can_edit" class="rounded-lg border border-gray-200 p-4">
             <div class="text-sm font-medium text-gray-700">{{ noteForm.id ? ctrans("Edit note") : ctrans("New note") }}</div>
             <input v-model="noteForm.title" type="text" maxlength="200" :placeholder="ctrans('Title, for example: Shipping to Germany')"
                 class="mt-2 w-full rounded-md border-gray-300 text-sm" />
@@ -301,8 +302,8 @@ const saveCouriers = () => {
                     <div class="text-sm font-medium text-gray-800">{{ note.title }}</div>
                     <p class="whitespace-pre-line text-sm text-gray-600">{{ note.body }}</p>
                 </div>
-                <button type="button" class="text-xs text-indigo-700 underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
-                <button type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-indigo-700 underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 
@@ -314,8 +315,8 @@ const saveCouriers = () => {
                     <div class="text-sm font-medium text-gray-800">{{ entry.title }} <span class="text-xs font-normal text-gray-500">· {{ ctrans(":count customers", { count: entry.customers_count }) }}</span></div>
                     <p class="text-sm text-gray-600">{{ entry.body }}</p>
                 </div>
-                <button type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
-                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 
@@ -328,8 +329,8 @@ const saveCouriers = () => {
                     <p class="text-sm text-gray-600">{{ entry.body }}</p>
                     <p v-if="entry.conflict" class="text-xs text-amber-800">{{ ctrans("Differs from:") }} {{ entry.conflict }}</p>
                 </div>
-                <button type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
-                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 
@@ -342,7 +343,7 @@ const saveCouriers = () => {
                     </div>
                     <p class="text-sm text-gray-600">{{ entry.body }}</p>
                 </div>
-                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
+                <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 

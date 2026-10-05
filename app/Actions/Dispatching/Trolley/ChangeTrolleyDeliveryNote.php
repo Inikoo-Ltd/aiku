@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Trolley;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ChangeTrolleyDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         $trolley = null;

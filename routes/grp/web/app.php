@@ -7,6 +7,8 @@
  */
 
 use App\Actions\DevOps\UI\IndexAppDeployments;
+use App\Actions\Docs\UI\ShowAikuPublicAnalytics;
+use App\Actions\Docs\UI\ShowDocsDashboard;
 use App\Actions\Comms\Mailbox\CallbackShopMailbox;
 use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
@@ -117,6 +119,8 @@ Route::middleware(
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
     Route::get('/deploys', IndexAppDeployments::class)->name('deploys');
+    Route::get('/docs', ShowDocsDashboard::class)->name('docs');
+    Route::get('/docs/aiku-public-analytics', ShowAikuPublicAnalytics::class)->name('docs.aiku-public-analytics');
     Route::prefix("overview")
         ->name("overview.")
         ->group(__DIR__."/overview.php");
@@ -218,6 +222,10 @@ Route::middleware(
     Route::prefix("tasks")
         ->name("tasks.")
         ->group(__DIR__."/tasks.php");
+
+    Route::prefix("projects")
+        ->name("projects.")
+        ->group(__DIR__."/projects.php");
 
     Route::prefix("devops")
         ->name("devops.")

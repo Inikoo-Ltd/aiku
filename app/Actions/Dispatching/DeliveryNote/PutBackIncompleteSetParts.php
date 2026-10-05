@@ -28,6 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class PutBackIncompleteSetParts extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     /**
      * @throws \Throwable
      */

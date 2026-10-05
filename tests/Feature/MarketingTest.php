@@ -1425,7 +1425,7 @@ describe('referral traffic sources', function () {
 
         /* Two ChatGPT arrivals from one browser and one from another, all filed under Referral on the
            day, plus the day's Referral visit row that counted them. */
-        $day = now()->subDay();
+        $day = now()->subDay()->startOfDay();
         foreach ([['203.0.113.7', 0], ['203.0.113.7', 2], ['198.51.100.9', 1]] as [$ip, $hours]) {
             DB::table('traffic_source_clicks')->insert([
                 'shop_id'      => $this->shop->id,

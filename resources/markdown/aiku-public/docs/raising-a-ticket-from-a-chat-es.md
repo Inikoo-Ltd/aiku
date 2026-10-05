@@ -4,7 +4,7 @@ summary: Convierte una conversación con un cliente en un ticket sin volver a es
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, tickets, help desk
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

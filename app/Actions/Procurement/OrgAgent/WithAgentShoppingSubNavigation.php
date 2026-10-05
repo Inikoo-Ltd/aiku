@@ -21,7 +21,7 @@ trait WithAgentShoppingSubNavigation
                 "label"    => __("Shopping"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.shopping.dashboard",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-shopping-basket"],
@@ -33,7 +33,7 @@ trait WithAgentShoppingSubNavigation
                 "label"    => __("Suppliers"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.suppliers.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-person-dolly"],
@@ -45,7 +45,7 @@ trait WithAgentShoppingSubNavigation
                 "label"    => __("Shopping List"),
                 "route"    => [
                     "name"       => "grp.org.procurement.shopping_list.index",
-                    "parameters" => [$parent->organisation->slug],
+                    "parameters" => [$this->organisation->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-list"],

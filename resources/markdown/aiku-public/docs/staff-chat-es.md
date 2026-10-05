@@ -4,7 +4,7 @@ summary: La barra de mensajes a la derecha de cada pantalla de aiku - escribe a 
 date: 2026-09-02
 source_date: 2026-09-02
 tags: crm, dispatch, hr, chat, messaging
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

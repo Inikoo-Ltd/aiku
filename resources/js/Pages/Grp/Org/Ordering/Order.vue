@@ -928,6 +928,14 @@ const labelToBePaid = (toBePaidValue: string) => {
 const isPreOrderLocked = computed(() => !!props.pre_order?.lock?.is_locked_for_me)
 const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || '') && !isPreOrderLocked.value)
 
+const isShippingEditable = computed(() => {
+    if (props.state === 'cancelled' || isPreOrderLocked.value) {
+        return false
+    }
+
+    return !['finalised', 'dispatched'].includes(props.state) || !props.box_stats?.invoices?.length
+})
+
 const isOrderAmountsProvisional = computed(() => ['in_warehouse', 'handling', 'handling_blocked'].includes(props.data?.data?.state || ''))
 
 const isLoadingPriorityDispatch = ref(false)
@@ -2708,7 +2716,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !isPreOrderLocked"
+                                        v-if="isShippingEditable"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="ctrans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">

@@ -587,7 +587,6 @@ test("UI show trade unit navigation stays in the bucket and the group", function
             'name'     => $code.' name',
             'status'   => $status,
         ]);
-        $tradeUnit->stats()->create();
 
         return $tradeUnit;
     };
@@ -798,6 +797,18 @@ test('stocks with a CPNP numbered trade unit are marked as cosmetic', function (
     expect($other->refresh()->is_cosmetic)->toBeTrue();
 });
 
+test('setting or clearing a trade unit CPNP number follows on its stocks cosmetic flag', function () {
+    [$stock] = createStocks($this->group);
+    $tradeUnit = $stock->tradeUnits()->first();
+    $stock->update(['is_cosmetic' => false]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['cpnp_number' => 'CPNP-9876']);
+    expect($stock->refresh()->is_cosmetic)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['cpnp_number' => null]);
+    expect($stock->refresh()->is_cosmetic)->toBeFalse();
+});
+
 test("UI Create Stock in Stock Family Group", function () {
     $stockFamily = StockFamily::first();
     $response    = get(
@@ -932,6 +943,25 @@ test('UI Show Trade Unit Family page loads', function () {
             ->has('tabs.current');
     });
 });
+
+test('UI Show Trade Unit Family page loads from goods and masters routes with previous and next', function (string $routeName) {
+    $group = createGroup();
+
+    $first = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-A-'.uniqid(),
+        'name' => 'First Family',
+    ]);
+    $second = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-B-'.uniqid(),
+        'name' => 'Second Family',
+    ]);
+
+    get(route($routeName, [$second->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Goods/TradeUnitFamily')
+            ->where('navigation.previous.route.name', $routeName));
+})->with(['grp.goods.trade-unit-families.show', 'grp.masters.trade-unit-families.show']);
 
 test('UI Show Trade Unit Family sales analysis tab', function () {
     $group = createGroup();
@@ -1753,4 +1783,59 @@ test('weights are whole grams: a decimal is refused instead of failing the save'
 
     \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['gross_weight' => 57]);
     expect($tradeUnit->fresh()->gross_weight)->toBe(57);
+});
+
+test('trade unit family documents reach products read only and leave them when removed from the family', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+
+    $tradeUnitFamily = StoreTradeUnitFamily::make()->action($this->group, [
+        'code' => 'TUF-DOC-'.uniqid(),
+        'name' => 'Documents Family',
+    ]);
+    $tradeUnit->update(['trade_unit_family_id' => $tradeUnitFamily->id]);
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnitFamily, [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('family-test-report.pdf', "%PDF-1.4\n% ".uniqid()."\n%%EOF")],
+        'scope'       => 'test_reports',
+    ]);
+    $familyDocument = $tradeUnitFamily->attachments()->first();
+
+    expect($product->attachments()->pluck('media.id')->all())->toBe([$familyDocument->id]);
+
+    $productDocuments = \App\Actions\Catalogue\Product\UI\GetProductAttachment::run($product->fresh())['documents'];
+    expect($productDocuments)->toHaveCount(1)
+        ->and($productDocuments[0]['source']['type'])->toBe('trade_unit_family')
+        ->and($productDocuments[0]['source']['route']['parameters']['tradeUnitFamily'])->toBe($tradeUnitFamily->slug)
+        ->and(\App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments::make()->forTradeUnitFamilyOf($tradeUnit->fresh()))->toHaveCount(1)
+        ->and(\Illuminate\Support\Facades\Route::has('grp.models.product.attachment.attach'))->toBeFalse();
+
+    \App\Actions\Helpers\Media\DetachAttachmentFromModel::make()->action($tradeUnitFamily, $familyDocument);
+
+    expect($product->attachments()->count())->toBe(0);
+});
+
+test('products get their trade unit family documents when their trade unit joins the family', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+
+    $tradeUnitFamily = StoreTradeUnitFamily::make()->action($this->group, [
+        'code' => 'TUF-JOIN-'.uniqid(),
+        'name' => 'Joining Family',
+    ]);
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnitFamily, [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('join-sds.pdf', "%PDF-1.4\n% ".uniqid()."\n%%EOF")],
+        'scope'       => 'sds',
+    ]);
+    $familyDocument = $tradeUnitFamily->attachments()->first();
+
+    expect($product->attachments()->where('media.id', $familyDocument->id)->exists())->toBeFalse();
+
+    \App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily::make()->handle($tradeUnitFamily, ['trade_units' => [$tradeUnit->id]]);
+
+    expect($product->attachments()->where('media.id', $familyDocument->id)->exists())->toBeTrue();
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [['id' => $tradeUnit->id, 'quantity' => 1]]);
+
+    expect($product->attachments()->where('media.id', $familyDocument->id)->count())->toBe(1);
 });

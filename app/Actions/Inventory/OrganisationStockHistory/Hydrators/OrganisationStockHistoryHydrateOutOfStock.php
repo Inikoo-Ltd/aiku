@@ -25,7 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * alive that day but had no location at all (those never get an org stock history row). Fresh SKOs
  * are made only for orders already placed and never kept on the shelf, so they are left out entirely.
  * An empty SKO is only a stock out when it feeds a product on sale today and had received stock by
- * that day; otherwise it is left out of the day's SKOs too.
+ * that day, and never when it is on demand; otherwise it is left out of the day's SKOs too.
  *
  * The estimated lost revenue is what those SKOs would have sold that day: each one's average daily
  * sales over the full months before, so a stock out never lowers its own rate. Discontinued SKOs,

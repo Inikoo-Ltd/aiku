@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\FulfilmentGate\UI;
 
+use App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\FulfilmentGate\GetMakeQueue;
 use App\Actions\OrgAction;
@@ -223,6 +224,7 @@ class IndexOrdersAtGate extends OrgAction
                 ],
                 'data'      => $orders,
                 'shortfall'  => $this->shortfall($this->organisation),
+                'can_create_job_orders' => StoreJobOrderFromShortfall::userCanCreateIn($request->user(), $this->warehouse),
                 'make_queue' => $makeQueue,
                 'currency_code' => $this->organisation->currency->code,
             ]

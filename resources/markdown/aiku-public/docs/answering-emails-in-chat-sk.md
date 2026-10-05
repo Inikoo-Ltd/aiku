@@ -4,7 +4,7 @@ summary: Pošta do schránky obchodu príde ako konverzácia vedľa webového ch
 date: 2026-10-01
 source_date: 2026-10-01
 tags: crm, chat, email
-category: crm
+category: help-desk
 series: Chat
 order: 3
 ---

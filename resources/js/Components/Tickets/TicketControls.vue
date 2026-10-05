@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { Popover, Listbox, Dialog } from "primevue"
@@ -24,9 +25,9 @@ import TicketAttachmentPreview, { attachmentIconFor, isPreviewableAttachment } f
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots, faBellSlash } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots, faBellSlash, faProjectDiagram, faFlag } from "@fal"
 
-library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faForward, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots, faBellSlash)
+library.add(faFlag, faProjectDiagram, faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faForward, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots, faBellSlash)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -40,6 +41,8 @@ const props = defineProps<{
         tags: string[]
         kinds: Option<string>[]
         modules: Option<string>[]
+        projects?: Option<number>[]
+        milestones?: Option<number>[]
         collaborators?: (Option<number> & { avatar?: Record<string, string> | null })[]
         developers?: { username: string; name: string }[]
         mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
@@ -53,6 +56,7 @@ const props = defineProps<{
     can_request_qa: boolean
     is_reporter: boolean
     can_change_kind_module: boolean
+    can_change_project?: boolean
     can_update?: boolean
     can_cancel_as_reporter?: boolean
     can_reopen_as_reporter?: boolean
@@ -62,6 +66,7 @@ const props = defineProps<{
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
         collaborators?: { name: string; parameters: Record<string, unknown> }
+        project?: { name: string; parameters: Record<string, unknown> }
         deploy_comment?: { name: string; parameters: Record<string, unknown> }
     }
 }>()
@@ -70,16 +75,7 @@ const emit = defineEmits<{
     (e: "updated"): void
 }>()
 
-const kindIcons: Record<string, string> = {
-    bug: "fal fa-bug",
-    feature: "fal fa-lightbulb",
-    escalation: "fal fa-level-up",
-    task: "fal fa-tasks",
-    qa: "fal fa-vial",
-    documentation: "fal fa-books",
-    data_integrity: "fal fa-database",
-    support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const kindPopover = ref()
 const modulePopover = ref()
@@ -87,9 +83,15 @@ const assigneePopover = ref()
 const isAssigneePickerOpen = ref(false)
 const isKindPickerOpen = ref(false)
 const isModulePickerOpen = ref(false)
+const projectPopover = ref()
+const isProjectPickerOpen = ref(false)
+const milestonePopover = ref()
+const isMilestonePickerOpen = ref(false)
+const milestoneOptions = computed(() => [{ label: ctrans("No milestone"), value: null }, ...(props.options.milestones ?? [])])
+const projectOptions = computed(() => [{ label: ctrans("No project"), value: null }, ...(props.options.projects ?? [])])
 const isTagPickerOpen = ref(false)
 
-const optionLabel = (options: { label: string; value: string }[], value: string | null) => options.find((option) => option.value === value)?.label
+const optionLabel = (options: { label: string; value: string | number }[], value: string | number | null) => options.find((option) => option.value === value)?.label
 
 const statusBadgeClasses: Record<string, string> = {
     gray: "bg-gray-100 text-gray-700",
@@ -194,7 +196,6 @@ const sendQaVerdict = () => {
 }
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
-const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
 const canGiveQaVerdict = computed(() => props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
 const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
 
@@ -206,7 +207,7 @@ const qaVerdictCopy = computed(() => ({
 
 const showQaTarget = computed(() => props.ticket.qa_status === "requested" || Boolean(props.ticket.qa_user))
 
-const canAskQa = computed(() => props.can_request_qa && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => props.can_request_qa && props.ticket.qa_status !== "requested")
 
 // Asking for a check is a question, and a question with nothing said about what changed makes
 // QA guess. The note is optional, since sometimes the ticket already says it.
@@ -309,12 +310,21 @@ const update = (field: string, value: unknown, action: string = field) => {
     })
 }
 
+const updateProject = (field: "ticket_project_id" | "ticket_project_milestone_id", value: number | null) => {
+    if (isBusy.value || !props.routes.project) return
+    router.patch(route(props.routes.project.name, props.routes.project.parameters), { [field]: value }, {
+        preserveScroll: true,
+        onStart: () => (pendingAction.value = field),
+        onFinish: () => (pendingAction.value = null),
+        onSuccess: () => emit("updated"),
+    })
+}
+
 const isEditingDeployComment = ref(false)
 const deployCommentDraft = ref("")
 const deployCommentImages = ref<File[]>([])
 const deployCommentRemovedFiles = ref<string[]>([])
 const deployCommentError = ref("")
-const deployCommentPreview = ref(false)
 
 type DeployCommentFile = { ulid: string; name: string; url: string; is_image: boolean }
 const keptDeployCommentFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter((file: DeployCommentFile) => !deployCommentRemovedFiles.value.includes(file.ulid)))
@@ -334,7 +344,6 @@ const startEditDeployComment = () => {
     deployCommentImages.value = []
     deployCommentRemovedFiles.value = []
     deployCommentError.value = ""
-    deployCommentPreview.value = false
     isEditingDeployComment.value = true
 }
 
@@ -511,15 +520,7 @@ const saveDeployComment = () => {
                     </div>
 
                     <template v-if="isEditingDeployComment">
-                        <div class="mt-2 flex items-center gap-3 text-xs">
-                            <button type="button" class="pb-0.5" :class="!deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = false">{{ ctrans("Write") }}</button>
-                            <button type="button" class="pb-0.5" :class="deployCommentPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="deployCommentPreview = true">{{ ctrans("Preview") }}</button>
-                        </div>
-                        <TicketComposer v-if="!deployCommentPreview" v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :max-images="deployCommentMaxImages" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
-                        <div v-else class="rounded border border-green-200 bg-white px-3 py-2 min-h-[4.5rem]">
-                            <TicketBody v-if="deployCommentDraft.trim()" :text="deployCommentDraft" />
-                            <p v-else class="text-sm italic text-gray-400">{{ ctrans("Nothing to preview") }}</p>
-                        </div>
+                        <TicketComposer class="mt-2" v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :max-images="deployCommentMaxImages" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
                         <div v-if="keptDeployCommentFiles.length" class="mt-2 flex flex-wrap gap-1.5">
                             <span v-for="file in keptDeployCommentFiles" :key="file.ulid" class="relative">
                                 <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover" />
@@ -569,6 +570,39 @@ const saveDeployComment = () => {
                 </div>
             </div>
             <slot name="after-qa" />
+            <div v-if="ticket.project || (can_change_project && options.projects?.length)">
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Project") }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span
+                        v-tooltip="can_change_project ? ctrans('Project · click to change') : ctrans('Project')"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 select-none transition duration-200"
+                        :class="[can_change_project && 'cursor-pointer hover:bg-gray-200 active:!bg-gray-300', isProjectPickerOpen && '!bg-gray-300']"
+                        @click="can_change_project && projectPopover.toggle($event)"
+                        :tabindex="can_change_project ? 0 : undefined"
+                        @keydown.enter.prevent="can_change_project && projectPopover.toggle($event)">
+                        <FontAwesomeIcon :icon="isPending('ticket_project_id') ? 'fal fa-spinner' : 'fal fa-project-diagram'" :spin="isPending('ticket_project_id')" fixed-width />
+                        {{ ticket.project?.name ?? ctrans("No project") }}
+                    </span>
+                    <span
+                        v-if="ticket.project && options.milestones?.length"
+                        v-tooltip="can_change_project ? ctrans('Milestone · click to change') : ctrans('Milestone')"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 select-none transition duration-200"
+                        :class="[can_change_project && 'cursor-pointer hover:bg-gray-200 active:!bg-gray-300', isMilestonePickerOpen && '!bg-gray-300']"
+                        @click="can_change_project && milestonePopover.toggle($event)"
+                        :tabindex="can_change_project ? 0 : undefined"
+                        @keydown.enter.prevent="can_change_project && milestonePopover.toggle($event)">
+                        <FontAwesomeIcon :icon="isPending('ticket_project_milestone_id') ? 'fal fa-spinner' : 'fal fa-flag'" :spin="isPending('ticket_project_milestone_id')" fixed-width />
+                        {{ optionLabel(options.milestones, ticket.ticket_project_milestone_id) ?? ctrans("No milestone") }}
+                    </span>
+                    <a v-if="ticket.project" :href="route('grp.projects.show', ticket.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
+                </div>
+                <Popover v-if="can_change_project" ref="projectPopover" @show="isProjectPickerOpen = true" @hide="isProjectPickerOpen = false">
+                    <Listbox :model-value="ticket.ticket_project_id ?? null" :options="projectOptions" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="updateProject('ticket_project_id', $event); projectPopover.hide()" />
+                </Popover>
+                <Popover v-if="can_change_project" ref="milestonePopover" @show="isMilestonePickerOpen = true" @hide="isMilestonePickerOpen = false">
+                    <Listbox :model-value="ticket.ticket_project_milestone_id ?? null" :options="milestoneOptions" option-label="label" option-value="value" scroll-height="16rem" class="border-0" @update:model-value="updateProject('ticket_project_milestone_id', $event); milestonePopover.hide()" />
+                </Popover>
+            </div>
             <template v-if="can_manage || can_contribute">
             <div v-if="ticket.type === 'help'">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Kind and module") }}</p>

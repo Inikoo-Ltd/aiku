@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue"
+import { usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { Dialog } from "primevue"
@@ -62,7 +63,7 @@ const open = async () => {
 </script>
 
 <template>
-    <div class="w-fit">
+    <div v-if="usePage().props.can_move_stock !== false" class="w-fit">
         <Button
             :type="buttonType ?? 'tertiary'"
             :size="buttonSize ?? 'xs'"

@@ -26,14 +26,17 @@ use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\UI\SyncOrderCancellationToShopify;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServices;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\GetFulfilmentServiceName;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Order\FetchShopifyOrdersFromApi;
 use App\Actions\Dropshipping\Shopify\Order\GetShopifyFulfilmentOrderFromApi;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\FetchRetinaCustomerSalesChannelOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\WebhookUninstalledShopifyUser;
+use App\Actions\Maintenance\Dropshipping\RemoveStaleShopifyFulfilmentLocations;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -564,6 +567,12 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
     ]);
     expect(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class);
 
+    foreach ([402, 404] as $status) {
+        ShopifyFake::fake(['getUnfulfilledOrders' => Http::response(['errors' => 'Unavailable Shop'], $status)]);
+        expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
+            ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, "HTTP $status");
+    }
+
     ShopifyFake::fake([
         'getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderNode('gid://shopify/Order/5030', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6030', 'IN_PROGRESS')])]),
     ]);
@@ -573,13 +582,13 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
         ->and($payload['order']['id'])->toBe('gid://shopify/Order/5030');
 });
 
-function shopifyPolledFulfilmentOrder(string $gid, string $status, string $requestStatus, string $locationGid = 'gid://shopify/Location/1001', array $lineItems = [[]]): array
+function shopifyPolledFulfilmentOrder(string $gid, string $status, string $requestStatus, string $locationGid = 'gid://shopify/Location/1001', array $lineItems = [[]], ?string $locationName = null): array
 {
     return array_merge(Arr::except(shopifyFulfilmentOrder($lineItems), 'order'), [
         'id'               => $gid,
         'status'           => $status,
         'requestStatus'    => $requestStatus,
-        'assignedLocation' => ['location' => ['id' => $locationGid]],
+        'assignedLocation' => ['location' => array_filter(['id' => $locationGid, 'name' => $locationName], fn ($value) => $value !== null)],
     ]);
 }
 
@@ -659,6 +668,29 @@ test('the order poller imports every fulfilment order requested from our locatio
 
     expect($importedIds())->toHaveCount(4)
         ->and($acceptedIds())->toBe(['gid://shopify/FulfillmentOrder/6047', 'gid://shopify/FulfillmentOrder/6052']);
+});
+
+test('a fulfilment order stuck on a non-current aiku location is flagged, a third-party location is not', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-stale-alert');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    Log::spy();
+    ShopifyFake::fake([
+        'getUnfulfilledOrders' => shopifyUnfulfilledOrdersReply([
+            shopifyPolledOrder('gid://shopify/Order/5070', [
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6070', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9990', locationName: 'aiku-awd (sho-old-1)'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6071', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9991', locationName: 'Merchant own warehouse'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6072', 'CLOSED', 'UNSUBMITTED', 'gid://shopify/Location/9992', locationName: 'aiku-awd (sho-old-closed)'),
+            ]),
+        ]),
+    ]);
+
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6070') && str_contains($message, 'Location/9990') && str_contains($message, 'UNSUBMITTED'))->once();
+    Log::shouldNotHaveReceived('warning', fn (string $message) => str_contains($message, 'FulfillmentOrder/6071'));
+    Log::shouldNotHaveReceived('warning', fn (string $message) => str_contains($message, 'FulfillmentOrder/6072'));
 });
 
 test('a request aw already holds an order for is only accepted, never split or declined, and left alone once staff cancelled it', function () {
@@ -933,16 +965,21 @@ function shopifyShopReply(array $fulfilmentServices, string $name = 'Ada Store')
     ]]);
 }
 
-function shopifyFulfilmentServiceNode(string $id, string $name, string $locationId, string $createdAt = '2026-01-01T00:00:00Z'): array
+function shopifyFulfilmentServiceNode(string $id, string $name, string $locationId, string $createdAt = '2026-01-01T00:00:00Z', ?string $callbackUrl = null): array
 {
     return [
         'id'                  => $id,
         'serviceName'         => $name,
         'inventoryManagement' => true,
-        'callbackUrl'         => 'https://app.example/webhooks/shopify/1',
+        'callbackUrl'         => $callbackUrl ?? 'https://app.example/webhooks/shopify/1',
         'type'                => 'THIRD_PARTY',
         'location'            => ['id' => $locationId, 'name' => $name, 'createdAt' => $createdAt, 'isActive' => true, 'fulfillsOnlineOrders' => true, 'address' => []],
     ];
+}
+
+function aikuCallbackFor(ShopifyUser $shopifyUser): string
+{
+    return 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id;
 }
 
 test('creating the fulfilment service names it after the channel, learns its location and switches the channel live', function () {
@@ -1046,6 +1083,198 @@ test('deleting all fulfilment services only touches aiku services and adopting k
         ->and($shopifyUser->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/old')
         ->and($shopifyUser->shopify_location_id)->toBe('gid://shopify/Location/2');
     CheckShopifyPortfolios::assertPushed();
+});
+
+test('reconnecting a shop adopts an aiku fulfilment service abandoned by an earlier channel generation instead of leaving it and creating a new one', function () {
+    Queue::fake();
+    $oldShopifyUser = shopifyOrderChannel($this, 'reconnect-stale');
+    $customer       = $oldShopifyUser->customer;
+    $channel        = $oldShopifyUser->customerSalesChannel;
+    $oldServiceName = 'aiku-'.$this->shop->slug.' (an-earlier-channel-generation)';
+    $oldShopifyUser->delete();
+
+    ShopifyFake::fake([
+        'shop'                     => shopifyShopReply([shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/501', $oldServiceName, 'gid://shopify/Location/1001', '2025-06-01T00:00:00Z')]),
+        'fulfillmentServiceUpdate' => ShopifyFake::graphql(['fulfillmentServiceUpdate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/501', 'serviceName' => $oldServiceName, 'callbackUrl' => 'x'], 'userErrors' => []]]),
+    ]);
+
+    $newShopifyUser = ClaimShopifyUser::make()->handle($customer, 'reconnect-stale.'.config('shopify-app.my_shopify_domain'));
+
+    expect($newShopifyUser->id)->not->toBe($oldShopifyUser->id)
+        ->and($newShopifyUser->customer_sales_channel_id)->toBe($channel->id)
+        ->and(ShopifyFake::calls('fulfillmentServiceCreate'))->toBe([])
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentService/501')
+        ->and($newShopifyUser->refresh()->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/501')
+        ->and($newShopifyUser->shopify_location_id)->toBe('gid://shopify/Location/1001');
+
+    CheckShopifyPortfolios::assertPushed();
+    RemoveStaleShopifyFulfilmentLocations::assertPushed();
+});
+
+test('reconnecting a shop with no earlier aiku fulfilment service on the store still creates one', function () {
+    Queue::fake();
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $created  = null;
+
+    ShopifyFake::fake([
+        'shop'                     => function () use (&$created) {
+            return shopifyShopReply($created ? [$created] : []);
+        },
+        'fulfillmentServiceCreate' => function (array $variables) use (&$created) {
+            $created = shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/900', $variables['name'], 'gid://shopify/Location/1900');
+
+            return ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => $created['id'], 'serviceName' => $variables['name'], 'callbackUrl' => $variables['callbackUrl'], 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]);
+        },
+        'locationEdit'             => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1900', 'name' => 'x', 'address' => []], 'userErrors' => []]]),
+        'getDeliveryProfiles'      => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
+    ]);
+
+    $shopifyUser = ClaimShopifyUser::make()->handle($customer, 'reconnect-fresh.'.config('shopify-app.my_shopify_domain'));
+
+    expect(ShopifyFake::calls('fulfillmentServiceCreate'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate'))->toBe([])
+        ->and($shopifyUser->refresh()->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/900')
+        ->and($shopifyUser->shopify_location_id)->toBe('gid://shopify/Location/1900');
+});
+
+test('reconnecting onto a reused channel re-points its same-named service at the fresh login instead of leaving the dead callback', function () {
+    Queue::fake();
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    ShopifyFake::fake([
+        'shop'                     => function () use ($customer) {
+            $channel = $customer->customerSalesChannels()->first();
+
+            return shopifyShopReply([shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/801', GetFulfilmentServiceName::run($channel), 'gid://shopify/Location/1801', callbackUrl: 'https://'.config('app.domain').'/webhooks/shopify/999999')]);
+        },
+        'fulfillmentServiceUpdate' => ShopifyFake::graphql(['fulfillmentServiceUpdate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/801', 'serviceName' => 'x', 'callbackUrl' => 'x'], 'userErrors' => []]]),
+    ]);
+
+    $shopifyUser = ClaimShopifyUser::make()->handle($customer, 'reconnect-exact.'.config('shopify-app.my_shopify_domain'));
+
+    expect(ShopifyFake::calls('fulfillmentServiceCreate'))->toBe([])
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentService/801')
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate')[0]['variables']['callbackUrl'])->toBe(aikuCallbackFor($shopifyUser))
+        ->and($shopifyUser->refresh()->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/801')
+        ->and($shopifyUser->shopify_location_id)->toBe('gid://shopify/Location/1801');
+    RemoveStaleShopifyFulfilmentLocations::assertPushed();
+});
+
+test('reconnecting onto a reused channel whose service already answers to the live login touches nothing', function () {
+    Queue::fake();
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    ShopifyFake::fake([
+        'shop' => function () use ($customer) {
+            $channel = $customer->customerSalesChannels()->first();
+
+            return shopifyShopReply([shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/801', GetFulfilmentServiceName::run($channel), 'gid://shopify/Location/1801', callbackUrl: 'https://'.config('app.domain').'/webhooks/shopify/'.$channel->platform_user_id)]);
+        },
+    ]);
+
+    $shopifyUser = ClaimShopifyUser::make()->handle($customer, 'reconnect-settled.'.config('shopify-app.my_shopify_domain'));
+
+    expect(ShopifyFake::calls('fulfillmentServiceCreate'))->toBe([])
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate'))->toBe([])
+        ->and($shopifyUser->refresh()->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/801');
+    RemoveStaleShopifyFulfilmentLocations::assertPushed();
+});
+
+test('the stale location sweep removes an abandoned aiku fulfilment service with no open orders, keeping the live one', function () {
+    $shopifyUser = shopifyOrderChannel($this, 'sweep-clean');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    ShopifyFake::fake([
+        'shop'                     => shopifyShopReply([
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/501', 'aiku-'.$this->shop->slug.' (current)', 'gid://shopify/Location/1001', callbackUrl: aikuCallbackFor($shopifyUser)),
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/499', 'aiku-'.$this->shop->slug.' (abandoned)', 'gid://shopify/Location/999'),
+        ]),
+        'staleLocationOrders'      => ShopifyFake::graphql(['orders' => ['edges' => [], 'pageInfo' => ['hasNextPage' => false, 'endCursor' => null]]]),
+        'fulfillmentServiceDelete' => fn (array $variables) => ShopifyFake::graphql(['fulfillmentServiceDelete' => ['deletedId' => $variables['id'], 'userErrors' => []]]),
+    ]);
+
+    [$ok, $message, $report] = RemoveStaleShopifyFulfilmentLocations::run($channel, false);
+
+    expect($ok)->toBeTrue()
+        ->and($report)->toHaveCount(1)
+        ->and($report[0]['id'])->toBe('gid://shopify/FulfillmentService/499')
+        ->and($report[0]['action'])->toBe('deleted')
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentService/499')
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete')[0]['variables']['inventoryAction'])->toBe('DELETE');
+});
+
+test('the stale location sweep re-points a live service whose callback holds a retired login instead of deleting it', function () {
+    $shopifyUser = shopifyOrderChannel($this, 'sweep-repoint');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    ShopifyFake::fake([
+        'shop'                     => shopifyShopReply([
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/501', 'aiku-'.$this->shop->slug.' (current)', 'gid://shopify/Location/1001', callbackUrl: 'https://'.config('app.domain').'/webhooks/shopify/999999'),
+        ]),
+        'fulfillmentServiceUpdate' => ShopifyFake::graphql(['fulfillmentServiceUpdate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/501', 'serviceName' => 'x', 'callbackUrl' => 'x'], 'userErrors' => []]]),
+    ]);
+
+    [$ok, $message, $report] = RemoveStaleShopifyFulfilmentLocations::run($channel, false);
+
+    expect($ok)->toBeTrue()
+        ->and($report)->toHaveCount(1)
+        ->and($report[0]['action'])->toBe('re-pointed')
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentService/501')
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate')[0]['variables']['callbackUrl'])->toBe(aikuCallbackFor($shopifyUser))
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete'))->toBe([]);
+});
+
+test('the stale location sweep skips an abandoned aiku fulfilment service that still has an order open there', function () {
+    $shopifyUser = shopifyOrderChannel($this, 'sweep-open-order');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    ShopifyFake::fake([
+        'shop'                => shopifyShopReply([
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/501', 'aiku-'.$this->shop->slug.' (current)', 'gid://shopify/Location/1001', callbackUrl: aikuCallbackFor($shopifyUser)),
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/498', 'aiku-'.$this->shop->slug.' (stuck)', 'gid://shopify/Location/998'),
+        ]),
+        'staleLocationOrders' => ShopifyFake::graphql(['orders' => [
+            'edges'    => [['node' => ['fulfillmentOrders' => ['edges' => [
+                ['node' => ['status' => 'OPEN', 'assignedLocation' => ['location' => ['id' => 'gid://shopify/Location/998']]]],
+            ]]]]],
+            'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
+        ]]),
+    ]);
+
+    [$ok, $message, $report] = RemoveStaleShopifyFulfilmentLocations::run($channel, false);
+
+    expect($ok)->toBeTrue()
+        ->and($report[0]['action'])->toBe('skipped')
+        ->and($report[0]['reason'])->toContain('1 order')
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete'))->toBe([]);
+});
+
+test('the stale location sweep is a dry run by default, deletes nothing, and refuses a login with no service of its own', function () {
+    $shopifyUser = shopifyOrderChannel($this, 'sweep-dry-run');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    ShopifyFake::fake([
+        'shop'                => shopifyShopReply([
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/501', 'aiku-'.$this->shop->slug.' (current)', 'gid://shopify/Location/1001', callbackUrl: 'https://'.config('app.domain').'/webhooks/shopify/999999'),
+            shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/497', 'aiku-'.$this->shop->slug.' (abandoned)', 'gid://shopify/Location/997'),
+        ]),
+        'staleLocationOrders' => ShopifyFake::graphql(['orders' => ['edges' => [], 'pageInfo' => ['hasNextPage' => false, 'endCursor' => null]]]),
+    ]);
+
+    [$ok, $message, $report] = RemoveStaleShopifyFulfilmentLocations::run($channel);
+
+    expect($report[0]['action'])->toBe('would re-point')
+        ->and($report[0]['id'])->toBe('gid://shopify/FulfillmentService/501')
+        ->and($report[1]['action'])->toBe('would delete')
+        ->and($report[1]['id'])->toBe('gid://shopify/FulfillmentService/497')
+        ->and(ShopifyFake::calls('fulfillmentServiceDelete'))->toBe([])
+        ->and(ShopifyFake::calls('fulfillmentServiceUpdate'))->toBe([]);
+
+    $shopifyUser->update(['shopify_fulfilment_service_id' => null]);
+    [$ok, $message] = RemoveStaleShopifyFulfilmentLocations::run($channel->refresh(), false);
+    expect($ok)->toBeFalse()->and($message)->toContain('no fulfilment service of its own');
 });
 
 test('installing the app registers the uninstall webhook, reads the store and creates the fulfilment service', function () {

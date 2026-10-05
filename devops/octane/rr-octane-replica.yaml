@@ -1,0 +1,19 @@
+version: '3'
+http:
+  address: 127.0.0.1:8000
+  pool:
+    num_workers: 32
+    allocate_timeout: 60s
+    reset_timeout: 300s
+    destroy_timeout: 1s
+    dynamic_allocator:
+      max_workers: 48
+      spawn_rate: 10
+      idle_timeout: 10s
+rpc:
+  listen: 'tcp://127.0.0.1:6001'
+metrics:
+  address: '127.0.0.1:2113'
+logs:
+  mode: production
+  level: error

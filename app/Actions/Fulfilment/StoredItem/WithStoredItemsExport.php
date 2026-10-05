@@ -49,7 +49,7 @@ trait WithStoredItemsExport
             'user'          => auth()->user(),
         ], [], $config);
 
-        return response($pdf->stream(), 200)
+        return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
         // try {

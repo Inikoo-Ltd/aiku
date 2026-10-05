@@ -415,7 +415,8 @@ class ClassifyChatTurn
 
         $orderLine = fn (array $order) => $order['reference'].': '.$order['status']
             .(isset($order['dispatched_on']) ? ', '.__('dispatched').' '.$order['dispatched_on'] : '')
-            .collect($order['parcels'] ?? [])->map(fn (array $parcel) => ' · '.trim(($parcel['courier'] ?? '').' '.collect($parcel['tracking'] ?? [])->pluck('number')->join(', ')))->join('');
+            .collect($order['parcels'] ?? [])->map(fn (array $parcel) => ' · '.trim(($parcel['courier'] ?? '').' '.collect($parcel['tracking'] ?? [])->pluck('number')->join(', ')))->join('')
+            .collect($order['replacements'] ?? [])->map(fn (array $replacement) => ' · '.__('replacement').' '.($replacement['created'] ?? '').': '.$replacement['status'])->join('');
 
         return array_values(array_filter([
             ...($orders ? [$orderLine($orders['order'])] : []),

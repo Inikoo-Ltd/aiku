@@ -28,6 +28,7 @@ import MasterFamilyShowcase from "@/Components/Showcases/Grp/MasterFamilyShowcas
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
@@ -123,6 +124,7 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
+        attachments: TradeUnitDocuments,
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,

@@ -25,6 +25,7 @@ enum MasterFamilyTabsEnum: string
 
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
     case HISTORY   = 'history';
+    case ATTACHMENTS = 'attachments';
     case VARIANTS   = 'variants';
 
     public function blueprint(): array
@@ -47,6 +48,12 @@ enum MasterFamilyTabsEnum: string
             MasterFamilyTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
+            ],
+            MasterFamilyTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             MasterFamilyTabsEnum::HISTORY => [
                 'title' => __('History'),

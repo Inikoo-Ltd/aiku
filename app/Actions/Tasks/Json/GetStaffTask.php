@@ -24,6 +24,6 @@ class GetStaffTask
 
     public function asController(StaffTask $staffTask): StaffTaskResource
     {
-        return new StaffTaskResource($staffTask->load(['requester', 'assignee', 'collaborators.image', 'conversation.participants', 'model', 'media']));
+        return new StaffTaskResource($staffTask->load(['requester', 'assignee', 'collaborators.image', 'conversation.participants', 'model', 'media', 'project', 'milestone']));
     }
 }

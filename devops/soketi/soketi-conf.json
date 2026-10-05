@@ -1,0 +1,59 @@
+{
+  "port": 6002,
+  "appManager.array.apps": [
+    {
+      "id": "aiku",
+      "key": "{{SOKETI_AIKU_KEY}}",
+      "secret": "{{SOKETI_AIKU_SECRET}}",
+      "enabled": true,
+      "enableClientMessages": true,
+      "webhooks": [],
+      "maxBackendEventsPerSecond": -1,
+      "maxClientEventsPerSecond": -1,
+      "maxReadRequestsPerSecond": -1,
+      "maxPresenceMembersPerChannel": 100,
+      "maxPresenceMemberSizeInKb": 200,
+      "maxChannelNameLength": 200,
+      "maxEventChannelsAtOnce": 10,
+      "maxEventNameLength": 100,
+      "maxEventPayloadInKb": 400,
+      "maxEventBatchSize": 10
+    },
+    {
+      "id": "aiku-staging",
+      "key": "{{SOKETI_AIKU_STAGING_KEY}}",
+      "secret": "{{SOKETI_AIKU_STAGING_SECRET}}",
+      "enabled": true,
+      "enableClientMessages": true,
+      "webhooks": [],
+      "maxBackendEventsPerSecond": -1,
+      "maxClientEventsPerSecond": -1,
+      "maxReadRequestsPerSecond": -1,
+      "maxPresenceMembersPerChannel": 100,
+      "maxPresenceMemberSizeInKb": 200,
+      "maxChannelNameLength": 200,
+      "maxEventChannelsAtOnce": 10,
+      "maxEventNameLength": 100,
+      "maxEventPayloadInKb": 400,
+      "maxEventBatchSize": 10
+    },
+    {
+      "id": "aiku-devel",
+      "key": "{{SOKETI_AIKU_DEVEL_KEY}}",
+      "secret": "{{SOKETI_AIKU_DEVEL_SECRET}}",
+      "enabled": true,
+      "enableClientMessages": true,
+      "webhooks": [],
+      "maxBackendEventsPerSecond": -1,
+      "maxClientEventsPerSecond": -1,
+      "maxReadRequestsPerSecond": -1,
+      "maxPresenceMembersPerChannel": 100,
+      "maxPresenceMemberSizeInKb": 200,
+      "maxChannelNameLength": 200,
+      "maxEventChannelsAtOnce": 10,
+      "maxEventNameLength": 100,
+      "maxEventPayloadInKb": 400,
+      "maxEventBatchSize": 10
+    }
+  ]
+}

@@ -34,7 +34,6 @@ const emit = defineEmits<{
                 type="button"
                 :disabled="removing"
                 :aria-label="ctrans('Remove :name', { name })"
-                v-tooltip="ctrans('Remove :name', { name })"
                 class="absolute inset-0 flex items-center justify-center rounded-full bg-red-500/90 text-[10px] text-white opacity-0 transition duration-200 focus:opacity-100 group-hover/chip:opacity-100 disabled:cursor-wait [@media(hover:none)]:opacity-100"
                 :class="removing && '!opacity-100'"
                 @click.stop="emit('remove')">

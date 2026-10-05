@@ -216,6 +216,7 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgSupplier;
         $this->initialisation($organisation, $request)->withTab(OrgSupplierProductsTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier, OrgSupplierProductsTabsEnum::INDEX->value);
     }

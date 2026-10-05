@@ -125,6 +125,7 @@ class ShowChatSettings extends OrgAction
                     'learned'      => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('source_type', 'learned')->whereIn('status', ['active', 'proposed', 'conflict'])->orderByDesc('customers_count')->limit(200)
                         ->get(['id', 'title', 'body', 'status', 'conflict', 'customers_count', 'last_seen_at', 'expires_at'])->all(),
                     'knowledge_route' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    'can_edit'        => $this->userCanActOnChatOnShop($request->user(), $parent),
                     'update_route' => [
                         'name'       => 'grp.org.shops.show.chat.settings.policies.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],

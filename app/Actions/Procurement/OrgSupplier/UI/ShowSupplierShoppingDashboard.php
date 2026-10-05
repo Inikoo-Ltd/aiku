@@ -150,7 +150,7 @@ class ShowSupplierShoppingDashboard extends OrgAction
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
-        $routeParameters = [$this->orgSupplier->organisation->slug, $this->orgSupplier->slug];
+        $routeParameters = [$this->organisation->slug, $this->orgSupplier->slug];
 
         return Inertia::render(
             'Procurement/SupplierShoppingDashboard',

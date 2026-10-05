@@ -24,6 +24,7 @@ enum TicketKindEnum: string
     case DOCUMENTATION   = 'documentation';
     case DATA_INTEGRITY  = 'data_integrity';
     case SUPPORT         = 'support';
+    case AURORA          = 'aurora';
 
     public static function labels(): array
     {
@@ -36,6 +37,7 @@ enum TicketKindEnum: string
             'documentation'  => __('Documentation'),
             'data_integrity' => __('Data integrity'),
             'support'        => __('Support / investigation'),
+            'aurora'         => __('Aurora migration'),
         ];
     }
 

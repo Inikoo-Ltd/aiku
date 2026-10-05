@@ -27,6 +27,7 @@ enum MasterAssetTabsEnum: string
 
     case HISTORY = 'history';
     case TRADE_UNITS = 'trade_units';
+    case ATTACHMENTS = 'attachments';
 
 
     public function blueprint(MasterAsset $masterAsset): array
@@ -68,6 +69,12 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            MasterAssetTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],

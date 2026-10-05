@@ -115,7 +115,7 @@ class DraftChatReply implements ShouldBeUnique
         $customer = self::knownCustomer($chatSession);
         $facts    = array_filter([
             'order_facts'   => $customer ? GetChatOrderFacts::run($customer, $text) : null,
-            'product_facts' => GetChatProductFacts::run($shop, $text) ?: null,
+            'product_facts' => GetChatProductFacts::run($shop, $text) ?: GetChatProductFactsByName::run($shop, $text) ?: null,
         ]);
 
         if ($turn['guide'] ?? null) {
@@ -179,7 +179,7 @@ class DraftChatReply implements ShouldBeUnique
             'customer_name' => $customer ? ($customer->contact_name ?: $customer->name) : null,
             'order_facts'   => $customer ? GetChatOrderFacts::run($customer, $text) : null,
             'claim'         => $customer && $turn['branch'] === 'problem' ? GetChatClaimCase::run($chatSession, $customer) : null,
-            'product_facts' => GetChatProductFacts::run($shop, $text) ?: null,
+            'product_facts' => GetChatProductFacts::run($shop, $text) ?: GetChatProductFactsByName::run($shop, $text) ?: null,
             'looked_up'     => $turn['facts'] ?: null,
             'guides'        => collect($turn['guides'])->map(fn (array $guide) => ['title' => $guide['title'], 'url' => $guide['url']])->all() ?: null,
             'shop_notes'    => collect(PickChatKnowledge::run($shop, $text, $weSaid))->map(fn (array $page) => ['title' => $page['title'], 'url' => $page['url'], 'text' => $page['text']])->all() ?: null,
@@ -259,7 +259,7 @@ class DraftChatReply implements ShouldBeUnique
             $previous = ['reply' => $answer['reply'], 'fix' => $judge->critique($text, $weSaid, $facts, $examples, $answer['reply'], $problems) ?: $problems];
         }
 
-        if (!$best || ($best['scores']['invents'] ?? 0) >= 0.5) {
+        if (!$best || ($best['scores']['invents'] ?? 0) >= 0.5 || ($best['scores']['claims_done'] ?? 0) >= 0.5) {
             return null;
         }
 
@@ -365,10 +365,13 @@ class DraftChatReply implements ShouldBeUnique
           it. When we need something from the customer, ask them in the reply. When the facts do
           not cover a part, leave that part out rather than guess. Outside a gap the reply speaks
           to the customer as us: never mention the agent, a draft or the facts.
+        - Never say we have done something (asked, forwarded, sent, arranged, chased, credited,
+          refunded, spoken to someone) unless the facts or what we last said show it was done.
         - Missing, damaged, faulty or wrong items: say sorry once, name the items from "claim" or
           "order_facts" that match what they describe, ask for a photo of each item and of the
-          box if they have not sent photos, and leave the outcome as a gap. Follow the returns
-          rules in "shop_notes" when they cover it.
+          box if they have not sent photos, and leave the outcome as a gap unless a rule in
+          "shop_notes" says what we do in this case: then say that. Follow the returns rules in
+          "shop_notes" when they cover it.
         - When they answer something we asked or offered, confirm what happens next as we said
           it, or leave a gap if we did not say it.
         - A "guide" or a "shop_notes" entry that answers them may be named with its link.

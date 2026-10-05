@@ -10,6 +10,7 @@ import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { alertOnce, chosenAlertSound, isOpenInFront } from "@/Composables/useNotificationSound"
+import { pruneCachedChats, readCachedChat, removeCachedChat, writeCachedChat } from "@/Composables/useStaffChatCache"
 
 export interface StaffMessageReactions {
     [emoji: string]: number[]
@@ -30,6 +31,8 @@ export interface StaffMessage {
     image: any
     gif_url?: string | null
     created_at: string
+    client_status?: "sending" | "failed"
+    client_key?: string
 }
 
 export interface StaffParticipant {
@@ -38,7 +41,10 @@ export interface StaffParticipant {
     handle: string | null
     avatar: any
     last_seen_at?: string | null
+    last_read_at?: string | null
 }
+
+const GIF_URL = /^https:\/\/\S+\.(gif|webp)$/i
 
 export interface StaffConversation {
     ulid: string
@@ -53,6 +59,7 @@ export interface StaffConversation {
     context_label?: string | null
     context_url?: string | null
     task?: StaffConversationTask | null
+    my_left_at?: string | null
 }
 
 export interface StaffConversationTask {
@@ -89,12 +96,23 @@ interface ArchivedNote {
 
 const MAX_BUBBLES = 12
 
+const CACHE_WRITE_DELAY_MS = 400
+const cacheWriteTimers = new Map<string, ReturnType<typeof setTimeout>>()
+let isCachePruned = false
+
+const currentUserId = (): number | undefined => usePage().props?.auth?.user?.id
+
 export const bubblesStorageKey = () => `staff-chat-bubbles:${usePage().props?.auth?.user?.id ?? "guest"}`
 
-const readStoredBubbles = (): string[] => {
+const readStoredWindows = (): WindowState[] => {
     try {
         const stored = JSON.parse(localStorage.getItem(bubblesStorageKey()) ?? "[]")
-        return Array.isArray(stored) ? stored.filter((ulid): ulid is string => typeof ulid === "string") : []
+        if (!Array.isArray(stored)) return []
+
+        return stored
+            .map((entry) => (typeof entry === "string" ? { ulid: entry, minimised: true } : entry))
+            .filter((entry): entry is WindowState => typeof entry?.ulid === "string")
+            .map((entry) => ({ ulid: entry.ulid, minimised: entry.minimised !== false }))
     } catch {
         return []
     }
@@ -117,7 +135,8 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         typingByUlid: {} as Record<string, { user_name: string; expiresAt: number }>,
         loadingMessages: {} as Record<string, boolean>,
         fetched: false,
-        maxVisible: 3,
+        maxVisible: 1,
+        instantlyMinimised: [] as string[],
     }),
 
     getters: {
@@ -133,6 +152,26 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const { data } = await axios.get(route("grp.chat.staff.conversations.index"))
             this.conversations = data.data
             this.fetched = true
+
+            const userId = currentUserId()
+            if (userId && !isCachePruned) {
+                isCachePruned = true
+                pruneCachedChats(userId)
+            }
+        },
+
+        cacheChatSoon(ulid: string) {
+            const userId = currentUserId()
+            if (!userId) return
+
+            const pending = cacheWriteTimers.get(ulid)
+            if (pending) clearTimeout(pending)
+
+            cacheWriteTimers.set(ulid, setTimeout(() => {
+                cacheWriteTimers.delete(ulid)
+                const messages = this.messagesByUlid[ulid]
+                if (messages?.length) writeCachedChat(userId, ulid, messages)
+            }, CACHE_WRITE_DELAY_MS))
         },
 
         async openWithUser(userId: number) {
@@ -183,7 +222,19 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.openConversation(task.conversation_ulid)
         },
 
+        makeRoomForWindow(ulid: string) {
+            const visible = this.openWindows.filter((w) => !w.minimised && w.ulid !== ulid)
+            const overflow = visible.length - this.maxVisible + 1
+            if (overflow <= 0) return
+
+            const makingRoom = visible.slice(0, overflow)
+            this.instantlyMinimised = makingRoom.map((w) => w.ulid)
+            makingRoom.forEach((w) => (w.minimised = true))
+        },
+
         openConversation(ulid: string) {
+            this.makeRoomForWindow(ulid)
+
             const existing = this.openWindows.find((w) => w.ulid === ulid)
             if (existing) {
                 existing.minimised = false
@@ -192,19 +243,23 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 return
             }
 
-            const visible = this.openWindows.filter((w) => !w.minimised)
-            if (visible.length >= this.maxVisible) {
-                const oldest = visible[0]
-                oldest.minimised = true
-            }
-
             this.openWindows.push({ ulid, minimised: false })
             this.loadMessages(ulid)
             this.markRead(ulid)
         },
 
+        forgetCachedChat(ulid: string) {
+            const pending = cacheWriteTimers.get(ulid)
+            if (pending) clearTimeout(pending)
+            cacheWriteTimers.delete(ulid)
+
+            const userId = currentUserId()
+            if (userId) removeCachedChat(userId, ulid)
+        },
+
         dismissWindow(ulid: string) {
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
+            this.forgetCachedChat(ulid)
         },
 
         handleArchived(e: { conversation_ulid: string; user_id: number }) {
@@ -220,6 +275,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         closeConversation(ulid: string) {
             if (!canArchiveConversation(this.conversationByUlid(ulid))) return
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
+            this.forgetCachedChat(ulid)
             axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
             const index = this.conversations.findIndex((c) => c.ulid === ulid)
             if (index !== -1) {
@@ -230,18 +286,27 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         persistBubbles() {
             try {
-                localStorage.setItem(bubblesStorageKey(), JSON.stringify(this.openWindows.filter((w) => w.minimised).map((w) => w.ulid)))
+                localStorage.setItem(bubblesStorageKey(), JSON.stringify(this.openWindows.map((w) => ({ ulid: w.ulid, minimised: w.minimised }))))
             } catch { }
         },
 
-        restoreBubbles() {
-            const storedUlids = readStoredBubbles().filter((ulid) => !!this.conversationByUlid(ulid))
-            const openUlids = new Set(this.openWindows.filter((w) => !w.minimised).map((w) => w.ulid))
+        restoreBubbles({ reopenWindows = false }: { reopenWindows?: boolean } = {}) {
+            const stored = readStoredWindows().filter((entry) => !!this.conversationByUlid(entry.ulid))
+            const openHere = this.openWindows.filter((w) => !w.minimised)
+            const openUlids = new Set(openHere.map((w) => w.ulid))
 
-            this.openWindows = [
-                ...this.openWindows.filter((w) => !w.minimised),
-                ...storedUlids.filter((ulid) => !openUlids.has(ulid)).slice(-MAX_BUBBLES).map((ulid) => ({ ulid, minimised: true })),
-            ]
+            const reopened = reopenWindows
+                ? stored.filter((entry) => !entry.minimised && !openUlids.has(entry.ulid)).slice(-Math.max(0, this.maxVisible - openHere.length))
+                : []
+            const reopenedUlids = new Set(reopened.map((entry) => entry.ulid))
+
+            const bubbles = stored
+                .filter((entry) => !openUlids.has(entry.ulid) && !reopenedUlids.has(entry.ulid))
+                .slice(-MAX_BUBBLES)
+                .map((entry) => ({ ulid: entry.ulid, minimised: true }))
+
+            this.openWindows = [...openHere, ...reopened.map((entry) => ({ ulid: entry.ulid, minimised: false })), ...bubbles]
+            reopened.forEach((entry) => this.loadMessages(entry.ulid))
         },
 
         showAsBubble(ulid: string) {
@@ -258,48 +323,145 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         minimiseConversation(ulid: string, minimised: boolean) {
             const w = this.openWindows.find((w) => w.ulid === ulid)
-            if (w) {
-                w.minimised = minimised
-                if (!minimised) {
-                    this.markRead(ulid)
-                }
-            }
+            if (!w) return
+
+            if (!minimised) this.makeRoomForWindow(ulid)
+            w.minimised = minimised
+            if (!minimised) this.markRead(ulid)
         },
 
         async loadMessages(ulid: string, beforeId?: number) {
             if (this.loadingMessages[ulid]) return
             this.loadingMessages[ulid] = true
-            try {
-                const { data } = await axios.get(route("grp.chat.staff.conversations.messages.index", ulid), {
-                    params: beforeId ? { before_id: beforeId } : {},
+
+            const request = axios.get(route("grp.chat.staff.conversations.messages.index", ulid), {
+                params: beforeId ? { before_id: beforeId } : {},
+            })
+
+            const userId = currentUserId()
+            if (!beforeId && !this.messagesByUlid[ulid] && userId) {
+                readCachedChat(userId, ulid).then((cached) => {
+                    if (cached && this.loadingMessages[ulid] && !this.messagesByUlid[ulid]) this.messagesByUlid[ulid] = cached
                 })
+            }
+
+            try {
+                const { data } = await request
                 const incoming: StaffMessage[] = data.data
                 const current = this.messagesByUlid[ulid] ?? []
-                this.messagesByUlid[ulid] = beforeId ? [...incoming, ...current] : incoming
+                this.messagesByUlid[ulid] = beforeId ? [...incoming, ...current] : [...incoming, ...current.filter((m) => !!m.client_status)]
+                if (!beforeId) this.cacheChatSoon(ulid)
             } finally {
                 this.loadingMessages[ulid] = false
             }
         },
 
+        messageListOf(ulid: string): StaffMessage[] {
+            if (!this.messagesByUlid[ulid]) this.messagesByUlid[ulid] = []
+
+            return this.messagesByUlid[ulid]
+        },
+
         async send(ulid: string, body: string, parentId?: number | null, image?: File | null) {
-            let payload: any
-            let config: any = {}
-            if (image) {
-                const form = new FormData()
-                if (body) form.append("body", body)
-                if (parentId) form.append("parent_id", String(parentId))
-                form.append("image", image)
-                payload = form
-                config = { headers: { "Content-Type": "multipart/form-data" } }
-            } else {
-                payload = { body, parent_id: parentId ?? undefined }
+            if (!image) {
+                return this.sendOptimistically(ulid, body, parentId ?? null)
             }
-            const { data } = await axios.post(route("grp.chat.staff.conversations.messages.store", ulid), payload, config)
+
+            const form = new FormData()
+            if (body) form.append("body", body)
+            if (parentId) form.append("parent_id", String(parentId))
+            form.append("image", image)
+
+            const { data } = await axios.post(route("grp.chat.staff.conversations.messages.store", ulid), form, { headers: { "Content-Type": "multipart/form-data" } })
             const message: StaffMessage = data.data
-            const list = this.messagesByUlid[ulid] ?? (this.messagesByUlid[ulid] = [])
+            const list = this.messageListOf(ulid)
             if (!list.some((m) => m.id === message.id)) list.push(message)
             this.bumpConversation(ulid, message)
             return message
+        },
+
+        async sendOptimistically(ulid: string, body: string, parentId: number | null, retryKey?: string) {
+            const me = usePage().props?.auth?.user
+            const list = this.messageListOf(ulid)
+            const clientKey = retryKey ?? `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`
+            const isGif = GIF_URL.test(body)
+
+            const pending: StaffMessage = {
+                id: -Date.now(),
+                conversation_ulid: ulid,
+                user_id: me?.id,
+                user_name: me?.username ?? "",
+                parent_id: parentId,
+                body,
+                mentions: [],
+                language_id: null,
+                translations: {},
+                reactions: {},
+                image: null,
+                gif_url: isGif ? body : null,
+                created_at: new Date().toISOString(),
+                client_status: "sending",
+                client_key: clientKey,
+            }
+
+            const existingIndex = list.findIndex((m) => m.client_key === clientKey)
+            if (existingIndex === -1) {
+                list.push(pending)
+            } else {
+                list[existingIndex] = pending
+            }
+            this.bumpConversation(ulid, pending)
+
+            try {
+                const { data } = await axios.post(route("grp.chat.staff.conversations.messages.store", ulid), { body, parent_id: parentId ?? undefined })
+                const message: StaffMessage = data.data
+                const current = this.messageListOf(ulid)
+                const pendingIndex = current.findIndex((m) => m.client_key === clientKey)
+                const alreadyListed = current.some((m) => m.id === message.id)
+
+                if (pendingIndex !== -1) {
+                    if (alreadyListed) {
+                        current.splice(pendingIndex, 1)
+                    } else {
+                        current[pendingIndex] = message
+                    }
+                } else if (!alreadyListed) {
+                    current.push(message)
+                }
+                this.bumpConversation(ulid, message)
+                this.cacheChatSoon(ulid)
+
+                return message
+            } catch {
+                const current = this.messageListOf(ulid)
+                const failedIndex = current.findIndex((m) => m.client_key === clientKey)
+                if (failedIndex !== -1) current[failedIndex] = { ...current[failedIndex], client_status: "failed" }
+
+                return null
+            }
+        },
+
+        retrySend(message: StaffMessage) {
+            if (message.client_status !== "failed" || !message.client_key) return
+
+            return this.sendOptimistically(message.conversation_ulid, message.body, message.parent_id, message.client_key)
+        },
+
+        discardFailed(message: StaffMessage) {
+            const list = this.messagesByUlid[message.conversation_ulid]
+            if (!list) return
+            this.messagesByUlid[message.conversation_ulid] = list.filter((m) => m.client_key !== message.client_key)
+        },
+
+        mergeConversation(fresh: StaffConversation) {
+            const existing = this.conversationByUlid(fresh.ulid)
+            if (!existing) return
+            Object.assign(existing, { participants: fresh.participants, my_left_at: fresh.my_left_at ?? null, task: fresh.task ?? existing.task, name: fresh.name })
+        },
+
+        handleRead(e: { conversation_ulid: string; user_id: number; last_read_at: string }) {
+            const participant = this.conversationByUlid(e.conversation_ulid)?.participants.find((p) => p.id === e.user_id)
+            if (participant) participant.last_read_at = e.last_read_at
         },
 
         async toggleReaction(messageId: number, emoji: string) {
@@ -335,6 +497,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const index = list.findIndex((m) => m.id === message.id)
             if (index !== -1) {
                 list[index] = message
+                this.cacheChatSoon(message.conversation_ulid)
             }
         },
 
@@ -367,10 +530,23 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
             const list = this.messagesByUlid[ulid]
             if (list && !list.some((m) => m.id === message.id)) {
-                list.push(message)
+                const pendingIndex = message.user_id === myId
+                    ? list.findIndex((m) => m.client_status === "sending" && m.body === message.body)
+                    : -1
+
+                if (pendingIndex === -1) {
+                    list.push(message)
+                } else {
+                    list[pendingIndex] = message
+                }
+                this.cacheChatSoon(ulid)
             }
 
             this.bumpConversation(ulid, message)
+
+            if (message.user_id !== myId && isOpen && document.hasFocus()) {
+                this.markRead(ulid)
+            }
 
             if (message.user_id !== myId) {
                 const isMentioned = !!message.mentions?.includes(myId)

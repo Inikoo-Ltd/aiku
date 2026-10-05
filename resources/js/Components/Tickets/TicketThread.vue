@@ -60,6 +60,8 @@ const composer = ref<{ appendMention: (username: string) => void } | null>(null)
 
 const mentionInReply = (username: string) => composer.value?.appendMention(username)
 
+defineExpose({ mentionInReply })
+
 const isNewestFirst = ref(props.commentsNewestFirst)
 
 const toggleCommentOrder = () => {
@@ -80,14 +82,12 @@ const editingId = ref<number | null>(null)
 const editBody = ref("")
 const editRemovedMedia = ref<string[]>([])
 const editImages = ref<File[]>([])
-const editPreview = ref(false)
 
 const startEdit = (comment: { id: number; body: string }) => {
     editingId.value = comment.id
     editBody.value = comment.body
     editRemovedMedia.value = []
     editImages.value = []
-    editPreview.value = false
 }
 
 // Removing a file is only actually sent once Save is pressed, but it is still one-way enough
@@ -283,15 +283,7 @@ const submit = () => {
                     </span>
                 </div>
                 <div v-if="editingId === comment.id" class="space-y-2">
-                    <div class="mt-2 flex items-center gap-3 text-xs">
-                        <button type="button" class="pb-0.5" :class="!editPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="editPreview = false">{{ ctrans("Write") }}</button>
-                        <button type="button" class="pb-0.5" :class="editPreview ? 'font-medium text-gray-800 border-b-2 border-gray-800' : 'text-gray-400 hover:text-gray-600'" @click="editPreview = true">{{ ctrans("Preview") }}</button>
-                    </div>
-                    <TicketComposer v-if="!editPreview" v-model:body="editBody" v-model:images="editImages" :rows="4" :mentionable="mentionable" :max-images="Math.max(0, 5 - keptEditImages(comment).length - keptEditAttachments(comment).length)" />
-                    <div v-else class="rounded border border-gray-200 bg-gray-50 px-3 py-2 min-h-[4.5rem]">
-                        <TicketBody v-if="editBody.trim()" :text="editBody" />
-                        <p v-else class="text-sm italic text-gray-400">{{ ctrans("Nothing to preview") }}</p>
-                    </div>
+                    <TicketComposer class="mt-2" v-model:body="editBody" v-model:images="editImages" :rows="4" :mentionable="mentionable" :max-images="Math.max(0, 5 - keptEditImages(comment).length - keptEditAttachments(comment).length)" />
                     <div v-if="keptEditImages(comment).length || keptEditAttachments(comment).length" class="flex flex-wrap gap-1.5">
                         <span v-for="image in keptEditImages(comment)" :key="image.ulid" class="relative">
                             <img :src="image.original" :alt="image.name" class="h-12 w-12 rounded border border-gray-200 object-cover" />

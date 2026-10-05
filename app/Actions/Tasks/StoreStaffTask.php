@@ -54,6 +54,8 @@ class StoreStaffTask
                 'model_type'   => $modelData['model_type'] ?? $sourceMessage?->conversation->context_type,
                 'model_id'     => $modelData['model_id'] ?? $sourceMessage?->conversation->context_id,
                 'assigned_at'  => isset($modelData['assignee_id']) ? now() : null,
+                'ticket_project_id'           => $modelData['ticket_project_id'] ?? null,
+                'ticket_project_milestone_id' => $modelData['ticket_project_milestone_id'] ?? null,
                 'data'         => [
                     'subtasks' => collect($modelData['subtasks'] ?? [])->map(fn (array $subtask) => [
                         'title'  => trim($subtask['title']),
@@ -91,6 +93,8 @@ class StoreStaffTask
                 Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
             }
 
+            NotifyStaffTaskDepartment::run($task, $requester);
+
             BroadcastStaffTaskChanged::dispatch($task);
             SendStaffTaskBadgeUpdateToUsers::run($task->involvedUserIds());
 
@@ -119,6 +123,8 @@ class StoreStaffTask
             'subtasks.*.status' => ['sometimes', Rule::in(StaffTask::SUBTASK_STATUSES)],
             'images'            => ['sometimes', 'array', 'max:5'],
             'images.*'          => StaffTask::ticketFileRules(),
+            'ticket_project_id' => ['sometimes', 'nullable', Rule::exists('ticket_projects', 'id')->where('group_id', $groupId)->whereNull('deleted_at')],
+            'ticket_project_milestone_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 

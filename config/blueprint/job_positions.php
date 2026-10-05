@@ -385,6 +385,19 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
+        'acc-o'      => [
+            'code'               => 'acc-o',
+            'name'               => 'Accounts orders',
+            'department'         => 'admin',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'roles'              => [
+                RolesEnum::ACCOUNTING_ORDERS
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
 
 
         'buy'      => [

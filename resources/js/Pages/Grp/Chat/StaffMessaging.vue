@@ -161,7 +161,7 @@ onUnmounted(() => {
                         v-model="query"
                         type="text"
                         :placeholder="ctrans('Search or start a new chat…')"
-                        class="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        class="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
                         @input="onSearchInput" />
                 </div>
             </div>
@@ -188,10 +188,10 @@ onUnmounted(() => {
                         v-for="conversation in filteredConversations"
                         :key="conversation.ulid"
                         class="w-full flex items-center gap-x-3 px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-50"
-                        :class="selectedUlid === conversation.ulid ? 'bg-indigo-50' : ''"
+                        :class="selectedUlid === conversation.ulid ? 'bg-[--app-accent-soft]' : ''"
                         @click="selectConversation(conversation.ulid)">
                         <div v-if="conversation.type === 'group'" class="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                            <FontAwesomeIcon icon="fal fa-comments" class="text-indigo-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-comments" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                         </div>
                         <div v-else class="relative h-9 w-9 rounded-full overflow-hidden bg-gray-200 shrink-0">
                             <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
@@ -204,7 +204,7 @@ onUnmounted(() => {
                             </div>
                             <div class="text-xs text-gray-500 truncate">{{ useTruncate(conversation.last_message ?? '', 40) }}</div>
                         </div>
-                        <span v-if="conversation.unread_count > 0" class="bg-indigo-600 text-white rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
+                        <span v-if="conversation.unread_count > 0" class="bg-[--app-accent] text-[--app-accent-text] rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                     </button>
                     <div v-if="!filteredConversations.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ ctrans('No messages yet') }}</div>
                     <Link

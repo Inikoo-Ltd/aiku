@@ -4,7 +4,7 @@ summary: Správy na WhatsApp číslo obchodu sedia v tej istej schránke ako web
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat, whatsapp
-category: crm
+category: help-desk
 series: Chat
 order: 4
 ---

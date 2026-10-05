@@ -21,7 +21,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from "primevue/breadcrumb"
-import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import EditProductPriceAllShop from "@/Components/EditProductPriceAllShop.vue";
@@ -101,7 +101,7 @@ const component = computed(() => {
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
-        attachments: AttachmentManagement,
+        attachments: TradeUnitDocuments,
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,
     }

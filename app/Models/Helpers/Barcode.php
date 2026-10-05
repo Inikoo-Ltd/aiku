@@ -147,6 +147,7 @@ class Barcode extends Model implements Auditable
 
         return $query->where('barcodes.status', BarcodeStatusEnum::AVAILABLE)
             ->whereNull('barcodes.deleted_at')
+            ->whereRaw("coalesce(barcodes.data->>'external', 'false') <> 'true'")
             ->whereNotExists($carriedBy('trade_units', 'barcode'))
             ->whereNotExists($carriedBy('master_assets', 'barcode'))
             ->whereNotExists($carriedBy('products', 'barcode'))

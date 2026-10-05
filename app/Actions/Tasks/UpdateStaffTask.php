@@ -36,7 +36,7 @@ class UpdateStaffTask
             $modelData['assigned_at'] = $modelData['assignee_id'] ? now() : null;
             if ($modelData['assignee_id']) {
                 $assignee = User::find($modelData['assignee_id']);
-                $task->conversation?->participants()->syncWithoutDetaching([$assignee->id]);
+                $task->conversation?->addParticipants([$assignee->id]);
                 $lines[] = $assignee->id === $actor->id ? __('I will take this one') : __('Assigned to :name', ['name' => $assignee->chatName()]);
             }
         }
@@ -60,11 +60,22 @@ class UpdateStaffTask
             $task->collaborators()->detach($task->assignee_id);
         }
 
+        if ($task->wasChanged('assignee_id') && $previousAssigneeId && $task->conversation) {
+            $stillInvolved = $previousAssigneeId === $task->requester_id
+                || $task->collaborators()->where('users.id', $previousAssigneeId)->exists();
+
+            if (!$stillInvolved) {
+                $task->conversation->removeParticipants([$previousAssigneeId]);
+            }
+        }
+
         if ($note) {
             $lines[] = $note;
         }
         if ($lines && $task->conversation) {
-            $task->conversation->participants()->syncWithoutDetaching([$actor->id]);
+            if (!$task->conversation->hasParticipant($actor)) {
+                $task->conversation->addParticipants([$actor->id]);
+            }
             SendStaffMessage::run($task->conversation, $actor, ['body' => implode(': ', $lines)]);
         }
 
@@ -82,6 +93,10 @@ class UpdateStaffTask
             Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
         }
 
+        if ($task->wasChanged('department')) {
+            NotifyStaffTaskDepartment::run($task, $actor);
+        }
+
         if ($task->wasChanged('status') && !$task->status->isOpen() && $task->requester_id !== $actor->id) {
             $title = $task->status === StaffTaskStatusEnum::DONE
                 ? __(':reference is done', ['reference' => $task->reference])
@@ -97,6 +112,13 @@ class UpdateStaffTask
 
         if ($request->has('due_at') && !$task->canSetDueDate($request->user())) {
             return false;
+        }
+
+        if ($request->has('assignee_id') && (int) $request->input('assignee_id') !== (int) $task->assignee_id) {
+            $isClaimingUnassigned = !$task->assignee_id && (int) $request->input('assignee_id') === $request->user()->id;
+            if (!$isClaimingUnassigned && !$task->canReassignBy($request->user())) {
+                return false;
+            }
         }
 
         return $task->isVisibleTo($request->user());

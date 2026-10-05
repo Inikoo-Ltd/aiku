@@ -63,6 +63,7 @@ export interface StockManagementRoutes {
 }
 
 export interface StocksManagementTS {
+    can_edit?: boolean
     routes: StockManagementRoutes
     summary: {
         [key: string]: {

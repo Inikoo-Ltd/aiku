@@ -20,12 +20,13 @@ import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
 import TaskBadgeList from './TaskBadgeList.vue';
+import CreatedTaskBadgeList from './CreatedTaskBadgeList.vue';
 import RailBadgeVisibilityToggle from './RailBadgeVisibilityToggle.vue';
 import axios from 'axios'
 import { faTasks } from '@fal'
 import CustomersWaiting from './CustomersWaiting.vue';
 import WhatsappCallAlert from './WhatsappCallAlert.vue';
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 library.add(faCircle, faLifeRing, faShoppingCart, faCube)
 
@@ -40,13 +41,37 @@ const myTicketsUnread = computed(() => (layout.ticket_badges?.recent ?? []).filt
 const queueCount = computed(() => (layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0) + (layout.ticket_badges?.queue?.collaborating?.count ?? 0))
 const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 const hasTicketBadges = computed(() => Boolean(layout.ticket_badges?.queue) || Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0)))
-const hiddenBadges = ref<string[]>([...(layout.user?.settings?.rail_hidden_badges ?? [])])
+const hiddenBadgesStorageKey = () => `rail-hidden-badges:${layout.user?.id ?? 'guest'}`
+
+const readCachedHiddenBadges = (): string[] | null => {
+    try {
+        const cached = JSON.parse(localStorage.getItem(hiddenBadgesStorageKey()) ?? 'null')
+        return Array.isArray(cached) ? cached.filter((key): key is string => typeof key === 'string') : null
+    } catch {
+        return null
+    }
+}
+
+const cacheHiddenBadges = (keys: string[]) => {
+    try {
+        localStorage.setItem(hiddenBadgesStorageKey(), JSON.stringify(keys))
+    } catch { }
+}
+
+const hiddenBadges = ref<string[]>(readCachedHiddenBadges() ?? [...(layout.user?.settings?.rail_hidden_badges ?? [])])
 const isHiddenBadge = (key: string) => hiddenBadges.value.includes(key)
 const isOffRail = (key: string) => !layout.messagingSidebar.show && isHiddenBadge(key)
-const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)]:opacity-40' : ''
+const dimmedClass = (key: string) => layout.messagingSidebar.show && isHiddenBadge(key) ? '[&>:not(.rail-eye)>button]:opacity-40' : ''
+
+watch(() => layout.user?.settings?.rail_hidden_badges, (savedKeys) => {
+    if (!Array.isArray(savedKeys)) return
+    hiddenBadges.value = [...savedKeys]
+    cacheHiddenBadges(hiddenBadges.value)
+}, { immediate: true })
 
 const toggleBadge = (key: string) => {
     hiddenBadges.value = isHiddenBadge(key) ? hiddenBadges.value.filter((hidden) => hidden !== key) : [...hiddenBadges.value, key]
+    cacheHiddenBadges(hiddenBadges.value)
     if (layout.user?.settings) layout.user.settings.rail_hidden_badges = hiddenBadges.value
     axios.patch(route('grp.models.profile.update'), { rail_hidden_badges: hiddenBadges.value })
 }
@@ -57,6 +82,9 @@ const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo',
 const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
 const myTasksUnread = computed(() => (layout.task_badges?.recent ?? []).filter((update) => !update.read).length)
 const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0))
+const createdTasks = computed(() => layout.task_badges?.created ?? null)
+const myTasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
+const createdTasksOnRail = computed(() => (createdTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_created', true))
 const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
 const ticketsOnRail = computed(() => shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue)) || shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0))))
@@ -74,10 +102,15 @@ const isPointerInside = ref(false)
 const controlsElement = ref<HTMLElement | null>(null)
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
-const ordersCount = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0))
-const catalogueCount = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0))
+const countOnRail = (badges: [string, number | undefined][]) => badges.reduce((total, [key, count]) => total + (isOffRail(key) ? 0 : (count ?? 0)), 0)
+const ordersCount = computed(() => countOnRail([['dispatching_waiting', layout?.dispatching_waiting_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]]))
+const catalogueCount = computed(() => countOnRail([['master_updated', layout?.master_updated_count], ['products_need_review', layout?.products_need_review_count]]))
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
+
+const tasksOnRail = computed(() => myTasksOnRail.value || createdTasksOnRail.value)
+const ordersSectionShown = computed(() => (isFolded('orders') ? ordersCount.value > 0 : ordersOnRail.value))
+const catalogueSectionShown = computed(() => (isFolded('catalogue') ? catalogueCount.value > 0 : catalogueOnRail.value))
 
 const clearCollapseTimer = () => {
     if (collapseTimer) {
@@ -191,20 +224,20 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
 
         <div
-            v-if="ticketsOnRail"
+            v-if="ticketsOnRail && (tasksOnRail || ordersSectionShown || catalogueSectionShown)"
             class="border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'"
             aria-hidden="true" />
 
-        <template v-if="hasTaskBadges && shownOnRail('tasks', true)">
+        <template v-if="tasksOnRail">
             <div class="shrink-0" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
                 <FontAwesomeIcon :icon="faTasks" class="w-4 shrink-0 text-center text-xs text-white" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Tasks')" aria-hidden="true" />
                 <!-- Badge: My tasks -->
-                <div class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks')">
+                <div v-if="myTasksOnRail" class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks')">
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks')" @toggle="toggleBadge('tasks')" />
                     <Popover width="w-72" position="right-full mr-2 top-0">
                         <template #button>
-                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-cyan-200 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100">
+                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-300 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100" :class="!layout.messagingSidebar.show && createdTasksOnRail ? 'rounded-t-xl' : 'rounded-xl'">
                                 <Transition name="spin-to-right"><span :key="myTasksCount"><span :class="myTasksCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTasksCount > 99 ? '99+' : myTasksCount }}</span></span></Transition>
                                 <FontAwesomeIcon v-if="myTasksOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-red-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon v-else-if="myTasksUnread" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-cyan-400" fixed-width aria-hidden="true" />
@@ -215,9 +248,30 @@ onBeforeUnmount(clearCollapseTimer)
                         </template>
                     </Popover>
                 </div>
+                <!-- Badge: Tasks I created -->
+                <div v-if="createdTasksOnRail && createdTasks" class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('tasks_created')">
+                    <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks_created')" @toggle="toggleBadge('tasks_created')" />
+                    <Popover width="w-80" position="right-full mr-2 top-0">
+                        <template #button>
+                            <div
+                                v-tooltip="createdTasks.needs_answer ? ctrans('Tasks I created · :count waiting for your answer', { count: String(createdTasks.needs_answer) }) : ctrans('Tasks I created')"
+                                class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-100 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100"
+                                :class="!layout.messagingSidebar.show && myTasksOnRail ? 'rounded-b-xl' : 'rounded-xl'">
+                                <Transition name="spin-to-right"><span :key="createdTasks.open"><span :class="createdTasks.open > 99 ? 'text-xxs' : 'text-xs'">{{ createdTasks.open > 99 ? '99+' : createdTasks.open }}</span></span></Transition>
+                                <template v-if="createdTasks.needs_answer">
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-amber-500" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-[5px] text-amber-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <CreatedTaskBadgeList :created="createdTasks" :myId="layout.user?.id" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
             </div>
 
-            <div class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
+            <div v-if="ordersSectionShown || catalogueSectionShown" class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
         </template>
 
         <button v-if="isFolded('orders') && ordersCount > 0" type="button"
@@ -300,7 +354,7 @@ onBeforeUnmount(clearCollapseTimer)
         </div>
         </div>
 
-        <div v-if="ordersOnRail && catalogueOnRail" class="border-t border-[var(--chat-line)] shrink-0"
+        <div v-if="ordersSectionShown && catalogueSectionShown" class="border-t border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full' : 'w-6'" aria-hidden="true" />
 
         <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button"

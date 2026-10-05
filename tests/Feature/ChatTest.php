@@ -2992,6 +2992,42 @@ describe('staff messaging archive', function () {
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull();
     });
 
+    test('the key a browser encrypts its saved chats with is personal, stable and never cached', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $response = actingAs($this->user)->getJson(route('grp.chat.staff.cache_key'))->assertOk();
+        $key      = $response->json('key');
+
+        expect(strlen(base64_decode($key)))->toBe(32)
+            ->and($response->headers->get('Cache-Control'))->toContain('no-store')
+            ->and(actingAs($this->user)->getJson(route('grp.chat.staff.cache_key'))->json('key'))->toBe($key)
+            ->and(actingAs($other)->getJson(route('grp.chat.staff.cache_key'))->json('key'))->not->toBe($key);
+    });
+
+    test('reading a conversation tells the other participants when, for their read ticks', function () {
+        Event::fake([\App\Events\StaffMessageSent::class, \App\Events\StaffConversationRead::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'can you check the pallet?']);
+
+        actingAs($other)->postJson(route('grp.chat.staff.conversations.read', $conversation))->assertOk();
+
+        Event::assertDispatched(\App\Events\StaffConversationRead::class, function (\App\Events\StaffConversationRead $event) use ($conversation, $other) {
+            $channels = collect($event->broadcastOn())->map(fn ($channel) => $channel->name)->all();
+
+            return $event->conversation->is($conversation)
+                && $event->broadcastWith()['user_id'] === $other->id
+                && $channels === ['private-grp.personal.'.$this->user->id];
+        });
+
+        $participants = collect((new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()->load('participants')))->resolve()['participants']);
+
+        expect($participants->firstWhere('id', $other->id)['last_read_at'])->not->toBeNull();
+    });
+
     test('a task chat cannot be archived while the task is open and lives on the task page', function () {
         $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the blue mugs', 'department' => 'warehouse']);
         $conversation = $task->conversation;
@@ -3753,6 +3789,120 @@ test('whoever works on a task suggests a new ETA and the requester accepts or de
         ->assertUnprocessable();
 });
 
+test('someone taken off a task keeps the chat history up to then, cannot write, and sees everything again when added back', function () {
+    Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $nextAssignee = $newColleague();
+
+    $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Sort the returns', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+    $conversation = $task->conversation;
+    $bodies       = fn (\App\Models\SysAdmin\User $user) => collect(actingAs($user)->getJson(route('grp.chat.staff.conversations.messages.index', $conversation))->assertOk()->json('data'))->pluck('body');
+
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'before the change']);
+    expect($conversation->isActiveParticipant($helper))->toBeTrue();
+
+    \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task, [], $this->user);
+    $this->travel(2)->seconds();
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'after the change']);
+
+    expect($conversation->isActiveParticipant($helper))->toBeFalse()
+        ->and($conversation->hasParticipant($helper))->toBeTrue()
+        ->and($bodies($helper))->toContain('before the change')
+        ->and($bodies($helper))->not->toContain('after the change');
+    actingAs($helper)->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'can I still write?'])->assertForbidden();
+
+    \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task->refresh(), [$helper->id], $this->user);
+    expect($conversation->isActiveParticipant($helper))->toBeTrue()
+        ->and($bodies($helper))->toContain('after the change');
+
+    \App\Actions\Tasks\UpdateStaffTask::run($task->refresh(), $this->user, ['assignee_id' => $nextAssignee->id]);
+    expect($conversation->isActiveParticipant($nextAssignee))->toBeTrue()
+        ->and($conversation->isActiveParticipant($assignee))->toBeFalse();
+});
+
+test('the tasks a person created are counted apart, with the ones waiting for their answer first', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    \App\Models\Tasks\StaffTask::query()->where('requester_id', $this->user->id)->open()->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+
+    $quiet   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Order more tape', 'assignee_id' => $worker->id]);
+    $waiting = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Repaint the dock', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);
+    \App\Actions\Tasks\ProposeStaffTaskEta::run($waiting, $worker, ['due_at' => now()->addDays(5)->toDateString(), 'reason' => 'Paint is late']);
+
+    $created = \App\Actions\Tasks\GetStaffTaskBadgeData::make()->handle($this->user)['created'];
+
+    expect($created['open'])->toBe(2)
+        ->and($created['needs_answer'])->toBe(1)
+        ->and($created['tasks'][0]['reference'])->toBe($waiting->reference)
+        ->and($created['tasks'][0]['has_eta_proposal'])->toBeTrue()
+        ->and(collect($created['tasks'])->pluck('reference'))->toContain($quiet->reference);
+
+    actingAs($this->user);
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks_created']])->assertSessionHasNoErrors();
+});
+
+test('the requester or assignee hands a task to someone else, who is told, while a helper cannot', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $assignee     = $newColleague();
+    $helper       = $newColleague();
+    $newAssignee  = $newColleague();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Recount bay 7', 'assignee_id' => $assignee->id, 'collaborator_ids' => [$helper->id]]);
+
+    expect($task->canReassignBy($this->user))->toBeTrue()
+        ->and($task->canReassignBy($assignee))->toBeTrue()
+        ->and($task->canReassignBy($helper))->toBeFalse();
+
+    actingAs($helper)->patchJson(route('grp.tasks.update', $task->reference), ['assignee_id' => $newAssignee->id])->assertForbidden();
+
+    actingAs($assignee)->patchJson(route('grp.tasks.update', $task->reference), ['assignee_id' => $newAssignee->id])->assertOk();
+
+    expect($task->refresh()->assignee_id)->toBe($newAssignee->id)
+        ->and($newAssignee->notifications()->where('data', 'like', '%'.$task->reference.' is for you%')->exists())->toBeTrue();
+});
+
+test('a task sent to a department tells the people in it', function () {
+    $groupPosition = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->user->group_id)->whereNull('organisation_id')->whereNotNull('department')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->first();
+    $member        = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $member->id, 'job_position_id' => $groupPosition->id, 'group_id' => $member->group_id, 'scopes' => '{}']);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Someone please check the new range', 'department' => $groupPosition->department]);
+
+    expect($member->notifications()->where('data', 'like', '%'.$task->reference.' is waiting for someone from%')->exists())->toBeTrue();
+});
+
+test('open tasks are reminded the day before they are due and once they are late, once per due date', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Ship the samples', 'assignee_id' => $worker->id, 'due_at' => now()->addDay()->toDateString()]);
+    $notified = fn (\App\Models\SysAdmin\User $user, string $text) => $user->notifications()->where('data', 'like', '%'.$task->reference.' '.$text.'%')->count();
+
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    expect($notified($worker, 'is due tomorrow'))->toBe(1);
+
+    $task->refresh()->update(['due_at' => now()->subDay()->toDateString()]);
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+    \App\Actions\Tasks\RemindStaffTaskDueDates::run();
+
+    expect($notified($worker, 'is overdue'))->toBe(1)
+        ->and($notified($this->user, 'is overdue'))->toBe(1);
+});
+
+test('whoever works on a task can ask for help and the requester hears why', function () {
+    $worker   = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task     = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Fix the label printer', 'assignee_id' => $worker->id]);
+
+    actingAs($outsider)->postJson(route('grp.tasks.help.store', $task->reference), ['note' => 'not mine'])->assertForbidden();
+
+    actingAs($worker)->postJson(route('grp.tasks.help.store', $task->reference), ['note' => 'The printer needs a part I cannot order'])->assertOk();
+
+    expect($this->user->notifications()->where('data', 'like', '%needs help with '.$task->reference.'%')->exists())->toBeTrue()
+        ->and($task->conversation->messages()->latest('id')->first()->body)->toContain('The printer needs a part I cannot order')
+        ->and($task->refresh()->data['help_requested']['by_id'])->toBe($worker->id);
+});
+
 test('a supervisor working on a task asks for a new ETA while a supervisor outside it sets the date', function () {
     $newSupervisor = function () {
         $user     = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
@@ -3939,7 +4089,8 @@ test('people can hide right panel badges from the narrow bar', function () {
     actingAs($this->user);
 
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks', 'crm_waiting']])->assertSessionHasNoErrors();
-    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting']);
+    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting'])
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['rail_hidden_badges'])->toBe(['tasks', 'crm_waiting']);
 
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['not_a_badge']])->assertSessionHasErrors('rail_hidden_badges.0');
 
@@ -4509,7 +4660,7 @@ test('staff task collaborators join the thread and see the task as theirs', func
         ->assertOk()
         ->assertJsonPath('data.collaborators', []);
 
-    expect($task->conversation->hasParticipant($helper))->toBeFalse()
+    expect($task->conversation->isActiveParticipant($helper))->toBeFalse()
         ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($helper, 'mine'))->toBeEmpty();
 
     \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task, [$helper->id], $requester);
@@ -4830,6 +4981,23 @@ test('customer service viewer gets no write access to chat', function () {
 
     expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
         ->and(ChatAgent::where('user_id', $viewer->id)->exists())->toBeFalse();
+});
+
+test('a customer service viewer sees the shop knowledge notes but not the controls to change them', function () {
+    actingAs($this->user);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+    $note       = \App\Models\Chat\ChatKnowledgeEntry::create(['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'kind' => 'note', 'title' => 'Shipping', 'body' => 'No shipping to Mars', 'source_type' => 'manual', 'is_manual' => true]);
+    $canEdit    = fn () => get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=policies')->viewData('page')['props']['policies']['can_edit'];
+
+    expect($canEdit())->toBeTrue();
+
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    expect($canEdit())->toBeFalse();
+    $this->delete(route('grp.org.shops.show.chat.settings.knowledge.delete', [...$parameters, $note->id]))->assertForbidden();
+    actingAsUserWithRoles($this->user, $originalRoles);
+
+    $note->delete();
 });
 
 test('a departed staff member is never a chat agent', function () {
@@ -7746,6 +7914,21 @@ test('a question about an order gets a draft written from that customer\'s order
 
     expect($copied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
 
+    expect(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Please enter Ancient Wisdom Marketing Ltd as the warehouse name in TikTok Shop.', 'Hi, if you use Ancient Wisdom Marketing Ltd as the warehouse name in TikTok Shop.'))->toBeGreaterThan(0.6)->toBeLessThan(0.9)
+        ->and(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Your order [[which order?]] ships today.', 'Hello Ann, your order ships today. Carmen'))->toBe(1.0)
+        ->and(\App\Actions\Chat\ChatSession\SettleChatAiDraft::draftWordsKept('Your order ships today.', 'It is with APC.'))->toBe(0.0);
+
+    // Retyped with their own greeting and name, without pressing Use: still sent as written.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Hi again, where is my order?');
+    $retyped = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    $typed   = $ask($session, 'Hello! '.$retyped->text.' Carmen', ChatSenderTypeEnum::AGENT);
+    $typed->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $typed);
+
+    expect($retyped->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
+
     // Answering a question we asked them ("yes", "please") gets no draft: what they want is in our question.
     $this->travel(1)->minutes();
     $ourQuestion = $ask($session, 'Do you mean the orders still with us?', ChatSenderTypeEnum::AGENT);
@@ -8266,7 +8449,7 @@ test('the archive reads at most its hourly share of a mailbox, a hundred mails a
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
     $this->shop->update(['settings' => $settings]);
     \Illuminate\Support\Facades\Cache::flush();
-    $this->travelTo(now()->startOfHour()->addMinutes(50));
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-06 10:50', 'UTC'));
 
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/*'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
@@ -8281,7 +8464,7 @@ test('the archive reads at most its hourly share of a mailbox, a hundred mails a
     expect($action->archivePage($this->shop, 12))->toMatchArray(['rate_limited' => false, 'read' => 4]);
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'users/me/messages?') && str_contains($request->url(), 'maxResults=100'));
 
-    \Illuminate\Support\Facades\Cache::increment('mailbox-archive-reads:'.$this->shop->id.':'.now()->format('YmdH'), 596);
+    \Illuminate\Support\Facades\Cache::increment('mailbox-archive-reads:'.$this->shop->id.':'.now()->format('YmdH'), 1996);
     $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
     $spent          = $action->archivePage($this->shop, 12);
 
@@ -8368,6 +8551,22 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Carbon::setTestNow();
 });
 
+test('the archive reads more of a mailbox an hour at night and at weekends, when customer service is not answering', function () {
+    $mailbox = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::class;
+    $at      = fn (string $when) => \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse($when, 'UTC'));
+
+    $at('2026-10-06 10:00');
+    expect($mailbox::readsPerHour())->toBe(2000);
+    $at('2026-10-06 04:59');
+    expect($mailbox::readsPerHour())->toBe(10000);
+    $at('2026-10-06 18:00');
+    expect($mailbox::readsPerHour())->toBe(10000);
+    $at('2026-10-04 12:00');
+    expect($mailbox::readsPerHour())->toBe(10000);
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
 test('oldest first reads the mailbox a calendar month at a time from the oldest, and a run whose mark left the cache carries on', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];
@@ -8448,6 +8647,7 @@ test('the best customers have all their mail archived, searched by their address
 
 test('what agents keep telling different customers is learned and put to staff once enough customers heard it, and only a person turns it on', function () {
     $shop = $this->shop;
+    \App\Actions\Helpers\AI\EmbedTexts::mock()->shouldReceive('handle')->andReturnUsing(fn (array $texts) => array_map(fn (string $text) => array_pad(str_contains($text, 'VAT') ? [1.0, 0.0] : [0.0, 1.0], 1024, 0.0), $texts));
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     $customers = [];
     $thread    = function (string $question, string $reply, string $key, ?string $customerKey = null) use ($shop, &$customers) {
@@ -8489,6 +8689,7 @@ test('what agents keep telling different customers is learned and put to staff o
     $vat   = \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->sole();
     expect($twice)->toMatchArray(['replies' => 2, 'rules' => 2, 'promoted' => 0])
         ->and($vat->only(['status', 'customers_count']))->toBe(['status' => 'candidate', 'customers_count' => 2])
+        ->and($vat->embedding)->toHaveCount(1024)
         ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->pluck('id'))->not->toContain($vat->id)
         ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(0);
 
@@ -8524,8 +8725,60 @@ test('what agents keep telling different customers is learned and put to staff o
     expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['rules'])->toBe(0)
         ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-no-answer')->value('learned_at'))->toBeNull();
 
+    $rule = ['general' => true, 'title' => 'Missing items', 'note' => 'A missing item on a shipped order is credited to the account.', 'temporary' => false];
+    $thread('One candle is missing', 'Sorry about that, we have credited the missing candle to your account.', 'years-ago');
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'q-years-ago')->update(['sent_at' => now()->subYears(5)->subDay()]);
+    \App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-years-ago')->update(['sent_at' => now()->subYears(5)]);
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(1)
+        ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop, 0)['replies'])->toBe(1)
+        ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-years-ago')->value('learned_at'))->not->toBeNull();
+
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
+});
+
+test('order facts follow a replacement sent lately for an older order, and products named in words are found by the shop search', function () {
+    $customer = createOwnCustomer($this->shop, 'facts-replacement');
+    $order    = fn (string $reference, string $date) => \App\Models\Ordering\Order::find(\Illuminate\Support\Facades\DB::table('orders')->insertGetId([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+        'currency_id' => $this->shop->currency_id, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id, 'slug' => 'ord-'.uniqid(), 'reference' => $reference,
+        'state' => 'dispatched', 'net_amount' => 100, 'org_net_amount' => 100, 'grp_net_amount' => 100, 'status' => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data' => '{}', 'data' => '{}', 'date' => $date, 'submitted_at' => $date, 'dispatched_at' => $date, 'created_at' => $date, 'updated_at' => $date,
+    ]));
+    $older = $order('REPL'.random_int(100000, 999999), now()->subDays(20)->toDateTimeString());
+    $newer = $order('NEWR'.random_int(100000, 999999), now()->subDays(5)->toDateTimeString());
+
+    expect(\App\Actions\Chat\ChatSession\GetChatOrderFacts::run($customer, 'When will it be sent?')['order']['reference'])->toBe($newer->reference);
+
+    $deliveryNoteId = \Illuminate\Support\Facades\DB::table('delivery_notes')->insertGetId([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+        'warehouse_id' => \App\Models\Inventory\Warehouse::where('organisation_id', $this->shop->organisation_id)->firstOrFail()->id, 'slug' => 'dn-'.uniqid(),
+        'reference' => $older->reference, 'type' => 'replacement', 'state' => 'handling', 'date' => now(), 'data' => '{}', 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->insert(['delivery_note_id' => $deliveryNoteId, 'order_id' => $older->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $facts = \App\Actions\Chat\ChatSession\GetChatOrderFacts::run($customer, 'When will it be sent?');
+    expect($facts['order']['reference'])->toBe($older->reference)
+        ->and($facts['order']['replacements'][0]['status'])->toBe(\App\Actions\Chat\ChatSession\GetChatOrderFacts::STATE_MEANING['handling'])
+        ->and($facts['order'])->not->toHaveKey('parcels')
+        ->and(collect($facts['other_recent_orders'])->pluck('reference'))->toContain($newer->reference);
+
+    config(['scout.driver' => 'collection']);
+    $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+    $product->update(['name' => 'Tropical Paradise Soap Loaf - Papaya', 'is_in_website' => true, 'is_for_sale' => true]);
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"names": ["Soap Loaf"]}');
+
+    $found = \App\Actions\Chat\ChatSession\GetChatProductFactsByName::run($this->shop, 'The soap loafs, what is a good starting order?');
+    expect(collect($found)->pluck('code'))->toContain($product->code)
+        ->and($found[0]['found_by_name'])->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\GetChatProductFactsByName::run($this->shop, 'Is TPSoap-03 in stock?'))->toBe([]);
+
+    expect(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::isGoodEnough(['answers' => 1.0, 'invents' => 0.0, 'claims_done' => 0.6, 'staff_like' => 1.0, 'send_as_is' => 1.0]))->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::whatToFix(['answers' => 1.0, 'invents' => 0.0, 'claims_done' => 0.6, 'staff_like' => 1.0, 'send_as_is' => 1.0])[0])->toContain('already did something');
+
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->where('delivery_note_id', $deliveryNoteId)->delete();
+    \Illuminate\Support\Facades\DB::table('delivery_notes')->where('id', $deliveryNoteId)->delete();
+    \Illuminate\Support\Facades\DB::table('orders')->whereIn('id', [$older->id, $newer->id])->delete();
 });
 
 test('a general question is answered from the knowledge base entry jev picks, and only when the quote is really in it', function () {

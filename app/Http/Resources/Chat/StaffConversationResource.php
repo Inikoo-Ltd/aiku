@@ -11,6 +11,7 @@ namespace App\Http\Resources\Chat;
 use App\Models\Analytics\UserRequest;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -59,12 +60,14 @@ class StaffConversationResource extends JsonResource
 
     public function toArray($request): array
     {
-        $participants = $this->participants->map(fn (User $user) => [
+        $myLeftAt     = $this->participants->firstWhere('id', $request->user()?->id)?->pivot?->left_at;
+        $participants = $this->participants->filter(fn (User $user) => !$user->pivot?->left_at)->map(fn (User $user) => [
             'id'     => $user->id,
             'name'   => $user->chatName(),
             'handle' => $user->nickname ?: $user->username,
             'avatar' => $user->image_id ? $user->imageSources(0, 48) : null,
             'last_seen_at' => Cache::remember('staff-last-seen:'.$user->id, 120, fn () => UserRequest::where('user_id', $user->id)->max('date')),
+            'last_read_at' => $user->pivot?->last_read_at ? Carbon::parse($user->pivot->last_read_at)->toIso8601ZuluString('microsecond') : null,
         ])->values();
 
         return [
@@ -77,6 +80,7 @@ class StaffConversationResource extends JsonResource
             'context_url'     => $this->contextUrl(),
             'task'            => $this->task(),
             'participants'    => $participants,
+            'my_left_at'      => $myLeftAt ? Carbon::parse($myLeftAt)->toIso8601ZuluString() : null,
             'last_message_at' => $this->last_message_at,
             'last_message'    => $this->last_message_body ?? null,
             'unread_count'    => (int) ($this->unread_count ?? 0),

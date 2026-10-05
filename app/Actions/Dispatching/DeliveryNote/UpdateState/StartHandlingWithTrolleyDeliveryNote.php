@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartHandlingWithTrolleyDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, User $user, array $modelData): DeliveryNote
     {
         $trolley = null;

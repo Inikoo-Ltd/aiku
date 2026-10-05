@@ -4,7 +4,7 @@ summary: Por qué se bloquea el cuadro de mensaje en una conversación de WhatsA
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, whatsapp, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

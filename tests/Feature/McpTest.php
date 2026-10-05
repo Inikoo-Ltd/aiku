@@ -245,6 +245,25 @@ describe('mcp authentication', function () {
         ])->assertForbidden();
     });
 
+    test('authorize page warns a user without can_use_mcp and disables approval', function () {
+        $authorizePage = fn () => view('mcp.authorize', [
+            'client'    => (object) ['id' => 'client-id', 'name' => 'Claude'],
+            'user'      => $this->user->refresh(),
+            'scopes'    => [],
+            'authToken' => 'token',
+            'request'   => request(),
+        ])->render();
+
+        expect($authorizePage())->toContain($this->user->username)
+            ->not->toContain('mcpAccessMissing');
+
+        $this->user->update(['can_use_mcp' => false]);
+
+        expect($authorizePage())->toContain('mcpAccessMissing')
+            ->toContain('cannot use the AI assistant')
+            ->toMatch('/id="authorizeButton" disabled/');
+    });
+
     test('oauth discovery endpoints are published', function () {
         getJson('/.well-known/oauth-authorization-server')
             ->assertOk()

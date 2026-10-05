@@ -9,6 +9,7 @@ import { Link } from '@inertiajs/vue3';
 import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
 import { useFormatTime } from '@/Composables/useFormatTime';
+import { ctrans } from '@/Composables/useTrans';
 
 defineProps<{
     data: object,
@@ -61,6 +62,11 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
                 {{ stockDelivery['reference'] }}
             </Link>
             <span v-else>{{ stockDelivery['reference'] }}</span>
+            <span v-if="stockDelivery.number_new_org_stocks > 0"
+                v-tooltip="ctrans('Items that have never been in stock')"
+                class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                {{ ctrans(':count new', { count: stockDelivery.number_new_org_stocks }) }}
+            </span>
         </template>
 
         <template #cell(parent_name)="{ item: stockDelivery }">

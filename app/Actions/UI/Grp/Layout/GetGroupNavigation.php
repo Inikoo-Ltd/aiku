@@ -166,6 +166,20 @@ class GetGroupNavigation
             ],
         ];
 
+        $groupNavigation['projects'] = [
+            'label'   => __('Projects'),
+            'icon'    => ['fal', 'fa-project-diagram'],
+            'root'    => 'grp.projects.',
+            'route'   => [
+                'name' => 'grp.projects.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    ['label' => __('Projects'), 'icon' => ['fal', 'fa-project-diagram'], 'root' => 'grp.projects.', 'route' => ['name' => 'grp.projects.index']],
+                ],
+            ],
+        ];
+
         $groupNavigation['chat'] = [
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),
@@ -259,7 +273,9 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets'] : ['tickets']);
+            $modules = $user->worksOnlyForAgents() ? ['tickets'] : ['tickets', 'projects'];
+
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', ...$modules] : $modules);
         }
 
         return $groupNavigation;

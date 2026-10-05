@@ -579,4 +579,29 @@ class DeliveryNote extends Model implements Auditable
     {
         return $this->handled_in_aurora && !in_array($this->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED]);
     }
+
+    /**
+     * Picking, packing, shipping, finalising and dispatching: warehouse dispatch staff, plus the
+     * shop's customer service, who book shipments and dispatch collections themselves.
+     */
+    public function canBeWorkedOnBy(User $user): bool
+    {
+        return $user->authTo([
+            "dispatching.$this->warehouse_id.edit",
+            "supervisor-dispatching.$this->warehouse_id",
+            "returns.$this->warehouse_id",
+            "org-admin.$this->organisation_id",
+            "orders.$this->shop_id.edit",
+        ]);
+    }
+
+    public function canBeCancelledBy(User $user): bool
+    {
+        return $user->authTo([
+            "supervisor-dispatching.$this->warehouse_id",
+            "org-admin.$this->organisation_id",
+            "orders.$this->shop_id.edit",
+            "crm.$this->shop_id.edit",
+        ]);
+    }
 }

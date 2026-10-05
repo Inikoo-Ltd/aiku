@@ -10,11 +10,20 @@ concurrency:
 
 env:
   HOME: /home/aiku_test
+  REDIS_SOCKET: /home/aiku_test/redis-ci.sock
+  REDIS_DEFAULT_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_HORIZON_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_CACHE_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_SESSIONS_HOST: /home/aiku_test/redis-ci.sock
+  REDIS_DEFAULT_PORT: 0
+  REDIS_HORIZON_PORT: 0
+  REDIS_CACHE_PORT: 0
+  REDIS_SESSONS_PORT: 0
 
 jobs:
   laravel-tests:
     name: Run backend tests 🧪
-    runs-on: [ self-hosted ]
+    runs-on: [ helio ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -42,7 +51,9 @@ jobs:
         run: |
           MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
           if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
-            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            DB_HOST=$(sed -n 's/^DB_HOST=//p' .env.testing)
+            DB_PORT=$(sed -n 's/^DB_PORT=//p' .env.testing)
+            ./generate_testing_db_dumps.sh php8.4 aiku_test "${DB_HOST:-localhost}" "${DB_PORT:-5432}"
             cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/aiku.dump.tmp
             mv ../../../../artifacts/aiku.dump.tmp ../../../../artifacts/aiku.dump
             echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
@@ -51,8 +62,15 @@ jobs:
           fi
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
+      - name: Start private Redis
+        run: redis-server --port 0 --unixsocket "$REDIS_SOCKET" --unixsocketperm 700 --save '' --appendonly no --maxmemory 512mb --daemonize yes --pidfile /home/aiku_test/redis-ci.pid --logfile /home/aiku_test/redis-ci.log
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=6 --log-junit junit.xml
+        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --testsuite=Unit,Feature --parallel --processes=${PEST_PROCESSES:-6} --log-junit junit.xml
+      - name: Report test results to aiku
+        if: ${{ !cancelled() }}
+        env:
+          DEVOPS_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
+        run: /usr/bin/php8.4 devops/ci/report-test-results.php junit.xml
       - name: Editorial translation audit
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -92,3 +110,6 @@ jobs:
               echo "::endgroup::"
             done
           done
+      - name: Stop private Redis
+        if: ${{ always() }}
+        run: redis-cli -s "$REDIS_SOCKET" shutdown nosave || true

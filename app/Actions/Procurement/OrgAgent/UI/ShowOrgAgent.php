@@ -123,8 +123,8 @@ class ShowOrgAgent extends OrgAction
                 ],
 
                 OrgAgentTabsEnum::SHOWCASE->value => $this->tab == OrgAgentTabsEnum::SHOWCASE->value ?
-                    fn () => GetOrgAgentShowcase::run($orgAgent)
-                    : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
+                    fn () => GetOrgAgentShowcase::run($orgAgent, $this->organisation)
+                    : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent, $this->organisation)),
 
                 OrgAgentTabsEnum::INBOX->value => $this->tab == OrgAgentTabsEnum::INBOX->value ?
                     fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgAgent, OrgAgentTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgAgent)])
@@ -233,6 +233,12 @@ class ShowOrgAgent extends OrgAction
 
     private function siblings(OrgAgent $orgAgent): Builder
     {
+        $viewingOrganisation = request()->route('organisation');
+
+        if ($viewingOrganisation instanceof Organisation && $this->getOrganisationAgent($viewingOrganisation)) {
+            return OrgAgent::where('agent_id', $orgAgent->agent_id);
+        }
+
         return OrgAgent::where('organisation_id', $orgAgent->organisation_id)->whereHas('agent');
     }
 
@@ -243,7 +249,7 @@ class ShowOrgAgent extends OrgAction
         }
 
         return [
-            'label' => $orgAgent->agent->organisation->name,
+            'label' => $orgAgent->agent_id === request()->route('organisation')?->agent?->id ? $orgAgent->organisation->name : $orgAgent->agent->organisation->name,
             'route' => [
                 'name'       => $request->route()->getName(),
                 'parameters' => array_merge(

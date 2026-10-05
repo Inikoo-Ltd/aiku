@@ -4,7 +4,7 @@ summary: La burbuja de la web, qué pasa fuera del horario de trabajo, el interr
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 2
 ---

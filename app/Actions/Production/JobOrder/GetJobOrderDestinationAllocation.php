@@ -37,13 +37,14 @@ class GetJobOrderDestinationAllocation
     {
         $items = $jobOrder->jobOrderItems()->with(['artefact.orgStock', 'tasks'])->get();
 
-        $lines = PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
+        $lines = PartnerShoppingListItem::with('stock')->where('job_order_id', $jobOrder->id)
             ->get()
             ->groupBy('stock_id');
 
         $bays = OrgPartner::where('organisation_id', $jobOrder->organisation_id)
             ->whereNotNull('goods_out_location_id')
-            ->pluck('goods_out_location_id', 'partner_id');
+            ->get()
+            ->keyBy('partner_id');
 
         $remainingUnitsByLine = [];
         $allocations          = [];
@@ -79,7 +80,7 @@ class GetJobOrderDestinationAllocation
                 $allocations[] = [
                     'item'        => $item,
                     'line'        => $line,
-                    'location_id' => $line->partner_organisation_id ? $bays->get($line->organisation_id) : null,
+                    'location_id' => $line->partner_organisation_id ? $bays->get($line->organisation_id)?->bayIdFor((bool) $line->stock?->is_cosmetic) : null,
                     'quantity'    => $wanted,
                 ];
             }

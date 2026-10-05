@@ -121,6 +121,10 @@ class ShowLocation extends OrgAction
 
                 ],
                 'location_id' => $location->id,
+                'can_move_location_stock' => $request->user()->authTo([
+                    'supervisor-locations.'.$location->warehouse_id,
+                    'locations.'.$location->warehouse_id.'.edit',
+                ]),
                 'transfer_reason'   => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 'create_order_route' => $location->is_goods_out && $this->canEdit ? [
                     'name'       => 'grp.models.location.create_order',

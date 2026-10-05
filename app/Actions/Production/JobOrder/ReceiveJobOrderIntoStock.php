@@ -121,7 +121,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 $item->update(['quantity_received' => round((float) $item->quantity_received + $producedUnits, 3)]);
                 $surplusBooked = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received) - $surplusBefore;
 
-                if ($surplusBooked > 0 && !$orgStock->organisation->orgPartners()->where('goods_out_location_id', $location->id)->exists()) {
+                if ($surplusBooked > 0 && !$orgStock->organisation->orgPartners()->withBay($location->id)->exists()) {
                     FulfilToProduceItemsFromSurplus::run($orgStock, $surplusBooked);
                 }
             }

@@ -12,12 +12,10 @@ use App\Actions\Transfers\Aurora\FetchAuroraAdjustments;
 use App\Actions\Transfers\Aurora\FetchAuroraAgents;
 use App\Actions\Transfers\Aurora\FetchAuroraBarcodes;
 use App\Actions\Transfers\Aurora\FetchAuroraCharges;
-use App\Actions\Transfers\Aurora\FetchAuroraClockingMachines;
 use App\Actions\Transfers\Aurora\FetchAuroraCollections;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomerClients;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedCustomers;
-use App\Actions\Transfers\Aurora\FetchAuroraDeletedEmployees;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedStocks;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
@@ -26,7 +24,6 @@ use App\Actions\Transfers\Aurora\FetchAuroraDispatchedEmails;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailBulkRuns;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailOngoingRuns;
 use App\Actions\Transfers\Aurora\FetchAuroraEmails;
-use App\Actions\Transfers\Aurora\FetchAuroraEmployees;
 use App\Actions\Transfers\Aurora\FetchAuroraFamilies;
 use App\Actions\Transfers\Aurora\FetchAuroraHistoricAssets;
 use App\Actions\Transfers\Aurora\FetchAuroraHistoricSupplierProducts;
@@ -105,7 +102,6 @@ use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
-use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -718,30 +714,9 @@ trait WithAuroraParsers
 
     public function parseEmployee($sourceId): ?Employee
     {
-        $employee   = Employee::withTrashed()->where('source_id', $sourceId)->first();
-        $sourceData = explode(':', $sourceId);
-        if (!$employee) {
-            $employee = FetchAuroraEmployees::run($this->organisationSource, $sourceData[1]);
-        }
-        if (!$employee) {
-            $employee = FetchAuroraDeletedEmployees::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $employee;
+        return Employee::withTrashed()->where('source_id', $sourceId)->first();
     }
 
-
-    public function parseClockingMachine($sourceId): ?ClockingMachine
-    {
-        $clockingMachine = ClockingMachine::where('source_id', $sourceId)->first();
-        if (!$clockingMachine) {
-            $sourceData = explode(':', $sourceId);
-
-            $clockingMachine = FetchAuroraClockingMachines::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $clockingMachine;
-    }
 
     public function parseMailshot($sourceId): ?Mailshot
     {

@@ -68,7 +68,7 @@ class EditClocking extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead' => [
-                    'title'    => $clocking->slug,
+                    'title'    => $clocking->clocked_at,
                     'actions'  => [
                         [
                             'type'  => 'button',
@@ -84,12 +84,17 @@ class EditClocking extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('id'),
+                            'title'  => __('Clocking'),
                             'fields' => [
-                                'code' => [
+                                'clocked_at' => [
                                     'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $clocking->slug
+                                    'label' => __('Clocked at'),
+                                    'value' => $clocking->clocked_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s')
+                                ],
+                                'notes' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('Notes'),
+                                    'value' => $clocking->notes
                                 ],
                             ]
                         ]
@@ -97,10 +102,9 @@ class EditClocking extends OrgAction
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.org.models.clocking.update',
+                            'name'       => 'grp.models.clocking-machine.clocking.notes.update',
                             'parameters' => [
-                                'organisation' => $request->route()->originalParameters()['organisation']->slug,
-                                'clocking'     => $clocking->slug
+                                'clocking' => $clocking->id
                             ]
                         ],
                     ]

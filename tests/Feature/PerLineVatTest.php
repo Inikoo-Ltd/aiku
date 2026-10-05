@@ -21,6 +21,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Models\Accounting\Invoice;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
@@ -50,6 +51,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Ordering\Order;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -489,6 +491,26 @@ test('manual shipping on a non-faire order does not touch faire', function () {
     UpdateOrderShippingEngineAsManual::make()->handle($order->refresh(), ['shipping_amount' => 4.95]);
 
     expect((float)$order->refresh()->shipping_amount)->toBe(4.95);
+});
+
+/** HELP-3670: deleting the invoice of a finalised order makes its shipping editable again. */
+test('manual shipping is locked on an invoiced finalised order and unlocked once the invoice is deleted', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+    UpdateOrderShippingEngineAsManual::make()->handle($order->refresh(), ['shipping_amount' => 4.49]);
+
+    $order->refresh()->updateQuietly(['state' => OrderStateEnum::FINALISED]);
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+
+    patch(route('grp.models.order.set_shipping_engine_manual', $order->id), ['shipping_amount' => 0])
+        ->assertSessionHasErrors('message');
+    expect((float)$order->refresh()->shipping_amount)->toBe(4.49);
+
+    $invoice->delete();
+
+    patch(route('grp.models.order.set_shipping_engine_manual', $order->id), ['shipping_amount' => 0])
+        ->assertSessionHasNoErrors();
+    expect((float)$order->refresh()->shipping_amount)->toBe(0.0);
 });
 
 /** HELP-2967: a validity flip re-rates open orders, but never touches an invoiced one. */

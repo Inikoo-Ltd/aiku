@@ -4,7 +4,7 @@ summary: Una sola bandeja para el chat de la web, WhatsApp y el correo de la tie
 date: 2026-10-01
 source_date: 2026-10-01
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 1
 ---

@@ -9,6 +9,8 @@
 namespace App\Actions\Production\Restock;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
+use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -17,6 +19,7 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class QueueArtefactsToProduce extends OrgAction
@@ -37,9 +40,9 @@ class QueueArtefactsToProduce extends OrgAction
     /**
      * Put our own restock lines on the To produce board: no partner, no order, just work to do.
      *
-     * @param array<int, array{artefact_id: int, quantity: float, priority?: string}> $lines
+     * @param array<int, array{artefact_id: int, quantity?: float, units?: int, priority?: string}> $lines
      *
-     * @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>}
+     * @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>, not_prepared: array<int, string>, artefact_ids: array<int, int>}
      */
     public function handle(Organisation $seller, Production $production, array $lines): array
     {
@@ -51,8 +54,10 @@ class QueueArtefactsToProduce extends OrgAction
             ->get()
             ->keyBy('id');
 
-        $queued  = 0;
-        $skipped = [];
+        $queued      = 0;
+        $skipped     = [];
+        $notPrepared = [];
+        $queuedIds   = [];
 
         foreach ($lines as $line) {
             $artefact = $artefacts->get($line['artefact_id']);
@@ -61,7 +66,9 @@ class QueueArtefactsToProduce extends OrgAction
                 continue;
             }
 
-            $quantity = round((float) $line['quantity'], 3);
+            $quantity = isset($line['units'])
+                ? $this->quantityForUnits((int) $line['units'], $artefact)
+                : round((float) ($line['quantity'] ?? 0), 3);
             if ($quantity <= 0) {
                 $skipped[] = ['artefact_id' => $line['artefact_id'], 'reason' => 'nothing to make'];
                 continue;
@@ -83,7 +90,7 @@ class QueueArtefactsToProduce extends OrgAction
                 continue;
             }
 
-            PartnerShoppingListItem::create([
+            $item = PartnerShoppingListItem::create([
                 'group_id'         => $seller->group_id,
                 'organisation_id'  => $seller->id,
                 'stock_id'         => $artefact->orgStock->stock_id,
@@ -95,18 +102,34 @@ class QueueArtefactsToProduce extends OrgAction
             ]);
 
             $queued++;
+            $queuedIds[] = $artefact->id;
+
+            try {
+                SetToProduceItemPreparing::make()->action($production, $item);
+            } catch (ValidationException) {
+                $notPrepared[] = $artefact->orgStock->code;
+            }
         }
 
-        return ['queued' => $queued, 'skipped' => $skipped];
+        return ['queued' => $queued, 'skipped' => $skipped, 'not_prepared' => $notPrepared, 'artefact_ids' => $queuedIds];
     }
 
-    /** @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>} */
+    private function quantityForUnits(int $units, Artefact $artefact): float
+    {
+        $packedIn = max(1, (int) $artefact->orgStock->packed_in);
+        $quantum  = BatchedUnitsForDemand::make()->quantumInSkos($packedIn, $artefact->recommended_batch_size) * $packedIn;
+
+        return (float) ((int) ceil(max(1, $units) / $quantum) * $quantum / $packedIn);
+    }
+
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
             'lines'               => ['required', 'array', 'min:1'],
             'lines.*.artefact_id' => ['required', 'integer'],
-            'lines.*.quantity'    => ['required', 'numeric', 'min:0.001'],
+            'lines.*.quantity'    => ['required_without:lines.*.units', 'nullable', 'numeric', 'min:0.001'],
+            'lines.*.units'       => ['sometimes', 'nullable', 'integer', 'min:1'],
             'lines.*.priority'    => ['sometimes', 'nullable', 'string'],
         ];
     }
@@ -119,9 +142,9 @@ class QueueArtefactsToProduce extends OrgAction
     }
 
     /**
-     * @param array<int, array{artefact_id: int, quantity: float, priority?: string}> $lines
+     * @param array<int, array{artefact_id: int, quantity?: float, units?: int, priority?: string}> $lines
      *
-     * @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>}
+     * @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>, not_prepared: array<int, string>, artefact_ids: array<int, int>}
      */
     public function action(Organisation $seller, Production $production, array $lines): array
     {
@@ -131,8 +154,18 @@ class QueueArtefactsToProduce extends OrgAction
         return $this->handle($seller, $production, $this->validatedData['lines']);
     }
 
-    public function htmlResponse(): RedirectResponse
+    /** @param array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>, not_prepared: array<int, string>, artefact_ids: array<int, int>} $result */
+    public function htmlResponse(array $result, ActionRequest $request): RedirectResponse
     {
-        return Redirect::back();
+        return Redirect::back()->with('notification', [
+            'status'      => $result['queued'] ? 'success' : 'warning',
+            'title'       => $result['queued']
+                ? __(':count sent to Prepare', ['count' => $result['queued']])
+                : __('Nothing was sent to Prepare'),
+            'description' => trim(
+                ($result['not_prepared'] ? __('Left in Backlog, type their batch code on the board: :codes', ['codes' => implode(', ', $result['not_prepared'])]).' · ' : '')
+                .__('Open board').': '.route('grp.org.productions.show.to_produce.index', $request->route()->originalParameters())
+            ),
+        ]);
     }
 }

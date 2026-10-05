@@ -87,8 +87,12 @@ class DeleteClocking extends OrgAction
         return response()->json(['success' => true]);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(Clocking $clocking, ActionRequest $request): RedirectResponse
     {
+        if ($request->boolean('from_clocking_page')) {
+            return Redirect::route('grp.org.hr.clockings.index', $clocking->organisation->slug);
+        }
+
         return Redirect::back();
     }
 }

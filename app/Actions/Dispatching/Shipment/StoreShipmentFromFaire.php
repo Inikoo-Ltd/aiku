@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Catalogue\Shop\External\Faire\GetSpecificFaireOrder;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreShipmentFromFaire extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     /**
      * @throws \Throwable
      */

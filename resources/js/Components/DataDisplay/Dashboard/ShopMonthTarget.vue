@@ -33,12 +33,13 @@ interface PeriodTarget {
     needed_this_week?: number | null
     tip?: string | null
     remaining_days: number
-    chart: { days: number[], this_year: number[], last_year: number[], forecast?: { expected: (number | null)[], low: (number | null)[], high: (number | null)[] } | null }
+    chart: { days: number[], this_year: number[], last_year: number[], weekly_versus_last_year?: { x: number, y: number | null }[], forecast?: { expected: (number | null)[], low: (number | null)[], high: (number | null)[] } | null }
     granularity?: "month" | "year"
     children?: ChildTarget[]
     children_label?: string
     selection_setting?: string
     selected_child?: string
+    selected_period?: "month" | "year"
     can_edit: boolean
     update_route: { name: string, parameters: Record<string, number> } | null
 }
@@ -55,15 +56,28 @@ const props = defineProps<{
     yearTarget?: PeriodTarget
 }>()
 
-const activePeriod = ref<"month" | "year">("month")
+const activePeriod = ref<"month" | "year">(props.monthTarget.selected_period === "year" && props.yearTarget ? "year" : "month")
 const children = computed(() => props.monthTarget.children ?? [])
 const selectedChildKey = ref(children.value.some((child) => child.key === props.monthTarget.selected_child) ? props.monthTarget.selected_child! : "all")
 const selectedChild = computed(() => children.value.find((child) => child.key === selectedChildKey.value) ?? null)
 const showAllCategories = ref(false)
 
+const yearChild = computed(() => props.yearTarget?.children?.find((child) => child.key === selectedChildKey.value) ?? null)
+
+const isYearView = computed(() => activePeriod.value === "year" && !!props.yearTarget)
+
+const chips = computed(() => [
+    { key: "all", name: ctrans("All"), block: (isYearView.value ? props.yearTarget : props.monthTarget) as PeriodTarget },
+    ...children.value.map((child) => ({
+        key: child.key,
+        name: child.name,
+        block: (isYearView.value ? props.yearTarget?.children?.find((yearChild) => yearChild.key === child.key) ?? child : child) as PeriodTarget,
+    })),
+])
+
 const periodData = computed<PeriodTarget>(() => {
     if (activePeriod.value === "year" && props.yearTarget) {
-        return props.yearTarget
+        return selectedChildKey.value === "all" ? props.yearTarget : yearChild.value ?? props.yearTarget
     }
     return selectedChild.value ?? props.monthTarget
 })
@@ -110,11 +124,14 @@ const canEditTarget = computed(() => periodData.value.can_edit && !periodData.va
 const selectPeriod = (period: "month" | "year") => {
     isEditing.value = false
     activePeriod.value = period
+    axios.patch(route("grp.models.profile.update"), { settings: { sales_target_period: period } })
 }
 
 const selectChild = (key: string) => {
     isEditing.value = false
-    activePeriod.value = "month"
+    if (!props.yearTarget?.children?.some((child) => child.key === key)) {
+        activePeriod.value = "month"
+    }
     selectedChildKey.value = key
     if (props.monthTarget.selection_setting) {
         axios.patch(route("grp.models.profile.update"), { settings: { [props.monthTarget.selection_setting]: key } })
@@ -161,19 +178,127 @@ const dayLabel = (unit: number) => {
 
 const forecast = computed(() => periodData.value.chart.forecast ?? null)
 
+const isYear = computed(() => periodData.value.granularity === "year")
+
+const onMonthAxis = (series: (number | null)[]) => isYear.value ? series.map((y, index) => ({ x: index + 1, y })) : series
+
+const thisYearLine = computed(() => {
+    const points = onMonthAxis(periodData.value.chart.this_year) as any[]
+    if (!isYear.value || !points.length) {
+        return points
+    }
+    const today = new Date()
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+    points[points.length - 1].x = points.length - 1 + today.getDate() / daysInMonth
+    return points
+})
+
 const chartData = computed(() => ({
     labels: periodData.value.chart.days.map(dayLabel),
     datasets: [
-        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
+        { label: periodData.value.month_label, data: thisYearLine.value, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
         ...(forecast.value ? [
-            { key: "forecast", label: ctrans("Forecast"), data: forecast.value.expected, borderColor: "transparent", backgroundColor: "transparent", tension: 0, borderWidth: 0, pointRadius: 0, inLegend: false },
-            { key: "band", label: ctrans("Forecast"), data: forecast.value.high, borderColor: "transparent", backgroundColor: COLORS.forecastBand, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0, order: 10, isBand: true },
-            { key: "band_low", label: "", data: forecast.value.low, borderColor: "transparent", backgroundColor: COLORS.forecastBand, tension: 0, borderWidth: 0, pointRadius: 0, order: 10, inLegend: false },
+            { key: "forecast", label: ctrans("Forecast"), data: onMonthAxis(forecast.value.expected), borderColor: "transparent", backgroundColor: "transparent", tension: 0, borderWidth: 0, pointRadius: 0, inLegend: false },
+            { key: "band", label: ctrans("Forecast"), data: onMonthAxis(forecast.value.high), borderColor: "transparent", backgroundColor: COLORS.forecastBand, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0, order: 10, isBand: true },
+            { key: "band_low", label: "", data: onMonthAxis(forecast.value.low), borderColor: "transparent", backgroundColor: COLORS.forecastBand, tension: 0, borderWidth: 0, pointRadius: 0, order: 10, inLegend: false },
         ] : []),
-        { label: periodData.value.last_year_label, data: periodData.value.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
-        ...(target.value ? [{ label: ctrans("Target"), data: periodData.value.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
+        { label: periodData.value.last_year_label, data: onMonthAxis(periodData.value.chart.last_year), borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+        ...(target.value ? [{ label: ctrans("Target"), data: onMonthAxis(periodData.value.chart.days.map(() => target.value)), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
     ],
 }))
+
+const aheadBehindLine = computed(() => {
+    const thisYear = periodData.value.chart.this_year
+    const lastYear = periodData.value.chart.last_year
+    return thisYearLine.value.map((point: any, index: number) => {
+        const isPartialMonth = index === thisYear.length - 1
+        const comparedTo = isPartialMonth ? periodData.value.last_year_so_far : lastYear[index]
+        const sales = isPartialMonth ? periodData.value.sales_so_far : thisYear[index]
+        return { x: point.x, y: comparedTo ? Math.round(((sales / comparedTo) - 1) * 1000) / 10 : null }
+    })
+})
+
+const weekLabel = (monthPosition: number) => {
+    const year = Number(periodData.value.month.slice(0, 4))
+    const monthIndex = Math.min(11, Math.floor(monthPosition - 0.0001))
+    const day = Math.max(1, Math.round((monthPosition - monthIndex) * new Date(year, monthIndex + 1, 0).getDate()))
+    return new Date(year, monthIndex, day).toLocaleDateString(undefined, { day: "numeric", month: "short" })
+}
+
+const percentOfLastYear = (series: (number | null)[]) => series.map((sales, index) => {
+    const lastYear = periodData.value.chart.last_year[index]
+    return { x: index + 1, y: sales !== null && lastYear ? Math.round(((sales / lastYear) - 1) * 1000) / 10 : null }
+})
+
+const aheadBehindForecast = computed(() => forecast.value
+    ? { expected: percentOfLastYear(forecast.value.expected), low: percentOfLastYear(forecast.value.low), high: percentOfLastYear(forecast.value.high) }
+    : null)
+
+const aheadBehindData = computed(() => ({
+    datasets: [
+        ...(aheadBehindForecast.value ? [
+            { key: "forecast", label: ctrans("Forecast"), data: aheadBehindForecast.value.expected, borderColor: COLORS.thisYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+            { key: "band", label: "", data: aheadBehindForecast.value.high, borderColor: "transparent", backgroundColor: COLORS.forecastBand, fill: "+1", tension: 0, borderWidth: 0, pointRadius: 0 },
+            { key: "band_low", label: "", data: aheadBehindForecast.value.low, borderColor: "transparent", tension: 0, borderWidth: 0, pointRadius: 0 },
+        ] : []),
+        {
+            label: ctrans("vs :last_year", { last_year: periodData.value.last_year_label }),
+            data: periodData.value.chart.weekly_versus_last_year ?? aheadBehindLine.value,
+            borderColor: COLORS.thisYear,
+            tension: 0,
+            borderWidth: 1.5,
+            pointRadius: periodData.value.chart.weekly_versus_last_year ? 0 : 2,
+            fill: { target: { value: 0 }, above: "rgba(31, 132, 90, 0.15)", below: "rgba(220, 38, 38, 0.15)" },
+            segment: { borderColor: (context: any) => context.p1.parsed.y < 0 ? "#dc2626" : COLORS.thisYear },
+            pointBackgroundColor: (context: any) => context.parsed?.y < 0 ? "#dc2626" : COLORS.thisYear,
+        },
+    ],
+}))
+
+const monthRows = computed(() => {
+    const thisYear = periodData.value.chart.this_year
+    const lastYear = periodData.value.chart.last_year
+    const expected = forecast.value?.expected ?? []
+    const inMonth = (series: (number | null)[], index: number) => (series[index] ?? 0) - (index > 0 ? (series[index - 1] ?? 0) : 0)
+    return lastYear.map((_, index) => {
+        const isPartial = index === thisYear.length - 1
+        const isForecast = index >= thisYear.length && expected[index] != null && expected[index - 1] != null
+        const lastYearInMonth = isPartial ? periodData.value.last_year_so_far - (lastYear[index - 1] ?? 0) : inMonth(lastYear, index)
+        const sales = index < thisYear.length - 1 ? inMonth(thisYear, index)
+            : isPartial ? periodData.value.sales_so_far - (thisYear[index - 1] ?? 0)
+            : isForecast ? inMonth(expected, index) : null
+        return {
+            month: index + 1,
+            kind: isPartial ? "partial" : isForecast ? "forecast" : index < thisYear.length ? "actual" : "future",
+            sales,
+            lastYear: lastYearInMonth,
+            change: sales !== null && lastYearInMonth ? ((sales / lastYearInMonth) - 1) * 100 : null,
+        }
+    })
+})
+
+const aheadBehindOptions = computed(() => {
+    const values = [periodData.value.chart.weekly_versus_last_year ?? aheadBehindLine.value, ...Object.values(aheadBehindForecast.value ?? {})].flat().map((point: any) => Math.abs(point.y ?? 0))
+    const reach = Math.max(2, 2 * Math.ceil(Math.max(...values) * 0.6))
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                filter: (item: any) => item.parsed.y !== null && !String(item.dataset.key ?? "").startsWith("band"),
+                callbacks: {
+                    title: (items: any[]) => items.length ? weekLabel(items[0].parsed.x) : "",
+                    label: (item: any) => `${item.dataset.label}: ${item.parsed.y > 0 ? "+" : ""}${item.parsed.y}%`,
+                },
+            },
+        },
+        scales: {
+            x: { type: "linear", min: 0, max: 12, grid: { display: false }, ticks: { stepSize: 1, maxRotation: 0, callback: (value: number) => value < 12 ? dayLabel(value + 1) : "" } },
+            y: { min: -reach, max: reach, afterFit: (axis: any) => { axis.width = 56 }, grid: { color: (context: any) => context.tick.value === 0 ? "#64748b" : "#f1f5f9" }, ticks: { count: 5, callback: (value: number) => `${value > 0 ? "+" : ""}${Math.round(value * 10) / 10}%` } },
+        },
+    }
+})
 
 const chartOptions = computed(() => ({
     responsive: true,
@@ -182,17 +307,20 @@ const chartOptions = computed(() => ({
     plugins: {
         legend: { display: false },
         tooltip: {
-            filter: (item: any) => item.raw !== null && !String(item.dataset.key ?? "").startsWith("band"),
+            filter: (item: any) => item.parsed.y !== null && !String(item.dataset.key ?? "").startsWith("band"),
             callbacks: {
+                title: (items: any[]) => isYear.value && items.length ? dayLabel(Math.ceil(items[0].parsed.x)) : items[0]?.label,
                 label: (item: any) => item.dataset.key === "forecast" && forecast.value
-                    ? ctrans(":label: :amount (likely :low to :high)", { label: item.dataset.label, amount: money(item.raw), low: money(forecast.value.low[item.dataIndex]), high: money(forecast.value.high[item.dataIndex]) })
-                    : `${item.dataset.label}: ${money(item.raw)}`,
+                    ? ctrans(":label: :amount (likely :low to :high)", { label: item.dataset.label, amount: money(item.parsed.y), low: money(forecast.value.low[item.dataIndex]), high: money(forecast.value.high[item.dataIndex]) })
+                    : `${item.dataset.label}: ${money(item.parsed.y)}`,
             },
         },
     },
     scales: {
-        x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
-        y: { beginAtZero: true, ticks: { callback: (value: number) => shortMoney(value) } },
+        x: isYear.value
+            ? { type: "linear", min: 0, max: 12, grid: { display: false }, ticks: { stepSize: 1, maxRotation: 0, callback: (value: number) => value < 12 ? dayLabel(value + 1) : "" } }
+            : { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+        y: { beginAtZero: true, afterFit: (axis: any) => { axis.width = 56 }, ticks: { callback: (value: number) => shortMoney(value) } },
     },
 }))
 
@@ -226,7 +354,7 @@ const donutOptions = {
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                 <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-[var(--theme-color-4)]" fixed-width aria-hidden="true" />
                 {{ ctrans(":month target", { month: periodData.month_label }) }}
-                <span v-if="selectedChild && activePeriod === 'month'" class="font-normal text-gray-500">· {{ selectedChild.name }}</span>
+                <span v-if="selectedChild && (activePeriod === 'month' || yearChild)" class="font-normal text-gray-500">· {{ selectedChild.name }}</span>
                 <Link v-if="selectedChild?.link && activePeriod === 'month'" :href="route(selectedChild.link.name, selectedChild.link.parameters)" class="text-xs font-normal text-gray-400 hover:text-gray-700" :aria-label="ctrans('Open dashboard')" @click.stop>
                     <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
                 </Link>
@@ -261,22 +389,30 @@ const donutOptions = {
         <div v-if="children.length" class="mb-4 flex flex-wrap items-center gap-1.5 text-sm">
             <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ monthTarget.children_label }}</span>
             <button
-                v-for="chip in [{ key: 'all', name: ctrans('All'), block: monthTarget as PeriodTarget }, ...children.map((child) => ({ key: child.key, name: child.name, block: child as PeriodTarget }))]"
+                v-for="chip in chips"
                 :key="chip.key"
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="selectedChildKey === chip.key && activePeriod === 'month'
+                :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild)
                     ? 'border-[var(--theme-color-4)] bg-[var(--theme-color-4)] text-[var(--theme-color-5)] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="selectChild(chip.key)">
                 <span>{{ chip.name }}</span>
-                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && activePeriod === 'month' ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
+                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
             </button>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-5">
-            <div class="h-56 min-w-0 xl:col-span-3">
-                <Chart type="line" :data="chartData" :options="chartOptions" class="h-full" />
+            <div class="flex min-w-0 flex-col xl:col-span-3">
+                <div class="h-56">
+                    <Chart type="line" :data="chartData" :options="chartOptions" class="h-full" />
+                </div>
+                <div v-if="isYear && aheadBehindLine.length" class="mt-4 flex flex-1 flex-col">
+                    <div class="mb-1 text-xs text-gray-500">{{ ctrans("Ahead or behind :last_year", { last_year: periodData.last_year_label }) }}</div>
+                    <div class="relative min-h-32 flex-1">
+                        <Chart type="line" :data="aheadBehindData" :options="aheadBehindOptions" class="!absolute inset-0" />
+                    </div>
+                </div>
             </div>
 
             <div class="min-w-0 xl:col-span-2 xl:border-l xl:border-gray-100 xl:pl-6">
@@ -344,6 +480,25 @@ const donutOptions = {
                     <template v-if="periodData.needed_this_week && periodData.granularity !== 'year'"> · {{ ctrans(":amount this week", { amount: money(periodData.needed_this_week) }) }}</template>
                     · {{ ctrans(":orders orders in the pipeline", { orders: String(periodData.pipeline.orders) }) }}
                 </p>
+
+                <table v-if="isYear" class="mt-4 w-full text-xs tabular-nums">
+                    <thead class="text-gray-400">
+                        <tr>
+                            <th class="py-0.5 text-left font-normal">{{ ctrans("Month") }}</th>
+                            <th class="py-0.5 text-right font-normal">{{ periodData.month.slice(0, 4) }}</th>
+                            <th class="py-0.5 text-right font-normal">{{ periodData.last_year_label }}</th>
+                            <th class="py-0.5 text-right font-normal">{{ ctrans("Change") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="row in monthRows" :key="row.month" :class="row.kind === 'forecast' ? 'italic text-gray-400' : 'text-gray-700'">
+                            <td class="py-0.5">{{ dayLabel(row.month) }}<span v-if="row.kind === 'partial'" class="text-gray-400"> · {{ ctrans("so far") }}</span><span v-if="row.kind === 'forecast'"> · {{ ctrans("forecast") }}</span></td>
+                            <td class="py-0.5 text-right">{{ row.sales === null ? "—" : money(row.sales) }}</td>
+                            <td class="py-0.5 text-right text-gray-500">{{ money(row.lastYear) }}</td>
+                            <td class="py-0.5 text-right" :class="row.change === null ? '' : row.change < 0 ? 'text-red-600' : 'text-green-600'">{{ row.change === null ? "" : (row.change > 0 ? "+" : "") + row.change.toFixed(1) + "%" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 

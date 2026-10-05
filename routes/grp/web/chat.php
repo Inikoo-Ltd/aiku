@@ -48,6 +48,7 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
+    Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');
     Route::post('/conversations', \App\Actions\Chat\Staff\StoreStaffConversation::class)->name('conversations.store');
     Route::get('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\Json\GetStaffMessages::class)->name('conversations.messages.index');
     Route::post('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\SendStaffMessage::class)->name('conversations.messages.store');

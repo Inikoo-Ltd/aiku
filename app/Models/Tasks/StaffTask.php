@@ -8,6 +8,8 @@
 
 namespace App\Models\Tasks;
 
+use App\Models\Traits\InGroup;
+use App\Models\Traits\InTicketProject;
 use App\Models\Chat\StaffConversation;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -35,6 +37,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 /**
  * @property int $id
  * @property int $group_id
+ * @property int|null $ticket_project_id
+ * @property int|null $ticket_project_milestone_id
  * @property int $number
  * @property string $reference
  * @property string $subject
@@ -64,6 +68,8 @@ class StaffTask extends Model implements Auditable, HasMedia
     use HasHistory;
     use InteractsWithMedia;
     use HasTicketImages;
+    use InGroup;
+    use InTicketProject;
 
     public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock', 'ChatSession', 'MetaChatSession'];
 
@@ -96,7 +102,7 @@ class StaffTask extends Model implements Auditable, HasMedia
         'priority' => ChatPriorityEnum::NORMAL,
     ];
 
-    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject'];
+    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject', 'ticket_project_id'];
 
     protected function casts(): array
     {
@@ -247,6 +253,18 @@ class StaffTask extends Model implements Auditable, HasMedia
         return $this->assignee_id === $user->id || $this->collaborators->contains('id', $user->id);
     }
 
+    public function canReassignBy(User $user): bool
+    {
+        return $this->requester_id === $user->id
+            || $this->assignee_id === $user->id
+            || ($this->group_id === $user->group_id && self::isSupervisor($user));
+    }
+
+    public function canAskForHelpBy(User $user): bool
+    {
+        return $this->isOpen() && $this->isWorkedOnBy($user);
+    }
+
     public function canRemoveCollaboratorsBy(User $user): bool
     {
         return $this->assignee_id === $user->id || $this->canSetDueDate($user);
@@ -346,6 +364,19 @@ class StaffTask extends Model implements Auditable, HasMedia
      */
     public static function departmentSupervisors(User $requester, string $department): Collection
     {
+        return self::departmentPeople($requester, $department, true);
+    }
+
+    /**
+     * Everyone in a department in the requester's organisations, for a task sent to the department as a whole.
+     */
+    public static function departmentMembers(User $requester, string $department): Collection
+    {
+        return self::departmentPeople($requester, $department, false);
+    }
+
+    private static function departmentPeople(User $requester, string $department, bool $supervisorsOnly): Collection
+    {
         $organisationIds = DB::table('user_has_models')
             ->join('employees', 'employees.id', '=', 'user_has_models.model_id')
             ->where('user_has_models.model_type', 'Employee')
@@ -357,7 +388,7 @@ class StaffTask extends Model implements Auditable, HasMedia
         $jobPositionIds = DB::table('job_positions')
             ->where('group_id', $requester->group_id)
             ->where('department', $department)
-            ->where('code', 'like', '%-m')
+            ->when($supervisorsOnly, fn ($query) => $query->where('code', 'like', '%-m'))
             ->where(fn ($query) => $query->whereNull('organisation_id')->orWhereIn('organisation_id', $organisationIds))
             ->select('id');
 

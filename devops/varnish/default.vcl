@@ -17,17 +17,17 @@ acl cache_warmer {
     # "10.0.0.10";
 }
 
-backend helio {
-    .host = "{{VARNISH_HOST_HELIO}}";
-    .port = "8080";
+backend litio {
+    .host = "{{VARNISH_HOST_LITIO}}";
+    .port = "{{VARNISH_PORT_LITIO}}";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
     .between_bytes_timeout = 30s;
 }
 
-backend helio_in {
-    .host = "{{VARNISH_HOST_HELIO}}";
-    .port = "8080";
+backend litio_in {
+    .host = "{{VARNISH_HOST_LITIO}}";
+    .port = "{{VARNISH_PORT_LITIO}}";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
     .between_bytes_timeout = 30s;
@@ -82,12 +82,12 @@ sub vcl_init {
 
 
     new logged_in_vdir = directors.random();
-    logged_in_vdir.add_backend(helio_in,20);
-    logged_in_vdir.add_backend(boro_in,80);
+    logged_in_vdir.add_backend(litio_in,80);
+    logged_in_vdir.add_backend(boro_in,20);
 
     new logged_out_vdir = directors.random();
-    logged_out_vdir.add_backend(helio,20);
-    logged_out_vdir.add_backend(boro,80);
+    logged_out_vdir.add_backend(litio,80);
+    logged_out_vdir.add_backend(boro,20);
 
 }
 

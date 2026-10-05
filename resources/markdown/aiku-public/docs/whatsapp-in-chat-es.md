@@ -4,7 +4,7 @@ summary: Los mensajes al número de WhatsApp de la tienda están en la misma ban
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat, whatsapp
-category: crm
+category: help-desk
 series: Chat
 order: 4
 ---

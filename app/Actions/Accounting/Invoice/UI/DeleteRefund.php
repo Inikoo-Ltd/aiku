@@ -25,6 +25,15 @@ class DeleteRefund extends OrgAction
     use WithActionUpdate;
     use WithDeleteInvoiceUI;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $this->canDeleteInvoice($request);
+    }
+
     // Don't delete this Raul. We need a split asController, as we name it on the route as $refund, not $invoice.
     public function asController(Invoice $refund, ActionRequest $request): Invoice
     {
