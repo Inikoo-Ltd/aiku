@@ -143,6 +143,14 @@ class EditProfileSettings
                                     'label' => __(':count seconds', ['count' => $seconds]),
                                 ])->all(),
                             ],
+                            "alert_popup_previews" => [
+                                "type"         => "alert_popup_previews",
+                                "label"        => __("Preview pop-ups"),
+                                "information"  => __("Shows a sample of each pop-up with your pop-up time, so you can see what it looks like"),
+                                "noSaveButton" => true,
+                                "full"         => true,
+                                "value"        => null,
+                            ],
                             "alert_sounds" => [
                                 "type"        => "alert_sounds",
                                 "label"       => __("Chat alerts"),

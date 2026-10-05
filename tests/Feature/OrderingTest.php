@@ -191,6 +191,7 @@ use App\Models\Ordering\Transaction;
 use App\Actions\Catalogue\Shop\CalculateShopOrderAlertSizes;
 use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
+use App\Actions\UI\Profile\EditProfileSettings;
 use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Events\BroadcastNewOrderAlert;
 use App\Models\SysAdmin\User;
@@ -5810,6 +5811,41 @@ test('order alert settings are saved on the user and reach the layout', function
         ->patchJson(route('grp.models.profile.update'), ['order_alerts' => ['types' => ['ecom_big' => ['sound' => 'air-horn']], 'popup' => ['show' => 'maybe']]])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['order_alerts.types.ecom_big.sound', 'order_alerts.popup.show']);
+
+    $user->update(['settings' => Arr::except($user->settings, 'order_alerts')]);
+    $this->shop->update(['state' => $shopState]);
+});
+
+test('order pop-ups can be switched off from the pop-up without losing the followed shops', function () {
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => [
+            'shops' => [$this->shop->id],
+            'types' => ['ecom_normal' => ['enabled' => true, 'sound' => 'coins']],
+            'popup' => ['show' => true],
+        ]])
+        ->assertSuccessful();
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts_popup' => false])
+        ->assertSuccessful();
+
+    $user = $this->user->fresh();
+
+    expect(GetUserOrderAlerts::run($user)['popup'])->toEqual(['show' => false])
+        ->and(Arr::get($user->settings, 'order_alerts.shops'))->toBe([$this->shop->id])
+        ->and(Arr::get($user->settings, 'order_alerts.types.ecom_normal'))->toEqual(['enabled' => true, 'sound' => 'coins', 'muted' => false]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts_popup' => 'maybe'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['order_alerts_popup']);
+
+    $alertFields = collect(EditProfileSettings::make()->generateBlueprint($user)['formData']['blueprint'])
+        ->firstWhere('label', 'Alerts')['fields'];
+    expect($alertFields['alert_popup_previews'])->toMatchArray(['type' => 'alert_popup_previews', 'noSaveButton' => true]);
 
     $user->update(['settings' => Arr::except($user->settings, 'order_alerts')]);
     $this->shop->update(['state' => $shopState]);

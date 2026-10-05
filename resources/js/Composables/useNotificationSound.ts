@@ -636,6 +636,66 @@ const formatMoney = (amount: number, currency: string) => {
 	}
 }
 
+const popupDurationMs = () => (useLayoutStore().user?.settings?.alert_preview_seconds ?? 6) * 1000
+
+type OrderPopup = Omit<NewOrderEvent, "url"> & { url: string | null; type?: string; sound_blocked?: boolean }
+
+export const showOrderPopup = (event: OrderPopup) => {
+	notify({
+		group: "alert-popups",
+		title: event.is_unpaid ? ctrans("Unpaid order · :shop", { shop: event.shop }) : ctrans("New order · :shop", { shop: event.shop }),
+		text: `${event.reference} · ${event.customer} · ${formatMoney(event.amount, event.currency)}`,
+		duration: popupDurationMs(),
+		data: { ...event, kind: "order", money: formatMoney(event.amount, event.currency) },
+	})
+}
+
+export const showTicketPopup = (title: string, body: string, url: string | null) => {
+	notify({
+		group: "alert-popups",
+		title,
+		text: body,
+		duration: popupDurationMs(),
+		data: { kind: "ticket", url },
+	})
+}
+
+export type AlertPopupPreview = "order" | "unpaid_order" | "ticket" | "customer_message"
+
+export const previewAlertPopup = (kind: AlertPopupPreview) => {
+	const sampleOrder: OrderPopup = {
+		order_id: 0,
+		shop_id: 0,
+		shop: "UK",
+		types: [],
+		reference: "UK100234",
+		customer: ctrans("Sample customer Ltd"),
+		amount: 249.5,
+		currency: "GBP",
+		is_unpaid: false,
+		url: null,
+	}
+
+	switch (kind) {
+		case "order":
+			return showOrderPopup(sampleOrder)
+		case "unpaid_order":
+			return showOrderPopup({ ...sampleOrder, is_unpaid: true })
+		case "ticket":
+			return showTicketPopup(ctrans("HELP-1234 is done"), ctrans("Sample colleague marked HELP-1234 (Invoice total is wrong) as done."), null)
+		case "customer_message":
+			customerPeek.value = {
+				key: `preview:${Date.now()}`,
+				channel: ctrans("Chat"),
+				isEmail: false,
+				sender: ctrans("Sample customer"),
+				subject: null,
+				text: ctrans("Hi, where is my order?"),
+				url: null,
+			}
+	}
+}
+
 let orderAlertsStarted = false
 
 export const startOrderAlerts = () => {
@@ -657,13 +717,7 @@ export const startOrderAlerts = () => {
 		const body = `${event.reference} · ${event.customer} · ${formatMoney(event.amount, event.currency)}`
 
 		if (preferences.popup.show && document.visibilityState === "visible") {
-			notify({
-				group: "order-alerts",
-				title,
-				text: body,
-				duration: (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000,
-				data: { ...event, type, money: formatMoney(event.amount, event.currency), sound_blocked: (navigator as any).userActivation?.hasBeenActive === false },
-			})
+			showOrderPopup({ ...event, type, sound_blocked: (navigator as any).userActivation?.hasBeenActive === false })
 		}
 
 		alertOnce({
