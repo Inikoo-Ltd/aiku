@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Catalogue\Shop\External\Wix\UpdateShippingWixOrder;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
@@ -143,7 +145,11 @@ class StoreShipment extends OrgAction
         if ($parent instanceof DeliveryNote) {
             $order = $parent->orders()->first();
             if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external) {
-                $faireFeedback = UpdateShippingFaireOrder::run($parent);
+                $faireFeedback = match ($order->shop->engine) {
+                    ShopEngineEnum::FAIRE => UpdateShippingFaireOrder::run($parent),
+                    ShopEngineEnum::WIX   => UpdateShippingWixOrder::run($parent),
+                    default               => null,
+                };
             }
         }
 

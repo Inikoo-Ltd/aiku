@@ -18,6 +18,8 @@ use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
+use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
@@ -801,6 +803,24 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetFaireProductsAllShops',
                 ),
                 name: 'GetFaireProductsAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetWixOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetWixOrdersAllShops',
+                ),
+                name: 'GetWixOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetWixProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetWixProductsAllShops',
+                ),
+                name: 'GetWixProductsAllShops',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
