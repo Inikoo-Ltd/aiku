@@ -66,7 +66,8 @@ const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
 
 const isDesktop = useMediaQuery("(min-width: 1024px)")
-const maxAlertPopups = computed(() => isDesktop.value ? 5 : 3)
+const isTablet = useMediaQuery("(min-width: 768px)")
+const maxAlertPopups = computed(() => isDesktop.value ? 5 : (isTablet.value ? 2 : 3))
 
 const stopOrderPopups = async (close: () => void) => {
     close()
