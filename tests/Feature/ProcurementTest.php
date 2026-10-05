@@ -72,6 +72,7 @@ use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
+use App\Actions\Procurement\OrgPartner\PreparePartnerShoppingListOrder;
 use App\Actions\Procurement\OrgPartner\StoreRescuePurchaseOrder;
 use App\Actions\Procurement\OrgPartner\UI\GetOrgPartnerShowcase;
 use App\Models\CRM\Customer;
@@ -2674,7 +2675,7 @@ test('UI Index org partners', function () {
                 ->where('name', $this->orgPartner->partner->name)
                 ->where('is_hub', $this->orgPartner->partner->is_manufacturing_hub)
                 ->has('stats', fn (AssertableInertia $stats) => $this->orgPartner->partner->is_manufacturing_hub
-                    ? $stats->has('open_shopping_list_items')->etc()
+                    ? $stats->has('open_shopping_list_items')->has('rescuable.buckets', 4)->has('rescuable.top')->etc()
                     : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.buckets.0.left_out')->has('rescuable.top')->etc())
                 ->etc());
     });
@@ -2736,20 +2737,33 @@ test('new purchase order to a sister company opens it, or the one already being 
     }
 });
 
-test('rescue page and rescue order refuse the manufacturing hub', function () {
+test('ordering from the manufacturing hub fills the shopping list, never a rescue purchase order', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;
     $partner->update(['is_manufacturing_hub' => true]);
 
     try {
-        $this->get(route('grp.org.procurement.org_partners.show.rescue.index', [$this->organisation->slug, $this->orgPartner->id]))
-            ->assertNotFound();
+        $orgPartner = $this->orgPartner->refresh();
+        $this->get(route('grp.org.procurement.org_partners.show.rescue.index', [$this->organisation->slug, $orgPartner->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('orgPartner.is_hub', true)->where('draftReference', null)->etc());
 
-        expect(fn () => StoreRescuePurchaseOrder::make()->handle($this->orgPartner->refresh()))
-            ->toThrow(ValidationException::class);
+        $buckets = GetPartnerStockCoverBuckets::make();
+        expect((new ReflectionMethod($buckets, 'spareExpression'))->invoke($buckets, $orgPartner, 14))->toBe('null::numeric')
+            ->and($buckets->orderBuckets($orgPartner))->toBe(['out', 'w1', 'w2', 'w3'])
+            ->and((int) DB::selectOne('select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, 'null::numeric', 14, $orgPartner).' as quantity
+                from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os, (select null::jsonb as data) stock_families,
+                    (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 6 as packed_in) p')->quantity)
+            ->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
+            ->and(collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('bucket')->all())->toBe(['out', 'w1', 'w2', 'w3'])
+            ->and(fn () => StoreRescuePurchaseOrder::make()->handle($orgPartner))->toThrow(ValidationException::class);
+
+        $this->post(route('grp.models.org-partner.shopping_list_order.store', ['orgPartner' => $orgPartner->id]))
+            ->assertSessionHasErrors('rescue');
     } finally {
         $partner->update(['is_manufacturing_hub' => $wasHub]);
     }
+
+    expect(fn () => PreparePartnerShoppingListOrder::make()->handle($this->orgPartner->refresh()))->toThrow(ValidationException::class);
 });
 
 test('a rescue line orders at least a month of sales, never more than the partner can spare', function () {
@@ -2757,7 +2771,7 @@ test('a rescue line orders at least a month of sales, never more than the partne
     $quantity = fn (string $spare) => DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
         from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os,
-            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id) p, (select null::jsonb as data) stock_families'
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
     )->quantity;
 
     expect((int) $quantity('500'))->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
@@ -4508,6 +4522,24 @@ describe('partner shopping list', function () {
 
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    });
+
+    test('hub quantities go up to whole batches unless the batch is broken on purpose', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $sellerOrgStock->updateQuietly(['packed_in' => 1]);
+        $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'BATCHSL', 'name' => 'Batch factory']);
+        StoreArtefact::make()->action($production, ['code' => 'BATCH-SL', 'name' => 'Batched shopping list artefact', 'recommended_batch_size' => 45])
+            ->update(['org_stock_id' => $sellerOrgStock->id]);
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner->refresh(), $this->buyerOrgStock, ['quantity' => 50]);
+        expect((float) $item->quantity)->toBe(90.0);
+
+        $item = UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => 10]);
+        expect((float) $item->quantity)->toBe(45.0);
+
+        $item = UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => 10, 'break_batch' => true]);
+        expect((float) $item->quantity)->toBe(10.0);
     });
 
     test('a mixed bundle holding the SKO does not price it (HELP-3104)', function () {
@@ -6479,7 +6511,7 @@ test('partner shopping list org stocks json feed', function () {
         ->and($row['saveRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.store')
         ->and($row['deleteRoute'])->toBeNull();
 
-    StorePartnerShoppingListItem::make()->action($this->orgPartner, $sellerOrgStock, ['quantity' => 5]);
+    StorePartnerShoppingListItem::make()->action($this->orgPartner, $sellerOrgStock, ['quantity' => 5, 'break_batch' => true]);
 
     $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]));
     $row = collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id);

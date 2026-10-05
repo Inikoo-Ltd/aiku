@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
@@ -79,6 +80,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'users.contact_name as added_by_name',
                 'org_stock_stats.days_of_cover',
                 'partner_org_stocks.quantity_available as their_available',
+                DB::raw(RoundPartnerQuantityToBatches::quantumSql('partner_org_stocks').' as order_quantum'),
                 'job_orders.reference as job_order_reference',
                 'job_orders.state as job_order_state',
                 'orders.reference as order_reference',

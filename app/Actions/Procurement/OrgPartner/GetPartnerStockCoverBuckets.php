@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -25,6 +26,8 @@ class GetPartnerStockCoverBuckets
     use AsObject;
 
     public const int MINIMUM_LINE_VALUE = 10;
+
+    public const array DEFAULT_ORDER_BUCKETS = ['out', 'w1', 'w2'];
 
     public const int MINIMUM_COVER_DAYS = 30;
 
@@ -179,15 +182,17 @@ class GetPartnerStockCoverBuckets
             ->get()
             ->keyBy('bucket');
 
-        $exchange = $orgPartner->exchangeToOrgCurrency();
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
         $leftOut  = $this->leftOut($orgPartner, $leadTime['days']);
+
+        $defaultCounts = $counts->only(self::DEFAULT_ORDER_BUCKETS);
 
         return [
             'order'   => [
-                'lines' => (int) $counts->sum('order_lines'),
-                'cost'  => round((float) $counts->sum('order_cost') * $exchange, 2),
+                'lines' => (int) $defaultCounts->sum('order_lines'),
+                'cost'  => round((float) $defaultCounts->sum('order_cost') * $exchange, 2),
             ],
-            'buckets' => collect(['out', 'w1', 'w2'])->map(fn (string $bucket) => [
+            'buckets' => collect($this->orderBuckets($orgPartner))->map(fn (string $bucket) => [
                 'bucket'      => $bucket,
                 'label'       => $bucket === 'out' ? __(self::BUCKETS['out']['label']) : $this->bucketLabel($bucket, $leadTime['days']),
                 'tone'        => self::BUCKETS[$bucket]['tone'],
@@ -212,18 +217,23 @@ class GetPartnerStockCoverBuckets
     public function leftOut(OrgPartner $orgPartner, int $leadDays): array
     {
         $expression = $this->bucketExpression($leadDays);
-        $spare      = "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
-        $onDraft    = "exists (select 1 from purchase_order_transactions pot
+        $spare      = $this->spareExpression($orgPartner, $leadDays);
+        $onDraft    = $orgPartner->partner->is_manufacturing_hub
+            ? "exists (select 1 from partner_shopping_list_items sli
+                where sli.org_stock_id = os.id and sli.org_partner_id = ".(int) $orgPartner->id."
+                    and sli.state = '".ShoppingListItemStateEnum::OPEN->value."' and sli.deleted_at is null)"
+            : "exists (select 1 from purchase_order_transactions pot
                 join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
                 where pot.org_stock_id = os.id and pot.deleted_at is null and po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."'
                     and po.parent_type = 'OrgPartner' and po.parent_id = ".(int) $orgPartner->id.')';
+        $spareReasons = $orgPartner->partner->is_manufacturing_hub ? '' : "
+            when $spare is null then 'partner_no_forecast'
+            when $spare < 1 then 'partner_short'";
         $reason     = "case
             when coalesce(s.predicted_daily_usage, 0) <= 0 then 'not_selling'
             when p.id is null then 'not_stocked'
             when $onDraft then 'on_draft'
-            when {$this->alreadyComingExpression($orgPartner)} then 'coming'
-            when $spare is null then 'partner_no_forecast'
-            when $spare < 1 then 'partner_short'
+            when {$this->alreadyComingExpression($orgPartner)} then 'coming'$spareReasons
             when os.health_rank in ('A', 'B') then 'rescuable'
             when {$this->orgSkoPrice($orgPartner)} <= 0 then 'no_price'
             when {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} < ".self::MINIMUM_LINE_VALUE." then 'too_small'
@@ -242,7 +252,7 @@ class GetPartnerStockCoverBuckets
             ->where('os.organisation_id', $orgPartner->organisation_id)
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
-            ->whereRaw("$expression in ('out', 'w1', 'w2')")
+            ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
             ->selectRaw("$expression as bucket, $reason as reason, count(*) as total")
             ->groupByRaw('1, 2')
             ->get()
@@ -260,7 +270,7 @@ class GetPartnerStockCoverBuckets
         [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadDays);
 
         return $query
-            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays, $orgPartner)} as quantity, s.days_of_cover, s.projected_lost_revenue, ".self::hubNameSql('os.stock_id').' as hub_name')
+            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, p.quantity_available as their_stock, {$this->rescueQuantity($spare, $leadDays, $orgPartner)} as quantity, s.days_of_cover, s.projected_lost_revenue, {$this->orderQuantum($orgPartner)} as order_quantum, ".($orgPartner->partner->is_manufacturing_hub ? 'null' : self::hubNameSql('os.stock_id')).' as hub_name')
             ->orderByRaw('s.projected_lost_revenue desc nulls last')
             ->orderBy('os.health_rank')
             ->orderByRaw("case $expression when 'out' then 1 when 'w1' then 2 else 3 end")
@@ -281,11 +291,13 @@ class GetPartnerStockCoverBuckets
             'rank'          => $row->health_rank,
             'bucket'        => $row->bucket,
             'our_stock'     => (float) $row->our_stock,
-            'spare'         => (int) $row->spare,
+            'spare'         => $row->spare === null ? null : (int) $row->spare,
+            'their_stock'   => (float) $row->their_stock,
             'quantity'      => (int) $row->quantity,
             'days_of_cover' => $row->days_of_cover === null ? null : (float) $row->days_of_cover,
             'lost'          => $row->projected_lost_revenue === null ? null : (float) $row->projected_lost_revenue,
             'hub_name'      => $row->hub_name,
+            'order_quantum' => (int) $row->order_quantum,
         ];
     }
 
@@ -295,12 +307,12 @@ class GetPartnerStockCoverBuckets
      * SKOs to order are multiplied by the units in each SKO.
      *
      * @param  array<int, string>  $buckets
-     * @return array<int, array{org_stock_id: int, quantity: int}>
+     * @return array<int, array{org_stock_id: int, skos: int, quantity: int}>
      */
-    public function rescueLines(OrgPartner $orgPartner, array $buckets = ['out', 'w1', 'w2'], bool $worstOnly = true): array
+    public function rescueLines(OrgPartner $orgPartner, array $buckets = self::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true): array
     {
         $leadDays = GetPartnerLeadTime::run($orgPartner)['days'];
-        $buckets  = array_values(array_intersect(['out', 'w1', 'w2'], $buckets));
+        $buckets  = array_values(array_intersect($this->orderBuckets($orgPartner), $buckets));
         if (!$buckets) {
             return [];
         }
@@ -310,8 +322,22 @@ class GetPartnerStockCoverBuckets
             ->when($worstOnly, fn ($query) => $query->whereRaw($this->inRescueOrder()))
             ->addSelect('os.packed_in')
             ->get()
-            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'quantity' => (int) $row->quantity * max(1, (int) $row->packed_in)])
+            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'skos' => (int) $row->quantity, 'quantity' => (int) $row->quantity * max(1, (int) $row->packed_in)])
             ->all();
+    }
+
+    /**
+     * What an order can pick from: out, doomed and critical. Ordering from the manufacturing hub is
+     * normal ordering with a long lead time, so it may also take danger (out within 3 lead times),
+     * which would otherwise wait a whole delivery for the next order.
+     *
+     * @return array<int, string>
+     */
+    public function orderBuckets(OrgPartner $orgPartner): array
+    {
+        return $orgPartner->partner->is_manufacturing_hub
+            ? [...self::DEFAULT_ORDER_BUCKETS, 'w3']
+            : self::DEFAULT_ORDER_BUCKETS;
     }
 
     private function inRescueOrder(): string
@@ -349,7 +375,28 @@ class GetPartnerStockCoverBuckets
         $need     = "ceil(s.predicted_daily_usage * {$this->criticalDays($leadDays)} - greatest(os.quantity_available, 0))";
         $forValue = 'least(coalesce(ceil('.self::MINIMUM_LINE_VALUE.' / nullif('.$this->orgSkoPrice($orgPartner).', 0)), 0), ceil(s.predicted_daily_usage * '.self::MAXIMUM_COVER_DAYS.'))';
 
-        return "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
+        $quantity = "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
+
+        if ($orgPartner->partner->is_manufacturing_hub) {
+            $quantum = $this->orderQuantum($orgPartner);
+
+            return "(ceil($quantity / $quantum) * $quantum)";
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * The smallest order, in SKOs, that the hub's whole production batches fill exactly, 1 without a
+     * batch size or from a sister company.
+     */
+    private function orderQuantum(OrgPartner $orgPartner): string
+    {
+        if (!$orgPartner->partner->is_manufacturing_hub) {
+            return '1';
+        }
+
+        return RoundPartnerQuantityToBatches::quantumSql('p');
     }
 
     /**
@@ -358,6 +405,19 @@ class GetPartnerStockCoverBuckets
     private function orgSkoPrice(OrgPartner $orgPartner): string
     {
         return '('.$this->partnerSkoPrice($orgPartner).' * '.(float) $orgPartner->exchangeToOrgCurrency().')';
+    }
+
+    /**
+     * What the partner can let go of without putting its own stock at risk. A manufacturing hub makes
+     * what it is asked for, so there is no limit (null: least() ignores it in rescueQuantity).
+     */
+    private function spareExpression(OrgPartner $orgPartner, int $leadDays): string
+    {
+        if ($orgPartner->partner->is_manufacturing_hub) {
+            return 'null::numeric';
+        }
+
+        return "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
     }
 
     private function criticalDays(int $leadDays): string
@@ -406,14 +466,14 @@ class GetPartnerStockCoverBuckets
     private function rescuableQuery(OrgPartner $orgPartner, int $leadDays): array
     {
         $expression = $this->bucketExpression($leadDays);
-        $spare      = "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
+        $spare      = $this->spareExpression($orgPartner, $leadDays);
 
         $query = $this->scopedQuery($orgPartner)
             ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
-            ->whereRaw("$spare >= 1")
+            ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
-            ->whereRaw("$expression in ('out', 'w1', 'w2')")
+            ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');
 
         return [$query, $expression, $spare];

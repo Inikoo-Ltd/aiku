@@ -49,6 +49,10 @@ class StorePartnerShoppingListItem extends OrgAction
 
         EnsurePartnerOrderPackedInMatches::make()->guard($orgPartner, [$buyerOrgStock->stock_id]);
 
+        if (!Arr::pull($modelData, 'break_batch')) {
+            $modelData['quantity'] = RoundPartnerQuantityToBatches::run($orgPartner, $buyerOrgStock->stock_id, (float) $modelData['quantity']);
+        }
+
         data_set($modelData, 'group_id', $orgPartner->group_id);
         data_set($modelData, 'organisation_id', $orgPartner->organisation_id);
         data_set($modelData, 'org_partner_id', $orgPartner->id);
@@ -84,6 +88,7 @@ class StorePartnerShoppingListItem extends OrgAction
             'priority'       => ['sometimes', 'required', Rule::enum(ShoppingListItemPriorityEnum::class)],
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],
+            'break_batch'    => ['sometimes', 'boolean'],
         ];
     }
 

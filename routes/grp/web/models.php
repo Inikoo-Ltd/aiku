@@ -429,6 +429,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Procurement\OrgPartner\PreparePartnerShoppingListOrder;
 use App\Actions\Procurement\OrgPartner\StoreRescuePurchaseOrder;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -1557,6 +1558,7 @@ Route::name('org-agent.')->prefix('org-agent/{orgAgent:id}')->group(function () 
 Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgPartner'])->name('purchase-order.store');
     Route::post('rescue-purchase-order', StoreRescuePurchaseOrder::class)->name('rescue_purchase_order.store');
+    Route::post('shopping-list-order', PreparePartnerShoppingListOrder::class)->name('shopping_list_order.store');
 });
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {

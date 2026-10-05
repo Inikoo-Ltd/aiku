@@ -84,11 +84,13 @@ interface PartnerCard {
 				name: string
 				rank: string
 				bucket: string
-				spare: number
+				spare: number | null
+				their_stock: number
 				quantity: number
 				days_of_cover: number | null
 				lost: number | null
 				hub_name: string | null
+				order_quantum: number
 			}[]
 		}
 	}
@@ -135,10 +137,13 @@ const bucketClass: Record<string, string> = {
 	out: "bg-red-100 text-red-800",
 	w1: "bg-rose-50 text-rose-700",
 	w2: "bg-orange-50 text-orange-700",
+	w3: "bg-amber-50 text-amber-700",
 }
 
 const bucketShortLabel = (bucket: string) =>
-	({ out: ctrans("Out"), w1: ctrans("Doomed"), w2: ctrans("Critical") })[bucket] ?? bucket
+	({ out: ctrans("Out"), w1: ctrans("Doomed"), w2: ctrans("Critical"), w3: ctrans("Danger") })[
+		bucket
+	] ?? bucket
 
 const rescuableTotal = (partner: PartnerCard) =>
 	partner.stats.rescuable?.buckets.reduce((total, bucket) => total + bucket.count, 0) ?? 0
@@ -250,262 +255,288 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					</div>
 				</template>
 
-				<template v-else>
-					<section
-						v-if="hasRescuable(partner)"
-						class="overflow-hidden rounded-md ring-1 ring-gray-200">
-						<div
-							v-tooltip="
-								ctrans(
-									'Our selling SKOs that are out or about to run out, with nothing on order, that they can spare without putting their own stock at risk'
-								)
-							"
-							class="border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-600">
-							{{ ctrans("They can rescue") }}
-						</div>
-						<div class="space-y-1.5 px-2 py-2">
-							<table class="w-full text-xs tabular-nums">
-								<thead>
-									<tr
-										class="text-left text-gray-500 [&_th]:pb-1 [&_th]:font-normal">
-										<th />
-										<th class="text-right">{{ ctrans("SKOs") }}</th>
-										<th
-											v-tooltip="
-												ctrans(
-													'Sales lost over the lead time and a month after, if nothing more is ordered'
-												)
-											"
-											class="text-right">
-											{{ ctrans("Lost sales") }}
-										</th>
-										<th
-											v-tooltip="
-												ctrans(
-													'What the suggested order costs at their price, in our currency'
-												)
-											"
-											class="text-right">
-											{{ ctrans("Cost to reorder") }}
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr
-										v-for="bucket in partner.stats.rescuable!.buckets.filter(
-											(bucket) => bucket.count
-										)"
-										:key="bucket.bucket"
+				<section
+					v-if="hasRescuable(partner)"
+					class="overflow-hidden rounded-md ring-1 ring-gray-200">
+					<div
+						v-tooltip="
+							partner.is_hub
+								? ctrans(
+										'Our selling SKOs that are out or about to run out, with nothing on order, that they make'
+									)
+								: ctrans(
+										'Our selling SKOs that are out or about to run out, with nothing on order, that they can spare without putting their own stock at risk'
+									)
+						"
+						class="border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-600">
+						{{
+							partner.is_hub
+								? ctrans("To order from them")
+								: ctrans("They can rescue")
+						}}
+					</div>
+					<div class="space-y-1.5 px-2 py-2">
+						<table class="w-full text-xs tabular-nums">
+							<thead>
+								<tr class="text-left text-gray-500 [&_th]:pb-1 [&_th]:font-normal">
+									<th />
+									<th class="text-right">{{ ctrans("SKOs") }}</th>
+									<th
 										v-tooltip="
-											bucket.label +
-											' · ' +
-											ctrans(':count bestsellers (A/B)', {
-												count: bucket.bestsellers,
-											})
-										">
-										<td class="py-0.5">
-											<span
-												class="rounded px-1.5 py-0.5"
-												:class="bucketClass[bucket.bucket]">
-												{{ bucketShortLabel(bucket.bucket) }}
-											</span>
-										</td>
-										<td class="py-0.5 text-right font-medium text-gray-900">
-											{{ locale.number(bucket.count) }}
-										</td>
-										<td class="py-0.5 text-right">
-											{{ bucket.lost ? wholeMoney(bucket.lost) : "-" }}
-										</td>
-										<td class="py-0.5 text-right">
-											{{ bucket.cost ? wholeMoney(bucket.cost) : "-" }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-							<div
-								v-if="partner.stats.rescuable!.top.length"
-								class="pt-1 text-xs text-gray-500">
+											ctrans(
+												'Sales lost over the lead time and a month after, if nothing more is ordered'
+											)
+										"
+										class="text-right">
+										{{ ctrans("Lost sales") }}
+									</th>
+									<th
+										v-tooltip="
+											ctrans(
+												'What the suggested order costs at their price, in our currency'
+											)
+										"
+										class="text-right">
+										{{ ctrans("Cost to reorder") }}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									v-for="bucket in partner.stats.rescuable!.buckets.filter(
+										(bucket) => bucket.count
+									)"
+									:key="bucket.bucket"
+									v-tooltip="
+										bucket.label +
+										' · ' +
+										ctrans(':count bestsellers (A/B)', {
+											count: bucket.bestsellers,
+										})
+									">
+									<td class="py-0.5">
+										<span
+											class="rounded px-1.5 py-0.5"
+											:class="bucketClass[bucket.bucket]">
+											{{ bucketShortLabel(bucket.bucket) }}
+										</span>
+									</td>
+									<td class="py-0.5 text-right font-medium text-gray-900">
+										{{ locale.number(bucket.count) }}
+									</td>
+									<td class="py-0.5 text-right">
+										{{ bucket.lost ? wholeMoney(bucket.lost) : "-" }}
+									</td>
+									<td class="py-0.5 text-right">
+										{{ bucket.cost ? wholeMoney(bucket.cost) : "-" }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<div
+							v-if="partner.stats.rescuable!.top.length"
+							class="pt-1 text-xs text-gray-500">
+							{{
+								ctrans("Worst :shown of :total, by lost sales", {
+									shown: partner.stats.rescuable!.top.length,
+									total: locale.number(rescuableTotal(partner)),
+								})
+							}}
+						</div>
+						<table
+							v-if="partner.stats.rescuable!.top.length"
+							class="w-full table-fixed text-xs [&_td]:pr-2 [&_th]:pr-2 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0">
+							<thead>
+								<tr class="text-left text-gray-500">
+									<th class="w-3 font-normal" />
+									<th class="w-24 font-normal">{{ ctrans("SKO") }}</th>
+									<th class="w-12 font-normal">{{ ctrans("Rank") }}</th>
+									<th
+										v-tooltip="
+											ctrans(
+												'Sales lost over the lead time and a month after, if nothing more is ordered'
+											)
+										"
+										class="text-right font-normal">
+										{{ ctrans("Lost sales") }}
+									</th>
+									<th
+										v-tooltip="
+											ctrans(
+												'Enough to get out of the critical zone, never more than they can spare'
+											)
+										"
+										class="w-24 whitespace-nowrap text-right font-normal">
+										{{ ctrans("Suggested order") }}
+									</th>
+									<th class="w-16 text-right font-normal">
+										{{
+											partner.is_hub
+												? ctrans("Their stock")
+												: ctrans("Can spare")
+										}}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									v-for="item in partner.stats.rescuable!.top"
+									:key="item.code"
+									v-tooltip="item.name">
+									<td class="py-0.5">
+										<span
+											class="block h-1.5 w-1.5 rounded-full"
+											:class="
+												item.bucket === 'out'
+													? 'bg-red-500'
+													: item.bucket === 'w1'
+														? 'bg-rose-400'
+														: item.bucket === 'w3'
+															? 'bg-amber-400'
+															: 'bg-orange-400'
+											"
+											:title="bucketShortLabel(item.bucket)" />
+									</td>
+									<td class="truncate py-0.5 font-medium text-gray-700">
+										{{ item.code }}
+										<span
+											v-if="item.hub_name"
+											v-tooltip="
+												ctrans(
+													':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time',
+													{ hub: item.hub_name }
+												)
+											"
+											class="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
+									</td>
+									<td class="py-0.5 text-gray-600">{{ item.rank }}</td>
+									<td class="py-0.5 text-right tabular-nums text-gray-700">
+										{{ item.lost ? wholeMoney(item.lost) : "-" }}
+									</td>
+									<td
+										class="py-0.5 text-right font-medium tabular-nums text-gray-900">
+										<span
+											v-if="item.order_quantum > 1"
+											v-tooltip="
+												ctrans(
+													'Made in batches: ordered in multiples of :quantum SKOs',
+													{
+														quantum: item.order_quantum,
+													}
+												)
+											"
+											class="mr-1 cursor-help text-xs font-normal text-gray-400"
+											>×{{ item.order_quantum }}</span
+										>
+										{{ locale.number(item.quantity) }}
+									</td>
+									<td class="py-0.5 text-right tabular-nums text-gray-500">
+										{{ locale.number(item.spare ?? item.their_stock) }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<div class="flex items-center gap-3 border-t border-gray-100 pt-2">
+							<RescueOrderButton
+								v-if="can_create_purchase_orders"
+								:orgPartnerId="partner.id"
+								:partnerName="partner.name"
+								:draftReference="purchaseOrderInProcess(partner)?.reference"
+								:currencyCode="currency_code"
+								:buckets="partner.stats.rescuable!.buckets"
+								:isHub="partner.is_hub"
+								size="xs" />
+							<span
+								v-if="partner.stats.rescuable!.order.lines"
+								v-tooltip="
+									ctrans(
+										'Lines that would lose sales, and A/B bestsellers, at the suggested order'
+									)
+								"
+								class="text-xs tabular-nums text-gray-500">
 								{{
-									ctrans("Worst :shown of :total, by lost sales", {
-										shown: partner.stats.rescuable!.top.length,
+									ctrans(":lines lines ≈ :cost", {
+										lines: locale.number(partner.stats.rescuable!.order.lines),
+										cost: wholeMoney(partner.stats.rescuable!.order.cost),
+									})
+								}}
+							</span>
+							<Link
+								:href="
+									partnerUrl(
+										partner,
+										'grp.org.procurement.org_partners.show.rescue.index'
+									)
+								"
+								class="ml-auto whitespace-nowrap text-xs font-medium text-indigo-600 hover:underline">
+								{{
+									ctrans("See all :total", {
 										total: locale.number(rescuableTotal(partner)),
 									})
 								}}
-							</div>
-							<table
-								v-if="partner.stats.rescuable!.top.length"
-								class="w-full table-fixed text-xs [&_td]:pr-2 [&_th]:pr-2 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0">
-								<thead>
-									<tr class="text-left text-gray-500">
-										<th class="w-3 font-normal" />
-										<th class="w-24 font-normal">{{ ctrans("SKO") }}</th>
-										<th class="w-12 font-normal">{{ ctrans("Rank") }}</th>
-										<th
-											v-tooltip="
-												ctrans(
-													'Sales lost over the lead time and a month after, if nothing more is ordered'
-												)
-											"
-											class="text-right font-normal">
-											{{ ctrans("Lost sales") }}
-										</th>
-										<th
-											v-tooltip="
-												ctrans(
-													'Enough to get out of the critical zone, never more than they can spare'
-												)
-											"
-											class="w-24 whitespace-nowrap text-right font-normal">
-											{{ ctrans("Suggested order") }}
-										</th>
-										<th class="w-16 text-right font-normal">
-											{{ ctrans("Can spare") }}
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr
-										v-for="item in partner.stats.rescuable!.top"
-										:key="item.code"
-										v-tooltip="item.name">
-										<td class="py-0.5">
-											<span
-												class="block h-1.5 w-1.5 rounded-full"
-												:class="
-													item.bucket === 'out'
-														? 'bg-red-500'
-														: item.bucket === 'w1'
-															? 'bg-rose-400'
-															: 'bg-orange-400'
-												"
-												:title="bucketShortLabel(item.bucket)" />
-										</td>
-										<td class="truncate py-0.5 font-medium text-gray-700">
-											{{ item.code }}
-											<span
-												v-if="item.hub_name"
-												v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
-												class="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
-										</td>
-										<td class="py-0.5 text-gray-600">{{ item.rank }}</td>
-										<td class="py-0.5 text-right tabular-nums text-gray-700">
-											{{ item.lost ? wholeMoney(item.lost) : "-" }}
-										</td>
-										<td
-											class="py-0.5 text-right font-medium tabular-nums text-gray-900">
-											{{ locale.number(item.quantity) }}
-										</td>
-										<td class="py-0.5 text-right tabular-nums text-gray-500">
-											{{ locale.number(item.spare) }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-							<div class="flex items-center gap-3 border-t border-gray-100 pt-2">
-								<RescueOrderButton
-									v-if="can_create_purchase_orders"
-									:orgPartnerId="partner.id"
-									:partnerName="partner.name"
-									:draftReference="purchaseOrderInProcess(partner)?.reference"
-									:currencyCode="currency_code"
-									:buckets="partner.stats.rescuable!.buckets"
-									size="xs" />
-								<span
-									v-if="partner.stats.rescuable!.order.lines"
-									v-tooltip="
-										ctrans(
-											'Lines that would lose sales, and A/B bestsellers, at the suggested order'
-										)
-									"
-									class="text-xs tabular-nums text-gray-500">
-									{{
-										ctrans(":lines lines ≈ :cost", {
-											lines: locale.number(
-												partner.stats.rescuable!.order.lines
-											),
-											cost: wholeMoney(partner.stats.rescuable!.order.cost),
-										})
-									}}
-								</span>
-								<Link
-									:href="
-										partnerUrl(
-											partner,
-											'grp.org.procurement.org_partners.show.rescue.index'
-										)
-									"
-									class="ml-auto whitespace-nowrap text-xs font-medium text-indigo-600 hover:underline">
-									{{
-										ctrans("See all :total", {
-											total: locale.number(rescuableTotal(partner)),
-										})
-									}}
-									→
-								</Link>
-							</div>
+								→
+							</Link>
 						</div>
-					</section>
-					<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
-						<div
-							class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
-							<span class="font-medium text-gray-600">{{
-								ctrans("Open and on the way")
+					</div>
+				</section>
+				<section
+					v-if="!partner.is_hub"
+					class="overflow-hidden rounded-md ring-1 ring-gray-200">
+					<div
+						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
+						<span class="font-medium text-gray-600">{{
+							ctrans("Open and on the way")
+						}}</span>
+						<span v-if="partner.stats.last_submitted_at" class="ml-auto text-gray-500">
+							{{ ctrans("Last order") }}
+							<span class="tabular-nums text-gray-700">{{
+								shortDate(partner.stats.last_submitted_at)
 							}}</span>
-							<span
-								v-if="partner.stats.last_submitted_at"
-								class="ml-auto text-gray-500">
-								{{ ctrans("Last order") }}
-								<span class="tabular-nums text-gray-700">{{
-									shortDate(partner.stats.last_submitted_at)
-								}}</span>
-							</span>
-						</div>
-						<ul v-if="partner.stats.current?.length" class="divide-y divide-gray-100">
-							<li
-								v-for="item in partner.stats.current"
-								:key="item.type + item.reference">
-								<Link
-									:href="item.url"
-									class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50">
-									<FontAwesomeIcon
-										:icon="
-											item.type === 'stock_delivery'
-												? 'fal fa-truck-container'
-												: 'fal fa-clipboard-list'
-										"
-										class="text-gray-500"
-										fixed-width
-										:title="
-											item.type === 'stock_delivery'
-												? ctrans('Stock delivery')
-												: ctrans('Purchase order')
-										" />
-									<div class="min-w-0 flex-1">
-										<div class="truncate font-medium text-gray-900">
-											{{ item.reference }}
-										</div>
-										<div class="text-xs tabular-nums text-gray-500">
-											{{
-												item.lines
-													? ctrans(":count lines", { count: item.lines })
-													: ctrans("empty")
-											}}
-											· {{ shortDate(item.date) }}
-										</div>
+						</span>
+					</div>
+					<ul v-if="partner.stats.current?.length" class="divide-y divide-gray-100">
+						<li v-for="item in partner.stats.current" :key="item.type + item.reference">
+							<Link
+								:href="item.url"
+								class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50">
+								<FontAwesomeIcon
+									:icon="
+										item.type === 'stock_delivery'
+											? 'fal fa-truck-container'
+											: 'fal fa-clipboard-list'
+									"
+									class="text-gray-500"
+									fixed-width
+									:title="
+										item.type === 'stock_delivery'
+											? ctrans('Stock delivery')
+											: ctrans('Purchase order')
+									" />
+								<div class="min-w-0 flex-1">
+									<div class="truncate font-medium text-gray-900">
+										{{ item.reference }}
 									</div>
-									<span
-										class="shrink-0 whitespace-nowrap rounded px-1.5 text-xs"
-										:class="stateClass(item)"
-										>{{ item.state_label }}</span
-									>
-								</Link>
-							</li>
-						</ul>
-						<div v-else class="px-2 py-2 text-xs text-gray-500">
-							{{ ctrans("Nothing open or on the way") }}
-						</div>
-					</section>
-				</template>
+									<div class="text-xs tabular-nums text-gray-500">
+										{{
+											item.lines
+												? ctrans(":count lines", { count: item.lines })
+												: ctrans("empty")
+										}}
+										· {{ shortDate(item.date) }}
+									</div>
+								</div>
+								<span
+									class="shrink-0 whitespace-nowrap rounded px-1.5 text-xs"
+									:class="stateClass(item)"
+									>{{ item.state_label }}</span
+								>
+							</Link>
+						</li>
+					</ul>
+					<div v-else class="px-2 py-2 text-xs text-gray-500">
+						{{ ctrans("Nothing open or on the way") }}
+					</div>
+				</section>
 			</div>
 
 			<div class="flex items-center gap-3 border-t border-gray-100 px-4 py-3">

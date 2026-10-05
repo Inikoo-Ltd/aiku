@@ -42,7 +42,7 @@ class StoreRescuePurchaseOrder extends OrgAction
     /**
      * @param  array<int, string>  $buckets
      */
-    public function handle(OrgPartner $orgPartner, ?float $budget = null, array $buckets = ['out', 'w1', 'w2'], bool $worstOnly = true): PurchaseOrder
+    public function handle(OrgPartner $orgPartner, ?float $budget = null, array $buckets = GetPartnerStockCoverBuckets::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true): PurchaseOrder
     {
         $fail = fn (string $message) => throw ValidationException::withMessages(['rescue' => $message]);
 
@@ -78,7 +78,7 @@ class StoreRescuePurchaseOrder extends OrgAction
                 }
 
                 if ($budget !== null) {
-                    $lineCost = $this->lineCost($orgPartner, $purchaseOrder, $orgStock, $line['quantity']);
+                    $lineCost = $this->lineCost($orgPartner, (float) ($purchaseOrder->org_exchange ?: 1), $orgStock, $line['quantity']);
                     if ($lineCost === null) {
                         continue;
                     }
@@ -114,12 +114,12 @@ class StoreRescuePurchaseOrder extends OrgAction
     /**
      * What the line will cost in our currency, priced exactly as adding it to the order prices it.
      */
-    private function lineCost(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, OrgStock $orgStock, int $quantity): ?float
+    public function lineCost(OrgPartner $orgPartner, float $exchange, OrgStock $orgStock, int $units): ?float
     {
         $product   = GetPartnerSellingProduct::run($orgPartner, $orgStock->stock_id);
         $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
 
-        return $unitPrice === null ? null : round($unitPrice * GetPartnerBuyingPriceFactor::run($orgPartner) * $quantity, 2) * (float) ($purchaseOrder->org_exchange ?: 1);
+        return $unitPrice === null ? null : round($unitPrice * GetPartnerBuyingPriceFactor::run($orgPartner) * $units, 2) * $exchange;
     }
 
     public function rules(): array
@@ -141,7 +141,7 @@ class StoreRescuePurchaseOrder extends OrgAction
         return $this->handle(
             $orgPartner,
             $budget === null ? null : (float) $budget,
-            $this->validatedData['buckets'] ?? ['out', 'w1', 'w2'],
+            $this->validatedData['buckets'] ?? GetPartnerStockCoverBuckets::DEFAULT_ORDER_BUCKETS,
             (bool) ($this->validatedData['worst_only'] ?? true)
         );
     }
