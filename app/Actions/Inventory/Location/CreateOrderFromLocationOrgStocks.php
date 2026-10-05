@@ -9,9 +9,12 @@
 namespace App\Actions\Inventory\Location;
 
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\PartnerShippingList\GetPartnerOrdersInTheMaking;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -42,8 +45,9 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
     }
 
     /**
-     * Orders what sits in a partner's goods out bay through the partner's shopping list, so the
-     * lines end up ordered and the same stock can not be raised again from the partner orders block.
+     * Orders what sits in a partner's goods out bay through the partner's shopping list and sends it
+     * straight to the warehouse: from that click the order is closed to additions, and the lines are
+     * ordered so the partner orders block can not raise the same stock again.
      *
      * @param  array<int, int>  $orgStockIds
      *
@@ -65,6 +69,24 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
             throw ValidationException::withMessages(['org_stock_ids' => __('This location is not the goods out bay of a partner')]);
         }
 
+        $inProgress = Order::where('organisation_id', $seller->id)
+            ->whereIn('customer_id', array_values(data_get($buyerPartner->data, 'intercompany_customers', [])))
+            ->whereIn('state', [
+                OrderStateEnum::SUBMITTED,
+                OrderStateEnum::IN_WAREHOUSE,
+                OrderStateEnum::HANDLING,
+                OrderStateEnum::HANDLING_BLOCKED,
+                OrderStateEnum::PICKED,
+                OrderStateEnum::PACKING,
+                OrderStateEnum::PACKED,
+            ])
+            ->pluck('reference');
+        if ($inProgress->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'org_stock_ids' => __('Finish :references before creating a new order, so its stock is not mixed with the new one', ['references' => $inProgress->implode(', ')]),
+            ]);
+        }
+
         $inTheBay = $location->locationOrgStocks()
             ->whereIn('org_stock_id', $orgStockIds)
             ->where('quantity', '>', 0)
@@ -78,7 +100,7 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
             ->selectRaw('partner_shopping_list_items.stock_id, sum(partner_shopping_list_items.quantity) as quantity')
             ->pluck('quantity', 'stock_id');
 
-        return DB::transaction(function () use ($seller, $buyerPartner, $inTheBay, $spokenFor) {
+        $orders = DB::transaction(function () use ($seller, $buyerPartner, $inTheBay, $spokenFor) {
             $lines          = [];
             $alreadyOrdered = [];
             foreach ($inTheBay as $locationOrgStock) {
@@ -109,6 +131,17 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
 
             return $picked['orders'];
         });
+
+        return array_map(function (Order $order) {
+            if ($order->state === OrderStateEnum::CREATING) {
+                $order = SubmitOrder::make()->action($order);
+            }
+            if ($order->refresh()->state === OrderStateEnum::SUBMITTED) {
+                SendOrderToWarehouse::make()->action($order, []);
+            }
+
+            return $order->refresh();
+        }, $orders);
     }
 
     /**

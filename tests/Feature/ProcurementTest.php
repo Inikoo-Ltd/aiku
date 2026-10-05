@@ -5748,6 +5748,7 @@ describe('partner shopping list', function () {
 
         $response->assertRedirect(route('grp.org.shops.show.ordering.orders.show', [$seller->slug, $order->shop->slug, $order->slug]));
         expect($order->shop_id)->toBe($this->sellerShop->id)
+            ->and($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE)
             ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
             ->and((float) $item->quantity)->toBe(3.0)
             ->and($notAskedLine->state)->toBe(ShoppingListItemStateEnum::ORDERED)
@@ -5758,6 +5759,15 @@ describe('partner shopping list', function () {
         $this->post(route('grp.models.location.create_order', $goodsOut->id), ['org_stock_ids' => [$asked->id]])
             ->assertSessionHasErrors('org_stock_ids');
         expect($order->transactions()->count())->toBe(2);
+
+        $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING]);
+        $nextOrderStock = $inTheBay(2);
+        $this->post(route('grp.models.location.create_order', $goodsOut->id), ['org_stock_ids' => [$nextOrderStock->id]])
+            ->assertSessionHasErrors(['org_stock_ids' => __('Finish :references before creating a new order, so its stock is not mixed with the new one', ['references' => $order->reference])]);
+
+        $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::FINALISED]);
+        $this->post(route('grp.models.location.create_order', $goodsOut->id), ['org_stock_ids' => [$nextOrderStock->id]])
+            ->assertSessionHasNoErrors();
     });
 
     test('the ai assistant fills the hub shopping list only when enrolled, logged and revertible', function () {
