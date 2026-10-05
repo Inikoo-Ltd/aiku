@@ -1199,7 +1199,12 @@ test('StoreOfflineMessage creates a new session with the offline message', funct
         ->and($chatMessage->metadata['is_offline_message'])->toBeTrue();
 });
 
-test('StoreOfflineMessage reopens a closed session when ulid matches', function () {
+test('StoreOfflineMessage puts a closed session back in the waiting queue, not with the agent who closed it', function () {
+    $agent = ChatAgent::updateOrCreate(
+        ['user_id' => createAdminGuest(createGroup())->getUser()->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0, 'deleted_at' => null]
+    );
+
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
         'status'           => ChatSessionStatusEnum::CLOSED,
@@ -1211,6 +1216,15 @@ test('StoreOfflineMessage reopens a closed session when ulid matches', function 
         'closed_at'        => now(),
         'created_at'       => now(),
         'updated_at'       => now(),
+    ]);
+
+    ChatAssignment::create([
+        'chat_session_id' => $chatSession->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::RESOLVED->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now()->subDay(),
+        'resolved_at'     => now()->subHour(),
     ]);
 
     $modelData = [
@@ -1226,8 +1240,10 @@ test('StoreOfflineMessage reopens a closed session when ulid matches', function 
     $reopenedSession = StoreOfflineMessage::make()->handle($this->shop, $modelData);
 
     expect($reopenedSession->id)->toBe($chatSession->id)
-        ->and($reopenedSession->status)->toBe(ChatSessionStatusEnum::ACTIVE)
-        ->and($reopenedSession->closed_at)->toBeNull();
+        ->and($reopenedSession->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($reopenedSession->closed_at)->toBeNull()
+        ->and($reopenedSession->closed_by)->toBeNull()
+        ->and($chatSession->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->exists())->toBeFalse();
 });
 
 test('StoreGuestProfile stores guest contact metadata and creates a message', function () {
