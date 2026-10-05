@@ -15,7 +15,9 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
@@ -30,6 +32,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Illuminate\Database\Query\Builder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -271,7 +274,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
     }
 
-    private function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    public function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
     {
         $rows               = $paginator->getCollection();
         $supplierProductIds = $rows->pluck('supplier_product_id')->filter()->unique()->values();
@@ -296,6 +299,12 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ])
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('purchase_order_transactions.deleted_at')
+            ->whereNotExists(
+                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::deliveryItemsOfTransaction($items)
+                    ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.stock_delivery_id', 'stock_delivery_items.stock_delivery_id')
+                    ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
+                    ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
+            )
             ->orderBy('purchase_orders.id')
             ->select([
                 'purchase_order_transactions.supplier_product_id',
@@ -309,7 +318,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $rows->transform(function ($row) use ($openPurchaseOrderLines) {
             $row->other_open_purchase_orders = $openPurchaseOrderLines
-                ->filter(fn ($line) => $line->supplier_product_id == $row->supplier_product_id
+                ->filter(fn ($line) => ($row->supplier_product_id && $line->supplier_product_id == $row->supplier_product_id)
                     || ($row->org_stock_id && $line->org_stock_id == $row->org_stock_id))
                 ->groupBy('slug')
                 ->map(fn ($lines) => [
