@@ -622,7 +622,7 @@ const FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "ppt
 
 const isSupportedFile = (file: File) => FILE_EXTENSIONS.includes(file.name.split(".").pop()?.toLowerCase() ?? "")
 
-const MAX_SIZE = 10 * 1024 * 1024
+const MAX_SIZE = 100 * 1024 * 1024
 
 const isMenuOpen = ref(false)
 const isLoadingMore = ref(false)
@@ -1821,7 +1821,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" fixed-width />
                 <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
                 <div class="text-xs text-gray-400">
-                    {{ ctrans("Images, documents, spreadsheets and zip files, up to 30 at a time, 10MB each") }}
+                    {{ ctrans("Images, documents, spreadsheets and zip files, up to 30 at a time, 100MB each") }}
                 </div>
             </div>
         </div>

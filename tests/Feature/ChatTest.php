@@ -12641,6 +12641,38 @@ test('staff flag an AI summary of an email or of a chat as wrong, saying why, on
     $session->delete();
 });
 
+test('email reply attaches files while they fit in 18MB and links the rest', function () {
+    $megabyte = 1024 * 1024;
+    $files    = collect([
+        (object) ['ulid' => 'a', 'size' => 10 * $megabyte],
+        (object) ['ulid' => 'b', 'size' => 27 * $megabyte],
+        (object) ['ulid' => 'c', 'size' => 8 * $megabyte],
+    ]);
+
+    [$attached, $linked] = \App\Actions\Comms\Mailbox\SendChatMessageByGmail::splitByGmailLimit($files);
+
+    expect($attached->pluck('ulid')->all())->toBe(['a', 'c'])
+        ->and($linked->pluck('ulid')->all())->toBe(['b']);
+});
+
+test('customer uploads are capped at 10MB a file and 100MB a day per IP', function () {
+    $ip = '203.0.113.'.random_int(1, 254);
+    \Illuminate\Support\Facades\RateLimiter::clear('chat-customer-upload-bytes:'.$ip);
+    $send = fn (int $kilobytes) => SendChatMessage::make()->customerUploadRefusal(
+        \Illuminate\Http\Request::create('/', 'POST', [], [], ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('a.pdf', $kilobytes)]], ['REMOTE_ADDR' => $ip])
+    );
+
+    expect($send(11 * 1024)['code'])->toBe(422);
+
+    foreach (range(1, 10) as $ignored) {
+        expect($send(10 * 1024))->toBeNull();
+    }
+
+    expect($send(1)['code'])->toBe(429);
+
+    \Illuminate\Support\Facades\RateLimiter::clear('chat-customer-upload-bytes:'.$ip);
+});
+
 test('unauthenticated request cannot post as system', function () {
     \Illuminate\Support\Facades\Auth::logout();
     $chatSession = ChatSession::create([

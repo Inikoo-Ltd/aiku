@@ -51,7 +51,7 @@ class StartCustomerEmailChat extends OrgAction
             'message' => ['required', 'string'],
             'email'         => ['sometimes', 'nullable', 'string', $this->addressListRule()],
             'attachments'   => ['sometimes', 'array', 'max:'.SendChatMessage::MAX_ATTACHMENTS],
-            'attachments.*' => [File::types(SendChatMessage::ATTACHMENT_TYPES)->max(20 * 1024)],
+            'attachments.*' => [File::types(SendChatMessage::ATTACHMENT_TYPES)->max(SendChatMessage::MAX_AGENT_FILE_KB)],
         ];
 
         if (!$this->customer) {
