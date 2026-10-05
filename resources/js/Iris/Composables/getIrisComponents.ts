@@ -8,7 +8,7 @@ import Topbar1FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar1Fulfilmen
 import Topbar2FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"
 import Topbar1Iris from "@/Iris/Components/IrisBlocks/Topbar1Iris.vue"
 import Topbar2Iris from "@/Iris/Components/IrisBlocks/Topbar2Iris.vue"
-import Menu1Workshop from "@/Iris/Components/IrisBlocks/Menu1Iris.vue"
+import Menu1Iris from "@/Iris/Components/IrisBlocks/Menu1Iris.vue"
 import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
@@ -145,7 +145,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
 		//menu
-		"menu-1": Menu1Workshop,
+		"menu-1": Menu1Iris,
 
 		//footer
 		"footer-1": Footer1Iris,

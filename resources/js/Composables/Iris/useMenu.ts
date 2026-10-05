@@ -34,7 +34,7 @@ export interface ProductCategoryMenu {
     sub_departments: ProductCategoryMenuSub[]
 }
 
-interface CustomMenu {
+export interface CustomMenu {
     id: string
     icon: {}
     type: string  // 'multiple' | 'single'
@@ -66,6 +66,12 @@ interface CustomMenu {
 
 
 
+
+export interface MenuSidebarSource {
+    navigation: CustomMenu[]
+    navigation_bottom: CustomMenu[]
+    product_categories: ProductCategoryMenu[]
+}
 
 const byName = (a: { name?: string }, b: { name?: string }) =>
     (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
