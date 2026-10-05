@@ -59,6 +59,7 @@ export interface SessionAPI {
 		summary: string
 		key_points: string
 		sentiment: string
+		flagged?: boolean
 	} | null
 	customer?: {
 		id: string

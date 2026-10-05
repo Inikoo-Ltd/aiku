@@ -439,7 +439,19 @@ class EditOrganisationSettings extends OrgAction
                                     'options' => GetTimezonesOptions::run(),
                                     'label' => __('Timezone'),
                                     'value' => $organisation->timezone_id,
-                                ]
+                                ],
+                                'time_format' => [
+                                    'type'        => 'select',
+                                    'mode'        => 'single',
+                                    'label'       => __('Time format'),
+                                    'information' => __('How times of day are written, e.g. the working hours customers see in the chat.'),
+                                    'options'     => [
+                                        ['value' => '24h', 'label' => __('24-hour · 08:00, 16:04')],
+                                        ['value' => '12h', 'label' => __('12-hour · 8:00 am, 4:04 pm')],
+                                        ['value' => '12h_short', 'label' => __('Short 12-hour · 8am, 4:30pm')],
+                                    ],
+                                    'value'       => Arr::get($organisation->settings, 'time_format', '24h'),
+                                ],
                             ],
                         ],
                         [

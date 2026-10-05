@@ -748,7 +748,14 @@ test('UI Index customers', function () {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->etc()
-            );
+            )
+            ->where('pageHead.subNavigation', function ($subNavigation) {
+                $trafficSources = collect($subNavigation)->last();
+
+                return $trafficSources['route']['name'] === 'grp.org.shops.show.marketing.traffic_sources.index'
+                    && $trafficSources['align'] === 'right'
+                    && $trafficSources['label'] === '';
+            });
     });
 });
 
@@ -1147,7 +1154,9 @@ test('can show list of prospects', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Shop/CRM/Prospects')
-            ->has('title');
+            ->has('title')
+            ->where('upload_spreadsheet.required_fields', array_keys(\App\Imports\CRM\ProspectImport::HEADER_ALIASES))
+            ->where('upload_spreadsheet.column_aliases.email', \App\Imports\CRM\ProspectImport::HEADER_ALIASES['email']);
     });
 });
 

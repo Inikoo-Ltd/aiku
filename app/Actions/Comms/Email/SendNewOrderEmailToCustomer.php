@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Comms\Traits\WithOrderingCustomerNotification;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
@@ -205,7 +206,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 );
             }
 
-            $discountLabel .= $this->preOrderLineNoteHtml($transaction->data);
+            $discountLabel .= $this->preOrderLineNoteHtml($order, $transaction->data);
 
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
@@ -352,7 +353,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . ($order->preOrder ? __('Balance due when the goods arrive') : __('To Pay Amount')) . '</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">' . ($order->preOrder ? GetPreOrderText::make()->handle($order->shop, 'order_balance_due') : __('To Pay Amount')) . '</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 12px 8px; text-align: right; border-bottom: 2px solid #333; color: #555;">%s%s</td>
             </tr>',
             $currency,
@@ -368,9 +369,9 @@ class SendNewOrderEmailToCustomer extends OrgAction
     /**
      * @param  array<string, mixed>|null  $transactionData
      */
-    private function preOrderLineNoteHtml(?array $transactionData): string
+    private function preOrderLineNoteHtml(Order $order, ?array $transactionData): string
     {
-        $preOrderNote = GetProductPreOrder::make()->lineNote(Arr::get($transactionData, 'pre_order'));
+        $preOrderNote = GetProductPreOrder::make()->lineNote($order->shop, Arr::get($transactionData, 'pre_order'));
 
         return $preOrderNote
             ? '<br/><span style="display: inline-block; margin-top: 4px; padding: 2px 4px; font-size: 11px; font-weight: bold; color: #92400e; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px;">'.e($preOrderNote).'</span>'
@@ -385,8 +386,8 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $paragraph = 'style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 13px; color: #92400e; line-height: 1.5em; margin: 0 0 8px;"';
 
         if ($splitPreOrder = $order->splitPreOrder) {
-            return '<div style="padding: 0 22px 22px 22px;"><p '.$paragraph.'>'.e(__('Your pre-order items are in order :reference, which is sent separately when they arrive.', [
-                'reference' => $splitPreOrder->order->reference,
+            return '<div style="padding: 0 22px 22px 22px;"><p '.$paragraph.'>'.e(GetPreOrderText::make()->handle($order->shop, 'order_split', [
+                'pre_order_number' => $splitPreOrder->order->reference,
             ])).'</p></div>';
         }
 
@@ -396,12 +397,12 @@ class SendNewOrderEmailToCustomer extends OrgAction
         }
 
         $html = '<div style="padding: 0 22px 22px 22px;">';
-        $html .= '<p '.$paragraph.'><strong>'.e(__('Pre-order: estimated dispatch between :from and :to.', [
-            'from' => $preOrder->estimated_dispatch_from?->toFormattedDateString(),
-            'to'   => $preOrder->estimated_dispatch_to?->toFormattedDateString(),
+        $html .= '<p '.$paragraph.'><strong>'.e(GetPreOrderText::make()->handle($order->shop, 'label').': '.GetPreOrderText::make()->handle($order->shop, 'order_dispatch_dates', [
+            'from_date' => $preOrder->estimated_dispatch_from?->format('d/m/Y'),
+            'to_date'   => $preOrder->estimated_dispatch_to?->format('d/m/Y'),
         ])).'</strong></p>';
         if ($preOrder->parentOrder) {
-            $html .= '<p '.$paragraph.'>'.e(__('The in-stock items of your order are in order :reference, sent now.', ['reference' => $preOrder->parentOrder->reference])).'</p>';
+            $html .= '<p '.$paragraph.'>'.e(GetPreOrderText::make()->handle($order->shop, 'order_split_pre_order', ['in_stock_order_number' => $preOrder->parentOrder->reference])).'</p>';
         }
         $html .= '<ul style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 12px; color: #555; margin: 0; padding-left: 18px;">';
         foreach ($preOrder->terms as $term) {

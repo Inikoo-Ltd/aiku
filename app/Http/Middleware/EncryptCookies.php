@@ -26,4 +26,13 @@ class EncryptCookies extends Middleware
         'aiku_vcd',
         'iris_vua'
     ];
+
+    /**
+     * GA4 writes "_ga" and one "_ga_<measurement id>" per property from the browser, so their
+     * names are only known by prefix and they are always plaintext.
+     */
+    public function isDisabled($name): bool
+    {
+        return str_starts_with($name, '_ga') || parent::isDisabled($name);
+    }
 }

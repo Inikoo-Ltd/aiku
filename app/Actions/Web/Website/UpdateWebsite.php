@@ -110,6 +110,14 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
 
+        if (Arr::has($modelData, "ga4_measurement_id")) {
+            data_set($modelData, "settings.ga4_measurement_id", Arr::pull($modelData, "ga4_measurement_id"));
+        }
+
+        if (Arr::has($modelData, "ga4_api_secret")) {
+            data_set($modelData, "settings.ga4_api_secret", Arr::pull($modelData, "ga4_api_secret"));
+        }
+
         if (Arr::has($modelData, "gsc_content")) {
             data_set($modelData, "settings.gsc_content", Arr::pull($modelData, "gsc_content"));
         }
@@ -246,6 +254,8 @@ class UpdateWebsite extends OrgAction
             'state'                                      => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
             'status'                                     => ['sometimes', 'boolean'],
             'google_tag_id'                              => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
+            'ga4_measurement_id'                         => ['sometimes', 'nullable', 'string', 'regex:/^G-[A-Z0-9]+$/'],
+            'ga4_api_secret'                             => ['sometimes', 'nullable', 'string', 'max:255'],
             'gsc_content'                                => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],
             'catalogue_template'                         => ['sometimes', 'array'],
             'sound_player_style'                         => ['sometimes', 'string', Rule::in(['rainbow', 'mono', 'wave', 'equalizer', 'minimal'])],

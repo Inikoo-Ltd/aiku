@@ -18,9 +18,11 @@
  */
 
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
@@ -35,6 +37,7 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct as IrisGetWebBlockProduct;
 use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct as WorkshopGetWebBlockProduct;
@@ -721,6 +724,166 @@ test('families that sold the same are listed newest first', function () {
         ->toBe([$families['newer']->code, $families['older']->code]);
 });
 
+test('the families block leads with the hand picked order and falls back to latest arrivals', function () {
+    [, $product] = createProduct($this->shop);
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($product->department, $subDepartmentData);
+
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+    $families = [];
+    foreach (['oldest' => 30, 'middle' => 20, 'newest' => 2] as $label => $daysAgo) {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($subDepartment, $familyData);
+
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+
+        PublishWebpage::make()->action(
+            StoreProductCategoryWebpage::make()->action($family),
+            ['comment' => 'family goes live']
+        );
+
+        $families[$label] = $family->fresh();
+    }
+
+    $runner = new class () {
+        use WithFamiliesQuery;
+    };
+
+    $codesInCuratedOrder = fn () => $runner
+        ->getFamilyList($subDepartmentWebpage, ['product_categories.code'], true)
+        ->get()
+        ->pluck('code')
+        ->all();
+
+    expect($codesInCuratedOrder())
+        ->toBe([$families['newest']->code, $families['middle']->code, $families['oldest']->code]);
+
+    DB::table('product_categories')->where('id', $families['oldest']->id)->update(['website_position' => 1]);
+
+    expect($codesInCuratedOrder())
+        ->toBe([$families['oldest']->code, $families['newest']->code, $families['middle']->code]);
+});
+
+test('the top families block keeps ranking by sales and ignores the hand picked order', function () {
+    [, $product] = createProduct($this->shop);
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($product->department, $subDepartmentData);
+
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+    $families = [];
+    foreach (['older' => 20, 'newer' => 2] as $label => $daysAgo) {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($subDepartment, $familyData);
+
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+
+        PublishWebpage::make()->action(
+            StoreProductCategoryWebpage::make()->action($family),
+            ['comment' => 'family goes live']
+        );
+
+        $families[$label] = $family->fresh();
+    }
+
+    DB::table('product_categories')->where('id', $families['older']->id)->update(['website_position' => 1]);
+
+    $runner = new class () {
+        use WithFamiliesQuery;
+    };
+
+    $listed = $runner->getFamilyList($subDepartmentWebpage, ['product_categories.code'])->get();
+
+    expect($listed->pluck('code')->all())
+        ->toBe([$families['newer']->code, $families['older']->code]);
+});
+
+test('the families overview block leads with the hand picked order too', function () {
+    [, $product] = createProduct($this->shop);
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($product->department, $subDepartmentData);
+
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+    $families = [];
+    foreach (['oldest' => 30, 'middle' => 20, 'newest' => 2] as $label => $daysAgo) {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($subDepartment, $familyData);
+
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+
+        PublishWebpage::make()->action(
+            StoreProductCategoryWebpage::make()->action($family),
+            ['comment' => 'family goes live']
+        );
+
+        $families[$label] = $family->fresh();
+    }
+
+    $listedCodes = function () use ($subDepartmentWebpage) {
+        $block = GetIrisWebBlockFamiliesOverview::run($subDepartmentWebpage, [
+            'type'      => 'families-1-overview',
+            'web_block' => ['layout' => ['data' => ['fieldValue' => []]]],
+        ]);
+
+        return Arr::pluck(Arr::get($block, 'structure.families', []), 'code');
+    };
+
+    expect($listedCodes())
+        ->toBe([$families['newest']->code, $families['middle']->code, $families['oldest']->code]);
+
+    DB::table('product_categories')->where('id', $families['oldest']->id)->update(['website_position' => 1]);
+
+    expect($listedCodes())
+        ->toBe([$families['oldest']->code, $families['newest']->code, $families['middle']->code]);
+});
+
+test('the families under a department page default to the hand picked order', function () {
+    [, $product] = createProduct($this->shop);
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($product->department, $subDepartmentData);
+
+    $families = [];
+    foreach (['oldest' => 30, 'middle' => 20, 'newest' => 2] as $label => $daysAgo) {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($subDepartment, $familyData);
+
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+
+        PublishWebpage::make()->action(
+            StoreProductCategoryWebpage::make()->action($family),
+            ['comment' => 'family goes live']
+        );
+
+        $families[$label] = $family->fresh();
+    }
+
+    $listedCodes = fn () => collect(GetFamiliesUnderDepartmentPage::run($subDepartment)->items())
+        ->pluck('code')
+        ->all();
+
+    expect($listedCodes())
+        ->toBe([$families['newest']->code, $families['middle']->code, $families['oldest']->code]);
+
+    DB::table('product_categories')->where('id', $families['oldest']->id)->update(['website_position' => 1]);
+
+    expect($listedCodes())
+        ->toBe([$families['oldest']->code, $families['newest']->code, $families['middle']->code]);
+});
+
 test('cached family product list carries the same shop-wide offer prices as the logged-in list', function () {
     [, $product] = createProduct($this->shop);
 
@@ -1048,4 +1211,69 @@ test('iris side basket sends the customer credit balance', function () {
     (fn () => $this->shop = $order->shop)->call($fetchBasket);
 
     expect((float) $fetchBasket->jsonResponse($order->refresh())['balance'])->toBe(25.5);
+});
+
+test('department families list takes collection families only from active collections attached to the department', function () {
+    [, $product]       = createProduct($this->shop);
+    $department        = $product->department;
+    $departmentFamily  = $product->family;
+
+    $otherDepartmentData = ProductCategory::factory()->definition();
+    data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $otherDepartment = StoreProductCategory::make()->action($this->shop, $otherDepartmentData);
+
+    $storeOtherFamily = function () use ($otherDepartment): ProductCategory {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+
+        return StoreProductCategory::make()->action($otherDepartment, $familyData);
+    };
+
+    $familyFromDepartmentCollection = $storeOtherFamily();
+    $familyFromOtherModelCollection = $storeOtherFamily();
+    $familyFromInactiveCollection   = $storeOtherFamily();
+
+    $families = [$departmentFamily, $familyFromDepartmentCollection, $familyFromOtherModelCollection, $familyFromInactiveCollection];
+    foreach ($families as $family) {
+        StoreProductCategoryWebpage::make()->action($family);
+    }
+    DB::table('product_categories')->whereIn('id', collect($families)->pluck('id'))->update(['show_in_website' => true, 'state' => 'active']);
+    DB::table('webpages')->where('model_type', 'ProductCategory')->whereIn('model_id', collect($families)->pluck('id'))->update(['state' => 'live']);
+
+    $collectionHolding = function (string $code, string $state, string $attachedModelType, ProductCategory $family) use ($department) {
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code'        => $code,
+            'name'        => $code,
+            'description' => $code,
+        ]);
+        DB::table('collections')->where('id', $collection->id)->update(['state' => $state]);
+
+        DB::table('model_has_collections')->insert([
+            'collection_id' => $collection->id,
+            'model_type'    => $attachedModelType,
+            'model_id'      => $department->id,
+            'type'          => 'department',
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+        DB::table('collection_has_models')->insert([
+            'collection_id' => $collection->id,
+            'model_type'    => 'ProductCategory',
+            'model_id'      => $family->id,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+    };
+
+    $collectionHolding('DeptCol', 'active', 'ProductCategory', $familyFromDepartmentCollection);
+    $collectionHolding('OtherCol', 'active', 'Shop', $familyFromOtherModelCollection);
+    $collectionHolding('OffCol', 'inactive', 'ProductCategory', $familyFromInactiveCollection);
+
+    $listedFamilyIds = GetFamiliesUnderDepartmentPage::run($department->refresh())->pluck('id');
+
+    expect($listedFamilyIds)
+        ->toContain($departmentFamily->id)
+        ->toContain($familyFromDepartmentCollection->id)
+        ->not->toContain($familyFromOtherModelCollection->id)
+        ->not->toContain($familyFromInactiveCollection->id);
 });

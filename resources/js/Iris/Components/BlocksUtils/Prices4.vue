@@ -12,6 +12,7 @@ import { useExpectedBackInStockLabel } from "@/Composables/useOutOfStockLabel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { faCircle } from "@fas"
+import { PreOrder } from "@/types/Iris/Products"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Popover } from "primevue"
 import MemberPriceLabel from "@/Iris/Components/Offer/MemberPriceLabel.vue"
@@ -41,6 +42,7 @@ interface ProductResource {
     unit: string
     stock: number
     expected_back_in_stock_at?: string | null
+    pre_order?: PreOrder | null
     rating: number
     price: number
     url: string | null
@@ -170,6 +172,9 @@ const isStepOrderable = (minQuantity: number) => {
 const stockTooltip = computed(() => {
     if (props.product.stock > 0) {
         return ctrans('Available product stocks')
+    }
+    if (props.product.pre_order) {
+        return props.product.pre_order.available_label
     }
 
     return [ctrans('Out of stock'), useExpectedBackInStockLabel(props.product)].filter(Boolean).join(' · ')
@@ -317,7 +322,7 @@ const onHideStepsPopover = () => {
                 <div v-if="layout?.iris?.is_logged_in && !product.is_coming_soon"
                     v-tooltip="stockTooltip" class="flex items-center">
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
-                        :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
+                        :class="product.stock > 0 ? 'text-green-500' : (product.pre_order ? 'text-amber-500' : 'text-red-500')" fixed-width />
                 </div>
 
                 <LabelComingSoon v-else-if="product.is_coming_soon && !product.pre_order" :product="product" />

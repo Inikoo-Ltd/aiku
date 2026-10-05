@@ -108,11 +108,14 @@ class ShowTicket extends OrgAction
                     'module'          => __('Module set to :module', ['module' => $modules[$value] ?? '—']),
                     'tags'            => __('Tags changed'),
                     'subject'         => __('Subject edited'),
+                    'description'     => __('Description edited'),
+                    'attachments'     => Ticket::ticketFilesHistoryText((string) $old, (string) $value),
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
                     'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
                     'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
                     'ticket_project_id' => $value ? __('Added to project :name', ['name' => $projects[$value] ?? '?']) : __('Removed from its project'),
+                    'comment'         => __('Removed a comment by :name', ['name' => $old]),
                     default           => null,
                 };
                 if ($text) {
@@ -124,10 +127,13 @@ class ShowTicket extends OrgAction
                             'collaborators' => 'fal fa-users',
                             'pull_request_url' => 'fal fa-code-branch',
                             'ticket_project_id' => 'fal fa-project-diagram',
+                            'attachments' => 'fal fa-paperclip',
+                            'comment'   => 'fal fa-trash-alt',
                             default     => 'fal fa-pencil',
                         },
-                        'text' => $text,
-                        'by'   => $by,
+                        'text'   => $text,
+                        'by'     => $by,
+                        'change' => Ticket::historyTextChange($field, $old, $value),
                     ];
                 }
             }
@@ -288,9 +294,11 @@ class ShowTicket extends OrgAction
             'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
             'can_preview_attachments' => $ticket->canPreviewAttachmentsBy($user),
             'can_comment_internally' => $ticket->canWriteEngineeringNotesBy($user),
+            'can_edit_content'       => $ticket->canEditContentBy($user),
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
+                'content'  => ['name' => 'grp.models.ticket.content.update', 'parameters' => ['ticket' => $ticket->id]],
                 'project'  => ['name' => 'grp.models.ticket.project.update', 'parameters' => ['ticket' => $ticket->id]],
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
                 'deploy_comment' => ['name' => 'grp.models.ticket.deploy_comment.update', 'parameters' => ['ticket' => $ticket->id]],

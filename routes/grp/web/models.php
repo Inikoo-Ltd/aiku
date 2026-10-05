@@ -408,6 +408,8 @@ use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDep
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\SyncMasterProductCategoryRelatedMasterProductCategories;
+use App\Actions\Catalogue\ProductCategory\ReorderFamiliesInDepartment;
+use App\Actions\Masters\MasterProductCategory\ReorderMasterFamiliesInMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -600,6 +602,7 @@ use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
+use App\Actions\Helpers\Ticket\UpdateTicketContent;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Helpers\Ticket\ToggleTicketCommentVisibility;
 use App\Actions\Helpers\Ticket\TranslateTicketText;
@@ -624,6 +627,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::patch('{ticket:id}/project', [AssignWorkToProject::class, 'inTicket'])->name('project.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/content', UpdateTicketContent::class)->name('content.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/pull-request', UpdateTicketPullRequest::class)->name('pull_request.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
@@ -733,6 +737,8 @@ Route::patch('master-product-category/{masterProductCategory:id}/master-sub-depa
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/families-order', ReorderMasterFamiliesInMasterDepartment::class)->name('master_product_category.families_order.update')->withoutScopedBindings();
+Route::patch('product-category/{productCategory:id}/families-order', ReorderFamiliesInDepartment::class)->name('product_category.families_order.update')->withoutScopedBindings();
 
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
 Route::post('mcp-change/{mcpChange:id}/revert', RevertMcpChange::class)->name('mcp_change.revert');

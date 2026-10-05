@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
+use App\Actions\Ordering\Order\SendOrderPurchaseToGoogleAnalytics;
 use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
@@ -249,6 +250,10 @@ class SubmitOrder extends OrgAction
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
         ProcessOrderTrafficSource::dispatch($order)->delay($this->hydratorsDelay);
+
+        if ($order->ga_client_id) {
+            SendOrderPurchaseToGoogleAnalytics::dispatch($order->id)->afterCommit();
+        }
 
         /** Tells any other browser tab still showing this order's checkout to redirect away,
          * so a stale card widget cannot take a second payment */

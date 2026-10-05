@@ -27,6 +27,13 @@ export interface PreOrderShowcase {
     pallet_quote_amount: number | null
     can_pay_balance: boolean
     terms: string[]
+    texts: {
+        title: string
+        dispatch_dates: string
+        cancel_contact: string
+        terms_title: string
+        pay_button: string
+    }
 }
 
 const props = defineProps<{
@@ -45,7 +52,7 @@ const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateSt
     <div class="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="font-semibold">
-                {{ ctrans("Pre-order") }} · {{ pre_order.state_label }}
+                {{ pre_order.texts.title }} · {{ pre_order.state_label }}
             </div>
             <div v-if="pre_order.parent_order_reference" class="text-xs">
                 {{ ctrans("Split from order :reference, whose in-stock items are sent separately.", { reference: pre_order.parent_order_reference }) }}
@@ -53,7 +60,7 @@ const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateSt
         </div>
 
         <div v-if="pre_order.estimated_dispatch_from && pre_order.is_open">
-            {{ ctrans("Estimated dispatch between :from and :to", { from: formatDate(pre_order.estimated_dispatch_from), to: formatDate(pre_order.estimated_dispatch_to) }) }}
+            {{ pre_order.texts.dispatch_dates }}
         </div>
 
         <div class="flex flex-wrap gap-x-6 gap-y-1">
@@ -65,11 +72,11 @@ const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateSt
         </div>
 
         <div v-if="pre_order.is_open" class="text-xs">
-            {{ ctrans("To cancel this pre-order, please contact us.") }}
+            {{ pre_order.texts.cancel_contact }}
         </div>
 
         <details class="text-xs">
-            <summary class="cursor-pointer underline">{{ ctrans("Pre-order terms") }}</summary>
+            <summary class="cursor-pointer underline">{{ pre_order.texts.terms_title }}</summary>
             <ul class="mt-1 list-disc space-y-0.5 pl-4">
                 <li v-for="term in pre_order.terms" :key="term">{{ term }}</li>
             </ul>
@@ -77,7 +84,7 @@ const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateSt
 
         <div v-if="pre_order.is_open" class="flex flex-wrap items-center gap-2 pt-1">
             <Link v-if="showPayButton && pre_order.can_pay_balance" :href="route('retina.ecom.orders.pay_balance', { order: orderSlug })">
-                <Button type="positive" :label="ctrans('Pay the balance')" />
+                <Button type="positive" :label="pre_order.texts.pay_button" />
             </Link>
         </div>
     </div>

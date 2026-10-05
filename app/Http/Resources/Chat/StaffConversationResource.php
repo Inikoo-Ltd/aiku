@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Chat;
 
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Analytics\UserRequest;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
@@ -51,6 +52,9 @@ class StaffConversationResource extends JsonResource
         return [
             'reference'        => $task->reference,
             'is_open'          => $task->isOpen(),
+            'status'           => $task->status->value,
+            'status_label'     => StaffTaskStatusEnum::labels()[$task->status->value],
+            'status_icon'      => StaffTaskStatusEnum::stateIcon()[$task->status->value],
             'requester_id'     => $task->requester_id,
             'assignee_id'      => $task->assignee_id,
             'collaborator_ids' => $task->collaborators->pluck('id')->all(),

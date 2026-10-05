@@ -29,7 +29,6 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
@@ -39,7 +38,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 			...getStyles(modelValue.container?.properties, screenType)
 		}" @click="() => {
                 sendMessageToParent('activeBlock', indexBlock)
-                sendMessageToParent('activeChildBlock', bKeys[1])
+                sendMessageToParent('activeChildBlock', 'container-properties')
             }">
 			<div class="relative  px-6 py-24 text-center  l sm:px-16">
 				<Editor v-model="modelValue.headline" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
@@ -54,7 +53,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 					<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 						:label="modelValue?.button?.text" @click.stop="() => {
 							sendMessageToParent('activeBlock', indexBlock)
-							sendMessageToParent('activeChildBlock', bKeys[0])
+							sendMessageToParent('activeChildBlock', 'button')
 						}" />
 				</div>
 			</div>

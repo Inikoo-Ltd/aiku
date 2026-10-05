@@ -15,13 +15,13 @@ import {
 import { faSpinnerThird } from "@fad";
 import { faHeart } from "@far";
 import { faBars, faChevronLeft, faChevronRight as falChevronRight, faAlbumCollection } from "@fal";
-import { ref, inject, nextTick, onMounted, computed, watch } from "vue";
+import { ref, inject, nextTick, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { debounce, get } from "lodash-es";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import LinkIris from "@/Iris/Components/LinkIris.vue";
-import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
+import { menuCategoriesToMenuStructure, MenuSidebarSource } from "@/Composables/Iris/useMenu"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue";
 
@@ -41,19 +41,22 @@ library.add(
     faSpinnerThird
 );
 
-const props = withDefaults(
-    defineProps<{
-        fieldValue: {
-            custom_navigation_1_styling: {
-                index_of_navigation_to_apply: string  // "1, 2, 6, 7, 8"
-                properties: {}
-            }
-        };
-        screenType?: "mobile" | "tablet" | "desktop";
-    }>(),
-    {}
-);
-// console.log(props)
+const props = defineProps<{
+    fieldValue: {
+        navigation?: any[]
+        setting_on_sidebar?: {
+            is_follow?: boolean
+        }
+        custom_navigation_1_styling?: {
+            index_of_navigation_to_apply?: string
+            properties?: {}
+        }
+        [key: string]: any
+    };
+    screenType?: "mobile" | "tablet" | "desktop";
+    sidebar?: MenuSidebarSource;
+}>();
+
 const layout = inject("layout", layoutStructure);
 const isCollapsedOpen = ref(false);
 const hoveredNavigation = ref<any>(null);
@@ -67,12 +70,9 @@ const onMouseEnterMenu = (navigation: any) => {
     hoveredNavigation.value = navigation;
 };
 
-
-// Spinner logic for subnav
 const onClickSubnav = (link: any) => {
     if (!link?.link?.href) return;
     loadingItem.value = link.id || link.label;
-    /* setTimeout(() => (window.location.href = link.link.href), 600); */
 };
 
 const onStartNavigation = (navigation: any) => {
@@ -80,7 +80,6 @@ const onStartNavigation = (navigation: any) => {
     loadingItem.value = navigation.id || navigation.label;
 }
 
-// Scroll logic
 const _scrollContainer = ref<HTMLElement | null>(null);
 const isAbleScrollToRight = ref(false);
 const isAbleScrollToLeft = ref(false);
@@ -103,94 +102,62 @@ onMounted(() => {
     });
 });
 
+onBeforeUnmount(() => {
+    window.removeEventListener("resize", checkScroll);
+});
+
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(true));
 
 const hasNavigationIcon = (navigation: any) => navigation.type === "multiple" || !!navigation.icon;
 
-// Section: Sidebar menu
-const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
-const compSelectedSidebar = computed(() => {
-    return sidebarMenu?.value || layout.iris?.sidebar
-})
-const compCustomTopNavigation = computed(() => {
-    if (get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
-        return compSelectedSidebar.value?.data?.fieldValue?.navigation
-    } else {
-        return null
+const irisSidebarSource = computed<MenuSidebarSource>(() => {
+    const irisSidebar = layout.iris?.sidebar
+
+    return {
+        navigation: irisSidebar?.data?.fieldValue?.navigation ?? [],
+        navigation_bottom: irisSidebar?.data?.fieldValue?.navigation_bottom ?? [],
+        product_categories: irisSidebar?.product_categories ?? [],
     }
 })
-const compCustomBottomNavigation = computed(() => {
-    if (get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
-        return compSelectedSidebar.value?.data?.fieldValue?.navigation_bottom
-    } else {
-        return null
-    }
-})
-const computedSelectedSidebarData = computed(() => {
-    if (!get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
-        return []
+
+const sidebarSource = computed<MenuSidebarSource>(() => props.sidebar ?? irisSidebarSource.value)
+
+const isFollowSidebar = computed(() => get(props, "fieldValue.setting_on_sidebar.is_follow", false))
+
+const compCustomTopNavigation = computed(() => isFollowSidebar.value ? sidebarSource.value.navigation : null)
+
+const compCustomBottomNavigation = computed(() => isFollowSidebar.value ? sidebarSource.value.navigation_bottom : null)
+
+const selectedMenu = computed(() => {
+    if (isFollowSidebar.value) {
+        return menuCategoriesToMenuStructure(sidebarSource.value.product_categories) || []
     }
 
-    const selectedProductCategories = !layout.iris?.sidebar ? compSelectedSidebar.value?.data?.fieldValue?.product_categories : compSelectedSidebar.value?.product_categories
-    // const selectedProductCategories = compSelectedSidebar.value?.product_categories
-    const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
-
-    return productCategoriesAuto
+    return (props.fieldValue?.navigation ?? []).filter((item) => !item.hidden)
 })
 
-const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item) => !item.hidden))
-watch(
-    () => props.fieldValue.navigation,
-    () => {
-        selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item) => !item.hidden)
-    },
-    { deep: true }
-)
-
-// Section: Hover style
-const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType, false))
-watch(
-    () => props.fieldValue?.hover,
-    () => {
-        navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType, false)
-    },
-    { deep: true }
-)
-
-
+const navHoverClass = computed(() => getStyles(props.fieldValue?.hover?.container?.properties, props.screenType, false))
 
 const internalHref = (url: string) => {
-    // "https://www.aw-dropship.com/new",   -> /new
-    // "http://aw-dropship.com/new",   -> /new
-    // "www.aw-dropship.com/new",   -> /new
-    // "aw-dropship.com/new"   -> /new
     if (!url) return '';
 
-    const path = url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "");
-
-    return path
+    return url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "")
 }
 
 const compIndexStyling1 = computed(() => {
-    const xxx = props.fieldValue?.custom_navigation_1_styling?.index_of_navigation_to_apply
-    // Convert "1, 2, 4, 7, 8" to [1, 2, 4, 7, 8]
-    const vvvvv = typeof xxx === 'string'
-        ? xxx.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n))
-        : [];
+    const indexesToApply = props.fieldValue?.custom_navigation_1_styling?.index_of_navigation_to_apply
 
-    return vvvvv
+    return typeof indexesToApply === 'string'
+        ? indexesToApply.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n))
+        : []
 })
 
-// Watcher: if finish visit link, close the Collapsed
 watch(loadingItem, (newVal) => {
-    if (newVal) {
-
-    } else {
+    if (!newVal) {
         isCollapsedOpen.value = false
         debSetCollapsedTrue.cancel()
     }
 })
-
 
 const getSubnavIndex = (col: number) => {
     const imgPos = hoveredNavigation.value?.image_position
@@ -204,7 +171,6 @@ const getSubnavIndex = (col: number) => {
 
     return col - 1
 }
-
 
 const imageCol = computed(() => {
     if (!hoveredNavigation.value?.image) return null
@@ -245,7 +211,7 @@ const subnavColumns = computed(() => {
                         color: fieldValue?.navigation_container?.properties?.text?.color
                     }">
                     <FontAwesomeIcon icon="fal fa-bars" class="opacity-80 text-[10px]" fixed-width aria-hidden="true" />
-                    <span class="font-medium">{{ trans("All Categories") }}</span>
+                    <span class="font-medium">{{ ctrans("All Categories") }}</span>
                 </div>
                 <Transition>
                     <div v-if="isAbleScrollToLeft" class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"

@@ -51,7 +51,11 @@ The lead time comes from, in order: the product's own lead time, then the **pre-
 
 ## What the customer sees and pays
 
-On the product page and in the product lists the customer sees the type and the estimate, for example "Made to order · Estimated dispatch 9–11 weeks", along with the pre-order terms. The basket marks each pre-order line and lists the terms again.
+Customers only ever see the word **Pre-order**: back-order and made-to-order stay inside aiku, where they decide how the customer pays.
+
+While a product is **in stock**, the website shows its normal stock and no pre-order message. Once it is **out of stock**, "Out of stock" is replaced by "Available to pre-order · Estimated dispatch 13–15 weeks", with what is paid now ("Pay in full now" or "30% deposit now, balance when the goods arrive") and a link to the pre-order terms.
+
+When only part of what the customer wants is in stock, the basket says so on the line, for example "2 will be sent now, 3 are pre-ordered (estimated dispatch 13–15 weeks)". The pre-order payment and terms apply only to the 3 pre-ordered units.
 
 At checkout the customer must **tick to accept the pre-order terms** before any payment is shown. The terms are the ones that apply to them, for example:
 
@@ -66,7 +70,7 @@ What is paid at checkout:
 - **Trade, made-to-order** — the deposit only, or everything when the order is worth less than the shop's threshold.
 - **Dropshipping** — everything, always.
 
-Pastpay and cash on delivery are not offered for a basket with pre-orders, and bank transfer is not offered when a deposit is due, because none of them can take a deposit now and the rest later.
+Pastpay, cash on delivery and bank transfer are not offered for a basket with pre-orders: a pre-order is paid at checkout, in full or the deposit, and none of them pays at checkout.
 
 The same terms are repeated in the order confirmation email and on the invoice.
 
@@ -74,7 +78,7 @@ The same terms are repeated in the order confirmation email and on the invoice.
 
 When the order is placed, the in-stock items and the pre-order items become **two orders**. The in-stock order goes to the warehouse now, with its normal delivery. The pre-order items form an order of their own, with their own delivery charge, which waits until the goods arrive. Each order shows a note pointing to the other.
 
-The customer can instead tick **Hold my order and send everything together**: then nothing is split and the whole order waits for the pre-order goods.
+At checkout a mixed basket says "We'll send your in-stock items now and your pre-order items as soon as they arrive." The customer can instead tick **Hold my order and send everything together**: then nothing is split and the whole order waits for the pre-order goods. A basket with only pre-order items says "We'll dispatch your order as soon as the goods arrive."
 
 The customer pays once at checkout. The part of that payment that belongs to the pre-order is moved to it through the customer's account balance, so the balance itself does not change.
 
@@ -112,6 +116,7 @@ Customers cannot cancel a pre-order themselves: they contact customer service, w
 ### Where to click in aiku
 
 - **Switch pre-orders on for a shop** — open the shop, **Settings**, then **Pre-orders** › **Enable pre-orders**. The other terms are in the same section.
+- **Change what customers read** — open the shop, **Settings**, then **Pre-order texts**. Every text customers see is there, in each language of the shop: the labels, product page, basket and checkout messages, the terms and the tick box, the emails, and the wording on the order confirmation and invoice. Leave one empty to use the default shown in grey. Words in braces, like {weeks}, {deposit_percent}, {balance_due_date} and {order_number}, are filled in automatically. Orders already placed keep the terms the customer accepted.
 - **Mark a product** — **Masters**, open the master product, **Edit**, then **Pre-order**. A shop's own product has the same section under **Edit**.
 - **Set a supplier's lead time** — open the supplier, **Edit**, then **Pre-orders**: **Pre-order lead time**, **Lead time in** (days or weeks) and **Order by date**.
 - **Follow a pre-order** — open the order. The **Pre-order** panel at the top has **Supplier ordered**, **Goods arrived**, **Pallet quote**, **Change dispatch dates**, **Send to warehouse** and **Cancel pre-order**.

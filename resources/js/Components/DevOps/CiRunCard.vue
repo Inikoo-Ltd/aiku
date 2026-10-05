@@ -91,6 +91,7 @@ const stepColour = (status: string, conclusion: string | null) =>
     conclusion === "success" ? "text-emerald-600" : conclusion === "failure" ? "text-red-600" : status === "in_progress" ? "text-sky-600 animate-pulse" : "text-gray-300"
 
 const showAllTasks = ref(false)
+const showSteps = ref(false)
 
 const formatCount = (count: number) => count.toLocaleString()
 
@@ -127,7 +128,7 @@ const hasCounts = computed(() => props.recent.some(previous => previous.test_cou
             <ul v-if="run.failed_tests.length" class="mt-2 space-y-1 rounded bg-red-50 p-2 text-xs">
                 <li v-for="failed in run.failed_tests" :key="failed.test">
                     <div class="font-medium text-red-800">✗ {{ failed.test }}</div>
-                    <div v-if="failed.message" class="truncate text-red-700" :title="failed.message">{{ failed.message }}</div>
+                    <div v-if="failed.message" class="whitespace-pre-line break-words font-mono text-red-700">{{ failed.message }}</div>
                 </li>
             </ul>
 
@@ -144,7 +145,10 @@ const hasCounts = computed(() => props.recent.some(previous => previous.test_cou
                 </div>
             </div>
 
-            <table v-if="steps.length" class="mt-3 w-full table-fixed text-xs tabular-nums">
+            <button v-if="steps.length && run.failed_tests.length" type="button" class="mt-3 text-xs text-indigo-600 hover:underline" @click.prevent="showSteps = !showSteps">
+                {{ showSteps ? ctrans("Hide CI steps") : ctrans("Show CI steps") }}
+            </button>
+            <table v-if="steps.length && (showSteps || !run.failed_tests.length)" class="mt-3 w-full table-fixed text-xs tabular-nums">
                 <colgroup><col class="w-4"><col><col class="w-16"></colgroup>
                 <tbody class="divide-y divide-gray-100">
                     <tr v-for="step in steps" :key="`${step.job}-${step.number}`">

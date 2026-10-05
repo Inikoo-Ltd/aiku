@@ -8,6 +8,8 @@ const props = defineProps<{
     url: string
     flagged?: boolean
     reason?: string | null
+    question?: string
+    placeholder?: string
 }>()
 
 const emit = defineEmits<{
@@ -56,10 +58,10 @@ const send = async () => {
             {{ ctrans("Wrong?") }}
         </button>
         <form v-else class="flex w-72 flex-col gap-1.5 rounded-md bg-white p-2 text-left ring-1 ring-red-200" @submit.prevent="send">
-            <label class="text-xs text-gray-600">{{ ctrans("Why is it wrong? We use this to correct the automatic replies.") }}</label>
+            <label class="text-xs text-gray-600">{{ question ?? ctrans("Why is it wrong? We use this to correct the automatic replies.") }}</label>
             <textarea v-model="reasonText" rows="2" maxlength="500" required autofocus
                 class="w-full rounded-md border-gray-300 text-xs focus:border-red-400 focus:ring-red-400"
-                :placeholder="ctrans('e.g. the customer already told us the products and quantities')" />
+                :placeholder="placeholder ?? ctrans('e.g. the customer already told us the products and quantities')" />
             <span class="flex justify-end gap-1.5">
                 <button type="button" class="rounded-md px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-100" @click="isOpen = false">
                     {{ ctrans("Cancel") }}

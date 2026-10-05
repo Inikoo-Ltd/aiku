@@ -109,8 +109,8 @@ const downloadUrl = (type: string) => {
         v-model="isModalUploadOpen"
         scope="Prospect"
         :title="{
-            label: 'Upload your new prospects',
-            information: 'The list of column file: customer_reference, notes, stored_items'
+            label: ctrans('Upload your new prospects'),
+            information: ctrans('Make sure your file has a contact name column (Contact name, Name or Full name). Email, Company, Phone and Prospect key columns are read too, in any order. To update a prospect, put its id in Prospect key; leave the column out, or write new, to add one.')
         }"
         v-if="upload_spreadsheet"
         progressDescription="Adding Prospects to Shop"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, IframeHTMLAttributes, watch, provide, inject, computed } from "vue"
+import { ref, IframeHTMLAttributes, watch, provide, inject, computed, toRaw } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Publish from "@/Components/Publish.vue"
@@ -8,7 +8,6 @@ import axios from "axios"
 import { Head, Link } from "@inertiajs/vue3"
 import ScreenView from "@/Components/ScreenView.vue"
 import { setIframeView } from "@/Composables/Workshop"
-import ProgressSpinner from "primevue/progressspinner"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,7 +21,12 @@ import {
 	faTimes,
 	faPlusCircle,
 	faBars,
+	faThLarge,
+	faList,
+	faPaintBrushAlt,
+	faPaintBrush,
 } from "@fas"
+import { faChevronDoubleLeft, faChevronDoubleRight, faExternalLinkAlt } from "@fal"
 import { faHeart, faLowVision } from "@far"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -65,7 +69,7 @@ const isLoading = ref(false)
 const status = ref(props.status)
 const comment = ref("")
 const isIframeLoading = ref(true)
-const iframeClass = ref("w-full h-full")
+const iframeClass = ref(setIframeView("desktop"))
 const _iframe = ref<IframeHTMLAttributes | null>(null)
 const iframeSrc = ref(route("grp.websites.header.preview", [route().params["website"]]))
 const layout = inject('layout', layoutStructure)
@@ -119,7 +123,47 @@ watch(currentView, (newValue) => {
 })
 
 
-// Section: Side workshop
+const sideEditorStorageKey = "menu-workshop-side-editor-open"
+const readSideEditorOpen = (): boolean => {
+	try {
+		return localStorage.getItem(sideEditorStorageKey) !== "false"
+	} catch {
+		return true
+	}
+}
+const isSideEditorOpen = ref(readSideEditorOpen())
+watch(isSideEditorOpen, (isOpen) => {
+	try {
+		localStorage.setItem(sideEditorStorageKey, String(isOpen))
+	} catch {
+	}
+})
+
+const selectedSideTab = ref<"menu" | "styling" | "custom_styling" | "templates">(props.data.menu ? "menu" : "templates")
+
+const railTabs = computed(() => [
+	{ key: "menu", label: ctrans("Menu"), icon: faList },
+	{ key: "styling", label: ctrans("Style"), icon: faPaintBrushAlt },
+	{ key: "custom_styling", label: ctrans("Styling for custom navigation"), icon: faPaintBrush },
+	{ key: "templates", label: ctrans("Template"), icon: faThLarge },
+])
+
+const openSideTab = (tabKey: "menu" | "styling" | "custom_styling" | "templates") => {
+	selectedSideTab.value = tabKey
+	isSideEditorOpen.value = true
+}
+
+const isFollowSidebar = computed(() =>
+	get(Navigation.value, ["data", "fieldValue", "setting_on_sidebar", "is_follow"], false)
+)
+
+const setFollowSidebar = (isFollow: boolean) => {
+	const updatedNavigation = structuredClone(toRaw(Navigation.value))
+	set(updatedNavigation, ["data", "fieldValue", "setting_on_sidebar", "is_follow"], isFollow)
+	Navigation.value = updatedNavigation
+	autoSave(updatedNavigation)
+}
+
 const urlToSidebar = computed(() => {
 	return route('grp.org.shops.show.web.websites.workshop.sidebar', {
 		organisation: layout.currentParams?.organisation || 'x',
@@ -128,7 +172,6 @@ const urlToSidebar = computed(() => {
 	})
 })
 
-// Section: Save (auto)
 const statusSave = ref<null | 'loading' | 'success' | 'error'>(null)
 let statusTimeout: ReturnType<typeof setTimeout> | null = null
 const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
@@ -185,108 +228,98 @@ const autoSave = async (value: any) => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #mainIcon v-if="statusSave === 'loading'">
+			<LoadingIcon size="sm" />
+		</template>
 		<template #button-publish="{ action }">
-			<Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
+			<Publish :isLoading="isLoading || statusSave === 'loading'" :is_dirty="true" v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)" />
 		</template>
-
-		<template #afterTitle2>
-            <ConditionIcon v-if="statusSave" :state="statusSave" class="text-xl" />
-            <Button
-                v-else
-                @click="() => autoSave(Navigation)"
-                type="tertiary"
-                :label="ctrans('Save')"
-                icon="fas fa-save"
-                size="xs"
-                :loading="statusSave === 'loading'"
-            />
-        </template>
 	</PageHeading>
 
-	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-		<!-- SIDEBAR -->
-		<div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-			<!-- Section: is follow Sidebar -->
-			<div v-if="shop_type !== 'fulfilment'" class="border-dashed border-b border-gray-300 pb-6 mb-6">
-				<div class="flex justify-between mt-4 ">
-					<div>
-						{{ ctrans("Is follow sidebar navigation?") }}
+	<div class="h-[84vh] flex border-t border-gray-200">
+		<aside v-if="isSideEditorOpen" class="w-80 shrink-0 flex flex-col bg-[#F9F9F9] border-r border-gray-300">
+			<div class="h-9 shrink-0 pl-3 pr-1.5 flex items-center justify-between border-b border-gray-300 bg-gray-50 text-sm">
+				<div class="flex items-center gap-2 font-semibold">
+					<FontAwesomeIcon :icon="faBars" fixed-width aria-hidden="true" />
+					{{ ctrans("Menu") }}
+				</div>
+				<button type="button" class="h-7 w-7 rounded text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+					v-tooltip="ctrans('Collapse editor')" @click="isSideEditorOpen = false">
+					<FontAwesomeIcon :icon="faChevronDoubleLeft" fixed-width aria-hidden="true" />
+				</button>
+			</div>
+
+			<div v-if="shop_type !== 'fulfilment' && Navigation"
+				class="shrink-0 px-3 py-2 flex items-center justify-between gap-2 border-b border-gray-200 bg-white text-xs">
+				<div class="min-w-0">
+					<div class="flex items-center gap-1 font-medium text-gray-700">
+						{{ ctrans("Follow sidebar navigation") }}
 						<InformationIcon :information="ctrans('The data will be same like Sidebar')" />
 					</div>
-
-					<Toggle
-						:modelValue="get(data, ['menu', 'data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)"
-						@update:modelValue="(value) => { set(data, ['menu', 'data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], value), autoSave(data?.menu) }" />
+					<Link :href="urlToSidebar" class="text-gray-500 hover:text-indigo-600 hover:underline">
+						{{ ctrans("Open Sidebar workshop") }}
+						<FontAwesomeIcon :icon="faExternalLinkAlt" class="text-[10px]" fixed-width aria-hidden="true" />
+					</Link>
 				</div>
-
-				<Link :href="urlToSidebar" class="text-xs underline hover:text-blue-500 cursor-pointer mt-2">
-				{{ ctrans("Open Sidebar workshop") }}
-				<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
-				</Link>
+				<Toggle size="sm" :modelValue="isFollowSidebar" @update:modelValue="setFollowSidebar" />
 			</div>
 
-			<!-- Side workshop -->
-			<SideMenuWorkshop
-				:data="Navigation"
-				:webBlockTypes="webBlockTypes"
-				:uploadImageRoute
-				@auto-save="autoSave"
-				@sendToIframe="sendToIframe"
-			/>
-		</div>
+			<div class="flex-1 min-h-0">
+				<SideMenuWorkshop
+					v-model:tab="selectedSideTab"
+					:data="Navigation"
+					:webBlockTypes="webBlockTypes"
+					:uploadImageRoute
+					@auto-save="autoSave"
+					@sendToIframe="sendToIframe"
+				/>
+			</div>
+		</aside>
 
-		<!-- PREVIEW SECTION -->
-		<div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
-			<!-- Controls -->
-			<div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+		<aside v-else class="w-10 shrink-0 flex flex-col items-center bg-[#F9F9F9] border-r border-gray-300">
+			<button type="button" class="h-9 w-full border-b border-gray-300 bg-gray-50 text-gray-500 hover:text-gray-700"
+				v-tooltip="ctrans('Expand editor')" @click="isSideEditorOpen = true">
+				<FontAwesomeIcon :icon="faChevronDoubleRight" fixed-width aria-hidden="true" />
+			</button>
+			<div class="flex flex-col items-center gap-0.5 py-1.5">
+				<button v-for="tab in railTabs" :key="tab.key" type="button"
+					class="h-8 w-8 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+					v-tooltip="tab.label" @click="openSideTab(tab.key)">
+					<FontAwesomeIcon :icon="tab.icon" class="text-sm" fixed-width aria-hidden="true" />
+				</button>
+			</div>
+		</aside>
+
+		<section class="flex-1 min-w-0 flex flex-col bg-gray-100">
+			<div class="h-9 shrink-0 flex items-center justify-between gap-3 pr-3 bg-slate-200 border-b border-gray-300">
 				<ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+
+				<div class="flex items-center gap-2 text-xs">
+					<span class="tabular-nums" :class="statusSave === 'error' ? 'text-red-600' : 'text-gray-500'">
+						<template v-if="statusSave === 'loading'">{{ ctrans("Saving…") }}</template>
+						<template v-else-if="statusSave === 'error'">{{ ctrans("Save failed") }}</template>
+						<template v-else-if="statusSave === 'success'">{{ ctrans("All changes saved") }}</template>
+					</span>
+					<Button type="tertiary" size="xxs" icon="fas fa-save" :label="ctrans('Save')"
+						:loading="statusSave === 'loading'" @click="() => autoSave(Navigation)" />
+				</div>
 			</div>
 
-			<!-- Iframe Preview -->
-			<div v-if="data.menu?.code" class="relative flex-1 overflow-hidden">
-				<div v-if="isIframeLoading" class="loading-overlay">
-					<ProgressSpinner />
+			<div v-if="data.menu?.code" class="relative flex-1 min-h-0 overflow-hidden"
+				:class="currentView === 'desktop' ? '' : 'py-4'">
+				<div v-if="isIframeLoading"
+					class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/80">
+					<LoadingIcon class="text-4xl" />
+					<span class="text-sm text-gray-500">{{ ctrans("Loading preview") }}</span>
 				</div>
-				<iframe :src="iframeSrc" :title="props.title" :class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-					@error="handleIframeError" @load="isIframeLoading = false" ref="_iframe" />
+				<iframe :src="iframeSrc" :title="props.title" ref="_iframe"
+					class="bg-white transition-all" :class="[iframeClass, currentView === 'desktop' ? '' : 'shadow-lg']"
+					@error="handleIframeError" @load="isIframeLoading = false" />
 			</div>
-			<div v-else>
-				<EmptyState />
+			<div v-else class="flex-1 flex items-center justify-center bg-white">
+				<EmptyState :data="{ title: ctrans('Pick menu template'), description: ctrans('Choose a template from the Template tab to start') }" />
 			</div>
-		</div>
+		</section>
 	</div>
 </template>
-
-
-<style scoped lang="scss">
-:deep(.loading-overlay) {
-	position: absolute;
-	inset: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background-color: rgba(255, 255, 255, 0.85);
-	z-index: 40;
-	backdrop-filter: blur(2px);
-}
-
-:deep(.spinner) {
-	border: 4px solid rgba(255, 255, 255, 0.3);
-	border-top: 4px solid #6366f1; // Tailwind's indigo-500
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-
-	100% {
-		transform: rotate(360deg);
-	}
-}
-</style>

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -59,6 +60,8 @@ class SubmitRetinaOrder extends RetinaAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisation($request);
+
+        CaptureOrderGoogleAnalyticsClient::run($order, $request);
 
         return $this->handle($order, $this->validatedData);
     }

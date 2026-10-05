@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, type Ref, inject, onMounted, watch, computed, nextTick } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
@@ -435,7 +436,7 @@ onMounted(async () => {
 						<span
 							class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium "
 							:class="props.session?.web_user ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
-							{{ props.session?.web_user ? trans('Customer') : trans('Guest') }}
+							{{ props.session?.web_user ? ctrans('Customer') : ctrans('Guest') }}
 						</span>
 					</div>
 				</div>
@@ -444,27 +445,27 @@ onMounted(async () => {
 			<div class="flex border-b text-sm">
 				<button class="px-4 py-2" :class="activeTab === 'history' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'history'">
-					{{ trans("History") }}
+					{{ ctrans("History") }}
 				</button>
 
 				<button class="px-4 py-2" :class="activeTab === 'profile' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'profile'">
-					{{ trans("Profile") }}
+					{{ ctrans("Profile") }}
 				</button>
 
 				<button class="px-4 py-2" :class="activeTab === 'message-details' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'message-details'">
-					{{ trans("Details") }}
+					{{ ctrans("Details") }}
 				</button>
 
 				<button v-if="props.session?.web_user" class="px-4 py-2" :class="activeTab === 'statistics' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'statistics'">
-					{{ trans("Statistics") }}
+					{{ ctrans("Statistics") }}
 				</button>
 
 				<button v-if="props.session?.web_user" class="px-4 py-2" :class="activeTab === 'timeline' ? 'tab-active' : 'tab-inactive'"
 					@click="activeTab = 'timeline'">
-					{{ trans("Timeline") }}
+					{{ ctrans("Timeline") }}
 				</button>
 			</div>
 
@@ -489,20 +490,20 @@ onMounted(async () => {
 								<!-- Time Info -->
 								<div class="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
 									<div>
-										<div class="text-gray-400">{{ trans("Created") }}</div>
+										<div class="text-gray-400">{{ ctrans("Created") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ useFormatTime(s.created_at, { formatTime: 'hms' }) }}
 										</div>
 									</div>
 									<div>
-										<div class="text-gray-400">{{ trans("Last Activity") }}</div>
+										<div class="text-gray-400">{{ ctrans("Last Activity") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ useFormatTime(s.last_message?.created_at, { formatTime: 'hms' })
 											}}
 										</div>
 									</div>
 									<div>
-										<div class="text-gray-400">{{ trans("Duration") }}</div>
+										<div class="text-gray-400">{{ ctrans("Duration") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ s.duration || '' }}
 										</div>
@@ -512,14 +513,14 @@ onMounted(async () => {
 								<!-- AI Summary -->
 								<div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
 									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs font-bold text-indigo-600">{{ trans("AI Summary") }}</span>
-										<span class="text-[10px] text-gray-400">{{ trans("Auto generated") }}</span>
+										<span class="text-xs font-bold text-indigo-600">{{ ctrans("AI Summary") }}</span>
+										<span class="text-[10px] text-gray-400">{{ ctrans("Auto generated") }}</span>
 									</div>
 
 									<template v-if="s.ai_summary">
 										<!-- Summary -->
 										<div class="mb-2">
-											<div class="text-[11px] font-bold text-gray-500 mb-1">{{ trans("Summary") }}
+											<div class="text-[11px] font-bold text-gray-500 mb-1">{{ ctrans("Summary") }}
 											</div>
 											<p class="text-xs text-gray-700 leading-relaxed">
 												{{ s.ai_summary.summary }}
@@ -529,7 +530,7 @@ onMounted(async () => {
 										<!-- Key Points -->
 										<div class="mb-2">
 											<div class="text-[11px] font-bold text-gray-500 mb-1">
-												{{ trans("Key Points") }}
+												{{ ctrans("Key Points") }}
 											</div>
 											<ul class="text-xs text-gray-700 space-y-1 list-disc pl-4">
 												<li v-for="(point, i) in s.ai_summary.key_points" :key="i">
@@ -542,14 +543,20 @@ onMounted(async () => {
 										<div class="flex items-center mt-2 gap-2">
 											<span class="text-[11px] font-medium px-2 py-0.5 rounded-full capitalize"
 												:class="sentimentClass(s.ai_summary.sentiment)">
-												{{ trans("Sentiment :") }} {{ s.ai_summary.sentiment || '' }}
+												{{ ctrans("Sentiment :") }} {{ s.ai_summary.sentiment || '' }}
 											</span>
+										</div>
+
+										<div class="mt-2" @click.stop>
+											<FlagWrongButton :url="route('grp.chat.ai.summaries.session.flag', [s.ulid])" :flagged="!!s.ai_summary.flagged"
+												:question="ctrans('Why is this summary wrong? We use this to improve the summaries.')"
+												:placeholder="ctrans('e.g. longer than the chat itself, or it missed what the customer asked')" />
 										</div>
 									</template>
 
 									<!-- Fallback -->
 									<div v-else class="text-xs text-gray-400 italic">
-										{{ trans("AI summary not available.") }}
+										{{ ctrans("AI summary not available.") }}
 									</div>
 								</div>
 							</div>
@@ -561,14 +568,14 @@ onMounted(async () => {
 
 				<div v-if="activeTab === 'profile'" class="p-4 space-y-3">
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Name") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Name") }}</div>
 						<div class="col-span-2 text-sm">
 							{{ displayName || "-" }}
 						</div>
 					</div>
 
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Email") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Email") }}</div>
 						<div class="col-span-2 text-sm">
 							{{
 								props.session?.web_user?.email ||
@@ -579,7 +586,7 @@ onMounted(async () => {
 					</div>
 
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Phone") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Phone") }}</div>
 						<div class="col-span-2 text-sm">
 							{{
 								props.session?.web_user?.phone ||
@@ -590,13 +597,13 @@ onMounted(async () => {
 					</div>
 
 					<div v-if="props.session?.web_user" class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Organisation") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Organisation") }}</div>
 						<div class="col-span-2 text-sm">
 							{{ capitalize(props.session?.web_user?.organisation || "-") }}
 						</div>
 					</div>
 					<div v-if="props.session?.web_user" class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Shop") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Shop") }}</div>
 						<div class="col-span-2 text-sm">
 							{{ capitalize(props.session?.web_user?.shop || "-") }}
 						</div>
@@ -604,8 +611,8 @@ onMounted(async () => {
 
 					<!-- Tags -->
 					<div v-if="props.session?.web_user" class="pt-1">
-						<div class="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">{{ trans("Tags") }}</div>
-						<div v-if="isLoadingProfile" class="text-xs text-gray-400">{{ trans("Loading...") }}</div>
+						<div class="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">{{ ctrans("Tags") }}</div>
+						<div v-if="isLoadingProfile" class="text-xs text-gray-400">{{ ctrans("Loading...") }}</div>
 						<div v-else-if="customerProfile.tags.length" class="flex flex-wrap gap-1.5">
 							<span
 								v-for="tag in customerProfile.tags"
@@ -616,12 +623,12 @@ onMounted(async () => {
 								{{ tag.name }}
 							</span>
 						</div>
-						<div v-else class="text-xs text-gray-400 italic">{{ trans("No tags") }}</div>
+						<div v-else class="text-xs text-gray-400 italic">{{ ctrans("No tags") }}</div>
 					</div>
 
 					<div v-if="!props.session?.web_user && props.session?.guest_identifier" class="pt-2 space-y-2">
 						<div class="text-xs text-gray-500">
-							{{ trans("Sync by email (optional)") }}
+							{{ ctrans("Sync by email (optional)") }}
 						</div>
 						<input type="email" v-model="syncEmail" disabled placeholder="guest@example.com"
 							class="w-full px-3 py-2 border rounded" />
@@ -629,24 +636,24 @@ onMounted(async () => {
 							class="w-full px-3 py-2 buttonPrimary rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
 							:disabled="isSyncing || !syncEmail" @click="onSyncByEmail">
 							<FontAwesomeIcon :icon="faSync" class="text-base text-white" fixed-width />
-							{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
+							{{ isSyncing ? ctrans("Syncing...") : ctrans("Sync by email") }}
 						</button>
 						<AlertMessage v-if="syncEmailAlert" :alert="syncEmailAlert" />
 					</div>
 					<div v-else class="pt-2 space-y-2">
 						<div class="text-xs text-gray-500 mb-1">
-							{{ trans("Click to Customer Detail") }}
+							{{ ctrans("Click to Customer Detail") }}
 						</div>
 						<Link
 							:href="`/org/${props.session.web_user.organisation_slug}/shops/${props.session.web_user.shop_slug}/crm/customers/${props.session.web_user.slug}`">
-							<Button :icon="faUser" :full="true" :label="trans('View Customer Profile')" />
+							<Button :icon="faUser" :full="true" :label="ctrans('View Customer Profile')" />
 						</Link>
 					</div>
 				</div>
 
 				<div v-if="activeTab === 'message-details'" class="p-4 space-y-3">
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Status") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Status") }}</div>
 						<div class="flex items-center text-sm">
 							<FontAwesomeIcon :icon="statusIcon(props.session?.status)" class="mr-1 text-sm"
 								:class="statusClass(props.session?.status)" fixed-width />
@@ -654,7 +661,7 @@ onMounted(async () => {
 						</div>
 					</div>
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Priority") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Priority") }}</div>
 						<div v-if="!isEditingPriority" class="flex items-center text-sm cursor-pointer"
 							@click="isEditingPriority = true">
 							<FontAwesomeIcon :icon="priorityIcon(currentPriority)" class="mr-1 text-sm"
@@ -670,12 +677,12 @@ onMounted(async () => {
 							</button>
 							<button class="px-2 py-1 text-xs border rounded" :disabled="isUpdatingPriority"
 								@click="isEditingPriority = false">
-								{{ trans("Cancel") }}
+								{{ ctrans("Cancel") }}
 							</button>
 						</div>
 					</div>
 					<div class="grid grid-cols-3 gap-2 items-center">
-						<div class="text-gray-500 text-sm">{{ trans("Agent") }}</div>
+						<div class="text-gray-500 text-sm">{{ ctrans("Agent") }}</div>
 
 						<div v-if="!isEditingAgent" class="col-span-2 font-medium text-sm cursor-pointer"
 							@click="isEditingAgent = true">
@@ -720,7 +727,7 @@ onMounted(async () => {
 							<div class="flex items-center gap-2 mt-2">
 								<button class="px-2 py-1 text-xs border rounded" :disabled="isAssigningAgent"
 									@click="isEditingAgent = false">
-									{{ trans("Cancel") }}
+									{{ ctrans("Cancel") }}
 								</button>
 							</div>
 						</div>
@@ -733,11 +740,11 @@ onMounted(async () => {
 				<!-- Statistics Tab -->
 				<div v-if="activeTab === 'statistics'" class="p-4">
 					<div v-if="isLoadingProfile" class="flex items-center justify-center py-10 text-gray-400 text-sm">
-						{{ trans("Loading...") }}
+						{{ ctrans("Loading...") }}
 					</div>
 					<div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
 						<FontAwesomeIcon :icon="faChartLine" class="text-2xl mb-2 opacity-30" fixed-width />
-						<p class="text-xs">{{ trans("No statistics available") }}</p>
+						<p class="text-xs">{{ ctrans("No statistics available") }}</p>
 					</div>
 					<div v-else class="space-y-5">
 
@@ -745,45 +752,45 @@ onMounted(async () => {
 						<div>
 							<div class="flex items-center justify-between mb-3">
 								<span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-									{{ trans("Sales Attributes") }}
+									{{ ctrans("Sales Attributes") }}
 								</span>
 							</div>
 							<div class="space-y-2.5">
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("Last Invoice") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("Last Invoice") }}</span>
 									<span class="text-sm font-medium text-gray-800">{{ formatStatDate(customerProfile.stats.last_invoiced_at) }}</span>
 								</div>
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("First Order") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("First Order") }}</span>
 									<span class="text-sm font-medium text-gray-800">{{ formatStatDate(customerProfile.stats.first_order_date) }}</span>
 								</div>
                                 <div v-if="customerProfile.stats.number_returns > 0"
                                     class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-500">{{ trans("Returns") }}</span>
+                                    <span class="text-sm text-gray-500">{{ ctrans("Returns") }}</span>
                                     <span class="text-sm font-medium text-gray-800">{{
                                         customerProfile.stats.number_returns.toLocaleString() }}</span>
                                 </div>
                                 <div v-if="customerProfile.stats.number_invoices > 0"
                                     class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-500">{{ trans("Invoices") }}</span>
+                                    <span class="text-sm text-gray-500">{{ ctrans("Invoices") }}</span>
                                     <span class="text-sm font-medium text-gray-800">{{
                                         customerProfile.stats.number_invoices.toLocaleString() }}</span>
                                 </div>
 
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("Total Orders") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("Total Orders") }}</span>
 									<span class="text-sm font-semibold text-gray-800">{{ customerProfile.stats.number_orders.toLocaleString() }}</span>
 								</div>
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("Total Spend") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("Total Spend") }}</span>
 									<span class="text-sm font-semibold text-gray-800">{{ formatCurrency(customerProfile.stats.sales_all, customerProfile.stats.currency_symbol) }}</span>
 								</div>
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("Avg Order Value") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("Avg Order Value") }}</span>
 									<span class="text-sm font-medium text-gray-800">{{ formatCurrency(customerProfile.stats.average_order_value, customerProfile.stats.currency_symbol) }}</span>
 								</div>
 								<div class="flex items-center justify-between">
-									<span class="text-sm text-gray-500">{{ trans("Orders in Basket") }}</span>
+									<span class="text-sm text-gray-500">{{ ctrans("Orders in Basket") }}</span>
 									<span class="text-sm font-medium text-gray-800">{{ customerProfile.stats.number_orders_state_creating.toLocaleString() }}</span>
 								</div>
 							</div>

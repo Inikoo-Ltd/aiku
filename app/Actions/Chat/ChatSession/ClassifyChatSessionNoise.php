@@ -95,7 +95,7 @@ class ClassifyChatSessionNoise
         $nothingToRead = !$hasSubstance && (!$rule || $rule['verdict'] === ChatNoiseVerdictEnum::SUPPLIER_CIRCULAR);
 
         // Out of hours the closed-now reply has already asked what they want.
-        $closedReplyAsked = config('chat.out_of_hours_reply') && !IsWithinWorkingHours::run($chatSession->shop, now());
+        $closedReplyAsked = config('chat.out_of_hours_reply') && !IsWithinWorkingHours::make()->chatHours()->handle($chatSession->shop, now());
 
         if ($nothingToRead && $chatSession instanceof MetaChatSession && config('chat.noise.greet_bare_hello') && !$closedReplyAsked) {
             SendMetaChatGreeting::run($chatSession);

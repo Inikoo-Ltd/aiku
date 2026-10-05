@@ -31,6 +31,35 @@ class IsWithinWorkingHours
     private static ?WeakMap $shopWeeks = null;
 
     /**
+     * Without hours of its own, chat closes this long before the shop does, so customer service can sign off for the
+     * day instead of opening conversations at five to closing (HELP-3685).
+     */
+    public const int CHAT_CLOSES_EARLY_MINUTES = 15;
+
+    private bool $usesChatHours = false;
+
+    /**
+     * Answers for the chat rather than the shop: the chat hours set on the shop (Settings › Chat), else the working
+     * hours closing CHAT_CLOSES_EARLY_MINUTES earlier. What customers are told and offered; reports keep working hours.
+     */
+    public function chatHours(): static
+    {
+        $this->usesChatHours = true;
+
+        return $this;
+    }
+
+    /**
+     * The hours of one weekday, as the chat or the shop keeps them, null on a day off.
+     *
+     * @return array{s: string, e: string, b?: array<int, array{s: string, e: string}>}|null
+     */
+    public function hoursOn(Shop $shop, int $isoWeekday): ?array
+    {
+        return $this->dayHours(null, $shop, $isoWeekday);
+    }
+
+    /**
      * Whether a moment falls inside working hours, in the shop's own timezone.
      *
      * The agent's contracted hours are the truth when HR holds them, because they carry
@@ -117,12 +146,30 @@ class IsWithinWorkingHours
         if ($week->isNotEmpty()) {
             $day = $week->first(fn (WorkScheduleDay $day) => $day->day_of_week === $isoWeekday && $day->is_working_day);
 
-            return $day ? ['s' => substr((string) $day->start_time, 0, 5), 'e' => substr((string) $day->end_time, 0, 5), 'b' => []] : null;
+            return $day ? $this->forChat($shop, ['s' => substr((string) $day->start_time, 0, 5), 'e' => substr((string) $day->end_time, 0, 5), 'b' => []]) : null;
         }
 
         // A guess until a schedule exists: every contract that is filled in says
         // 08:00 to 16:00, Monday to Friday, so that is the least wrong default.
-        return $isoWeekday <= 5 ? ['s' => '08:00', 'e' => '16:00', 'b' => []] : null;
+        return $isoWeekday <= 5 ? $this->forChat($shop, ['s' => '08:00', 'e' => '16:00', 'b' => []]) : null;
+    }
+
+    /**
+     * @param array{s: string, e: string, b?: array<int, array{s: string, e: string}>} $day
+     *
+     * @return array{s: string, e: string, b?: array<int, array{s: string, e: string}>}
+     */
+    private function forChat(Shop $shop, array $day): array
+    {
+        if (!$this->usesChatHours) {
+            return $day;
+        }
+
+        $start = Arr::get($shop->settings, 'chat.hours.start') ?: $day['s'];
+        $end   = Arr::get($shop->settings, 'chat.hours.end')
+            ?: Carbon::createFromFormat('H:i', $day['e'])->subMinutes(self::CHAT_CLOSES_EARLY_MINUTES)->format('H:i');
+
+        return [...$day, 's' => $start, 'e' => max($start, $end)];
     }
 
     /**
