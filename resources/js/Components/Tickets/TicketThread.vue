@@ -199,7 +199,10 @@ const submit = () => {
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="ctrans('Raised from Slack')" :icon="faSlack" class="text-gray-500" fixed-width />
             </div>
             <slot name="card-header-footer" />
-            <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
+            <div class="mb-3 flex items-start justify-between gap-2">
+                <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
+                <slot name="subject-actions" />
+            </div>
             <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-[--app-accent-strong] hover:underline">{{ ticket.reference_url }}</a>
             <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
             <TicketTranslation v-if="translateRoutes && ticket.id && ticket.description" :translation="translations.description" :is-translating="translatingKey === 'description'" @translate="translateDescription" />

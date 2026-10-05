@@ -51,19 +51,6 @@ trait WithCustomersSubNavigation
                     'tooltip' => __('polls')
                 ]
             ];
-
-            $meta[] = [
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
-                    'parameters' => $request->route()->originalParameters()
-                ],
-                'number'   => $this->parent->crmStats?->number_traffic_sources ?? 0,
-                'label'    => __('Traffic Sources'),
-                'leftIcon' => [
-                    'icon'    => 'fal fa-route',
-                    'tooltip' => __('traffic sources')
-                ]
-            ];
         }
 
         if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::DROPSHIPPING && $this->parent->engine !== ShopEngineEnum::FAIRE) {
@@ -132,6 +119,19 @@ trait WithCustomersSubNavigation
                 'leftIcon' => [
                     'icon' => 'fal fa-tags',
                     'tooltip' => __('System tags')
+                ]
+            ];
+
+            $meta[] = [
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'align'    => 'right',
+                'label'    => '',
+                'leftIcon' => [
+                    'icon'    => 'fal fa-route',
+                    'tooltip' => __('Traffic sources (:count), in Marketing', ['count' => $this->parent->crmStats?->number_traffic_sources ?? 0])
                 ]
             ];
         }

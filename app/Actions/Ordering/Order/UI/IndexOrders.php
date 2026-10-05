@@ -77,16 +77,25 @@ class IndexOrders extends OrgAction
                     'partner' => [__('Partner'), null],
                 ],
 
-                'engine' => function ($query, $elements) {
-                    if (in_array('partner', $elements)) {
-                        $query->where('sales_channels.code', 'intercompany');
-                    } else {
-                        $query->whereRaw("coalesce(sales_channels.code, '') != 'intercompany'");
-                    }
-                }
+                'engine' => $this->channelEngine(...)
             ],
 
         ];
+    }
+
+    /**
+     * A partner order comes from a sister organisation's customer account, whatever channel it was placed through,
+     * or through the intercompany channel used when a partner purchase order is sent to the seller.
+     */
+    protected const string PARTNER_ORDER_SQL = "(customers.as_organisation_id is not null or coalesce(sales_channels.code, '') = 'intercompany')";
+
+    protected function channelEngine($query, array $elements): void
+    {
+        if (in_array('partner', $elements)) {
+            $query->whereRaw(self::PARTNER_ORDER_SQL);
+        } else {
+            $query->whereRaw('not '.self::PARTNER_ORDER_SQL);
+        }
     }
 
     public function handle(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): LengthAwarePaginator
@@ -115,6 +124,12 @@ class IndexOrders extends OrgAction
                 key: 'scope',
                 allowedElements: ['domestic', 'export'],
                 engine: fn ($query, $elements) => $query->where('orders.is_export', in_array('export', $elements)),
+                prefix: $prefix
+            );
+            $query->whereElementGroup(
+                key: 'channel',
+                allowedElements: ['direct', 'partner'],
+                engine: $this->channelEngine(...),
                 prefix: $prefix
             );
         }
@@ -155,6 +170,7 @@ class IndexOrders extends OrgAction
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
                 'customers.is_vip as is_customer_vip',
+                'customers.as_organisation_id as customer_as_organisation_id',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',
@@ -275,19 +291,37 @@ class IndexOrders extends OrgAction
     }
 
     /**
-     * Live domestic/export split of the bucket, one indexed aggregate per page load instead of a hydrated stat
+     * Live destination and channel split of the bucket, one indexed aggregate per page load instead of a hydrated stat.
+     * Each split follows the selection of the other one, so the numbers match the list the user would get by clicking.
      *
-     * @return array{domestic: int, export: int}
+     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}}
      */
-    public function scopeCounts(Group|Organisation|Shop $parent, string $bucket): array
+    public function backlogFilterCounts(Group|Organisation|Shop $parent, string $bucket, ?string $currentScope = null, ?string $currentChannel = null): array
     {
         $this->bucket = $bucket;
         $query        = $this->baseQuery($parent);
         $this->applyBucket($query, $parent, null);
 
-        $counts = ['domestic' => 0, 'export' => 0];
-        foreach ($query->toBase()->selectRaw('orders.is_export, count(*) as count')->groupBy('orders.is_export')->get() as $row) {
-            $counts[$row->is_export ? 'export' : 'domestic'] = (int) $row->count;
+        $counts = [
+            'scope'   => ['domestic' => 0, 'export' => 0],
+            'channel' => ['direct' => 0, 'partner' => 0],
+        ];
+
+        $rows = $query->toBase()
+            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, count(*) as count')
+            ->groupByRaw('orders.is_export, '.self::PARTNER_ORDER_SQL)
+            ->get();
+
+        foreach ($rows as $row) {
+            $scope   = $row->is_export ? 'export' : 'domestic';
+            $channel = $row->is_partner ? 'partner' : 'direct';
+
+            if (!$currentChannel || $currentChannel === $channel) {
+                $counts['scope'][$scope] += (int) $row->count;
+            }
+            if (!$currentScope || $currentScope === $scope) {
+                $counts['channel'][$channel] += (int) $row->count;
+            }
         }
 
         return $counts;

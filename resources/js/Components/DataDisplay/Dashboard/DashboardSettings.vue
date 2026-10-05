@@ -308,9 +308,13 @@ const updateTopCustomersLimit = (value: number) => {
         </div>
 
         <transition name="slide-to-right">
-            <div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap items-center gap-3 mb-2 text-sm">
+            <div v-show="isSectionVisible" id="dashboard-settings" class="dashboard-settings-panel relative mb-3 mt-3 flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2.5 text-sm">
 
                 <div class="flex flex-wrap items-center gap-3">
+                    <span class="dashboard-accent-text flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
+                        <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" />
+                        {{ ctrans('Dashboard settings') }}
+                    </span>
                     <!-- Toggle: model_state -->
                     <Transition name="slide-to-right">
                         <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
@@ -341,7 +345,7 @@ const updateTopCustomersLimit = (value: number) => {
                     />
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
                     <!-- Toggle: data_display_type (minified, full) -->
                     <DashboardSettingChoice
                         v-if="settings.data_display_type"
@@ -416,6 +420,31 @@ const updateTopCustomersLimit = (value: number) => {
 
 .dashboard-accent-text {
     color: v-bind("`color-mix(in srgb, ${accentColor} 75%, black)`");
+}
+
+.dashboard-settings-panel {
+    background-color: v-bind("`color-mix(in srgb, ${accentColor} 6%, white)`");
+    border-color: v-bind("`color-mix(in srgb, ${accentColor} 30%, white)`");
+}
+
+.dashboard-settings-panel::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: 18px;
+    width: 12px;
+    height: 12px;
+    transform: rotate(45deg);
+    background-color: inherit;
+    border-top: 1px solid;
+    border-left: 1px solid;
+    border-color: inherit;
+}
+
+@media (min-width: 640px) {
+    .dashboard-settings-panel::before {
+        right: 22px;
+    }
 }
 
 :deep(#dashboard-settings) {

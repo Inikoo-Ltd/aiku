@@ -114,7 +114,7 @@ class OrdersResource extends JsonResource
             'platform'                    => $this->getPlatformLogo($this->platform ?? ''),
             'sales_channel_type'          => $this->sales_channel_type,
             'sales_channel_name'          => $this->sales_channel_name,
-            'is_intercompany'             => $this->sales_channel_code === 'intercompany',
+            'is_intercompany'             => $this->sales_channel_code === 'intercompany' || (bool) $this->customer_as_organisation_id,
             'is_pre_order'                => (bool) $this->is_pre_order,
             'total_amount'                => $this->total_amount,
             'customer_name'               => $this->customer_name,

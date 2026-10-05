@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Prospect\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Imports\CRM\ProspectImport;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
@@ -300,13 +301,8 @@ class IndexProspects extends OrgAction
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
-                'required_fields' => [
-                    "id_prospect_key",
-                    "company_name",
-                    "contact_name",
-                    "email",
-                    "phone"
-                ],
+                'required_fields' => array_keys(ProspectImport::HEADER_ALIASES),
+                'column_aliases'  => ProspectImport::HEADER_ALIASES,
                 'route'           => [
                     'upload' => [
                         'name'       => 'grp.models.shop.prospects.upload',
