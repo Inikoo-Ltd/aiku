@@ -8374,7 +8374,16 @@ test('chat hours come from the work schedule, and the next opening skips closed 
 
     expect($config['is_online'])->toBeFalse()
         ->and($config['offline_info']['next_opening']['day_of_week'])->toBe(2)
-        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00:00');
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['time_format' => '12h_short']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10am');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '12h']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10:00 am')
+        ->and($this->organisation->fresh()->formatClockTime(\Illuminate\Support\Carbon::parse('16:30')))->toBe('4:30 pm');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '24h']);
 
     $closedLine = fn (bool $saidWhatTheyNeed) => \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($shop, true, null, $saidWhatTheyNeed);
 

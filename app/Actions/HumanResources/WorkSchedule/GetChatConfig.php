@@ -53,11 +53,11 @@ class GetChatConfig
         $todaySchedule = $days->firstWhere('day_of_week', $dayOfWeek);
 
         if ($todaySchedule && $todaySchedule->is_working_day) {
-            $config['schedule'] = $this->formatScheduleWindow(
-                (string) $todaySchedule->start_time,
-                (string) $todaySchedule->end_time,
-                $timezone
-            );
+            $config['schedule'] = [
+                'start'    => $this->formatTime($shop, $todaySchedule->start_time),
+                'end'      => $this->formatTime($shop, $todaySchedule->end_time),
+                'timezone' => $timezone,
+            ];
         }
 
         if (!$config['is_online']) {
@@ -93,8 +93,8 @@ class GetChatConfig
                 ? [
                     'day_of_week' => $nextOpening['opens']->isoWeekday(),
                     'day_name'    => $this->dayNameFromIso($nextOpening['opens']->isoWeekday()),
-                    'start'       => $nextOpening['opens']->format('H:i:s'),
-                    'end'         => $nextOpening['closes']->format('H:i:s'),
+                    'start'       => $shop->organisation->formatClockTime($nextOpening['opens']),
+                    'end'         => $shop->organisation->formatClockTime($nextOpening['closes']),
                     'timezone'    => $timezone,
                 ]
                 : null,
@@ -115,21 +115,15 @@ class GetChatConfig
         };
     }
 
-    private function formatScheduleWindow(string $startTime, string $endTime, string $timezone): array
-    {
-        return [
-            'start'    => $this->formatTime($startTime),
-            'end'      => $this->formatTime($endTime),
-            'timezone' => $timezone,
-        ];
-    }
-
-    private function formatTime(?string $time): ?string
+    /**
+     * Written the way the shop's organisation writes times (Organisation settings › Time format), 08:00 by default.
+     */
+    private function formatTime(Shop $shop, mixed $time): ?string
     {
         if (!$time) {
             return null;
         }
 
-        return Carbon::parse($time)->format('H:i:s');
+        return $shop->organisation->formatClockTime(Carbon::parse((string) $time));
     }
 }

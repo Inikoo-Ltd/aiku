@@ -200,6 +200,10 @@ class UpdateOrganisation extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'time_format')) {
+            data_set($modelData, 'settings.time_format', Arr::pull($modelData, 'time_format'));
+        }
+
         if (Arr::has($modelData, 'hr_annual_leave_days')) {
             data_set($modelData, "settings.hr.leave_quota.annual_leave_days", Arr::pull($modelData, 'hr_annual_leave_days'));
         }
@@ -297,6 +301,7 @@ class UpdateOrganisation extends OrgAction
             'address'                               => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
+            'time_format'                           => ['sometimes', Rule::in(Organisation::TIME_FORMATS)],
             'currency_id'                           => ['sometimes', 'exists:currencies,id'],
             'email'                                 => ['sometimes', 'nullable', 'email'],
             'phone'                                 => ['sometimes', 'nullable', new Phone()],
