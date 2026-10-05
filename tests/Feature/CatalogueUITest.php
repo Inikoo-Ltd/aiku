@@ -37,6 +37,10 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Dashboards\GetGroupWarehouseDashboardData;
+use App\Actions\UI\Dashboards\GetOperationsDashboardData;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Inventory\Warehouse\SeedWarehousePermissions;
+use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\Catalogue\Shop\UI\GetCatalogueShowcase;
 use App\Actions\UI\Grp\Layout\GetShopNavigation;
@@ -67,8 +71,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
@@ -1673,63 +1675,58 @@ test('each morning a tip on reaching the target is written for the shop and show
     $shop->update(['state' => ShopStateEnum::CLOSED]);
 });
 
-test('group warehouse overview derives its numbers from the hydrated stats', function () {
-    $orderingStats = [
-        'number_delivery_notes_state_unassigned'       => 2,
-        'number_delivery_notes_state_queued'            => 3,
-        'number_delivery_notes_state_handling'         => 4,
-        'number_delivery_notes_state_handling_blocked' => 1,
-        'number_delivery_notes_state_picked'           => 5,
-        'number_delivery_notes_state_packing'          => 6,
-        'number_delivery_notes_state_packed'           => 7,
-        'number_delivery_notes_state_finalised'        => 8,
-    ];
-    $procurementStats = [
-        'number_stock_deliveries_state_confirmed'      => 1,
-        'number_stock_deliveries_state_ready_to_ship'  => 2,
-        'number_stock_deliveries_state_dispatched'     => 3,
-        'number_stock_deliveries_state_received'       => 4,
-        'number_stock_deliveries_state_checked'        => 5,
-        'number_stock_deliveries_state_booking_in'     => 6,
-        'number_open_purchase_orders'                  => 7,
-    ];
-    foreach ([$this->group, $this->organisation] as $owner) {
-        $owner->orderHandlingStats()->update($orderingStats);
-        $owner->procurementStats()->update($procurementStats);
-    }
+test('stock tab shows stock health by days of cover; warehouse work lives on operations', function () {
+    createWarehouse();
+    Cache::forget("warehouse-dashboard-stock-cover:{$this->organisation->id}");
 
-    Cache::forget("group-warehouse-stock-health:{$this->group->id}");
-    $currentOrgStocks = DB::table('org_stocks')
-        ->where('group_id', $this->group->id)
-        ->whereIn('state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])
-        ->where('quantity_status', OrgStockQuantityStatusEnum::OUT_OF_STOCK->value)
-        ->count();
-
-    $overview = GetGroupWarehouseDashboardData::run($this->group->refresh());
-
-    expect($overview['totals']['work'])->toBe([
-        'waiting'           => 5,
-        'picking'           => 4,
-        'blocked'           => 1,
-        'packing'           => 11,
-        'ready_to_ship'     => 15,
-    ])
-        ->and($overview['totals']['goods_in'])->toBe([
-            'confirmed'            => 1,
-            'on_the_way'           => 5,
-            'to_book_in'           => 9,
-            'booking_in'           => 6,
-            'open_purchase_orders' => 7,
-        ])
-        ->and($overview['totals']['stock_health'])->toHaveKeys(['out_of_stock', 'critical', 'low', 'ideal', 'excess', 'error'])
-        ->and($overview['totals']['stock_health']['out_of_stock'])->toBe($currentOrgStocks);
-
+    $overview        = GetGroupWarehouseDashboardData::run($this->group->refresh());
     $organisationRow = collect($overview['organisations'])->firstWhere('slug', $this->organisation->slug);
-    expect($organisationRow['work']['waiting'])->toBe(5)
-        ->and($organisationRow['routes']['goods_in']['name'])->toBe('grp.org.procurement.stock_deliveries.index');
+
+    expect(array_keys($overview['totals']))->toBe(['stock_health'])
+        ->and(array_keys($organisationRow['stock_health']))->toBe(array_keys(GetOrganisationStockCoverBuckets::BUCKETS))
+        ->and($organisationRow['routes']['stock_health']['name'])->toBe('grp.org.procurement.stock_cover.index')
+        ->and(collect($overview['stock_levels'])->pluck('bucket')->all())->toBe(array_keys(GetOrganisationStockCoverBuckets::BUCKETS));
+
+    actingAs($this->user);
+    get(route('grp.dashboard.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('warehouseOverview')->where('operations.route.name', 'grp.dashboard.operations'));
+});
+
+test('operations dashboard: warehouse staff land on it, only see their warehouse and no money', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($this->group->id);
+    SeedWarehousePermissions::run($warehouse);
+
+    $supervisor = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $supervisor->givePermissionTo("supervisor-dispatching.$warehouse->id");
+    SetUserAuthorisedModels::run($supervisor);
+    $supervisor->refresh();
+    actingAs($supervisor);
 
     get(route('grp.dashboard.show'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('warehouseOverview.totals.work')->has('warehouseOverview.organisations'));
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')->where('operations.section', 'operations'));
+
+    $response = getJson(route('grp.dashboard.operations'))->assertOk();
+    expect(collect($response->json('filters.options.warehouses'))->pluck('id')->all())->toBe([$warehouse->id])
+        ->and($response->json('can_see_value'))->toBeFalse()
+        ->and($response->json('pipeline.unassigned.amount'))->toBeNull()
+        ->and($response->json('pipeline.unassigned.count'))->toBe(DB::table('delivery_notes')->where('warehouse_id', $warehouse->id)->whereNull('deleted_at')->where('state', 'unassigned')->count())
+        ->and($response->json('sales.rows.0.value_today'))->toBeNull()
+        ->and(array_keys($response->json('attention')))->toBe(['urgent', 'at_risk', 'blocked', 'customer_service', 'out_of_stock', 'replenishment', 'overdue', 'stock_errors']);
+
+    getJson(route('grp.dashboard.operations', ['channel' => 'b2b', 'period' => 7, 'remember' => 1]))
+        ->assertOk()
+        ->assertJsonPath('filters.channel', 'b2b')
+        ->assertJsonPath('filters.period', 7);
+    expect($supervisor->refresh()->settings[GetOperationsDashboardData::SETTINGS_KEY]['channel'])->toBe('b2b');
+    getJson(route('grp.dashboard.operations'))->assertJsonPath('filters.channel', 'b2b');
+    getJson(route('grp.dashboard.operations', ['warehouse' => '', 'channel' => '', 'period' => 30, 'remember' => 1]))->assertOk();
+    getJson(route('grp.dashboard.operations'))->assertJsonPath('filters.channel', null)->assertJsonPath('filters.warehouse', null);
+
+    $unrelated = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($unrelated);
+    getJson(route('grp.dashboard.operations'))->assertForbidden();
 });
 
 test('shop dashboard tab data serves the sub-departments table', function () {
