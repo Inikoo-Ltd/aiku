@@ -2,7 +2,7 @@
 title: Le canal Manuel/API
 summary: Créez un canal Manuel/API pour vendre depuis votre propre site, une marketplace ou une application, passez des commandes à la main ou envoyez-les-nous via notre API.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: manuel, api, canal de vente, site propre, jeton api, intégration
 category: sales-channels
 series: manual
@@ -78,6 +78,8 @@ Ouvrez <b>API</b> sous votre canal. La page comporte ces onglets :
 - <b>API calls</b> : les requêtes faites par votre système.
 - <b>History</b> : les changements effectués sur votre compte.
 
+Commencez par les clients : chaque commande API appartient à un client, votre système crée donc d'abord le client. [Créer des clients avec l'API](/docs/creating-clients-with-the-api) donne un exemple complet de requête et de réponse, chaque champ et le sens de chaque erreur.
+
 ### Obtenir un jeton
 
 1. Appuyez sur <b>Generate API token</b>.
@@ -105,6 +107,7 @@ Si ni votre solde ni vos cartes ne couvrent la commande, elle est marquée <b>Un
 - <b>Mes commandes n'arrivent pas d'elles-mêmes.</b> Un canal Manuel/API ne récupère jamais de commandes depuis un site. Créez-les sur la page du client, ou envoyez-les depuis votre système via l'API. Si vous vendez sur une plateforme affichée sur la page <b>Add Sales Channel</b>, connectez cette plateforme comme son propre canal.
 - <b>Mes produits ne sont pas sur mon site.</b> Nous n'importons rien depuis un canal Manuel/API. Chargez-les vous-même dans votre site, avec le téléchargement CSV sur <b>My Products</b> ou via l'API.
 - <b>J'ai perdu mon jeton API.</b> Il ne peut pas être réaffiché. Générez un nouveau jeton, mettez-le dans votre système et supprimez l'ancien.
+- <b>L'API refuse de créer un client.</b> Envoyez l'adresse dans un objet <b>address</b>, avec le pays sous forme de code ISO dans <b>country_code</b>, par exemple <b>GB</b>. Voir [Créer des clients avec l'API](/docs/creating-clients-with-the-api).
 - <b>L'API répond que je ne peux pas créer ou changer de commandes.</b> Le jeton est en lecture seule. Générez un jeton sans <b>Read only</b> coché.
 - <b>L'API refuse mes requêtes pendant un moment.</b> Chaque jeton peut faire jusqu'à 120 requêtes par minute. Ralentissez votre système et réessayez après une minute.
 - <b>L'API indique « This order has no products yet ».</b> Ajoutez au moins un produit à la commande avant de la soumettre.

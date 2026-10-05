@@ -126,6 +126,52 @@ test('retina api dropshipping store client', function () {
     ]);
 });
 
+test('retina api store client takes the country as a two or three letter iso code', function (string $code) {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $response = postJson(route('retina.api.dropshipping.clients.create'), [
+        'contact_name' => 'Jane Test',
+        'address'      => [
+            'address_line_1' => '1 Test Street',
+            'locality'       => 'Sheffield',
+            'postal_code'    => 'S9 1XT',
+            'country_code'   => $code,
+            'city'           => 'not one of our fields',
+        ],
+    ]);
+
+    $response->assertCreated();
+    expect($response->json('data.address.country_code'))->toBe('GB')
+        ->and($response->json('data.address.country_id'))->toBe(DB::table('countries')->where('code', 'GB')->value('id'));
+})->with(['GB', 'gb', 'GBR']);
+
+test('retina api store client explains an unknown or missing country', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street', 'country_code' => 'XX'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['address.country_code' => 'Unknown country code "XX"']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['address.country_code' => 'The country is required']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), ['contact_name' => 'No Address'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['address' => 'delivery address is required']);
+});
+
+test('retina api store client still takes country_id', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street', 'country_id' => DB::table('countries')->where('code', 'ES')->value('id')],
+    ])->assertCreated()
+        ->assertJsonPath('data.address.country_code', 'ES');
+});
+
 test('retina api read only token can read but not write', function () {
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
 

@@ -2,7 +2,7 @@
 title: Het Manual/API-kanaal
 summary: Maak een Manual/API-kanaal aan om vanaf uw eigen website, marktplaats of app te verkopen, plaats bestellingen met de hand of stuur ze naar ons via onze API.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: handmatig, api, verkoopkanaal, eigen website, api-token, integratie
 category: sales-channels
 series: manual
@@ -78,6 +78,8 @@ Open <b>API</b> onder uw kanaal. De pagina heeft deze tabbladen:
 - <b>API calls</b>: de verzoeken die uw systeem deed.
 - <b>History</b>: wijzigingen aan uw account.
 
+Begin met klanten: elke API-bestelling hoort bij een klant, dus uw systeem maakt eerst de klant aan. [Klanten aanmaken met de API](/docs/creating-clients-with-the-api) bevat een volledig voorbeeld van verzoek en antwoord, elk veld en wat elke fout betekent.
+
 ### Een token krijgen
 
 1. Druk op <b>Generate API token</b>.
@@ -105,6 +107,7 @@ Dekken noch uw saldo noch uw kaarten de bestelling, dan wordt deze gemarkeerd al
 - <b>Mijn bestellingen komen niet vanzelf binnen.</b> Een Manual/API-kanaal haalt nooit bestellingen op van een website. Maak ze aan op de klantpagina, of stuur ze vanuit uw systeem via de API. Verkoopt u op een platform dat op de pagina <b>Add Sales Channel</b> staat, koppel dat platform dan als eigen kanaal.
 - <b>Mijn producten staan niet op mijn website.</b> Wij uploaden niets vanuit een Manual/API-kanaal. Laad ze zelf in uw website in, met de CSV-download op <b>My Products</b> of via de API.
 - <b>Ik ben mijn API-token kwijt.</b> Het kan niet opnieuw getoond worden. Genereer een nieuw token, zet het in uw systeem en verwijder het oude.
+- <b>De API weigert een klant aan te maken.</b> Stuur het adres in een <b>address</b>-object, met het land als ISO-code in <b>country_code</b>, bijvoorbeeld <b>GB</b>. Zie [Klanten aanmaken met de API](/docs/creating-clients-with-the-api).
 - <b>De API antwoordt dat ik geen bestellingen kan aanmaken of wijzigen.</b> Het token is alleen-lezen. Genereer een token zonder <b>Read only</b> aangevinkt.
 - <b>De API weigert mijn verzoeken voor een korte tijd.</b> Elk token kan tot 120 verzoeken per minuut doen. Vertraag uw systeem en probeer het na een minuut opnieuw.
 - <b>De API zegt "This order has no products yet".</b> Voeg minstens één product aan de bestelling toe voordat u deze indient.
