@@ -137,7 +137,7 @@ const readOnlyCellClass = "inline-flex items-center gap-1 p-2"
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <StaffTasksSummary :summary="listSummary" />
+    <StaffTasksSummary :summary="listSummary" class="mb-3" />
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
         <Table :resource="data" class="mt-4 max-md:[&_td.max-w-0]:max-w-none max-md:[&_th.max-w-0]:max-w-none">
             <template #cell(reference)="{ item }">

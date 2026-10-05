@@ -18,6 +18,7 @@
  */
 
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -1048,4 +1049,69 @@ test('iris side basket sends the customer credit balance', function () {
     (fn () => $this->shop = $order->shop)->call($fetchBasket);
 
     expect((float) $fetchBasket->jsonResponse($order->refresh())['balance'])->toBe(25.5);
+});
+
+test('department families list takes collection families only from active collections attached to the department', function () {
+    [, $product]       = createProduct($this->shop);
+    $department        = $product->department;
+    $departmentFamily  = $product->family;
+
+    $otherDepartmentData = ProductCategory::factory()->definition();
+    data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $otherDepartment = StoreProductCategory::make()->action($this->shop, $otherDepartmentData);
+
+    $storeOtherFamily = function () use ($otherDepartment): ProductCategory {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+
+        return StoreProductCategory::make()->action($otherDepartment, $familyData);
+    };
+
+    $familyFromDepartmentCollection = $storeOtherFamily();
+    $familyFromOtherModelCollection = $storeOtherFamily();
+    $familyFromInactiveCollection   = $storeOtherFamily();
+
+    $families = [$departmentFamily, $familyFromDepartmentCollection, $familyFromOtherModelCollection, $familyFromInactiveCollection];
+    foreach ($families as $family) {
+        StoreProductCategoryWebpage::make()->action($family);
+    }
+    DB::table('product_categories')->whereIn('id', collect($families)->pluck('id'))->update(['show_in_website' => true, 'state' => 'active']);
+    DB::table('webpages')->where('model_type', 'ProductCategory')->whereIn('model_id', collect($families)->pluck('id'))->update(['state' => 'live']);
+
+    $collectionHolding = function (string $code, string $state, string $attachedModelType, ProductCategory $family) use ($department) {
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code'        => $code,
+            'name'        => $code,
+            'description' => $code,
+        ]);
+        DB::table('collections')->where('id', $collection->id)->update(['state' => $state]);
+
+        DB::table('model_has_collections')->insert([
+            'collection_id' => $collection->id,
+            'model_type'    => $attachedModelType,
+            'model_id'      => $department->id,
+            'type'          => 'department',
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+        DB::table('collection_has_models')->insert([
+            'collection_id' => $collection->id,
+            'model_type'    => 'ProductCategory',
+            'model_id'      => $family->id,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+    };
+
+    $collectionHolding('DeptCol', 'active', 'ProductCategory', $familyFromDepartmentCollection);
+    $collectionHolding('OtherCol', 'active', 'Shop', $familyFromOtherModelCollection);
+    $collectionHolding('OffCol', 'inactive', 'ProductCategory', $familyFromInactiveCollection);
+
+    $listedFamilyIds = GetFamiliesUnderDepartmentPage::run($department->refresh())->pluck('id');
+
+    expect($listedFamilyIds)
+        ->toContain($departmentFamily->id)
+        ->toContain($familyFromDepartmentCollection->id)
+        ->not->toContain($familyFromOtherModelCollection->id)
+        ->not->toContain($familyFromInactiveCollection->id);
 });

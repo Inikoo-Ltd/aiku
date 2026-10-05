@@ -23,10 +23,11 @@ import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faToolbox, faUserHeadset, faComment, faComments, faEnvelope, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faBan } from "@fal"
+import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faToolbox, faUserHeadset, faComment, faComments, faEnvelope, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faBan, faPencil } from "@fal"
+import { editContentUrl } from "@/Composables/useEditContentUrl"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck, faWhatsapp, faComment, faComments, faEnvelope, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faBan)
+library.add(faPencil, faLifeRing,faToolbox, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck, faWhatsapp, faComment, faComments, faEnvelope, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle, faBan)
 
 const emit = defineEmits<{
     (e: "closed"): void
@@ -172,7 +173,16 @@ const close = () => {
                             >· {{ displayTicket.module_label }}</span
                         >
                     </div>
-                    <h2 class="text-lg font-semibold leading-snug mb-3">{{ displayTicket.subject }}</h2>
+                    <div class="mb-3 flex items-start justify-between gap-2">
+                        <h2 class="text-lg font-semibold leading-snug">{{ displayTicket.subject }}</h2>
+                        <Link
+                            v-if="controls?.can_edit_content"
+                            v-tooltip="ctrans('Edit subject, description and files')"
+                            :href="editContentUrl(ticketRoute(displayTicket.reference))"
+                            class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600">
+                            <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                        </Link>
+                    </div>
                     <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
                         <span class="flex flex-wrap items-center gap-1"
                             >{{ ctrans("Raised") }}: {{ shortDate(displayTicket.created_at) }}

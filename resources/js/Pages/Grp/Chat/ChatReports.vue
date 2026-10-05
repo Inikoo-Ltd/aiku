@@ -510,9 +510,9 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 								type="doughnut"
 								:data="donutChart"
 								:options="donutOptions"
-								class="h-full" />
+								class="relative z-10 h-full" />
 							<div
-								class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+								class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
 								<span class="text-3xl font-bold">{{ stats.conversations }}</span>
 								<span class="text-xs text-gray-500">{{ ctrans("Total") }}</span>
 							</div>
