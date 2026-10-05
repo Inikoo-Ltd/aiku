@@ -34,7 +34,6 @@ class StoreCustomerFromWix extends OrgAction
             'company_name'    => Arr::get($contact, 'company') ?: $contactName,
             'email'           => $email,
             'external_id'     => $externalId,
-            'reference'       => $externalId,
             'contact_address' => $this->getFormattedAddress($wixOrder),
         ];
 
@@ -47,7 +46,7 @@ class StoreCustomerFromWix extends OrgAction
             ->first();
 
         if ($customer) {
-            return UpdateCustomer::make()->action(customer: $customer, modelData: Arr::except($customerData, ['reference']), strict: false);
+            return UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
         }
 
         return StoreCustomer::make()->action(shop: $shop, modelData: $customerData, strict: false);
