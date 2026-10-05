@@ -14,32 +14,14 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\DB;
 
 trait WithHydrateDeliveryNotes
 {
     public function getDeliveryStateNotesStats(DeliveryNoteStateEnum $state, Group|Organisation|Shop $model): array
     {
-        $query = DB::table('delivery_notes');
-
-        if ($model instanceof Shop) {
-            $query->where('delivery_notes.shop_id', $model->id);
-        } elseif ($model instanceof Group) {
-            $query->where('delivery_notes.group_id', $model->id);
-        } elseif ($model instanceof Organisation) {
-            $query->where('delivery_notes.organisation_id', $model->id);
-        }
-
-        $query->whereNull('delivery_notes.deleted_at')
-            ->where('delivery_notes.state', $state->value)
-            ->leftJoin('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
-            ->distinct('delivery_note_items.id')
-            ->count('delivery_note_items.id');
-
         return [
             'number_delivery_notes_state_'.$state->value => $model->deliveryNotes()->where('state', $state)->count(),
             'weight_delivery_notes_state_'.$state->value => $model->deliveryNotes()->where('state', $state)->sum('weight'),
-            //      'number_items_delivery_notes_state_'.$state->value => $query,
         ];
     }
 

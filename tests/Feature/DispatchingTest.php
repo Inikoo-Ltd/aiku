@@ -19,6 +19,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
 use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
@@ -5624,4 +5625,40 @@ test('the picking list shows which set sold only complete an item is a part of (
         ->and($indivisibleSet['sets_ordered'])->toBe((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus)
         ->and($indivisibleSet['route'])->toBeNull()
         ->and($part)->toBe(['code' => $tradeUnit->code, 'name' => $tradeUnit->name, 'quantity' => 9.0]);
+});
+
+test('shop delivery note state hydrator does not query delivery note items', function () {
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    ShopHydrateDeliveryNotesState::run($this->shop->id, DeliveryNoteStateEnum::HANDLING);
+
+    expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'delivery_note_items')))->toBeEmpty()
+        ->and($this->shop->orderHandlingStats()->first())->not->toBeNull();
+});
+
+test('delivery note items list only aggregates packings of its own delivery note', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    [$otherDeliveryNote, $otherDeliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    StorePacking::make()->action($deliveryNoteItem, $this->user, ['quantity' => 4]);
+    StorePacking::make()->action($otherDeliveryNoteItem, $this->user, ['quantity' => 3]);
+    StorePacking::make()->action($otherDeliveryNoteItem, $this->user, ['quantity' => 2]);
+
+    request()->setRouteResolver(fn () => (new Route('GET', 'test', []))->name('test'));
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    $row = IndexDeliveryNoteItems::make()->handle($deliveryNote->refresh())->firstWhere('id', $deliveryNoteItem->id);
+    $otherRow = IndexDeliveryNoteItems::make()->handle($otherDeliveryNote->refresh())->firstWhere('id', $otherDeliveryNoteItem->id);
+
+    expect((float) $row->packings_quantity)->toBe(4.0)
+        ->and($row->packings_count)->toBe(1)
+        ->and((float) $otherRow->packings_quantity)->toBe(5.0)
+        ->and($otherRow->packings_count)->toBe(2)
+        ->and(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "packings" where "delivery_note_id" = ?')))->not->toBeEmpty();
 });
