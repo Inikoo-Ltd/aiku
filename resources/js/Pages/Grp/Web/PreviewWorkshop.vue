@@ -9,7 +9,7 @@ import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { ref, onMounted, provide, onBeforeUnmount, inject, watch, computed } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
-import { sendMessageToParent } from '@/Composables/Workshop'
+import { sendMessageToParent, irisStyleVariables } from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
 import { router } from '@inertiajs/vue3'
 import "@/../css/Iris/editor.css"
@@ -83,6 +83,7 @@ onMounted(() => {
     layout.app.webpage_layout = props?.layout
     updateIrisLayout(isPreviewLoggedIn.value)
     setColorStyleRoot(props.layout?.color)
+    irisStyleVariables(props.layout?.color)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
@@ -115,6 +116,9 @@ onBeforeUnmount(() => {
 })
 
 
+const isBoxedLayout = computed(() => props.layout?.layout === 'blog' || !props.layout?.layout)
+const isFooterReadOnly = computed(() => isPreviewMode.value || ['grp.websites.preview', 'grp.org.shops.show.web.webpages.snapshot.preview'].includes(route().current() ?? ''))
+
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
 const compSidebar = computed(() => {
@@ -136,7 +140,7 @@ watch(isPreviewLoggedIn, (value) => {
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
 
-        <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
+        <div :class="isBoxedLayout ? 'container max-w-7xl mx-auto shadow-xl' : 'w-full'">
             <div>
                 <RenderHeaderMenu
                     :key="keyHeader"
@@ -161,10 +165,14 @@ watch(isPreviewLoggedIn, (value) => {
                 </template>
             </div>
 
-            <!-- Footer -->
             <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
-                v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
+                :is="isFooterReadOnly ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+                v-model="footer.data.data.fieldValue"
+                :keyTemplate="footer.data.code"
+                :screenType
+                :previewMode="isFooterReadOnly"
+                :colorThemed="props.layout"
+                @update:model-value="updateData(footer.data)" />
         </div>
     </div>
 
