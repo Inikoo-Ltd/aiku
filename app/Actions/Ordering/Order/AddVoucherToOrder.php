@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferHasCustomer;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -41,7 +42,18 @@ class AddVoucherToOrder extends OrgAction
             ->where('voucher', $voucherCode)
             ->first();
 
-        if (!$offer) {
+        $customerListEntry = OfferHasCustomer::where('shop_id', $order->shop_id)
+            ->where('customer_id', $order->customer_id)
+            ->when(
+                $offer,
+                fn ($query) => $query->where('offer_id', $offer->id),
+                fn ($query) => $query->where('voucher', $voucherCode)
+            )
+            ->first();
+
+        $offer ??= $customerListEntry?->offer;
+
+        if (!$offer || ($offer->hasCustomerList() && !$customerListEntry)) {
             throw ValidationException::withMessages([
                 'voucher' => __('Voucher not found.')
             ]);

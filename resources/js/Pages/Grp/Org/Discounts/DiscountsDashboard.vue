@@ -7,6 +7,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue";
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue";
+import CustomerListVouchers from "@/Components/Offers/CustomerListVouchers.vue";
 import { faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faSortAmountUp, faHandHoldingUsd, faChartNetwork } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -23,6 +24,11 @@ const props = defineProps<{
         currency: {
             code: string
         }
+    }
+    customer_list_vouchers: {
+        vouchers: any[]
+        can_edit: boolean
+        shop_data: any
     }
 }>();
 
@@ -46,5 +52,10 @@ const props = defineProps<{
         :settings="settings"
         :currentTab="blocks.current_tab"
     />
-
+    <CustomerListVouchers
+        :vouchers="customer_list_vouchers.vouchers"
+        :canEdit="customer_list_vouchers.can_edit"
+        :shopData="customer_list_vouchers.shop_data"
+        :currencyCode="data.currency.code"
+    />
 </template>

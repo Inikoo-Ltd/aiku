@@ -37,6 +37,7 @@ import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProd
 import PreviewFreeItems from '@/Components/Offers/PreviewOffer/PreviewFreeItems.vue'
 import CustomerViewOffer from '@/Components/Offers/PreviewOffer/CustomerViewOffer.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableOfferCustomerList from '@/Components/Offers/TableOfferCustomerList.vue'
 
 library.add(faFlagCheckered)
 
@@ -52,6 +53,7 @@ const props = defineProps<{
         current: string
         navigation: Record<string, { title: string; icon?: string; type?: string; align?: string }>
     }
+    vouchers?: object
     customers?: object
     orders?: object
     history?: object
@@ -167,6 +169,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
+        vouchers: TableOfferCustomerList,
         customers: TableCustomers,
         orders: TableOrders,
         history: TableHistories

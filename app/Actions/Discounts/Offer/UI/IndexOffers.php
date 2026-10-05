@@ -22,6 +22,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
+use App\Models\Discounts\OfferHasCustomer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -81,8 +82,12 @@ class IndexOffers extends OrgAction
             $query->where('offers.trigger_id', $parent->id);
             $query->where('offers.trigger_type', class_basename(Product::class));
         } elseif ($parent instanceof Customer) {
-            $query->where('offers.trigger_id', $parent->id);
-            $query->where('offers.trigger_type', class_basename(Customer::class));
+            $query->where(function ($query) use ($parent) {
+                $query->where(function ($query) use ($parent) {
+                    $query->where('offers.trigger_id', $parent->id)
+                        ->where('offers.trigger_type', class_basename(Customer::class));
+                })->orWhereIn('offers.id', OfferHasCustomer::where('customer_id', $parent->id)->select('offer_id'));
+            });
         } else {
             $query->where('offers.shop_id', $parent->id);
         }
@@ -172,6 +177,14 @@ class IndexOffers extends OrgAction
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
         $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
+        if ($parent instanceof Customer) {
+            $query->leftJoin('offer_has_customers', function ($join) use ($parent) {
+                $join->on('offer_has_customers.offer_id', '=', 'offers.id')
+                    ->where('offer_has_customers.customer_id', $parent->id);
+            });
+            $selects[] = DB::raw('CASE WHEN offer_has_customers.id IS NOT NULL THEN COALESCE(offer_has_customers.code, offers.code) END AS voucher_code');
+        }
+
         if ($filterByOfferType) {
             if ($filterByOfferType == 'offer_only') {
                 $query->whereNotIn('offers.type', ['VolGr Gift', 'GR Amnesty']);
@@ -220,6 +233,9 @@ class IndexOffers extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true, searchable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true);
             $table->column(key: 'label', label: __('Label'), sortable: false);
+            if ($parent instanceof Customer) {
+                $table->column(key: 'voucher_code', label: __('Voucher code'), sortable: false);
+            }
             if ($parent instanceof ProductCategory || $parent instanceof Product) {
                 $table->column(key: 'type_icon', label: __('Type'), sortable: true, type: 'icon', );
             } else {

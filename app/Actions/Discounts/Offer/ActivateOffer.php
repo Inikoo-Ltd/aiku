@@ -58,7 +58,7 @@ class ActivateOffer extends OrgAction
         $this->handleOfferSideEffects($offer, false);
 
 
-        if (!$offer->voucher) {
+        if (!$offer->voucher && !$offer->hasCustomerList()) {
             if ($offer->customer_id) {
                 RecalculateCustomerTotalsOrdersInBasket::dispatch($offer->customer_id)->delay($this->hydratorsDelay);
             } else {

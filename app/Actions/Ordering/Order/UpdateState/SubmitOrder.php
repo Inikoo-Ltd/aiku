@@ -437,14 +437,14 @@ class SubmitOrder extends OrgAction
         if (!empty($discountVoucherData) && key_exists($order->offer_voucher_id, $discountVoucherData)) {
             $voucherOfferData = $discountVoucherData[$order->offer_voucher_id];
             $minAmount        = Arr::get($voucherOfferData, 'min_amount', 0);
-            if ($minAmount <= $order->gross_amount) {
-                $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', Arr::get($voucherOfferData, 'id'))->first();
-                if ($allowanceData) {
+            if ($minAmount <= $order->gross_amount && !$this->orderHasGiftFromOffer($order, Arr::get($voucherOfferData, 'id'))) {
+                $allowances = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', Arr::get($voucherOfferData, 'id'))->orderBy('id')->get();
+                foreach ($allowances as $allowanceData) {
                     $allowanceGiftData = json_decode($allowanceData->data, true);
                     /** @var Product $gift */
                     $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
                     $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
-                    if ($quantity > 0 && $gift && !$this->orderHasGiftFromOffer($order, Arr::get($voucherOfferData, 'id'))) {
+                    if ($quantity > 0 && $gift) {
                         $giftTransaction = StoreTransaction::make()->action(
                             $order,
                             $gift->currentHistoricProduct,
@@ -461,7 +461,7 @@ class SubmitOrder extends OrgAction
                                 'o' => [
                                     'oc' => Arr::get($voucherOfferData, 'offer_campaign_id'),
                                     'o'  => Arr::get($voucherOfferData, 'id'),
-                                    'oa' => Arr::get($voucherOfferData, 'offer_allowance_id'),
+                                    'oa' => $allowanceData->id,
                                     't'  => 'gift',
                                     'p'  => 0,
                                     'l'  => Arr::get($voucherOfferData, 'name'),
@@ -476,7 +476,7 @@ class SubmitOrder extends OrgAction
                             'model_id'              => $giftTransaction->model_id,
                             'offer_campaign_id'     => Arr::get($voucherOfferData, 'offer_campaign_id'),
                             'offer_id'              => Arr::get($voucherOfferData, 'id'),
-                            'offer_allowance_id'    => Arr::get($voucherOfferData, 'offer_allowance_id'),
+                            'offer_allowance_id'    => $allowanceData->id,
                             'discounted_amount'     => 0,
                             'discounted_percentage' => 0,
                             'is_gift'               => true,

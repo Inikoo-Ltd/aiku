@@ -17,11 +17,13 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\DiscountsDashboardTabsEnum;
 use App\Http\Resources\Dashboards\DashboardHeaderOffersResource;
 use App\Http\Resources\Dashboards\DashboardOffersResource;
 use App\Http\Resources\Dashboards\DashboardTotalOffersResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -110,9 +112,35 @@ class ShowDiscountsDashboard extends OrgAction
                 ],
                 'data'        => [
                     'currency' => $this->shop->currency
-                ]
+                ],
+                'customer_list_vouchers' => [
+                    'vouchers'  => GetCustomerListVouchersOverview::run($this->shop),
+                    'can_edit'  => $request->user()->authTo("discounts.{$this->shop->id}.edit"),
+                    'shop_data' => $this->getCustomerListVoucherShopData(),
+                ],
             ]
         );
+    }
+
+    private function getCustomerListVoucherShopData(): ?array
+    {
+        $vouchersCampaign = OfferCampaign::where('shop_id', $this->shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
+
+        if (!$vouchersCampaign) {
+            return null;
+        }
+
+        return [
+            'id'            => $this->shop->id,
+            'slug'          => $this->shop->slug,
+            'organisation'  => $this->organisation->slug,
+            'offercampaign' => $vouchersCampaign->slug,
+            'currency_code' => $this->shop->currency->code,
+            'default_dates' => [
+                'start' => now()->toDateString(),
+                'end'   => now()->addDays(30)->toDateString(),
+            ],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array
