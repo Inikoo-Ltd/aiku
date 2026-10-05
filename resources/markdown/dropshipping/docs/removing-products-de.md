@@ -2,7 +2,7 @@
 title: Produkte aus einem Kanal entfernen
 summary: Nehmen Sie ein Produkt aus Meine Produkte, oder lösen Sie nur seine Verknüpfung mit Ihrem Shop, und erfahren Sie, was in jedem Fall mit dem Eintrag in Ihrem Shop passiert.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: Produkte, meine produkte, entfernen, löschen, Verknüpfung aufheben, eingestellt
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ Drücken Sie bei einem manuellen Kanal das rote Kreuz <b>Remove product from lis
 
 Dies funktioniert bei Plattform-Kanälen, nicht bei einem manuellen Kanal.
 
-1. Kreuzen Sie die Produkte in der Liste an.
+1. Kreuzen Sie die Produkte in der Liste an. Um alle Produkte der Seite anzukreuzen, kreuzen Sie das Kästchen oben in der Spalte mit den Kästchen an. Um schneller zu arbeiten, zeigen Sie mit der Auswahl unter der Liste mehr Zeilen pro Seite an, bis zu 150.
 2. Drücken Sie eine der Schaltflächen, die über der Liste erscheinen:
    - <b>Unlink (...)</b>: löst die Verknüpfung mit Ihrem Shop. Die Produkte bleiben in <b>Meine Produkte</b>, und die Einträge bleiben in Ihrem Shop.
    - <b>Unlink & Delete (...)</b>: löst die Verknüpfung und entfernt die Produkte aus <b>Meine Produkte</b>. Die Einträge bleiben in Ihrem Shop, löschen Sie sie also dort, wenn Sie sie nicht mehr wollen.
 
-Für diese beiden Schaltflächen gibt es kein Bestätigungsfenster. Prüfen Sie, was Sie angekreuzt haben, bevor Sie drücken.
+Beide Schaltflächen öffnen ein Fenster, das zeigt, wie viele Produkte Sie angekreuzt haben, und Sie um Bestätigung bittet. Lesen Sie es, bevor Sie <b>Yes</b> drücken: Keine der beiden Aktionen lässt sich rückgängig machen. Nach <b>Unlink & Delete</b> sind die Produkte mit den Namen, Preisen und Beschreibungen, die Sie dafür festgelegt haben, aus <b>Meine Produkte</b> verschwunden, und Sie müssen sie selbst erneut hinzufügen, wenn Sie es sich anders überlegen.
+
+Um Hunderte von Produkten zu entfernen, zum Beispiel nach einem versehentlichen Import von zu vielen, wiederholen Sie diese Schritte Seite für Seite: Zeigen Sie 150 Zeilen an, kreuzen Sie das Kästchen oben an, drücken Sie <b>Unlink & Delete (...)</b>, und die nächsten Produkte rücken auf die Seite nach. Wenn Sie mehr als 20 Produkte auf einmal entfernen, entfernen wir sie im Hintergrund, etwa eines pro Sekunde: Laden Sie die Seite nach einigen Minuten neu, um die Liste ohne sie zu sehen.
 
 ## Ein Bundle entfernen
 

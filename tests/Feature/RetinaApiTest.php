@@ -857,3 +857,34 @@ test('retina api refuses route bound records belonging to another customer', fun
 
     expect($otherPortfolio->refresh()->customer_product_name)->not->toBe('hijacked');
 });
+
+test('bulk unlink and delete only removes products of the channel in the address', function () {
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->fulfilmentChannel, $this->fulfilmentProduct, []);
+    $ownPortfolio   = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::make()->handle(
+        $this->dropshippingChannel,
+        ['portfolios' => [$otherPortfolio->id, $ownPortfolio->id]]
+    );
+
+    expect(\App\Models\Dropshipping\Portfolio::find($otherPortfolio->id))->not->toBeNull()
+        ->and(\App\Models\Dropshipping\Portfolio::find($ownPortfolio->id))->toBeNull();
+});
+
+test('bulk unlink and delete queues a large selection instead of running past the request limit', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $first = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    $ids   = [$first->id];
+    foreach (range(1, \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::SYNC_LIMIT) as $offset) {
+        $copy          = $first->replicate(['ulid', 'source_id']);
+        $copy->item_id = 900000000 + $offset;
+        $copy->save();
+        $ids[] = $copy->id;
+    }
+
+    $result = \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::make()->handle($this->dropshippingChannel, ['portfolios' => $ids]);
+
+    expect($result)->toBe(['deleted' => 0, 'queued' => count($ids)]);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, count($ids));
+});

@@ -1,7 +1,7 @@
 ---
 title: Removing products from a channel
 summary: Take a product out of My Products, or only break its link with your store, and know what happens to the listing in your store in each case.
-date: 2026-09-25
+date: 2026-10-05
 tags: products, my products, remove, delete, unlink, discontinued
 category: products
 help_routes: retina.dropshipping.customer_sales_channels.portfolios.index
@@ -53,12 +53,14 @@ On a manual channel press the red cross, <b>Remove product from list</b>. There 
 
 This works on platform channels, not on a manual channel.
 
-1. Tick the products in the list.
+1. Tick the products in the list. To tick every product on the page, tick the box at the top of the tick column. To work faster, show more rows per page with the selector under the list, up to 150.
 2. Press one of the buttons that appear above the list:
    - <b>Unlink (...)</b>: breaks the link with your store. The products stay in <b>My Products</b> and the listings stay in your store.
    - <b>Unlink & Delete (...)</b>: breaks the link and removes the products from <b>My Products</b>. The listings stay in your store, so delete them there if you no longer want them.
 
-There is no confirmation window for these two buttons. Check what you ticked before you press.
+Both buttons open a window that shows how many products you ticked and asks you to confirm. Read it before you press <b>Yes</b>: neither can be undone. After <b>Unlink & Delete</b> the products, with the names, prices and descriptions you set for them, are gone from <b>My Products</b>, and you need to add them again yourself if you change your mind.
+
+To clear hundreds of products, for example after importing too many by mistake, repeat these steps page by page: show 150 rows, tick the box at the top, press <b>Unlink & Delete (...)</b>, and the next products move up into the page. When you remove more than 20 products at once, we remove them in the background, about one per second: refresh the page after a few minutes to see the list without them.
 
 ## Remove a bundle
 

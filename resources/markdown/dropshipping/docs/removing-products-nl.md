@@ -2,7 +2,7 @@
 title: Producten verwijderen uit een kanaal
 summary: Haal een product uit Mijn producten, of verbreek alleen zijn koppeling met uw winkel, en weet wat er in elk geval gebeurt met de vermelding in uw winkel.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: producten, mijn producten, verwijderen, wissen, ontkoppelen, stopgezet
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ Druk op een handmatig kanaal op het rode kruis, <b>Remove product from list</b>.
 
 Dit werkt op platformkanalen, niet op een handmatig kanaal.
 
-1. Vink de producten in de lijst aan.
+1. Vink de producten in de lijst aan. Om alle producten op de pagina aan te vinken, vinkt u het vakje boven aan de kolom met vinkvakjes aan. Om sneller te werken, toont u met de keuzelijst onder de lijst meer rijen per pagina, tot 150.
 2. Druk op een van de knoppen die boven de lijst verschijnen:
    - <b>Unlink (...)</b>: verbreekt de koppeling met uw winkel. De producten blijven in <b>Mijn producten</b> en de vermeldingen blijven in uw winkel.
    - <b>Unlink & Delete (...)</b>: verbreekt de koppeling en verwijdert de producten uit <b>Mijn producten</b>. De vermeldingen blijven in uw winkel, dus verwijder ze daar als u ze niet meer wilt.
 
-Er is geen bevestigingsvenster voor deze twee knoppen. Controleer wat u heeft aangevinkt voordat u drukt.
+Beide knoppen openen een venster dat laat zien hoeveel producten u heeft aangevinkt en u om bevestiging vraagt. Lees het voordat u op <b>Yes</b> drukt: geen van beide acties kan ongedaan worden gemaakt. Na <b>Unlink & Delete</b> zijn de producten, met de namen, prijzen en beschrijvingen die u ervoor heeft ingesteld, verdwenen uit <b>Mijn producten</b>, en u moet ze zelf opnieuw toevoegen als u zich bedenkt.
+
+Om honderden producten te wissen, bijvoorbeeld nadat u er per ongeluk te veel hebt geïmporteerd, herhaalt u deze stappen pagina voor pagina: toon 150 rijen, vink het vakje bovenaan aan, druk op <b>Unlink & Delete (...)</b>, en de volgende producten schuiven op naar de pagina. Wanneer u meer dan 20 producten tegelijk verwijdert, verwijderen wij ze op de achtergrond, ongeveer één per seconde: vernieuw de pagina na een paar minuten om de lijst zonder deze producten te zien.
 
 ## Een bundel verwijderen
 
