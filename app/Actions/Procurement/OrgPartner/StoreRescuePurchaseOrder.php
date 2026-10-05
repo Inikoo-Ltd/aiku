@@ -119,7 +119,7 @@ class StoreRescuePurchaseOrder extends OrgAction
         $product   = GetPartnerSellingProduct::run($orgPartner, $orgStock->stock_id);
         $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
 
-        return $unitPrice === null ? null : round($unitPrice * $quantity, 2) * (float) ($purchaseOrder->org_exchange ?: 1);
+        return $unitPrice === null ? null : round($unitPrice * GetPartnerBuyingPriceFactor::run($orgPartner) * $quantity, 2) * (float) ($purchaseOrder->org_exchange ?: 1);
     }
 
     public function rules(): array

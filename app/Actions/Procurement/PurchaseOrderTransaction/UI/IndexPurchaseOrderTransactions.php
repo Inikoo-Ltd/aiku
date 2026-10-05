@@ -9,7 +9,9 @@
 namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Models\Procurement\OrgPartner;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
@@ -29,6 +31,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -166,14 +169,52 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $partnerLeadTimeDays = $parent->parent instanceof OrgPartner ? GetPartnerLeadTime::run($parent->parent)['days'] : null;
+        $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
         $paginator->getCollection()->each(
             fn (PurchaseOrderTransaction $transaction) => $transaction
                 ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
                 ->setAttribute('stock_deliveries', $stockDeliveries->get($transaction->org_stock_id))
                 ->setAttribute('buying_signals', GetOrgStockBuyingSignals::run($transaction->orgStock, $transaction->supplierProduct, $partnerLeadTimeDays))
+                ->setAttribute('partner_stock', $partnerStocks->get($transaction->org_stock_id))
         );
+        IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent);
 
         return $paginator;
+    }
+
+    /**
+     * The partner's own stock of each of our SKOs, and the carton the partner buys it in from its
+     * primary supplier. Cartons differ between organisations and are often wrong, so they are a guide only.
+     *
+     * @return Collection<int, object{stock: float|null, units_per_carton: int|null, hub_name: string|null}>
+     */
+    private function partnerStocks(OrgPartner $orgPartner, Collection $orgStockIds): Collection
+    {
+        if ($orgStockIds->isEmpty()) {
+            return collect();
+        }
+
+        $primarySupplierProduct = DB::table('org_stock_has_org_supplier_products as link')
+            ->join('org_supplier_products as osp', 'osp.id', 'link.org_supplier_product_id')
+            ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
+            ->whereColumn('link.org_stock_id', 'seller.id')
+            ->where('link.status', true)
+            ->orderBy('link.local_priority')
+            ->select('sp.units_per_carton')
+            ->limit(1);
+
+        return DB::table('org_stocks as buyer')
+            ->join('org_stocks as seller', function ($join) use ($orgPartner) {
+                $join->on('seller.stock_id', 'buyer.stock_id')
+                    ->where('seller.organisation_id', $orgPartner->partner_id);
+            })
+            ->leftJoinLateral($primarySupplierProduct, 'primary_sp')
+            ->whereIn('buyer.id', $orgStockIds)
+            ->select(['buyer.id as org_stock_id', 'primary_sp.units_per_carton'])
+            ->selectRaw('seller.quantity_in_locations * seller.packed_in / nullif(buyer.packed_in, 0) as stock')
+            ->selectRaw(GetPartnerStockCoverBuckets::hubNameSql('buyer.stock_id').' as hub_name')
+            ->get()
+            ->keyBy('org_stock_id');
     }
 
 

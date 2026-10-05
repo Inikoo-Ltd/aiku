@@ -68,6 +68,18 @@ class GetPartnerStockCoverBuckets
     }
 
     /**
+     * The manufacturing hub that sells this stock too. A rescue may still buy it from a sister company
+     * when the hub cannot ship in time, but the hub is the normal place to buy it, so it is flagged.
+     */
+    public static function hubNameSql(string $stockIdExpression): string
+    {
+        return "(select hub.name from org_stocks hub_os
+            join organisations hub on hub.id = hub_os.organisation_id and hub.is_manufacturing_hub
+            where hub_os.stock_id = $stockIdExpression and hub_os.state = '".OrgStockStateEnum::ACTIVE->value."'
+            order by hub.id limit 1)";
+    }
+
+    /**
      * Everything this partner can sell us, with our own stock alongside it when we carry it.
      */
     private function scopedQuery(OrgPartner $orgPartner): Builder
@@ -248,7 +260,7 @@ class GetPartnerStockCoverBuckets
         [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadDays);
 
         return $query
-            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays, $orgPartner)} as quantity, s.days_of_cover, s.projected_lost_revenue")
+            ->selectRaw("os.id as org_stock_id, os.slug, os.code, os.name, os.health_rank, os.quantity_available as our_stock, $expression as bucket, $spare as spare, {$this->rescueQuantity($spare, $leadDays, $orgPartner)} as quantity, s.days_of_cover, s.projected_lost_revenue, ".self::hubNameSql('os.stock_id').' as hub_name')
             ->orderByRaw('s.projected_lost_revenue desc nulls last')
             ->orderBy('os.health_rank')
             ->orderByRaw("case $expression when 'out' then 1 when 'w1' then 2 else 3 end")
@@ -273,6 +285,7 @@ class GetPartnerStockCoverBuckets
             'quantity'      => (int) $row->quantity,
             'days_of_cover' => $row->days_of_cover === null ? null : (float) $row->days_of_cover,
             'lost'          => $row->projected_lost_revenue === null ? null : (float) $row->projected_lost_revenue,
+            'hub_name'      => $row->hub_name,
         ];
     }
 

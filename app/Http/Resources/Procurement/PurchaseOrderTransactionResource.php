@@ -39,6 +39,10 @@ class PurchaseOrderTransactionResource extends JsonResource
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
             'stock_cover'          => $transaction->buying_signals ?? GetOrgStockBuyingSignals::run($orgStock, $supplierProduct),
             'stock_deliveries'     => $transaction->stock_deliveries,
+            'other_open_purchase_orders' => $transaction->other_open_purchase_orders ?? [],
+            'partner_stock'        => $transaction->partner_stock?->stock === null ? null : (float) $transaction->partner_stock->stock,
+            'partner_units_per_carton' => $transaction->partner_stock?->units_per_carton,
+            'hub_name'             => $transaction->partner_stock?->hub_name,
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,
