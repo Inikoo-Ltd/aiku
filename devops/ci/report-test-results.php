@@ -36,9 +36,11 @@ if ($xml === false) {
             break;
         }
         $message = (string) ($testcase->failure ?? $testcase->error);
+        $lines   = array_values(array_filter(array_map('trim', explode("\n", $message)), fn ($line) => $line !== '' && $line !== trim((string) $testcase['name'])));
+        preg_match('~(tests/\S+\.php:\d+)~', $message, $location);
         $results['failed'][] = [
             'test'    => trim(((string) $testcase['class'] ?: (string) $testcase['file']).' › '.$testcase['name']),
-            'message' => mb_substr(trim(strtok($message, "\n") ?: ''), 0, 300),
+            'message' => mb_substr(implode("\n", array_unique([...array_slice(array_filter($lines, fn ($line) => !str_starts_with($line, '/')), 0, 6), ...($location[1] ?? null ? [$location[1]] : [])])), 0, 500),
         ];
     }
 }
