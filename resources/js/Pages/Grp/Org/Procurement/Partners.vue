@@ -88,6 +88,7 @@ interface PartnerCard {
 				quantity: number
 				days_of_cover: number | null
 				lost: number | null
+				hub_name: string | null
 			}[]
 		}
 	}
@@ -381,6 +382,10 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										</td>
 										<td class="truncate py-0.5 font-medium text-gray-700">
 											{{ item.code }}
+											<span
+												v-if="item.hub_name"
+												v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
+												class="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
 										</td>
 										<td class="py-0.5 text-gray-600">{{ item.rank }}</td>
 										<td class="py-0.5 text-right tabular-nums text-gray-700">

@@ -27,6 +27,7 @@ interface RescueItem {
 	quantity: number
 	days_of_cover: number | null
 	lost: number | null
+	hub_name: string | null
 }
 
 const props = defineProps<{
@@ -130,7 +131,13 @@ const bucketClass = {
 						v-for="item in items.data"
 						:key="item.org_stock_id"
 						class="[&_td]:px-3 [&_td]:py-1.5">
-						<td class="whitespace-nowrap font-medium text-gray-900">{{ item.code }}</td>
+						<td class="whitespace-nowrap font-medium text-gray-900">
+							{{ item.code }}
+							<span
+								v-if="item.hub_name"
+								v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
+								class="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
+						</td>
 						<td class="max-w-xs truncate text-gray-500">{{ item.name }}</td>
 						<td class="text-gray-600">{{ item.rank ?? "-" }}</td>
 						<td>

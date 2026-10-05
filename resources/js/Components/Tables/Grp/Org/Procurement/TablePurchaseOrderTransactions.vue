@@ -371,6 +371,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         {{ item.code }}
                     </Link>
                     <span v-else>{{ item.code }}</span>
+                    <span
+                        v-if="item.hub_name"
+                        v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
+                        class="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
 
                     <Link
                         v-if="supplierProductRoute(item) && orgStockRoute(item)"
@@ -456,6 +460,17 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                </div>
+                <div v-else-if="item.partner_stock !== null || item.partner_units_per_carton" class="text-xs text-gray-500">
+                    <template v-if="item.partner_stock !== null">
+                        {{ ctrans('Partner stock') }}: <span class="font-semibold text-gray-700">{{ locale.number(Math.round(item.partner_stock)) }}</span>
+                    </template>
+                    <span
+                        v-if="item.partner_units_per_carton"
+                        v-tooltip="ctrans('How the partner buys it from its supplier. Often out of date and different in each organisation: a guide only, check before ordering in cartons')"
+                        class="cursor-help">
+                        <template v-if="item.partner_stock !== null">· </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
+                    </span>
                 </div>
                 <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>

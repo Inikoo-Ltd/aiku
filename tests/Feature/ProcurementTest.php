@@ -222,6 +222,7 @@ use App\Models\GoodsIn\StockDeliveryItem;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
+use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Models\Procurement\OrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -2759,6 +2760,55 @@ test('a sku on a rescue being prepared for another sister company is not offered
 
     $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
     expect($isComing())->toBeFalse();
+});
+
+test('partner order lines show the partner stock and its carton as a guide, and other open orders only for the same sko', function () {
+    $stock         = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $buyerOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->organisation, $stock);
+    $sellerStock   = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->partner, $stock);
+    $buyerOrgStock->updateQuietly(['packed_in' => 6]);
+    $sellerStock->updateQuietly(['packed_in' => 6, 'quantity_in_locations' => 40]);
+    DB::table('org_stock_has_org_supplier_products')->insert([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $this->orgSupplierProduct->supplier_product_id]),
+        'org_stock_id'            => $sellerStock->id,
+        'org_supplier_product_id' => $this->orgSupplierProduct->id,
+        'status'                  => true,
+        'local_priority'          => 1,
+        'created_at'              => now(),
+        'updated_at'              => now(),
+    ]);
+
+    $action        = IndexPurchaseOrderTransactions::make();
+    $partnerStocks = (new ReflectionMethod($action, 'partnerStocks'))->invoke($action, $this->orgPartner, collect([$buyerOrgStock->id]));
+
+    $hub         = $this->orgPartner->partner;
+    $hubFlags    = DB::table('organisations')->pluck('is_manufacturing_hub', 'id');
+    try {
+        DB::table('organisations')->update(['is_manufacturing_hub' => false]);
+        DB::table('organisations')->where('id', $hub->id)->update(['is_manufacturing_hub' => true]);
+        $hubName = (new ReflectionMethod($action, 'partnerStocks'))->invoke($action, $this->orgPartner, collect([$buyerOrgStock->id]))->get($buyerOrgStock->id)->hub_name;
+    } finally {
+        foreach ($hubFlags as $organisationId => $isHub) {
+            DB::table('organisations')->where('id', $organisationId)->update(['is_manufacturing_hub' => $isHub]);
+        }
+    }
+
+    expect($hubName)->toBe($hub->name)
+        ->and((float) $partnerStocks->get($buyerOrgStock->id)->stock)->toBe(40.0)
+        ->and((int) $partnerStocks->get($buyerOrgStock->id)->units_per_carton)->toBe((int) $this->orgSupplierProduct->supplierProduct->units_per_carton);
+
+    $otherOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->organisation, StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])));
+    $otherOrder    = StorePurchaseOrder::make()->action($this->orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'OTHER-SKO-'.PurchaseOrder::max('id')]), strict: false);
+    $otherLine     = StorePurchaseOrderTransaction::make()->action($otherOrder, $this->orgSupplierProduct->supplierProduct->historicSupplierProduct, $otherOrgStock, PurchaseOrderTransaction::factory()->definition());
+    $otherLine->updateQuietly(['supplier_product_id' => null, 'org_supplier_product_id' => null]);
+    $otherOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'organisation_id' => $this->orgPartner->organisation_id]);
+
+    $row       = (object) ['supplier_product_id' => null, 'org_stock_id' => $buyerOrgStock->id];
+    $paginator = new \Illuminate\Pagination\LengthAwarePaginator([$row], 1, 10);
+    IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, new PurchaseOrder(['organisation_id' => $this->orgPartner->organisation_id]));
+    $otherOrder->updateQuietly(['state' => PurchaseOrderStateEnum::CANCELLED]);
+
+    expect($paginator->items()[0]->other_open_purchase_orders)->toBeEmpty();
 });
 
 test('other open orders count only lines for the same sko still waiting for a delivery', function () {
@@ -5325,6 +5375,55 @@ describe('partner shopping list', function () {
         DB::table('orders')->where('customer_id', $order->customer_id)
             ->update(['state' => OrderStateEnum::CREATING->value, 'gross_amount' => 0, 'net_amount' => 0]);
         Cache::forget("partner_customer_discount_factor_{$order->customer_id}");
+    });
+
+    test('partner customer discount factor follows the standing customer offer over the order history', function () {
+        $item     = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $customer = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]])['orders'][0]->customer;
+        $offerId  = DB::table('offers')->insertGetId([
+            'group_id'          => $customer->group_id,
+            'organisation_id'   => $customer->organisation_id,
+            'shop_id'           => $customer->shop_id,
+            'offer_campaign_id' => DB::table('offer_campaigns')->where('shop_id', $customer->shop_id)->value('id'),
+            'customer_id'       => $customer->id,
+            'code'              => 'partner-test-'.$customer->id,
+            'slug'              => 'partner-test-'.$customer->id,
+            'name'              => 'Partner 45%',
+            'type'              => \App\Enums\Discounts\Offer\OfferTypeEnum::CUSTOMER_ANY_ORDER->value,
+            'state'             => \App\Enums\Discounts\Offer\OfferStateEnum::ACTIVE->value,
+            'trigger_type'      => 'Customer',
+            'trigger_id'        => $customer->id,
+            'trigger_data'      => '{}',
+            'data'              => '{}',
+            'settings'          => '{}',
+            'source_data'       => '{}',
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+        DB::table('offer_allowances')->insert([
+            'group_id'        => $customer->group_id,
+            'organisation_id' => $customer->organisation_id,
+            'shop_id'         => $customer->shop_id,
+            'offer_campaign_id' => DB::table('offers')->where('id', $offerId)->value('offer_campaign_id'),
+            'offer_id'        => $offerId,
+            'slug'            => 'partner-test-'.$customer->id,
+            'state'           => \App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum::ACTIVE->value,
+            'type'            => \App\Enums\Discounts\OfferAllowance\OfferAllowanceType::PERCENTAGE_OFF->value,
+            'target_type'     => \App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
+            'data'            => json_encode(['percentage_off' => 0.45]),
+            'source_data'     => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+        Cache::forget("partner_customer_discount_factor_$customer->id");
+
+        $factor = GetPartnerCustomerDiscount::run($customer);
+
+        DB::table('offer_allowances')->where('offer_id', $offerId)->delete();
+        DB::table('offers')->where('id', $offerId)->delete();
+        Cache::forget("partner_customer_discount_factor_$customer->id");
+
+        expect($factor)->toBe(0.55);
     });
 
     test('exclusive products for the intercompany customer appear in partner browse query', function () {
