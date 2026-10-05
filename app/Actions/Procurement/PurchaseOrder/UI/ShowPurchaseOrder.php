@@ -156,7 +156,7 @@ class ShowPurchaseOrder extends OrgAction
         return Inertia::render(
             'Procurement/PurchaseOrder',
             [
-                'title'       => __('Purchase Order'),
+                'title'       => '(' . $purchaseOrder->reference . ') ' . __('Purchase Order'),
                 'breadcrumbs' => $this->getBreadcrumbs($purchaseOrder, $request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($purchaseOrder, $request),
