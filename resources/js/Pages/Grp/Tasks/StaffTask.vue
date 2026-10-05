@@ -15,6 +15,11 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
+import TicketKeptFiles from "@/Components/Tickets/TicketKeptFiles.vue"
+import HistoryChangeModal from "@/Components/Tickets/HistoryChangeModal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import axios from "axios"
 import type { StaffTaskDueAccess, StaffTaskEtaProposal } from "@/types/StaffTaskEta"
 import StaffTaskControls from "@/Components/Tasks/StaffTaskControls.vue"
 import StaffTaskSubtasks from "@/Components/Tasks/StaffTaskSubtasks.vue"
@@ -65,6 +70,7 @@ const props = defineProps<{
         milestone: string | null
         closed_at: string | null
         created_at: string
+        attachments?: { ulid?: string; name: string; url: string; mime?: string | null; thumbnail?: Record<string, string> | null }[]
     }
     linked_url: string | null
     conversation: StaffConversation | null
@@ -73,7 +79,8 @@ const props = defineProps<{
     can_remove_collaborators: boolean
     can_reassign: boolean
     can_ask_for_help: boolean
-    timeline: { at: string; icon: string; text: string; by: string | null }[]
+    can_edit_content?: boolean
+    timeline: { at: string; icon: string; text: string; by: string | null; change?: { label: string; from: string; to: string } | null }[]
     options: { statuses: Option[]; priorities: Option[] }
     project_options?: { label: string; value: number }[]
     milestone_options?: { label: string; value: number }[]
@@ -102,7 +109,60 @@ const daysAgo = (date: string) => {
 const controls = ref<InstanceType<typeof StaffTaskControls> | null>(null)
 const subtasksBox = ref<InstanceType<typeof StaffTaskSubtasks> | null>(null)
 
-const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "timeline", "project_options", "milestone_options", "can_change_project", "project_route"], preserveScroll: true })
+const reloadTask = () => router.reload({ only: ["task", "conversation", "can_edit", "due_access", "can_remove_collaborators", "can_reassign", "can_ask_for_help", "can_edit_content", "timeline", "project_options", "milestone_options", "can_change_project", "project_route"], preserveScroll: true })
+
+const historyChangeEvent = ref<any | null>(null)
+
+const isEditingContent = ref(false)
+const isSavingContent = ref(false)
+const contentSubject = ref("")
+const contentDescription = ref("")
+const contentRemovedMedia = ref<string[]>([])
+const contentImages = ref<File[]>([])
+const contentErrors = ref<Record<string, string>>({})
+
+const startContentEdit = () => {
+    contentSubject.value = props.task.subject
+    contentDescription.value = props.task.description ?? ""
+    contentRemovedMedia.value = []
+    contentImages.value = []
+    contentErrors.value = {}
+    isEditingContent.value = true
+}
+
+onMounted(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get("edit") !== "content") return
+
+    url.searchParams.delete("edit")
+    window.history.replaceState(window.history.state, "", url.toString())
+    if (props.can_edit_content) startContentEdit()
+})
+
+const keptTaskFiles = computed(() => (props.task.attachments ?? []).filter((file) => !file.ulid || !contentRemovedMedia.value.includes(file.ulid)))
+const keptContentImages = computed(() => keptTaskFiles.value.filter((file) => file.thumbnail).map((file) => ({ ...file.thumbnail, name: file.name, ulid: file.ulid })))
+const keptContentAttachments = computed(() => keptTaskFiles.value.filter((file) => !file.thumbnail))
+
+const saveContent = async () => {
+    const formData = new FormData()
+    formData.append("_method", "patch")
+    formData.append("subject", contentSubject.value)
+    formData.append("description", contentDescription.value)
+    contentRemovedMedia.value.forEach((ulid) => formData.append("remove_media[]", ulid))
+    contentImages.value.forEach((file) => formData.append("images[]", file))
+
+    isSavingContent.value = true
+    contentErrors.value = {}
+    try {
+        await axios.post(route("grp.tasks.content.update", props.task.reference), formData)
+        isEditingContent.value = false
+        reloadTask()
+    } catch (error: any) {
+        contentErrors.value = Object.fromEntries(Object.entries(error.response?.data?.errors ?? { subject: [ctrans("Could not save, please try again")] }).map(([field, messages]) => [field.split(".")[0], (messages as string[])[0]]))
+    } finally {
+        isSavingContent.value = false
+    }
+}
 
 const panelSummary = computed(() => ({
     assignee: props.task.assignee?.name ?? props.task.department_label,
@@ -168,7 +228,7 @@ const sortedTimeline = computed(() => isHistoryNewestFirst.value ? props.timelin
 
 useLiveStaffTasks(
     reloadTask,
-    (event) => event.id === props.task.id && !controls.value?.isBusy && !subtasksBox.value?.isSaving
+    (event) => event.id === props.task.id && !controls.value?.isBusy && !subtasksBox.value?.isSaving && !isEditingContent.value
 )
 
 onMounted(async () => {
@@ -203,16 +263,43 @@ onUnmounted(() => {
                         <span v-if="task.closed_at" class="text-gray-400">· {{ ctrans("Closed :date", { date: useFormatTime(task.closed_at, { formatTime: "hm" }) }) }}</span>
                     </div>
                     <div id="task-card-controls" />
-                    <h2 class="mb-3 text-lg font-semibold">{{ task.subject }}</h2>
+                    <form v-if="isEditingContent" class="mb-3 space-y-3" :aria-busy="isSavingContent" @submit.prevent="saveContent">
+                        <div>
+                            <label for="task-content-subject" class="mb-1 block text-xs text-gray-500">{{ ctrans("Subject") }}</label>
+                            <input id="task-content-subject" v-model="contentSubject" type="text" maxlength="255" class="w-full rounded-md border-gray-300 text-sm font-semibold focus:border-[--app-accent] focus:ring-[--app-accent]" />
+                            <p v-if="contentErrors.subject" class="mt-1 text-xs text-red-600">{{ contentErrors.subject }}</p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-xs text-gray-500">{{ ctrans("Description") }}</p>
+                            <TicketComposer v-model:body="contentDescription" v-model:images="contentImages" :rows="6" :placeholder="ctrans('What needs doing, and anything that helps')" :max-images="Math.max(0, 5 - keptTaskFiles.length)" />
+                            <p v-if="contentErrors.description || contentErrors.images" class="mt-1 text-xs text-red-600">{{ contentErrors.description || contentErrors.images }}</p>
+                        </div>
+                        <TicketKeptFiles :images="keptContentImages" :attachments="keptContentAttachments" @remove="(ulid) => contentRemovedMedia.push(ulid)" />
+                        <p class="text-xs text-gray-400">{{ ctrans("Edits are written to the task history.") }}</p>
+                        <div class="flex justify-end gap-2">
+                            <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isSavingContent" @click="isEditingContent = false" />
+                            <Button :label="ctrans('Save')" :loading="isSavingContent" :disabled="!contentSubject.trim()" @click="saveContent" />
+                        </div>
+                    </form>
+                    <template v-else>
+                        <div class="mb-3 flex items-start justify-between gap-2">
+                            <h2 class="text-lg font-semibold">{{ task.subject }}</h2>
+                            <button v-if="can_edit_content" v-tooltip="ctrans('Edit subject, description and files')" type="button" class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600" @click="startContentEdit">
+                                <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                    </template>
                     <div v-if="task.model_label" class="mb-3 flex items-center gap-1.5 text-sm">
                         <FontAwesomeIcon icon="fal fa-link" class="text-gray-400" fixed-width />
                         <Link v-if="linked_url" :href="linked_url" class="truncate text-[--app-accent-strong] hover:underline">{{ task.model_label }}</Link>
                         <span v-else class="text-gray-700">{{ task.model_label }}</span>
                         <span class="text-xs text-gray-400">{{ task.model_type }}</span>
                     </div>
-                    <TicketBody v-if="task.description" :text="task.description" />
-                    <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
-                    <TicketAttachmentList v-if="task.attachments?.length" :files="task.attachments" compact class="mt-3" />
+                    <template v-if="!isEditingContent">
+                        <TicketBody v-if="task.description" :text="task.description" />
+                        <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
+                        <TicketAttachmentList v-if="task.attachments?.length" :files="task.attachments" compact class="mt-3" />
+                    </template>
 
                     <StaffTaskSubtasks ref="subtasksBox" :reference="task.reference" :subtasks="task.subtasks" :can-edit="can_edit" />
                 </section>
@@ -305,12 +392,14 @@ onUnmounted(() => {
                         <span class="absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200">
                             <FontAwesomeIcon :icon="event.icon" fixed-width class="text-[10px]" />
                         </span>
-                        <p class="text-gray-800">{{ event.text }}</p>
+                        <button v-if="event.change" v-tooltip="ctrans('See what changed')" type="button" class="text-left text-gray-800 underline decoration-gray-300 decoration-dotted underline-offset-2 transition duration-200 hover:text-[--app-accent-strong] hover:decoration-current" @click="historyChangeEvent = event">{{ event.text }}</button>
+                        <p v-else class="text-gray-800">{{ event.text }}</p>
                         <p class="text-xs text-gray-400">
                             {{ useFormatTime(event.at, { formatTime: "hm" }) }}<template v-if="event.by"> · {{ event.by }}</template>
                         </p>
                     </li>
                 </ol>
+                <HistoryChangeModal :event="historyChangeEvent" @close="historyChangeEvent = null" />
             </section>
             </Teleport>
         </div>

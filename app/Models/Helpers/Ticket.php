@@ -110,6 +110,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'priority',
         'assignee_id',
         'subject',
+        'description',
         'module',
         'tags',
         'is_confidential',
@@ -339,6 +340,15 @@ class Ticket extends Model implements Auditable, HasMedia
     public function canBeUpdatedBy(?User $user): bool
     {
         return self::canBeAssignedBy($user) || (self::canBeManagedBy($user) && $this->isAssignedTo($user));
+    }
+
+    /**
+     * The subject, description and the ticket's own files belong to whoever raised it; a lead
+     * engineer can tidy them too.
+     */
+    public function canEditContentBy(?User $user): bool
+    {
+        return $this->isReportedBy($user) || self::canBeAssignedBy($user);
     }
 
     public function canContributeBy(?User $user): bool

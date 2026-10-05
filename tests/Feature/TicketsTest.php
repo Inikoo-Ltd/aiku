@@ -496,6 +496,55 @@ test('retina support pages render for the customer', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Dropshipping/RetinaTicket')->where('ticket.reference', $ticket->reference));
 });
 
+test('the reporter or a lead engineer edits the ticket subject, description and its own files, and the history says so', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Totals wrong',
+        'description' => 'The invoice total is off',
+        'images'      => [UploadedFile::fake()->image('old-shot.png'), UploadedFile::fake()->image('keep.png')],
+    ]);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    $comment       = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [UploadedFile::fake()->image('comment.png')]]);
+    $oldShot       = $ticket->getMedia('ticket_images')->first(fn ($media) => str_starts_with($media->name, 'old-shot'));
+    $commentImage  = $comment->getMedia('ticket_images')->first();
+    $contentRoute  = route('grp.models.ticket.content.update', $ticket->id);
+
+    actingAs($outsider);
+    patch($contentRoute, ['subject' => 'Hijacked'])->assertForbidden();
+
+    actingAs($reporter);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', true));
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonPath('can_edit_content', true);
+    patch($contentRoute, [
+        'subject'      => 'Invoice totals wrong with vouchers',
+        'description'  => 'The invoice total is off when a voucher is used',
+        'remove_media' => [$oldShot->ulid, $commentImage->ulid],
+        'images'       => [UploadedFile::fake()->createWithContent('steps.pdf', "%PDF-1.4\n%%EOF\n")],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $ticket->refresh();
+    expect($ticket->subject)->toBe('Invoice totals wrong with vouchers')
+        ->and($ticket->description)->toBe('The invoice total is off when a voucher is used')
+        ->and($ticket->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($ticket->getMedia('ticket_images')->first()->name)->toStartWith('keep')
+        ->and($ticket->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and($comment->refresh()->getMedia('ticket_images'))->toHaveCount(1);
+
+    actingAs($this->user);
+    patch($contentRoute, ['description' => 'Edited by the lead engineer'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->refresh()->description)->toBe('Edited by the lead engineer');
+
+    $timeline = collect(get(route('grp.tickets.show', $ticket->reference))->inertiaProps()['timeline']);
+    expect($timeline->firstWhere('text', 'Description edited')['change'])->toBe(['label' => 'Description', 'from' => 'The invoice total is off when a voucher is used', 'to' => 'Edited by the lead engineer'])
+        ->and($timeline->firstWhere('text', 'Subject edited')['change']['from'])->toBe('Totals wrong');
+
+    $history = $timeline->pluck('text');
+    expect($history)->toContain('Subject edited')
+        ->and($history)->toContain('Description edited')
+        ->and($history->first(fn ($text) => str_starts_with($text, 'Removed old-shot')))->toContain(' · Added steps');
+});
+
 test('screenshots can be attached to tickets and comments', function () {
     $ticket = StoreTicket::make()->action($this->group, [
         'subject' => 'Broken layout, see screenshot',

@@ -3822,6 +3822,47 @@ test('someone taken off a task keeps the chat history up to then, cannot write, 
         ->and($conversation->isActiveParticipant($assignee))->toBeFalse();
 });
 
+test('the person who raised a task edits its subject, description and files, the worker cannot, and the history says so', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, [
+        'subject'     => 'Count the returns shelf',
+        'description' => 'Shelf B only',
+        'assignee_id' => $worker->id,
+        'images'      => [\Illuminate\Http\UploadedFile::fake()->image('old-photo.png')],
+    ]);
+    $oldPhoto     = $task->getMedia('ticket_images')->first();
+    $contentRoute = route('grp.tasks.content.update', $task->reference);
+
+    actingAs($worker);
+    \Pest\Laravel\patchJson($contentRoute, ['subject' => 'Something else'])->assertForbidden();
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', false));
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_edit_content', false);
+
+    actingAs($this->user);
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_edit_content', true);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', true)->where('task.attachments.0.ulid', $oldPhoto->ulid));
+    \Pest\Laravel\post($contentRoute, [
+        '_method'      => 'patch',
+        'subject'      => 'Count the returns shelves',
+        'description'  => 'Shelves B and C',
+        'remove_media' => [$oldPhoto->ulid],
+        'images'       => [\Illuminate\Http\UploadedFile::fake()->image('new-photo.png')],
+    ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.subject', 'Count the returns shelves');
+
+    $task->refresh();
+    expect($task->description)->toBe('Shelves B and C')
+        ->and($task->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($task->getMedia('ticket_images')->first()->ulid)->not->toBe($oldPhoto->ulid);
+
+    $timeline = collect(get(route('grp.tasks.show', $task->reference))->inertiaProps()['timeline']);
+    expect($timeline->firstWhere('text', 'Description edited')['change'])->toBe(['label' => 'Description', 'from' => 'Shelf B only', 'to' => 'Shelves B and C']);
+
+    $history = $timeline->pluck('text');
+    expect($history)->toContain('Subject edited')
+        ->and($history)->toContain('Description edited')
+        ->and($history->first(fn ($text) => str_starts_with($text, 'Removed old-photo')))->toContain(' · Added new-photo');
+});
+
 test('the tasks a person created are counted apart, with the ones waiting for their answer first', function () {
     $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     \App\Models\Tasks\StaffTask::query()->where('requester_id', $this->user->id)->open()->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);

@@ -123,6 +123,8 @@ class ShowStaffTask extends OrgAction
                     'priority'    => __('Priority: :from → :to', ['from' => $priorities[$old] ?? '—', 'to' => $priorities[$value] ?? $value]),
                     'due_at'      => $value ? __('Due date set to :date', ['date' => Carbon::parse($value)->toFormattedDateString()]) : __('Due date removed'),
                     'subject'     => __('Subject edited'),
+                    'description' => __('Description edited'),
+                    'attachments' => StaffTask::ticketFilesHistoryText((string) $old, (string) $value),
                     default       => null,
                 };
 
@@ -134,10 +136,12 @@ class ShowStaffTask extends OrgAction
                             'assignee_id' => 'fal fa-user-check',
                             'due_at'      => 'fal fa-calendar',
                             'priority'    => 'fal fa-flag',
+                            'attachments' => 'fal fa-paperclip',
                             default       => 'fal fa-pencil',
                         },
-                        'text' => $text,
-                        'by'   => $audit->user?->chatName(),
+                        'text'   => $text,
+                        'by'     => $audit->user?->chatName(),
+                        'change' => StaffTask::historyTextChange($field, $old, $value),
                     ];
                 }
             }
@@ -169,6 +173,7 @@ class ShowStaffTask extends OrgAction
             'can_remove_collaborators' => $staffTask->canRemoveCollaboratorsBy($viewer),
             'can_reassign' => $staffTask->canReassignBy($viewer),
             'can_ask_for_help' => $staffTask->canAskForHelpBy($viewer),
+            'can_edit_content' => $staffTask->canEditContentBy($viewer),
             'timeline'     => $this->timeline($staffTask),
             'options'      => $this->staffTaskEditOptions(),
             'listRoute'    => $this->tasksRoute('list_all'),
