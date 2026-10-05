@@ -304,10 +304,11 @@ class GetPartnerStockCoverBuckets
     /**
      * What to order to rescue the SKOs in these buckets: by default only the ones that would lose
      * sales and the A/B bestsellers, or every one of them. Purchase order quantities are units, so the
-     * SKOs to order are multiplied by the units in each SKO.
+     * SKOs to order are multiplied by the units in each SKO. Cost is what the line costs us, in our
+     * currency after the partner discount, priced in the same query so a budget needs no lookup per line.
      *
      * @param  array<int, string>  $buckets
-     * @return array<int, array{org_stock_id: int, skos: int, quantity: int}>
+     * @return array<int, array{org_stock_id: int, skos: int, quantity: int, cost: float}>
      */
     public function rescueLines(OrgPartner $orgPartner, array $buckets = self::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true): array
     {
@@ -317,12 +318,20 @@ class GetPartnerStockCoverBuckets
             return [];
         }
 
+        $toOurMoney = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+
         return $this->rescueItems($orgPartner, $leadDays)
             ->whereRaw($this->bucketExpression($leadDays)." in ('".implode("', '", $buckets)."')")
             ->when($worstOnly, fn ($query) => $query->whereRaw($this->inRescueOrder()))
             ->addSelect('os.packed_in')
+            ->selectRaw($this->partnerSkoPrice($orgPartner).' as partner_sko_price')
             ->get()
-            ->map(fn ($row) => ['org_stock_id' => (int) $row->org_stock_id, 'skos' => (int) $row->quantity, 'quantity' => (int) $row->quantity * max(1, (int) $row->packed_in)])
+            ->map(fn ($row) => [
+                'org_stock_id' => (int) $row->org_stock_id,
+                'skos'         => (int) $row->quantity,
+                'quantity'     => (int) $row->quantity * max(1, (int) $row->packed_in),
+                'cost'         => round((int) $row->quantity * (float) $row->partner_sko_price * $toOurMoney, 2),
+            ])
             ->all();
     }
 

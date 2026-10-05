@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
@@ -89,8 +90,10 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->keyBy('stock_id');
 
         $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor) {
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor, $quanta) {
+            $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
             $buyerOrgStock = $buyerOrgStocks->get($orgStock->stock_id);
@@ -109,8 +112,9 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) $buyerOrgStock->stats->days_of_cover
                     : null,
                 'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                    ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                    ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
                     : null,
+                'order_quantum'         => $quantum,
                 'price'                 => $product && $product->price !== null && $unitsPerSko
                     ? round((float) $product->price * $priceFactor * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
                     : null,

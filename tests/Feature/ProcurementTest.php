@@ -2803,7 +2803,7 @@ test('partner order lines show the partner stock and its carton as a guide, and 
     $sellerStock   = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->partner, $stock);
     $buyerOrgStock->updateQuietly(['packed_in' => 6]);
     $sellerStock->updateQuietly(['packed_in' => 6, 'quantity_in_locations' => 40]);
-    DB::table('org_stock_has_org_supplier_products')->insert([
+    $partnerLinkId = DB::table('org_stock_has_org_supplier_products')->insertGetId([
         'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $this->orgSupplierProduct->supplier_product_id]),
         'org_stock_id'            => $sellerStock->id,
         'org_supplier_product_id' => $this->orgSupplierProduct->id,
@@ -2842,6 +2842,8 @@ test('partner order lines show the partner stock and its carton as a guide, and 
     $paginator = new \Illuminate\Pagination\LengthAwarePaginator([$row], 1, 10);
     IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, new PurchaseOrder(['organisation_id' => $this->orgPartner->organisation_id]));
     $otherOrder->updateQuietly(['state' => PurchaseOrderStateEnum::CANCELLED]);
+
+    DB::table('org_stock_has_org_supplier_products')->where('id', $partnerLinkId)->delete();
 
     expect($paginator->items()[0]->other_open_purchase_orders)->toBeEmpty();
 });

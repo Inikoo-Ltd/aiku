@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
@@ -298,9 +299,11 @@ class ShowPartnerBrowse extends OrgAction
                 ->keyBy('stock_id');
 
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
+            $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange, $quanta) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
+                $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
 
@@ -314,6 +317,7 @@ class ShowPartnerBrowse extends OrgAction
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
                     'org_stock_slug'    => $sellerOrgStock?->slug,
+                    'org_stock_id'      => $sellerOrgStock?->id,
                     'our_stock'         => $buyerOrgStock ? (float) $buyerOrgStock->quantity_available : null,
                     'their_daily_usage' => $sellerOrgStock?->stats?->predicted_daily_usage !== null
                         ? round((float) $sellerOrgStock->stats->predicted_daily_usage, 1)
@@ -323,10 +327,11 @@ class ShowPartnerBrowse extends OrgAction
                         ? (int) $buyerOrgStock->stats->days_of_cover
                         : null,
                     'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                        ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                        ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
+                    'order_quantum'         => $quantum,
                 ];
             });
         }

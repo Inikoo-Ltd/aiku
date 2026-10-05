@@ -78,11 +78,10 @@ class StoreRescuePurchaseOrder extends OrgAction
                 }
 
                 if ($budget !== null) {
-                    $lineCost = $this->lineCost($orgPartner, (float) ($purchaseOrder->org_exchange ?: 1), $orgStock, $line['quantity']);
-                    if ($lineCost === null) {
+                    if ($line['cost'] <= 0) {
                         continue;
                     }
-                    if ($spent + $lineCost > $budget) {
+                    if ($spent + $line['cost'] > $budget) {
                         $skippedForBudget++;
                         continue;
                     }
@@ -109,17 +108,6 @@ class StoreRescuePurchaseOrder extends OrgAction
 
             return $purchaseOrder;
         });
-    }
-
-    /**
-     * What the line will cost in our currency, priced exactly as adding it to the order prices it.
-     */
-    public function lineCost(OrgPartner $orgPartner, float $exchange, OrgStock $orgStock, int $units): ?float
-    {
-        $product   = GetPartnerSellingProduct::run($orgPartner, $orgStock->stock_id);
-        $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
-
-        return $unitPrice === null ? null : round($unitPrice * GetPartnerBuyingPriceFactor::run($orgPartner) * $units, 2) * $exchange;
     }
 
     public function rules(): array

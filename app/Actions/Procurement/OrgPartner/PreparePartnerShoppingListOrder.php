@@ -64,12 +64,11 @@ class PreparePartnerShoppingListOrder extends OrgAction
                     continue;
                 }
 
-                $lineCost = StoreRescuePurchaseOrder::make()->lineCost($orgPartner, $exchange, $orgStock, $line['quantity']);
                 if ($budget !== null) {
-                    if ($lineCost === null) {
+                    if ($line['cost'] <= 0) {
                         continue;
                     }
-                    if ($spent + $lineCost > $budget) {
+                    if ($spent + $line['cost'] > $budget) {
                         $skippedForBudget++;
                         continue;
                     }
@@ -77,7 +76,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
 
                 try {
                     StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, ['quantity' => $line['skos']]);
-                    $spent += (float) $lineCost;
+                    $spent += $line['cost'];
                     $added++;
                 } catch (HttpException|ValidationException) {
                     continue;

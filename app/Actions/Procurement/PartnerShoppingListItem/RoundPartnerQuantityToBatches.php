@@ -23,9 +23,7 @@ class RoundPartnerQuantityToBatches
      */
     public function handle(OrgPartner $orgPartner, int $stockId, float $quantity): float
     {
-        $quantum = $this->quantum($orgPartner, $stockId);
-
-        return $quantum > 1 ? ceil(round($quantity / $quantum, 6)) * $quantum : $quantity;
+        return self::roundUp($quantity, $this->quantum($orgPartner, $stockId));
     }
 
     public function quantum(OrgPartner $orgPartner, int $stockId): int
@@ -39,6 +37,31 @@ class RoundPartnerQuantityToBatches
             ->where('hub_org_stock.stock_id', $stockId)
             ->selectRaw(self::quantumSql('hub_org_stock').' as quantum')
             ->value('quantum') ?? 1);
+    }
+
+    /**
+     * The order step of each of the hub's own SKOs on a page, in one query.
+     *
+     * @param  array<int, int>  $hubOrgStockIds
+     * @return array<int, int> hub org stock id => SKOs per step
+     */
+    public function quanta(OrgPartner $orgPartner, array $hubOrgStockIds): array
+    {
+        if (!$orgPartner->partner->is_manufacturing_hub || !$hubOrgStockIds) {
+            return [];
+        }
+
+        return DB::table('org_stocks as hub_org_stock')
+            ->whereIn('hub_org_stock.id', $hubOrgStockIds)
+            ->selectRaw('hub_org_stock.id, '.self::quantumSql('hub_org_stock').' as quantum')
+            ->pluck('quantum', 'id')
+            ->map(fn ($quantum) => (int) $quantum)
+            ->all();
+    }
+
+    public static function roundUp(?float $quantity, int $quantum): ?float
+    {
+        return $quantity === null || $quantum <= 1 ? $quantity : ceil(round($quantity / $quantum, 6)) * $quantum;
     }
 
     /**
