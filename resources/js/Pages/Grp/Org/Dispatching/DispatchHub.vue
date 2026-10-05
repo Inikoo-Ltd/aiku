@@ -43,6 +43,7 @@ const props = defineProps<{
         org_stock_id: number
         stock_code: string
         stock_name: string
+        is_cosmetic: boolean
         partner_code: string
         to_location: string
         quantity_staged: number
@@ -213,7 +214,10 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 <tr v-for="task in stagingTasks" :key="stagingKey(task)" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 font-medium">{{ task.partner_code }}</td>
                     <td class="px-4 py-2">
-                        <div class="font-medium">{{ task.stock_code }}</div>
+                        <div class="flex items-center gap-1.5 font-medium">
+                            {{ task.stock_code }}
+                            <span v-if="task.is_cosmetic" class="rounded-full bg-pink-100 px-1.5 text-xs font-normal text-pink-700">{{ ctrans("Cosmetic") }}</span>
+                        </div>
                         <div class="text-gray-500">{{ task.stock_name }}</div>
                     </td>
                     <td class="px-4 py-2">

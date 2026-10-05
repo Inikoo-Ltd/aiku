@@ -88,6 +88,7 @@ class GetPartnerStagingTasks
                 'org_stock_id'    => $sellerOrgStockId,
                 'stock_code'      => $row->stock_code,
                 'stock_name'      => $row->stock_name,
+                'is_cosmetic'     => (bool) $row->is_cosmetic,
                 'partner_code'    => $partner->partner->code,
                 'to_location'     => $bay->code,
                 'quantity_staged' => $staged,
