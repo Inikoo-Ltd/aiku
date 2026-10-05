@@ -102,7 +102,7 @@ class StaffTask extends Model implements Auditable, HasMedia
         'priority' => ChatPriorityEnum::NORMAL,
     ];
 
-    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject', 'ticket_project_id'];
+    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject', 'description', 'ticket_project_id'];
 
     protected function casts(): array
     {
@@ -156,6 +156,7 @@ class StaffTask extends Model implements Auditable, HasMedia
             ->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])
             ->sortBy('id')
             ->map(fn (Media $media) => [
+                'ulid'       => $media->ulid,
                 'name'       => $media->name,
                 'url'        => route('grp.tasks.attachments.show', ['staffTask' => $this->reference, 'media' => $media->ulid]),
                 'mime'       => $media->mime_type,
@@ -258,6 +259,33 @@ class StaffTask extends Model implements Auditable, HasMedia
         return $this->requester_id === $user->id
             || $this->assignee_id === $user->id
             || ($this->group_id === $user->group_id && self::isSupervisor($user));
+    }
+
+    /**
+     * The subject, description and the task's own files belong to whoever raised it; a supervisor
+     * of the group can tidy them too.
+     */
+    public function canEditContentBy(User $user): bool
+    {
+        return $this->requester_id === $user->id || ($this->group_id === $user->group_id && self::isSupervisor($user));
+    }
+
+    /**
+     * A department can be included on an open task that has none yet, by whoever raised it, works on it, or supervises.
+     */
+    public function canAddDepartmentBy(User $user): bool
+    {
+        return $this->department === null && $this->isOpen() && ($this->canReassignBy($user) || $this->isWorkedOnBy($user));
+    }
+
+    /**
+     * Once included, only the department itself decides it is not theirs: a member of it, never the person who raised the task.
+     */
+    public function canRemoveDepartmentBy(User $user): bool
+    {
+        return $this->department !== null
+            && $this->requester_id !== $user->id
+            && in_array($this->department, self::departmentsOf($user), true);
     }
 
     public function canAskForHelpBy(User $user): bool

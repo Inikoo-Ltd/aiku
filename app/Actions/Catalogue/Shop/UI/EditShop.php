@@ -833,6 +833,14 @@ class EditShop extends OrgAction
                             'value'       => Arr::get($shop->settings, 'chat.widget_key', ''),
                             'information' => __('Paste this key into the storefront embed. It is created when chat is enabled.'),
                         ],
+                        ...Arr::get($shop->settings, 'chat.enabled', false) ? [
+                            'chat_email_offline_replies' => [
+                                'type'        => 'toggle',
+                                'label'       => __('Answer offline messages by email'),
+                                'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
+                                'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
+                            ],
+                        ] : [],
                     ],
                 ] : [],
                 [
@@ -1219,6 +1227,10 @@ class EditShop extends OrgAction
         if ($isExternal) {
             if (!isset($formData['blueprint'])) {
                 $formData['blueprint'] = [];
+            }
+
+            if (Arr::get($shop->settings, 'chat.enabled', false)) {
+                $allowedBlueprintLabels[] = __('Customer mailbox');
             }
 
             $filteredBlueprint = [];

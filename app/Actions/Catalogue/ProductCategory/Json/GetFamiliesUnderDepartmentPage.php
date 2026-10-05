@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
 use App\Actions\IrisAction;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -56,7 +57,10 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                 ->whereIn('chm.collection_id', function ($q) use ($parentId) {
                     $q->select('mhc.collection_id')
                         ->from('model_has_collections as mhc')
-                        ->where('mhc.model_id', $parentId);
+                        ->join('collections as parent_collections', 'parent_collections.id', '=', 'mhc.collection_id')
+                        ->where('mhc.model_type', class_basename(ProductCategory::class))
+                        ->where('mhc.model_id', $parentId)
+                        ->where('parent_collections.state', CollectionStateEnum::ACTIVE);
                 });
         };
 

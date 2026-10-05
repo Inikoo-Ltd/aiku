@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
+use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
 use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning;
@@ -87,6 +88,8 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'balance'        => null,
             ];
         } else {
+            CaptureOrderGoogleAnalyticsClient::run($order, $request);
+
             return $this->handle($this->customer);
         }
     }

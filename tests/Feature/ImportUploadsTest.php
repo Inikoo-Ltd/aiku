@@ -10,6 +10,8 @@
 namespace Tests\Feature;
 
 use App\Actions\CRM\Customer\ImportCustomers;
+use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Imports\CRM\ProspectImport;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\ImportBulkPortfolios;
 use App\Actions\HumanResources\Employee\ImportEmployees;
@@ -120,6 +122,42 @@ test('import customers from file', function () {
         ->and($upload->number_rows)->toBe(1)
         ->and($upload->number_success)->toBe(1)
         ->and($upload->number_fails)->toBe(0);
+});
+
+test('import prospects finds each column by its header, whatever the order, spacing or dashes', function () {
+    Storage::fake('local');
+
+    $file = csvUpload('prospects.csv', [
+        ['Phone Number', 'E-Mail', 'Company', 'Full Name'],
+        ['+44 7700 900111', 'header.match@example.com', 'Header Match Ltd', 'Hanna Header'],
+        ['', 'no.name@example.com', 'Nameless Co', ''],
+        ['', '', '', ''],
+    ]);
+
+    $upload = ImportShopProspects::make()->handle($this->shop, $file);
+    $prospect = $this->shop->prospects()->where('email', 'header.match@example.com')->first();
+
+    expect($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(1)
+        ->and($prospect->contact_name)->toBe('Hanna Header')
+        ->and($prospect->company_name)->toBe('Header Match Ltd')
+        ->and($prospect->phone)->not->toBeNull()
+        ->and(ProspectImport::normaliseHeader(' Contact-Name '))->toBe('contact_name');
+
+    $updates = csvUpload('prospects-update.csv', [
+        ['Email Address', 'Contact Name', 'ID Prospect Key'],
+        ['header.match@example.com', 'Hanna Renamed', (string) $prospect->id],
+        ['brand.new@example.com', 'Nora New', 'new'],
+        ['ghost@example.com', 'Gus Ghost', '999999999'],
+    ]);
+
+    $upload = ImportShopProspects::make()->handle($this->shop, $updates);
+
+    expect($upload->number_success)->toBe(2)
+        ->and($upload->number_fails)->toBe(1)
+        ->and($prospect->refresh()->contact_name)->toBe('Hanna Renamed')
+        ->and($this->shop->prospects()->where('email', 'brand.new@example.com')->exists())->toBeTrue()
+        ->and($this->shop->prospects()->where('email', 'ghost@example.com')->exists())->toBeFalse();
 });
 
 test('import employees from file', function () {

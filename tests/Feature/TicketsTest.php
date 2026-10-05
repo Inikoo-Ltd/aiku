@@ -170,13 +170,19 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
         ->and($answered->fresh()->status)->toBe(TicketStatusEnum::WAITING);
 
     $stale = $stale->fresh();
+    expect($stale->isCancelledForNoReply())->toBeTrue();
     StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'sorry, was on holiday']);
-    expect($stale->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
         ->and($stale->fresh()->closed_at)->toBeNull();
 
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
     StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'thanks!']);
     expect($stale->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::CANCELLED->value]);
+    expect($stale->fresh()->isCancelledForNoReply())->toBeFalse();
+    StoreTicketComment::make()->action($stale->fresh(), $this->webUser, ['body' => 'thank you for checking']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED);
 
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::WAITING->value]);
     StoreTicketComment::make()->action($stale, $this->user, ['body' => 'any news?']);
@@ -249,6 +255,11 @@ test('reporter reopens their own done ticket into reporter replied, nobody else 
     actingAs($reporter);
     post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'A reply does not reopen'])->assertRedirect();
     expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'No problem, thank you for checking'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open', 'status_comment' => 'Still wrong'])->assertForbidden();
@@ -483,6 +494,55 @@ test('retina support pages render for the customer', function () {
     $this->actingAs($this->webUser, 'retina')
         ->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$ticket->reference)
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Dropshipping/RetinaTicket')->where('ticket.reference', $ticket->reference));
+});
+
+test('the reporter or a lead engineer edits the ticket subject, description and its own files, and the history says so', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Totals wrong',
+        'description' => 'The invoice total is off',
+        'images'      => [UploadedFile::fake()->image('old-shot.png'), UploadedFile::fake()->image('keep.png')],
+    ]);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    $comment       = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [UploadedFile::fake()->image('comment.png')]]);
+    $oldShot       = $ticket->getMedia('ticket_images')->first(fn ($media) => str_starts_with($media->name, 'old-shot'));
+    $commentImage  = $comment->getMedia('ticket_images')->first();
+    $contentRoute  = route('grp.models.ticket.content.update', $ticket->id);
+
+    actingAs($outsider);
+    patch($contentRoute, ['subject' => 'Hijacked'])->assertForbidden();
+
+    actingAs($reporter);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', true));
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonPath('can_edit_content', true);
+    patch($contentRoute, [
+        'subject'      => 'Invoice totals wrong with vouchers',
+        'description'  => 'The invoice total is off when a voucher is used',
+        'remove_media' => [$oldShot->ulid, $commentImage->ulid],
+        'images'       => [UploadedFile::fake()->createWithContent('steps.pdf', "%PDF-1.4\n%%EOF\n")],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $ticket->refresh();
+    expect($ticket->subject)->toBe('Invoice totals wrong with vouchers')
+        ->and($ticket->description)->toBe('The invoice total is off when a voucher is used')
+        ->and($ticket->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($ticket->getMedia('ticket_images')->first()->name)->toStartWith('keep')
+        ->and($ticket->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and($comment->refresh()->getMedia('ticket_images'))->toHaveCount(1);
+
+    actingAs($this->user);
+    patch($contentRoute, ['description' => 'Edited by the lead engineer'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->refresh()->description)->toBe('Edited by the lead engineer');
+
+    $timeline = collect(get(route('grp.tickets.show', $ticket->reference))->inertiaProps()['timeline']);
+    expect($timeline->firstWhere('text', 'Description edited')['change'])->toBe(['label' => 'Description', 'from' => 'The invoice total is off when a voucher is used', 'to' => 'Edited by the lead engineer'])
+        ->and($timeline->firstWhere('text', 'Subject edited')['change']['from'])->toBe('Totals wrong');
+
+    $history = $timeline->pluck('text');
+    expect($history)->toContain('Subject edited')
+        ->and($history)->toContain('Description edited')
+        ->and($history->first(fn ($text) => str_starts_with($text, 'Removed old-shot')))->toContain(' · Added steps');
 });
 
 test('screenshots can be attached to tickets and comments', function () {
@@ -1286,8 +1346,11 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
 
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
-    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
-    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id, 'qa_note' => 'Try it with a voucher', 'images' => [UploadedFile::fake()->image('voucher.png')]])->assertRedirect();
+    $requestComment = $ticket->comments()->latest('id')->first();
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id)
+        ->and($requestComment->body)->toBe('QA check requested: Try it with a voucher')
+        ->and($requestComment->getMedia('ticket_images'))->toHaveCount(1);
     actingAs($qa);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
     actingAs($engineer);

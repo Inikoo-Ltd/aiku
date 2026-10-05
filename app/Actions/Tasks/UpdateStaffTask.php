@@ -114,6 +114,12 @@ class UpdateStaffTask
             return false;
         }
 
+        if ($request->has('department') && $request->input('department') !== $task->department) {
+            if ($task->department !== null || !$task->canAddDepartmentBy($request->user())) {
+                return false;
+            }
+        }
+
         if ($request->has('assignee_id') && (int) $request->input('assignee_id') !== (int) $task->assignee_id) {
             $isClaimingUnassigned = !$task->assignee_id && (int) $request->input('assignee_id') === $request->user()->id;
             if (!$isClaimingUnassigned && !$task->canReassignBy($request->user())) {

@@ -11,6 +11,7 @@ import { computed, onMounted, onUnmounted, provide, ref } from "vue";
 import { Link, router } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
+import { externalChartTooltip, hideChartTooltip } from "@/Composables/useChartExternalTooltip"
 import { faExclamationCircle } from "@fas"
 
 library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle, faEnvelope, faCircleNotch, faExclamationCircle);
@@ -111,13 +112,66 @@ const customerStats = computed(() => {
 	};
 });
 
+const caseColours: Record<string, string> = {
+	green: "#22c55e",
+	lime: "#84cc16",
+	emerald: "#10b981",
+	teal: "#14b8a6",
+	blue: "#3b82f6",
+	indigo: "#6366f1",
+	purple: "#a855f7",
+	yellow: "#eab308",
+	amber: "#f59e0b",
+	orange: "#f97316",
+	red: "#ef4444",
+	gray: "#9ca3af",
+}
+
+const caseColour = (color: string) => caseColours[color] ?? caseColours.gray
+
+const caseShare = (count: number) => customerStats.value.count ? Math.round((count / customerStats.value.count) * 1000) / 10 : 0
+
+const caseUrl = (index: number): string | null => {
+	const caseRoute = customerStats.value.cases[index]?.route
+	return caseRoute?.name ? route(caseRoute.name, caseRoute.parameters) : null
+}
+
+const pieData = computed(() => ({
+	labels: customerStats.value.cases.map((c) => c.label),
+	datasets: [
+		{
+			data: customerStats.value.cases.map((c) => c.count),
+			backgroundColor: customerStats.value.cases.map((c) => caseColour(c.icon.color)),
+			borderColor: "#ffffff",
+			borderWidth: 2,
+			hoverOffset: 6,
+		},
+	],
+}))
+
 const options = {
 	responsive: true,
+	maintainAspectRatio: true,
+	onClick: (_event: any, elements: any[]) => {
+		const url = elements.length ? caseUrl(elements[0].index) : null
+		if (url) {
+			hideChartTooltip()
+			router.visit(url)
+		}
+	},
+	onHover: (event: any, elements: any[]) => {
+		if (event.native?.target) {
+			event.native.target.style.cursor = elements.length && caseUrl(elements[0].index) ? "pointer" : "default"
+		}
+	},
 	plugins: {
 		legend: { display: false },
 		tooltip: {
-			titleFont: { size: 10, weight: "lighter" },
-			bodyFont: { size: 11, weight: "bold" },
+			enabled: false,
+			external: externalChartTooltip,
+			callbacks: {
+				afterBody: (items: any[]) => (items.length && caseUrl(items[0].dataIndex) ? ctrans("Click to list these customers") : ""),
+			},
 		},
 	},
 };
@@ -169,6 +223,7 @@ const buildBarOptions = (group: SegmentGroup) => ({
 		legend: {
 			display: true,
 			position: 'top' as const,
+			labels: { boxWidth: 10, boxHeight: 10, font: { size: 11 }, color: '#6b7280' },
 		},
 		tooltip: {
 			callbacks: {
@@ -186,9 +241,11 @@ const buildBarOptions = (group: SegmentGroup) => ({
 			beginAtZero: true,
 			grid: {
 				display: true,
-				color: "rgba(0, 0, 0, 0.1)"
+				color: "rgba(0, 0, 0, 0.05)"
 			},
 			ticks: {
+				font: { size: 11 },
+				color: '#9ca3af',
 				callback: function (value: any) {
 					return value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value
 				}
@@ -197,6 +254,10 @@ const buildBarOptions = (group: SegmentGroup) => ({
 		y: {
 			grid: {
 				display: false
+			},
+			ticks: {
+				font: { size: 11 },
+				color: '#4b5563'
 			}
 		}
 	}
@@ -290,90 +351,58 @@ const isLoadingVisit = ref<number | null>(null)
 
 		<div class="px-6 relative">
 			<div v-if="isLoading" class="absolute inset-0 bg-white/50 flex items-center justify-center z-20">
-				<LoadingIcon class="text-indigo-500 text-3xl" />
+				<LoadingIcon class="text-[--app-accent] text-3xl" />
 			</div>
 
 			<!-- Customer Stats Card -->
-			<dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-3">
-				<div
-					class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
-					<dt class="text-base font-medium text-gray-400">
-						{{ customerStats.label }}
-					</dt>
-					<dd class="mt-2 flex justify-between gap-x-2">
-						<div
-							class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
-							<!-- Total Count -->
-							<div class="flex gap-x-2 items-end">
-								{{ locale.number(customerStats.count) }}
-								<span class="text-sm font-medium leading-4 text-gray-500">
-                                {{ ctrans("in total") }}
-                            </span>
-							</div>
-
-							<!-- Case Breakdown -->
-							<div
-								class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
-								<template v-for="(dCase, idxCase) in customerStats.cases" :key="dCase.value">
-									<component
-										:is="dCase.route?.name ? Link : 'div'"
-										:href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
-										:class="dCase.route?.name ? 'hover:bg-gray-200 px-1 py-0.5 rounded' : ''"
-										class="flex gap-x-0.5 items-center font-normal"
-										v-tooltip="capitalize(dCase.icon.tooltip)"
-										@start="() => isLoadingVisit = idxCase"
-										@finish="() => isLoadingVisit = null"
-									>
-										<LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
-										<FontAwesomeIcon
-											v-else
-											:icon="dCase.icon.icon"
-											:class="dCase.icon.class"
-											fixed-width
-											:title="dCase.icon.tooltip"
-											aria-hidden="true" />
-										<span class="font-semibold">{{ locale.number(dCase.count) }}</span>
-									</component>
-								</template>
-							</div>
-						</div>
-
-						<!-- Pie Chart -->
-						<div class="w-20">
-							<Pie
-								:data="{
-                                labels: customerStats.cases.map((c) => c.label),
-                                datasets: [
-                                    {
-                                        data: customerStats.cases.map((c) => c.count),
-                                        hoverOffset: 4,
-                                    },
-                                ],
-                            }"
-								:options="options" />
-						</div>
-					</dd>
+			<section class="mt-5 flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-5 tabular-nums shadow-sm md:flex-row md:items-center">
+				<div class="shrink-0 md:w-48">
+					<p class="text-sm font-medium text-gray-500">{{ customerStats.label }}</p>
+					<p class="mt-1 text-3xl font-semibold text-gray-900">{{ locale.number(customerStats.count) }}</p>
+					<p class="text-xs text-gray-400">{{ ctrans("in total") }}</p>
 				</div>
-			</dl>
+
+				<ul class="grid min-w-0 flex-1 grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-3">
+					<li v-for="(dCase, idxCase) in customerStats.cases" :key="dCase.value">
+						<component
+							:is="dCase.route?.name ? Link : 'div'"
+							:href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
+							class="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition duration-200"
+							:class="dCase.route?.name ? 'hover:bg-gray-50 active:bg-gray-100' : ''"
+							v-tooltip="capitalize(dCase.icon.tooltip)"
+							@start="() => isLoadingVisit = idxCase"
+							@finish="() => isLoadingVisit = null"
+						>
+							<LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
+							<span v-else class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: caseColour(dCase.icon.color) }" aria-hidden="true" />
+							<FontAwesomeIcon :icon="dCase.icon.icon" :class="dCase.icon.class" fixed-width aria-hidden="true" />
+							<span class="min-w-0 flex-1 truncate text-gray-600">{{ capitalize(dCase.label) }}</span>
+							<span class="font-semibold text-gray-900">{{ locale.number(dCase.count) }}</span>
+							<span class="w-12 text-right text-xs text-gray-400">{{ caseShare(dCase.count) }}%</span>
+						</component>
+					</li>
+				</ul>
+
+				<div class="mx-auto w-28 shrink-0 md:mx-0">
+					<Pie :data="pieData" :options="options" />
+				</div>
+			</section>
 
 			<!-- RFM Segments Cards -->
 			<div v-if="data.segments" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 				<!-- Recency Card -->
-				<div class="bg-white rounded-lg shadow p-6">
+				<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 							<FontAwesomeIcon :icon="['fal', 'calendar-alt']" class="text-blue-500" fixed-width />
 							{{ data.segments.recency.title }}
 						</h3>
 					</div>
-					<p class="text-xs text-gray-400 mb-4">{{ data.segments.recency.description }}</p>
+					<p class="text-xs text-gray-400">{{ data.segments.recency.description }}</p>
+					<p class="mb-3 mt-1 text-[11px] text-gray-400">{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}</p>
 
 					<div class="h-80">
 						<Bar :data="getRecencyChartData" :options="recencyBarOptions" />
-					</div>
-
-					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
@@ -388,27 +417,23 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.recency[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-blue-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>
 
 				<!-- Frequency Card -->
-				<div class="bg-white rounded-lg shadow p-6">
+				<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 							<FontAwesomeIcon :icon="['fal', 'sync-alt']" class="text-green-500" fixed-width />
 							{{ data.segments.frequency.title }}
 						</h3>
 					</div>
-					<p class="text-xs text-gray-400 mb-4">{{ data.segments.frequency.description }}</p>
+					<p class="text-xs text-gray-400">{{ data.segments.frequency.description }}</p>
+					<p class="mb-3 mt-1 text-[11px] text-gray-400">{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}</p>
 
 					<div class="h-80">
 						<Bar :data="getFrequencyChartData" :options="frequencyBarOptions" />
-					</div>
-
-					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
@@ -423,27 +448,23 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.frequency[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-green-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>
 
 				<!-- Monetary Card -->
-				<div class="bg-white rounded-lg shadow p-6">
+				<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 							<FontAwesomeIcon :icon="['fal', 'chart-line']" class="text-purple-500" fixed-width />
 							{{ data.segments.monetary.title }}
 						</h3>
 					</div>
-					<p class="text-xs text-gray-400 mb-4">{{ data.segments.monetary.description }}</p>
+					<p class="text-xs text-gray-400">{{ data.segments.monetary.description }}</p>
+					<p class="mb-3 mt-1 text-[11px] text-gray-400">{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}</p>
 
 					<div class="h-80">
 						<Bar :data="getMonetaryChartData" :options="monetaryBarOptions" />
-					</div>
-
-					<div class="mt-3 text-xs text-gray-500 text-center">
-						{{ ctrans('Comparing') }}: {{ previousDate }} → {{ currentDate }}
 					</div>
 
 					<div v-if="data.newsletterRevenue" class="mt-4 border-t border-gray-100 pt-3">
@@ -482,7 +503,6 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.monetary[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-purple-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>

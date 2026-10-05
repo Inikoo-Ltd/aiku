@@ -118,6 +118,21 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
+                'ga4_measurement_id'    => [
+                    'type'        => 'input',
+                    'information' => __('GA4 property that receives purchases sent from the server, so an order is counted even when the browser never reports it'),
+                    'label'       => __('GA4 measurement ID'),
+                    'value'       => Arr::get($website->settings, "ga4_measurement_id"),
+                    'placeholder' => 'G-ABC123DEF4',
+                    'required'    => false,
+                ],
+                'ga4_api_secret'        => [
+                    'type'        => 'input',
+                    'information' => __('GA4 Admin → Data streams → Measurement Protocol API secrets'),
+                    'label'       => __('GA4 Measurement Protocol API secret'),
+                    'value'       => Arr::get($website->settings, "ga4_api_secret"),
+                    'required'    => false,
+                ],
                 "image"                 => [
                     "type"    => "image_crop_square",
                     "label"   => __("Logo"),

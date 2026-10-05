@@ -117,6 +117,8 @@ const emit = defineEmits<{
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+const isStorefrontWidget = layout?.app?.name === "chat-widget"
+const panelGapAboveButton = isStorefrontWidget ? 96 : 88
 
 const shopId = computed(() => props.shopId ?? layout?.iris?.shop?.id)
 
@@ -881,8 +883,8 @@ const brandColor = computed(() => layout?.iris?.theme?.color?.[4] ?? layout?.app
 const brandTextColor = computed(() => layout?.iris?.theme?.color?.[5] ?? layout?.app?.theme?.[5])
 const floatingButtonsDrag = useFloatingButtonsDrag(layout)
 const floatingPanelStyle = computed(() => isMobile.value || props.docked ? undefined : {
-    bottom: `${88 + floatingButtonsDrag.offset.value}px`,
-    maxHeight: `calc(100dvh - ${104 + floatingButtonsDrag.offset.value}px)`,
+    bottom: `${panelGapAboveButton + floatingButtonsDrag.offset.value}px`,
+    maxHeight: `calc(100dvh - ${panelGapAboveButton + 16 + floatingButtonsDrag.offset.value}px)`,
 })
 
 const onChatButtonClick = () => {
@@ -943,14 +945,14 @@ if (isClient) {
 
 <template>
     <div>
-        <button v-if="!docked" ref="buttonRef" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] w-12 h-12 flex items-center justify-center rounded-full shadow-lg buttonPrimary transition-[right,background-color] duration-300 touch-none focus:outline-none" :class="bundle.open.value ? 'right-[470px]' : 'right-3'"
+        <button v-if="!docked" ref="buttonRef" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center justify-center rounded-full shadow-lg buttonPrimary transition-[right,background-color] duration-300 touch-none focus:outline-none" :class="[bundle.open.value ? 'right-[470px]' : 'right-3', isStorefrontWidget ? 'w-14 h-14' : 'w-12 h-12']"
             :style="{ bottom: `${24 + floatingButtonsDrag.offset.value}px` }"
             @pointerdown="floatingButtonsDrag.onPointerDown"
             @pointermove="floatingButtonsDrag.onPointerMove"
             @pointerup="floatingButtonsDrag.onPointerUp"
             @pointercancel="floatingButtonsDrag.onPointerUp"
             @click="onChatButtonClick">
-            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faComments" class="text-base"
+            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faComments" :class="isStorefrontWidget ? 'text-xl' : 'text-base'"
                 fixed-width aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1
                bg-white text-gray-800 text-[11px] font-semibold shadow

@@ -44,22 +44,46 @@ const props = defineProps<{
     picked?: {}
     packing?: {}
     returned?: {}
-    scope_filter?: {
+    backlog_filters?: {
         prefix: string
-        current: 'domestic' | 'export' | null
-        counts: { domestic: number, export: number }
+        current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null }
+        counts: {
+            scope: { domestic: number, export: number }
+            channel: { direct: number, partner: number }
+        }
     }
 }>()
 
-const setScope = (scope: 'domestic' | 'export') => {
+type BacklogFilterKey = 'scope' | 'channel'
+
+const filterGroups = computed(() => [
+    {
+        key: 'scope' as BacklogFilterKey,
+        label: ctrans('Destination'),
+        options: [
+            { value: 'domestic', label: ctrans('Domestic') },
+            { value: 'export', label: ctrans('Export') },
+        ],
+    },
+    {
+        key: 'channel' as BacklogFilterKey,
+        label: ctrans('Channel'),
+        options: [
+            { value: 'direct', label: ctrans('Direct') },
+            { value: 'partner', label: ctrans('Partner') },
+        ],
+    },
+])
+
+const setFilter = (key: BacklogFilterKey, value: string | null) => {
     const url = new URL(window.location.href)
-    const key = `${props.scope_filter?.prefix}_elements[scope]`
-    if (props.scope_filter?.current === scope) {
-        url.searchParams.delete(key)
+    const param = `${props.backlog_filters?.prefix}_elements[${key}]`
+    if (value === null || props.backlog_filters?.current[key] === value) {
+        url.searchParams.delete(param)
     } else {
-        url.searchParams.set(key, scope)
+        url.searchParams.set(param, value)
     }
-    url.searchParams.delete(`${props.scope_filter?.prefix}Page`)
+    url.searchParams.delete(`${props.backlog_filters?.prefix}Page`)
     router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true })
 }
 
@@ -99,21 +123,23 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>
-    <div v-if="scope_filter" class="mx-4 mt-3 flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
-        <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Destination") }}</span>
-        <button
-            v-for="scope in (['domestic', 'export'] as const)"
-            :key="scope"
-            type="button"
-            class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-            :class="scope_filter.current === scope
-                ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
-                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
-            @click="setScope(scope)">
-            <span>{{ scope === 'domestic' ? ctrans('Domestic') : ctrans('Export') }}</span>
-            <span class="rounded-full px-1.5 text-xs tabular-nums" :class="scope_filter.current === scope ? 'bg-white/20' : 'bg-white text-gray-500'">{{ scope_filter.counts[scope] }}</span>
-        </button>
-        <button v-if="scope_filter.current" type="button" class="ml-2 text-xs text-gray-400 hover:text-gray-600" @click="setScope(scope_filter.current)">× {{ ctrans("Clear") }}</button>
+    <div v-if="backlog_filters" class="mx-4 mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
+        <div v-for="group in filterGroups" :key="group.key" class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+            <button
+                v-for="option in group.options"
+                :key="option.value"
+                type="button"
+                class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+                :class="backlog_filters.current[group.key] === option.value
+                    ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                @click="setFilter(group.key, option.value)">
+                <span>{{ option.label }}</span>
+                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="backlog_filters.current[group.key] === option.value ? 'bg-white/20' : 'bg-white text-gray-500'">{{ backlog_filters.counts[group.key][option.value] }}</span>
+            </button>
+            <button v-if="backlog_filters.current[group.key]" type="button" class="ml-2 text-xs text-gray-400 hover:text-gray-600" @click="setFilter(group.key, null)">× {{ ctrans("Clear") }}</button>
+        </div>
     </div>
     <!-- <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders> -->
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>

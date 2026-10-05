@@ -4031,7 +4031,7 @@ test('export flag follows the customs territory of the organisation', function (
     expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
 
     $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
-    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->backlogFilterCounts($this->shop, 'in_basket')['scope'];
     $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
     expect($counts)->toBe([
         'domestic' => (clone $creating)->where('is_export', false)->count(),
@@ -4861,6 +4861,71 @@ test('the shop orders list flags a partner order and the channel filter separate
     $directOnly = $flagsIn('?orders_elements[channel]=direct');
     expect($directOnly->get($directOrder->reference))->toBeFalse()
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
+});
+
+test('the orders backlog can be filtered to partner or direct orders and counts each channel', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]
+    );
+    $directOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        Order::factory()->definition()
+    );
+
+    $sisterOrganisationCustomer = freshCustomerLike($this->shop, $this->customer);
+    $sisterOrganisationCustomer->update([
+        'as_organisation_id' => (int) DB::table('organisations')->max('id') + 1,
+    ]);
+    $phonedInPartnerOrder = StoreOrder::make()->action($sisterOrganisationCustomer, Order::factory()->definition());
+
+    $url = route('grp.org.shops.show.ordering.backlog', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'tab'          => 'in_basket',
+    ]);
+
+    $pageFor = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return $response->viewData('page')['props'];
+    };
+
+    $referencesIn = fn (array $props) => collect($props['in_basket']['data'])->pluck('reference');
+
+    $partnerOnly = $pageFor('&in_basket_elements[channel]=partner');
+    expect($referencesIn($partnerOnly))->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference)
+        ->not->toContain($directOrder->reference)
+        ->and($partnerOnly['backlog_filters']['current']['channel'])->toBe('partner');
+
+    $directOnly = $pageFor('&in_basket_elements[channel]=direct');
+    expect($referencesIn($directOnly))->toContain($directOrder->reference)
+        ->not->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference);
+
+    $creating     = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    $partnerCount = (clone $creating)
+        ->where(fn ($query) => $query
+            ->where('sales_channel_id', $intercompany->id)
+            ->orWhereIn('customer_id', Customer::whereNotNull('as_organisation_id')->select('id')))
+        ->count();
+    $counts = $pageFor('')['backlog_filters']['counts']['channel'];
+    expect($counts['partner'])->toBe($partnerCount)
+        ->and($counts['direct'] + $counts['partner'])->toBe((clone $creating)->count());
+
+    expect(array_sum($partnerOnly['backlog_filters']['counts']['scope']))->toBe($partnerCount);
 });
 
 test('the shop orders list sends the warehouse note so its icon shows next to the order', function () {
