@@ -147,8 +147,8 @@ const isSubNavActive = (subNav: SubNav) => {
                                 class="text-sm group-hover:opacity-100 opacity-50" fixed-width aria-hidden="true" />
                         </div>
 
-                        <div class="xl:whitespace-nowrap flex items-center gap-x-1.5">
-                            <span class="leading-none text-sm xl:text-base">{{ subNav.label }}</span>
+                        <div v-if="subNav.label || typeof subNav.number == 'number'" class="xl:whitespace-nowrap flex items-center gap-x-1.5">
+                            <span v-if="subNav.label" class="leading-none text-sm xl:text-base">{{ subNav.label }}</span>
                             <div v-if="typeof subNav.number == 'number'"
                                 class="inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
                                 :class="layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx') || layout.currentRoute === subNav.route?.name ? 'bg-indigo-100 ' : 'bg-gray-200 '">

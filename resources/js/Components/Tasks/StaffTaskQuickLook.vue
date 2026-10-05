@@ -24,8 +24,9 @@ import StaffTaskControls from "@/Components/Tasks/StaffTaskControls.vue"
 import StaffTaskSubtasks from "@/Components/Tasks/StaffTaskSubtasks.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faLink, faCheck, faComments, faExternalLink, faImage, faBuilding, faCalendar } from "@fal"
-library.add(faTimes, faSpinner, faLink, faCheck, faComments, faExternalLink, faImage, faBuilding, faCalendar)
+import { faTimes, faSpinner, faLink, faCheck, faComments, faExternalLink, faImage, faBuilding, faCalendar, faPencil } from "@fal"
+import { editContentUrl } from "@/Composables/useEditContentUrl"
+library.add(faTimes, faSpinner, faLink, faCheck, faComments, faExternalLink, faImage, faBuilding, faCalendar, faPencil)
 
 const emit = defineEmits<{
     closed: []
@@ -41,6 +42,10 @@ type QuickLookData = {
     can_remove_collaborators: boolean
     can_reassign: boolean
     can_ask_for_help: boolean
+    can_edit_content?: boolean
+    can_add_department?: boolean
+    can_remove_department?: boolean
+    department_options?: { value: string; label: string }[]
     options: { statuses: any[]; priorities: any[] }
     project_options?: any[]
     milestone_options?: any[]
@@ -160,7 +165,16 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             <span class="text-gray-600">{{ shown.priority_label }}</span>
                             <span v-if="shown.is_overdue" class="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">{{ ctrans("Overdue") }}</span>
                         </div>
-                        <h2 class="mb-3 text-lg font-semibold leading-snug">{{ shown.subject }}</h2>
+                        <div class="mb-3 flex items-start justify-between gap-2">
+                            <h2 class="text-lg font-semibold leading-snug">{{ shown.subject }}</h2>
+                            <Link
+                                v-if="data?.can_edit_content"
+                                v-tooltip="ctrans('Edit subject, description and files')"
+                                :href="editContentUrl(taskRoute(shown.reference))"
+                                class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600">
+                                <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                            </Link>
+                        </div>
                         <div class="mb-4 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
                             <span class="flex flex-wrap items-center gap-1">
                                 {{ ctrans("Raised") }}: {{ shortDate(shown.created_at) }}
@@ -181,7 +195,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             </span>
                         </div>
                         <TicketControlPanel v-if="!isDesktop && panelSummary" :ticket="panelSummary" storage-key="staff_task_quick_look_controls_open" :default-open="false">
-                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
+                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
                         </TicketControlPanel>
                     </div>
 
@@ -241,7 +255,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                 </div>
 
                 <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
+                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
                 </aside>
             </div>
         </div>

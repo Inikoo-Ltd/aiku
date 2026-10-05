@@ -55,6 +55,9 @@ const props = defineProps<{
     canRemoveCollaborators?: boolean
     canReassign?: boolean
     canAskForHelp?: boolean
+    canAddDepartment?: boolean
+    canRemoveDepartment?: boolean
+    departmentOptions?: { value: string; label: string }[]
     dueAccess?: StaffTaskDueAccess
     options: { statuses: Option[]; priorities: Option[] }
     projectOptions?: { label: string; value: number }[]
@@ -290,6 +293,26 @@ const askForHelp = () => {
         .then(() => notify({ title: ctrans("Help is on its way"), text: ctrans(":name and the supervisors were told", { name: props.task.requester?.name ?? ctrans("The requester") }), type: "success" }))
 }
 
+const addDepartment = (event: Event) => {
+    const department = (event.target as HTMLSelectElement).value
+    if (department) patchTask("department", { department })
+}
+
+const departmentRemovalOpen = ref(false)
+const departmentRemovalReason = ref("")
+
+const openDepartmentRemoval = () => {
+    departmentRemovalReason.value = ""
+    departmentRemovalOpen.value = true
+}
+
+const removeDepartment = () => {
+    const reason = departmentRemovalReason.value.trim()
+    if (!reason) return
+    departmentRemovalOpen.value = false
+    send("department", () => axios.post(route("grp.tasks.department.remove", props.task.reference), { reason }))
+}
+
 onMounted(() => {
     if (props.canEdit || props.canReassign) loadCoworkers()
 })
@@ -320,9 +343,9 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                 @click="canReassign && openAssigneePicker($event)">
                 <TicketUserAvatar v-if="task.assignee" :name="task.assignee.name" :avatar="task.assignee.avatar" />
                 <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                    <FontAwesomeIcon :icon="task.department_label ? 'fal fa-building' : 'fal fa-user'" fixed-width />
+                    <FontAwesomeIcon icon="fal fa-user" fixed-width />
                 </span>
-                <span class="min-w-0 flex-1 truncate" :class="task.assignee || task.department_label ? 'text-gray-800' : 'text-gray-400'">{{ task.assignee?.name ?? task.department_label ?? ctrans("Unassigned") }}</span>
+                <span class="min-w-0 flex-1 truncate" :class="task.assignee ? 'text-gray-800' : 'text-gray-400'">{{ task.assignee?.name ?? (task.department_label ? ctrans("Anyone in the department") : ctrans("Unassigned")) }}</span>
                 <FontAwesomeIcon v-if="canReassign" :icon="isPending('assignee') ? 'fal fa-spinner' : 'fal fa-exchange-alt'" :spin="isPending('assignee')" class="shrink-0 text-xs text-gray-400" fixed-width aria-hidden="true" />
             </component>
             <Popover v-if="canReassign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="onAssigneePickerHide">
@@ -350,6 +373,33 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                     </div>
                 </div>
             </Popover>
+        </div>
+
+        <div v-if="task.department_label || canAddDepartment">
+            <p :class="sectionLabelClass">{{ ctrans("Department") }}</p>
+            <div v-if="task.department_label" class="flex items-center gap-2 rounded-md p-2">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-building" fixed-width />
+                </span>
+                <span class="min-w-0 flex-1 truncate text-gray-800">{{ task.department_label }}</span>
+                <button
+                    v-if="canRemoveDepartment"
+                    v-tooltip="ctrans('Not for our department: take it off, with a reason')"
+                    type="button"
+                    class="shrink-0 rounded-md p-1.5 text-gray-400 transition duration-200 hover:bg-red-50 hover:text-red-600 active:!bg-red-100"
+                    @click="openDepartmentRemoval">
+                    <FontAwesomeIcon :icon="isPending('department') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('department')" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+            <select
+                v-else
+                class="w-full rounded-md border-gray-300 text-sm text-gray-600 focus:border-[--app-accent] focus:ring-[--app-accent]"
+                :aria-label="ctrans('Include a department')"
+                :disabled="isPending('department')"
+                @change="addDepartment">
+                <option value="">{{ isPending("department") ? ctrans("Including…") : ctrans("Include a department…") }}</option>
+                <option v-for="option in departmentOptions ?? []" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
         </div>
 
         <div v-if="task.collaborators.length || canManagePeople">
@@ -533,6 +583,25 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                 <div class="flex justify-end gap-x-2">
                     <Button type="button" text severity="secondary" :label="ctrans('Back')" @click="helpDialogOpen = false" />
                     <Button type="submit" :label="ctrans('Ask for help')" />
+                </div>
+            </form>
+        </Dialog>
+
+        <Dialog
+            v-model:visible="departmentRemovalOpen"
+            modal
+            dismissableMask
+            :header="ctrans('Take :department off :reference?', { department: task.department_label ?? '', reference: task.reference })"
+            :style="{ width: '28rem' }"
+            :breakpoints="{ '640px': '95vw' }">
+            <form class="space-y-3" @submit.prevent="removeDepartment">
+                <p class="text-sm text-gray-600">
+                    {{ task.assignee ? ctrans(":name keeps the task as it is. :requester is told why.", { name: task.assignee.name, requester: task.requester?.name ?? ctrans("The requester") }) : ctrans("Give the task to someone first, so it is not left with nobody.") }}
+                </p>
+                <Textarea v-model="departmentRemovalReason" rows="3" maxlength="1000" autofocus autoResize fluid :placeholder="ctrans('Why is it not for this department?')" />
+                <div class="flex justify-end gap-x-2">
+                    <Button type="button" text severity="secondary" :label="ctrans('Back')" @click="departmentRemovalOpen = false" />
+                    <Button type="submit" severity="danger" :label="ctrans('Take it off')" :disabled="!departmentRemovalReason.trim() || !task.assignee" />
                 </div>
             </form>
         </Dialog>

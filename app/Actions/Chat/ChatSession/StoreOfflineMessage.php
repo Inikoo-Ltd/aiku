@@ -102,6 +102,11 @@ class StoreOfflineMessage
             ->first();
     }
 
+    /**
+     * A customer writing again after the conversation was closed is new work nobody holds yet, so it goes back to the
+     * waiting queue for every agent to see, as an email reply does, rather than to the agent who closed it (HELP-3660).
+     * A conversation still open stays with whoever holds it.
+     */
     private function reopenSessionIfNeeded(ChatSession $session, array $data): void
     {
         if (! $session->isClosed()) {
@@ -109,26 +114,17 @@ class StoreOfflineMessage
         }
 
         $session->update([
-            'status' => ChatSessionStatusEnum::ACTIVE,
+            'status'    => ChatSessionStatusEnum::WAITING,
+            'closed_by' => null,
             'closed_at' => null,
         ]);
 
-        /** @var \App\Models\Chat\ChatAssignment|null $lastAssignment */
-        $lastAssignment = $session->assignments()
-            ->where('status', ChatAssignmentStatusEnum::RESOLVED->value)
-            ->latest('resolved_at')
-            ->first();
-
-        $isAlreadyHeld = $session->assignments()
+        $session->assignments()
             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-            ->exists();
-
-        if ($lastAssignment && !$isAlreadyHeld) {
-            $lastAssignment->update([
-                'status'      => ChatAssignmentStatusEnum::ACTIVE->value,
-                'resolved_at' => null,
+            ->update([
+                'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
+                'resolved_at' => now(),
             ]);
-        }
 
         $this->logReopenEvent($session, $data);
     }
