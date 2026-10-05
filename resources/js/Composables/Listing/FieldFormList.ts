@@ -27,6 +27,7 @@ import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import AlertSounds from '@/Components/Forms/Fields/AlertSounds.vue'
 import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
 import OrderAlerts from '@/Components/Forms/Fields/OrderAlerts.vue'
+import AlertPopupPreviews from '@/Components/Forms/Fields/AlertPopupPreviews.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import MailboxConnect from '@/Components/Forms/Fields/MailboxConnect.vue'
@@ -176,6 +177,7 @@ export const componentsList: { [key: string]: Component } = {
     'alert_sounds': AlertSounds,
     'org_themes': OrgThemes,
     'order_alerts': OrderAlerts,
+    'alert_popup_previews': AlertPopupPreviews,
     'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,

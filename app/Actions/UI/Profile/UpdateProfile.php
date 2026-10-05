@@ -128,6 +128,17 @@ class UpdateProfile extends OrgAction
             $user->update(['settings' => $settings]);
         }
 
+        $orderAlertsPopupWasSubmitted = Arr::exists($modelData, 'order_alerts_popup');
+
+        if ($orderAlertsPopupWasSubmitted) {
+            $settings                 = $user->settings;
+            $settings['order_alerts'] = array_merge(
+                GetUserOrderAlerts::make()->formValue($user),
+                ['popup' => ['show' => (bool) Arr::pull($modelData, 'order_alerts_popup')]]
+            );
+            $user->update(['settings' => $settings]);
+        }
+
         if (Arr::exists($modelData, 'alert_preview_seconds')) {
             $modelData['settings']['alert_preview_seconds'] = (int) Arr::pull($modelData, 'alert_preview_seconds');
         }
@@ -180,7 +191,7 @@ class UpdateProfile extends OrgAction
          * The organisation colours travel in the first load only layout props, so without asking for
          * those props again the left navigation would keep the old colours until a full page load.
          */
-        if ($organisationColoursWereSubmitted || $orderAlertsWereSubmitted) {
+        if ($organisationColoursWereSubmitted || $orderAlertsWereSubmitted || $orderAlertsPopupWasSubmitted) {
             Session::put('reloadLayout', '1');
         }
 
@@ -230,6 +241,7 @@ class UpdateProfile extends OrgAction
             'order_alerts.types.*.sound'  => ['sometimes', Rule::in(OrderAlertTypeEnum::SOUNDS)],
             'order_alerts.types.*.muted'  => ['sometimes', 'boolean'],
             'order_alerts.popup.show'     => ['sometimes', 'boolean'],
+            'order_alerts_popup'          => ['sometimes', 'boolean'],
             'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'triumph', 'gong', 'sparkle', 'knock', 'genie', 'silent'])],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],

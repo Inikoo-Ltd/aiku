@@ -21,6 +21,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue"
+import ActionGauges from "@/Components/Stats/ActionGauges.vue"
+import { ActionGaugeTS } from "@/types/Components/ActionGauge"
 
 library.add(
     faBox,
@@ -57,6 +59,7 @@ defineProps<{
             }>
         }>
     }
+    actionGauges?: ActionGaugeTS[]
     statsBox: {}
     additionalStatBox?: {}[]
     stockHistoryToday?: {
@@ -125,6 +128,8 @@ const options = {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
+
+    <ActionGauges v-if="actionGauges?.length" :gauges="actionGauges" />
 
     <div v-if="stockHistoryToday" class="px-4 mt-4">
         <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">

@@ -97,6 +97,7 @@ class ShowInventoryDashboard extends OrgAction
                         ]
                     ]
                 ],
+                'actionGauges' => $this->getActionGauges($routeParameters),
                 'statsBox' => [
                     [
                         'label' => __('Replenishments'),
@@ -169,6 +170,56 @@ class ShowInventoryDashboard extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * The daily to-do counts, laid out like the old Aurora warehouse gauges so warehouse staff spot what needs doing first.
+     *
+     * @return array<int, array{key: string, label: string, hint: string, value: int, percentage: float, total: int, color: string, route: array{name: string, parameters: array}, secondary?: array}>
+     */
+    public function getActionGauges(array $routeParameters): array
+    {
+        $stats           = $this->warehouse->stats;
+        $numberOrgStocks = $this->organisation->inventoryStats->number_current_org_stocks;
+        $percentageOf    = fn (int $count): float => $numberOrgStocks ? round($count / $numberOrgStocks * 100, 1) : 0;
+
+        return [
+            [
+                'key'        => 'urgent_audit',
+                'label'      => __('Urgent audit'),
+                'hint'       => __('SKOs with :threshold or fewer left in all locations. Count them to confirm the stock.', ['threshold' => $this->warehouse->getLowStockThreshold()]),
+                'value'      => $stats->number_org_stocks_low_stock_audits,
+                'percentage' => $percentageOf($stats->number_org_stocks_low_stock_audits),
+                'total'      => $numberOrgStocks,
+                'color'      => '#d97706',
+                'route'      => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.low_stock_audits.index',
+                    'parameters' => $routeParameters
+                ],
+            ],
+            [
+                'key'        => 'to_replenish',
+                'label'      => __('To replenish'),
+                'hint'       => __('Picking locations below their minimum while other locations still hold stock. Move stock into them.'),
+                'value'      => $stats->number_org_stocks_replenishments_wholesale,
+                'percentage' => $percentageOf($stats->number_org_stocks_replenishments_wholesale),
+                'total'      => $numberOrgStocks,
+                'color'      => '#e11d48',
+                'route'      => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
+                    'parameters' => $routeParameters
+                ],
+                'secondary'  => [
+                    'tooltip' => __('Dropshipping replenishments'),
+                    'icon'    => 'fas fa-shopping-basket',
+                    'value'   => $stats->number_org_stocks_replenishments_dropshipping,
+                    'route'   => [
+                        'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping',
+                        'parameters' => $routeParameters
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function getDashboard(): array
