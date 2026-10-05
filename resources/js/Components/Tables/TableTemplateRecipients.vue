@@ -430,14 +430,14 @@ watch(
 
 <template>
     <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col gap-3 mb-6 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex flex-col gap-3 mb-4 xl:flex-row xl:items-center xl:justify-between">
             <!-- left side -->
             <div class="flex flex-wrap items-center gap-2 min-w-0">
                 <div v-if="channelOptions?.length" class="flex items-center gap-4 h-10 px-4 rounded-lg border border-gray-200 bg-white">
                     <label v-for="option in channelOptions" :key="option.value"
                         class="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" v-model="selectedChannels[option.value]" @change="onChannelChange"
-                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                            class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
                         <span class="text-sm text-gray-700 whitespace-nowrap">{{ ctrans(option.label) }}</span>
                     </label>
                 </div>
@@ -490,7 +490,7 @@ watch(
                     :type="selectedUpcoming === 'ready' ? 'primary' : 'secondary'"
                     :tooltip="ctrans('Upcoming Transactions Ready')" class="h-10 px-4 shrink-0 whitespace-nowrap">
                     <FontAwesomeIcon :icon="faCalendarPlus" fixed-width />
-                    <span>{{ ctrans("Upcoming Transactions") }}</span>
+                    <span>{{ ctrans("Upcoming: ready") }}</span>
                     <Badge :value="upcomingReadyCount" class="ml-2" />
                 </Button>
 
@@ -499,7 +499,7 @@ watch(
                     :type="selectedUpcoming === 'out_of_stock' ? 'red' : 'red_outline'"
                     :tooltip="ctrans('Upcoming Transactions Out of Stock / Not for Sale')" class="h-10 px-4 shrink-0 whitespace-nowrap">
                     <FontAwesomeIcon :icon="faBan" fixed-width />
-                    <span>{{ ctrans("Upcoming Transactions") }}</span>
+                    <span>{{ ctrans("Upcoming: out of stock") }}</span>
                     <Badge :value="upcomingOutOfStockCount" class="ml-2" />
                 </Button>
 
@@ -507,12 +507,6 @@ watch(
 
                 <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />
-            </div>
-            <!-- center side -->
-            <div v-if="isAllCustomers && showEstimate" class="flex items-center">
-                <span class="text-blue-600 font-medium">
-                    {{ ctrans("Audience: All Customers") }}
-                </span>
             </div>
             <!-- right side -->
             <div class="flex flex-wrap items-center gap-3 shrink-0 xl:justify-end">
@@ -806,24 +800,17 @@ watch(
             </div>
         </div>
 
-        <div v-if="showEstimate" class="mt-8">
-            <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
-
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">{{ ctrans(estimateLabel) }}</p>
-                    <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
-                        {{ ctrans(formatNumber(estimatedRecipients)) }}
-                    </h2>
-                    <p class="text-xs text-gray-400 mt-2">
-                        {{ ctrans("Based on current filters") }}
-                    </p>
-                </div>
-
-                <div class="h-16 w-16 rounded-full bg-indigo-50 flex items-center justify-center">
-                    <FontAwesomeIcon :icon="faUsers" class="text-indigo-600 text-2xl" fixed-width />
-                </div>
-
+        <div v-if="showEstimate" class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[--app-accent-soft] text-[--app-accent-strong]">
+                <FontAwesomeIcon :icon="faUsers" fixed-width aria-hidden="true" />
+            </span>
+            <div class="min-w-0">
+                <p class="text-xs text-gray-500">{{ ctrans(estimateLabel) }}</p>
+                <p class="text-2xl font-semibold tabular-nums tracking-tight text-gray-900">{{ formatNumber(estimatedRecipients) }}</p>
             </div>
+            <span class="ml-auto rounded-full px-2.5 py-1 text-xs font-medium" :class="isAllCustomers ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'bg-gray-100 text-gray-600'">
+                {{ isAllCustomers ? ctrans("Audience: all customers") : ctrans("Based on current filters") }}
+            </span>
         </div>
     </div>
 </template>
