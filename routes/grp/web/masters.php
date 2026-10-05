@@ -73,7 +73,6 @@ Route::get('/tab-data', GetMastersDashboardTabData::class)->name('dashboard.tab-
 
 
 
-Route::get('/master-products', IndexMasterProducts::class)->name('master_products.index');
 Route::get('/master-departments', [IndexMasterDepartments::class, 'inGroup'])->name('master_departments.index');
 Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMasterProductCategory::class)->name('master_departments.delete');
 

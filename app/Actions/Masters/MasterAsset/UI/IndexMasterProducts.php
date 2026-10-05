@@ -19,7 +19,6 @@ use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -716,14 +715,6 @@ class IndexMasterProducts extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_products.index' => array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb([
-                    'name'       => $routeName,
-                    'parameters' => [],
-                ], $suffix),
-            ),
-
             'grp.masters.master_shops.show.master_products.index',
             'grp.masters.master_shops.show.master_products.sales' => array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),
@@ -768,15 +759,6 @@ class IndexMasterProducts extends OrgAction
 
             default => [],
         };
-    }
-
-    public function asController(ActionRequest $request): LengthAwarePaginator
-    {
-        $group        = group();
-        $this->parent = $group;
-        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
-
-        return $this->handle($group, prefix: MasterProductsTabsEnum::INDEX->value);
     }
 
     public function inMasterShop(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
