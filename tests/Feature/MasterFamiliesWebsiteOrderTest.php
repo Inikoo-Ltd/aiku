@@ -6,13 +6,19 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\ReorderFamiliesInDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Catalogue\ProductCategory\UI\GetDepartmentFamiliesOrder;
 use App\Actions\Masters\MasterProductCategory\ReorderMasterFamiliesInMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentFamilies;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentFamiliesOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -20,6 +26,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -188,4 +195,111 @@ test('a shop department that has opted out orders its own families', function ()
 
     expect($families['second']->fresh()->website_position)->toBe(1)
         ->and($families['first']->fresh()->website_position)->toBe(2);
+});
+
+test('the families order lists the families brought in by the active collections of the department apart', function () {
+    $ownFamily = ($this->storeMasterFamily)($this->masterDepartment, 'own family');
+
+    $otherDepartment = StoreMasterDepartment::make()->action($this->masterShop, [
+        'code' => 'WPD-'.uniqid(),
+        'name' => 'other department',
+        'type' => MasterProductCategoryTypeEnum::DEPARTMENT,
+    ]);
+    $fromDepartmentCollection = ($this->storeMasterFamily)($otherDepartment, 'from department collection');
+    $fromOtherModelCollection = ($this->storeMasterFamily)($otherDepartment, 'from other model collection');
+    $fromInactiveCollection   = ($this->storeMasterFamily)($otherDepartment, 'from inactive collection');
+
+    $collectionHolding = function (string $name, string $state, string $attachedModelType, MasterProductCategory $masterFamily) {
+        $masterCollection = StoreMasterCollection::make()->action($this->masterShop, [
+            'code' => 'WPC'.substr(uniqid(), -6),
+            'name' => $name,
+        ], createChildren: false);
+        DB::table('master_collections')->where('id', $masterCollection->id)->update(['state' => $state]);
+
+        DB::table('model_has_master_collections')->insert([
+            'master_collection_id' => $masterCollection->id,
+            'model_type'           => $attachedModelType,
+            'model_id'             => $this->masterDepartment->id,
+            'type'                 => 'department',
+            'created_at'           => now(),
+            'updated_at'           => now(),
+        ]);
+        DB::table('master_collection_has_models')->insert([
+            'master_collection_id' => $masterCollection->id,
+            'model_type'           => 'MasterProductCategory',
+            'model_id'             => $masterFamily->id,
+            'created_at'           => now(),
+            'updated_at'           => now(),
+        ]);
+    };
+
+    $collectionHolding('Department collection', 'active', 'MasterProductCategory', $fromDepartmentCollection);
+    $collectionHolding('Other model collection', 'active', 'MasterShop', $fromOtherModelCollection);
+    $collectionHolding('Inactive collection', 'inactive', 'MasterProductCategory', $fromInactiveCollection);
+
+    $order = GetMasterDepartmentFamiliesOrder::run($this->masterDepartment);
+
+    $orderedIds    = collect($order['data']->resolve())->pluck('id');
+    $collectionRow = collect($order['collection_families']->resolve());
+
+    expect($orderedIds->all())->toBe([$ownFamily->id])
+        ->and($collectionRow->pluck('id')->all())->toBe([$fromDepartmentCollection->id])
+        ->and($collectionRow->first()['collection_names'])->toBe('Department collection')
+        ->and($collectionRow->first()['department_name'])->toBe('other department');
+});
+
+test('a shop department lists the families of its collections after its own families on the order tab and the website', function () {
+    [, $product] = createProduct($this->shop);
+    $department  = $product->department;
+    $ownFamily   = $product->family;
+
+    $otherDepartmentData = ProductCategory::factory()->definition();
+    data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $otherDepartment = StoreProductCategory::make()->action($this->shop, $otherDepartmentData);
+
+    $familyData = ProductCategory::factory()->definition();
+    data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+    $collectionFamily = StoreProductCategory::make()->action($otherDepartment, $familyData);
+
+    $families = [$ownFamily, $collectionFamily];
+    foreach ($families as $family) {
+        StoreProductCategoryWebpage::make()->action($family);
+    }
+    DB::table('product_categories')->whereIn('id', collect($families)->pluck('id'))
+        ->update(['show_in_website' => true, 'state' => 'active']);
+    DB::table('product_categories')->where('id', $collectionFamily->id)->update(['website_position' => 1]);
+    DB::table('product_categories')->where('id', $ownFamily->id)->update(['website_position' => 5]);
+    DB::table('webpages')->where('model_type', 'ProductCategory')->whereIn('model_id', collect($families)->pluck('id'))
+        ->update(['state' => 'live']);
+
+    $collection = StoreCollection::make()->action($this->shop, [
+        'code'        => 'WPC'.substr(uniqid(), -6),
+        'name'        => 'Shop department collection',
+        'description' => 'Shop department collection',
+    ]);
+    DB::table('collections')->where('id', $collection->id)->update(['state' => 'active']);
+    DB::table('model_has_collections')->insert([
+        'collection_id' => $collection->id,
+        'model_type'    => 'ProductCategory',
+        'model_id'      => $department->id,
+        'type'          => 'department',
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
+    DB::table('collection_has_models')->insert([
+        'collection_id' => $collection->id,
+        'model_type'    => 'ProductCategory',
+        'model_id'      => $collectionFamily->id,
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
+
+    $order = GetDepartmentFamiliesOrder::run($department->refresh());
+
+    expect(collect($order['data']->resolve())->pluck('id'))->not->toContain($collectionFamily->id)
+        ->and(collect($order['collection_families']->resolve())->pluck('id')->all())->toBe([$collectionFamily->id]);
+
+    $websiteFamilyIds = collect(GetFamiliesUnderDepartmentPage::run($department)->items())->pluck('id')->all();
+
+    expect($websiteFamilyIds)->toBe([$ownFamily->id, $collectionFamily->id]);
 });

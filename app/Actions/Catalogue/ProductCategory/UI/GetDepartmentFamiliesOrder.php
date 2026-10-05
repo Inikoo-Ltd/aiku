@@ -6,6 +6,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\FamilyWebsiteOrderResource;
@@ -16,16 +17,19 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetDepartmentFamiliesOrder
 {
     use AsObject;
+    use WithFamiliesFromParentCollections;
 
     public function handle(ProductCategory $department): array
     {
-        $families = $this->getFamilies($department);
+        $families           = $this->getFamilies($department);
+        $collectionFamilies = $this->getCollectionFamilies($department);
 
         $followsMaster = (bool) data_get($department->shop->settings, 'catalog.family_order_follow_master', true);
 
         return [
             'id'               => $department->id,
             'data'             => FamilyWebsiteOrderResource::collection($families),
+            'collection_families' => FamilyWebsiteOrderResource::collection($collectionFamilies),
             'editable'         => !$followsMaster,
             'follows_master'   => $followsMaster,
             'number_uncurated' => $families->whereNull('website_position')->count(),
@@ -59,6 +63,31 @@ class GetDepartmentFamiliesOrder
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
             ->with(['subDepartment', 'stats'])
+            ->orderByRaw('product_categories.website_position ASC NULLS LAST')
+            ->orderByRaw('product_categories.created_at DESC')
+            ->get();
+    }
+
+    /**
+     * Families of other departments brought in by the active collections attached to the department.
+     * The website lists them after the department own families, in the order of their own department.
+     *
+     * @return Collection<int, ProductCategory>
+     */
+    public function getCollectionFamilies(ProductCategory $department): Collection
+    {
+        return ProductCategory::query()
+            ->select('product_categories.*')
+            ->selectSub($this->parentCollectionNamesOfFamily($department->id), 'collection_names')
+            ->where('product_categories.shop_id', $department->shop_id)
+            ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+            ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
+            ->where(function ($query) use ($department) {
+                $query->whereNull('product_categories.department_id')
+                    ->orWhere('product_categories.department_id', '!=', $department->id);
+            })
+            ->whereIn('product_categories.id', $this->familyIdsFromParentCollections($department->id))
+            ->with(['department', 'subDepartment', 'stats'])
             ->orderByRaw('product_categories.website_position ASC NULLS LAST')
             ->orderByRaw('product_categories.created_at DESC')
             ->get();

@@ -16,11 +16,13 @@ class GetMasterDepartmentFamiliesOrder
 
     public function handle(MasterProductCategory $masterDepartment): array
     {
-        $families = GetMasterDepartmentFamilies::run($masterDepartment)->load(['masterSubDepartment', 'stats']);
+        $families           = GetMasterDepartmentFamilies::run($masterDepartment)->load(['masterSubDepartment', 'stats']);
+        $collectionFamilies = GetMasterDepartmentFamilies::make()->getCollectionFamilies($masterDepartment)->load(['masterDepartment', 'masterSubDepartment', 'stats']);
 
         return [
             'id'                  => $masterDepartment->id,
             'data'                => MasterFamilyWebsiteOrderResource::collection($families),
+            'collection_families' => MasterFamilyWebsiteOrderResource::collection($collectionFamilies),
             'editable'            => true,
             'number_uncurated'    => $families->whereNull('website_position')->count(),
             'payload_key'         => 'master_families',

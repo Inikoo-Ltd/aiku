@@ -29,10 +29,14 @@ const props = withDefaults(
         disabled?: boolean
         pasteLookupRoute?: { name: string; parameters?: Record<string, unknown> } | null
         sortOptions?: SortOption[]
+        listMaxHeight?: string | null
+        dense?: boolean
     }>(),
     {
         disabled : false,
         useDelete: false,
+        listMaxHeight: null,
+        dense: false,
         sortOptions: () => [
             { key: 'name', label: 'Name', type: 'string' },
             { key: 'code', label: 'Code', type: 'string' },
@@ -62,7 +66,7 @@ const sortBy = ref<string>('manual')
 const sortDirection = ref<'asc' | 'desc'>('asc')
 const history = ref<any[][]>([])
 const future = ref<any[][]>([])
-const clone = (data: any) => JSON.parse(JSON.stringify(data))
+const clone = (data: any[]) => [...data]
 
 const saveHistory = () => {
     history.value.push(clone(items.value))
@@ -227,8 +231,8 @@ onMounted(() => window.addEventListener("keydown", handleKey))
 onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 </script>
 <template>
-    <div class="p-4">
-        <div class="flex items-center justify-between mb-4">
+    <div :class="dense ? 'p-3' : 'p-4'">
+        <div class="flex items-center justify-between" :class="dense ? 'mb-2' : 'mb-4'">
             <div class="flex items-center gap-4">
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button v-for="option in sortOptions" :key="option.key" @click="applySort(option.key)"
@@ -286,16 +290,15 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             </slot>
         </template>
 
-        <!-- LIST -->
-
-        <draggable v-else-if="viewMode === 'list'" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle"
-            @end="updateOrder" animation="200" ghost-class="drag-ghost" chosen-class="drag-chosen"
-            drag-class="drag-dragging" class="space-y-2">
+        <div :class="listMaxHeight ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="listMaxHeight ? { maxHeight: listMaxHeight } : undefined">
+        <draggable v-if="items.length && viewMode === 'list'" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle"
+            @end="updateOrder" animation="150" ghost-class="drag-ghost" chosen-class="drag-chosen"
+            drag-class="drag-dragging" :class="dense ? 'space-y-1' : 'space-y-2'">
             <template #item="{ element, index }">
-                <div class="flex items-center gap-3 p-2 border rounded bg-white hover:bg-gray-50">
+                <div class="flex items-center border rounded bg-white hover:bg-gray-50" :class="dense ? 'gap-2 px-2 py-1' : 'gap-3 p-2'">
                     <div class="drag-handle cursor-move text-gray-400" v-if="!disabled">☰</div>
 
-                    <div class="w-10 text-xs text-gray-400">
+                    <div class="text-xs text-gray-400 tabular-nums" :class="dense ? 'w-8' : 'w-10'">
                         <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
                             :max="items.length" class="index-input w-full border rounded px-1 text-xs"
                             @blur="applyNewIndex(element)" @keyup.enter="applyNewIndex(element)" />
@@ -328,8 +331,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             </template>
         </draggable>
 
-        <!-- CARD -->
-        <draggable v-else :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
+        <draggable v-else-if="items.length" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
             ghost-class="drag-ghost" chosen-class="drag-chosen" drag-class="drag-dragging" tag="div"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
@@ -374,6 +376,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 </div>
             </template>
         </draggable>
+
+        <slot name="after-list" :view-mode="viewMode" :items-count="items.length"></slot>
+        </div>
     </div>
     <PasteProductOrderModal
         :is-open="isPasteOpen"

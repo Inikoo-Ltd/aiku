@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
+use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -18,7 +19,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -27,6 +27,8 @@ use Spatie\QueryBuilder\Sorts\Sort;
 
 class GetFamiliesUnderDepartmentPage extends IrisAction
 {
+    use WithFamiliesFromParentCollections;
+
     public function handle(ProductCategory $parent): LengthAwarePaginator
     {
         if (!in_array($parent->type, [ProductCategoryTypeEnum::DEPARTMENT, ProductCategoryTypeEnum::SUB_DEPARTMENT])) {
@@ -51,17 +53,6 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     ->where('c.code', $value);
             });
         });
-
-        $familiesFromCollections = function ($parentId) {
-            return DB::table('collection_has_models as chm')
-                ->select('chm.model_id')
-                ->where('chm.model_type', class_basename(ProductCategory::class))
-                ->whereIn('chm.collection_id', function ($q) use ($parentId) {
-                    $q->select('mhc.collection_id')
-                        ->from('model_has_collections as mhc')
-                        ->where('mhc.model_id', $parentId);
-                });
-        };
 
         $query = QueryBuilder::for(ProductCategory::class)
             ->leftJoin('webpages', function ($join) {
@@ -90,10 +81,9 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ])
             ->where('product_categories.show_in_website', true)
             ->where('product_categories.shop_id', $parent->shop_id)
-            ->where(function ($q) use ($parent, $parentColumn, $familiesFromCollections) {
+            ->where(function ($q) use ($parent, $parentColumn) {
                 $q->where($parentColumn, $parent->id)
-                    ->orWhereIn('product_categories.id', $familiesFromCollections($parent->id));
-
+                    ->orWhereIn('product_categories.id', $this->familyIdsFromParentCollections($parent->id));
             })
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
@@ -101,11 +91,16 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
 
         $curatedSort = AllowedSort::custom(
             'website_position',
-            new class () implements Sort {
+            new class ($parentColumn, $parent->id) implements Sort {
+                public function __construct(private readonly string $parentColumn, private readonly int $parentId)
+                {
+                }
+
                 public function __invoke(Builder $query, bool $descending, string $property)
                 {
                     $direction = $descending ? 'DESC' : 'ASC';
-                    $query->orderByRaw("product_categories.website_position $direction NULLS LAST")
+                    $query->orderByRaw("CASE WHEN $this->parentColumn = ? THEN 0 ELSE 1 END", [$this->parentId])
+                        ->orderByRaw("product_categories.website_position $direction NULLS LAST")
                         ->orderByRaw('product_categories.created_at DESC');
                 }
             }
