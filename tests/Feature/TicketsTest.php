@@ -4062,3 +4062,20 @@ test('the project tools let a team member run a project through the AI assistant
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
     expect($task->fresh()->ticket_project_id)->toBe($project->id);
 });
+
+test('a deployment closes a pending deploy ticket whose fix commit was rewritten by a rebase once a commit naming it is deployed', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rebased fix']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'deadbeef00', 'comment' => 'Live now'])->assertOk();
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY);
+
+    $ticket->update(['data' => array_merge($ticket->fresh()->data, ['commits' => [['hash' => '5f525f2033']]])]);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+});
