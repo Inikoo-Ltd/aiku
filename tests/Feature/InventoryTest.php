@@ -2964,6 +2964,34 @@ describe('aurora provisional cost fix', function () {
         expect((float) $orgStock->refresh()->sku_value)->toBe(5.5);
     });
 
+    test('fifo ignores the counted level an Aurora audit carries', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFAA');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $movements = [
+            [OrgStockMovementTypeEnum::PURCHASE, 10, 1, '2026-07-01 10:00:00', null],
+            [OrgStockMovementTypeEnum::AUDIT, 10, null, '2026-07-02 10:00:00', $this->organisation->id.':990001'],
+            [OrgStockMovementTypeEnum::PICKED, -10, null, '2026-07-03 10:00:00', null],
+            [OrgStockMovementTypeEnum::PURCHASE, 10, 3, '2026-07-04 10:00:00', null],
+        ];
+        foreach ($movements as [$type, $quantity, $costPerSku, $date, $sourceId]) {
+            $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+                'type'     => $type->value,
+                'quantity' => $quantity,
+            ]);
+            $movement->update([
+                'cost_per_sku' => $costPerSku,
+                'org_amount'   => $costPerSku === null ? 0 : $costPerSku * $quantity,
+                'date'         => $date,
+                'source_id'    => $sourceId,
+            ]);
+        }
+
+        expect(StoreOrgStockMovement::make()->getFifoPerSku($orgStock->refresh(), \Illuminate\Support\Carbon::parse('2026-07-05')))->toBe(3.0);
+    });
+
     test('recompute leaves rows before the first repaired movement alone', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFD');
 

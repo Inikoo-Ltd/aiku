@@ -28,6 +28,7 @@ use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
@@ -4975,6 +4976,16 @@ describe('partner shopping list', function () {
             ->and($stockDelivery)->not->toBeNull()
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+
+        $fifoPerSko = 0.4 * (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
+        $originalSupplierCost = $sellerOrgStock->current_supplier_sku_cost;
+        $sellerOrgStock->update(['current_supplier_sku_cost' => round($fifoPerSko * 8, 2)]);
+        expect(GetPartnerLandedCost::run([$sellerOrgStock->id])[$sellerOrgStock->id])->toBe(round($fifoPerSko * 8, 2));
+        $sellerOrgStock->update(['current_supplier_sku_cost' => round($fifoPerSko / 8, 2)]);
+        expect(GetPartnerLandedCost::run([$sellerOrgStock->id])[$sellerOrgStock->id])->toBe(round($fifoPerSko / 8, 2));
+        $sellerOrgStock->update(['current_supplier_sku_cost' => round($fifoPerSko * 1.5, 2)]);
+        expect(GetPartnerLandedCost::run([$sellerOrgStock->id])[$sellerOrgStock->id])->toEqualWithDelta($fifoPerSko, 0.0001);
+        $sellerOrgStock->update(['current_supplier_sku_cost' => $originalSupplierCost]);
 
         DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->delete();
         DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
