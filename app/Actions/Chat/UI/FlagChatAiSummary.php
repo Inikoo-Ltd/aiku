@@ -12,10 +12,12 @@ use App\Actions\Chat\ChatSession\SummarizeLongEmail;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -30,7 +32,7 @@ class FlagChatAiSummary
 
     public const string KEY = 'ai_summary_flags';
 
-    public function handle(ChatMessage|ChatSession $model, int $userId, string $reason): ChatMessage|ChatSession
+    public function handle(ChatMessage|ChatSession|MetaChatSession $model, int $userId, string $reason): ChatMessage|ChatSession|MetaChatSession
     {
         $metadata = $model->metadata ?? [];
 
@@ -46,14 +48,14 @@ class FlagChatAiSummary
         return $model;
     }
 
-    public static function summaryOf(ChatMessage|ChatSession $model): ?string
+    public static function summaryOf(ChatMessage|ChatSession|MetaChatSession $model): ?string
     {
         return $model instanceof ChatMessage
             ? Arr::get($model->metadata, SummarizeLongEmail::KEY)
             : Arr::get($model->metadata, 'ai_summary.summary');
     }
 
-    public static function isFlagged(ChatMessage|ChatSession $model): bool
+    public static function isFlagged(ChatMessage|ChatSession|MetaChatSession $model): bool
     {
         $summary = self::summaryOf($model);
 
@@ -70,19 +72,29 @@ class FlagChatAiSummary
         return $this->flag($chatSession, $chatSession, $request);
     }
 
-    private function flag(ChatMessage|ChatSession $model, ?ChatSession $chatSession, Request $request): JsonResponse
+    public function inMetaChatSession(MetaChatSession $metaChatSession, Request $request): JsonResponse
+    {
+        return $this->flag($metaChatSession, $metaChatSession, $request);
+    }
+
+    private function flag(ChatMessage|ChatSession|MetaChatSession $model, ChatSession|MetaChatSession|null $chatSession, Request $request): JsonResponse
     {
         abort_unless(self::summaryOf($model) && $this->mayFlag($request->user(), $chatSession), 404);
         abort_if(self::isFlagged($model), 422, __('This summary is already marked as wrong'));
 
         $reason = $request->validate(['reason' => ['required', 'string', 'max:500']])['reason'];
 
-        $this->handle($model, $request->user()->id, $reason);
+        DB::transaction(function () use ($model, $request, $reason) {
+            $locked = $model::query()->lockForUpdate()->findOrFail($model->id);
+            abort_if(self::isFlagged($locked), 422, __('This summary is already marked as wrong'));
+
+            $this->handle($locked, $request->user()->id, $reason);
+        });
 
         return response()->json(['success' => true]);
     }
 
-    private function mayFlag(User $user, ?ChatSession $chatSession): bool
+    private function mayFlag(User $user, ChatSession|MetaChatSession|null $chatSession): bool
     {
         $shop = $chatSession?->shop;
 

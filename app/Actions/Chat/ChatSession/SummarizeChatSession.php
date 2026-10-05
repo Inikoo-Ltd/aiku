@@ -72,6 +72,7 @@ class SummarizeChatSession
             return $chatSession;
         }
 
+        $chatSession->refresh();
         $metadata               = $chatSession->metadata ?? [];
         $metadata['ai_summary'] = Arr::only($summaryData, ['summary', 'key_points', 'status', 'sentiment']) + ['model' => $model];
 
