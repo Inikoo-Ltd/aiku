@@ -54,8 +54,8 @@ class GetRetinaPaymentMethods
     /**
      * The ways this basket can be paid. Pastpay reserves and cash on delivery collects the whole
      * invoice when the goods are sent, which cannot take a deposit now and a balance later; a bank
-     * transfer arrives after the order is placed, so it cannot be the made-to-order deposit taken at
-     * checkout. A basket with pre-order lines offers nothing until the terms are accepted (HELP-3432).
+     * transfer arrives after the order is placed, and pre-orders are paid at checkout, in full or the
+     * deposit (HELP-3678). A basket with pre-order lines offers nothing until the terms are accepted.
      *
      * @return Collection<int, PaymentAccountShop>
      */
@@ -67,10 +67,7 @@ class GetRetinaPaymentMethods
         }
 
         $hasPreOrders     = $order->preOrder || ($basketPreOrders['has_pre_orders'] ?? false);
-        $excludedPayments = $hasPreOrders ? [PaymentAccountTypeEnum::PASTPAY, PaymentAccountTypeEnum::CASH_ON_DELIVERY] : [];
-        if ($order->preOrder || ($basketPreOrders['deferred_amount'] ?? 0) > 0) {
-            $excludedPayments[] = PaymentAccountTypeEnum::BANK;
-        }
+        $excludedPayments = $hasPreOrders ? [PaymentAccountTypeEnum::PASTPAY, PaymentAccountTypeEnum::CASH_ON_DELIVERY, PaymentAccountTypeEnum::BANK] : [];
 
         return $order->shop->paymentAccountShops()
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)

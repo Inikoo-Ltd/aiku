@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 use App\Actions\Chat\Widget\EnableShopChatWidget;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
@@ -232,6 +233,13 @@ class UpdateShop extends OrgAction
             }
         }
 
+        foreach ($this->preOrderTextFields($shop) as $field => $path) {
+            if (array_key_exists($field, $modelData)) {
+                $text = trim((string) Arr::pull($modelData, $field));
+                data_set($modelData, "settings.$path", $text === '' ? null : $text);
+            }
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -295,6 +303,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'family_indexing_follow_master')) {
             data_set($modelData, 'settings.catalog.family_indexing_follow_master', Arr::pull($modelData, 'family_indexing_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'family_order_follow_master')) {
+            data_set($modelData, 'settings.catalog.family_order_follow_master', Arr::pull($modelData, 'family_order_follow_master'));
         }
 
         if (Arr::exists($modelData, 'portal_link')) {
@@ -450,6 +462,12 @@ class UpdateShop extends OrgAction
             $seconds = (int) Arr::pull($modelData, $field);
 
             data_set($modelData, "settings.chat.unclaimed_after_seconds.$chatChannel", $seconds > 0 ? $seconds : null);
+        }
+
+        foreach (['start', 'end'] as $edge) {
+            if (Arr::exists($modelData, "chat_hours_$edge")) {
+                data_set($modelData, "settings.chat.hours.$edge", Arr::pull($modelData, "chat_hours_$edge") ?: null);
+            }
         }
 
         if (Arr::exists($modelData, 'chat_email_offline_replies')) {
@@ -991,6 +1009,8 @@ class UpdateShop extends OrgAction
                     }
                 },
             ],
+            'chat_hours_start'                                        => ['sometimes', 'nullable', 'date_format:H:i'],
+            'chat_hours_end'                                          => ['sometimes', 'nullable', 'date_format:H:i'],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
@@ -1028,6 +1048,7 @@ class UpdateShop extends OrgAction
             'shopkeeper_in_charge_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
+            'family_order_follow_master'                              => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
@@ -1116,11 +1137,36 @@ class UpdateShop extends OrgAction
             $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
         }
 
+        foreach ($this->preOrderTextFields($this->shop) as $field => $path) {
+            $rules[$field] = ['sometimes', 'nullable', 'string', 'max:5000'];
+        }
+
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
+    }
+
+    /**
+     * One field per customer pre-order text and shop language (HELP-3678).
+     *
+     * @return array<string, string> field => settings path
+     */
+    public function preOrderTextFields(?Shop $shop): array
+    {
+        if (!$shop) {
+            return [];
+        }
+
+        $fields = [];
+        foreach (GetPreOrderText::make()->locales($shop) as $locale) {
+            foreach (array_keys(GetPreOrderText::TEXTS) as $key) {
+                $fields["pre_order_text__{$locale}__$key"] = "pre_orders.texts.$locale.$key";
+            }
+        }
+
+        return $fields;
     }
 
     public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Shop

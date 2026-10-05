@@ -27,7 +27,7 @@ class GetBasketPreOrders
     use AsObject;
 
     /**
-     * @return array{deferred_amount: float, pay_now_amount: float, signature: string, is_accepted: bool, hold_together: bool, lines: array<int, array<string, mixed>>, has_pre_orders: bool, has_in_stock_lines: bool, has_made_to_order: bool, has_pallet_delivery: bool, terms: array<int, string>}
+     * @return array{deferred_amount: float, pay_now_amount: float, signature: string, is_accepted: bool, hold_together: bool, lines: array<int, array<string, mixed>>, has_pre_orders: bool, has_in_stock_lines: bool, has_made_to_order: bool, has_pallet_delivery: bool, terms: array<int, string>, texts: array<string, string>}
      */
     public function handle(Order $order): array
     {
@@ -64,6 +64,7 @@ class GetBasketPreOrders
                 'in_stock_quantity'  => $inStockQuantity,
                 'pre_order_quantity' => $preOrderQuantity,
                 'pre_order_net_amount' => round((float) $transaction->net_amount * $preOrderQuantity / $quantityOrdered, 2),
+                'basket_label'       => $this->basketLabel($order, $preOrder, $inStockQuantity, $preOrderQuantity),
             ]);
         }
 
@@ -72,7 +73,8 @@ class GetBasketPreOrders
         $terms      = $collection->isEmpty() ? [] : GetProductPreOrder::make()->terms($order->shop, $types, $collection->contains('is_pallet_delivery', true));
         $signature  = $this->signature($order, $lines);
 
-        $deferredAmount = $this->deferredAmount($order, $collection->all());
+        $deferredAmount  = $this->deferredAmount($order, $collection->all());
+        $hasInStockLines = $productLines->count() > $collection->count() || $collection->contains(fn ($line) => $line['in_stock_quantity'] > 0);
 
         return [
             'deferred_amount'     => $deferredAmount,
@@ -83,13 +85,48 @@ class GetBasketPreOrders
             'hold_together'       => (bool) Arr::get($order->data, 'pre_order.hold_together', false),
             'lines'               => $lines,
             'has_pre_orders'      => $collection->isNotEmpty(),
-            'has_in_stock_lines'  => $productLines->count() > $collection->count() || $collection->contains(fn ($line) => $line['in_stock_quantity'] > 0),
+            'has_in_stock_lines'  => $hasInStockLines,
             'has_made_to_order'   => $collection->contains('type', 'made_to_order'),
             'has_pallet_delivery' => $collection->contains('is_pallet_delivery', true),
             'pallet_estimate_label' => $collection->contains('is_pallet_delivery', true)
                 ? GetProductPreOrder::make()->palletEstimateLabel($order->shop, $order->deliveryAddress?->country_code)
                 : null,
             'terms'               => $terms,
+            'texts'               => $collection->isEmpty() ? [] : $this->texts($order, $hasInStockLines),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $preOrder
+     */
+    private function basketLabel(Order $order, array $preOrder, float $inStockQuantity, float $preOrderQuantity): string
+    {
+        $values = [
+            'in_stock'  => trimDecimalZeros($inStockQuantity),
+            'pre_order' => trimDecimalZeros($preOrderQuantity),
+            'weeks'     => GetPreOrderText::make()->weeks($preOrder['dispatch_from_weeks'], $preOrder['dispatch_to_weeks']),
+        ];
+
+        $label = GetPreOrderText::make()->handle($order->shop, $inStockQuantity > 0 ? 'basket_line_partial' : 'basket_line', $values);
+
+        return $label.' · '.$preOrder['payment_label'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function texts(Order $order, bool $hasInStockLines): array
+    {
+        $texts = GetPreOrderText::make();
+        $shop  = $order->shop;
+
+        return [
+            'title'          => $texts->handle($shop, 'label'),
+            'dispatch'       => $texts->handle($shop, $hasInStockLines ? 'checkout_mixed' : 'checkout_only_pre_order'),
+            'hold_together'  => $texts->handle($shop, 'checkout_hold_together'),
+            'only_pre_order' => $texts->handle($shop, 'checkout_only_pre_order'),
+            'accept'         => $texts->handle($shop, 'checkout_accept'),
+            'terms_title'    => $texts->handle($shop, 'terms_link'),
         ];
     }
 

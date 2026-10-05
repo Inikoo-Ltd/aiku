@@ -61,6 +61,27 @@ class GetPreOrderShowcase
             'pallet_quote_over_estimate' => SendPreOrderUpdateEmail::make()->isPalletQuoteOverTolerance($preOrder),
             'can_pay_balance'          => $isOpen && (float) $order->total_amount > (float) $order->payment_amount,
             'terms'                    => $preOrder->terms,
+            'texts'                    => $this->customerTexts($preOrder),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function customerTexts(PreOrder $preOrder): array
+    {
+        $texts = GetPreOrderText::make();
+        $shop  = $preOrder->shop;
+
+        return [
+            'title'          => $texts->handle($shop, 'label'),
+            'dispatch_dates' => $texts->handle($shop, 'order_dispatch_dates', [
+                'from_date' => $preOrder->estimated_dispatch_from?->format('d/m/Y'),
+                'to_date'   => $preOrder->estimated_dispatch_to?->format('d/m/Y'),
+            ]),
+            'cancel_contact' => $texts->handle($shop, 'order_cancel_contact'),
+            'terms_title'    => $texts->handle($shop, 'terms_link'),
+            'pay_button'     => $texts->handle($shop, 'email_pay_button'),
         ];
     }
 }

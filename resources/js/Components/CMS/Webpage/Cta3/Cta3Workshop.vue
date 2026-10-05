@@ -21,7 +21,6 @@ const emits = defineEmits<{
 }>()
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 // Define preferred image ratio, e.g., 16:9
 const imageSettings = {
@@ -55,7 +54,7 @@ const imageSettings = {
 		    @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
         @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
-          sendMessageToParent('activeChildBlock', bKeys[0])
+          sendMessageToParent('activeChildBlock', 'image')
         }"
       >
         <Image
@@ -75,7 +74,7 @@ const imageSettings = {
         class="relative z-10 w-full bg-white  p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md"
         @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
-          sendMessageToParent('activeChildBlock', bKeys[1])
+          sendMessageToParent('activeChildBlock', 'block_properties')
         }"
       >
         <div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
@@ -85,7 +84,7 @@ const imageSettings = {
             @update:modelValue="() => emits('autoSave')"
             @focus="() => {
               sendMessageToParent('activeBlock', indexBlock)
-              sendMessageToParent('activeChildBlock', bKeys[1])
+              sendMessageToParent('activeChildBlock', 'block_properties')
             }"
             :uploadImageRoute="{
               name: webpageData.images_upload_route.name,
@@ -106,7 +105,7 @@ const imageSettings = {
           :label="modelValue?.button?.text"
           @click.stop="() => {
             sendMessageToParent('activeBlock', indexBlock)
-            sendMessageToParent('activeChildBlock', bKeys[2])
+            sendMessageToParent('activeChildBlock', 'button')
           }"
         />
       </div>

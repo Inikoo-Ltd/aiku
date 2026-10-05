@@ -12,7 +12,7 @@ import {
     faCameraRetro, faClock,
     faCube, faCubes,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling, faFolderDownload,
-    faChartLine
+    faChartLine, faSortAmountDown
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -39,6 +39,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import FamiliesOrder from "@/Components/Catalogue/FamiliesOrder.vue"
 import ButtonExportWebsiteStructure from "@/Components/Catalogue/ButtonExportWebsiteStructure.vue"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -59,7 +60,7 @@ library.add(
     faBrowser,
     faSeedling,
     faFolderDownload,
-    faChartLine
+    faChartLine, faSortAmountDown
 );
 
 
@@ -94,6 +95,7 @@ const props = defineProps<{
     }
     offers?: {}
     related_product_category?: object,
+    families_order?: object,
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -123,6 +125,7 @@ const component = computed(() => {
         sales_analysis: SalesAnalysis,
         offers: TableOffers,
         related_product_category: RelatedProductCategory,
+        families_order: FamiliesOrder,
     };
     return components[currentTab.value];
 

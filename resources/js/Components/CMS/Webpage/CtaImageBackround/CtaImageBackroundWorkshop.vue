@@ -21,7 +21,6 @@ const emits = defineEmits<{
 }>()
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 // Define preferred image ratio, e.g., 16:9
 const imageSettings = {
@@ -48,7 +47,7 @@ const imageSettings = {
           aspectRatio: imageSettings.aspectRatio
         }" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)" @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
-          sendMessageToParent('activeChildBlock', bKeys[0])
+          sendMessageToParent('activeChildBlock', 'image')
         }">
         <Image :src="modelValue?.image?.source
             ? modelValue.image.source
@@ -61,12 +60,12 @@ const imageSettings = {
       <div :style="getStyles(modelValue.container.properties?.block, screenType)"
         class="relative z-10 w-full p-6 sm:flex sm:flex-col sm:items-start lg:w-96" @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
-          sendMessageToParent('activeChildBlock', bKeys[1])
+          sendMessageToParent('activeChildBlock', 'block_properties')
         }">
         <div class="text-center md:text-left text-gray-700 pr-3 mb-4 w-full">
           <Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" @focus="() => {
               sendMessageToParent('activeBlock', indexBlock)
-              sendMessageToParent('activeChildBlock', bKeys[1])
+              sendMessageToParent('activeChildBlock', 'block_properties')
             }" :uploadImageRoute="{
               name: webpageData.images_upload_route.name,
               parameters: {
@@ -81,7 +80,7 @@ const imageSettings = {
             ...getStyles(modelValue?.button?.container?.properties, screenType),
           }"@click.stop="() => {
             sendMessageToParent('activeBlock', indexBlock)
-            sendMessageToParent('activeChildBlock', bKeys[2])
+            sendMessageToParent('activeChildBlock', 'button')
           }"
             class="w-full text-center md:!w-fit"
           >

@@ -4,8 +4,6 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import Image from "@common/Components/Image.vue"
-import Blueprint from './Blueprint'
-import CardBlueprint from './CardBlueprint'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -62,8 +60,6 @@ const slidePrev = () => swiperInstance.value?.slidePrev()
 const slideNext = () => swiperInstance.value?.slideNext()
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
-const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 </script>
 
@@ -92,9 +88,9 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                  @click.stop="
                                     () => {
                                         sendMessageToParent('activeBlock', indexBlock)
-                                        sendMessageToParent('activeChildBlock', bKeys[1])
+                                        sendMessageToParent('activeChildBlock', 'carousel_data-cards')
                                         sendMessageToParent('activeChildBlockArray', index)
-                                        sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                                        sendMessageToParent('activeChildBlockArrayBlock', 'image')
                                     }
                                 " 
                                 @dblclick.stop="
@@ -115,14 +111,14 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     <div class="max-w-xl w-full mx-auto" @click="
                                         () => {
                                             sendMessageToParent('activeBlock', indexBlock)
-                                            sendMessageToParent('activeChildBlock', bKeys[1])
+                                            sendMessageToParent('activeChildBlock', 'carousel_data-cards')
                                             sendMessageToParent('activeChildBlockArray', index)
                                         }
                                     ">
                                         <EditorV2
                                             v-if="data?.text"
                                             v-model="data.text"
-                                            @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                                            @focus="() => sendMessageToParent('activeChildBlock', 'carousel_data-cards')"
                                             @update:modelValue="(e) => { data.text = e, emits('autoSave')}"
                                             :uploadImageRoute="{
                                                 name: webpageData.images_upload_route.name,
@@ -139,9 +135,9 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                                 :label="data?.button?.text" @click.stop="
                                                     () => {
                                                         sendMessageToParent('activeBlock', indexBlock)
-                                                        sendMessageToParent('activeChildBlock', bKeys[1])
+                                                        sendMessageToParent('activeChildBlock', 'carousel_data-cards')
                                                         sendMessageToParent('activeChildBlockArray', index)
-                                                        sendMessageToParent('activeChildBlockArrayBlock', baKeys[1])
+                                                        sendMessageToParent('activeChildBlockArrayBlock', 'button')
                                                     }
                                                 " />
                                         </div>

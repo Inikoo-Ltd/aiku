@@ -361,11 +361,24 @@ return [
         ],
         'cus-c'      => [
             'code'               => 'cus-c',
-            'name'               => 'Customer service',
+            'name'               => 'Customer service chat',
             'department'         => 'customer-services',
             'scope'              => JobPositionScopeEnum::SHOPS,
             'roles'              => [
                 RolesEnum::CUSTOMER_SERVICE_CLERK
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
+        'cus-call'   => [
+            'code'               => 'cus-call',
+            'name'               => 'Customer service calls',
+            'department'         => 'customer-services',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'roles'              => [
+                RolesEnum::CUSTOMER_SERVICE_CALLER
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

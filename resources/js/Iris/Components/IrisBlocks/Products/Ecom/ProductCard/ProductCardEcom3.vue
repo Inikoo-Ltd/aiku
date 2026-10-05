@@ -363,8 +363,8 @@ defineExpose({
                     </template>
                 </LinkIris>
 
-                <div v-if="product.pre_order && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
-                    <span class="font-semibold">{{ product.pre_order.type_label }}</span> · {{ product.pre_order.dispatch_label }}
+                <div v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
+                    <span class="font-semibold">{{ product.pre_order.available_label }}</span> · {{ product.pre_order.dispatch_label }}
                 </div>
             </div>
         </div>

@@ -11,10 +11,13 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\OrgAction;
+use Illuminate\Support\Carbon;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
@@ -334,6 +337,13 @@ class EditShop extends OrgAction
                             'type'        => 'toggle',
                             'value'       => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
                             'information' => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'family_order_follow_master'               => [
+                            'label'       => __('Family Order In Website Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.family_order_follow_master', true),
+                            'information' => __('This would force the order the families are listed in on the department, sub department and collection pages of this shop to follow the order set on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'related_product_follow_master'            => [
@@ -692,6 +702,8 @@ class EditShop extends OrgAction
 
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderSettingsFields($shop) : [],
 
+                in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderTextFields($shop) : [],
+
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Packaging & Inserts'),
                     'icon'   => 'fa-light fa-box-open',
@@ -843,6 +855,24 @@ class EditShop extends OrgAction
                             'information' => __('If active, will enable the Chat feature on this shop website'),
                             'label'       => __('Enable Chat Feature'),
                             'value'       => Arr::get($shop->settings, 'chat.enable_chat', false),
+                        ],
+                        'chat_hours_start'    => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat opens at'),
+                            'placeholder' => __('When work starts'),
+                            'information' => __('Leave empty to open the chat when the working hours start.'),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.start'),
+                        ],
+                        'chat_hours_end'      => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat closes at'),
+                            'placeholder' => __(':minutes minutes before work ends', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'information' => __('Leave empty to close the chat :minutes minutes before the working hours end, so the team can sign off for the day.', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.end'),
                         ],
                         'chat_slack_token'    => [
                             'type'        => 'input',
@@ -1262,6 +1292,21 @@ class EditShop extends OrgAction
         );
     }
 
+    /**
+     * Every quarter of an hour, written the way the shop's organisation writes times.
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function chatTimeOptions(Shop $shop): array
+    {
+        $midnight = Carbon::today();
+
+        return collect(range(0, 95))
+            ->map(fn (int $quarter) => $midnight->copy()->addMinutes($quarter * 15))
+            ->map(fn (Carbon $time) => ['value' => $time->format('H:i'), 'label' => $shop->organisation->formatClockTime($time)])
+            ->all();
+    }
+
     private function loadReviewRatingLabels(Shop $shop): array
     {
         $stored = ReviewRatingLabel::query()
@@ -1338,6 +1383,53 @@ class EditShop extends OrgAction
             ),
             default => []
         };
+    }
+
+    /**
+     * Every pre-order text customers read, per shop language. Empty uses the default shown greyed
+     * out (HELP-3678).
+     *
+     * @return array<string, mixed>
+     */
+    private function preOrderTextFields(Shop $shop): array
+    {
+        $texts   = GetPreOrderText::make();
+        $locales = $texts->locales($shop);
+        $fields  = [];
+
+        foreach ($locales as $locale) {
+            foreach (GetPreOrderText::TEXTS as $key => [$label, $default]) {
+                $fields["pre_order_text__{$locale}__$key"] = [
+                    'type'        => 'textarea',
+                    'label'       => __($label).(count($locales) > 1 ? ' ('.$locale.')' : ''),
+                    'placeholder' => $texts->default($key, $locale),
+                    'rows'        => substr_count($default, "\n") + max(2, (int) ceil(strlen($default) / 90)),
+                    'value'       => (string) Arr::get($shop->settings, "pre_orders.texts.$locale.$key", ''),
+                    'information' => $this->preOrderTextInformation($default),
+                ];
+            }
+        }
+
+        return [
+            'label'  => __('Pre-order texts'),
+            'icon'   => 'fa-light fa-language',
+            'fields' => $fields,
+        ];
+    }
+
+    private function preOrderTextInformation(string $default): string
+    {
+        $information = __('Leave empty to use the default shown in grey. Orders already placed keep the terms they accepted.');
+        if (str_contains($default, "\n")) {
+            $information .= ' '.__('Separate paragraphs with an empty line.');
+        }
+
+        preg_match_all('/\{\w+\}/', $default, $placeholders);
+        if ($placeholders[0]) {
+            $information .= ' '.__('Filled in automatically: :placeholders', ['placeholders' => implode(' ', array_unique($placeholders[0]))]);
+        }
+
+        return $information;
     }
 
     /**

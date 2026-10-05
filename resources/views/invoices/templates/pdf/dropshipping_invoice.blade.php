@@ -321,9 +321,9 @@
                             {{ trimDecimalZeros($packUnits) }}x
                         @endif
                         {{ $transaction->historicAsset->name }}
-                        @if($invoice->order?->preOrder && $preOrderNote = \App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote(data_get($transaction->transaction?->data, 'pre_order')))
+                        @if($invoice->order?->preOrder && $preOrderNote = \App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote($invoice->shop, data_get($transaction->transaction?->data, 'pre_order')))
                             <br>
-                            {{ __('Pre-order') }}: {{ $preOrderNote }}
+                            {{ $preOrderNote }}
                         @endif
                         @if(isset($transaction->pallet))
                             <br>
@@ -517,7 +517,7 @@
 
 @if($invoice->order?->preOrder?->terms)
     <div style="font-size: 8pt;">
-        <strong>{{ __('Pre-order terms') }}</strong>
+        <strong>{{ \App\Actions\Ordering\PreOrder\GetPreOrderText::make()->handle($invoice->shop, 'terms_link') }}</strong>
         <ul>
             @foreach($invoice->order->preOrder->terms as $term)
                 <li>{{ $term }}</li>

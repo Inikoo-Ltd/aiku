@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
 use App\Enums\CRM\Livechat\ChatRetractionReasonEnum;
@@ -23,7 +24,7 @@ class ChatMessageResource extends JsonResource
      *
      * @var array<int, string>
      */
-    public const PRIVATE_METADATA = ['edit_history', 'retraction_note', 'flagged_reason', 'flagged_by_user_id'];
+    public const PRIVATE_METADATA = ['edit_history', 'retraction_note', 'flagged_reason', 'flagged_by_user_id', FlagChatAiSummary::KEY];
 
     /** A picture small enough to be written into an email's body instead of stored as a file. */
     public const EMBEDDED_PICTURE = '/<img\b[^>]*\ssrc="data:[^"]*"[^>]*>/i';
@@ -137,6 +138,7 @@ class ChatMessageResource extends JsonResource
                     ];
                 })->values(),
             'metadata' => Arr::except($chatMessage->metadata ?? [], self::PRIVATE_METADATA),
+            'ai_summary_flagged' => FlagChatAiSummary::isFlagged($this->resource),
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'edited_at' => $chatMessage->edited_at,
             'created_at' => $this->created_at,

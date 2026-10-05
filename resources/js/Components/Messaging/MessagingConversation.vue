@@ -10,7 +10,7 @@ import { usePage, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
@@ -20,11 +20,12 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useStaffTaskMembers } from "@/Composables/useStaffTaskMembers"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 import { Drawer, Popover } from "primevue"
 import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
 import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
@@ -132,6 +133,25 @@ const refreshTaskInfo = async () => {
 }
 
 const leftAt = computed(() => props.conversation.my_left_at ?? null)
+
+const isTaskClosed = computed(() => !!taskInfo.value && !taskInfo.value.is_open)
+const isEndingChat = ref(false)
+
+// A task that is done no longer needs its chat in everybody's list (INI-045): ending it clears it from mine, the
+// thread itself stays on the task page.
+const endChat = async () => {
+    isEndingChat.value = true
+    try {
+        await refreshTaskInfo()
+    } catch {
+        // The archive call checks the task again on the server.
+    }
+    store.closeConversation(props.conversation.ulid)
+    isEndingChat.value = false
+    if (props.embedded) {
+        notify({ title: ctrans("Chat ended"), text: ctrans("It is cleared from your chats and stays here on the task."), type: "success" })
+    }
+}
 
 useLiveStaffTasks(refreshTaskInfo, (event) => !props.embedded && event.reference === taskInfo.value?.reference)
 
@@ -474,9 +494,25 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
                     <span v-if="typingUser">{{ typingUser }} {{ ctrans('is typing…') }}</span>
                     <span v-else-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
-                    <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
+                    <span v-else-if="conversation.context_url" class="flex min-w-0 items-center gap-1.5">
+                        <a :href="conversation.context_url" class="truncate" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
+                        <span v-if="taskInfo?.status_label" class="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap">
+                            <FontAwesomeIcon v-if="taskInfo.status_icon" :icon="taskInfo.status_icon.icon" :class="taskInfo.status_icon.class" fixed-width aria-hidden="true" />
+                            {{ taskInfo.status_label }}
+                        </span>
+                    </span>
                 </div>
             </div>
+            <button
+                v-if="embedded && isTaskClosed"
+                type="button"
+                v-tooltip="ctrans('Clear this chat from your chats. It stays here on the task.')"
+                class="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition duration-200 hover:bg-gray-50 active:!bg-gray-100 disabled:opacity-50"
+                :disabled="isEndingChat"
+                @click="endChat">
+                <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                {{ ctrans("End chat") }}
+            </button>
             <slot name="header-actions" />
             <button
                 v-if="taskInfo && !embedded"
@@ -496,6 +532,14 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </button>
             <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+            </button>
+        </div>
+
+        <div v-if="isTaskClosed && !embedded" class="flex shrink-0 items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600">
+            <FontAwesomeIcon v-if="taskInfo?.status_icon" :icon="taskInfo.status_icon.icon" :class="taskInfo.status_icon.class" fixed-width aria-hidden="true" />
+            <span class="min-w-0 flex-1 truncate">{{ ctrans(":reference is :status", { reference: taskInfo!.reference, status: (taskInfo!.status_label ?? ctrans("closed")).toLowerCase() }) }}</span>
+            <button type="button" class="shrink-0 rounded-md bg-white px-2 py-0.5 font-medium text-gray-700 ring-1 ring-gray-300 transition duration-200 hover:bg-gray-100 disabled:opacity-50" :disabled="isEndingChat" @click="endChat">
+                {{ ctrans("End chat") }}
             </button>
         </div>
 

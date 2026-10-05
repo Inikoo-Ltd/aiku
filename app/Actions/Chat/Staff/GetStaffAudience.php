@@ -75,7 +75,7 @@ class GetStaffAudience
         }
 
         [$scope, $roles] = match ($audience) {
-            'crm'       => [Shop::find($context->shop_id), [RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR]],
+            'crm'       => [Shop::find($context->shop_id), [RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_CALLER, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR]],
             'warehouse' => [
                 $context instanceof DeliveryNote ? Warehouse::find($context->warehouse_id) : Warehouse::where('organisation_id', $context->organisation_id)->first(),
                 [RolesEnum::DISPATCH_CLERK, RolesEnum::DISPATCH_SUPERVISOR, RolesEnum::STOCK_CONTROLLER],
@@ -155,7 +155,7 @@ class GetStaffAudience
 
         $roleNames = [];
         foreach ($shops as $shop) {
-            foreach ([RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR] as $role) {
+            foreach ([RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_CALLER, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR] as $role) {
                 $roleNames[] = RolesEnum::getRoleName($role->value, $shop);
             }
         }

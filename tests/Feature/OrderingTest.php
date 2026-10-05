@@ -5430,6 +5430,12 @@ describe('pre-orders (HELP-3432)', function () {
             ->and($preOrder->terms)->not->toBeEmpty()
             ->and(Arr::get($child->transactions()->where('model_type', 'Product')->first()->data, 'pre_order.type'))->toBe('made_to_order');
 
+        $preOrderEmail = \App\Actions\Comms\Email\SendPreOrderUpdateEmail::make();
+        expect($preOrderEmail->subject($preOrder, $preOrderEmail::DISPATCH_DATE_CHANGED))->toBe('New estimated dispatch for pre-order '.$child->reference)
+            ->and($preOrderEmail->body($preOrder, $preOrderEmail::DISPATCH_DATE_CHANGED, ['reason' => 'Supplier delay']))->toContain('Supplier delay')
+            ->toContain($preOrder->estimated_dispatch_to->format('d/m/Y'))
+            ->not->toContain('{');
+
         $madeToOrder->orgStocks()->update(['quantity_available' => 2]);
         \App\Actions\Ordering\PreOrder\AllocatePreOrderStock::run();
         $preOrder->refresh();
@@ -5661,6 +5667,39 @@ describe('pre-orders (HELP-3432)', function () {
             ->and((float) $line->quantity_bonus)->toBe(1.0)
             ->and((float) $preOrderLine->quantity_ordered)->toBe(2.0)
             ->and((float) $preOrderLine->quantity_bonus)->toBe(0.0);
+    });
+
+    test('customers only read "Pre-order", partly in-stock lines say what is sent now, and every text can be rewritten per shop language (HELP-3678)', function () {
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'available_quantity' => 2]);
+        $backOrder->orgStocks()->update(['quantity_available' => 2]);
+
+        $productPreOrder = \App\Actions\Ordering\PreOrder\GetProductPreOrder::run($backOrder->fresh());
+        expect($productPreOrder)->not->toHaveKey('type_label')
+            ->and($productPreOrder['label'])->toBe('Pre-order')
+            ->and($productPreOrder['available_label'])->toBe('Available to pre-order')
+            ->and($productPreOrder['dispatch_label'])->toBe('Estimated dispatch 9–11 weeks')
+            ->and($productPreOrder['payment_label'])->toBe('Pay in full now')
+            ->and(implode(' ', $productPreOrder['terms']))->not->toContain('Back-order');
+
+        $basket = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $backOrder->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 5]));
+        $basketPreOrders = \App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket->fresh());
+
+        expect(collect($basketPreOrders['lines'])->first()['basket_label'])->toBe('2 will be sent now, 3 are pre-ordered (estimated dispatch 9–11 weeks) · Pay in full now')
+            ->and($basketPreOrders['texts']['dispatch'])->toBe("We'll send your in-stock items now and your pre-order items as soon as they arrive.")
+            ->and($basketPreOrders['texts']['hold_together'])->toBe('Hold my order and send everything together');
+
+        $locale = $this->shop->language->code;
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, [
+            "pre_order_text__{$locale}__available" => 'Order now, ships in {weeks} weeks',
+            "pre_order_text__{$locale}__line_note" => 'Pre-order ({weeks} weeks)',
+        ]);
+        $this->shop->refresh();
+        expect(\App\Actions\Ordering\PreOrder\GetPreOrderText::make()->handle($this->shop, 'available', ['weeks' => '9–11'], $locale))->toBe('Order now, ships in 9–11 weeks')
+            ->and(\App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote($this->shop, ['type' => 'made_to_order', 'dispatch_from_weeks' => 9, 'dispatch_to_weeks' => 11]))->toBe('Pre-order (9–11 weeks)');
+
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ["pre_order_text__{$locale}__available" => '']);
+        expect(\App\Actions\Ordering\PreOrder\GetPreOrderText::make()->handle($this->shop->refresh(), 'available', [], $locale))->toBe('Available to pre-order');
     });
 
     test('paying with balance twice from the same page charges once', function () {
