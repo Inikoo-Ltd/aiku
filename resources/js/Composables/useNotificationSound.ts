@@ -662,6 +662,12 @@ export const showTicketPopup = (title: string, body: string, url: string | null)
 
 export type AlertPopupPreview = "order" | "unpaid_order" | "ticket" | "customer_message"
 
+const SAMPLE_ORDER_SIZES = [
+	{ type: "ecom_small", amount: 38.9 },
+	{ type: "ecom_normal", amount: 249.5 },
+	{ type: "ecom_big", amount: 1840 },
+]
+
 export const previewAlertPopup = (kind: AlertPopupPreview) => {
 	const sampleOrder: OrderPopup = {
 		order_id: 0,
@@ -678,9 +684,9 @@ export const previewAlertPopup = (kind: AlertPopupPreview) => {
 
 	switch (kind) {
 		case "order":
-			return showOrderPopup(sampleOrder)
+			return showOrderPopup({ ...sampleOrder, ...SAMPLE_ORDER_SIZES[Math.floor(Math.random() * SAMPLE_ORDER_SIZES.length)] })
 		case "unpaid_order":
-			return showOrderPopup({ ...sampleOrder, is_unpaid: true })
+			return showOrderPopup({ ...sampleOrder, type: "dropshipping_unpaid", is_unpaid: true })
 		case "ticket":
 			return showTicketPopup(ctrans("HELP-1234 is done"), ctrans("Sample colleague marked HELP-1234 (Invoice total is wrong) as done."), null)
 		case "customer_message":

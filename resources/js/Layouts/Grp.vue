@@ -37,7 +37,7 @@ import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import AlertToast from "@/Components/Utils/AlertToast.vue"
-import { useMediaQuery } from "@vueuse/core"
+import { useMediaQuery, useWindowSize } from "@vueuse/core"
 import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBellSlash, faShoppingCart, faLifeRing } from "@fal"
@@ -68,6 +68,17 @@ useAppAccentVariables(() => layout.app?.theme)
 const isDesktop = useMediaQuery("(min-width: 1024px)")
 const isTablet = useMediaQuery("(min-width: 768px)")
 const maxAlertPopups = computed(() => isDesktop.value ? 5 : (isTablet.value ? 2 : 3))
+const { width: windowWidth } = useWindowSize()
+const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro ? 16 : 48))
+const alertPopupsWidth = computed(() => Math.min(340, windowWidth.value - alertPopupsRightPx.value - 8))
+const alertPopupsStyle = computed(() => ({ top: "3.5rem", right: `${alertPopupsRightPx.value}px` }))
+
+const orderAmountClass = (orderAlertType: string | undefined) => ({
+    ecom_small: "text-gray-500",
+    ecom_normal: "text-blue-600",
+    ecom_big: "text-emerald-600 font-bold",
+    dropshipping_unpaid: "text-amber-600",
+}[orderAlertType ?? ""] ?? "text-gray-700")
 
 const stopOrderPopups = async (close: () => void) => {
     close()
@@ -448,9 +459,9 @@ const safeTheme = computed(() => {
         group="alert-popups"
         position="top right"
         :max="maxAlertPopups"
-        width="340"
+        :width="alertPopupsWidth"
         :pauseOnHover="true"
-        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        :style="alertPopupsStyle">
         <template #body="{ item, close }">
             <AlertToast
                 v-if="item.data.kind === 'order'"
@@ -460,7 +471,7 @@ const safeTheme = computed(() => {
                 :heading="`${item.data.reference} · ${item.data.customer}`"
                 :url="item.data.url"
                 @close="close">
-                <div class="text-sm font-semibold tabular-nums text-gray-700">{{ item.data.money }}</div>
+                <div class="text-sm font-semibold tabular-nums" :class="orderAmountClass(item.data.type)">{{ item.data.money }}</div>
                 <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
                 <template #actions>
                     <button
