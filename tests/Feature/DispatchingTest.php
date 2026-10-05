@@ -5427,7 +5427,7 @@ function deliveryNoteWithOnePartNotFound($ctx): array
     ]);
     $deliveryNote->deliveryNoteItems()
         ->whereKeyNot($item->id)
-        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0]);
+        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0, 'quantity_not_picked' => 10]);
 
     return [$deliveryNote->refresh(), $item];
 }
@@ -5463,6 +5463,23 @@ test('a set sold only complete waits until its other parts are put back, then re
         ->and((float)$item->quantity_picked)->toBe(0.0)
         ->and($item->is_handled)->toBeTrue()
         ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});
+
+test('a set sold only complete marks its parts never picked as not picked in one go when another part is not found (HELP-3703)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+    $item->pickings()->delete();
+    $item->update(['quantity_picked' => 0, 'quantity_not_picked' => 0, 'is_handled' => false]);
+
+    expect($deliveryNote->refresh()->incompleteSetItems()->pluck('id')->all())->toBe([$item->id])
+        ->and(\App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote::make()->getPutBackIncompleteSetsAction($deliveryNote)['parts'])->toBe([]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    $item->refresh();
+    expect((float)$item->quantity_not_picked)->toBe((float)$item->quantity_required)
+        ->and($item->is_handled)->toBeTrue()
+        ->and($deliveryNote->refresh()->hasIncompleteSets())->toBeFalse();
 });
 
 test('a set sold only complete waiting on a part not found goes back to picking with that part to look for again (HELP-3548)', function () {

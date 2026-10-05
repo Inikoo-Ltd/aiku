@@ -368,9 +368,9 @@ class DeliveryNote extends Model implements Auditable
     }
 
     /**
-     * Parts of a set sold only complete (HELP-3548) picked beyond what a finished part allows: the
-     * bulb and cable in the tote while the lamp was not found. They block the note until they are
-     * put back, so the customer is never sent, free, parts useless on their own.
+     * Parts of a set sold only complete (HELP-3548) picked, or still to pick, beyond what a finished
+     * part allows: the bulb and cable in the tote, or not yet picked, while the lamp was not found.
+     * They block the note until they are put back or marked not picked in one go (HELP-3703).
      */
     public function incompleteSetItems(): HasMany
     {
@@ -400,7 +400,7 @@ class DeliveryNote extends Model implements Auditable
                     ->where('part.state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)
                     ->where('part.is_handled', true)
                     ->where('part.quantity_required', '>', 0)
-                    ->whereRaw('delivery_note_items.quantity_picked * part.quantity_required - part.quantity_picked * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
+                    ->whereRaw('(delivery_note_items.quantity_required - coalesce(delivery_note_items.quantity_not_picked, 0)) * part.quantity_required - part.quantity_picked * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
             });
     }
 

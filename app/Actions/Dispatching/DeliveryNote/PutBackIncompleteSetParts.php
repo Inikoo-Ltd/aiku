@@ -35,16 +35,19 @@ class PutBackIncompleteSetParts extends OrgAction
     public function handle(DeliveryNote $deliveryNote, ?User $user): DeliveryNote
     {
         foreach ($deliveryNote->incompleteSetItems()->get() as $deliveryNoteItem) {
-            $excess = $this->getQuantityToPutBack($deliveryNoteItem);
+            $quantityToNotPick = $this->getQuantityToNotPick($deliveryNoteItem);
 
-            if ($excess <= 0.000001) {
+            if ($quantityToNotPick <= 0.000001) {
                 continue;
             }
 
-            $this->reversePicks($deliveryNoteItem, $excess);
+            $excess = $this->getQuantityToPutBack($deliveryNoteItem);
+            if ($excess > 0.000001) {
+                $this->reversePicks($deliveryNoteItem, $excess);
+            }
 
             StoreNotPickPicking::make()->action($deliveryNoteItem->refresh(), $user, [
-                'quantity'          => $excess,
+                'quantity'          => $quantityToNotPick,
                 'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_WAREHOUSE,
                 'not_picked_note'   => __('Put back: another part of the set was not found'),
             ]);
@@ -57,6 +60,12 @@ class PutBackIncompleteSetParts extends OrgAction
     {
         return (float)$deliveryNoteItem->quantity_picked
             - (float)$deliveryNoteItem->quantity_required * $this->getCompleteSetFraction($deliveryNoteItem);
+    }
+
+    public function getQuantityToNotPick(DeliveryNoteItem $deliveryNoteItem): float
+    {
+        return (float)$deliveryNoteItem->quantity_required * (1 - $this->getCompleteSetFraction($deliveryNoteItem))
+            - (float)$deliveryNoteItem->quantity_not_picked;
     }
 
     private function getCompleteSetFraction(DeliveryNoteItem $deliveryNoteItem): float
