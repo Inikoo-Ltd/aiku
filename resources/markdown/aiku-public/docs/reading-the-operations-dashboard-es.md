@@ -13,6 +13,8 @@ Abre <b>Dashboard</b> y elige la pestaña <b>Operations (In/Out)</b>. El persona
 
 Ábrelo en **Dashboard → Operations (In/Out)**. Si tu puesto es de entrada de mercancías, salida de mercancías o fulfilment, el panel se abre en esta pestaña. La última pestaña que elijas es la que verás la próxima vez, así que puedes volver a **Sales** o **Stock** de forma permanente si lo prefieres.
 
+La página de cada almacén (**tu organización → Warehouses → el almacén**) también se abre en una pestaña **Operations (In/Out)**: la misma vista, solo para ese almacén.
+
 ## Filtros y hora
 
 Arriba hay dos filtros:

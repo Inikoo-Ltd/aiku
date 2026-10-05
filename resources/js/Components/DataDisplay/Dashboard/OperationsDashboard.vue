@@ -18,6 +18,7 @@ type Stage = Tile & { replacements: number; premium: number; amount: number | nu
 const props = defineProps<{
 	fetchRoute: { name: string }
 	active: boolean
+	warehouseId?: number | null
 }>()
 
 const locale = useLocaleStore()
@@ -34,9 +35,11 @@ let clockTimer: ReturnType<typeof setInterval> | null = null
 const load = async (remember = false): Promise<void> => {
 	isLoading.value = true
 	try {
-		const params = data.value || remember
-			? { warehouse: filters.value.warehouse ?? "", channel: filters.value.channel ?? "", period: filters.value.period, remember: remember ? 1 : 0 }
-			: {}
+		const params = props.warehouseId
+			? { warehouse: props.warehouseId, channel: filters.value.channel ?? "", period: filters.value.period, remember: 0 }
+			: data.value || remember
+				? { warehouse: filters.value.warehouse ?? "", channel: filters.value.channel ?? "", period: filters.value.period, remember: remember ? 1 : 0 }
+				: {}
 		const response = await axios.get(route(props.fetchRoute.name), { params })
 		data.value = response.data
 		filters.value = {
@@ -274,7 +277,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 <template>
 	<div class="px-3 sm:px-6 py-4 space-y-4">
 		<div class="flex flex-wrap items-center gap-2 text-sm">
-			<select v-model="filters.warehouse" class="rounded-md border-gray-300 py-1.5 text-sm" :aria-label="ctrans('Warehouse')" @change="changeFilter">
+			<select v-if="!warehouseId" v-model="filters.warehouse" class="rounded-md border-gray-300 py-1.5 text-sm" :aria-label="ctrans('Warehouse')" @change="changeFilter">
 				<option :value="null">{{ ctrans("All warehouses") }}</option>
 				<option v-for="warehouse in data?.filters?.options?.warehouses ?? []" :key="warehouse.id" :value="warehouse.id">{{ warehouse.label }}</option>
 			</select>

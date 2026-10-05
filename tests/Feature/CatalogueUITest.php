@@ -1692,6 +1692,23 @@ test('stock tab shows stock health by days of cover; warehouse work lives on ope
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('warehouseOverview')->where('operations.route.name', 'grp.dashboard.operations'));
 });
 
+test('warehouse page opens on its own operations tab', function () {
+    $warehouse = createWarehouse();
+    actingAs($this->user);
+
+    get(route('grp.org.warehouses.show.infrastructure.dashboard', [$warehouse->organisation->slug, $warehouse->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Warehouse/Warehouse')
+            ->where('tabs.current', 'operations')
+            ->where('operations.warehouse', $warehouse->id)
+            ->where('operations.route.name', 'grp.dashboard.operations'));
+
+    getJson(route('grp.dashboard.operations', ['warehouse' => $warehouse->id, 'remember' => 0]))
+        ->assertOk()
+        ->assertJsonPath('filters.warehouse', $warehouse->id)
+        ->assertJsonCount(1, 'warehouses');
+});
+
 test('operations dashboard: warehouse staff land on it, only see their warehouse and no money', function () {
     $warehouse = createWarehouse();
     setPermissionsTeamId($this->group->id);

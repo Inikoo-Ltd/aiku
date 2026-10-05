@@ -13,6 +13,8 @@ Otvorte <b>Dashboard</b> a vyberte kartu <b>Operations (In/Out)</b>. Pracovníci
 
 Otvorte ju cez **Dashboard → Operations (In/Out)**. Ak pracujete na príjme tovaru, výdaji tovaru alebo vo fulfilmente, nástenka sa otvorí na tejto karte. Karta, ktorú vyberiete naposledy, sa zobrazí aj nabudúce, takže ak chcete, môžete sa natrvalo vrátiť na **Sales** alebo **Stock**.
 
+Stránka každého skladu (**vaša organizácia → Warehouses → sklad**) sa tiež otvára na karte **Operations (In/Out)**: rovnaký pohľad, len pre daný sklad.
+
 ## Filtre a čas
 
 Navrchu sú dva filtre:

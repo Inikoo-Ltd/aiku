@@ -12,6 +12,8 @@ Open <b>Dashboard</b> and pick the <b>Operations (In/Out)</b> tab. Goods in, goo
 
 Open it at **Dashboard → Operations (In/Out)**. If your job is in goods in, goods out or fulfilment, the dashboard opens on this tab. Whichever tab you pick last is the one you see next time, so you can switch back to **Sales** or **Stock** for good if you prefer.
 
+Each warehouse page (**your organisation → Warehouses → the warehouse**) also opens on an **Operations (In/Out)** tab: the same view, for that warehouse only.
+
 ## Filters and time
 
 Two filters sit at the top:
