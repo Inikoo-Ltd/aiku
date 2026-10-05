@@ -149,7 +149,15 @@ class IndexBarcode extends OrgAction
                     'title' => $title,
                 ],
                 'actions'   => [
-
+                    $request->user()->authTo('goods.edit') ? [
+                        'type'  => 'button',
+                        'style' => 'create',
+                        'label' => __('Add barcode'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.create',
+                            'parameters' => []
+                        ]
+                    ] : false,
                 ]
             ],
             'tabs'                         => [

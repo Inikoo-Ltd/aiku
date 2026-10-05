@@ -33,8 +33,16 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
 	currency_code: string
+	can_create_purchase_orders?: boolean
 	orgPartner: { id: number; name: string }
-	rescueOrder: { lines: number; cost: number }
+	rescueBuckets: {
+		bucket: "out" | "w1" | "w2"
+		label: string
+		count: number
+		cost: number
+		order_lines: number
+		order_cost: number
+	}[]
 	draftReference: string | null
 	items: {
 		data: RescueItem[]
@@ -69,12 +77,12 @@ const bucketClass = {
 	<PageHeading :data="pageHead">
 		<template #other>
 			<RescueOrderButton
+				v-if="can_create_purchase_orders"
 				:orgPartnerId="orgPartner.id"
 				:partnerName="orgPartner.name"
 				:currencyCode="currency_code"
 				:draftReference="draftReference"
-				:estimatedLines="rescueOrder.lines"
-				:estimatedCost="rescueOrder.cost" />
+				:buckets="rescueBuckets" />
 		</template>
 	</PageHeading>
 

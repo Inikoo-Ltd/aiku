@@ -34,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithNoStrictRules;

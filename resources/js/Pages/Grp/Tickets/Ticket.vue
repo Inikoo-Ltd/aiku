@@ -63,6 +63,7 @@ const props = defineProps<{
     is_reporter: boolean
     can_comment_internally: boolean
     can_change_kind_module: boolean
+    can_change_project?: boolean
     can_update: boolean
     can_cancel_as_reporter: boolean
     can_reopen_as_reporter: boolean
@@ -86,6 +87,7 @@ const props = defineProps<{
         update: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
         rate: { name: string; parameters: Record<string, unknown> }
+        project?: { name: string; parameters: Record<string, unknown> }
         pull_request: { name: string; parameters: Record<string, unknown> }
         pull_request_update: { name: string; parameters: Record<string, unknown> }
     }
@@ -214,7 +216,7 @@ const update = (field: string, value: unknown) => {
         <div class="min-w-0 space-y-4 self-start max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto lg:pb-2.5 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
         <Teleport defer to="#ticket-card-controls" :disabled="isDesktop">
         <TicketControlPanel :ticket="ticket" :storage-key="isDesktop ? 'ticket_controls_open' : 'ticket_controls_open_mobile'" :default-open="isDesktop" :embedded="!isDesktop">
-            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_claim_qa="can_claim_qa" :qa_held_by_another="qa_held_by_another" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
+            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_claim_qa="can_claim_qa" :qa_held_by_another="qa_held_by_another" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_change_project="can_change_project" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">

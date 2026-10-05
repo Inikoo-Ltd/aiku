@@ -11,7 +11,6 @@ use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
-use App\Actions\GoodsIn\StockDelivery\UI\EditStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
@@ -39,6 +38,8 @@ use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
+use App\Actions\Procurement\OrgPartner\UI\EditOrgPartner;
+use App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings;
 use App\Actions\Procurement\OrgSupplier\ExportOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
@@ -180,6 +181,8 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
     Route::get('', IndexOrgPartners::class)->name('index');
     Route::prefix('{orgPartner}')->as('show')->group(function () {
         Route::get('', ShowOrgPartner::class);
+        Route::get('edit', EditOrgPartner::class)->name('.edit');
+        Route::patch('cosmetic-settings', UpdateOrgPartnerCosmeticSettings::class)->name('.cosmetic_settings.update');
         Route::prefix('purchase-orders')->as('.purchase-orders.')->group(function () {
             Route::get('index', [IndexPurchaseOrders::class, 'inOrgPartner'])->name('index');
             Route::get('{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgPartner'])->name('show');
@@ -253,6 +256,5 @@ Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
     Route::get('export', ExportStockDeliveries::class)->name('export');
     Route::get('create', CreateStockDelivery::class)->name('create');
     Route::get('{stockDelivery}', ShowStockDelivery::class)->name('show');
-    Route::get('{stockDelivery}/edit', EditStockDelivery::class)->name('edit');
     Route::get('{stockDelivery}/pdf', PdfStockDelivery::class)->name('pdf');
 });

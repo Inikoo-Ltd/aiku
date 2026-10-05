@@ -17,10 +17,6 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - name: Unmask secret
-        run: echo "${{ secrets.DEPLOY_SSH_CONFIG }}" | base64
-      - name: Unmask secret
-        run: echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" | base64
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
@@ -79,6 +75,8 @@ jobs:
           echo "GIT_HTTP_AUTH=$auth" >> "$GITHUB_ENV"
       - name: Launch 🚀
         uses: deployphp/action@v1
+        env:
+          DEVOPS_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
         with:
           dep: deploy
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG_V2 }}

@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Symfony\Component\HttpFoundation\Response;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 class PdfPurchaseOrder extends OrgAction
 {
@@ -56,7 +57,7 @@ class PdfPurchaseOrder extends OrgAction
 
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): Response
     {
-        abort_unless($purchaseOrder->organisation_id === $organisation->id, 404);
+        abort_unless($purchaseOrder->organisation_id === $organisation->id || $organisation->type === OrganisationTypeEnum::AGENT, 404);
         $this->initialisation($organisation, $request);
 
         return response($this->handle($purchaseOrder), 200)

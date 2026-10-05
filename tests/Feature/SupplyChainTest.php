@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
 use App\Models\SysAdmin\User;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
@@ -680,14 +681,16 @@ test('majordomo redirect supplier product link', function () {
 
 test('UI create supplier', function () {
     $this->withoutExceptionHandling();
+    $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.suppliers.create'));
 
-    $response->assertInertia(function (AssertableInertia $page) {
+    $response->assertInertia(function (AssertableInertia $page) use ($supplier) {
         $page
             ->component('CreateModel')
             ->has('title')
             ->has('pageHead')
             ->has('formData')
+            ->where('formData.blueprint.2.fields.code.takenValues.'.strtolower($supplier->code), $supplier->name ?: $supplier->code)
             ->has('breadcrumbs', 4);
     });
 });
@@ -927,7 +930,7 @@ test('UI show free supplier has direct procurement navigation', function () {
     });
 });
 
-test('UI show agent supplier has agent supplier purchase order navigation', function () {
+test('UI show agent supplier lists its purchase orders and its agent purchase orders', function () {
     $agent = StoreAgent::make()->action(
         group: $this->group,
         modelData: Agent::factory()->definition(),
@@ -939,8 +942,18 @@ test('UI show agent supplier has agent supplier purchase order navigation', func
 
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
-            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->where('pageHead.subNavigation.4.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->etc());
+
+    StoreOrgSupplier::make()->action($this->organisation, $supplier);
+
+    $this->get(route('grp.supply-chain.suppliers.purchase_orders.index', [$supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->has('pageHead.actions', 1)
+            ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
             ->etc());
 });
 

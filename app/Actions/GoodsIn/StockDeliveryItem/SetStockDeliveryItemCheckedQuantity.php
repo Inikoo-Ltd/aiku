@@ -36,6 +36,10 @@ class SetStockDeliveryItemCheckedQuantity extends OrgAction
     {
         $stockDelivery = $this->stockDeliveryItem->stockDelivery;
 
+        if ($this->stockDeliveryItem->canBeReceivedAfterAll()) {
+            return;
+        }
+
         if ($this->stockDeliveryItem->state === StockDeliveryItemStateEnum::CANCELLED
             || !($stockDelivery->isInGoodsIn() || $stockDelivery->state === StockDeliveryStateEnum::BOOKED_IN)) {
             $validator->errors()->add('unit_quantity_checked', __('Items can only be checked while the delivery is being booked in'));
@@ -48,6 +52,14 @@ class SetStockDeliveryItemCheckedQuantity extends OrgAction
         $checked = max($placed, (float) (isset($modelData['sko_quantity_checked'])
             ? round($modelData['sko_quantity_checked'] * $stockDeliveryItem->unitsPerSko(), 4)
             : $modelData['unit_quantity_checked']));
+
+        if ($checked > 0 && $stockDeliveryItem->canBeReceivedAfterAll()) {
+            $stockDeliveryItem->stockDelivery->update([
+                'state'     => StockDeliveryStateEnum::BOOKED_IN,
+                'placed_at' => null,
+                'is_costed' => false,
+            ]);
+        }
 
         $stockDeliveryItem = $this->update($stockDeliveryItem, [
             'unit_quantity_checked' => $checked,

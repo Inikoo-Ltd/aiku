@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
@@ -309,6 +310,10 @@ class ShowMasterProduct extends OrgAction
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
                     fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+
+                MasterAssetTabsEnum::ATTACHMENTS->value => $this->tab == MasterAssetTabsEnum::ATTACHMENTS->value ?
+                    fn () => ['documents' => GetTradeUnitDocuments::run($masterAsset->tradeUnits)]
+                    : Inertia::optional(fn () => ['documents' => GetTradeUnitDocuments::run($masterAsset->tradeUnits)]),
 
                 MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))

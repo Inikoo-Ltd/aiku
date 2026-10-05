@@ -1630,7 +1630,8 @@ test('a delivery note going to a box packing list destination is packed only onc
     \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 10]]]);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED)
-        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200);
+        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200)
+        ->and(app()->getLocale())->toBe($deliveryNote->shop->language->code);
 
     get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -2259,6 +2260,33 @@ test('only a dispatch supervisor can step a waiting delivery note back to pickin
     $user->syncRoles($originalRoles);
     Cache::tags('auth-user:'.$user->id)->flush();
     actingAs($user->refresh());
+});
+
+test('delivery note steps need dispatching, and undispatching needs a supervisor', function () {
+    [$deliveryNote] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $can           = fn () => [
+        $deliveryNote->canBeWorkedOnBy($user),
+        $deliveryNote->canBeCancelledBy($user),
+        \App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall::userCanCreateIn($user, $this->warehouse),
+    ];
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $this->warehouse)]);
+    expect($can())->toBe([false, false, false]);
+    patch(route('grp.models.delivery_note.update', $deliveryNote->id), [])->assertForbidden();
+    patch(route('grp.models.delivery_note.state.auto_finish_waiting', $deliveryNote->id))->assertForbidden();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    expect($can())->toBe([true, false, true]);
+    patch(route('grp.models.delivery_note.state.rollback', $deliveryNote->id))->assertForbidden();
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    expect($can())->toBe([true, true, true]);
+
+    actingAsUserWithRoles($user, $originalRoles);
 });
 
 test('over-picked item is trimmed back to required when picking is done', function () {
@@ -4992,6 +5020,20 @@ test('order transactions only show the batch code column once a picking carries 
     $deliveryNoteItem->pickings()->update(['batch_code_id' => $batchCode->id]);
 
     expect($columnKeys())->toContain('batch_codes');
+});
+
+test('order transactions show the UN number of dangerous goods (HELP-3658)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order       = $deliveryNote->orders->first();
+    $transaction = $order->transactions()->where('model_type', 'Product')->first();
+    $tradeUnit   = $transaction->model->tradeUnits()->first();
+    $tradeUnit->update(['un_number' => '1197', 'proper_shipping_name' => 'EXTRACTS, LIQUID']);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $row = \App\Http\Resources\Ordering\TransactionsResource::collection(\App\Actions\Ordering\Transaction\UI\IndexTransactions::make()->handle($order))
+        ->resolve()[0];
+
+    expect(collect($row['un_numbers'])->first())->toMatchArray(['number' => '1197', 'shipping_name' => 'EXTRACTS, LIQUID']);
 });
 
 test('finishing a return only marks the still unhandled quantity as not returned (HELP-3194)', function () {

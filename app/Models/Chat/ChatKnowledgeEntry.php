@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_seen_at
  * @property \Illuminate\Support\Carbon|null $expires_at
  * @property string|null $conflict
+ * @property array<int, float>|null $embedding
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Shop|null $shop
@@ -49,6 +50,8 @@ class ChatKnowledgeEntry extends Model
 {
     protected $guarded = [];
 
+    protected $hidden = ['embedding'];
+
     protected $casts = [
         'is_manual'   => 'boolean',
         'is_active'   => 'boolean',
@@ -56,6 +59,7 @@ class ChatKnowledgeEntry extends Model
         'evidence'     => 'array',
         'last_seen_at' => 'datetime',
         'expires_at'   => 'datetime',
+        'embedding'    => 'array',
     ];
 
     public function shop(): BelongsTo

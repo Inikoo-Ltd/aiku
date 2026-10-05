@@ -79,6 +79,7 @@ const createOrderLabel = computed(() => selectedCustomerName.value
 const closeOrderModal = () => {
     isOrderModalOpen.value = false
     orderForm.reset()
+    orderForm.clearErrors()
     if (props.customersRoute) {
         selectedCustomerId.value = null
         selectedCustomerName.value = null
@@ -165,6 +166,9 @@ const component = computed(() => {
             <div class="mt-6" :class="selectedCustomerId ? '' : 'opacity-50 pointer-events-none'">
                 <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
                     @update:model-value="(val) => orderForm.sales_channel_id = val" />
+            </div>
+            <div v-if="orderForm.hasErrors" class="mt-4 rounded bg-red-500 p-3 text-sm text-white">
+                <p v-for="message in Object.values(orderForm.errors)" :key="message">{{ message }}</p>
             </div>
 
             <div class="mt-6 flex justify-end">

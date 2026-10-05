@@ -271,6 +271,7 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
+use App\Actions\Goods\Barcode\StoreBarcode;
 use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
@@ -590,6 +591,11 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use App\Actions\Helpers\Ticket\DeleteTicket;
+use App\Actions\Helpers\TicketProject\AssignWorkToProject;
+use App\Actions\Helpers\TicketProject\AttachWorkToProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\UpdateTicketProject;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
@@ -616,6 +622,7 @@ Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notificat
 Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('/', StoreTicket::class)->name('store');
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/project', [AssignWorkToProject::class, 'inTicket'])->name('project.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/pull-request', UpdateTicketPullRequest::class)->name('pull_request.update')->whereNumber('ticket');
@@ -627,6 +634,13 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::delete('comment/{ticketComment:id}', DeleteTicketComment::class)->name('comment.delete')->whereNumber('ticketComment');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
     Route::delete('{ticket:id}', DeleteTicket::class)->name('delete')->whereNumber('ticket');
+});
+
+Route::prefix('ticket-project')->name('ticket_project.')->group(function () {
+    Route::post('/', StoreTicketProject::class)->name('store');
+    Route::patch('{ticketProject:id}', UpdateTicketProject::class)->name('update')->whereNumber('ticketProject');
+    Route::post('{ticketProject:id}/update', StoreTicketProjectUpdate::class)->name('update.store')->whereNumber('ticketProject');
+    Route::post('{ticketProject:id}/work', AttachWorkToProject::class)->name('work.attach')->whereNumber('ticketProject');
 });
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
@@ -984,8 +998,6 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
     Route::patch('{product:id}/media/{media:id}/alt', UpdateProductImageAlt::class)->name('images.update_image_alt')->withoutScopedBindings();
     Route::delete('{product:id}/media/{media:id}/delete', DeleteImagesFromProduct::class)->name('images.delete_images')->withoutScopedBindings();
-    Route::post('{product:id}/attachment/attach', [AttachAttachmentToModel::class, 'inProduct'])->name('attachment.attach');
-    Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 
     Route::name('external.')->prefix('external')->group(function () {
         Route::patch('/{product:id}/update', UpdateTradeUnitsForExternalProduct::class)->name('update');
@@ -1684,6 +1696,7 @@ Route::name('brand.')->prefix('brand')->group(function () {
 });
 
 Route::name('barcodes.')->prefix('barcode')->group(function () {
+    Route::post('store', StoreBarcode::class)->name('store');
     Route::patch('{barcode:id}/update', UpdateBarcode::class)->name('update')->withoutScopedBindings();
 });
 

@@ -9,6 +9,7 @@
 namespace App\Exports\Procurement;
 
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\Exportable;
@@ -22,9 +23,13 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
 {
     use Exportable;
 
+    public function __construct(public Organisation $organisation)
+    {
+    }
+
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|PurchaseOrder|Builder
     {
-        return PurchaseOrder::query();
+        return PurchaseOrder::query()->where('organisation_id', $this->organisation->id)->with('currency');
     }
 
     /** @var PurchaseOrder $row */
@@ -33,20 +38,17 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
         return [
             $row->id,
             $row->slug,
-            $row->status->value,
+            $row->reference,
             $row->state->value,
+            $row->delivery_state?->value,
             $row->date,
             $row->submitted_at,
             $row->confirmed_at,
-            $row->manufactured_at,
-            $row->dispatched_at,
-            $row->received_at,
-            $row->checked_at,
             $row->settled_at,
             $row->cancelled_at,
             $row->currency->code,
-            $row->exchange,
-            $row->number_of_items,
+            $row->org_exchange,
+            $row->number_purchase_order_transactions,
             $row->gross_weight,
             $row->net_weight,
             $row->cost_items,
@@ -64,15 +66,12 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
         return [
             '#',
             'Slug',
-            'Status',
+            'Reference',
             'State',
+            'Delivery State',
             'Date',
             'Submitted At',
             'Confirmed At',
-            'Manufactured At',
-            'Dispatched At',
-            'Received At',
-            'Checked At',
             'Settled At',
             'Cancelled At',
             'Currency',
@@ -81,7 +80,7 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             'Gross Weight',
             'Net Weight',
             'Cost Items',
-            'Cst Extra',
+            'Cost Extra',
             'Cost Shipping',
             'Cost Duties',
             'Cost Tax',

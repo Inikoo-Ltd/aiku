@@ -14,7 +14,10 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Http\Resources\Chat\StaffConversationResource;
 use App\Http\Resources\Tasks\StaffTaskResource;
+use App\Actions\Helpers\TicketProject\AssignWorkToProject;
+use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\TicketProject;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use App\Models\SysAdmin\Organisation;
@@ -34,7 +37,7 @@ class ShowStaffTask extends OrgAction
 
     public function handle(StaffTask $staffTask): StaffTask
     {
-        return $staffTask->load(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants.image', 'conversation.context', 'model', 'media']);
+        return $staffTask->load(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants.image', 'conversation.context', 'model', 'media', 'project', 'milestone']);
     }
 
     public function asController(StaffTask $staffTask, ActionRequest $request): StaffTask
@@ -56,6 +59,25 @@ class ShowStaffTask extends OrgAction
         $this->initialisationFromTasksScope($request, $organisation, $shop);
 
         return $this->handle($staffTask);
+    }
+
+    /**
+     * @return array{project_options: array<int, array{label: string, value: int}>, milestone_options: array<int, array{label: string, value: int}>, can_change_project: bool, project_route: array{name: string, parameters: array<string, string>}}
+     */
+    public function projectControls(StaffTask $staffTask, User $viewer): array
+    {
+        return [
+            'project_options'   => TicketProject::where('group_id', $staffTask->group_id)
+                ->where(fn ($query) => $query->whereIn('status', [TicketProjectStatusEnum::ACTIVE, TicketProjectStatusEnum::ON_HOLD])->orWhere('id', $staffTask->ticket_project_id))
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (TicketProject $project) => ['label' => $project->name, 'value' => $project->id])
+                ->values()
+                ->all(),
+            'milestone_options' => $staffTask->project?->milestones()->get(['id', 'name'])->map(fn ($milestone) => ['label' => $milestone->name, 'value' => $milestone->id])->values()->all() ?? [],
+            'can_change_project' => AssignWorkToProject::canAssign($staffTask, $viewer, $staffTask->ticket_project_id),
+            'project_route'     => ['name' => 'grp.tasks.project.update', 'parameters' => ['staffTask' => $staffTask->reference]],
+        ];
     }
 
     public function linkedRecordUrl(StaffTask $staffTask): ?string
@@ -150,6 +172,7 @@ class ShowStaffTask extends OrgAction
             'timeline'     => $this->timeline($staffTask),
             'options'      => $this->staffTaskEditOptions(),
             'listRoute'    => $this->tasksRoute('list_all'),
+            ...$this->projectControls($staffTask, $viewer),
         ]);
     }
 

@@ -19,12 +19,16 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * An agent answered while a draft was waiting: it counts as sent as written when the words
- * match, even when they copied it without pressing Use, sent after changes when the agent took it and rewrote it, and not used when they wrote
- * their own. These counts decide whether drafts are ever trusted to go out on their own.
+ * match or they retyped nearly all of it, even without pressing Use; sent after changes when
+ * they took it, or kept most of its words, and rewrote it; and not used when they wrote their own. These counts decide whether drafts are ever trusted to go out on their own.
  */
 class SettleChatAiDraft
 {
     use AsAction;
+
+    private const float RETYPED = 0.9;
+
+    private const float REWORDED = 0.6;
 
     public function handle(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): ?ChatAiDraft
     {
@@ -36,10 +40,13 @@ class SettleChatAiDraft
             return null;
         }
 
-        $status = match (true) {
-            self::normalised($draft->text) === self::normalised((string) $reply->message_text) => ChatAiDraftStatusEnum::USED,
-            !$draft->taken_at                                                                  => ChatAiDraftStatusEnum::SUPERSEDED,
-            default                                                                            => ChatAiDraftStatusEnum::EDITED,
+        $replyText = (string) $reply->message_text;
+        $kept      = self::draftWordsKept($draft->text, $replyText);
+        $status    = match (true) {
+            self::normalised($draft->text) === self::normalised($replyText) => ChatAiDraftStatusEnum::USED,
+            $kept >= self::RETYPED && self::wordCount($replyText) <= 1.5 * self::wordCount($draft->text) => ChatAiDraftStatusEnum::USED,
+            $draft->taken_at !== null || $kept >= self::REWORDED => ChatAiDraftStatusEnum::EDITED,
+            default => ChatAiDraftStatusEnum::SUPERSEDED,
         };
 
         $draft->update([
@@ -50,6 +57,34 @@ class SettleChatAiDraft
         ]);
 
         return $draft;
+    }
+
+    /**
+     * The share of the draft's words that are in the reply: an agent who retyped it, or
+     * added a greeting and their name, kept nearly all of them.
+     */
+    public static function draftWordsKept(string $draft, string $reply): float
+    {
+        $draftWords = self::words((string) preg_replace(DraftChatReply::GAP, ' ', $draft));
+
+        if (!$draftWords) {
+            return 0;
+        }
+
+        return count(array_intersect($draftWords, self::words($reply))) / count($draftWords);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function words(string $text): array
+    {
+        return array_values(array_unique(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY)));
+    }
+
+    private static function wordCount(string $text): int
+    {
+        return count(preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY));
     }
 
     private static function normalised(string $text): string

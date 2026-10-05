@@ -4,7 +4,7 @@ summary: Lišta správ na pravej strane každej obrazovky aiku - napíšte koleg
 date: 2026-09-02
 source_date: 2026-09-02
 tags: crm, dispatch, hr, chat, messaging
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

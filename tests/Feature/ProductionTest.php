@@ -2994,26 +2994,20 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->firstWhere('label', 'Backlog')['items'];
-    $toRestock = fn () => get(route('grp.org.productions.show.to_restock.index', $routeParameters))
-        ->assertOk()->viewData('page')['props'];
 
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
         ->and($counts()['to_produce'])->toBe($before['to_produce'])
-        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1)
-        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
-        ->and($toRestock()['sentFromStock'])->toBe($before['pre_pick'] + 1);
+        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1);
 
     $orgStocks[0]->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id);
 
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
     expect(collect($backlog())->pluck('id')->all())->toContain($line->id)
-        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1)
-        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->toContain($line->id);
+        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
 
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
-        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
         ->and($counts()['to_produce'])->toBe($before['to_produce']);
 
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
@@ -3157,11 +3151,12 @@ test('to restock bands rank artefacts by cover and queue them onto the to produc
 
     $props = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
         ->assertOk()->viewData('page')['props'];
-    $toDo = collect($props['lanes']['to_do'])->pluck('stock_code');
+    $toDo = collect($props['data']['data'])->pluck('stock_code');
 
     expect($toDo)->toContain($orgStocks[0]->code)
         ->and($toDo)->not->toContain($orgStocks[1]->code)
-        ->and($props['leadTime']['days'])->toBeGreaterThan(0);
+        ->and($props['leadTime']['days'])->toBeGreaterThan(0)
+        ->and((int) collect($props['data']['data'])->firstWhere('stock_code', $orgStocks[0]->code)['job_units'])->toBe(9);
 
     \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
         ->action($this->organisation, $this->production, [['artefact_id' => $empty->id, 'quantity' => 9]]);
@@ -3171,11 +3166,265 @@ test('to restock bands rank artefacts by cover and queue them onto the to produc
         ->and($queued->partner_organisation_id)->toBeNull()
         ->and($queued->organisation_id)->toBe($this->organisation->id);
 
-    $lanes = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
-        ->assertOk()->viewData('page')['props']['lanes'];
+    $after = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
 
-    expect(collect($lanes['to_do'])->pluck('stock_code'))->not->toContain($orgStocks[0]->code)
-        ->and(collect($lanes['queued'])->pluck('stock_code'))->toContain($orgStocks[0]->code);
+    expect(collect($after['data']['data'])->pluck('stock_code'))->not->toContain($orgStocks[0]->code)
+        ->and($after)->not->toHaveKey('candidates')
+        ->and(collect($after['cover'])->pluck('bucket')->all())->toContain('out', 'w1', 'w2', 'ok');
+});
+
+test('to restock leaves out stocks whose only products are exclusive to a private customer', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-PRIV', 'name' => 'Private product']);
+    $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_available' => 0]);
+    $orgStocks[0]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
+
+    list(, , $shop) = createShop();
+    [, $product] = createProduct($shop);
+    $customer    = createCustomer($shop);
+    \DB::table('product_has_org_stocks')->where('org_stock_id', $orgStocks[0]->id)->delete();
+    \DB::table('product_has_org_stocks')->insert(['product_id' => $product->id, 'org_stock_id' => $orgStocks[0]->id, 'quantity' => 1]);
+    $product->update(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'exclusive_for_customer_id' => $customer->id]);
+
+    actingAs($this->guest->getUser());
+    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug]);
+    $codes = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code');
+
+    expect($codes())->not->toContain($orgStocks[0]->code);
+
+    \App\Models\Procurement\OrgPartner::updateOrCreate(
+        ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'partner_id' => $this->organisation->id],
+        ['status' => true, 'customer_id' => $customer->id],
+    );
+
+    expect($codes())->toContain($orgStocks[0]->code);
+
+    \App\Models\Procurement\OrgPartner::where('organisation_id', $this->organisation->id)->where('partner_id', $this->organisation->id)->update(['customer_id' => null]);
+});
+
+test('to restock hides stocks one private customer took almost all of, once hydrated', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
+
+    foreach ([0, 1] as $index) {
+        $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-TOP'.$index, 'name' => 'Top customer '.$index]);
+        $artefact->update(['org_stock_id' => $orgStocks[$index]->id]);
+        $orgStocks[$index]->update(['quantity_available' => 0]);
+        $orgStocks[$index]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
+        \DB::table('delivery_note_items')->whereIn('org_stock_id', [$orgStocks[$index]->id])->delete();
+    }
+
+    list(, , $shop) = createShop();
+    $big   = createCustomer($shop);
+    $small = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+    $warehouseId = createWarehouse()->id;
+
+    $dispatch = function (int $orgStockId, int $customerId, int $quantity) use ($shop, $warehouseId) {
+        $noteId = \DB::table('delivery_notes')->insertGetId([
+            'group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'slug' => 'dn-'.\Illuminate\Support\Str::random(10),
+            'warehouse_id' => $warehouseId, 'shop_id' => $shop->id, 'customer_id' => $customerId,
+            'reference' => 'DN'.\Illuminate\Support\Str::random(8), 'date' => now(), 'data' => '{}',
+        ]);
+        \DB::table('delivery_note_items')->insert([
+            'group_id' => $shop->group_id, 'organisation_id' => $this->organisation->id, 'shop_id' => $shop->id, 'delivery_note_id' => $noteId,
+            'org_stock_id' => $orgStockId, 'quantity_dispatched' => $quantity, 'data' => '{}', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    };
+
+    $dispatch($orgStocks[0]->id, $big->id, 95);
+    $dispatch($orgStocks[0]->id, $small->id, 5);
+    $dispatch($orgStocks[1]->id, $big->id, 60);
+    $dispatch($orgStocks[1]->id, $small->id, 40);
+
+    actingAs($this->guest->getUser());
+    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug]);
+    $codes = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code');
+
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateTopCustomerShare::run($this->organisation);
+
+    expect($codes())->not->toContain($orgStocks[0]->code)
+        ->and($codes())->toContain($orgStocks[1]->code);
+});
+
+test('to restock keeps a stock partly covered by production, asking only for what is missing, and hides a fully covered one', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
+
+    \DB::table('product_has_org_stocks')->where('org_stock_id', $orgStocks[0]->id)->delete();
+    $orgStocks[0]->stats()->update(['top_customer_id' => null, 'top_customer_dispatch_share' => null]);
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-PART', 'name' => 'Partly covered', 'recommended_batch_size' => 10]);
+    $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_available' => 0, 'packed_in' => 1]);
+    $orgStocks[0]->stats()->update(['recommended_order_quantity' => 95, 'days_of_cover' => 0]);
+
+    actingAs($this->guest->getUser());
+    $url = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'perPage' => 500]);
+    $row = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('stock_code', $orgStocks[0]->code);
+
+    expect((int) $row()['job_units'])->toBe(100)
+        ->and((int) $row()['in_production'])->toBe(0);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'         => $this->group->id,
+        'organisation_id'  => $this->organisation->id,
+        'stock_id'         => $orgStocks[0]->stock_id,
+        'org_stock_id'     => $orgStocks[0]->id,
+        'quantity'         => 40,
+        'priority'         => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum::NORMAL,
+        'state'            => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN,
+    ]);
+
+    expect((int) $row()['in_production'])->toBe(40)
+        ->and((int) $row()['job_units'])->toBe(60);
+
+    $line->update(['quantity' => 95]);
+
+    expect($row())->toBeNull();
+});
+
+test('sending one product to the to produce board queues only that line', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
+
+    $first  = StoreArtefact::make()->action($this->production, ['code' => 'RES-ONE', 'name' => 'First', 'recommended_batch_size' => 10]);
+    $second = StoreArtefact::make()->action($this->production, ['code' => 'RES-TWO', 'name' => 'Second', 'recommended_batch_size' => 10]);
+    $first->update(['org_stock_id' => $orgStocks[0]->id]);
+    $second->update(['org_stock_id' => $orgStocks[1]->id]);
+
+    $result = \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
+        ->action($this->organisation, $this->production, [['artefact_id' => $second->id, 'units' => 25]]);
+
+    expect($result['queued'])->toBe(1)
+        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->exists())->toBeFalse()
+        ->and((float) \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[1]->id)->value('quantity'))->toBe(30.0 / max(1, (int) $orgStocks[1]->packed_in));
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[1]->id)->first();
+    expect($line->preparing_at)->not->toBeNull()
+        ->and($result['artefact_ids'])->toBe([$second->id]);
+
+    actingAs($this->guest->getUser());
+    $page = get(route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'sent' => $second->id]))->assertOk()->viewData('page');
+    $partial = $this->withHeaders([
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => $page['version'],
+        'X-Inertia-Partial-Component' => 'Org/Production/ToRestock',
+        'X-Inertia-Partial-Data'      => 'sent',
+    ])->get(route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'sent' => $second->id]))->assertOk()->json('props.sent');
+
+    expect($partial['cards'][$second->id]['id'])->toBe($line->id)
+        ->and($partial['artisans'])->toBeArray();
+});
+
+test('to restock suggests and queues whole SKOs, never a fraction', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
+    \DB::table('product_has_org_stocks')->where('org_stock_id', $orgStocks[0]->id)->delete();
+    $orgStocks[0]->stats()->update(['top_customer_id' => null, 'top_customer_dispatch_share' => null]);
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-WHOLE', 'name' => 'Whole SKOs']);
+    $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_available' => 0, 'packed_in' => 12]);
+    $orgStocks[0]->stats()->update(['recommended_order_quantity' => 6.9167, 'days_of_cover' => 0]);
+
+    actingAs($this->guest->getUser());
+    $url = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'perPage' => 500]);
+    $row = collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('stock_code', $orgStocks[0]->code);
+
+    expect((int) $row['job_units'] % 12)->toBe(0)
+        ->and((int) $row['quantum_units'])->toBe(12);
+
+    \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
+        ->action($this->organisation, $this->production, [['artefact_id' => $artefact->id, 'units' => 83]]);
+
+    $quantity = (float) \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->value('quantity');
+
+    expect($quantity)->toBe(7.0);
+});
+
+test('sending a product over http redirects to a page whose sent prop carries its preparing card', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-HTTP', 'name' => 'Http product']);
+    $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 12]);
+
+    actingAs($this->guest->getUser());
+    $parameters = [$this->organisation->slug, $this->production->slug];
+    $page       = get(route('grp.org.productions.show.to_restock.index', $parameters))->assertOk()->viewData('page');
+    $inertia    = fn (string $only) => [
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => $page['version'],
+        'X-Inertia-Partial-Component' => 'Org/Production/ToRestock',
+        'X-Inertia-Partial-Data'      => $only,
+    ];
+
+    $this->withHeaders($inertia('sent,flash') + ['Referer' => route('grp.org.productions.show.to_restock.index', $parameters)])
+        ->post(route('grp.org.productions.show.to_restock.queue', $parameters), ['lines' => [['artefact_id' => $artefact->id, 'units' => 83]]])
+        ->assertRedirect();
+
+    $cards = $this->withHeaders($inertia('sent'))->get(route('grp.org.productions.show.to_restock.index', [...$parameters, 'sent' => $artefact->id]))->assertOk()->json('props.sent.cards');
+
+    expect($cards)->toHaveKey((string) $artefact->id)
+        ->and((float) $cards[$artefact->id]['quantity'])->toBe(7.0)
+        ->and($cards[$artefact->id]['preparing_at'])->not->toBeNull();
+});
+
+test('queueing to produce rounds a per-line unit quantity up to whole batches', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->update(['org_stock_id' => null]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-UNITS', 'name' => 'Units product', 'recommended_batch_size' => 10]);
+    $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 5]);
+
+    $result = \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
+        ->action($this->organisation, $this->production, [['artefact_id' => $artefact->id, 'units' => 12]]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
+
+    expect($result['queued'])->toBe(1)
+        ->and((float) $line->quantity)->toBe(4.0);
 });
 
 test('repair assigns artefacts to families mirroring their org stock family', function () {

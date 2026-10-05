@@ -10,7 +10,6 @@ namespace App\Actions\Traits;
 
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\AuroraOrganisationService;
-use App\Transfers\WowsbarOrganisationService;
 use Exception;
 use Illuminate\Support\Arr;
 
@@ -19,7 +18,7 @@ trait WithOrganisationSource
     /**
      * @throws \Exception
      */
-    public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|WowsbarOrganisationService|null
+    public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|null
     {
         $sourceType = Arr::get($organisation->source, 'type');
         if (!$sourceType) {
@@ -28,7 +27,6 @@ trait WithOrganisationSource
 
         $organisationSource = match (Arr::get($organisation->source, 'type')) {
             'Aurora'  => new AuroraOrganisationService(),
-            'Wowsbar' => new WowsbarOrganisationService(),
             default   => null
         };
 

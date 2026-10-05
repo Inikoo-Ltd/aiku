@@ -19,12 +19,29 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StorePartnerStockDeliveryFromDeliveryNote
 {
     use AsAction;
+
+    public function reference(DeliveryNote $deliveryNote, Organisation $buyerOrganisation): string
+    {
+        $isTaken = StockDelivery::where('organisation_id', $buyerOrganisation->id)
+            ->whereRaw('lower(reference) = lower(?)', [$deliveryNote->reference])
+            ->exists();
+
+        if ($isTaken) {
+            return GetSerialReference::run(
+                container: $buyerOrganisation,
+                modelType: SerialReferenceModelEnum::STOCK_DELIVERY
+            );
+        }
+
+        return $deliveryNote->reference;
+    }
 
     public function handle(DeliveryNote $deliveryNote): ?StockDelivery
     {
@@ -40,10 +57,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
         $stockDelivery = StoreStockDelivery::make()->action(
             $orgPartner,
             [
-                'reference'        => GetSerialReference::run(
-                    container: $buyerOrganisation,
-                    modelType: SerialReferenceModelEnum::STOCK_DELIVERY
-                ),
+                'reference'        => $this->reference($deliveryNote, $buyerOrganisation),
                 'state'            => StockDeliveryStateEnum::CONFIRMED,
                 'confirmed_at'     => now(),
                 'date'             => now(),

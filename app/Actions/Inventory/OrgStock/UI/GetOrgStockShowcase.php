@@ -43,13 +43,15 @@ class GetOrgStockShowcase
             return $a['code'] <=> $b['code'];
         });
 
+        $canEditStock = (bool) request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation));
+
         return collect(
             [
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'barcodes'           => GetOrgStockBarcodes::run($orgStock),
-                'barcode_update_route' => request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation)) ? [
+                'barcode_update_route' => $canEditStock ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
                     'parameters' => [
                         'organisation' => $warehouse->organisation->slug,
@@ -76,6 +78,7 @@ class GetOrgStockShowcase
                     'parameters' => request()->route()->originalParameters(),
                 ],
                 'stocks_management'  => [
+                    'can_edit'        => $canEditStock,
                     'routes'          => [
                         'location_route'                         => [
                             'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',

@@ -36,6 +36,7 @@ class PurchaseOrderResource extends JsonResource
             'state'       => $purchaseOrder->state->value,
             'state_label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
             'state_icon'  => $purchaseOrder->state->stateIcon()[$purchaseOrder->state->value],
+            'is_partner'  => $purchaseOrder->parent_type === 'OrgPartner',
             'created_at'  => $purchaseOrder->created_at,
             'updated_at'  => $purchaseOrder->updated_at,
         ];

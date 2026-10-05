@@ -16,7 +16,6 @@ use App\Models\Web\Website;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\AuroraOrganisationService;
 use App\Transfers\SourceOrganisationService;
-use App\Transfers\WowsbarOrganisationService;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraWebBlockLink extends OrgAction
@@ -24,7 +23,7 @@ class FetchAuroraWebBlockLink extends OrgAction
     use WithAuroraParsers;
     use WithOrganisationSource;
 
-    protected AuroraOrganisationService|WowsbarOrganisationService|SourceOrganisationService|null $organisationSource = null;
+    protected AuroraOrganisationService|SourceOrganisationService|null $organisationSource = null;
 
     /**
      * @throws \Exception

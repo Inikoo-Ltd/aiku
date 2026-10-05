@@ -79,7 +79,7 @@ class UnsubscribeMailshot
                     };
 
                     $customerComms = $recipient->comms;
-                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                    UpdateCustomerComms::run($customerComms, $modelData);
                 }
             }
 
@@ -108,7 +108,7 @@ class UnsubscribeMailshot
                     };
 
                     $customerComms = $recipient->comms;
-                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                    UpdateCustomerComms::run($customerComms, $modelData);
                 }
             }
         }

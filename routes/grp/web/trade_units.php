@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\Barcode\UI\CreateBarcode;
 use App\Actions\Goods\Barcode\UI\EditBarcode;
 use App\Actions\Goods\Barcode\UI\IndexBarcode;
 use App\Actions\Goods\Barcode\UI\ShowBarcode;
@@ -82,6 +83,7 @@ Route::prefix('tags')->as('tags.')->group(function () {
 
 Route::prefix('barcodes')->as('barcodes.')->group(function () {
     Route::get('/', IndexBarcode::class)->name('index');
+    Route::get('/create', CreateBarcode::class)->name('create');
     Route::prefix('/{barcode}')->group(function () {
         Route::get('', ShowBarcode::class)->name('show');
         Route::get('/edit', EditBarcode::class)->name('edit');

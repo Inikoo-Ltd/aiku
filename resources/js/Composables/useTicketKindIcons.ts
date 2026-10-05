@@ -5,9 +5,9 @@
  */
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch, faQuestionCircle } from "@fal"
+import { faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch, faQuestionCircle, faHistory } from "@fal"
 
-library.add(faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch, faQuestionCircle)
+library.add(faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch, faQuestionCircle, faHistory)
 
 export const ticketKindIcons: Record<string, string> = {
     bug: "fal fa-bug",
@@ -18,6 +18,7 @@ export const ticketKindIcons: Record<string, string> = {
     documentation: "fal fa-books",
     data_integrity: "fal fa-database",
     support: "fal fa-search",
+    aurora: "fal fa-history",
 }
 
 export const ticketKindIcon = (kind: string | null | undefined) => (kind && ticketKindIcons[kind]) || "fal fa-question-circle"

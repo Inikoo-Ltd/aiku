@@ -3,7 +3,7 @@ title: When WhatsApp is not working
 summary: The symptoms people actually hit — nothing arriving in the inbox, templates stuck on pending, a campaign that stopped or will not finish — with the cause and what to change.
 date: 2026-09-10
 tags: marketing, whatsapp, campaigns
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 3
 help_routes: grp.org.shops.show.chat.whatsapp_templates

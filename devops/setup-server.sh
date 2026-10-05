@@ -32,11 +32,15 @@ set -a; source "$ENV_FILE"; set +a
 : "${HAPROXY_STATS_USER:?set it in $ENV_FILE}"
 : "${HAPROXY_STATS_PASSWORD:?set it in $ENV_FILE}"
 : "${VARNISH_HOST_BORO:?set it in $ENV_FILE}"
-: "${VARNISH_HOST_HELIO:?set it in $ENV_FILE}"
-: "${APP_HOST:?set it in $ENV_FILE — boro or helio}"
+: "${VARNISH_HOST_LITIO:?set it in $ENV_FILE}"
+: "${VARNISH_PORT_LITIO:?set it in $ENV_FILE}"
+: "${NGINX_PORT:?set it in $ENV_FILE}"
+: "${APP_HOST:?set it in $ENV_FILE — boro, litio or helio}"
 : "${OCTANE_WORKERS:?set it in $ENV_FILE}"
 : "${OCTANE_MAX_REQUESTS:?set it in $ENV_FILE}"
 INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
+: "${HORIZON_DB_READ_HOSTS?set it in $ENV_FILE — empty on boro, 127.0.0.1 on litio}"
+export OCTANE_PORT="${OCTANE_PORT:-8000}"
 
 # place <src> <dst> [mode]
 # Substitutes every {{VAR}} from the environment (dies on an unset placeholder,
@@ -56,7 +60,11 @@ place() {
 }
 
 echo "haproxy:"
-place "$DEVOPS/haproxy/haproxy.cfg"        /etc/haproxy/haproxy.cfg
+# litio is the live edge and dispatches Aurora and soketi hosts too; boro keeps the plain
+# aiku edge as hot standby. Any other host gets boro's file.
+haproxy_cfg="$DEVOPS/haproxy/haproxy-$APP_HOST.cfg"
+[[ -f $haproxy_cfg ]] || haproxy_cfg="$DEVOPS/haproxy/haproxy.cfg"
+place "$haproxy_cfg"                       /etc/haproxy/haproxy.cfg
 place "$DEVOPS/haproxy/CF_ips.lst"         /etc/haproxy/CF_ips.lst
 place "$DEVOPS/haproxy/facebook-bots.lst"  /etc/haproxy/facebook-bots.lst
 # haproxy.cfg reads the stats credentials from the environment, so the tracked file is byte-identical to the live one;
@@ -89,6 +97,25 @@ if [[ $DRY_RUN != 1 ]]; then
           /etc/nginx/sites-enabled/aiku-octane-production.conf
 fi
 
+# Second, small Octane pool that reads this host's own database replica (PROCESS_DB_READ_HOSTS).
+# Only for requests where a fraction of a second of staleness is harmless (HAProxy routes the
+# Shopify stock feed to it); basket, checkout, payments, logins and every POST stay on the main pool.
+# Same nginx site rendered on 8091 -> Octane 8001; the deploy reloads this pool too.
+echo "octane replica pool:"
+if [[ ${INSTALL_OCTANE_REPLICA:-0} == 1 ]]; then
+  : "${OCTANE_REPLICA_WORKERS:?set it in $ENV_FILE}"
+  NGINX_PORT=8091 OCTANE_PORT=8001 place "$DEVOPS/nginx/aiku-octane-production.conf" /etc/nginx/sites-available/aiku-octane-replica-production.conf
+  place "$DEVOPS/supervisor/octane-replica.conf" /etc/supervisor/conf.d/aiku-production-octane-replica.conf
+  place "$DEVOPS/octane/rr-octane-replica.yaml" /home/aiku/rr-octane-replica.yaml
+  if [[ $DRY_RUN != 1 ]]; then
+    chown aiku:aiku /home/aiku/rr-octane-replica.yaml
+    ln -sfn /etc/nginx/sites-available/aiku-octane-replica-production.conf \
+            /etc/nginx/sites-enabled/aiku-octane-replica-production.conf
+  fi
+else
+  echo "  skipped (INSTALL_OCTANE_REPLICA=0 — only the host with the replica runs it)"
+fi
+
 echo "supervisor:"
 # Staging configs live in the same directory but name the staging user and its
 # /home/staging paths, and aiku-staging-inertia-ssr.conf declares the same
@@ -113,6 +140,47 @@ fi
 
 echo "varnish:"
 place "$DEVOPS/varnish/default.vcl" /etc/varnish/default.vcl
+# Installing the varnish package starts it with the package's example VCL and 256m;
+# restart varnish after the first install or it keeps serving that example.
+place "$DEVOPS/systemd/varnish.service" /etc/systemd/system/varnish.service
+
+# The edge host resizes product images (media.aiku.io). imgproxy runs from docker
+# (docker.io + docker-compose-v2), published on 127.0.0.1 only because docker-published
+# ports bypass ufw. Its signing key/salt must equal every earlier host's, or every
+# image URL already handed out (shops, exports, feeds) stops resolving.
+echo "imgproxy:"
+if [[ ${INSTALL_IMGPROXY:-0} == 1 ]]; then
+  for var in IMGPROXY_KEY IMGPROXY_SALT IMGPROXY_SECRET IMGPROXY_SOURCE_URL_ENCRYPTION_KEY IMGPROXY_PUBLISH IMGPROXY_NGINX_PORT; do
+    : "${!var:?set $var in $ENV_FILE}"
+  done
+  place "$DEVOPS/imgproxy/docker-compose.yml" /home/inikoo/docker/imgproxy/docker-compose.yml 600
+  place "$DEVOPS/nginx/imgproxy-aiku-production.conf" /etc/nginx/sites-available/imgproxy_aiku_production.conf
+  if [[ $DRY_RUN != 1 ]]; then
+    install -d -o www-data -g www-data /var/cache/nginx/imgproxy/production
+    ln -sfn /etc/nginx/sites-available/imgproxy_aiku_production.conf \
+            /etc/nginx/sites-enabled/imgproxy_aiku_production.conf
+    docker compose -p imgproxy -f /home/inikoo/docker/imgproxy/docker-compose.yml up -d
+  fi
+else
+  echo "  skipped (INSTALL_IMGPROXY=0 — imgproxy runs on the edge host only)"
+fi
+
+# Realtime websockets (soketi.aiku.io). Needs node 18 in /opt/node-v18.20.8-linux-x64 and
+# soketi 1.6.0 in /opt/soketi (npm install -g --prefix /opt/soketi @soketi/soketi@1.6.0);
+# its app keys must match PUSHER_APP_KEY/SECRET in every host's .env.
+echo "soketi:"
+if [[ ${INSTALL_SOKETI:-0} == 1 ]]; then
+  for var in SOKETI_AIKU_KEY SOKETI_AIKU_SECRET SOKETI_AIKU_STAGING_KEY SOKETI_AIKU_STAGING_SECRET SOKETI_AIKU_DEVEL_KEY SOKETI_AIKU_DEVEL_SECRET; do
+    : "${!var:?set $var in $ENV_FILE}"
+  done
+  place "$DEVOPS/soketi/soketi-conf.json" /home/aiku/soketi/soketi-conf.json 640
+  place "$DEVOPS/supervisor/soketi.conf" /etc/supervisor/conf.d/soketi.conf
+  if [[ $DRY_RUN != 1 ]]; then
+    chown aiku:aiku /home/aiku/soketi/soketi-conf.json
+  fi
+else
+  echo "  skipped (INSTALL_SOKETI=0 — soketi runs on the edge host only)"
+fi
 
 echo "sysctl:"
 place "$DEVOPS/sysctl/99-aiku.conf" /etc/sysctl.d/99-aiku.conf
@@ -120,23 +188,7 @@ if [[ $DRY_RUN != 1 ]]; then
   sysctl -q --load /etc/sysctl.d/99-aiku.conf
 fi
 
-echo "github runner:"
-# Drop-in, not a full unit: the unit itself is generated by the runner's own
-# svc.sh install and gets rewritten on every runner upgrade. Without this the
-# service stays `failed` after an OOM and CI silently stops running, and the
-# stock KillMode=process orphans Runner.Listener on every restart until two
-# listeners race over one _work dir and checkout dies on a missing _temp file.
-shopt -s nullglob
-runner_units=(/etc/systemd/system/actions.runner.*.service)
-shopt -u nullglob
-if [[ ${#runner_units[@]} -eq 0 ]]; then
-  echo "  skipped (no actions.runner unit on this host)"
-else
-  for unit in "${runner_units[@]}"; do
-    place "$DEVOPS/systemd/actions-runner.conf" "$unit.d/aiku.conf"
-  done
-  place "$DEVOPS/cron/actions-runner-watchdog" /etc/cron.d/actions-runner-watchdog
-fi
+# The GitHub runner (CI host only) is set up by devops/setup-ci-runner.sh.
 
 echo "cron:"
 if [[ $INSTALL_SCHEDULER == 1 ]]; then
@@ -161,9 +213,25 @@ else
   echo "  pg-freeze-sweep skipped (primary DB host only)"
 fi
 
+echo "redis queue:"
+if [[ $APP_HOST == boro ]]; then
+  place "$DEVOPS/redis/redis-queue.conf" /etc/redis/redis-queue.conf 640
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would chown redis:redis /etc/redis/redis-queue.conf, create /var/lib/redis/queue and enable redis-server@queue"
+  else
+    chown redis:redis /etc/redis/redis-queue.conf
+    install -d -o redis -g redis -m 750 /var/lib/redis/queue
+    systemctl enable --now redis-server@queue
+    echo "  -> redis-server@queue enabled (port 6380, queues + default connection)"
+  fi
+else
+  echo "  skipped (the queue Redis lives on boro)"
+fi
+
 echo "postgres:"
 case $APP_HOST in
   boro)  pg_conf="boro-production.conf" ;;
+  litio) pg_conf="litio-replica.conf" ;;
   helio) pg_conf="helio-replica.conf" ;;
   *)     pg_conf="" ;;
 esac

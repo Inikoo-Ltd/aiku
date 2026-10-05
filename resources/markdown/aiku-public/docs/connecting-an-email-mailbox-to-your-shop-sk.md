@@ -4,7 +4,7 @@ summary: Prihláste zákaznícku schránku predajne raz a e-maily od zákazníko
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, email, shop
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

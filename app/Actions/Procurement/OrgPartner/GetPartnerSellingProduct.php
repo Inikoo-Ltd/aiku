@@ -11,7 +11,6 @@ namespace App\Actions\Procurement\OrgPartner;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPartnerSellingProduct
@@ -19,13 +18,18 @@ class GetPartnerSellingProduct
     use AsObject;
 
     /**
-     * The product a partner sells a stock with, in the shop it sells to the other companies from
-     * (settings procurement.shop_id). Its pivot quantity is the SKOs it holds.
+     * The product a partner sells a stock with, from the first of the shops it sells to the other companies
+     * from (see GetPartnerSellingShopIds) that sells it. Its pivot quantity is the SKOs it holds.
+     *
+     * @param  array<int, int>|null  $onlyShopIds  restricts the shops looked at, keeping their order of preference
      */
-    public function handle(OrgPartner $orgPartner, int $stockId): ?Product
+    public function handle(OrgPartner $orgPartner, int $stockId, ?array $onlyShopIds = null): ?Product
     {
-        $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
-        if (!$shopId) {
+        $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner);
+        if ($onlyShopIds !== null) {
+            $shopIds = array_values(array_intersect($shopIds, $onlyShopIds));
+        }
+        if (!$shopIds) {
             return null;
         }
 
@@ -36,8 +40,8 @@ class GetPartnerSellingProduct
             return null;
         }
 
-        $products = $sellerOrgStock->products()->where('products.shop_id', $shopId);
-        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery());
+        $products = $sellerOrgStock->products();
+        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery(), $shopIds);
 
         return $products->first();
     }

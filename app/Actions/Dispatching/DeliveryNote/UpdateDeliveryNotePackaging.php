@@ -25,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNotePackaging extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithDeliveryNotePackaging;
 

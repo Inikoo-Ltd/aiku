@@ -9,10 +9,13 @@
 namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -35,7 +38,65 @@ class EnsureOrganisationIsAuthorised
             abort(403);
         }
 
+        if ($organisation instanceof Organisation && $organisation->type === OrganisationTypeEnum::AGENT) {
+            $this->keepRecordsInsideTheAgent($request, $organisation);
+        }
+
         return $next($request);
+    }
+
+    /**
+     * An agent works on records of the organisations it buys for, so its pages take records whose organisation is
+     * not the agent's own. Each one must belong to the agent's organisation or to the agent itself; any other is
+     * not found, so changing a slug in the url never opens another agent's suppliers or orders (HELP-3654).
+     * Agent labels open our SKOs, which carry no agent: that page keeps the agent to the SKOs it buys for us itself.
+     */
+    private function keepRecordsInsideTheAgent(Request $request, Organisation $organisation): void
+    {
+        if (str_starts_with((string) $request->route()->getName(), 'grp.org.procurement.agent_labels.')) {
+            return;
+        }
+
+        $agentId = $organisation->agent?->id;
+
+        foreach ($request->route()->parameters() as $record) {
+            if (!$record instanceof Model || $record instanceof Organisation) {
+                continue;
+            }
+
+            $attributes = $record->getAttributes();
+
+            if (array_key_exists('organisation_id', $attributes) && $attributes['organisation_id'] === $organisation->id) {
+                continue;
+            }
+
+            $recordAgentId = $this->getRecordAgentId($attributes);
+
+            if ($recordAgentId === null && !array_key_exists('organisation_id', $attributes)) {
+                continue;
+            }
+
+            if ($agentId === null || $recordAgentId !== $agentId) {
+                abort(404);
+            }
+        }
+    }
+
+    private function getRecordAgentId(array $attributes): ?int
+    {
+        if (isset($attributes['agent_id'])) {
+            return $attributes['agent_id'];
+        }
+
+        if (isset($attributes['org_agent_id'])) {
+            return DB::table('org_agents')->where('id', $attributes['org_agent_id'])->value('agent_id');
+        }
+
+        if (isset($attributes['supplier_id']) && !array_key_exists('organisation_id', $attributes)) {
+            return DB::table('suppliers')->where('id', $attributes['supplier_id'])->value('agent_id');
+        }
+
+        return null;
     }
 
     /**

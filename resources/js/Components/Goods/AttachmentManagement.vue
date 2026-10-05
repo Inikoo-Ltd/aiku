@@ -10,6 +10,7 @@ import ProgressBar from "primevue/progressbar"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import { Link } from "@inertiajs/vue3"
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 
 const props = defineProps<{
     data: {
@@ -19,6 +20,7 @@ const props = defineProps<{
         attachment_category_box: routeType[]
         attachRoute: routeType
         detachRoute: routeType
+        family_documents?: any[]
         attachments: {
             label: string
             type: string
@@ -303,6 +305,13 @@ const getIcon = (type: string) => {
             </TransitionGroup>
         </div>
     </div>
+
+    <TradeUnitDocuments
+        v-if="props.data.family_documents?.length"
+        :documents="props.data.family_documents"
+        :title="ctrans('From its trade unit family')"
+        note="These come from the trade unit family and go to the products too. Change them on the trade unit family."
+    />
 </template>
 
 <style scoped>

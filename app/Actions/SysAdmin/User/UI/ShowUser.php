@@ -65,7 +65,7 @@ class ShowUser extends OrgAction
 
             return $request->user()->authTo("sysadmin.view");
         } else {
-            $this->canEdit = $request->user()->authTo("human-resources.{$this->organisation->id}.view");
+            $this->canEdit = $request->user()->authTo('sysadmin.edit');
 
             return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
         }
@@ -93,7 +93,7 @@ class ShowUser extends OrgAction
                             'icon'  => ['fal', 'fa-user-circle'],
                             'title' => __('user')
                         ],
-                    'subNavigation' => $this->getUserNavigation($user, $request),
+                    'subNavigation' => $request->user()->authTo('sysadmin.view') ? $this->getUserNavigation($user, $request) : [],
                     'title'         => $user->username,
                     'actions'       => [
                         $this->canEdit ? [

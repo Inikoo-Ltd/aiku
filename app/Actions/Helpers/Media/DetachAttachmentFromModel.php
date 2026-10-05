@@ -42,6 +42,14 @@ class DetachAttachmentFromModel extends OrgAction
                 CloneProductAttachmentsFromTradeUnits::run($product);
             }
         }
+        if ($model instanceof TradeUnitFamily) {
+            foreach ($model->tradeUnits as $tradeUnit) {
+                foreach ($tradeUnit->products as $product) {
+                    CloneProductAttachmentsFromTradeUnits::run($product);
+                }
+            }
+        }
+
         return $model;
     }
 
@@ -58,13 +66,6 @@ class DetachAttachmentFromModel extends OrgAction
         return $this->handle($model, $attachment);
     }
 
-
-    public function inProduct(Product $product, Media $attachment)
-    {
-        abort_unless($this->canChangeAttachments(request()->user(), $product), 403);
-        $this->initialisation($product->organisation, []);
-        $this->handle($product, $attachment);
-    }
 
     public function inTradeUnitFamily(TradeUnitFamily $tradeUnitFamily, Media $attachment)
     {

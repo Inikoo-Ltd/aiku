@@ -903,11 +903,24 @@ const showDsKinds = computed(() =>
     && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
 )
 
-// Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
-const canStartEmail = computed(
-    () => selectedChannel.value === "email" && !isReadOnly.value && !!selectedShopId.value
-        && selectedInbox.value?.can_start_email === true
+// Writing a fresh email needs one shop, its mailbox, and the right to answer on it. The button
+// stays in sight whenever some shop could send one, and says what is missing instead of vanishing.
+const showNewEmailButton = computed(
+    () => !isReadOnly.value && (props.inboxes ?? []).some((inbox) => inbox.can_start_email === true)
 )
+const newEmailBlockedReason = computed<string | null>(() => {
+    if (!selectedShopId.value) {
+        return ctrans("Select one shop to write a new email")
+    }
+    if (selectedInbox.value?.can_start_email !== true) {
+        return ctrans("This shop has no mailbox connected")
+    }
+    if (selectedChannel.value !== "email") {
+        return ctrans("Select only the Email squares to write a new email")
+    }
+
+    return null
+})
 
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
@@ -2647,10 +2660,12 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
-                    <button v-if="canStartEmail" type="button"
-                        v-tooltip="ctrans('New email')"
-                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-indigo-600 text-[11px] font-medium"
-                        @click="newEmailVisible = true">
+                    <button v-if="showNewEmailButton" type="button"
+                        v-tooltip="newEmailBlockedReason ?? ctrans('New email')"
+                        :aria-disabled="newEmailBlockedReason !== null"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium"
+                        :class="newEmailBlockedReason ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-indigo-600'"
+                        @click="newEmailBlockedReason === null && (newEmailVisible = true)">
                         <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
                         {{ ctrans("New email") }}
                     </button>

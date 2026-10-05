@@ -182,11 +182,23 @@ class SetToProduceItemPreparing extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
             "productions_operations.{$this->production->id}.prepare",
         ]);
+    }
+
+    public function action(Production $production, PartnerShoppingListItem $item): PartnerShoppingListItem
+    {
+        $this->asAction = true;
+        $this->initialisationFromProduction($production, ['preparing' => true, 'lines' => [['id' => $item->id]]]);
+
+        return $this->handleMany($this->validatedData['lines'], true)[0];
     }
 
     /** @return array<int, PartnerShoppingListItem> */

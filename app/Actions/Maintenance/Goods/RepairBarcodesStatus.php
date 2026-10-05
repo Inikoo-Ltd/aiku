@@ -30,6 +30,7 @@ class RepairBarcodesStatus
     {
         $carried = Barcode::where('group_id', $group->id)
             ->where('status', BarcodeStatusEnum::AVAILABLE)
+            ->whereRaw("coalesce(barcodes.data->>'external', 'false') <> 'true'")
             ->whereNotIn('id', Barcode::where('group_id', $group->id)->free()->select('barcodes.id'));
 
         $count = (clone $carried)->count();

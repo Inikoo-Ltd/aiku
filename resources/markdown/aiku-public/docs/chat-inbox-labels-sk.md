@@ -4,7 +4,7 @@ summary: Každý zoznam, počet, farba a značka v zákazníckej schránke jedno
 date: 2026-09-29
 source_date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

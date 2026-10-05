@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartPackingDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
     use WithUnprintedLeafletsGuard;

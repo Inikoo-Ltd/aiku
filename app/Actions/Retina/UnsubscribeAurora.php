@@ -77,8 +77,7 @@ class UnsubscribeAurora extends IrisAction
                         'is_subscribed_to_reorder_reminder' => false,
                         'is_subscribed_to_basket_low_stock' => false,
                         'is_subscribed_to_basket_reminder'  => false,
-                    ],
-                    false
+                    ]
                 );
             }
         } elseif ($type == 'Prospect') {
@@ -99,8 +98,7 @@ class UnsubscribeAurora extends IrisAction
                         'fail_status'            => ProspectFailStatusEnum::UNSUBSCRIBED,
                         'success_status'         => ProspectSuccessStatusEnum::NA,
                         'contacted_state'        => ProspectContactedStateEnum::OPEN,
-                    ],
-                    false,
+                    ]
                 );
             }
         }

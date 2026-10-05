@@ -1,0 +1,19 @@
+# CI uids may reach the internet (GitHub, packagist, codecov) and nothing else: no loopback
+# services except DNS, no private network (boro/litio/neon), no Postgres/Redis/MySQL anywhere.
+# Tests reach their own cluster over its unix socket, which netfilter does not see.
+table inet ci_fence
+delete table inet ci_fence
+
+table inet ci_fence {
+    chain output {
+        type filter hook output priority filter; policy accept;
+        meta skuid != { aiku_test, pgci } accept
+        ct state established,related accept
+        meta skuid pgci counter reject
+        oifname "lo" meta l4proto { tcp, udp } th dport 53 accept
+        oifname "lo" counter reject
+        ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16 } counter reject
+        ip6 daddr { fc00::/7, fe80::/10 } counter reject
+        tcp dport { 3306, 5432, 6379 } counter reject
+    }
+}

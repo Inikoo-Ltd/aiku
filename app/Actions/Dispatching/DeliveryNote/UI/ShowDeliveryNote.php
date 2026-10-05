@@ -392,12 +392,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
 
-        $showCancel = (bool)request()->user()?->authTo([
-            "supervisor-dispatching.$deliveryNote->warehouse_id",
-            "org-admin.$deliveryNote->organisation_id",
-            "orders.$deliveryNote->shop_id.edit",
-            "crm.$deliveryNote->shop_id.edit",
-        ]);
+        $showCancel = $deliveryNote->canBeCancelledBy(request()->user());
 
         if (in_array($deliveryNote->state, [
             DeliveryNoteStateEnum::CANCELLED,
@@ -430,6 +425,8 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ];
         }
+
+        $isEditable = $isEditable && $deliveryNote->canBeWorkedOnBy(request()->user());
 
         if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $actions[] = [
@@ -544,7 +541,7 @@ class ShowDeliveryNote extends OrgAction
         if ($this->parent instanceof Warehouse) {
             $isEditable = true;
         }
-        if (!$isEditable) {
+        if (!$isEditable || !$deliveryNote->canBeWorkedOnBy($request->user())) {
             return [];
         }
 
@@ -700,7 +697,7 @@ class ShowDeliveryNote extends OrgAction
                             ]
                         ]
                     ] : [],
-                [
+                $deliveryNote->canBeCancelledBy($request->user()) ? [
                     'type'    => 'button',
                     'style'   => 'cancel',
                     'tooltip' => __('Set Delivery Note as undispatched (back to finalised)'),
@@ -713,7 +710,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ],
+                ] : [],
             ],
             default => []
         });

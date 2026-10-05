@@ -83,7 +83,7 @@ class JudgeChatSuggestion
      *
      * @param  array<string, mixed>  $facts
      * @param  array<int, array{customer: string, reply: string}>  $examples
-     * @return array{answers: float, invents: float, staff_like: float, send_as_is: float}|null
+     * @return array{answers: float, invents: float, claims_done: float, staff_like: float, send_as_is: float}|null
      */
     public function review(string $text, string $weSaid, array $facts, array $examples, string $reply): ?array
     {
@@ -97,6 +97,11 @@ class JudgeChatSuggestion
                 'Does "draft" state something as true that is not in facts, customer_wrote or we_said?',
                 'It states something made up or guessed.',
                 'Everything it states comes from facts, customer_wrote or we_said.'
+            ),
+            'claims_done' => self::noul(
+                'Does "draft" say we have already done something (asked, forwarded, sent, arranged, chased, credited, refunded, spoken to someone) that facts and we_said do not show was done?',
+                'Yes, it claims an action nobody shows was taken.',
+                'No, every action it says we took is shown in facts or we_said, or it claims none.'
             ),
             'staff_like' => [
                 'type'         => 'score',
@@ -117,37 +122,39 @@ class JudgeChatSuggestion
         return [
             'answers'    => round((float) Arr::get($answers, 'answers.score', 1) / 3, 2),
             'invents'    => round((float) Arr::get($answers, 'invents.noul', 0), 2),
+            'claims_done' => round((float) Arr::get($answers, 'claims_done.noul', 0), 2),
             'staff_like' => round((float) Arr::get($answers, 'staff_like.score', 1) / 3, 2),
             'send_as_is' => round((float) Arr::get($answers, 'send_as_is.noul', 0.5), 2),
         ];
     }
 
     /**
-     * @param  array{answers: float, invents: float, staff_like: float, send_as_is: float}  $scores
+     * @param  array{answers: float, invents: float, claims_done: float, staff_like: float, send_as_is: float}  $scores
      */
     public static function isGoodEnough(array $scores): bool
     {
-        return $scores['invents'] < 0.3 && $scores['answers'] >= 0.66 && $scores['staff_like'] >= 0.66 && $scores['send_as_is'] >= 0.6;
+        return $scores['invents'] < 0.3 && ($scores['claims_done'] ?? 0) < 0.3 && $scores['answers'] >= 0.66 && $scores['staff_like'] >= 0.66 && $scores['send_as_is'] >= 0.6;
     }
 
     /**
-     * @param  array{answers: float, invents: float, staff_like: float, send_as_is: float}  $scores
+     * @param  array{answers: float, invents: float, claims_done: float, staff_like: float, send_as_is: float}  $scores
      */
     public static function rank(array $scores): float
     {
-        return $scores['send_as_is'] + $scores['answers'] + $scores['staff_like'] - 2 * $scores['invents'];
+        return $scores['send_as_is'] + $scores['answers'] + $scores['staff_like'] - 2 * $scores['invents'] - 2 * ($scores['claims_done'] ?? 0);
     }
 
     /**
      * What to fix, in words a writer can act on.
      *
-     * @param  array{answers: float, invents: float, staff_like: float, send_as_is: float}  $scores
+     * @param  array{answers: float, invents: float, claims_done: float, staff_like: float, send_as_is: float}  $scores
      * @return array<int, string>
      */
     public static function whatToFix(array $scores): array
     {
         return array_values(array_filter([
             $scores['invents'] >= 0.3 ? 'It states something that is not in the facts, what the customer wrote or what we said: remove it.' : null,
+            ($scores['claims_done'] ?? 0) >= 0.3 ? 'It says we already did something nobody shows was done: leave that out, or make it a [[gap]] when the agent must decide it.' : null,
             $scores['answers'] < 0.66 ? 'It does not answer what the customer asks now: answer that directly.' : null,
             $scores['staff_like'] < 0.66 ? 'It does not read like our agents\' replies: match their length, tone and directness.' : null,
             $scores['send_as_is'] < 0.6 ? 'An agent would not send it as it is: make it right and ready to send, with as few [[gaps]] as possible.' : null,

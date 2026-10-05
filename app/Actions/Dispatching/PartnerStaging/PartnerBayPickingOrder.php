@@ -27,7 +27,7 @@ final class PartnerBayPickingOrder
                 from delivery_note_items bay_dni
                 join delivery_notes bay_dn on bay_dn.id = bay_dni.delivery_note_id
                 join org_partners seller_side on seller_side.organisation_id = bay_dn.organisation_id
-                    and seller_side.goods_out_location_id = locations.id
+                    and locations.id in (seller_side.goods_out_location_id, seller_side.cosmetic_goods_out_location_id)
                 join org_partners buyer_side on buyer_side.organisation_id = seller_side.partner_id
                     and buyer_side.partner_id = seller_side.organisation_id
                 where bay_dni.id = ".$deliveryNoteItemIdExpression."

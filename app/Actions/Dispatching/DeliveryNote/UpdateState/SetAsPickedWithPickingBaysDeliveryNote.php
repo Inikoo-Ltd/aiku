@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetAsPickedWithPickingBaysDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         $pickedBay = null;

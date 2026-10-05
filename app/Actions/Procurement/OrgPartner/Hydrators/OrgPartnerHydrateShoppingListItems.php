@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\Hydrators;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -41,7 +42,7 @@ class OrgPartnerHydrateShoppingListItems implements ShouldBeUnique
                     ShoppingListItemStateEnum::DISMISS_PROPOSED->value,
                 ])
                 ->whereNull('deleted_at')
-                ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql().', 0)), 0) as total')
+                ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as total')
                 ->value('total'),
         ]);
     }

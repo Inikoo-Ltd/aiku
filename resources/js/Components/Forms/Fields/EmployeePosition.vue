@@ -242,6 +242,25 @@ const optionsJob = reactive<optionsJob>({
         // value: null
     },
 
+    acc_orders: {
+        key: "acc_orders",
+        department: ctrans("Accounting orders"),
+        icon: "fal fa-abacus",
+        scope: "shop",
+        subDepartment: [
+            {
+                slug: "acc-o",
+                grade: "clerk",
+                label: ctrans("Create orders"),
+                optionsType: ["shops"],
+                number_employees: props.options.positions.data.find(position => position.slug == "acc-o")?.number_employees || 0
+            }
+        ],
+        optionsClosed: props.options.shops.data?.filter(job => job.state != "open"),
+        optionsSlug: props.options.shops.data?.filter(job => job.state == "open").map(job => job.slug),
+        isHide: shopsLength < 1
+    },
+
     shop_admin: {
         key: "shop_admin",
         department: ctrans("Shop admin"),

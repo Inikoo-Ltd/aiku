@@ -23,6 +23,8 @@ class ShopHydratePortfolios implements ShouldBeUnique
     use WithEnumStats;
     use WithHydratePortfolios;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Shop $shop): string
     {
         return $shop->id;

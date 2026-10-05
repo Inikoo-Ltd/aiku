@@ -20,6 +20,8 @@ class PdfPackingList extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): Response
     {
+        app()->setLocale($deliveryNote->shop->language->code);
+
         $deliveryNote->loadMissing([
             'orders',
             'deliveryAddress',
@@ -52,7 +54,7 @@ class PdfPackingList extends OrgAction
             'deliveryAddress' => $deliveryNote->deliveryAddress?->formatted_address,
         ]);
 
-        return response($pdf->stream($filename), 200)
+        return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
     }

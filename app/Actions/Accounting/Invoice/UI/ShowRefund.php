@@ -215,19 +215,21 @@ class ShowRefund extends OrgAction
             ],
         ];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'delete',
-            'label' => __('Delete'),
-            'key'   => 'delete_refund',
-            'route' => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.refund.delete',
-                'parameters' => [
-                    'refund' => $refund->id,
+        if (DeleteRefund::userCanDeleteInvoicesIn($request->user(), $refund->shop)) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'delete',
+                'label' => __('Delete'),
+                'key'   => 'delete_refund',
+                'route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.refund.delete',
+                    'parameters' => [
+                        'refund' => $refund->id,
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         if ($refund->in_process) {
 

@@ -37,6 +37,10 @@ class SetPartnerGoodsOutLocation
             if (!$location->is_goods_out) {
                 throw ValidationException::withMessages(['location' => __('Location is not a goods out gathering location')]);
             }
+            if ($location->id === $orgPartner->cosmetic_goods_out_location_id
+                || OrgPartner::where('organisation_id', $orgPartner->organisation_id)->where('id', '!=', $orgPartner->id)->withBay($location->id)->exists()) {
+                throw ValidationException::withMessages(['location' => __('Location is already the goods out bay of a partner')]);
+            }
         }
 
         $orgPartner->update(['goods_out_location_id' => $location?->id]);

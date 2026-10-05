@@ -48,7 +48,8 @@ class SendPartnerPurchaseOrderToSeller
         $orgPartner = $purchaseOrder->parent;
         $partner    = $orgPartner->partner;
 
-        if (!Shop::find(Arr::get($partner->settings, 'procurement.shop_id'))) {
+        $shop = Shop::find(Arr::get($partner->settings, 'procurement.shop_id'));
+        if (!$shop) {
             return [__(':partner has no shop set up to sell to the other companies', ['partner' => $partner->name])];
         }
         if (!$orgPartner->organisation->address) {
@@ -58,7 +59,7 @@ class SendPartnerPurchaseOrderToSeller
         $transactions = $this->transactions($purchaseOrder);
         $problems     = [];
         foreach ($transactions as $transaction) {
-            if (!GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id)) {
+            if (!GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id])) {
                 $problems[] = __(':partner does not sell :code', ['partner' => $partner->name, 'code' => $transaction->orgStock->code]);
             }
         }
@@ -90,7 +91,7 @@ class SendPartnerPurchaseOrderToSeller
         ]);
 
         foreach ($this->transactions($purchaseOrder) as $transaction) {
-            $product      = GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id);
+            $product      = GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id]);
             $unitsPerItem = (float) $product->pivot->quantity * (float) ($product->orgStocks()->first()?->packed_in ?: 1);
             $quantity     = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
             $amount       = round($quantity * (float) $product->price, 2);

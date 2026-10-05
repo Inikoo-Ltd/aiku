@@ -2940,7 +2940,7 @@ describe('deployment crawling', function () {
     test('deployment stops active crawls before restarting SSR', function () {
         $deployFile = file_get_contents(base_path('deploy/deploy.php'));
 
-        preg_match("/task\('deploy', \[(.*?)\]\);/s", $deployFile, $matches);
+        preg_match('/\$deploySteps = \[(.*?)\];/s', $deployFile, $matches);
 
         $deploymentSteps  = $matches[1] ?? '';
         $stopCrawls       = strpos($deploymentSteps, "'deploy:stop-crawls'");

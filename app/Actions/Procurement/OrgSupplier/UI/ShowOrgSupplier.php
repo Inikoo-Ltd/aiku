@@ -101,8 +101,8 @@ class ShowOrgSupplier extends OrgAction
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
-                    fn () => GetOrgSupplierShowcase::run($orgSupplier)
-                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
+                    fn () => GetOrgSupplierShowcase::run($orgSupplier, $this->organisation)
+                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier, $this->organisation)),
 
                 SupplierTabsEnum::INBOX->value => $this->tab == SupplierTabsEnum::INBOX->value ?
                     fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgSupplier, SupplierTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgSupplier)])

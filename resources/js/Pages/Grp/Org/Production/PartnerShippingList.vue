@@ -21,6 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
+import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
 
 library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding)
@@ -294,7 +295,6 @@ const pendingFirst = computed(() => pendingItems.value[0] ?? null)
 function openReassign(item: BoardItem, event: MouseEvent) {
     dragging.value = [item]
     pickerMode.value = "reassign"
-    artisanSearch.value = ""
     pendingItems.value = [item]
     pickerPosition.value = {
         x: Math.max(8, Math.min(event.clientX - 40, window.innerWidth - 330)),
@@ -306,7 +306,6 @@ function openReassign(item: BoardItem, event: MouseEvent) {
 function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent) {
     if (!dragging.value.length) return
     pickerMode.value = mode
-    artisanSearch.value = ""
     pendingItems.value = dragging.value
     for (const key in pendingQuantities) delete pendingQuantities[key]
     for (const key in pendingBatchCodes) delete pendingBatchCodes[key]
@@ -422,54 +421,6 @@ const artisanMenuOpen = ref(false)
 function initials(name: string): string {
     return name.split(/[\s-]+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join("")
 }
-
-const artisanSearch = ref("")
-
-function fold(text: string): string {
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-}
-
-function fuzzyMatch(needle: string, haystack: string): boolean {
-    let index = 0
-    for (const char of needle) {
-        index = haystack.indexOf(char, index)
-        if (index === -1) return false
-        index++
-    }
-    return true
-}
-
-function editDistance(a: string, b: string): number {
-    const row = Array.from({ length: b.length + 1 }, (_, i) => i)
-    for (let i = 1; i <= a.length; i++) {
-        let previous = row[0]
-        row[0] = i
-        for (let j = 1; j <= b.length; j++) {
-            const temp = row[j]
-            row[j] = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1))
-            previous = temp
-        }
-    }
-    return row[b.length]
-}
-
-function nameMatches(needle: string, name: string): boolean {
-    const folded = fold(name)
-    if (fuzzyMatch(needle, folded)) return true
-    if (needle.length < 3) return false
-    return folded.split(/[\s-]+/).some(word => editDistance(needle, word.slice(0, needle.length)) <= 1 || editDistance(needle, word) <= 1)
-}
-
-const artisanChoices = computed(() => {
-    const needle = fold(artisanSearch.value.trim())
-    const visible = (props.artisanWorkload ?? []).filter(artisan => !artisan.hidden)
-    const matched = needle ? visible.filter(artisan => nameMatches(needle, artisan.name)) : visible
-    const list = (matched.length ? matched : visible)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    const ref = pendingDefaultMaker.value
-    const isDefault = (a: { id: number, name: string }) => ref?.maker_id ? a.id === ref.maker_id : (!!ref?.maker && a.name === ref.maker)
-    return [...list.filter(isDefault), ...list.filter(a => !isDefault(a))]
-})
 
 const showHiddenArtisans = ref(false)
 
@@ -681,21 +632,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <template v-if="pickerMode === 'reassign'">{{ ctrans("Change artisan of :reference", { reference: pendingFirst.job_order_reference ?? "" }) }} <span class="text-gray-400">({{ pendingFirst.job_order_artisan ?? ctrans("nobody") }})</span></template>
                     <template v-else>{{ pickerMode === 'assign-mix' ? ctrans("Who mixes it?") : pendingItems.length > 1 ? ctrans("Who makes them?") : ctrans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}</template>
                 </div>
-                <input v-if="(artisanWorkload ?? []).length > 8" v-model="artisanSearch" type="search" :placeholder="ctrans('Type a name…')" autofocus class="mb-1 w-full rounded border-gray-300 py-0.5 text-xs" />
-                <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
-                    <button
-                        v-for="artisan in artisanChoices"
-                        :key="artisan.id"
-                        type="button"
-                        class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"
-                        :class="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker) ? 'bg-indigo-50 font-medium text-indigo-700' : ''"
-                        @click="assign(artisan.id)">
-                        <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
-                        <span class="truncate">{{ artisan.name }}</span>
-                        <span v-if="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker)" class="ml-auto text-[10px] uppercase tracking-wide">{{ ctrans("default") }}</span>
-                        <span v-else class="ml-auto text-gray-400">{{ artisan.open_job_orders }}</span>
-                    </button>
-                </div>
+                <ArtisanPicker :artisans="artisanWorkload ?? []" :default-maker="pendingDefaultMaker" @pick="assign" />
             </template>
         </div>
     </Teleport>

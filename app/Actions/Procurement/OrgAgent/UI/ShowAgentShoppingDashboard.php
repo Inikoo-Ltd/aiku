@@ -185,15 +185,15 @@ class ShowAgentShoppingDashboard extends OrgAction
                 'openStockDeliveries'        => $data['open_stock_deliveries'],
                 'shoppingListRoute' => [
                     'name'       => 'grp.org.procurement.shopping_list.index',
-                    'parameters' => [$this->orgAgent->organisation->slug],
+                    'parameters' => [$this->organisation->slug],
                 ],
                 'stockDeliveriesRoute' => [
                     'name'       => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
-                    'parameters' => [$this->orgAgent->organisation->slug, $this->orgAgent->slug],
+                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
                 ],
                 'supplierPurchaseOrdersRoute' => [
                     'name'       => 'grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index',
-                    'parameters' => [$this->orgAgent->organisation->slug, $this->orgAgent->slug],
+                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
                 ],
             ]
         );

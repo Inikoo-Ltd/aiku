@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DispatchDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
     use WithUnprintedLeafletsGuard;

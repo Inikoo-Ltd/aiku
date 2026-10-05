@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
@@ -20,6 +21,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromT
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Actions\Goods\Stock\SyncStockCosmeticFromCpnp;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -174,6 +176,10 @@ class UpdateTradeUnit extends OrgAction
             GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(10);
         }
 
+        if ($tradeUnit->wasChanged('cpnp_number')) {
+            SyncStockCosmeticFromCpnp::run($tradeUnit);
+        }
+
         if ($tradeUnit->wasChanged('type')) {
             foreach ($tradeUnit->masterAssets as $masterAsset) {
                 if ($masterAsset->is_single_trade_unit) {
@@ -243,6 +249,9 @@ class UpdateTradeUnit extends OrgAction
                 TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
             TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);
+            foreach ($tradeUnit->products as $product) {
+                CloneProductAttachmentsFromTradeUnits::dispatch($product);
+            }
         }
 
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
@@ -20,7 +21,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * What a customer asking "where is my order" can be told, read from the order, its delivery
  * notes and their shipments: the same things their own order page shows. The order they named
- * if it is theirs, otherwise their latest, and only ever this customer's own orders.
+ * if it is theirs, otherwise the one with the latest activity (placed, or a replacement sent),
+ * and only ever this customer's own orders.
  */
 class GetChatOrderFacts
 {
@@ -29,6 +31,8 @@ class GetChatOrderFacts
     /** What each state means to somebody waiting for the parcel, for the model to explain. */
     public const array STATE_MEANING = [
         'submitted'        => 'received, waiting to be picked in the warehouse',
+        'unassigned'       => 'in the warehouse, waiting to be picked',
+        'queued'           => 'in the warehouse, waiting to be picked',
         'in_warehouse'     => 'in the warehouse, waiting to be picked',
         'handling'         => 'being picked in the warehouse',
         'handling_blocked' => 'held up in the warehouse, staff are looking at it',
@@ -51,7 +55,10 @@ class GetChatOrderFacts
             ->whereNot('state', OrderStateEnum::CREATING)
             ->latest('date')
             ->limit(3)
-            ->get();
+            ->get()
+            ->merge($this->withRecentReplacement($customer))
+            ->sortByDesc(fn (Order $order) => $this->lastActivity($order))
+            ->values();
 
         $order = $named
             ? $customer->orders()->where('reference', $named)->first()
@@ -75,6 +82,26 @@ class GetChatOrderFacts
     }
 
     /**
+     * Older orders a replacement was sent for lately: "when will it ship?" is about that
+     * replacement, not the newest order.
+     *
+     * @return \Illuminate\Support\Collection<int, Order>
+     */
+    private function withRecentReplacement(Customer $customer): \Illuminate\Support\Collection
+    {
+        return $customer->orders()
+            ->whereHas('deliveryNotes', fn ($query) => $query->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->where('delivery_notes.created_at', '>=', now()->subDays(14)))
+            ->get();
+    }
+
+    private function lastActivity(Order $order): string
+    {
+        $replacedAt = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->max('delivery_notes.created_at');
+
+        return max((string) ($order->submitted_at ?? $order->date), (string) $replacedAt);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function order(Order $order): array
@@ -85,8 +112,18 @@ class GetChatOrderFacts
             'status'        => self::STATE_MEANING[$order->state->value] ?? $order->state->value,
             'dispatched_on' => $order->dispatched_at?->toDateString(),
             'cancelled_on'  => $order->cancelled_at?->toDateString(),
-            'parcels'       => $order->deliveryNotes()->with('shipments.shipper')->get()
+            'parcels'       => $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->with('shipments.shipper')->get()
                 ->flatMap(fn (DeliveryNote $deliveryNote) => $deliveryNote->shipments->map(fn (Shipment $shipment) => $this->shipment($shipment)))
+                ->values()
+                ->all(),
+            'replacements'  => $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->with('shipments.shipper')->oldest('delivery_notes.created_at')->get()
+                ->map(fn (DeliveryNote $deliveryNote) => array_filter([
+                    'sent_for'      => 'items replaced after the order: missing, damaged or wrong',
+                    'created'       => $deliveryNote->created_at?->toDateString(),
+                    'status'        => self::STATE_MEANING[$deliveryNote->state->value] ?? $deliveryNote->state->value,
+                    'dispatched_on' => $deliveryNote->dispatched_at ? Carbon::parse($deliveryNote->dispatched_at)->toDateString() : null,
+                    'parcels'       => $deliveryNote->shipments->map(fn (Shipment $shipment) => $this->shipment($shipment))->values()->all(),
+                ], fn ($value) => $value !== null && $value !== []))
                 ->values()
                 ->all(),
         ], fn ($value) => $value !== null && $value !== []);

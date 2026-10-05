@@ -7,6 +7,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteLeaflet;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Models\Dispatching\DeliveryNoteLeaflet;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  */
 class PullDeliveryNoteLeafletMediaFromPreference
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use AsAction;
 
     public function handle(DeliveryNoteLeaflet $deliveryNoteLeaflet, ?User $user = null): DeliveryNoteLeaflet

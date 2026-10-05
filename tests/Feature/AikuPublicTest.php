@@ -192,7 +192,7 @@ test('page views are logged server-side from the referer header so ad blockers c
     get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible)'])->assertOk();
     expect($visits()->latest('id')->first()->is_bot)->toBeTrue();
 
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['bots'])->pluck('user_agent')->first(fn ($ua) => str_contains($ua, 'Googlebot')))->not->toBeNull();
 });
 
@@ -200,7 +200,7 @@ test('visit stats aggregate for devops dashboard widget and analytics page', fun
     get($this->host.'/visit.json?p=/~search/warehouse%20layout')->assertNoContent();
     get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy&r=https://lobste.rs/s/abc', ['CF-IPCountry' => 'SK'])->assertNoContent();
 
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['searches'])->pluck('query'))->toContain('warehouse layout')
         ->and(collect($stats['pages'])->pluck('path'))->toContain('/blog/anatomy-of-a-deploy')
         ->and(collect($stats['pages'])->pluck('path'))->not->toContain('/~search/warehouse%20layout')
@@ -210,12 +210,12 @@ test('visit stats aggregate for devops dashboard widget and analytics page', fun
         ->and(collect($stats['pages'])->first(fn ($row) => $row->path === '/blog/anatomy-of-a-deploy')->last_visited_at)->not->toBeNull();
 
     get($this->host.'/visit.json?p=/docs/scraped-once', ['User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0', 'CF-IPCountry' => 'BD'])->assertNoContent();
-    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    $stats = \App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['pages'])->pluck('path'))->not->toContain('/docs/scraped-once')
         ->and(collect($stats['countries'])->pluck('country'))->not->toContain('BD')
         ->and((int) collect($stats['daily'])->sum('suspect'))->toBe(1);
 
-    $widget = \App\Actions\DevOps\UI\ShowDevopsDashboard::make()->getPublicSiteVisits();
+    $widget = \App\Actions\Docs\UI\ShowDocsDashboard::make()->getPublicSiteVisits();
     expect($widget['views'])->toBeGreaterThanOrEqual(2)
         ->and($widget['visitors'])->toBeGreaterThanOrEqual(1)
         ->and($widget['daily'])->not->toBeEmpty();
@@ -252,7 +252,7 @@ test('future-dated posts stay hidden until their date', function () {
 test('analytics articles tab lists every note with real commit date and visit stats', function () {
     get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy')->assertNoContent();
 
-    $articles = collect(\App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->getArticleStats());
+    $articles = collect(\App\Actions\Docs\UI\ShowAikuPublicAnalytics::make()->getArticleStats());
     expect($articles)->toHaveCount(BlogPosts::all()->count());
 
     $row = $articles->firstWhere('slug', 'anatomy-of-a-deploy');

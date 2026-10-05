@@ -62,6 +62,7 @@ class UpdateOrgStockUnitBarcode extends OrgAction
                 'number' => $number,
                 'type'   => BarcodeTypeEnum::EAN->value,
                 'status' => BarcodeStatusEnum::USED->value,
+                'data'   => ['external' => true],
             ]);
         }
 

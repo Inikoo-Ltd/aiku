@@ -89,6 +89,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
+        $schedule->command('server-metrics:aggregate')->hourlyAt(5)->onOneServer()->withoutOverlapping();
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
         $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
         $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();
@@ -409,8 +410,18 @@ class Kernel extends ConsoleKernel
             $this->logSchedule(
                 $schedule->command('hydrate:org-stock-out-of-stock-forecast')->dailyAt('01:30')->timezone('UTC')->onOneServer()->withoutOverlapping(360)->sentryMonitor(
                     monitorSlug: 'OrgStockHydrateOutOfStockForecast',
+                    maxRuntime: 120,
                 ),
                 name: 'OrgStockHydrateOutOfStockForecast',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('org_stocks:hydrate_top_customer_share')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->sentryMonitor(
+                    monitorSlug: 'OrgStockHydrateTopCustomerShare',
+                ),
+                name: 'OrgStockHydrateTopCustomerShare',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

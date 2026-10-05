@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\StoreReturnDeliveryNoteItems;
 use App\Actions\OrgAction;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\Redirect;
 
 class ProcessReturnDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithHydrateReturnDeliveryNotes;
     private DeliveryNote $deliveryNote;
     private ReturnDeliveryNoteTypeEnum $type = ReturnDeliveryNoteTypeEnum::RETURN;

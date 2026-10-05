@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Models\Goods\TradeUnit;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments;
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
@@ -202,6 +204,10 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                 : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+
+            FamilyTabsEnum::ATTACHMENTS->value => $this->tab == FamilyTabsEnum::ATTACHMENTS->value ?
+                fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('products', fn ($query) => $query->where('products.family_id', $family->id))->get())]
+                : Inertia::optional(fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('products', fn ($query) => $query->where('products.family_id', $family->id))->get())]),
 
             FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))

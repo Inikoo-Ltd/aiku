@@ -75,6 +75,9 @@ interface PartnerCard {
 				bestsellers: number
 				lost: number
 				cost: number
+				order_lines: number
+				order_cost: number
+				left_out: Record<string, number>
 			}[]
 			top: {
 				code: string
@@ -94,6 +97,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	currency_code: string
+	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
 }>()
 
@@ -394,12 +398,12 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							</table>
 							<div class="flex items-center gap-3 border-t border-gray-100 pt-2">
 								<RescueOrderButton
+									v-if="can_create_purchase_orders"
 									:orgPartnerId="partner.id"
 									:partnerName="partner.name"
 									:draftReference="purchaseOrderInProcess(partner)?.reference"
 									:currencyCode="currency_code"
-									:estimatedLines="partner.stats.rescuable!.order.lines"
-									:estimatedCost="partner.stats.rescuable!.order.cost"
+									:buckets="partner.stats.rescuable!.buckets"
 									size="xs" />
 								<span
 									v-if="partner.stats.rescuable!.order.lines"
@@ -511,7 +515,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" />
 				</Link>
 				<Button
-					v-else-if="!purchaseOrderInProcess(partner)"
+					v-else-if="can_create_purchase_orders && !purchaseOrderInProcess(partner)"
 					:label="ctrans('New purchase order')"
 					icon="fal fa-plus"
 					size="s"

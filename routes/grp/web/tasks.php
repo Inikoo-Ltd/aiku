@@ -27,6 +27,7 @@ use App\Actions\Tasks\UI\ShowStaffTasksReports;
 use App\Actions\Tasks\UI\IndexStaffTasks;
 use App\Actions\Tasks\UpdateStaffTask;
 use App\Actions\Tasks\UpdateStaffTaskSubtasks;
+use App\Actions\Helpers\TicketProject\AssignWorkToProject;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowStaffTasks::class)->name('index');
@@ -43,6 +44,7 @@ Route::get('/{staffTask}/details', GetStaffTask::class)->name('details');
 Route::get('/{staffTask}/attachments/{media:ulid}', ShowStaffTaskAttachment::class)->name('attachments.show')->withoutScopedBindings();
 Route::get('/{staffTask}/conversation', GetStaffTaskConversation::class)->name('conversation');
 Route::patch('/{staffTask}/collaborators', SyncStaffTaskCollaborators::class)->name('collaborators.update');
+Route::patch('/{staffTask}/project', [AssignWorkToProject::class, 'inStaffTask'])->name('project.update');
 Route::patch('/{staffTask}/subtasks', UpdateStaffTaskSubtasks::class)->name('subtasks.update');
 Route::post('/{staffTask}/eta-proposal', ProposeStaffTaskEta::class)->name('eta_proposal.store');
 Route::post('/{staffTask}/eta-proposal/decision', DecideStaffTaskEta::class)->name('eta_proposal.decide');

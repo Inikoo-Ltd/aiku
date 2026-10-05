@@ -129,6 +129,7 @@ class IndexOrgPartners extends OrgAction
                     'title' => __('Partners'),
                 ],
                 'currency_code' => $this->organisation->currency->code,
+                'can_create_purchase_orders' => $this->canEdit,
                 'partners'      => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->partnerCard($orgPartner))->all(),
             ]
         );

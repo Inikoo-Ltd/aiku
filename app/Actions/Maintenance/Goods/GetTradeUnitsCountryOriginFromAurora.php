@@ -28,9 +28,9 @@ class GetTradeUnitsCountryOriginFromAurora
     use WithOrganisationSource;
 
     /**
-     * @var \App\Transfers\AuroraOrganisationService|\App\Transfers\WowsbarOrganisationService|null
+     * @var \App\Transfers\AuroraOrganisationService|null
      */
-    private \App\Transfers\WowsbarOrganisationService|null|AuroraOrganisationService $organisationSource;
+    private AuroraOrganisationService|null $organisationSource;
 
     /**
      * @throws \Exception

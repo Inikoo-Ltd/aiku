@@ -73,7 +73,7 @@ trait WithProformaInvoicePdf
             ], [], $config);
 
 
-            return response($pdf->stream($filename.'.pdf'), 200)
+            return response($pdf->output(), 200)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {

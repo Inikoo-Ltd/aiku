@@ -169,7 +169,7 @@ class CategoriseInvoice extends OrgAction
         return null;
     }
 
-    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=} {--e|empty only empty}';
+    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= : Shop slug} {--i|id=} {--e|empty : Only invoices without category} {--dry-run : Show the changes without saving them}';
 
 
     public function asCommand(Command $command): int
@@ -192,7 +192,7 @@ class CategoriseInvoice extends OrgAction
             $query->whereIn('organisation_id', $this->getOrganisationsIds($command));
         }
 
-        if ($command->hasOption('empty')) {
+        if ($command->option('empty')) {
             $query->whereNull('invoice_category_id');
         }
 
@@ -209,20 +209,20 @@ class CategoriseInvoice extends OrgAction
         }
 
 
-        $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
+        $isDryRun = (bool)$command->option('dry-run');
+        $changes  = [];
+
+        $query->chunk(1000, function (Collection $modelsData) use ($bar, $command, $isDryRun, &$changes) {
             foreach ($modelsData as $modelId) {
-                $invoice              = Invoice::withTrashed()->find($modelId->id);
-                $oldInvoiceCategoryId = $invoice->invoiceCategory?->id;
-                $oldInvoiceCategory   = $invoice->invoiceCategory;
-                $invoice              = $this->handle($invoice);
+                $invoice            = Invoice::withTrashed()->find($modelId->id);
+                $oldInvoiceCategory = $invoice->invoiceCategory;
+                $newInvoiceCategory = $isDryRun ? $this->getInvoiceCategory($invoice) : $this->handle($invoice)->invoiceCategory;
 
-
-                $newInvoiceCategoryId = $invoice->invoiceCategory?->id;
-
-                if ($oldInvoiceCategoryId != $newInvoiceCategoryId) {
-                    $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$invoice->invoiceCategory?->slug);
+                if ($oldInvoiceCategory?->id != $newInvoiceCategory?->id) {
+                    $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$newInvoiceCategory?->slug);
+                    $change           = ($oldInvoiceCategory?->slug ?? '-').' -> '.($newInvoiceCategory?->slug ?? '-');
+                    $changes[$change] = ($changes[$change] ?? 0) + 1;
                 }
-
 
                 $bar?->advance();
             }
@@ -230,6 +230,15 @@ class CategoriseInvoice extends OrgAction
         if ($bar) {
             $bar->finish();
             $command->info("");
+        }
+
+        $command->table(
+            ['Change', 'Invoices'],
+            collect($changes)->sortDesc()->map(fn ($count, $change) => [$change, $count])->values()->all()
+        );
+
+        if ($isDryRun) {
+            $command->warn('Dry run: nothing was saved');
         }
 
         return 0;

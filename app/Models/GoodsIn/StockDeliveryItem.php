@@ -8,6 +8,7 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStock;
@@ -150,6 +151,17 @@ class StockDeliveryItem extends Model implements Auditable
     public function unitsPerSko(): float
     {
         return (float) ($this->orgStock?->packed_in ?: 1);
+    }
+
+    /**
+     * A partner delivery is costed the moment its last line is booked in, so a line marked not received by
+     * mistake can still be checked afterwards: doing so takes the delivery back to booking in.
+     */
+    public function canBeReceivedAfterAll(): bool
+    {
+        return $this->state === StockDeliveryItemStateEnum::NOT_RECEIVED
+            && $this->stockDelivery->state === StockDeliveryStateEnum::PLACED
+            && $this->stockDelivery->parent_type === 'OrgPartner';
     }
 
     /**

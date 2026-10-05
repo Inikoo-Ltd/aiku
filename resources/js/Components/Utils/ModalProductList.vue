@@ -21,6 +21,7 @@ import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
 import ProductUnitLabel from "./Product/ProductUnitLabel.vue"
+import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 
 library.add(
@@ -44,11 +45,12 @@ const props = defineProps<{
 	current: string | number
 	typeModel: string
 	currentTab: string
+	isPartner?: boolean
 }>()
 
 const activeLevel = defineModel<OrderingLevel>("level", { default: "units" })
 
-const levels = getOrderingLevels()
+const levels = getOrderingLevels().filter((l) => !props.isPartner || l.key === "skos")
 
 const isOrderingByLevel = computed(() => props.typeModel === "purchase_order")
 
@@ -486,7 +488,7 @@ watch(() => model.value, async (newValue) => {
 											</div>
 										</div>
 
-										<div v-if="isOrderingByLevel" class="flex items-end gap-1 border-b border-gray-200">
+										<div v-if="isOrderingByLevel && levels.length > 1" class="flex items-end gap-1 border-b border-gray-200">
 											<button
 												v-for="item in levels"
 												:key="item.key"
@@ -545,6 +547,11 @@ watch(() => model.value, async (newValue) => {
 												<span v-tooltip="orgStock.name">{{ orgStock.code }} ({{ ctrans("SKOs") }})</span>
 												<span v-if="orgStock.units_per_sku"> ({{ ctrans("packed in") }} {{ orgStock.units_per_sku }}s)</span>
 											</div>
+											<PurchaseOrderItemStockInfo
+												v-if="typeModel === 'purchase_order'"
+												:item="slotProps.data"
+												:isPartner="isPartner"
+												@suggest="(skos) => onLevelQuantityChange(slotProps, (skos * (Number(slotProps.data.units_per_pack) || 1)) / unitsPerLevel(slotProps.data))" />
 										</div>
 									</template>
 								</Column>

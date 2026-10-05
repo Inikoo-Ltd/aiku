@@ -288,7 +288,7 @@ class ProcessSesNotification
         $customerId = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('customer_id');
         $customerComms = $customerId ? Customer::find($customerId)?->comms : null;
         if ($customerComms) {
-            UpdateCustomerComms::run($customerComms, ['is_subscribed_to_newsletter' => false, 'is_subscribed_to_marketing' => false], false);
+            UpdateCustomerComms::run($customerComms, ['is_subscribed_to_newsletter' => false, 'is_subscribed_to_marketing' => false]);
         }
 
         $prospectId = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('prospect_id');

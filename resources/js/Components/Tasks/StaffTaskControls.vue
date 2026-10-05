@@ -21,8 +21,8 @@ import { useStaffMessaging } from "@/Stores/staff-messaging"
 import type { StaffTaskDueAccess, StaffTaskEtaProposal } from "@/types/StaffTaskEta"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping } from "@fal"
-library.add(faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping)
+import { faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping, faProjectDiagram, faFlag } from "@fal"
+library.add(faBuilding, faBell, faCalendar, faCalendarEdit, faUser, faSpinner, faPlay, faPause, faCheck, faTimes, faUndo, faCircle, faCheckCircle, faBan, faExchangeAlt, faHandsHelping, faProjectDiagram, faFlag)
 
 type Person = { id: number; name: string; avatar: any }
 type Option = { label: string; value: string; icon: any }
@@ -46,6 +46,10 @@ const props = defineProps<{
         model_id: number | null
         is_subscribed: boolean | null
         eta_proposal?: StaffTaskEtaProposal | null
+        ticket_project_id?: number | null
+        ticket_project_milestone_id?: number | null
+        project?: { name: string; slug: string } | null
+        milestone?: string | null
     }
     canEdit: boolean
     canRemoveCollaborators?: boolean
@@ -53,6 +57,10 @@ const props = defineProps<{
     canAskForHelp?: boolean
     dueAccess?: StaffTaskDueAccess
     options: { statuses: Option[]; priorities: Option[] }
+    projectOptions?: { label: string; value: number }[]
+    milestoneOptions?: { label: string; value: number }[]
+    canChangeProject?: boolean
+    projectRoute?: { name: string; parameters: Record<string, unknown> }
 }>()
 
 const emit = defineEmits<{
@@ -174,6 +182,22 @@ const onDueClick = (event: Event) => {
 const decideEta = (decision: "accept" | "decline") => send(`eta:${decision}`, () => axios.post(route("grp.tasks.eta_proposal.decide", props.task.reference), { decision }))
 
 const shortDate = (date: string) => useFormatTime(date, { formatTime: "mdy" })
+
+const projectPopover = ref()
+const isProjectPickerOpen = ref(false)
+const milestonePopover = ref()
+const isMilestonePickerOpen = ref(false)
+const projectChoices = computed(() => [{ label: ctrans("No project"), value: null }, ...(props.projectOptions ?? [])])
+const milestoneChoices = computed(() => [{ label: ctrans("No milestone"), value: null }, ...(props.milestoneOptions ?? [])])
+const canPickProject = computed(() => !!props.canChangeProject && !!props.projectRoute)
+const showProjectSection = computed(() => !!props.task.project || (canPickProject.value && !!props.projectOptions?.length))
+
+const patchProject = (field: "ticket_project_id" | "ticket_project_milestone_id", value: number | null) => {
+    projectPopover.value?.hide()
+    milestonePopover.value?.hide()
+    if (!props.projectRoute) return
+    send(field, () => axios.patch(route(props.projectRoute!.name, props.projectRoute!.parameters), { [field]: value }))
+}
 
 const canManagePeople = computed(() => props.canEdit || props.canRemoveCollaborators)
 
@@ -452,6 +476,38 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                         </button>
                     </div>
                 </div>
+            </Popover>
+        </div>
+
+        <div v-if="showProjectSection">
+            <p :class="sectionLabelClass">{{ ctrans("Project") }}</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <span
+                    v-tooltip="canPickProject ? ctrans('Project · click to change') : ctrans('Project')"
+                    :class="[chipClass, canPickProject && editableChipClass, isProjectPickerOpen && '!bg-gray-300']"
+                    :tabindex="canPickProject ? 0 : undefined"
+                    @click="canPickProject && projectPopover.toggle($event)"
+                    @keydown.enter.prevent="canPickProject && projectPopover.toggle($event)">
+                    <FontAwesomeIcon :icon="isPending('ticket_project_id') ? 'fal fa-spinner' : 'fal fa-project-diagram'" :spin="isPending('ticket_project_id')" fixed-width />
+                    {{ task.project?.name ?? ctrans("No project") }}
+                </span>
+                <span
+                    v-if="task.project && milestoneOptions?.length"
+                    v-tooltip="canPickProject ? ctrans('Milestone · click to change') : ctrans('Milestone')"
+                    :class="[chipClass, canPickProject && editableChipClass, isMilestonePickerOpen && '!bg-gray-300']"
+                    :tabindex="canPickProject ? 0 : undefined"
+                    @click="canPickProject && milestonePopover.toggle($event)"
+                    @keydown.enter.prevent="canPickProject && milestonePopover.toggle($event)">
+                    <FontAwesomeIcon :icon="isPending('ticket_project_milestone_id') ? 'fal fa-spinner' : 'fal fa-flag'" :spin="isPending('ticket_project_milestone_id')" fixed-width />
+                    {{ task.milestone ?? ctrans("No milestone") }}
+                </span>
+                <a v-if="task.project" :href="route('grp.projects.show', task.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
+            </div>
+            <Popover v-if="canPickProject" ref="projectPopover" @show="isProjectPickerOpen = true" @hide="isProjectPickerOpen = false">
+                <Listbox :model-value="task.ticket_project_id ?? null" :options="projectChoices" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="patchProject('ticket_project_id', $event)" />
+            </Popover>
+            <Popover v-if="canPickProject" ref="milestonePopover" @show="isMilestonePickerOpen = true" @hide="isMilestonePickerOpen = false">
+                <Listbox :model-value="task.ticket_project_milestone_id ?? null" :options="milestoneChoices" option-label="label" option-value="value" scroll-height="16rem" class="border-0" @update:model-value="patchProject('ticket_project_milestone_id', $event)" />
             </Popover>
         </div>
 

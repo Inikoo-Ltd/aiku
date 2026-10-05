@@ -8,44 +8,34 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Procurement\StockDeliveriesExport;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportStockDeliveries
+class ExportStockDeliveries extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithProcurementAuthorisation;
     use WithExportData;
 
     /**
      * @throws \Throwable
      */
-    public function handle(array $modelData): BinaryFileResponse
+    public function handle(Organisation $organisation, array $modelData): BinaryFileResponse
     {
-        $type = $modelData['type'];
-
-        return $this->export(new StockDeliveriesExport(), 'stock-deliveries', $type);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $organisation = $request->route()->parameter('organisation');
-
-        return $request->user()->authTo("procurement.{$organisation->id}.view");
+        return $this->export(new StockDeliveriesExport($organisation), 'stock-deliveries', $modelData['type']);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($organisation, $request);
 
-        return $this->handle($request->all());
+        return $this->handle($organisation, $this->validatedData);
     }
 }

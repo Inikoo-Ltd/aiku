@@ -36,6 +36,10 @@ use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Route;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\SysAdmin\Organisation\UI\EditOrganisation;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use Illuminate\Support\Arr;
 use App\Actions\SysAdmin\User\BorrowUserPermissions;
@@ -237,6 +241,33 @@ test('update organisation name', function (Organisation $organisation) {
         ['name' => 'Test New Organisation 2']
     );
     expect($organisation->name)->toBe('Test New Organisation 2');
+})->depends('create organisation by command');
+
+test('partner shops list saves in order from the edit organisation page and rejects external shops', function (Organisation $organisation) {
+    $agnes    = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+    $aroma    = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+    $external = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id, 'type' => ShopTypeEnum::EXTERNAL]);
+
+    $request = ActionRequest::create(route('grp.organisations.edit', $organisation->slug));
+    $request->setRouteResolver(fn () => Route::getRoutes()->match($request));
+    $page         = EditOrganisation::make()->htmlResponse($organisation, $request);
+    $formData     = (fn () => $this->props)->call($page)['formData'];
+    $updateRoute  = $formData['args']['updateRoute'];
+    $shopIdsField = collect($formData['blueprint'])->firstWhere('label', __('Procurement'))['fields']['procurement_shop_ids'];
+
+    expect(Route::has($updateRoute['name']))->toBeTrue()
+        ->and($shopIdsField['type'])->toBe('ordered-select-list')
+        ->and(collect($shopIdsField['options'])->pluck('id')->all())->toContain($agnes->id, $aroma->id)->not->toContain($external->id);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$aroma->id, $agnes->id]]);
+    expect(Arr::get($organisation->settings, 'procurement.shop_ids'))->toBe([$aroma->id, $agnes->id]);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$agnes->id, $aroma->id]]);
+    expect(Arr::get($organisation->settings, 'procurement.shop_ids'))->toBe([$agnes->id, $aroma->id]);
+
+    expect(fn () => UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$external->id]]))
+        ->toThrow(ValidationException::class);
+    expect(Arr::get($organisation->fresh()->settings, 'procurement.shop_ids'))->toBe([$agnes->id, $aroma->id]);
 })->depends('create organisation by command');
 
 test('picker location choice setting trims the picking locations', function (Organisation $organisation) {

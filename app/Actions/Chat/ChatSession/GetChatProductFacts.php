@@ -30,9 +30,7 @@ class GetChatProductFacts
      */
     public function handle(Shop $shop, string $text): array
     {
-        preg_match_all('/\b[A-Za-z][A-Za-z0-9]{1,15}-\d{1,4}[A-Za-z]?\b/u', $text, $matches);
-
-        $codes = collect($matches[0])->map(fn (string $code) => mb_strtolower($code))->unique()->take(10)->values()->all();
+        $codes = self::codes($text);
 
         if (!$codes) {
             return [];
@@ -47,9 +45,19 @@ class GetChatProductFacts
     }
 
     /**
+     * @return array<int, string>
+     */
+    public static function codes(string $text): array
+    {
+        preg_match_all('/\b[A-Za-z][A-Za-z0-9]{1,15}-\d{1,4}[A-Za-z]?\b/u', $text, $matches);
+
+        return collect($matches[0])->map(fn (string $code) => mb_strtolower($code))->unique()->take(10)->values()->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    private function product(Product $product): array
+    public function product(Product $product): array
     {
         $availability = match (true) {
             $product->state === ProductStateEnum::DISCONTINUED    => 'discontinued, will not come back',

@@ -122,14 +122,14 @@ class StorePortfolio extends OrgAction
             default => null
         };
 
-        GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
-        OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
-        ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
+        GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay(max($this->hydratorsDelay, 60));
+        OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay(max($this->hydratorsDelay, 60));
+        ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay(max($this->hydratorsDelay, 60));
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer_id)->delay(5);
         if ($this->hydrateChannel) {
             CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
         }
-        ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
+        ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay(max($this->hydratorsDelay, 60));
 
         return $portfolio;
     }

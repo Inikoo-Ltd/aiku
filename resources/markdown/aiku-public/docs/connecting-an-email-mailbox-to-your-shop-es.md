@@ -4,7 +4,7 @@ summary: Inicia sesión una vez con el buzón de clientes de la tienda, y los co
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, email, shop
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

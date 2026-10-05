@@ -8,6 +8,8 @@
 
 namespace App\Models\Tasks;
 
+use App\Models\Traits\InGroup;
+use App\Models\Traits\InTicketProject;
 use App\Models\Chat\StaffConversation;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -35,6 +37,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 /**
  * @property int $id
  * @property int $group_id
+ * @property int|null $ticket_project_id
+ * @property int|null $ticket_project_milestone_id
  * @property int $number
  * @property string $reference
  * @property string $subject
@@ -64,6 +68,8 @@ class StaffTask extends Model implements Auditable, HasMedia
     use HasHistory;
     use InteractsWithMedia;
     use HasTicketImages;
+    use InGroup;
+    use InTicketProject;
 
     public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock', 'ChatSession', 'MetaChatSession'];
 
@@ -96,7 +102,7 @@ class StaffTask extends Model implements Auditable, HasMedia
         'priority' => ChatPriorityEnum::NORMAL,
     ];
 
-    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject'];
+    protected array $auditInclude = ['status', 'assignee_id', 'department', 'priority', 'due_at', 'subject', 'ticket_project_id'];
 
     protected function casts(): array
     {

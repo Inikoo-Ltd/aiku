@@ -3,7 +3,7 @@ title: Live chat on the website
 summary: The bubble on the website, what happens outside working hours, the switch that turns out-of-hours messages into emails, and Email notification for customers who closed the tab.
 date: 2026-09-29
 tags: crm, chat
-category: crm
+category: help-desk
 series: Chat
 order: 2
 ---

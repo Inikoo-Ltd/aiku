@@ -13,7 +13,6 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\Production;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -32,14 +31,14 @@ class GetProductionStockCoverBuckets
         'never' => ['label' => 'Never made yet', 'tone' => 'violet'],
     ];
 
-    private function bucketLabel(string $bucket, int $leadDays): string
+    public function bucketLabel(string $bucket, int $leadDays): string
     {
         $edges = ['w2' => 2, 'w3' => 3, 'w4' => 4];
 
         return __(self::BUCKETS[$bucket]['label'], ['days' => ($edges[$bucket] ?? 1) * $leadDays]);
     }
 
-    private function bucketExpression(int $leadDays): string
+    public function bucketExpression(int $leadDays): string
     {
         $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $leadDays)";
 
@@ -57,9 +56,9 @@ class GetProductionStockCoverBuckets
     /**
      * Everything this factory can make, with the warehouse's own stock of it alongside.
      */
-    private function scopedQuery(Production $production): Builder
+    public function scopedQuery(Production $production, ?object $base = null): object
     {
-        return DB::table('artefacts as a')
+        return ($base ?? DB::table('artefacts as a'))
             ->leftJoin('org_stocks as os', function ($join) {
                 $join->on('os.id', 'a.org_stock_id')
                     ->where('os.state', OrgStockStateEnum::ACTIVE->value);

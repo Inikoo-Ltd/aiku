@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -93,6 +94,10 @@ class IndexPrePickList extends OrgAction
                 'stocks.name as stock_name',
                 'stocks.is_cosmetic',
                 'organisations.code as buyer_code',
+                DB::raw("(select locations.code from org_partners to_partner
+                    join locations on locations.id = ".OrgPartner::bayIdSql('to_partner', 'stocks.is_cosmetic')."
+                    where to_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
+                        and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
                 DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
             ])
@@ -175,6 +180,7 @@ class IndexPrePickList extends OrgAction
                 ->column(key: 'pick', label: '', canBeHidden: false)
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Artefact'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'to_location', label: __('To'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Asked'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'stock_available', label: __('In stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'can_pick', label: __('Can pick'), canBeHidden: false, sortable: true, align: 'right')

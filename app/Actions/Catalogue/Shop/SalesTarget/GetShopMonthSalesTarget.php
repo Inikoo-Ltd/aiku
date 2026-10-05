@@ -105,6 +105,7 @@ class GetShopMonthSalesTarget
             },
             'selection_setting' => $selectionSetting,
             'selected_child'    => (string) Arr::get($user?->settings ?? [], $selectionSetting, 'all'),
+            'selected_period'   => Arr::get($user?->settings ?? [], 'sales_target_period') === 'year' ? 'year' : 'month',
             'can_edit'          => $parent instanceof Shop && $user !== null && UpdateShopSalesTarget::canEdit($user, $parent),
             'update_route'      => $this->updateRoute($parent),
         ];
