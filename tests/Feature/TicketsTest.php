@@ -1719,7 +1719,6 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
         ->and($count($reporter, 'mine', 'in_progress'))->toBe(0)
         ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
         ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
-        ->and($count($this->user, 'queue', 'todo_week'))->toBe($baseline['todo_week']['count'] + 1)
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'])
         ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
 
@@ -1727,12 +1726,14 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
     $ticket->update(['created_at' => now()->subDays(2)]);
 
     expect($count($reporter, 'mine', 'waiting'))->toBe(1)
-        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'])
+        ->and($count($this->user, 'queue', 'waiting'))->toBe($baseline['waiting']['count'] + 1);
 
     StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'The red one']);
     Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
 
-    expect($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'] + 1)
+    expect($count($this->user, 'queue', 'replied'))->toBe($baseline['replied']['count'] + 1)
+        ->and($count($this->user, 'queue', 'waiting'))->toBe($baseline['waiting']['count'])
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'] + 1);
 
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
@@ -1763,7 +1764,7 @@ test('tickets reports link to filtered lists by assignee and dates', function ()
     }
 });
 
-test('engineers raise task and qa tickets, staff cannot, and internal tickets stay out of the to-do rail count', function () {
+test('engineers raise task and qa tickets, staff cannot', function () {
     Mail::fake();
     Notification::fake();
     $engineer = User::factory()->create(['group_id' => $this->group->id]);
@@ -1774,8 +1775,6 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support', 'aurora'])
         ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support', 'aurora']);
 
-    $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
-
     actingAs($staff);
     post(route('grp.models.ticket.store'), ['subject' => 'Do it for me', 'kind' => 'task'])->assertSessionHasErrors('kind');
 
@@ -1785,8 +1784,63 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
 
     $qaTicket = Ticket::where('subject', 'Please test totals')->first();
     expect($qaTicket->kind)->toBe(TicketKindEnum::QA)
-        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24)
-        ->and(GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'])->toBe($todoBefore + 1);
+        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24);
+});
+
+test('recent ticket updates in each popup are about that popup\'s own tickets', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+
+    $reported = StoreTicket::make()->action($this->group, ['subject' => 'I reported this', 'reporter_type' => 'User', 'reporter_id' => $engineer->id]);
+    $assigned = StoreTicket::make()->action($this->group, ['subject' => 'I work on this', 'assignee_id' => $engineer->id]);
+    $other    = StoreTicket::make()->action($this->group, ['subject' => 'Someone else entirely']);
+
+    $engineer->notifications()->delete();
+    foreach ([$reported, $assigned, $other] as $ticket) {
+        $engineer->notifications()->create([
+            'id'   => (string) Str::uuid(),
+            'type' => TicketNotification::class,
+            'data' => ['type' => 'ticket', 'ticket_id' => $ticket->id, 'title' => $ticket->subject, 'body' => '', 'route' => ''],
+        ]);
+    }
+
+    $badges = GetTicketBadgeData::run($engineer);
+
+    expect(collect($badges['recent'])->pluck('title')->all())->toBe(['I reported this'])
+        ->and(collect($badges['queue_recent'])->pluck('title')->all())->toBe(['I work on this']);
+});
+
+test('the tickets to fix popup groups the team queue, my work and my QA checks by role', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $engineerRows = GetTicketBadgeData::run($engineer)['queue'];
+    $qaRows       = GetTicketBadgeData::run($qa)['queue'];
+
+    expect(collect($engineerRows)->map(fn ($row) => $row['section'])->all())->toBe([
+        'new_unassigned' => 'team', 'overdue' => 'team',
+        'assigned_to_me' => 'mine', 'collaborating' => 'mine', 'waiting' => 'mine', 'replied' => 'mine', 'qa_failed' => 'mine', 'qa_passed' => 'mine',
+    ])
+        ->and(array_keys($qaRows))->toContain('qa_to_check')
+        ->and(array_keys($qaRows))->not->toContain('assigned_to_me');
+
+    $failed = StoreTicket::make()->action($this->group, ['subject' => 'Fix me again', 'assignee_id' => $engineer->id]);
+    $failed->update(['qa_status' => TicketQaStatusEnum::FAILED]);
+    $passed = StoreTicket::make()->action($this->group, ['subject' => 'Good to go', 'assignee_id' => $engineer->id]);
+    $passed->update(['qa_status' => TicketQaStatusEnum::PASSED]);
+    $toCheck = StoreTicket::make()->action($this->group, ['subject' => 'Check me']);
+    $toCheck->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id]);
+
+    expect(GetTicketBadgeData::run($engineer)['queue']['qa_failed']['count'])->toBe($engineerRows['qa_failed']['count'] + 1)
+        ->and(GetTicketBadgeData::run($engineer)['queue']['qa_passed']['count'])->toBe($engineerRows['qa_passed']['count'] + 1)
+        ->and(GetTicketBadgeData::run($qa)['queue']['qa_to_check']['count'])->toBe($qaRows['qa_to_check']['count'] + 1);
+
+    UpdateTicket::make()->action($passed, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect(GetTicketBadgeData::run($engineer)['queue']['qa_passed']['count'])->toBe($engineerRows['qa_passed']['count']);
 });
 
 test('ticket search ranks subject over description over comments, understands key:value tokens and jumps to a reference', function () {
