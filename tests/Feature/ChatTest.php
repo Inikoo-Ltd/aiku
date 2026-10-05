@@ -5353,6 +5353,28 @@ test('an external shop with chat enabled gets chat permissions', function () {
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
 });
 
+test('an external shop offers offline email replies in its chat widget settings only once its chat is enabled', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    actingAs($this->user);
+    $sectionLabels = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $externalShop->slug]))
+            ->assertOk()
+            ->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label');
+
+    expect($sectionLabels()->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies');
+
+    $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
+
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->toHaveKey('chat_email_offline_replies')
+        ->and($sections->has('Chat'))->toBeFalse();
+});
+
 test('a non external shop with chat disabled loses chat permissions', function () {
     $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
     $this->shop->refresh();
