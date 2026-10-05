@@ -51,6 +51,14 @@ class CreateMailshotTemplate extends OrgAction
                                     'required'    => true,
                                     'value'       => '',
                                 ],
+                                ...($this->isInComms($request) ? [
+                                    'dynamic_block' => [
+                                        'type'        => 'toggle',
+                                        'label'       => __('Dynamic block'),
+                                        'information' => __('Dynamic blocks can be inserted into emails from the Dynamic content block'),
+                                        'value'       => false,
+                                    ],
+                                ] : []),
                             ]
                         ]
                     ],

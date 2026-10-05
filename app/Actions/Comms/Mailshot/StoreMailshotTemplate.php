@@ -14,6 +14,7 @@ use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,12 +31,16 @@ class StoreMailshotTemplate extends OrgAction
             throw new \Exception('Default mailshot template not found');
         }
 
+        $isDynamicBlock = (bool) Arr::pull($modelData, 'dynamic_block');
+
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'shop_id', $this->shop->id);
         data_set($modelData, 'builder', EmailTemplateBuilderEnum::BEEFREE->value);
-        data_set($modelData, 'data', $isCommonOutbox
-            ? array_merge($defaultMailshotTemplate->data ?? [], ['common_outbox' => true])
-            : $defaultMailshotTemplate->data);
+        data_set($modelData, 'data', array_merge(
+            $defaultMailshotTemplate->data ?? [],
+            $isCommonOutbox ? ['common_outbox' => true] : [],
+            $isDynamicBlock ? ['dynamic_block' => true] : [],
+        ));
         data_set($modelData, 'language_id', $defaultMailshotTemplate->language_id);
         data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
         data_set($modelData, 'active_at', now());
@@ -55,7 +60,8 @@ class StoreMailshotTemplate extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'        => ['required', 'string', 'max:255'],
+            'name'          => ['required', 'string', 'max:255'],
+            'dynamic_block' => ['sometimes', 'boolean'],
         ];
 
         return $rules;
