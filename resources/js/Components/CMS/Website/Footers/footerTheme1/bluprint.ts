@@ -1,5 +1,5 @@
 import { trans } from "laravel-vue-i18n"
-import { faRectangleLandscape, faPhone, faEnvelope, faShare } from "@fal"
+import { faRectangleLandscape, faPhone, faEnvelope, faShare, faImage, faCreditCard } from "@fal"
 import { faRss } from "@far"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -29,7 +29,7 @@ export default {
 			name: "Logo",
 			key: ["logo"],
 			icon: {
-				icon: "fal fa-image",
+				icon: faImage,
 				tooltip: "Logo",
 			},
 			replaceForm: [
@@ -132,15 +132,17 @@ export default {
 			},
 			key: ["socialMedia"],
 			name: "Social Media",
+			accordion_key: "social-media",
 			type: "socialMedia",
 		},
 		{
 			icon: {
-				icon: faEnvelope,
-				tooltip: "Email",
+				icon: faCreditCard,
+				tooltip: "Payment",
 			},
 			key: ["paymentData","data"],
 			name: "Payment",
+			accordion_key: "payments",
 			type: "payment_templates",
 		},
 		{
