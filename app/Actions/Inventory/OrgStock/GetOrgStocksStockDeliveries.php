@@ -30,6 +30,7 @@ class GetOrgStocksStockDeliveries
         }
 
         $finishedStates = [
+            StockDeliveryStateEnum::BOOKED_IN->value,
             StockDeliveryStateEnum::PLACED->value,
             StockDeliveryStateEnum::CANCELLED->value,
             StockDeliveryStateEnum::NOT_RECEIVED->value,
@@ -43,7 +44,7 @@ class GetOrgStocksStockDeliveries
             ->where(function ($query) use ($finishedStates) {
                 $query->whereNotIn('stock_deliveries.state', $finishedStates)
                     ->orWhere(function ($query) {
-                        $query->where('stock_deliveries.state', StockDeliveryStateEnum::PLACED->value)
+                        $query->whereIn('stock_deliveries.state', [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value])
                             ->whereNotNull('stock_deliveries.received_at');
                     });
             })
@@ -57,18 +58,18 @@ class GetOrgStocksStockDeliveries
             ])
             ->selectRaw('sum(stock_delivery_items.unit_quantity) as quantity')
             ->selectRaw('sum(stock_delivery_items.unit_quantity_placed) as quantity_placed')
-            ->selectRaw('sum(greatest(stock_delivery_items.unit_quantity - stock_delivery_items.unit_quantity_placed, 0)) as quantity_to_place')
+            ->selectRaw("sum(greatest(case when stock_deliveries.state in ('".StockDeliveryStateEnum::CHECKED->value."', '".StockDeliveryStateEnum::BOOKING_IN->value."') then stock_delivery_items.unit_quantity_checked else stock_delivery_items.unit_quantity end - stock_delivery_items.unit_quantity_placed, 0)) as quantity_to_place")
             ->get()
             ->groupBy('org_stock_id');
 
         $labels = StockDeliveryStateEnum::labels();
 
         return $lines->map(function (Collection $deliveries) use ($labels) {
-            $lastReceived = $deliveries->filter(fn ($delivery) => $delivery->state === StockDeliveryStateEnum::PLACED->value || ($delivery->received_at && $delivery->quantity_placed > 0))
+            $lastReceived = $deliveries->filter(fn ($delivery) => in_array($delivery->state, [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value]) || ($delivery->received_at && $delivery->quantity_placed > 0))
                 ->sortByDesc('received_at')->first();
 
             return [
-                'coming'        => $deliveries->where('state', '!=', StockDeliveryStateEnum::PLACED->value)
+                'coming'        => $deliveries->whereNotIn('state', [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value])
                     ->where('quantity_to_place', '>', 0)
                     ->sortBy('reference')
                     ->map(fn ($delivery) => [

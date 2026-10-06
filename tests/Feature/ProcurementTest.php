@@ -7885,7 +7885,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and($item['stock_cover']['overstock_days'])->toBe(GetOrganisationStockCoverBuckets::EXCESS_DAYS)
         ->and($item['stock_cover']['lead_time_days'])->toBeInt();
 
-    DB::table('stock_delivery_items')->where('stock_delivery_id', $comingStockDelivery->id)->update(['unit_quantity_placed' => 30]);
+    DB::table('stock_delivery_items')->where('stock_delivery_id', $comingStockDelivery->id)->update(['unit_quantity_checked' => 20, 'unit_quantity_placed' => 20]);
     DB::table('stock_deliveries')->where('id', $comingStockDelivery->id)->update(['state' => StockDeliveryStateEnum::BOOKED_IN->value, 'received_at' => now()]);
 
     $items = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'items']))
