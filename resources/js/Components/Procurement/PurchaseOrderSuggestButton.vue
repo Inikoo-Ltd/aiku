@@ -38,7 +38,7 @@ const partnerStock = computed(() =>
 )
 
 const partnerShortfall = computed(() =>
-	partnerStock.value !== null && suggestion.value !== null && suggestion.value > partnerStock.value ? suggestion.value - partnerStock.value : 0
+	partnerStock.value !== null && orderedSkos.value > partnerStock.value ? orderedSkos.value - partnerStock.value : 0
 )
 
 const partnerShortfallTooltip = computed(() =>
@@ -61,8 +61,13 @@ const tooltip = computed(() =>
 </script>
 
 <template>
-	<div v-if="suggestion !== null && suggestion > 0" class="mt-1 flex max-w-[14rem] flex-col items-end gap-0.5">
+	<div v-if="(suggestion !== null && suggestion > 0) || partnerShortfall > 0" class="mt-1 flex max-w-[14rem] flex-col items-end gap-0.5">
+		<span v-if="partnerShortfall > 0" v-tooltip="partnerShortfallTooltip" class="cursor-help text-right text-[11px] leading-tight text-amber-600">
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-[10px]" fixed-width aria-hidden="true" />
+			{{ ctrans("Partner has only :stock SKOs, :shortfall SKOs more must be bought by them first", { stock: locale.number(Math.round(partnerStock ?? 0)), shortfall: locale.number(Math.round(partnerShortfall)) }) }}
+		</span>
 		<button
+			v-if="suggestion !== null && suggestion > 0"
 			type="button"
 			v-tooltip="tooltip"
 			class="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium transition-colors"
@@ -73,11 +78,7 @@ const tooltip = computed(() =>
 			"
 			@click="emit('suggest', suggestion)">
 			<FontAwesomeIcon :icon="faSparkles" class="text-[10px]" :class="isApplied ? 'text-green-500' : 'text-violet-500'" fixed-width aria-hidden="true" />
-			<span>{{ isApplied ? ctrans("Suggested") : ctrans("Suggest :quantity", { quantity: formattedSuggestion }) }}</span>
+			<span>{{ isApplied ? ctrans("Suggested") : ctrans("Suggestion: :quantity", { quantity: formattedSuggestion }) }}</span>
 		</button>
-		<span v-if="partnerShortfall > 0" v-tooltip="partnerShortfallTooltip" class="cursor-help text-right text-[11px] leading-tight text-amber-600">
-			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-[10px]" fixed-width aria-hidden="true" />
-			{{ ctrans("Partner has only :stock, :shortfall more must be bought by them first", { stock: locale.number(Math.round(partnerStock ?? 0)), shortfall: locale.number(Math.round(partnerShortfall)) }) }}
-		</span>
 	</div>
 </template>
