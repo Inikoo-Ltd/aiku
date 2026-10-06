@@ -93,6 +93,9 @@ interface Customer {
     created_at: string
     number_current_customer_clients: number | null
     address: Address
+    delivery_address: Address | null
+    address_id: number | null
+    delivery_address_id: number | null
     contact_website?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
@@ -691,6 +694,24 @@ const submitNote = async () => {
                             <dd class="w-full text-gray-500">
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                     <span v-html="data?.customer?.address.formatted_address" />
+                                    <div v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'"
+                                         @click="() => isModalAddress = true"
+                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ trans("Edit") }}</span>
+                                    </div>
+                                </div>
+                            </dd>
+                        </div>
+
+                        <div v-if="data?.customer?.delivery_address_id && data.customer.delivery_address_id !== data.customer.address_id"
+                             class="relative flex items-start w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Delivery address')" class="flex-none pt-2">
+                                <FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="w-full text-gray-500">
+                                <div class="text-xs text-gray-400 mb-1">{{ trans("Delivery address") }}</div>
+                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                    <span v-html="data.customer.delivery_address.formatted_address" />
                                     <div v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'"
                                          @click="() => isModalAddress = true"
                                          class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
