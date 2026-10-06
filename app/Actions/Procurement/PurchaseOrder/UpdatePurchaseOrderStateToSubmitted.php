@@ -54,7 +54,13 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, ?string $sendVia = null): PurchaseOrder
     {
-        return DB::transaction(fn () => $this->submit($purchaseOrder, $sendVia));
+        $purchaseOrder = DB::transaction(fn () => $this->submit($purchaseOrder, $sendVia));
+
+        if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
+            SendPartnerPurchaseOrderToSeller::dispatch($purchaseOrder);
+        }
+
+        return $purchaseOrder;
     }
 
     private function submit(PurchaseOrder $purchaseOrder, ?string $sendVia): PurchaseOrder
@@ -92,9 +98,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
         if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
-            SendPartnerPurchaseOrderToSeller::run($purchaseOrder);
-
-            return $purchaseOrder->refresh();
+            return $purchaseOrder;
         }
 
         if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($purchaseOrder), 'channel'), true)) {
