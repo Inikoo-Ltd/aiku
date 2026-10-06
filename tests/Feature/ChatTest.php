@@ -8659,7 +8659,8 @@ test('the mailbox history is archived as text for the customer it was with, leav
         ->and($archive($mail('a5', 'away@example.com', 'care@shop.test', 'I am away', ['INBOX'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
         ->and($archive($mail('a6', 'Care <care@shop.test>', $customer->email, 'We are closed at the moment', ['SENT'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
         ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id)
-        ->and($archive($mail('a8', 'a.supplier@example.com', 'care@shop.test', 'Our new price list')))->toBeNull();
+        ->and($archive($mail('a8', 'a.supplier@example.com', 'care@shop.test', 'Our new price list')))->toBeNull()
+        ->and($archive(array_replace_recursive($mail('a10', 'Care <care@shop.test>', $customer->email, '--Transaction Information-- Merchant: Shop', ['SENT']), ['payload' => ['headers' => [2 => ['name' => 'Subject', 'value' => 'Transaction receipt for order GB411978']]]])))->toBeNull();
 
     $shared  = 'shared.'.Str::lower(Str::random(6)).'@example.com';
     $twoOfUs = [createOwnCustomer($this->shop, 'archive-shared-a-'.$customer->id), createOwnCustomer($this->shop, 'archive-shared-b-'.$customer->id)];
@@ -8708,11 +8709,11 @@ test('a mail in one shop mailbox about an order of another shop is archived for 
     ];
     $archive = fn (array $raw) => \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archive($this->shop, 'care@shop.test', $raw);
 
-    expect($archive($mail('x1-'.$order->id, "Transaction receipt for order $orderReference"))->customer_id)->toBe($there->id)
+    expect($archive($mail('x1-'.$order->id, "Order $orderReference out of stock"))->customer_id)->toBe($there->id)
         ->and($archive($mail('x2-'.$order->id, 'Broken jar'))->customer_id)->toBe($here->id);
 
     $there->update(['email' => 'someone.else.'.Str::lower(Str::random(6)).'@example.com']);
-    expect($archive($mail('x3-'.$order->id, "Transaction receipt for order $orderReference"))->customer_id)->toBe($here->id);
+    expect($archive($mail('x3-'.$order->id, "Order $orderReference out of stock"))->customer_id)->toBe($here->id);
 
     \App\Models\Comms\EmailArchiveMessage::whereIn('customer_id', [$here->id, $there->id])->delete();
 });

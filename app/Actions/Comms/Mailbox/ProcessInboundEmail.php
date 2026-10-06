@@ -658,7 +658,8 @@ class ProcessInboundEmail
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')
-            || str_starts_with($subject, 'delivery status notification');
+            || str_starts_with($subject, 'delivery status notification')
+            || str_starts_with($subject, 'transaction receipt');
     }
 
     /**
