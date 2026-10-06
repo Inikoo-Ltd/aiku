@@ -17,7 +17,7 @@ class GetVoucherData
 {
     use AsObject;
 
-    public function handle(?int $offerId): ?array
+    public function handle(?int $offerId, ?int $customerId = null): ?array
     {
         if (!$offerId) {
             return null;
@@ -36,14 +36,19 @@ class GetVoucherData
 
         $giftProductCode = null;
         if ($offer->allowance_type === 'gift') {
-            $giftProductId   = Arr::get($allowance->data, 'product_id');
-            $giftProductCode = $giftProductId ? Product::find($giftProductId)?->code : null;
+            $giftProductIds  = $offer->offerAllowances->pluck('data.product_id')->filter()->all();
+            $giftProductCode = Product::whereIn('id', $giftProductIds)->pluck('code')->implode(', ') ?: null;
+        }
+
+        $voucherCode = $offer->code;
+        if ($customerId && $offer->hasUniqueCustomerCodes()) {
+            $voucherCode = $offer->customerList()->where('customer_id', $customerId)->value('code') ?? $voucherCode;
         }
 
         return [
             'id'                => $offer->id,
             'allowance_type'    => $offer->allowance_type,
-            'voucher_code'      => $offer->code,
+            'voucher_code'      => $voucherCode,
             'voucher_amount'    => Arr::get($offer->trigger_data, 'item_amount'),
             'state'             => $offer->state->value,
             'status'            => $offer->status,

@@ -4191,8 +4191,16 @@ test('all tasks list filters by assignee, including me and unassigned', function
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('appliedTaskFilters.assignee', 'me')
             ->where('appliedTaskFilters.department', 'none')
-            ->has('taskFilterOptions.assignee.me')
+            ->where('taskFilterOptions.assignee', fn ($options) => collect($options)->take(3)->pluck('value')->all() === ['all', 'me', 'unassigned'])
             ->where('columns', fn ($columns) => collect($columns)->flatMap(fn ($column) => $column['tasks'])->pluck('id')->diff([$mine->id])->isEmpty()));
+
+    get(route('grp.tasks.list_all'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('appliedTaskFilters.assignee', 'me')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($mine->id) && !collect($rows)->pluck('id')->contains($theirs->id)));
+
+    expect($taskIdsFor('all'))->toContain($mine->id)->toContain($theirs->id)->toContain($unassigned->id);
 
     \App\Models\Tasks\StaffTask::whereIn('id', [$mine->id, $theirs->id, $unassigned->id])->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
 });
@@ -4910,9 +4918,12 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
     $stranger      = $newColleague();
     $supervisor    = $newColleague();
     $engineer      = $newColleague([['slug' => 'gp-hd', 'scopes' => []]]);
+    $helpDeskLead  = $newColleague();
 
     $givePosition($viewer, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'));
     $givePosition($supervisor, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('code', 'like', '%-m')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->value('id'));
+    $givePosition($helpDeskLead, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->where('code', 'like', '%-m')->value('id'));
+    $givePosition($helpDeskLead, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'));
     $otherDepartment = collect(\App\Models\Tasks\StaffTask::departments($groupId))->pluck('value')->first(fn (string $department) => $department !== 'warehouse');
 
     $tasks = collect([
@@ -4929,7 +4940,8 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
 
     expect($visibleTo($viewer))->toBe($taskIds->take(4)->all())
         ->and($visibleTo($supervisor))->toBe($taskIds->all())
-        ->and($visibleTo($engineer))->toBe($taskIds->all());
+        ->and($visibleTo($engineer))->toBe($taskIds->all())
+        ->and($visibleTo($helpDeskLead))->toBe($taskIds->all());
 
     $board = collect(\App\Actions\Tasks\UI\ShowStaffTasksBoard::make()->handle($this->organisation->group, $viewer, 'all'))->flatMap(fn (array $column) => array_column($column['tasks'], 'reference'));
     expect($board)->toContain($tasks->first()->reference)

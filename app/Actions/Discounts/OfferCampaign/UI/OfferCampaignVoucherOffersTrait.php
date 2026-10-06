@@ -58,6 +58,10 @@ trait OfferCampaignVoucherOffersTrait
                         'end'   => now()->addDays(7)->toDateString(),
                     ],
                 ],
+                'customer_list_vouchers' => fn () => [
+                    'vouchers' => GetCustomerListVouchersOverview::run($offerCampaign),
+                    'can_edit' => $this->canEdit,
+                ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
                     : Inertia::optional(fn () => GetOfferCampaignOverview::run($offerCampaign)),

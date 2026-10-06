@@ -69,17 +69,11 @@ class ShowStaffTasksBoard extends OrgAction
     }
 
     /**
-     * @return array{organisation: string|null, assignee: string|null, department: string|null}
+     * @return array{organisation: string|null, assignee: string, department: string|null}
      */
     private function boardFilters(): array
     {
-        $filters = (array) request()->input('filter', []);
-
-        return [
-            'organisation' => Arr::get($filters, 'organisation'),
-            'assignee'     => Arr::get($filters, 'assignee'),
-            'department'   => Arr::get($filters, 'department'),
-        ];
+        return $this->appliedTaskFilters();
     }
 
     private function createdInterval(): string
@@ -102,11 +96,7 @@ class ShowStaffTasksBoard extends OrgAction
             'showRoute'   => $this->tasksRoute('show'),
             'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
             'createdInterval'  => $this->createdInterval(),
-            'taskFilterOptions'  => [
-                'organisation' => $this->organisationFilterOptions($request->user()),
-                'assignee'     => $this->assigneeFilterOptions($this->tasksListParent(), $request->user()),
-                'department'   => $this->departmentFilterOptions($this->tasksListParent()),
-            ],
+            'taskFilterOptions'  => $this->taskFilterOptions($this->tasksListParent(), $request->user()),
             'appliedTaskFilters' => $this->boardFilters(),
             'can_manage'  => StaffTask::isSupervisor($request->user()),
             'me'          => $request->user()->id,

@@ -30,6 +30,7 @@ use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
 use App\Models\CRM\Prospect;
+use App\Models\Discounts\Offer;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -91,6 +92,8 @@ class SendEmailDeliveryChannel
                 ]
             );
         }
+
+        $voucherOffer = $model instanceof Mailshot ? $this->getRecipeVoucherOffer($model) : null;
 
         /** @var EmailBulkRunRecipient|MailshotRecipient $recipient */
         foreach ($model->recipients()->where('channel', $emailDeliveryChannel->id)->get() as $recipient) {
@@ -154,6 +157,10 @@ class SendEmailDeliveryChannel
             }
 
 
+            if ($voucherOffer && $recipient->recipient_type == 'Customer') {
+                $additionalData = array_merge($additionalData, $this->getVoucherMergeData($voucherOffer, $recipient->recipient_id));
+            }
+
             $dispatchedEmail = $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $model->sender(),
@@ -189,6 +196,29 @@ class SendEmailDeliveryChannel
             EmailBulkRunHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateEmailBulkRunSentState::run($model);
         }
+    }
+
+    private function getRecipeVoucherOffer(Mailshot $mailshot): ?Offer
+    {
+        $offerId = data_get($mailshot->recipients_recipe, 'voucher_recipients.value');
+
+        return $offerId ? Offer::find($offerId) : null;
+    }
+
+    /**
+     * @return array{voucher: string, voucher_end_date: string|null}
+     */
+    private function getVoucherMergeData(Offer $offer, int $customerId): array
+    {
+        $customerCode = DB::connection('aiku_no_sticky')->table('offer_has_customers')
+            ->where('offer_id', $offer->id)
+            ->where('customer_id', $customerId)
+            ->value('code');
+
+        return [
+            'voucher'          => $customerCode ?? $offer->code,
+            'voucher_end_date' => $offer->end_at?->copy()->subSecond()->setTimezone($offer->shop->timezoneName())->toFormattedDateString(),
+        ];
     }
 
     private function isModelStopped(Mailshot|EmailBulkRun $model): bool

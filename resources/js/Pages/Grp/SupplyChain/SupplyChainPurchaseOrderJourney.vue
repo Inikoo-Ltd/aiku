@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import { computed, ref, watch } from "vue"
+import { computed, ref, shallowRef, watch } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { useElementSize } from "@vueuse/core"
 import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
@@ -13,9 +13,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown } from "@fal"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner)
 
 interface FacetOption {
     value: string
@@ -63,7 +63,25 @@ const { canScrollUp, canScrollDown, scrollVerticallyBy } = useScrollArrows(table
 const tableHead = ref<HTMLElement | null>(null)
 const { height: tableHeadHeight } = useElementSize(tableHead, undefined, { box: "border-box" })
 
-const isLoaded = computed(() => !!props.summary && !!props.filters && !!props.active)
+function lastLoaded<T>(source: () => T | undefined) {
+    const value = shallowRef<T | undefined>(source())
+    watch(source, (incoming) => {
+        if (incoming !== undefined) {
+            value.value = incoming
+        }
+    })
+    return value
+}
+
+const filters = lastLoaded(() => props.filters)
+const active = lastLoaded(() => props.active)
+const summary = lastLoaded(() => props.summary)
+const blockages = lastLoaded(() => props.blockages)
+const quickStats = lastLoaded(() => props.quickStats)
+const ribbons = lastLoaded(() => props.ribbons)
+const pagination = lastLoaded(() => props.pagination)
+
+const isLoaded = computed(() => !!summary.value && !!filters.value && !!active.value)
 
 const viewOptions = computed(() => [
     { value: "supplier_orders", label: ctrans("Orders to suppliers") },
@@ -72,7 +90,7 @@ const viewOptions = computed(() => [
 
 const dropdownOptions = (group: FilterGroup) => [
     { value: null, label: ctrans("All") },
-    ...(props.filters?.[group] ?? []).map((option) => ({ value: option.value, label: `${option.label} (${option.count})` }))
+    ...(filters.value?.[group] ?? []).map((option) => ({ value: option.value, label: `${option.label} (${option.count})` }))
 ]
 
 const inlineFilters = computed<{ group: FilterGroup; label: string }[]>(() => [
@@ -90,10 +108,10 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
     { group: "stage", label: ctrans("Current stage") }
 ])
 
-const search = ref(props.active?.search ?? "")
+const search = ref(active.value?.search ?? "")
 
 watch(
-    () => props.active?.search,
+    () => active.value?.search,
     (value) => {
         if ((value ?? "") !== search.value.trim()) {
             search.value = value ?? ""
@@ -101,15 +119,38 @@ watch(
     }
 )
 
+const isChangingPage = ref(false)
+
 function visit(changes: Record<string, string | number | boolean | null>): void {
     const params: Record<string, string | number | boolean> = {}
-    const merged = { ...props.active, view: props.view === "supplier_orders" ? null : props.view, page: null, ...changes }
+    const merged = { ...active.value, view: props.view === "supplier_orders" ? null : props.view, page: null, ...changes }
     for (const [key, value] of Object.entries(merged)) {
         if (value !== null && value !== "" && value !== false) {
             params[key] = value
         }
     }
-    router.get(route("grp.supply-chain.dashboard"), params, { preserveState: true, preserveScroll: true })
+    router.get(route("grp.supply-chain.dashboard"), params, {
+        only: ["view", "filters", "active", "summary", "blockages", "quickStats", "ribbons", "pagination"],
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => (isChangingPage.value = true),
+        onFinish: () => (isChangingPage.value = false)
+    })
+}
+
+function changePage(page: number): void {
+    const params = new URLSearchParams(window.location.search)
+    params.set("page", String(page))
+    router.get(route("grp.supply-chain.dashboard"), Object.fromEntries(params), {
+        only: ["ribbons", "pagination"],
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => (isChangingPage.value = true),
+        onFinish: () => {
+            isChangingPage.value = false
+            tableScroller.value?.scrollTo({ top: 0 })
+        }
+    })
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
@@ -127,13 +168,13 @@ function money(value: number, compact = false): string {
     }).format(value)
 }
 
-const kpis = computed(() => !props.summary ? [] : [
-    { label: ctrans("Open orders"), value: props.summary.open.toLocaleString(), note: "", class: "text-gray-900", filter: { status: null, problems_only: false } },
-    { label: ctrans("Total PO value"), value: money(props.summary.open_value, true), note: ctrans("open orders"), class: "text-gray-900", filter: null },
-    { label: ctrans("On track"), value: props.summary.on_track, note: `${props.summary.on_track_percent}% ${ctrans("of open orders")}`, class: "text-emerald-600", filter: { status: "on_track" } },
-    { label: ctrans("At risk"), value: props.summary.at_risk, note: `${props.summary.at_risk_percent}% ${ctrans("of open orders")}`, class: "text-amber-500", filter: { status: "at_risk" } },
-    { label: ctrans("Overdue"), value: props.summary.overdue, note: `${props.summary.overdue_percent}% ${ctrans("of open orders")}`, class: "text-red-600", filter: { status: "overdue" } },
-    { label: ctrans("Completed"), value: props.summary.completed, note: ctrans("last 60 days"), class: "text-blue-600", filter: { status: "completed" } }
+const kpis = computed(() => !summary.value ? [] : [
+    { label: ctrans("Open orders"), value: summary.value.open.toLocaleString(), note: "", class: "text-gray-900", filter: { status: null, problems_only: false } },
+    { label: ctrans("Total PO value"), value: money(summary.value.open_value, true), note: ctrans("open orders"), class: "text-gray-900", filter: null },
+    { label: ctrans("On track"), value: summary.value.on_track, note: `${summary.value.on_track_percent}% ${ctrans("of open orders")}`, class: "text-emerald-600", filter: { status: "on_track" } },
+    { label: ctrans("At risk"), value: summary.value.at_risk, note: `${summary.value.at_risk_percent}% ${ctrans("of open orders")}`, class: "text-amber-500", filter: { status: "at_risk" } },
+    { label: ctrans("Overdue"), value: summary.value.overdue, note: `${summary.value.overdue_percent}% ${ctrans("of open orders")}`, class: "text-red-600", filter: { status: "overdue" } },
+    { label: ctrans("Completed"), value: summary.value.completed, note: ctrans("last 60 days"), class: "text-blue-600", filter: { status: "completed" } }
 ])
 
 const legend = [
@@ -146,22 +187,24 @@ const legend = [
     { label: ctrans("Not recorded"), class: "bg-slate-50 border border-slate-200" }
 ]
 
+const isKpiSelected = (filter: Record<string, string | boolean | null> | null) => !!filter?.status && filter.status === active.value?.status
+
 const markPopover = ref()
 const marking = ref<{ ribbon: JourneyRibbon; segment: JourneySegment } | null>(null)
 const markDate = ref("")
 const markProcessing = ref(false)
 
 function showFilter(group: FilterGroup): boolean {
-    if (!props.active || !props.filters) {
+    if (!active.value || !filters.value) {
         return false
     }
-    if (props.active[group] !== null) {
+    if (active.value[group] !== null) {
         return true
     }
-    if (group === "country" && props.active.agent !== null) {
+    if (group === "country" && active.value.agent !== null) {
         return false
     }
-    return props.filters[group].length > 1
+    return filters.value[group].length > 1
 }
 
 function openMark(ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEvent): void {
@@ -195,13 +238,17 @@ function saveMark(date: string | null): void {
     <PageHeading :data="pageHead" />
 
     <template v-if="isLoaded && summary && filters && active && blockages && quickStats && ribbons && pagination">
-    <div class="mx-4 mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div class="mx-4 mt-3 grid grid-cols-2 gap-3 transition-opacity sm:grid-cols-3 xl:grid-cols-6" :class="{ 'opacity-60': isChangingPage }">
         <button
             v-for="kpi in kpis"
             :key="kpi.label"
             type="button"
-            class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-left transition"
-            :class="kpi.filter ? 'hover:border-gray-300 hover:shadow-sm' : 'cursor-default'"
+            class="rounded-lg border bg-white px-3 py-2 text-left transition"
+            :class="[
+                isKpiSelected(kpi.filter) ? 'border-[--app-accent] bg-[--app-accent-soft] ring-1 ring-[--app-accent]' : 'border-gray-200',
+                !kpi.filter ? 'cursor-default' : !isKpiSelected(kpi.filter) && 'hover:border-gray-300 hover:shadow-sm'
+            ]"
+            :aria-pressed="isKpiSelected(kpi.filter)"
             @click="kpi.filter && visit(kpi.filter)">
             <div class="flex items-baseline gap-2">
                 <span class="text-xl font-semibold" :class="kpi.class">{{ kpi.value }}</span>
@@ -278,14 +325,15 @@ function saveMark(date: string | null): void {
                     {{ isTableExpanded ? ctrans("Collapse") : ctrans("Expand") }}
                 </button>
                 <div class="flex items-center gap-2 whitespace-nowrap">
+                    <FontAwesomeIcon v-if="isChangingPage" icon="fal fa-spinner" spin class="text-[--app-accent]" fixed-width />
                     <span>{{ ctrans("Page :page of :last · :total orders", { page: pagination.page, last: pagination.last_page, total: pagination.total }) }}</span>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="pagination.page <= 1" @click="visit({ page: pagination.page - 1 })">‹</button>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="pagination.page >= pagination.last_page" @click="visit({ page: pagination.page + 1 })">›</button>
+                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="isChangingPage || pagination.page <= 1" @click="changePage(pagination.page - 1)">‹</button>
+                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="isChangingPage || pagination.page >= pagination.last_page" @click="changePage(pagination.page + 1)">›</button>
                 </div>
                 </div>
             </div>
             <div class="relative isolate">
-            <div ref="tableScroller" class="journey-table-scroller overflow-auto" :class="{ 'max-h-[80vh]': !isTableExpanded }">
+            <div ref="tableScroller" class="journey-table-scroller overflow-auto transition-opacity" :class="{ 'max-h-[80vh]': !isTableExpanded, 'pointer-events-none opacity-50': isChangingPage }">
                 <table class="journey-table w-full min-w-[72rem] border-collapse">
                     <thead ref="tableHead" class="sticky top-0 z-[2] bg-white">
                         <tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
@@ -306,6 +354,12 @@ function saveMark(date: string | null): void {
                     </tbody>
                 </table>
             </div>
+            <div v-if="isChangingPage" class="pointer-events-none absolute inset-0 z-[3] flex items-start justify-center pt-24">
+                <span class="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-md">
+                    <FontAwesomeIcon icon="fal fa-spinner" spin class="text-[--app-accent]" fixed-width />
+                    {{ ctrans("Loading…") }}
+                </span>
+            </div>
             <div v-if="!isTableExpanded" class="pointer-events-none absolute inset-x-0 bottom-0" :style="{ top: tableHeadHeight + 'px' }">
                 <ScrollFadeArrow direction="up" :visible="canScrollUp" @click="scrollVerticallyBy(-1)" />
                 <ScrollFadeArrow direction="down" :visible="canScrollDown" @click="scrollVerticallyBy(1)" />
@@ -316,7 +370,7 @@ function saveMark(date: string | null): void {
             </div>
         </div>
 
-        <div class="order-first grid gap-4 md:grid-cols-2 2xl:order-none 2xl:grid-cols-1 2xl:content-start">
+        <div class="order-first grid gap-4 transition-opacity md:grid-cols-2 2xl:order-none 2xl:grid-cols-1 2xl:content-start" :class="{ 'opacity-60': isChangingPage }">
             <div class="rounded-lg border border-gray-200 bg-white p-3">
                 <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />

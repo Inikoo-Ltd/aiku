@@ -41,6 +41,7 @@ use App\Enums\Discounts\Offer\OfferTypeEnum;
  * @property float|null $allowance_percentage_off
  * @property string|null $allowance_category_name
  * @property string|null $created_by
+ * @property string|null $voucher_code
  */
 class OffersResource extends JsonResource
 {
@@ -70,6 +71,7 @@ class OffersResource extends JsonResource
             'end_at'                      => $this->end_at,
             'is_active'                   => $this->state == OfferStateEnum::ACTIVE,
             'created_by'                  => $this->created_by,
+            'voucher_code'                => $this->voucher_code,
         ];
     }
 
