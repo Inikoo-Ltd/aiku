@@ -18,6 +18,7 @@ use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -38,7 +39,8 @@ class ShowGroupDashboard extends OrgAction
 
     public function handle(Group $group, ActionRequest $request): Response
     {
-        $user = $request->user();
+        $user       = $request->user();
+        $operations = $this->operations($user);
 
         if (!$this->canViewGroupDashboardSales($user)) {
             return Inertia::render(
@@ -49,6 +51,7 @@ class ShowGroupDashboard extends OrgAction
                     'dashboard'   => [
                         'super_blocks' => []
                     ],
+                    'operations'  => $operations,
                 ]
             );
         }
@@ -122,16 +125,37 @@ class ShowGroupDashboard extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard'          => $dashboard,
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
-                'warehouseOverview'  => GetGroupWarehouseDashboardData::run($group),
+                'warehouseOverview'  => Inertia::defer(fn () => GetGroupWarehouseDashboardData::run($group)),
+                'operations'         => $operations,
             ]
         );
+    }
+
+    /**
+     * Goods in, goods out and fulfilment staff open on Operations unless they chose another tab;
+     * the choice is kept in the user's settings.
+     */
+    private function operations(User $user): ?array
+    {
+        if (GetOperationsDashboardData::warehousesFor($user)->isEmpty()) {
+            return null;
+        }
+
+        $saved = Arr::get($user->settings ?? [], 'group_dashboard_section');
+
+        return [
+            'section' => in_array($saved, ['sales', 'warehouse', 'operations'], true)
+                ? $saved
+                : (GetOperationsDashboardData::isOperationsLanding($user) || !$this->canViewGroupDashboardSales($user) ? 'operations' : 'sales'),
+            'route'   => ['name' => 'grp.dashboard.operations'],
+        ];
     }
 
     public function asController(ActionRequest $request): Response|RedirectResponse
     {
         $group = group();
 
-        if (!$request->user()->hasGroupAccess() && !$request->user()->canViewSales()) {
+        if (!$request->user()->hasGroupAccess() && !$request->user()->canViewSales() && GetOperationsDashboardData::warehousesFor($request->user())->isEmpty()) {
             $organisation = $request->user()->authorisedOrganisations()->first();
             abort_unless($organisation, 403);
 

@@ -527,9 +527,9 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ ctrans("Leave types") }}</h2>
 			<div class="relative h-40 w-40 mx-auto shrink-0">
-				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" />
+				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" class="relative z-10" />
 				<div v-else class="flex h-full w-full items-center justify-center rounded-full border-8 border-gray-100" />
-				<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+				<div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
 					<span class="text-3xl font-bold text-gray-800">{{ leaveTypes.total }}</span>
 					<span class="text-xs text-gray-400">{{ ctrans("Employees") }}</span>
 				</div>

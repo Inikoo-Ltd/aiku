@@ -27,6 +27,7 @@ import RealUserSpeed from '@/Components/DataDisplay/RealUserSpeed.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
 import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import type { WebpageStructuredDataSource } from '@/Iris/Composables/useWebpageStructuredData'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -63,6 +64,7 @@ const props = defineProps<{
   pagespeed?: any,
   engagement?: any,
   seo?: any
+  structured_data_source?: WebpageStructuredDataSource | null
 }>()
 
 const isClosed = computed(() => props.data?.state === 'closed')
@@ -201,7 +203,7 @@ const visitRedirect = () => {
                   </div>
                   <iframe
                     ref="_iframe"
-                    :src="data?.canonical_url"
+                    :src="data?.canonical_url_without_domain ?? data?.canonical_url"
                     :key="screenMode"
                     :title="'props.title'"
                     class="w-full h-full"
@@ -226,11 +228,11 @@ const visitRedirect = () => {
 
         <WebpageEngagement v-if="data?.is_hidden_from_search_engines" :engagement="engagement" />
 
-        <WebpageSeo v-if="detailBesidePreview" :seo="seo" stacked />
+        <WebpageSeo v-if="detailBesidePreview" :seo="seo" :structuredDataSource="structured_data_source" stacked />
       </div>
     </div>
 
-    <WebpageSeo v-if="!redirected_to && !detailBesidePreview" :seo="seo" />
+    <WebpageSeo v-if="!redirected_to && !detailBesidePreview" :seo="seo" :structuredDataSource="structured_data_source" />
   </div>
   </template>
 </template>

@@ -110,6 +110,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'priority',
         'assignee_id',
         'subject',
+        'description',
         'module',
         'tags',
         'is_confidential',
@@ -243,6 +244,8 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public const array PRESET_TAGS = ['not a bug', 'lack of training', 'not enough info', 'duplicate', 'user error', 'data fix', 'wont fix'];
 
+    public const string CANCELLED_FOR_NO_REPLY = 'cancelled_for_no_reply';
+
     public static function knownTags(int $groupId): array
     {
         $used = DB::table('tickets')->where('group_id', $groupId)->selectRaw('distinct jsonb_array_elements_text(tags) as tag')->pluck('tag')->all();
@@ -339,6 +342,15 @@ class Ticket extends Model implements Auditable, HasMedia
         return self::canBeAssignedBy($user) || (self::canBeManagedBy($user) && $this->isAssignedTo($user));
     }
 
+    /**
+     * The subject, description and the ticket's own files belong to whoever raised it; a lead
+     * engineer can tidy them too.
+     */
+    public function canEditContentBy(?User $user): bool
+    {
+        return $this->isReportedBy($user) || self::canBeAssignedBy($user);
+    }
+
     public function canContributeBy(?User $user): bool
     {
         return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
@@ -382,6 +394,15 @@ class Ticket extends Model implements Auditable, HasMedia
     public function isReportedBy(?User $user): bool
     {
         return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
+    }
+
+    /**
+     * Cancelled by the stale-ticket sweep for want of a reply, and untouched since: any later
+     * status change clears the flag, so a cancel made by a person never carries it.
+     */
+    public function isCancelledForNoReply(): bool
+    {
+        return $this->status === TicketStatusEnum::CANCELLED && (bool) data_get($this->data, self::CANCELLED_FOR_NO_REPLY);
     }
 
     public function canBeCancelledByReporter(?User $user): bool

@@ -32,27 +32,15 @@ const emits = defineEmits<{
 }>()
 
 function masterFamilyRoute(masterProduct: MasterProduct) {
-    if (route().current() == "grp.masters.master_products.index") {
-        return route(
-            "grp.masters.master_families.show",
-            {masterFamily: masterProduct.master_family_slug})
-    } else {
-        return route(
-            "grp.masters.master_shops.show.master_families.show",
-            {masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug})
-    }
+    return route(
+        "grp.masters.master_shops.show.master_families.show",
+        {masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug})
 }
 
 function masterProductRoute(masterProduct: MasterProduct) {
     let masterShop = masterProduct.master_shop_slug ?? (route().params as RouteParams).masterShop;
     
-    if (route().current() == "grp.masters.master_products.index") {
-        return route(
-            "grp.masters.master_products.show",
-            {
-                masterProduct: masterProduct.slug
-            })
-    } else if (route().current() == "grp.masters.master_departments.show.master_families.show.master_products.index") {
+    if (route().current() == "grp.masters.master_departments.show.master_families.show.master_products.index") {
         return route(
             "grp.masters.master_departments.show.master_families.show.master_products.show",
             {
@@ -90,18 +78,12 @@ function masterProductRoute(masterProduct: MasterProduct) {
 }
 
 function masterDepartmentRoute(masterProduct: MasterProduct) {
-    if (route().current() == "grp.masters.master_products.index") {
-        return route(
-            "grp.masters.master_departments.show",
-            {masterDepartment: masterProduct.master_department_slug})
-    } else {
-        return route(
-            "grp.masters.master_shops.show.master_departments.show",
-            {
-                masterShop: (route().params as RouteParams).masterShop,
-                masterDepartment: masterProduct.master_department_slug
-            })
-    }
+    return route(
+        "grp.masters.master_shops.show.master_departments.show",
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterDepartment: masterProduct.master_department_slug
+        })
 }
 
 function masterShopRoute(masterProduct: MasterProduct) {

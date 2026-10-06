@@ -246,7 +246,7 @@ watch(
     <p v-if="listTip" class="mx-4 mt-2 text-xs text-gray-500">
         <span class="font-medium">{{ listTipTitle }}:</span> {{ listTip }}
     </p>
-    <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
+    <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 pb-3 text-xs text-gray-400">
         <span class="mr-1">{{ ctrans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
     </div>
@@ -332,10 +332,14 @@ watch(
                         :title="ctrans('Change kind')"
                         :disabled="isRowSaving(item)"
                         @click="openEditor('kind', item, $event)">
+                        <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" :class="!item.kind && 'text-gray-300'" fixed-width />
                         {{ item.kind_label || ctrans("No kind") }}
-                        <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
+                        <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                     </button>
-                    <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
+                    <span v-else :class="[readOnlyCellClass, 'text-gray-600']">
+                        <FontAwesomeIcon :icon="ticketKindIcon(item.kind)" :class="!item.kind && 'text-gray-300'" fixed-width />
+                        {{ item.kind_label || "-" }}
+                    </span>
                     <button
                         v-if="canEditModule(item)"
                         type="button"

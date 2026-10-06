@@ -75,7 +75,7 @@ class SeedStaffChatAudiences
      */
     private function shopRoleHolders(Shop $shop): array
     {
-        return $this->holdersOf([RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR], $shop);
+        return $this->holdersOf([RolesEnum::CUSTOMER_SERVICE_CLERK, RolesEnum::CUSTOMER_SERVICE_CALLER, RolesEnum::CUSTOMER_SERVICE_SUPERVISOR], $shop);
     }
 
     /**

@@ -8,8 +8,9 @@
 import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { compactCount } from "@/Composables/useCompactCount"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube } from "@fal"
+import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
@@ -24,7 +25,7 @@ import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
@@ -54,8 +55,17 @@ const stripBadgeGroups = computed(() => [
         icon: "fal fa-life-ring",
         label: ctrans("Tickets"),
         counts: [
-            { key: "queue", label: ctrans("Tickets assigned to me"), class: "text-lime-300", value: layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ["assigned_to_me", "collaborating"]) : 0 },
+            { key: "queue", label: ctrans("Tickets to fix"), class: "text-lime-300", value: layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ["assigned_to_me", "collaborating", "replied", "qa_to_check"]) : 0 },
             { key: "mine", label: ctrans("My tickets"), class: "text-lime-100", value: sumBadgeCounts(layout.ticket_badges?.mine, ["to_do", "in_progress", "waiting"]) },
+        ],
+    },
+    {
+        key: "tasks",
+        icon: "fal fa-tasks",
+        label: ctrans("Tasks"),
+        counts: [
+            { key: "mine", label: ctrans("My tasks"), class: "text-cyan-300", value: sumBadgeCounts(layout.task_badges?.mine, ["todo", "in_progress"]) },
+            { key: "created", label: ctrans("Tasks I created"), class: "text-cyan-100", value: layout.task_badges?.created?.open ?? 0 },
         ],
     },
     {
@@ -168,11 +178,6 @@ const isOnline = (id: number) => useLiveUsers().liveUsers[id]?.action === 'navig
 
 const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
 
-const getTooltipName = (name: string, coworkerId: number) => {
-    const page = getCurrentPage(coworkerId)
-    return page?.label ? `${name} · ${page.label}` : name
-}
-
 const byName = (a: StaffCoworker, b: StaffCoworker) => a.name.localeCompare(b.name)
 
 const teamCoworkers = computed(() => {
@@ -263,8 +268,6 @@ const conversationOtherId = (conversation: any) =>
 const conversationAvatar = (conversation: any) =>
     conversation.participants.find((p: any) => p.id !== myId.value)?.avatar ?? null
 
-const teamOfflineCoworkers = computed(() => teamCoworkers.value.filter((c) => !isOnline(c.id)))
-
 const filteredPeopleList = computed(() => {
     if (activeTab.value === "all") {
         return coworkers.value.filter((c) => presence(c) === 'online' && c.id !== myId.value).sort(byName)
@@ -297,38 +300,8 @@ const tabs = computed(() => [
     { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.alertingUnread, quietBadge: store.totalUnread - store.alertingUnread },
 ])
 
-const conversationUserIds = computed(() => new Set(
-    store.conversations.filter((c) => c.type === "dm").map((c) => conversationOtherId(c))
-))
-
-const railOfflineWithConversation = computed(() => {
-    return coworkers.value.filter((c) => !c.in_team && presence(c) === 'offline' && conversationUserIds.value.has(c.id))
-})
-
-const railOnlineWithConversation = computed(() => {
-    return coworkers.value.filter((c) => !c.in_team && presence(c) === 'online' && conversationUserIds.value.has(c.id))
-})
-
-const getPresenceBool = (c: StaffCoworker) => presence(c) !== 'offline'
-const railCandidates = computed(() => [
-    ...teamOnlineCoworkers.value.map((coworker) => ({ coworker, online: getPresenceBool(coworker) })),
-    ...teamOfflineCoworkers.value.map((coworker) => ({ coworker, online: false })),
-    ...railOnlineWithConversation.value.map((coworker) => ({ coworker, online: getPresenceBool(coworker) })),
-    ...railOfflineWithConversation.value.map((coworker) => ({ coworker, online: false })),
-])
-
-
 const unreadBadgeClass = (conversation: any) =>
     conversation.has_mention ? 'bg-[var(--chat-accent)] text-white' : (isAlerting(conversation) ? 'bg-[var(--chat-red)] text-white' : 'bg-[var(--chat-line)] text-[var(--chat-text)]')
-
-const railOrdered = computed(() => {
-    const withUnread = railCandidates.value
-        .filter((item) => unreadForUser(item.coworker.id) > 0)
-        .sort((a, b) => unreadForUser(b.coworker.id) - unreadForUser(a.coworker.id))
-    const withUnreadIds = new Set(withUnread.map((item) => item.coworker.id))
-    const rest = railCandidates.value.filter((item) => !withUnreadIds.has(item.coworker.id))
-    return [...withUnread, ...rest]
-})
 
 const WORK_THREAD_LABELS: Record<string, string> = {
     StaffTask: ctrans("Task"),
@@ -350,10 +323,6 @@ const RAIL_NEWEST_CHATS = 3
 const newestConversationsAll = computed(() => [...store.conversations].sort((a, b) => Date.parse(b.last_message_at ?? "") - Date.parse(a.last_message_at ?? "") || 0))
 const newestConversations = computed(() => newestConversationsAll.value.slice(0, RAIL_NEWEST_CHATS))
 const newerConversationsHidden = computed(() => Math.max(0, newestConversationsAll.value.length - RAIL_NEWEST_CHATS))
-
-const RAIL_AVATAR_LIMIT = 8
-const railOverflowCount = computed(() => Math.max(0, railOrdered.value.length - RAIL_AVATAR_LIMIT))
-const railVisible = computed(() => railOrdered.value.slice(0, railOverflowCount.value > 0 ? RAIL_AVATAR_LIMIT - 1 : RAIL_AVATAR_LIMIT))
 
 const unreadForUser = (userId: number) => {
     const conversation = store.conversations.find((c) => c.type === "dm" && conversationOtherId(c) === userId)
@@ -395,8 +364,8 @@ onUnmounted(() => {
     <div
         class="flex flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
-            layout.messagingSidebar.show ? 'w-56' : 'w-4',
-            layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-4' : 'md:w-12'),
+            layout.messagingSidebar.show ? 'w-56' : 'w-6',
+            layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-6' : 'md:w-12'),
         ]"
         id="messagingSidebar">
         <!-- Toggle: collapse-expand MessagingSideBar -->
@@ -412,32 +381,23 @@ onUnmounted(() => {
         </div>
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
-        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
+        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-3 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
             <WhatsappCallAlert micro />
             <CustomersWaiting v-if="layout?.user?.is_agent" micro />
             <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
-                <FontAwesomeIcon :icon="group.icon" class="text-[8px] text-[var(--chat-muted)]" fixed-width :title="group.label" aria-hidden="true" />
-                <span v-for="count in group.counts" :key="count.key" :class="count.class" :title="count.label">{{ count.value > 99 ? 99 : count.value }}</span>
+                <div class="flex flex-col items-center gap-y-1.5" :title="group.label">
+                    <FontAwesomeIcon :icon="group.icon" class="h-2.5 w-2.5 text-[var(--chat-text)] opacity-80" aria-hidden="true" />
+                    <span v-for="count in group.counts" :key="count.key" :class="count.class" :title="count.label">{{ compactCount(count.value) }}</span>
+                </div>
+                <div class="w-3 border-t border-[var(--chat-line)]" />
             </template>
-            <div v-if="stripBadgeGroups.length" class="w-3 border-t border-[var(--chat-line)]" />
 
-            <span class="text-[var(--chat-green)]">{{ allOnlineCount > 99 ? 99 : allOnlineCount }}</span>
-            <span class="text-[var(--chat-cyan)]">{{ orgOnlineCount > 99 ? 99 : orgOnlineCount }}</span>
-            <span class="text-[var(--chat-accent)]">{{ teamOnlineCount > 99 ? 99 : teamOnlineCount }}</span>
-            <span :class="store.alertingUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ Math.min(store.alertingUnread || store.totalUnread, 99) }}</span>
-
-            <div class="w-3 border-t border-[var(--chat-line)]" />
-
-            <!-- Mini avatars: same people the rail shows, at strip scale -->
-            <div
-                v-for="item in railVisible"
-                :key="'micro-' + item.coworker.id"
-                class="relative h-3 w-3 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0"
-                :class="[item.online ? '' : 'opacity-40', unreadForUser(item.coworker.id) > 0 ? 'ring-1 ring-[var(--chat-red)]' : '']"
-                :title="getTooltipName(item.coworker.name, item.coworker.id)">
-                <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
+            <div v-for="tab in tabs" :key="'micro-people-' + tab.key" class="flex flex-col items-center gap-y-1" :title="tab.label">
+                <FontAwesomeIcon :icon="tab.icon" class="h-2.5 w-2.5 opacity-80" :class="tab.color" aria-hidden="true" />
+                <span v-if="tab.key === 'messages'" :class="store.alertingUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ compactCount(store.alertingUnread || store.totalUnread) }}</span>
+                <span v-else :class="tab.color">{{ compactCount(tab.count) }}</span>
             </div>
-            <span v-if="railOverflowCount > 0" class="text-[var(--chat-label)]">+{{ railOverflowCount }}</span>
+
 
         </div>
 
@@ -632,6 +592,10 @@ onUnmounted(() => {
                                 v-tooltip="ctrans('Rings only when you are mentioned')"
                                 class="shrink-0 rounded bg-[var(--chat-line)] px-1 text-[9px] uppercase tracking-wide text-[var(--chat-label)]">
                                 {{ workThreadLabel(conversation) }}
+                            </span>
+                            <span v-if="conversation.task?.status_label" v-tooltip="ctrans('Task status')" class="inline-flex shrink-0 items-center gap-0.5 text-[var(--chat-label)]">
+                                <FontAwesomeIcon v-if="conversation.task.status_icon" :icon="conversation.task.status_icon.icon" :class="conversation.task.status_icon.class" fixed-width aria-hidden="true" />
+                                {{ conversation.task.status_label }}
                             </span>
                             <span class="truncate" :class="!conversation.last_message && 'italic opacity-70'">{{ lastMessagePreview(conversation) }}</span>
                         </div>

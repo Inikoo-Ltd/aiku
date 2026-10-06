@@ -2,6 +2,8 @@
 import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { buildWebpageStructuredData, type WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 import { faImage, faCheckCircle, faTimesCircle, faCode } from "@fal"
 import { faFacebook, faXTwitter, faWhatsapp, faGoogle } from "@fortawesome/free-brands-svg-icons"
 
@@ -27,6 +29,7 @@ const props = defineProps<{
 		structured_data?: Record<string, any> | Array<Record<string, any>>
 		structured_data_types?: string[]
 	}
+	structuredDataSource?: WebpageStructuredDataSource | null
 	stacked?: boolean
 }>()
 
@@ -46,7 +49,40 @@ const shareDescription = computed(() => props.seo?.description)
 
 const searchUrl = computed(() => (props.seo?.canonical_url ?? props.seo?.url ?? "").replace(/^https?:\/\//, ""))
 
-const structuredDataJson = computed(() => (props.seo?.structured_data ? JSON.stringify(props.seo.structured_data, null, 2) : null))
+const isStructuredDataLoading = computed(() => props.structuredDataSource === undefined)
+
+const websiteStructuredData = computed(() => (props.structuredDataSource ? buildWebpageStructuredData(props.structuredDataSource) : []))
+
+const isStructuredDataFromWebsite = computed(() => websiteStructuredData.value.length > 0)
+
+const structuredData = computed(() => {
+	if (isStructuredDataFromWebsite.value) {
+		return websiteStructuredData.value.length === 1 ? websiteStructuredData.value[0] : websiteStructuredData.value
+	}
+
+	return props.seo?.structured_data ?? null
+})
+
+const structuredDataJson = computed(() => (structuredData.value ? JSON.stringify(structuredData.value, null, 2) : null))
+
+const collectStructuredDataTypes = (value: unknown): string[] => {
+	if (Array.isArray(value)) {
+		return value.flatMap(collectStructuredDataTypes)
+	}
+
+	if (!value || typeof value !== "object") {
+		return []
+	}
+
+	const node = value as Record<string, any>
+	const ownTypes = [node["@type"]].flat().filter((type): type is string => typeof type === "string")
+
+	return [...ownTypes, ...collectStructuredDataTypes(node["@graph"])]
+}
+
+const structuredDataTypes = computed(() =>
+	isStructuredDataFromWebsite.value ? [...new Set(collectStructuredDataTypes(websiteStructuredData.value))] : (props.seo?.structured_data_types ?? [])
+)
 
 // Past these lengths Google cuts the line off in its result
 const TITLE_LIMIT = 60
@@ -124,9 +160,18 @@ const robotFlags = computed(() => [
 				</div>
 
 				<!-- The JSON-LD the page carries -->
+				<div
+					v-else-if="previewTab === 'structured_data' && isStructuredDataLoading"
+					class="flex items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
+					<LoadingIcon />
+					{{ ctrans("Building the structured data of the website") }}
+				</div>
 				<div v-else-if="previewTab === 'structured_data'" class="space-y-2">
-					<div v-if="seo?.structured_data_types?.length" class="flex flex-wrap gap-1.5">
-						<span v-for="type in seo.structured_data_types" :key="type" class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{{ type }}</span>
+					<p v-if="isStructuredDataFromWebsite" class="text-xs text-gray-500">
+						{{ ctrans("As the website renders it for a logged out visitor, including the structured data it generates automatically") }}
+					</p>
+					<div v-if="structuredDataTypes.length" class="flex flex-wrap gap-1.5">
+						<span v-for="type in structuredDataTypes" :key="type" class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{{ type }}</span>
 					</div>
 					<pre
 						v-if="structuredDataJson"

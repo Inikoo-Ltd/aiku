@@ -8,6 +8,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } fr
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import ProfilePagination from '@/Components/Profile/ProfilePagination.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
 library.add(faCircle, faSearch, faSortAlphaDown, faSortAlphaUp, faSort, faChevronLeft, faChevronRight, faChevronDoubleLeft, faChevronDoubleRight, faBellSlash, faSignOutAlt, faTruckCouch, faCheckDouble, faEnvelope)
@@ -73,14 +74,6 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalNotifications.value
 const firstIndex = computed(() => (currentPage.value - 1) * rowsPerPage.value)
 const lastIndex = computed(() => Math.min(firstIndex.value + rowsPerPage.value, totalNotifications.value))
 const pagedNotifications = computed(() => filteredNotifications.value.slice(firstIndex.value, lastIndex.value))
-
-const visiblePages = computed(() => {
-    const maxButtons = 5
-    const start = Math.max(1, Math.min(currentPage.value - Math.floor(maxButtons / 2), totalPages.value - maxButtons + 1))
-    const end = Math.min(totalPages.value, start + maxButtons - 1)
-
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index)
-})
 
 const isAllPageSelected = computed(() =>
     pagedNotifications.value.length > 0
@@ -322,43 +315,12 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="shrink-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-200 py-3 text-sm text-gray-600">
-            <div class="flex items-center gap-x-1">
-                <button type="button" @click="goToPage(1)" :disabled="currentPage === 1" :aria-label="ctrans('First page')"
-                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-left" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
-                <button type="button" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" :aria-label="ctrans('Previous page')"
-                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
-
-                <button v-for="page in visiblePages" :key="page" type="button" @click="goToPage(page)"
-                    class="h-8 min-w-8 px-2 rounded-full tabular-nums transition-colors"
-                    :class="page === currentPage ? 'bg-indigo-600 text-white font-semibold' : 'hover:bg-gray-100'">
-                    {{ page }}
-                </button>
-
-                <button type="button" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" :aria-label="ctrans('Next page')"
-                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-right" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
-                <button type="button" @click="goToPage(totalPages)" :disabled="currentPage === totalPages" :aria-label="ctrans('Last page')"
-                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-right" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-
-            <div class="flex items-center gap-x-3">
-                <span class="tabular-nums">{{ paginationReport }}</span>
-                <label class="flex items-center gap-x-2">
-                    <span class="sr-only">{{ ctrans('Rows per page') }}</span>
-                    <select v-model.number="rowsPerPage"
-                        class="rounded-md border-gray-300 py-1 pl-2 pr-8 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option v-for="option in rowsPerPageOptions" :key="option" :value="option">{{ option }}</option>
-                    </select>
-                </label>
-            </div>
-        </div>
+        <ProfilePagination
+            v-model:rows-per-page="rowsPerPage"
+            :current-page="currentPage"
+            :last-page="totalPages"
+            :report="paginationReport"
+            :rows-per-page-options="rowsPerPageOptions"
+            @page="goToPage" />
     </div>
 </template>

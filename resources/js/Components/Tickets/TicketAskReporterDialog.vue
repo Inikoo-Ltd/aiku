@@ -8,13 +8,15 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 
 const props = defineProps<{
     updateRoute: { name: string; parameters: Record<string, unknown> }
     defaultWaitingHours?: number | null
+    mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
 }>()
 
 const emit = defineEmits<{
@@ -24,30 +26,41 @@ const emit = defineEmits<{
 const visible = defineModel<boolean>("visible", { default: false })
 
 const waitingPresets = [
-    { label: trans("2 hours"), hours: 2 },
-    { label: trans("1 day"), hours: 24 },
-    { label: trans("2 days"), hours: 48 },
-    { label: trans("3 days"), hours: 72 },
-    { label: trans("14 days"), hours: 336 },
+    { label: ctrans("2 hours"), hours: 2 },
+    { label: ctrans("1 day"), hours: 24 },
+    { label: ctrans("2 days"), hours: 48 },
+    { label: ctrans("3 days"), hours: 72 },
+    { label: ctrans("14 days"), hours: 336 },
 ]
 
 const question = ref("")
+const questionImages = ref<File[]>([])
+const questionError = ref("")
 const waitingHours = ref(72)
 const isAsking = ref(false)
 
 watch(visible, (isVisible) => {
     if (!isVisible) return
     question.value = ""
+    questionImages.value = []
+    questionError.value = ""
     waitingHours.value = props.defaultWaitingHours ?? 72
 })
 
 const askReporter = () => {
-    router.patch(
+    router.post(
         route(props.updateRoute.name, props.updateRoute.parameters),
-        { status: "waiting", question: question.value, waiting_hours: waitingHours.value },
+        { _method: "patch", status: "waiting", question: question.value, waiting_hours: waitingHours.value, images: questionImages.value },
         {
             preserveScroll: true,
-            onStart: () => (isAsking.value = true),
+            forceFormData: true,
+            onStart: () => {
+                isAsking.value = true
+                questionError.value = ""
+            },
+            onError: (errors) => {
+                questionError.value = Object.entries(errors).find(([key]) => key.startsWith("images") || key === "question")?.[1] ?? ""
+            },
             onFinish: () => (isAsking.value = false),
             onSuccess: () => {
                 visible.value = false
@@ -59,14 +72,15 @@ const askReporter = () => {
 </script>
 
 <template>
-    <Dialog v-model:visible="visible" modal :header="trans('Ask reporter')" :style="{ width: '32rem' }">
+    <Dialog v-model:visible="visible" modal :header="ctrans('Ask reporter')" :style="{ width: '32rem' }">
         <div class="space-y-4 text-sm">
             <div>
-                <p class="mb-1 text-xs text-gray-500">{{ trans("What do we need to continue?") }}</p>
-                <textarea v-model="question" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="trans('e.g. please send the order number and a screenshot of the error')" />
+                <p class="mb-1 text-xs text-gray-500">{{ ctrans("What do we need to continue?") }}</p>
+                <TicketComposer v-model:body="question" v-model:images="questionImages" :mentionable="mentionable" :placeholder="ctrans('e.g. please send the order number and a screenshot of the error')" />
+                <p v-if="questionError" class="mt-1 text-xs text-red-600">{{ questionError }}</p>
             </div>
             <div>
-                <p class="mb-1 text-xs text-gray-500">{{ trans("Cancel the ticket if there is no reply in") }}</p>
+                <p class="mb-1 text-xs text-gray-500">{{ ctrans("Cancel the ticket if there is no reply in") }}</p>
                 <div class="flex flex-wrap gap-2">
                     <button
                         v-for="preset in waitingPresets"
@@ -80,8 +94,8 @@ const askReporter = () => {
                 </div>
             </div>
             <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="visible = false" />
-                <Button :label="trans('Send and wait')" icon="fal fa-question-circle" :loading="isAsking" :disabled="!question.trim()" @click="askReporter" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="visible = false" />
+                <Button :label="ctrans('Send and wait')" icon="fal fa-question-circle" :loading="isAsking" :disabled="!question.trim()" @click="askReporter" />
             </div>
         </div>
     </Dialog>

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
+use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
@@ -36,6 +37,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
+use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Discounts\Offer\Json\GetVoucherCustomerListPreview;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
@@ -220,6 +222,7 @@ Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.product
 Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
 
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
+Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 Route::get('shop/{shop:id}/voucher-customer-list-preview', GetVoucherCustomerListPreview::class)->name('shop.voucher_customer_list_preview');
 
@@ -266,6 +269,7 @@ Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-pro
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 Route::get('org-partner/{orgPartner}/purchase-order/{purchaseOrder}/org-stocks', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgPartner'])->name('org-partner.purchase-order-org-stocks');
 Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
+Route::get('partner-shopping-list-recent-uploads/{orgPartner:id}', IndexRecentPartnerShoppingListUploads::class)->name('org_partner.shopping_list.recent_uploads');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 

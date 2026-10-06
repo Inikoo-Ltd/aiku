@@ -14,6 +14,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -53,12 +54,14 @@ class UnassignToProduceItems extends OrgAction
         }
 
         $artefactId   = $this->resolveArtefactId($production, $item);
-        $jobOrderItem = $artefactId ? $jobOrder->jobOrderItems()->where('artefact_id', $artefactId)->first() : null;
+        $jobOrderItems = $artefactId ? $jobOrder->jobOrderItems()->where('artefact_id', $artefactId)->get() : collect();
 
-        if ($jobOrderItem) {
-            if (ManufactureTaskSession::whereIn('job_order_item_task_id', $jobOrderItem->tasks()->reorder()->select('id'))->exists()) {
-                return false;
-            }
+        $taskIds = JobOrderItemTask::whereIn('job_order_item_id', $jobOrderItems->pluck('id'))->select('id');
+        if (ManufactureTaskSession::whereIn('job_order_item_task_id', $taskIds)->exists()) {
+            return false;
+        }
+
+        foreach ($jobOrderItems->sortByDesc('id') as $jobOrderItem) {
             $jobOrderItem->tasks()->delete();
             $jobOrderItem->delete();
         }

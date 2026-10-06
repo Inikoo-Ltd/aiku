@@ -13,6 +13,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
+use App\Actions\UI\Dashboards\GetOperationsDashboardData;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\WarehouseResource;
@@ -28,6 +29,8 @@ class ShowWarehouse extends OrgAction
     use WithActionButtons;
     use WithWarehouseAuthorisation;
 
+    private bool $canSeeOperations = false;
+
     public function handle(Warehouse $warehouse): Warehouse
     {
         return $warehouse;
@@ -35,7 +38,10 @@ class ShowWarehouse extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
+        $this->canSeeOperations = GetOperationsDashboardData::warehousesFor($request->user())->contains('id', $warehouse->id);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(
+            $this->canSeeOperations ? WarehouseTabsEnum::values() : array_values(array_diff(WarehouseTabsEnum::values(), [WarehouseTabsEnum::OPERATIONS->value]))
+        );
 
         return $this->handle($warehouse);
     }
@@ -83,8 +89,13 @@ class ShowWarehouse extends OrgAction
                 'tabs'     => [
 
                     'current'    => $this->tab,
-                    'navigation' => WarehouseTabsEnum::navigation(),
+                    'navigation' => $this->canSeeOperations ? WarehouseTabsEnum::navigation() : Arr::except(WarehouseTabsEnum::navigation(), WarehouseTabsEnum::OPERATIONS->value),
                 ],
+
+                WarehouseTabsEnum::OPERATIONS->value => $this->canSeeOperations ? [
+                    'route'     => ['name' => 'grp.dashboard.operations'],
+                    'warehouse' => $warehouse->id,
+                ] : null,
 
                 WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
                     fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)

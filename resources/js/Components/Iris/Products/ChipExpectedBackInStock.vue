@@ -27,6 +27,6 @@ const expectedBackDate = computed(() =>
         @click.prevent.stop="emits('toggle')"
         class="flex min-h-8 min-w-0 items-center rounded-full px-3 py-1 text-left text-xs leading-tight shadow-md transition"
         :class="product.is_back_in_stock ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
-        {{ product.is_back_in_stock ? ctrans("Back in stock alert on") : ctrans("Notify me when back in stock") }}
+        {{ product.is_back_in_stock ? ctrans("Back in stock alert on") : expectedBackDate ? ctrans('Expected Back on :date', { date: expectedBackDate }) : ctrans("Notify me when back in stock") }}
     </button>
 </template>

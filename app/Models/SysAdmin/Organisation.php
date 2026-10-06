@@ -8,6 +8,7 @@
 
 namespace App\Models\SysAdmin;
 
+use Carbon\CarbonInterface;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -473,6 +474,20 @@ class Organisation extends Model implements HasMedia, Auditable
     public function logo(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'logo_id');
+    }
+
+    public const array TIME_FORMATS = ['24h', '12h', '12h_short'];
+
+    /**
+     * A time of day the way the organisation writes it: 16:04, 4:04 pm, or 4pm and 4:30pm.
+     */
+    public function formatClockTime(CarbonInterface $time): string
+    {
+        return match (data_get($this->settings, 'time_format', '24h')) {
+            '12h'       => $time->format('g:i a'),
+            '12h_short' => $time->minute === 0 ? $time->format('ga') : $time->format('g:ia'),
+            default     => $time->format('H:i'),
+        };
     }
 
     public function shops(): HasMany

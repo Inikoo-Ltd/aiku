@@ -18,6 +18,7 @@ import { trans } from "laravel-vue-i18n"
 defineProps<{
     data: object,
     tab?: string
+    useTopPagination?: boolean
 }>()
 
 
@@ -87,7 +88,7 @@ const shortLocation = (location: string[]) => {
 <template>
     <!-- ponytail: font shrunk with arbitrary variants on a wrapper, Table has no font prop -->
     <div class="[&_td]:!text-xs [&_th_div]:!text-xs">
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5">
         <template #cell(reference)="{ item: customer }">
             <Link v-if="customerRoute(customer)" :href="customerRoute(customer) as string" class="primaryLink">
                 {{ customer["reference"] }}

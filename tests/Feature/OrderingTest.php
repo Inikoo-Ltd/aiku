@@ -133,6 +133,10 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -191,6 +195,7 @@ use App\Models\Ordering\Transaction;
 use App\Actions\Catalogue\Shop\CalculateShopOrderAlertSizes;
 use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
+use App\Actions\UI\Profile\EditProfileSettings;
 use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Events\BroadcastNewOrderAlert;
 use App\Models\SysAdmin\User;
@@ -4031,7 +4036,7 @@ test('export flag follows the customs territory of the organisation', function (
     expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
 
     $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
-    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->backlogFilterCounts($this->shop, 'in_basket')['scope'];
     $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
     expect($counts)->toBe([
         'domestic' => (clone $creating)->where('is_export', false)->count(),
@@ -4863,6 +4868,71 @@ test('the shop orders list flags a partner order and the channel filter separate
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });
 
+test('the orders backlog can be filtered to partner or direct orders and counts each channel', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]
+    );
+    $directOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        Order::factory()->definition()
+    );
+
+    $sisterOrganisationCustomer = freshCustomerLike($this->shop, $this->customer);
+    $sisterOrganisationCustomer->update([
+        'as_organisation_id' => $this->organisation->id,
+    ]);
+    $phonedInPartnerOrder = StoreOrder::make()->action($sisterOrganisationCustomer, Order::factory()->definition());
+
+    $url = route('grp.org.shops.show.ordering.backlog', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'tab'          => 'in_basket',
+    ]);
+
+    $pageFor = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return $response->viewData('page')['props'];
+    };
+
+    $referencesIn = fn (array $props) => collect($props['in_basket']['data'])->pluck('reference');
+
+    $partnerOnly = $pageFor('&in_basket_elements[channel]=partner');
+    expect($referencesIn($partnerOnly))->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference)
+        ->not->toContain($directOrder->reference)
+        ->and($partnerOnly['backlog_filters']['current']['channel'])->toBe('partner');
+
+    $directOnly = $pageFor('&in_basket_elements[channel]=direct');
+    expect($referencesIn($directOnly))->toContain($directOrder->reference)
+        ->not->toContain($partnerOrder->reference, $phonedInPartnerOrder->reference);
+
+    $creating     = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    $partnerCount = (clone $creating)
+        ->where(fn ($query) => $query
+            ->where('sales_channel_id', $intercompany->id)
+            ->orWhereIn('customer_id', Customer::whereNotNull('as_organisation_id')->select('id')))
+        ->count();
+    $counts = $pageFor('')['backlog_filters']['counts']['channel'];
+    expect($counts['partner'])->toBe($partnerCount)
+        ->and($counts['direct'] + $counts['partner'])->toBe((clone $creating)->count());
+
+    expect(array_sum($partnerOnly['backlog_filters']['counts']['scope']))->toBe($partnerCount);
+});
+
 test('the shop orders list sends the warehouse note so its icon shows next to the order', function () {
     $adminGuest = createAdminGuest($this->group);
     actingAs($adminGuest->getUser());
@@ -5365,6 +5435,12 @@ describe('pre-orders (HELP-3432)', function () {
             ->and($preOrder->terms)->not->toBeEmpty()
             ->and(Arr::get($child->transactions()->where('model_type', 'Product')->first()->data, 'pre_order.type'))->toBe('made_to_order');
 
+        $preOrderEmail = \App\Actions\Comms\Email\SendPreOrderUpdateEmail::make();
+        expect($preOrderEmail->subject($preOrder, $preOrderEmail::DISPATCH_DATE_CHANGED))->toBe('New estimated dispatch for pre-order '.$child->reference)
+            ->and($preOrderEmail->body($preOrder, $preOrderEmail::DISPATCH_DATE_CHANGED, ['reason' => 'Supplier delay']))->toContain('Supplier delay')
+            ->toContain($preOrder->estimated_dispatch_to->format('d/m/Y'))
+            ->not->toContain('{');
+
         $madeToOrder->orgStocks()->update(['quantity_available' => 2]);
         \App\Actions\Ordering\PreOrder\AllocatePreOrderStock::run();
         $preOrder->refresh();
@@ -5598,6 +5674,39 @@ describe('pre-orders (HELP-3432)', function () {
             ->and((float) $preOrderLine->quantity_bonus)->toBe(0.0);
     });
 
+    test('customers only read "Pre-order", partly in-stock lines say what is sent now, and every text can be rewritten per shop language (HELP-3678)', function () {
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'available_quantity' => 2]);
+        $backOrder->orgStocks()->update(['quantity_available' => 2]);
+
+        $productPreOrder = \App\Actions\Ordering\PreOrder\GetProductPreOrder::run($backOrder->fresh());
+        expect($productPreOrder)->not->toHaveKey('type_label')
+            ->and($productPreOrder['label'])->toBe('Pre-order')
+            ->and($productPreOrder['available_label'])->toBe('Available to pre-order')
+            ->and($productPreOrder['dispatch_label'])->toBe('Estimated dispatch 9–11 weeks')
+            ->and($productPreOrder['payment_label'])->toBe('Pay in full now')
+            ->and(implode(' ', $productPreOrder['terms']))->not->toContain('Back-order');
+
+        $basket = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $backOrder->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 5]));
+        $basketPreOrders = \App\Actions\Ordering\PreOrder\GetBasketPreOrders::run($basket->fresh());
+
+        expect(collect($basketPreOrders['lines'])->first()['basket_label'])->toBe('2 will be sent now, 3 are pre-ordered (estimated dispatch 9–11 weeks) · Pay in full now')
+            ->and($basketPreOrders['texts']['dispatch'])->toBe("We'll send your in-stock items now and your pre-order items as soon as they arrive.")
+            ->and($basketPreOrders['texts']['hold_together'])->toBe('Hold my order and send everything together');
+
+        $locale = $this->shop->language->code;
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, [
+            "pre_order_text__{$locale}__available" => 'Order now, ships in {weeks} weeks',
+            "pre_order_text__{$locale}__line_note" => 'Pre-order ({weeks} weeks)',
+        ]);
+        $this->shop->refresh();
+        expect(\App\Actions\Ordering\PreOrder\GetPreOrderText::make()->handle($this->shop, 'available', ['weeks' => '9–11'], $locale))->toBe('Order now, ships in 9–11 weeks')
+            ->and(\App\Actions\Ordering\PreOrder\GetProductPreOrder::make()->lineNote($this->shop, ['type' => 'made_to_order', 'dispatch_from_weeks' => 9, 'dispatch_to_weeks' => 11]))->toBe('Pre-order (9–11 weeks)');
+
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ["pre_order_text__{$locale}__available" => '']);
+        expect(\App\Actions\Ordering\PreOrder\GetPreOrderText::make()->handle($this->shop->refresh(), 'available', [], $locale))->toBe('Available to pre-order');
+    });
+
     test('paying with balance twice from the same page charges once', function () {
         $order = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
         StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
@@ -5711,6 +5820,41 @@ test('order alert settings are saved on the user and reach the layout', function
     $this->shop->update(['state' => $shopState]);
 });
 
+test('order pop-ups can be switched off from the pop-up without losing the followed shops', function () {
+    $shopState = $this->shop->state;
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts' => [
+            'shops' => [$this->shop->id],
+            'types' => ['ecom_normal' => ['enabled' => true, 'sound' => 'coins']],
+            'popup' => ['show' => true],
+        ]])
+        ->assertSuccessful();
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts_popup' => false])
+        ->assertSuccessful();
+
+    $user = $this->user->fresh();
+
+    expect(GetUserOrderAlerts::run($user)['popup'])->toEqual(['show' => false])
+        ->and(Arr::get($user->settings, 'order_alerts.shops'))->toBe([$this->shop->id])
+        ->and(Arr::get($user->settings, 'order_alerts.types.ecom_normal'))->toEqual(['enabled' => true, 'sound' => 'coins', 'muted' => false]);
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['order_alerts_popup' => 'maybe'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['order_alerts_popup']);
+
+    $alertFields = collect(EditProfileSettings::make()->generateBlueprint($user)['formData']['blueprint'])
+        ->firstWhere('label', 'Alerts')['fields'];
+    expect($alertFields['alert_popup_previews'])->toMatchArray(['type' => 'alert_popup_previews', 'noSaveButton' => true]);
+
+    $user->update(['settings' => Arr::except($user->settings, 'order_alerts')]);
+    $this->shop->update(['state' => $shopState]);
+});
+
 test('staff entered and partner orders do not ring, and a failing alert never stops the order', function () {
     Event::fake([BroadcastNewOrderAlert::class]);
 
@@ -5741,4 +5885,40 @@ test('role defaults ring for big orders on the admin shops and never for small o
     expect($defaults)->toHaveKey($this->shop->id)
         ->and($defaults[$this->shop->id])->toContain(OrderAlertTypeEnum::ECOM_BIG->value)
         ->and($defaults[$this->shop->id])->not->toContain(OrderAlertTypeEnum::ECOM_SMALL->value);
+});
+
+test('organisation orders hydrator counts orders in a single scan', function () {
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    OrganisationHydrateOrders::run($this->organisation);
+
+    $stats = $this->organisation->orderingStats()->first();
+    $liveOrders = Order::where('organisation_id', $this->organisation->id);
+
+    expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "orders"')))->toHaveCount(1)
+        ->and($stats->number_orders)->toBe(Order::withTrashed()->where('organisation_id', $this->organisation->id)->count())
+        ->and($stats->number_orders_state_creating)->toBe((clone $liveOrders)->where('state', OrderStateEnum::CREATING)->count())
+        ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
+        ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
+});
+
+test('group orders hydrator counts orders in a single scan', function () {
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    GroupHydrateOrders::run($this->group);
+
+    $stats = $this->group->orderingStats()->first();
+    $liveOrders = Order::where('group_id', $this->group->id);
+
+    expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "orders"')))->toHaveCount(1)
+        ->and($stats->number_orders)->toBe(Order::withTrashed()->where('group_id', $this->group->id)->count())
+        ->and($stats->number_orders_state_creating)->toBe((clone $liveOrders)->where('state', OrderStateEnum::CREATING)->count())
+        ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
+        ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
 });

@@ -363,7 +363,7 @@ useAppAccentVariables(() => safeTheme.value)
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
-                        :label="trans('Okay')"
+                        :label="ctrans('Okay')"
                         full
                     />
                 </div>

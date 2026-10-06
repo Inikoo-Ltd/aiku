@@ -11,6 +11,7 @@ namespace App\Actions\Production\ManufactureTaskSession\UI;
 use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
@@ -56,6 +57,7 @@ class IndexArtisans extends OrgAction
             'from'                => ['sometimes', 'date'],
             'to'                  => ['sometimes', 'date', 'after_or_equal:from'],
             'manufacture_task_id' => ['sometimes', 'integer'],
+            'under_target'        => ['sometimes', 'boolean'],
         ];
     }
 
@@ -64,6 +66,7 @@ class IndexArtisans extends OrgAction
         $from             = Carbon::parse(Arr::get($this->validatedData, 'from', now()->startOfWeek()->toDateString()))->startOfDay();
         $to               = Carbon::parse(Arr::get($this->validatedData, 'to', now()->toDateString()))->endOfDay();
         $manufactureTaskId = Arr::get($this->validatedData, 'manufacture_task_id');
+        $underTargetOnly   = (bool) Arr::get($this->validatedData, 'under_target', false);
 
         $sessions = ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
             ->whereIn('manufacture_task_sessions.state', [
@@ -72,7 +75,8 @@ class IndexArtisans extends OrgAction
             ])
             ->whereBetween('ended_at', [$from, $to])
             ->when($manufactureTaskId, fn ($query) => $query->where('manufacture_task_id', $manufactureTaskId))
-            ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
+            ->when($underTargetOnly, fn ($query) => $query->where('is_under_target', true))
+            ->with(['user', 'manufactureTask', 'underTargetReviewer', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
             ->orderByDesc('ended_at')
             ->get();
 
@@ -100,6 +104,19 @@ class IndexArtisans extends OrgAction
             'quantity_made'       => (float)$session->quantity_made,
             'quantity_rejected'   => (float)$session->quantity_rejected,
             'earned'              => round($session->quantity_made * ($session->task_work_cost ?? 0), 2),
+            'units_per_hour'      => $session->paidHours() > 0 ? round($session->quantity_made / $session->paidHours(), 1) : null,
+            'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
+            'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
+            'under_target_review' => $session->under_target_reviewed_at ? [
+                'reason'      => ManufactureTaskSessionUnderTargetReasonEnum::labels()[$session->under_target_reason?->value] ?? null,
+                'note'        => $session->under_target_note,
+                'reviewed_by' => $session->underTargetReviewer?->contact_name ?: $session->underTargetReviewer?->username,
+                'reviewed_at' => $session->under_target_reviewed_at,
+            ] : null,
+            'review_route'        => $this->canEdit && $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
+                'name'       => 'grp.models.manufacture-task-session.under_target_review',
+                'parameters' => ['manufactureTaskSession' => $session->id],
+            ] : null,
             'void_route'          => $this->canEdit && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
                 'name'       => 'grp.models.manufacture-task-session.void',
                 'parameters' => ['manufactureTaskSession' => $session->id],
@@ -121,6 +138,7 @@ class IndexArtisans extends OrgAction
                     'quantity_made'     => $artisanTotals['quantity_made'],
                     'quantity_rejected' => $artisanTotals['quantity_rejected'],
                     'earned'            => $artisanTotals['earned'],
+                    'under_target_open' => $userSessions->filter(fn (ManufactureTaskSession $session) => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED && !$session->under_target_reviewed_at)->count(),
                     'jobs'              => $userSessions
                         ->groupBy('jobOrderItemTask.job_order_item_id')
                         ->map(function (Collection $jobSessions, int $jobOrderItemId) use ($serializeSession, $totals) {
@@ -164,6 +182,8 @@ class IndexArtisans extends OrgAction
                     'to'   => $to->toDateString(),
                 ],
                 'manufacture_task_id' => $manufactureTaskId ? (int)$manufactureTaskId : null,
+                'under_target'        => $underTargetOnly,
+                'under_target_reasons' => ManufactureTaskSessionUnderTargetReasonEnum::labels(),
                 'manufacture_tasks'   => ManufactureTask::withTrashed()
                     ->where('production_id', $production->id)
                     ->orderBy('name')

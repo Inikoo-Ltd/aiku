@@ -1217,6 +1217,7 @@ const getSeverity = (type?: string) => {
                             </slot>
                         </div>
                     </div>
+                    <div v-else />
 
                     <!-- Filter Group -->
                     <div class="grid grid-cols-1 nowrap md:flex md:flex-row justify-end items-center flex-nowrap gap-x-2 gap-y-1">

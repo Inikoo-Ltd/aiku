@@ -3168,6 +3168,19 @@ test('pickers handle returns in goods in without seeing stock deliveries', funct
     $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
 });
 
+test('goods in supervisor and worker positions hold the goods in roles', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+
+    $supervisor = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'gi-m')->firstOrFail();
+    $worker     = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'gi-c')->firstOrFail();
+
+    expect($supervisor->roles()->pluck('name')->all())->toBe([RolesEnum::getRoleName(RolesEnum::GOODS_IN_SUPERVISOR->value, $warehouse)])
+        ->and($worker->roles()->pluck('name')->all())->toBe([RolesEnum::getRoleName(RolesEnum::GOODS_IN_CLERK->value, $warehouse)]);
+});
+
 test('an admin holds no other position below them, so a customer service position does not make them a chat agent', function () {
     [$organisation, , $shop] = createShop();
     setPermissionsTeamId($organisation->group_id);
@@ -3266,11 +3279,16 @@ test('staff attachment downloads need permission on what the file is attached to
     $download($colleague, $deliveryPaperwork)->assertNotFound();
 });
 
-test('marketing job positions can create and edit offers', function () {
+test('the marketing/offers position can create and edit offers and see orders but not edit the website', function () {
     $roles = fn (string $code) => config("blueprint.job_positions.positions.$code.roles");
 
-    expect($roles('mrk-m'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_SUPERVISOR)
-        ->and($roles('mrk-c'))->toContain(\App\Enums\SysAdmin\Authorisation\RolesEnum::DISCOUNTS_CLERK);
+    $permissions = collect($roles('mrk-m'))->flatMap(fn (\App\Enums\SysAdmin\Authorisation\RolesEnum $role) => $role->getPermissions());
+
+    expect($permissions)->toContain(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::DISCOUNTS)
+        ->toContain(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::MARKETING)
+        ->toContain(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::ORDERS)
+        ->not->toContain(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::WEB_EDIT)
+        ->not->toContain(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::SUPERVISOR_WEB);
 });
 
 test('the new employee form shows login errors on its own fields', function () {
@@ -3360,4 +3378,70 @@ test('a human resources supervisor can open the organisation clockings and emplo
     get(route('grp.org.hr.analytics.show', [$this->organisation->slug, $employee->slug]))
         ->assertOk()
         ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('analytics.leave.leave_balance.annual_remaining', 17));
+});
+
+test('shopkeeper clerks are merged into the supervisor position on all the shops they held', function () {
+    setPermissionsTeamId($this->group->id);
+    $positionIds = JobPosition::where('organisation_id', $this->organisation->id)
+        ->whereIn('code', ['shk-m', 'shk-c', 'hr-c'])
+        ->pluck('id', 'code');
+
+    $clerk = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($clerk, [
+        $positionIds['shk-c'] => ['Shop' => [1, 2]],
+        $positionIds['hr-c']  => [],
+    ]);
+
+    $mixed = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($mixed, [
+        $positionIds['shk-m'] => ['Shop' => [1]],
+        $positionIds['shk-c'] => ['Shop' => [2, 3]],
+    ]);
+
+    \App\Actions\HumanResources\JobPosition\RepairMergeJobPositions::make()->handle('shk-c', 'shk-m');
+
+    $scopesOf = fn (Employee $employee) => $employee->jobPositions()->get()->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->code => $jobPosition->pivot->scopes])->sortKeys()->all();
+
+    expect($scopesOf($clerk))->toBe(['hr-c' => [], 'shk-m' => ['Shop' => [1, 2]]])
+        ->and($scopesOf($mixed))->toBe(['shk-m' => ['Shop' => [1, 2, 3]]]);
+});
+
+test('every non-shop department has a view-only position that gives way to a higher grade', function () {
+    setPermissionsTeamId($this->group->id);
+    \App\Actions\SysAdmin\Group\Seeders\SeedJobPositionCategories::run($this->group);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($this->organisation);
+
+    $viewerCodes = ['hr-v', 'acc-v', 'buy-v', 'wah-v', 'gi-v', 'dist-v', 'prod-v'];
+    $positions   = JobPosition::where('organisation_id', $this->organisation->id)->whereIn('code', [...$viewerCodes, 'wah-sc'])->get()->keyBy('code');
+
+    expect($positions->keys()->sort()->values()->all())->toBe(collect([...$viewerCodes, 'wah-sc'])->sort()->values()->all());
+
+    foreach ([...$viewerCodes, 'ful-v'] as $code) {
+        $permissions = collect(config("blueprint.job_positions.positions.$code.roles"))
+            ->flatMap(fn (\App\Enums\SysAdmin\Authorisation\RolesEnum $role) => $role->getPermissions())
+            ->map(fn ($permission) => $permission->value);
+
+        expect($permissions)->not->toBeEmpty()
+            ->and($permissions->reject(fn (string $permission) => str_ends_with($permission, '.view'))->all())->toBe([]);
+    }
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positions['wah-sc']->id => ['Warehouse' => [1]],
+        $positions['wah-v']->id  => ['Warehouse' => [1, 2]],
+        $positions['hr-v']->id   => [],
+    ]);
+
+    $scopes = $employee->jobPositions()->get()->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->code => $jobPosition->pivot->scopes])->sortKeys()->all();
+
+    expect($scopes)->toBe(['hr-v' => [], 'wah-sc' => ['Warehouse' => [1]], 'wah-v' => ['Warehouse' => [2]]]);
 });

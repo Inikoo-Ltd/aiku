@@ -73,7 +73,7 @@ class BackfillPickedOrgStockMovementCost
         $skipped = 0;
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['id', 'type', 'quantity', 'cost_per_sku', 'org_amount', 'date'])
+            ->select(['id', 'type', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'source_id'])
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->orderBy('date')

@@ -25,7 +25,7 @@ class RepairUnRelatedPortfolioShopify
 
     public function handle(ShopifyUser $shopifyUser, Collection $portfolios): void
     {
-        UnlinkAndDeleteBulkRetinaPortfolio::run([
+        UnlinkAndDeleteBulkRetinaPortfolio::run($shopifyUser->customerSalesChannel, [
             'portfolios' => $portfolios->pluck('id')->toArray()
         ]);
 

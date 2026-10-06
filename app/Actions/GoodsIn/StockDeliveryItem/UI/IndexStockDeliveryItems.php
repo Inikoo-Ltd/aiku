@@ -89,7 +89,7 @@ class IndexStockDeliveryItems extends OrgAction
             'supplierProduct.supplier',
             'organisation.currency',
             'organisation.warehouses',
-            'orgStock:id,packed_in',
+            'orgStock:id,slug,packed_in',
             'stockDelivery.currency',
             'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
         ]);

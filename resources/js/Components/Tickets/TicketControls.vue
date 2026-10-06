@@ -213,21 +213,30 @@ const canAskQa = computed(() => props.can_request_qa && props.ticket.qa_status !
 // QA guess. The note is optional, since sometimes the ticket already says it.
 const isQaRequestOpen = ref(false)
 const qaRequestNote = ref("")
+const qaRequestImages = ref<File[]>([])
 const qaRequestUserId = ref<number | null>(null)
+const qaRequestError = ref("")
 
 const openQaRequest = () => {
     qaRequestNote.value = ""
+    qaRequestImages.value = []
     qaRequestUserId.value = null
+    qaRequestError.value = ""
     isQaRequestOpen.value = true
 }
 
 const askQa = () => {
-    router.patch(
+    router.post(
         route(props.routes.update.name, props.routes.update.parameters),
-        { qa_status: "requested", qa_user_id: qaRequestUserId.value, qa_note: qaRequestNote.value.trim() },
+        { _method: "patch", qa_status: "requested", qa_user_id: qaRequestUserId.value, qa_note: qaRequestNote.value.trim(), images: qaRequestImages.value },
         {
             preserveScroll: true,
-            onStart: () => (pendingAction.value = "qa:request"),
+            forceFormData: true,
+            onError: (errors) => (qaRequestError.value = Object.values(errors)[0] ?? ""),
+            onStart: () => {
+                pendingAction.value = "qa:request"
+                qaRequestError.value = ""
+            },
             onFinish: () => (pendingAction.value = null),
             onSuccess: () => {
                 isQaRequestOpen.value = false
@@ -695,7 +704,8 @@ const saveDeployComment = () => {
         <div class="space-y-4 text-sm">
             <div>
                 <p class="mb-1 text-xs text-gray-500">{{ ctrans("What should they look at?") }} <span class="text-gray-400">{{ ctrans("(optional)") }}</span></p>
-                <textarea v-model="qaRequestNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="ctrans('e.g. rounding on the invoice totals, worth trying a voucher order too')" />
+                <TicketComposer v-model:body="qaRequestNote" v-model:images="qaRequestImages" :mentionable="options.mentionable" :placeholder="ctrans('e.g. rounding on the invoice totals, worth trying a voucher order too')" />
+                <p v-if="qaRequestError" class="mt-1 text-xs text-red-600">{{ qaRequestError }}</p>
                 <p class="mt-1 text-xs text-gray-400">{{ ctrans("Posted as a comment on the ticket.") }}</p>
             </div>
 
@@ -742,7 +752,7 @@ const saveDeployComment = () => {
             </div>
         </div>
     </Dialog>
-    <TicketAskReporterDialog v-model:visible="isAskReporterOpen" :update-route="routes.update" :default-waiting-hours="ticket.default_waiting_hours" @updated="emit('updated')" />
+    <TicketAskReporterDialog v-model:visible="isAskReporterOpen" :update-route="routes.update" :default-waiting-hours="ticket.default_waiting_hours" :mentionable="options.mentionable" @updated="emit('updated')" />
     <TicketStatusNoteDialog
         v-model:visible="isStatusNoteOpen"
         :status="statusNoteAction"

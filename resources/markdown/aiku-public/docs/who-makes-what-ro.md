@@ -2,7 +2,7 @@
 title: Cine face ce
 summary: Învață aiku care artizani fac de obicei fiecare categorie sau artefact, ca lista To produce să se ordoneze singură pe grămezile fiecăruia. O recomandare, niciodată o încuietoare.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -35,6 +35,16 @@ Pe fiecare pagină de departament și pe fiecare pagină de artefact există un 
 Așa citește aiku lucrurile. Pentru o linie din To produce se uită întâi la artefact. Dacă artefactul are artizani, primul este proprietarul liniei. Dacă nu, se uită la departamentul artefactului și ia primul artizan de acolo. Dacă niciunul nu are pe nimeni, linia rămâne la *Unassigned (Neatribuit)*, iar pe Board întrebarea *Cine o face?* apare fără niciun nume propus.
 
 Deci varianta simplă de a configura o fabrică este: atașează artizani la departamente, și atinge artefactele individuale doar pentru excepții. O singură persoană face tot săpunul, cu excepția unui singur lot care are nevoie de altă pereche de mâini.
+
+## Împărțirea unei comenzi de lucru între artizani
+
+O linie mare poate fi împărțită. Pe comanda de lucru, lângă cantitatea unei linii, apasă **Split / Assign multiple artisans (Împarte / Atribuie mai mulți artizani)**. Alege un artizan pentru fiecare rând și unitățile pe care le face; **Add artisan (Adaugă artizan)** adaugă un rând. Rândurile trebuie să însumeze exact totalul liniei, iar căsuța devine verde când se potrivesc. Apoi **Save assignments (Salvează atribuirile)**.
+
+- Fiecare rând devine o sub-comandă, numită după comanda de lucru cu o literă: JOaroma-0101-A, -B, -C. Toate poartă același cod de lot, așa că stocul intră ca un singur lot.
+- Pe podea, fiecare artizan vede ca fiind ale lui doar propria parte. Timpul, unitățile și plata se creditează celui care înregistrează sesiunea, ca de obicei.
+- Linia arată progresul total al tuturor părților sale și un tabel cu sub-comenzile: ținta fiecărui artizan, unitățile făcute, starea, timpul și recompensa.
+- Apasă din nou același buton ca să muți unități sau să schimbi numele. O parte pe care cineva a început-o nu poate fi eliminată și nici redusă sub ce s-a făcut deja. Primul rând rămâne mereu.
+- Din momentul în care ceva din linie a fost recepționat în stoc, linia nu mai poate fi împărțită.
 
 ## Ce nu este
 

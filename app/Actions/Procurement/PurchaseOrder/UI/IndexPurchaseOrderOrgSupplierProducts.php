@@ -15,7 +15,9 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
@@ -30,12 +32,15 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Illuminate\Database\Query\Builder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 {
@@ -45,7 +50,13 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('supplier_products.code', $value)
-                    ->orWhereStartWith('supplier_products.name', $value);
+                    ->orWhereStartWith('supplier_products.name', $value)
+                    ->orWhereExists(fn ($query) => $query->selectRaw('1')
+                        ->from('org_stocks')
+                        ->join('stock_has_supplier_products', 'stock_has_supplier_products.stock_id', 'org_stocks.stock_id')
+                        ->whereColumn('stock_has_supplier_products.supplier_product_id', 'supplier_products.id')
+                        ->whereColumn('org_stocks.organisation_id', 'org_supplier_products.organisation_id')
+                        ->where('org_stocks.code', 'ilike', addcslashes($value, '%_\\').'%'));
             });
         });
 
@@ -187,7 +198,10 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $buyingPricePerSko = GetPartnerLandedCost::appliesTo($orgPartner)
+            ? 'coalesce('.GetPartnerLandedCost::perSkoSql('seller_org_stocks.id').", $pricePerSko)"
+            : "$pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner);
 
         $paginator = QueryBuilder::for(OrgStock::class)
             ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {
@@ -218,7 +232,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'purchase_order_transactions.org_exchange',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
             ])
-            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $pricePerSko / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
+            ->selectRaw("coalesce(purchase_order_transactions.unit_cost, $buyingPricePerSko / nullif(seller_org_stocks.packed_in, 0)) as unit_cost")
             ->selectRaw('null as units_per_carton')
             ->selectRaw('true as is_partner_org_stock')
             ->selectRaw('? as supplier_name', [$orgPartner->partner->name])
@@ -271,7 +285,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
     }
 
-    private function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    public function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
     {
         $rows               = $paginator->getCollection();
         $supplierProductIds = $rows->pluck('supplier_product_id')->filter()->unique()->values();
@@ -296,6 +310,12 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ])
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('purchase_order_transactions.deleted_at')
+            ->whereNotExists(
+                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::deliveryItemsOfTransaction($items)
+                    ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.stock_delivery_id', 'stock_delivery_items.stock_delivery_id')
+                    ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
+                    ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
+            )
             ->orderBy('purchase_orders.id')
             ->select([
                 'purchase_order_transactions.supplier_product_id',
@@ -309,7 +329,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $rows->transform(function ($row) use ($openPurchaseOrderLines) {
             $row->other_open_purchase_orders = $openPurchaseOrderLines
-                ->filter(fn ($line) => $line->supplier_product_id == $row->supplier_product_id
+                ->filter(fn ($line) => ($row->supplier_product_id && $line->supplier_product_id == $row->supplier_product_id)
                     || ($row->org_stock_id && $line->org_stock_id == $row->org_stock_id))
                 ->groupBy('slug')
                 ->map(fn ($lines) => [

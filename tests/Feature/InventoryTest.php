@@ -263,14 +263,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(11);
+        ->and($warehouse->roles()->count())->toBe(13);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(11);
+    expect($warehouse->roles()->count())->toBe(13);
 });
 
 
@@ -1117,6 +1117,17 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
             )
             ->has("tabs");
     });
+})->depends('create org stock family');
+
+test("UI Org Stock Family stocks sortable by cover", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+
+    get(route("grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStockFamily->slug
+    ]).'?index_sort=-stock_cover')->assertOk();
 })->depends('create org stock family');
 
 test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {
@@ -2226,8 +2237,21 @@ test('UI Index invoices in org stock family', function () {
 
 test('UI Show inventory dashboard', function () {
     $warehouse = Warehouse::first();
-    get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
-        ->assertStatus(200);
+    $warehouse->stats->update([
+        'number_org_stocks_low_stock_audits'            => 4,
+        'number_org_stocks_replenishments_wholesale'    => 3,
+        'number_org_stocks_replenishments_dropshipping' => 2,
+    ]);
+
+    $gauges = collect(get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
+        ->assertStatus(200)
+        ->inertiaProps()['actionGauges'])->keyBy('key');
+
+    expect($gauges->keys()->all())->toBe(['urgent_audit', 'to_replenish'])
+        ->and($gauges['urgent_audit']['value'])->toBe(4)
+        ->and($gauges['urgent_audit']['total'])->toBe($this->organisation->inventoryStats->number_current_org_stocks)
+        ->and($gauges['to_replenish']['value'])->toBe(3)
+        ->and($gauges['to_replenish']['secondary']['value'])->toBe(2);
 })->depends('create warehouse');
 
 test('UI Index and Show OrganisationStockHistory', function () {
@@ -2595,6 +2619,21 @@ test('set org stock unit_barcode does not touch independent_barcode', function (
     expect($orgStock->unit_barcode)->toBeNull();
 });
 
+test('org stock carton barcode is kept once on the stock and shown as the third barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    UpdateOrgStock::make()->action($orgStock, ['carton_barcode' => ' 5050000000062C ']);
+    expect($stock->refresh()->carton_barcode)->toBe('5050000000062C')
+        ->and(collect(\App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes::run($orgStock->refresh()))->pluck('number', 'level')->get('carton'))->toBe('5050000000062C')
+        ->and(collect(\App\Actions\Goods\Stock\UI\GetStockShowcase::run($stock)['barcodes'])->pluck('level')->all())->toBe(['sko', 'unit', 'carton']);
+
+    UpdateOrgStock::make()->action($orgStock->refresh(), ['carton_barcode' => '']);
+    expect($stock->refresh()->carton_barcode)->toBeNull();
+});
+
 test('scan ignores the unit_barcode and matches only the sko barcode', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
@@ -2925,6 +2964,34 @@ describe('aurora provisional cost fix', function () {
         expect((float) $orgStock->refresh()->sku_value)->toBe(5.5);
     });
 
+    test('fifo ignores the counted level an Aurora audit carries', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFAA');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $movements = [
+            [OrgStockMovementTypeEnum::PURCHASE, 10, 1, '2026-07-01 10:00:00', null],
+            [OrgStockMovementTypeEnum::AUDIT, 10, null, '2026-07-02 10:00:00', $this->organisation->id.':990001'],
+            [OrgStockMovementTypeEnum::PICKED, -10, null, '2026-07-03 10:00:00', null],
+            [OrgStockMovementTypeEnum::PURCHASE, 10, 3, '2026-07-04 10:00:00', null],
+        ];
+        foreach ($movements as [$type, $quantity, $costPerSku, $date, $sourceId]) {
+            $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+                'type'     => $type->value,
+                'quantity' => $quantity,
+            ]);
+            $movement->update([
+                'cost_per_sku' => $costPerSku,
+                'org_amount'   => $costPerSku === null ? 0 : $costPerSku * $quantity,
+                'date'         => $date,
+                'source_id'    => $sourceId,
+            ]);
+        }
+
+        expect(StoreOrgStockMovement::make()->getFifoPerSku($orgStock->refresh(), \Illuminate\Support\Carbon::parse('2026-07-05')))->toBe(3.0);
+    });
+
     test('recompute leaves rows before the first repaired movement alone', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFD');
 
@@ -3145,7 +3212,16 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
     $held   = $stocks[1];
 
     [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
-    createOrgStocks($this->organisation, [$held]);
+    [$heldOrgStock] = createOrgStocks($this->organisation, [$held]);
+
+    $supplier            = StoreSupplier::make()->action($group, Supplier::factory()->definition());
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $empty->id]));
+    $orgSupplier         = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+        ?? StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $purchaseOrder       = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $openTransaction     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $emptyOrgStock, PurchaseOrderTransaction::factory()->definition());
+    $openStockDelivery   = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'SD-MERGE-'.uniqid(), 'date' => now()->toDateString()], strict: false);
+    $openDeliveryItem    = \App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem::make()->action($openStockDelivery, null, $emptyOrgStock, ['unit_quantity' => 30], strict: false);
 
     // The merge only retires org stocks holding nothing, and the fixture stock is shared with earlier tests
     DB::table('location_org_stocks')->where('org_stock_id', $emptyOrgStock->id)->update(['quantity' => 0]);
@@ -3164,7 +3240,9 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
         ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED)
         ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
         ->and($held->slug)->toBe('arttt-merge')
-        ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
+        ->and($empty->refresh()->slug)->not->toBe('arttt-merge')
+        ->and($openTransaction->refresh()->org_stock_id)->toBe($heldOrgStock->id)
+        ->and($openDeliveryItem->refresh()->org_stock_id)->toBe($heldOrgStock->id);
 });
 
 describe('product available quantity resync', function () {

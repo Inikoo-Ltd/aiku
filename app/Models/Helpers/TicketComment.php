@@ -10,6 +10,7 @@ namespace App\Models\Helpers;
 
 use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Traits\HasTicketImages;
@@ -76,5 +77,13 @@ class TicketComment extends Model implements HasMedia
     public function isAuthoredBy(?Model $user): bool
     {
         return $user !== null && $this->author_type === class_basename($user) && (int) $this->author_id === (int) $user->id;
+    }
+
+    /**
+     * Its author, or a lead engineer tidying the thread (a comment posted under the wrong name, or by mistake).
+     */
+    public function canBeDeletedBy(?Model $user): bool
+    {
+        return $this->isAuthoredBy($user) || ($user instanceof User && Ticket::canBeAssignedBy($user));
     }
 }

@@ -47,6 +47,25 @@ const props = defineProps<{
 
 const model = defineModel()
 
+const normaliseHeader = (header: unknown) =>
+    String(header ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")
+
+const fieldForHeader = (header: unknown): string | null => {
+    const normalised = normaliseHeader(header)
+    if (props.upload_spreadsheet?.required_fields?.includes(normalised)) return normalised
+    const aliases = props.upload_spreadsheet?.column_aliases ?? {}
+    return Object.keys(aliases).find((field) => aliases[field].includes(normalised)) ?? null
+}
+
+const headerTooltip = (header: unknown) => {
+    const field = fieldForHeader(header)
+    if (field) {
+        return normaliseHeader(header) === field ? ctrans("Correct column") : ctrans("Read as :field", { field })
+    }
+    const fields = props.upload_spreadsheet?.required_fields ?? []
+    return ctrans("This column is not match, will not be processed.") + (fields.length ? " " + ctrans("Must be one of these:") + " " + fields.join(", ") : "")
+}
+
 const selectedEchopersonal = inject('selectedEchopersonal', {})
 
 // const emits = defineEmits();
@@ -240,15 +259,6 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                     <div class="w-full">
                         <div class="flex gap-x-0.5 justify-center items-center">
                             <span class="text-lg font-bold">{{ title?.label }}</span>
-                            <VTooltip v-if="title?.information" class="w-fit">
-                                <FontAwesomeIcon icon='fad fa-info-circle' size="xs" class='text-gray-500' fixed-width
-                                    aria-hidden='true' />
-                                <template #popper>
-                                    <div class="min-w-20 w-fit max-w-52 text-xs">
-                                        {{ title?.information }}
-                                    </div>
-                                </template>
-                            </VTooltip>
                         </div>
 
                         <!-- Preview: excel -->
@@ -363,6 +373,11 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                 </div> -->
                             </div>
 
+                            <p v-if="title?.information" class="mb-2 flex items-start gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">
+                                <FontAwesomeIcon icon="fad fa-info-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                                <span>{{ title.information }}</span>
+                            </p>
+
                             <div class="w-full border border-gray-300 rounded-md overflow-x-auto">
                                 <table class="w-full">
                                     <thead class="">
@@ -371,11 +386,11 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                                 <Transition name="slide-to-up">
                                                     <th v-if="index != compIndexStoredItemInPreview || isIncludeStoreItems" :key="index"
                                                         class="whitespace-nowrap overflow-ellipsis pl-3 pr-1"
-                                                        :class="upload_spreadsheet?.required_fields?.length ? upload_spreadsheet?.required_fields.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
-                                                        v-tooltip="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? ctrans('Correct column') : ctrans('This column is not match, will not be processed.') + (upload_spreadsheet?.required_fields?.length > 0 ? (' Must be one of these:') + ' ' + upload_spreadsheet?.required_fields?.join(', ') : null)"
+                                                        :class="upload_spreadsheet?.required_fields?.length ? fieldForHeader(header) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
+                                                        v-tooltip="headerTooltip(header)"
                                                     >
                                                         {{ header }}
-                                                        <FontAwesomeIcon v-if="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase())" icon='fas fa-check-circle' class='text-green-600' fixed-width aria-hidden='true' />
+                                                        <FontAwesomeIcon v-if="fieldForHeader(header)" icon='fas fa-check-circle' class='text-green-600' fixed-width aria-hidden='true' />
                                                         <FontAwesomeIcon v-else icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
                                                     </th>
                                                 </Transition>

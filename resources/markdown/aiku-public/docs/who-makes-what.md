@@ -1,7 +1,7 @@
 ---
 title: Who makes what
 summary: Teach aiku which artisans usually make each category or artefact, so the To produce list sorts itself into people's piles. A recommendation, never a lock.
-date: 2026-09-08
+date: 2026-10-05
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefact_families, grp.org.productions.show.crafts.artefacts
@@ -35,6 +35,16 @@ On every department page and every artefact page there is a row under the title:
 aiku reads it like this. For a line in To produce it looks at the artefact first. If the artefact has artisans, the first one owns the line. If not, it looks at the artefact's department and takes the first artisan there. If neither has anyone, the line sits under *Unassigned*, and on the Board the *Who makes it?* question comes with no name proposed.
 
 So the cheap way to set up a factory is: attach artisans to departments, and only touch individual artefacts for the exceptions. One person makes all the soap except the one loaf that needs the other pair of hands.
+
+## Sharing one job between artisans
+
+A big line can be shared. On the job order, next to the quantity of a line, click **Split / Assign multiple artisans**. Pick an artisan for each row and the units they make; **Add artisan** adds a row. The rows must add up to the line total exactly, the box turns green when they do. **Save assignments**.
+
+- Each row becomes a sub-job, named after the job order with a letter: JOaroma-0101-A, -B, -C. All of them carry the same batch code, so the stock lands as one batch.
+- On the floor each artisan sees only their own part as theirs. Time, units and pay are credited to whoever logs the session, as always.
+- The line shows the total progress of all its parts, and a table of sub-jobs with each artisan's target, units done, status, time and reward.
+- Open the same button again to move units or change names. A part someone already started cannot be removed or set below what is already made. The first row always stays.
+- Once anything from the line has been received into stock, it can no longer be split.
 
 ## What it is not
 

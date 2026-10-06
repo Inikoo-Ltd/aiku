@@ -12,7 +12,7 @@ import {
     faCameraRetro, faClock,
     faCube, faCubes, faQuoteLeft,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
-    faTrashAlt, faChartLine
+    faTrashAlt, faChartLine, faSortAmountDown
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -42,6 +42,7 @@ import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import FamiliesOrder from "@/Components/Catalogue/FamiliesOrder.vue"
 import { Department } from "@/types/department";
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
@@ -58,7 +59,7 @@ library.add(
     faDiagramNext,
     faCubes,
     faFolders, faBrowser, faSeedling, faQuoteLeft,
-    faTrashAlt, faChartLine
+    faTrashAlt, faChartLine, faSortAmountDown
 );
 
 
@@ -85,6 +86,7 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     mini_breadcrumbs?: any[]
     related_product_category? : object
+    families_order?: object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
@@ -110,6 +112,7 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,
         related_product_category: RelatedProductCategory,
+        families_order: FamiliesOrder,
     };
     return components[currentTab.value] ?? null;
 });

@@ -2,7 +2,7 @@
 title: Kto co wykonuje
 summary: Naucz aiku, którzy rzemieślnicy zwykle wykonują daną kategorię lub wyrób, aby lista To produce sama się sortowała na stosy dla poszczególnych osób. Rekomendacja, nigdy blokada.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -35,6 +35,16 @@ Na każdej stronie działu i każdej stronie wyrobu jest wiersz pod tytułem: **
 aiku czyta to tak. Dla pozycji w To produce najpierw patrzy na wyrób. Jeśli wyrób ma rzemieślników, pierwszy z nich jest właścicielem pozycji. Jeśli nie, patrzy na dział wyrobu i bierze pierwszego rzemieślnika stamtąd. Jeśli nigdzie nikogo nie ma, pozycja siedzi pod *Unassigned* (Nieprzypisane), a na Board pytanie *Kto to wykona?* pojawia się bez zaproponowanego imienia.
 
 Więc najprostszy sposób skonfigurowania fabryki to: przypisać rzemieślników do działów i dotykać poszczególnych wyrobów tylko dla wyjątków. Jedna osoba robi całe mydło poza jedną kostką, która wymaga innej pary rąk.
+
+## Dzielenie jednego zlecenia między rzemieślników
+
+Dużą pozycję można podzielić. Na zleceniu produkcyjnym, obok ilości w pozycji, kliknij **Split / Assign multiple artisans** (Podziel / Przypisz wielu rzemieślników). Wybierz rzemieślnika dla każdego wiersza i liczbę sztuk, które wykona; **Add artisan** (Dodaj rzemieślnika) dodaje wiersz. Wiersze muszą dokładnie sumować się do całości pozycji; gdy tak jest, pole robi się zielone. Następnie **Save assignments** (Zapisz przydziały).
+
+- Każdy wiersz staje się podzleceniem, nazwanym od zlecenia produkcyjnego z dodaną literą: JOaroma-0101-A, -B, -C. Wszystkie mają ten sam kod partii, więc towar trafia na magazyn jako jedna partia.
+- Na hali każdy rzemieślnik widzi jako swoją tylko własną część. Czas, sztuki i wynagrodzenie są zaliczane osobie, która loguje sesję, jak zawsze.
+- Pozycja pokazuje łączny postęp wszystkich części oraz tabelę podzleceń z celem każdego rzemieślnika, wykonanymi sztukami, statusem, czasem i wynagrodzeniem.
+- Otwórz ten sam przycisk ponownie, aby przenieść sztuki lub zmienić osoby. Części, którą ktoś już rozpoczął, nie można usunąć ani ustawić poniżej tego, co już wykonano. Pierwszy wiersz zawsze zostaje.
+- Gdy cokolwiek z pozycji zostało już przyjęte na magazyn, nie można jej już dzielić.
 
 ## Czym to nie jest
 

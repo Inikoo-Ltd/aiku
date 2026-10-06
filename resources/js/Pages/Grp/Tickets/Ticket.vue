@@ -21,15 +21,16 @@ import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
+import HistoryChangeModal from "@/Components/Tickets/HistoryChangeModal.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faForward, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots, faCodeBranch } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faForward, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots, faCodeBranch, faBell, faBellSlash } from "@fal"
 
-library.add(faCodeBranch, faWhatsapp,faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faForward, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+library.add(faBell, faBellSlash, faCodeBranch,faWhatsapp,faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faForward, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
 
 const desktopQuery = window.matchMedia("(min-width: 1024px)")
 const isDesktop = ref(desktopQuery.matches)
@@ -51,7 +52,7 @@ const props = defineProps<{
     title: string
     ticket: any
     comments: any[]
-    timeline: { at: string; icon: string; text: string; by: string | null }[]
+    timeline: { at: string; icon: string; text: string; by: string | null; change?: { label: string; from: string; to: string } | null }[]
     can_rate: boolean
     can_manage: boolean
     can_assign: boolean
@@ -62,6 +63,7 @@ const props = defineProps<{
     can_request_qa: boolean
     is_reporter: boolean
     can_comment_internally: boolean
+    can_edit_content?: boolean
     can_change_kind_module: boolean
     can_change_project?: boolean
     can_update: boolean
@@ -85,6 +87,7 @@ const props = defineProps<{
     }
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
+        content?: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
         rate: { name: string; parameters: Record<string, unknown> }
         project?: { name: string; parameters: Record<string, unknown> }
@@ -136,6 +139,8 @@ const mobileTabs = computed(() => [
 
 const sortedTimeline = computed(() => (isHistoryNewestFirst.value ? props.timeline : [...props.timeline].reverse()))
 
+const historyChangeEvent = ref<any | null>(null)
+
 
 
 
@@ -174,9 +179,20 @@ const update = (field: string, value: unknown) => {
     <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div class="min-w-0 lg:col-span-2 space-y-4 pb-[26px] lg:border-r-2 lg:border-gray-300 lg:pr-6">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" label-reporter-on-mobile :show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" :content-route="can_edit_content ? routes.content : null" label-reporter-on-mobile:show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #card-header-footer>
                     <div id="ticket-card-controls" />
+                </template>
+                <template v-if="is_reporter" #subject-actions>
+                    <button
+                        type="button"
+                        v-tooltip="ticket.reporter_muted ? ctrans('Muted: no sound, mini-modal or email for you on this ticket') : ctrans('Mute this ticket for me')"
+                        class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600"
+                        :class="ticket.reporter_muted && '!text-amber-600'"
+                        :aria-pressed="ticket.reporter_muted"
+                        @click="update('reporter_muted', !ticket.reporter_muted)">
+                        <FontAwesomeIcon :icon="ticket.reporter_muted ? 'fal fa-bell-slash' : 'fal fa-bell'" fixed-width aria-hidden="true" />
+                    </button>
                 </template>
                 <template #after-description>
                     <div id="ticket-mobile-pull-request" class="lg:hidden" />
@@ -244,13 +260,15 @@ const update = (field: string, value: unknown) => {
                     <span class="absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200">
                         <FontAwesomeIcon :icon="event.icon" fixed-width class="text-[10px]" />
                     </span>
-                    <p class="text-gray-800">{{ event.text }}</p>
+                    <button v-if="event.change" v-tooltip="ctrans('See what changed')" type="button" class="text-left text-gray-800 underline decoration-gray-300 decoration-dotted underline-offset-2 transition duration-200 hover:text-[--app-accent-strong] hover:decoration-current" @click="historyChangeEvent = event">{{ event.text }}</button>
+                    <p v-else class="text-gray-800">{{ event.text }}</p>
                     <p class="text-xs text-gray-400">
                         {{ useFormatTime(event.at, { formatTime: "hm" }) }}<template v-if="event.by"> · {{ event.by }}</template>
                     </p>
                 </li>
             </ol>
         </div>
+        <HistoryChangeModal :event="historyChangeEvent" @close="historyChangeEvent = null" />
         </Teleport>
         </div>
     </div>

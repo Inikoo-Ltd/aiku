@@ -32,6 +32,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 
 class StorePurchaseOrderTransaction extends OrgAction
 {
@@ -154,12 +156,29 @@ class StorePurchaseOrderTransaction extends OrgAction
             if ($unitPrice === null) {
                 $fail(__(':partner does not sell :code', ['partner' => $purchaseOrder->parent->partner->name, 'code' => $orgStock->code]));
             }
+            $unitPrice = $this->partnerLandedUnitCost($purchaseOrder->parent, $orgStock) ?? $unitPrice * GetPartnerBuyingPriceFactor::run($purchaseOrder->parent);
 
             return $this->handle($purchaseOrder, null, $orgStock, array_merge($modelData, [
                 'unit_cost'  => round($unitPrice, 6),
                 'net_amount' => round($unitPrice * (float) $modelData['quantity_ordered'], 2),
             ]));
         });
+    }
+
+    public function partnerLandedUnitCost(OrgPartner $orgPartner, OrgStock $orgStock): ?float
+    {
+        if (!GetPartnerLandedCost::appliesTo($orgPartner)) {
+            return null;
+        }
+
+        $sellerOrgStock = OrgStock::where('organisation_id', $orgPartner->partner_id)->where('stock_id', $orgStock->stock_id)->first();
+        if (!$sellerOrgStock || (float) $sellerOrgStock->packed_in <= 0) {
+            return null;
+        }
+
+        $perSko = GetPartnerLandedCost::run([$sellerOrgStock->id])[$sellerOrgStock->id] ?? null;
+
+        return $perSko === null ? null : $perSko / (float) $sellerOrgStock->packed_in;
     }
 
     /**

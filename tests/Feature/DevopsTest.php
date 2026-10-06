@@ -8,6 +8,7 @@ use App\Models\DevOps\AppDeployment;
 use App\Models\DevOps\WebsiteHealthLog;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -676,6 +677,8 @@ it('records backend test results and shows counts, failures and daily stats on t
 });
 
 it('shows nightowl telemetry graphs, top tables, request, job and command waterfalls, exception stack traces with issue status changes and logs on the devops dashboard', function () {
+    Config::set('database.connections.nightowl', array_merge(config('database.connections.nightowl'), Arr::only(config('database.connections.'.config('database.default')), ['host', 'port', 'database', 'username', 'password'])));
+    DB::purge('nightowl');
     $nightowl = DB::connection('nightowl');
     $nightowl->beginTransaction();
 
@@ -872,4 +875,15 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
         $nightowl->rollBack();
         Cache::forget('devops-telemetry-24h');
     }
+});
+
+test('warm telemetry fills the flexible cache so the dashboard never builds it inline', function () {
+    $telemetry = Mockery::mock(App\Actions\DevOps\UI\GetNightOwlTelemetry::class)->makePartial();
+    $telemetry->shouldReceive('build')->times(3)->andReturnUsing(fn (string $range) => ['range' => $range, 'warmed' => true]);
+    app()->instance(App\Actions\DevOps\UI\GetNightOwlTelemetry::class, $telemetry);
+
+    App\Actions\DevOps\WarmNightOwlTelemetry::run();
+
+    expect($telemetry->overview('1h'))->toBe(['range' => '1h', 'warmed' => true])
+        ->and($telemetry->overview('7d'))->toBe(['range' => '7d', 'warmed' => true]);
 });

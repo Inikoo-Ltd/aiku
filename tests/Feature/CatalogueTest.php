@@ -1808,3 +1808,20 @@ test('customer service gets one stock notification for all their shops, new apar
             && str_contains($data['title'], $shop->code);
     });
 });
+
+test('a shop short name is saved from the edit form and seeded only where it is missing', function () {
+    [, , $shop] = createOwnShop('shop short name');
+
+    $shop->update(['code' => 'CZ', 'short_name' => null]);
+    expect(\App\Actions\Catalogue\Shop\Seeders\SeedShopShortNames::make()->handle(true))->toBe(["CZ: $shop->name -> Česko"])
+        ->and($shop->fresh()->short_name)->toBeNull();
+
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopShortNames::make()->handle();
+    expect($shop->fresh()->short_name)->toBe('Česko');
+
+    UpdateShop::make()->action($shop->fresh(), ['short_name' => 'Czechia']);
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopShortNames::make()->handle();
+
+    expect($shop->fresh()->short_name)->toBe('Czechia')
+        ->and(\App\Http\Resources\Catalogue\ShopResource::make($shop->fresh())->resolve()['short_name'])->toBe('Czechia');
+});

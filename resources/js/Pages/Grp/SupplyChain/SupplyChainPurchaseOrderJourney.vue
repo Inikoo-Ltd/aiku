@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { computed, ref, watch } from "vue"
-import { Popover } from "primevue"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
+import { useElementSize } from "@vueuse/core"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
+import { Popover, Select, SelectButton, Checkbox, IconField, InputIcon, InputText } from "primevue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
@@ -10,9 +13,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch } from "@fal"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown)
 
 interface FacetOption {
     value: string
@@ -29,9 +32,9 @@ const props = defineProps<{
     groupCurrency: string
     canMark: boolean
     stages: { key: string; label: string; description: string; markable: boolean }[]
-    filters: Record<FilterGroup, FacetOption[]>
-    active: Record<FilterGroup, string | null> & { problems_only: boolean; search: string | null }
-    summary: {
+    filters?: Record<FilterGroup, FacetOption[]>
+    active?: Record<FilterGroup, string | null> & { problems_only: boolean; search: string | null }
+    summary?: {
         open: number
         open_value: number
         on_track: number
@@ -42,17 +45,35 @@ const props = defineProps<{
         overdue_percent: number
         completed: number
     }
-    blockages: { stage: string; label: string; count: number; max_days_overdue: number }[]
-    quickStats: {
+    blockages?: { stage: string; label: string; count: number; max_days_overdue: number }[]
+    quickStats?: {
         average_lead_days: number | null
         oldest_open_days: number | null
         open_value: number
         due_30_days: number
         due_30_days_value: number
     }
-    ribbons: JourneyRibbon[]
-    pagination: { page: number; last_page: number; total: number; per_page: number }
+    ribbons?: JourneyRibbon[]
+    pagination?: { page: number; last_page: number; total: number; per_page: number }
 }>()
+
+const isTableExpanded = ref(false)
+const tableScroller = ref<HTMLElement | null>(null)
+const { canScrollUp, canScrollDown, scrollVerticallyBy } = useScrollArrows(tableScroller)
+const tableHead = ref<HTMLElement | null>(null)
+const { height: tableHeadHeight } = useElementSize(tableHead, undefined, { box: "border-box" })
+
+const isLoaded = computed(() => !!props.summary && !!props.filters && !!props.active)
+
+const viewOptions = computed(() => [
+    { value: "supplier_orders", label: ctrans("Orders to suppliers") },
+    { value: "purchase_orders", label: ctrans("Agent POs") }
+])
+
+const dropdownOptions = (group: FilterGroup) => [
+    { value: null, label: ctrans("All") },
+    ...(props.filters?.[group] ?? []).map((option) => ({ value: option.value, label: `${option.label} (${option.count})` }))
+]
 
 const inlineFilters = computed<{ group: FilterGroup; label: string }[]>(() => [
     { group: "organisation", label: ctrans("AW company") },
@@ -69,10 +90,10 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
     { group: "stage", label: ctrans("Current stage") }
 ])
 
-const search = ref(props.active.search ?? "")
+const search = ref(props.active?.search ?? "")
 
 watch(
-    () => props.active.search,
+    () => props.active?.search,
     (value) => {
         if ((value ?? "") !== search.value.trim()) {
             search.value = value ?? ""
@@ -106,7 +127,7 @@ function money(value: number, compact = false): string {
     }).format(value)
 }
 
-const kpis = computed(() => [
+const kpis = computed(() => !props.summary ? [] : [
     { label: ctrans("Open orders"), value: props.summary.open.toLocaleString(), note: "", class: "text-gray-900", filter: { status: null, problems_only: false } },
     { label: ctrans("Total PO value"), value: money(props.summary.open_value, true), note: ctrans("open orders"), class: "text-gray-900", filter: null },
     { label: ctrans("On track"), value: props.summary.on_track, note: `${props.summary.on_track_percent}% ${ctrans("of open orders")}`, class: "text-emerald-600", filter: { status: "on_track" } },
@@ -131,6 +152,9 @@ const markDate = ref("")
 const markProcessing = ref(false)
 
 function showFilter(group: FilterGroup): boolean {
+    if (!props.active || !props.filters) {
+        return false
+    }
     if (props.active[group] !== null) {
         return true
     }
@@ -170,6 +194,7 @@ function saveMark(date: string | null): void {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
+    <template v-if="isLoaded && summary && filters && active && blockages && quickStats && ribbons && pagination">
     <div class="mx-4 mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <button
             v-for="kpi in kpis"
@@ -187,17 +212,15 @@ function saveMark(date: string | null): void {
     </div>
 
     <div class="mx-4 mt-3 flex flex-wrap items-center gap-2">
-        <div class="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1 py-1 text-xs">
-            <button
-                v-for="option in [{ value: 'supplier_orders', label: ctrans('Orders to suppliers') }, { value: 'purchase_orders', label: ctrans('Agent POs') }]"
-                :key="option.value"
-                type="button"
-                class="rounded-md px-2 py-0.5 transition duration-200"
-                :class="view === option.value ? 'bg-white font-medium text-gray-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:bg-white hover:text-gray-800'"
-                @click="visit({ view: option.value === 'supplier_orders' ? null : option.value })">
-                {{ option.label }}
-            </button>
-        </div>
+        <SelectButton
+            :modelValue="view"
+            :options="viewOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+            size="small"
+            class="journey-view-toggle"
+            @update:modelValue="(value) => visit({ view: value === 'supplier_orders' ? null : value })" />
         <template v-for="filter in inlineFilters" :key="filter.group">
         <PillFilterBar
             v-if="showFilter(filter.group)"
@@ -210,29 +233,61 @@ function saveMark(date: string | null): void {
 
     <div class="mx-4 mt-2 flex flex-wrap items-center gap-2">
         <template v-for="filter in dropdownFilters" :key="filter.group">
-        <PillFilterBar
-            v-if="showFilter(filter.group)"
-            dropdown
-            :label="filter.label"
-            :options="filters[filter.group]"
-            :selected="active[filter.group]"
-            @select="(value) => visit({ [filter.group]: value })" />
+            <div v-if="showFilter(filter.group)" class="flex items-center gap-1.5">
+                <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ filter.label }}</span>
+                <Select
+                    :modelValue="active[filter.group]"
+                    :options="dropdownOptions(filter.group)"
+                    optionLabel="label"
+                    optionValue="value"
+                    :filter="filters[filter.group].length > 8"
+                    size="small"
+                    class="journey-select min-w-[9rem]"
+                    :class="{ 'is-active': active[filter.group] !== null }"
+                    @update:modelValue="(value) => visit({ [filter.group]: value })" />
+            </div>
         </template>
-        <label class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs" :class="active.problems_only ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-600'">
-            <input type="checkbox" class="h-3.5 w-3.5 rounded border-gray-300 text-red-600" :checked="active.problems_only" @change="visit({ problems_only: !active.problems_only })" />
+        <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="active.problems_only ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-600'">
+            <Checkbox :modelValue="active.problems_only" binary size="small" class="journey-checkbox" @update:modelValue="(value) => visit({ problems_only: value })" />
             {{ ctrans("Problems only") }}
         </label>
-        <div class="flex min-w-[14rem] flex-1 items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs sm:max-w-xs">
-            <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" fixed-width aria-hidden="true" />
-            <input v-model="search" type="search" class="w-full border-0 p-0 text-xs focus:ring-0" :placeholder="ctrans('Search PO, supplier, agent, buyer')" />
-        </div>
+        <IconField class="min-w-[14rem] flex-1 sm:max-w-xs">
+            <InputIcon>
+                <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
+            </InputIcon>
+            <InputText v-model="search" size="small" class="journey-search w-full" :placeholder="ctrans('Search PO, supplier, agent, buyer')" />
+        </IconField>
     </div>
 
-    <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_17rem]">
+    <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div class="min-w-0 rounded-lg border border-gray-200 bg-white">
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead>
+            <div class="flex items-stretch border-b border-gray-200 text-xs text-gray-500">
+                <div class="flex min-w-0 flex-1 flex-wrap content-center items-center gap-x-4 gap-y-1.5 px-3 py-2">
+                    <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
+                        <span class="inline-block h-3 w-3 shrink-0 rounded-sm" :class="item.class" />
+                        {{ item.label }}
+                    </span>
+                </div>
+                <div class="flex shrink-0 flex-col items-end justify-center gap-1.5 border-l border-gray-200 px-3 py-2">
+                <button
+                    type="button"
+                    v-tooltip="isTableExpanded ? ctrans('Limit table height') : ctrans('Show the whole table')"
+                    class="flex items-center gap-1.5 rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] hover:text-[--app-accent]"
+                    @click="isTableExpanded = !isTableExpanded">
+                    <FontAwesomeIcon :icon="isTableExpanded ? 'fal fa-compress-alt' : 'fal fa-expand-alt'" fixed-width aria-hidden="true" />
+                    {{ isTableExpanded ? ctrans("Collapse") : ctrans("Expand") }}
+                </button>
+                <div class="flex items-center gap-2 whitespace-nowrap">
+                    <span>{{ ctrans("Page :page of :last · :total orders", { page: pagination.page, last: pagination.last_page, total: pagination.total }) }}</span>
+                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="pagination.page <= 1" @click="visit({ page: pagination.page - 1 })">‹</button>
+                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="pagination.page >= pagination.last_page" @click="visit({ page: pagination.page + 1 })">›</button>
+                </div>
+                </div>
+            </div>
+            <div class="relative isolate">
+            <div ref="tableScroller" class="journey-table-scroller overflow-auto" :class="{ 'max-h-[80vh]': !isTableExpanded }">
+                <table class="journey-table w-full min-w-[72rem] border-collapse">
+                    <thead ref="tableHead" class="sticky top-0 z-[2] bg-white">
                         <tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
                             <th class="py-2 pl-3 pr-4">{{ ctrans("PO details") }}</th>
                             <th v-for="stage in stages" :key="stage.key" class="px-1 py-2 text-center" :title="stage.description">{{ stage.label }}</th>
@@ -251,21 +306,13 @@ function saveMark(date: string | null): void {
                     </tbody>
                 </table>
             </div>
+            <div v-if="!isTableExpanded" class="pointer-events-none absolute inset-x-0 bottom-0" :style="{ top: tableHeadHeight + 'px' }">
+                <ScrollFadeArrow direction="up" :visible="canScrollUp" @click="scrollVerticallyBy(-1)" />
+                <ScrollFadeArrow direction="down" :visible="canScrollDown" @click="scrollVerticallyBy(1)" />
+            </div>
+            </div>
             <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
                 {{ ctrans("No purchase orders match these filters.") }}
-            </div>
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-3 py-2 text-xs text-gray-500">
-                <div class="flex flex-wrap items-center gap-3">
-                    <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
-                        <span class="inline-block h-3 w-3 rounded-sm" :class="item.class" />
-                        {{ item.label }}
-                    </span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span>{{ ctrans("Page :page of :last · :total orders", { page: pagination.page, last: pagination.last_page, total: pagination.total }) }}</span>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 disabled:opacity-40" :disabled="pagination.page <= 1" @click="visit({ page: pagination.page - 1 })">‹</button>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 disabled:opacity-40" :disabled="pagination.page >= pagination.last_page" @click="visit({ page: pagination.page + 1 })">›</button>
-                </div>
             </div>
         </div>
 
@@ -324,6 +371,48 @@ function saveMark(date: string | null): void {
         </div>
     </div>
 
+    </template>
+
+    <div v-else class="animate-pulse">
+        <div class="mx-4 mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <div v-for="skeletonKpi in 6" :key="skeletonKpi" class="h-[3.75rem] rounded-lg border border-gray-200 bg-white px-3 py-2">
+                <div class="h-5 w-2/3 rounded bg-gray-200" />
+                <div class="mt-2 h-3 w-1/2 rounded bg-gray-100" />
+            </div>
+        </div>
+        <div class="mx-4 mt-3 flex flex-wrap gap-2">
+            <div v-for="skeletonPill in [10, 16, 12, 9, 14]" :key="skeletonPill" class="h-8 rounded-md bg-gray-200" :style="{ width: skeletonPill + 'rem' }" />
+        </div>
+        <div class="mx-4 mt-2 flex flex-wrap gap-2">
+            <div v-for="skeletonFilter in [8, 9, 8, 10, 7, 18]" :key="skeletonFilter" class="h-8 rounded-md bg-gray-200" :style="{ width: skeletonFilter + 'rem' }" />
+        </div>
+        <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+            <div class="rounded-lg border border-gray-200 bg-white">
+                <div class="h-9 border-b border-gray-200 bg-gray-50" />
+                <div v-for="skeletonRow in 8" :key="skeletonRow" class="flex items-center gap-3 border-b border-gray-100 px-3 py-3">
+                    <div class="w-48 space-y-1.5">
+                        <div class="h-3.5 w-3/4 rounded bg-gray-200" />
+                        <div class="h-3 w-1/2 rounded bg-gray-100" />
+                    </div>
+                    <div class="h-5 flex-1 rounded bg-gray-100" />
+                    <div class="h-5 w-16 rounded-full bg-gray-200" />
+                </div>
+            </div>
+            <div class="order-first grid gap-4 md:grid-cols-2 2xl:order-none 2xl:grid-cols-1 2xl:content-start">
+                <div v-for="skeletonCard in 2" :key="skeletonCard" class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+                    <div class="h-4 w-1/3 rounded bg-gray-200" />
+                    <div v-for="skeletonLine in 4" :key="skeletonLine" class="flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-md bg-gray-200" />
+                        <div class="flex-1 space-y-1.5">
+                            <div class="h-3.5 w-2/3 rounded bg-gray-200" />
+                            <div class="h-3 w-1/2 rounded bg-gray-100" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <Popover ref="markPopover">
         <div v-if="marking" class="w-64 text-sm">
             <div class="font-semibold text-gray-800">{{ marking.ribbon.reference }} · {{ marking.segment.label }}</div>
@@ -352,3 +441,56 @@ function saveMark(date: string | null): void {
         </div>
     </Popover>
 </template>
+
+<style scoped>
+.journey-table thead th:first-child,
+.journey-table :deep(tbody td:first-child) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: white;
+    box-shadow: 1px 0 0 #e5e7eb;
+}
+
+.journey-table thead th {
+    background-color: white;
+    box-shadow: inset 0 -2px 0 #d1d5db;
+}
+
+.journey-table thead th:first-child {
+    z-index: 3;
+    box-shadow: inset 0 -2px 0 #d1d5db, 1px 0 0 #e5e7eb;
+}
+
+.journey-view-toggle :deep(.p-togglebutton-checked .p-togglebutton-content) {
+    background-color: var(--app-accent);
+    color: var(--app-accent-text);
+}
+
+.journey-select {
+    font-size: 0.75rem;
+}
+
+.journey-select.is-active {
+    border-color: var(--app-accent);
+}
+
+.journey-select :deep(.p-select-label) {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.journey-checkbox.p-checkbox-checked :deep(.p-checkbox-box) {
+    background-color: var(--app-accent);
+    border-color: var(--app-accent);
+}
+
+.journey-search {
+    font-size: 0.75rem;
+}
+
+.journey-search:focus,
+.journey-select:deep(.p-focus) {
+    border-color: var(--app-accent);
+}
+</style>

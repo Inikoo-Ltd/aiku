@@ -233,6 +233,20 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
+        'hr-v' => [
+            'code'               => 'hr-v',
+            'name'               => 'Human resources viewer',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'admin',
+            'roles'              => [
+                RolesEnum::HUMAN_RESOURCES_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+                OrganisationTypeEnum::AGENT,
+            ],
+        ],
         'acc-m'      => [
             'code'               => 'acc-m',
             'department'         => 'admin',
@@ -259,6 +273,20 @@ return [
                 OrganisationTypeEnum::SHOP,
                 OrganisationTypeEnum::DIGITAL_AGENCY,
                 OrganisationTypeEnum::AGENT
+            ],
+        ],
+        'acc-v' => [
+            'code'               => 'acc-v',
+            'name'               => 'Accounting viewer',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'admin',
+            'roles'              => [
+                RolesEnum::ACCOUNTING_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+                OrganisationTypeEnum::AGENT,
             ],
         ],
 
@@ -361,7 +389,7 @@ return [
         ],
         'cus-c'      => [
             'code'               => 'cus-c',
-            'name'               => 'Customer service',
+            'name'               => 'Customer service chat',
             'department'         => 'customer-services',
             'scope'              => JobPositionScopeEnum::SHOPS,
             'roles'              => [
@@ -372,9 +400,22 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
+        'cus-call'   => [
+            'code'               => 'cus-call',
+            'name'               => 'Customer service calls',
+            'department'         => 'customer-services',
+            'scope'              => JobPositionScopeEnum::SHOPS,
+            'roles'              => [
+                RolesEnum::CUSTOMER_SERVICE_CALLER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+            ]
+        ],
         'cus-v'      => [
             'code'               => 'cus-v',
-            'name'               => 'Customer service viewer',
+            'name'               => 'Shop viewer',
             'department'         => 'customer-services',
             'scope'              => JobPositionScopeEnum::SHOPS,
             'roles'              => [
@@ -413,6 +454,19 @@ return [
                 OrganisationTypeEnum::AGENT
             ],
         ],
+        'buy-v' => [
+            'code'               => 'buy-v',
+            'name'               => 'Procurement viewer',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'products',
+            'roles'              => [
+                RolesEnum::PROCUREMENT_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT,
+            ],
+        ],
         'wah-m'    => [
             'code'       => 'wah-m',
             'name'       => 'Warehouse supervisor',
@@ -441,6 +495,62 @@ return [
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
                 OrganisationTypeEnum::AGENT
+            ],
+        ],
+        'wah-v' => [
+            'code'               => 'wah-v',
+            'name'               => 'Warehouse viewer',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::WAREHOUSE_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT,
+            ],
+        ],
+        'gi-m'     => [
+            'code'               => 'gi-m',
+            'name'               => 'Goods in supervisor',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::GOODS_IN_SUPERVISOR
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT
+            ],
+        ],
+        'gi-c'     => [
+            'code'               => 'gi-c',
+            'name'               => 'Goods in worker',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::GOODS_IN_CLERK
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT
+            ],
+        ],
+        'gi-v' => [
+            'code'               => 'gi-v',
+            'name'               => 'Goods in viewer',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::GOODS_IN_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT,
             ],
         ],
         'dist-m'   => [
@@ -504,6 +614,20 @@ return [
                 OrganisationTypeEnum::AGENT
             ],
         ],
+        'dist-v' => [
+            'code'               => 'dist-v',
+            'name'               => 'Dispatching viewer',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::DISPATCH_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT,
+            ],
+        ],
 
 
         'prod-d' => [
@@ -557,6 +681,19 @@ return [
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
             ]
+        ],
+        'prod-v' => [
+            'code'               => 'prod-v',
+            'name'               => 'Production viewer',
+            'scope'              => JobPositionScopeEnum::PRODUCTIONS,
+            'team'               => 'production',
+            'department'         => 'production',
+            'roles'              => [
+                RolesEnum::MANUFACTURING_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+            ],
         ],
 
         'seo-m'    => [
@@ -707,6 +844,21 @@ return [
                 'has_shop_type' => 'fulfilment'
             ]
 
+        ],
+        'ful-v' => [
+            'code'               => 'ful-v',
+            'name'               => 'Fulfilment viewer',
+            'scope'              => JobPositionScopeEnum::FULFILMENTS,
+            'department'         => 'fulfilment',
+            'roles'              => [
+                RolesEnum::FULFILMENT_SHOP_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+            ],
+            'extra_conditions'   => [
+                'has_shop_type' => 'fulfilment'
+            ]
         ],
     ],
     'wrappers'  => [

@@ -54,7 +54,7 @@ class CloseManufactureTaskSession extends OrgAction
                 ]);
             }
 
-            $session->update([
+            $session->fill([
             'quantity_made'                   => $modelData['quantity_made'],
             'quantity_rejected'               => $modelData['quantity_rejected'] ?? 0,
             'ended_at'                        => now(),
@@ -65,7 +65,10 @@ class CloseManufactureTaskSession extends OrgAction
             'operative_reward_amount'         => $manufactureTask->is_piece_rate ? $manufactureTask->operative_reward_amount : 0,
             'activity_type'                   => $modelData['activity_type'] ?? $session->activity_type ?? ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
             'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
+            'standard_rate'                   => $session->recipeStandardRate(),
         ]);
+            $session->is_under_target = $this->isUnderTarget($session);
+            $session->save();
 
             $task = CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
             CalculateManufactureTaskSessionPay::run($session);
@@ -77,6 +80,20 @@ class CloseManufactureTaskSession extends OrgAction
 
             return $session;
         });
+    }
+
+    private function isUnderTarget(ManufactureTaskSession $session): bool
+    {
+        if ($session->activity_type != ManufactureTaskSessionActivityTypeEnum::PRODUCTION || $session->standard_rate === null) {
+            return false;
+        }
+
+        $hours = $session->paidHours();
+        if ($hours <= 0) {
+            return false;
+        }
+
+        return (float) $session->quantity_made / $hours < (float) $session->standard_rate;
     }
 
     public function rules(): array

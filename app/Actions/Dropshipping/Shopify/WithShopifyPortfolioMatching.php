@@ -25,6 +25,14 @@ trait WithShopifyPortfolioMatching
 
         if (!$portfolio) {
             $portfolio = $this->findPortfolioByPlatformId($customerSalesChannel, 'platform_product_id', $platformProductId);
+
+            if ($portfolio && $this->isAnotherVariantOfLinkedListing($portfolio, $platformProductVariantId)) {
+                $sizeOrdered = $this->findPortfolioByProductCode($customerSalesChannel, $sku);
+
+                if ($sizeOrdered && $sizeOrdered->id !== $portfolio->id) {
+                    return $sizeOrdered;
+                }
+            }
         }
 
         if (!$portfolio) {
@@ -49,6 +57,38 @@ trait WithShopifyPortfolioMatching
         $portfolios = $customerSalesChannel->portfolios()
             ->whereIn($column, $candidates)
             ->when($column === 'platform_product_id', fn ($query) => $query->whereRaw("coalesce(settings->>'shopify_variant_adopted', 'false') <> 'true'"))
+            ->limit(2)
+            ->get();
+
+        return $portfolios->count() === 1 ? $portfolios->first() : null;
+    }
+
+    /**
+     * A merchant can turn one of our listings into a multi-size product, so the listing id alone
+     * points at whichever size it was first linked to; when the line is a different variant of that
+     * listing, a sku that is exactly our product code names the size actually ordered (HELP-3711).
+     * That portfolio keeps its own links: the merchant's listing belongs to the size it was made for.
+     */
+    private function isAnotherVariantOfLinkedListing(Portfolio $portfolio, ?string $platformProductVariantId): bool
+    {
+        $candidates = $this->shopifyPlatformIdCandidates($platformProductVariantId);
+
+        return filled($portfolio->platform_product_variant_id)
+            && $candidates
+            && !in_array($portfolio->platform_product_variant_id, $candidates, true);
+    }
+
+    private function findPortfolioByProductCode(CustomerSalesChannel $customerSalesChannel, ?string $sku): ?Portfolio
+    {
+        $sku = Str::lower(trim((string) $sku));
+
+        if ($sku === '') {
+            return null;
+        }
+
+        $portfolios = $customerSalesChannel->portfolios()
+            ->where('status', true)
+            ->whereRaw('lower(item_code) = ?', [$sku])
             ->limit(2)
             ->get();
 

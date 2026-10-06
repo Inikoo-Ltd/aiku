@@ -206,23 +206,11 @@ onMounted(() => {
     irisStyleVariables(theme?.color)
 
     whenIrisLoggedIn(layout, fetchHasInBasket)
-
-    ;(window as any).aikuIris = {
-        // For Search result (app-iris.blade )
-        refreshCustomerData: async () => {
-            layout.reload_handle?.()
-            await fetchHasInBasket()
-        }
-    }
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
     document.removeEventListener('visibilitychange', handleTabFocus)
-
-    if ((window as any).aikuIris) {
-        delete (window as any).aikuIris
-    }
 })
 
 

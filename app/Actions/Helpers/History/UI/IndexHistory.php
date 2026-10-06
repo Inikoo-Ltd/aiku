@@ -32,7 +32,7 @@ class IndexHistory
     /**
      * @param array<int, array{type: string, labels: array<int, string>, shops: array<int, int>|null}> $auditScope
      */
-    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null, mixed $userScopeFilter = null, array $auditScope = []): LengthAwarePaginator|array|bool
+    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null, mixed $userScopeFilter = null, array $auditScope = [], ?int $perPage = null): LengthAwarePaginator|array|bool
     {
         $this->model = class_basename($model);
 
@@ -108,7 +108,7 @@ class IndexHistory
             ->defaultSort('audits.created_at')
             ->allowedSorts(['ip_address','auditable_id', 'auditable_type', 'user_type', 'url','created_at'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $perPage, tableName: request()->route()->getName())
             ->withQueryString();
 
         if ($auditScope) {

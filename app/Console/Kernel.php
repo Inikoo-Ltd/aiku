@@ -18,6 +18,9 @@ use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
+use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
+use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
@@ -47,6 +50,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorAICredit;
 use App\Actions\DevOps\MonitorNightowlIngest;
+use App\Actions\DevOps\WarmNightOwlTelemetry;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorStockLocationIntegrity;
@@ -116,6 +120,7 @@ class Kernel extends ConsoleKernel
            window, 90 days. */
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())
             ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
+        $schedule->command('procurement:reprice_partner_purchase_orders')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
@@ -302,6 +307,13 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorNightowlIngest',
                 ),
                 name: 'MonitorNightowlIngest',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(WarmNightOwlTelemetry::makeJob())->everyMinute()->withoutOverlapping()->onOneServer(),
+                name: 'WarmNightOwlTelemetry',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -801,6 +813,33 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetFaireProductsAllShops',
                 ),
                 name: 'GetFaireProductsAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SyncDispatchedFaireOrdersTax::makeJob())->dailyAt('03:40')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SyncDispatchedFaireOrdersTax',
+                ),
+                name: 'SyncDispatchedFaireOrdersTax',
+                type: 'job',
+                scheduledAt: '03:40'
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetWixOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetWixOrdersAllShops',
+                ),
+                name: 'GetWixOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetWixProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetWixProductsAllShops',
+                ),
+                name: 'GetWixProductsAllShops',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

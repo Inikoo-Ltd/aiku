@@ -180,8 +180,10 @@ const clusterPosition = ref<{ x: number; y: number } | null>(readClusterPosition
 const clusterElement = ref<HTMLElement | null>(null)
 const clusterDrag = ref<{ startX: number; startY: number; origX: number; origY: number; moved: boolean; bubbleUlid: string | null } | null>(null)
 
+const isSidebarMinimised = computed(() => (isMobile.value ? !layout.messagingSidebar.show : Boolean(layout.messagingSidebar.micro)))
+
 const isDockShown = computed(() => orderedBubbles.value.length > 0
-    && !layout.messagingSidebar.show
+    && isSidebarMinimised.value
     && !(isCompact.value && (mobilePanelOpen.value || visibleConversationWindows.value.length > 0)))
 const hasDockButton = computed(() => isMobile.value && !mobilePanelOpen.value && !visibleConversationWindows.value.length)
 
@@ -198,7 +200,7 @@ watch(clusterElement, (element, _previous, onCleanup) => {
     onCleanup(() => observer.disconnect())
 }, { flush: "post" })
 
-const desktopAnchorRem = computed(() => (layout.messagingSidebar.show ? 15 : (layout.messagingSidebar.micro ? 2 : 4)))
+const desktopAnchorRem = computed(() => (layout.messagingSidebar.show ? 15 : (layout.messagingSidebar.micro ? 2.5 : 4)))
 
 const hideIfMakingRoom = (element: Element) => {
     const ulid = (element as HTMLElement).dataset.windowUlid

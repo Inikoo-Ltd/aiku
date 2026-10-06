@@ -408,6 +408,8 @@ use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDep
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\SyncMasterProductCategoryRelatedMasterProductCategories;
+use App\Actions\Catalogue\ProductCategory\ReorderFamiliesInDepartment;
+use App\Actions\Masters\MasterProductCategory\ReorderMasterFamiliesInMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -427,6 +429,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Procurement\OrgPartner\PreparePartnerShoppingListOrder;
 use App\Actions\Procurement\OrgPartner\StoreRescuePurchaseOrder;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -484,7 +487,9 @@ use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\JobOrderItem\SplitJobOrderItem;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
+use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -600,6 +605,7 @@ use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
+use App\Actions\Helpers\Ticket\UpdateTicketContent;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Helpers\Ticket\ToggleTicketCommentVisibility;
 use App\Actions\Helpers\Ticket\TranslateTicketText;
@@ -624,6 +630,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::patch('{ticket:id}/project', [AssignWorkToProject::class, 'inTicket'])->name('project.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/content', UpdateTicketContent::class)->name('content.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
     Route::patch('{ticket:id}/pull-request', UpdateTicketPullRequest::class)->name('pull_request.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
@@ -733,6 +740,8 @@ Route::patch('master-product-category/{masterProductCategory:id}/master-sub-depa
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/families-order', ReorderMasterFamiliesInMasterDepartment::class)->name('master_product_category.families_order.update')->withoutScopedBindings();
+Route::patch('product-category/{productCategory:id}/families-order', ReorderFamiliesInDepartment::class)->name('product_category.families_order.update')->withoutScopedBindings();
 
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
 Route::post('mcp-change/{mcpChange:id}/revert', RevertMcpChange::class)->name('mcp_change.revert');
@@ -1443,9 +1452,11 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');
 Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('job-order.item.store')->withoutScopedBindings();
 Route::patch('/job-order-item/{jobOrderItem:id}', UpdateJobOrderItem::class)->name('job-order-item.update')->withoutScopedBindings();
+Route::patch('/job-order-item/{jobOrderItem:id}/split', SplitJobOrderItem::class)->name('job-order-item.split')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
+Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.attach')->withoutScopedBindings();
@@ -1551,6 +1562,7 @@ Route::name('org-agent.')->prefix('org-agent/{orgAgent:id}')->group(function () 
 Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgPartner'])->name('purchase-order.store');
     Route::post('rescue-purchase-order', StoreRescuePurchaseOrder::class)->name('rescue_purchase_order.store');
+    Route::post('shopping-list-order', PreparePartnerShoppingListOrder::class)->name('shopping_list_order.store');
 });
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {

@@ -9,14 +9,15 @@
 
   import {Chart as ChartJS, ArcElement, Tooltip, Legend, Colors} from 'chart.js'
   import {Pie} from 'vue-chartjs'
-  import {trans} from "laravel-vue-i18n";
+  import { externalChartTooltip, hideChartTooltip } from '@/Composables/useChartExternalTooltip'
+  import { ctrans } from '@/Composables/useTrans'
   import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
   import {faSeedling, faChair, faThumbsDown, faLaugh, faUnlink, faExclamationTriangle, faExclamationCircle, faSignIn, faDungeon, faEye, faEyeSlash, faMousePointer, faSnooze} from '@fal'
   import {library} from '@fortawesome/fontawesome-svg-core'
   import {useLocaleStore} from "@/Stores/locale";
   import {capitalize} from '@/Composables/capitalize'
   import { onUnmounted, onMounted } from 'vue';
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { ref } from 'vue'
   
@@ -48,26 +49,59 @@ import { ref } from 'vue'
       }
   }>()
   
-  const options = {
+  const caseColours = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+
+  const caseColour = (index: number) => caseColours[index % caseColours.length]
+
+  const pieData = (cases: Record<string, { label: string; count: number }>) => {
+      const rows = Object.values(cases)
+
+      return {
+          labels: rows.map((row) => row.label),
+          datasets: [{
+              data: rows.map((row) => row.count),
+              backgroundColor: rows.map((_, index) => caseColour(index)),
+              borderColor: '#ffffff',
+              borderWidth: 2,
+              hoverOffset: 4
+          }]
+      }
+  }
+
+  type CaseRow = { label: string; count: number; route?: { name: string; parameters: Record<string, unknown> } }
+
+  const caseUrl = (cases: Record<string, CaseRow>, index: number): string | null => {
+      const caseRoute = Object.values(cases)[index]?.route
+      return caseRoute?.name ? route(caseRoute.name, caseRoute.parameters) : null
+  }
+
+  const pieOptions = (cases: Record<string, CaseRow>) => ({
       responsive: true,
+      onClick: (_event: any, elements: any[]) => {
+          const url = elements.length ? caseUrl(cases, elements[0].index) : null
+          if (url) {
+              hideChartTooltip()
+              router.visit(url)
+          }
+      },
+      onHover: (event: any, elements: any[]) => {
+          if (event.native?.target) {
+              event.native.target.style.cursor = elements.length && caseUrl(cases, elements[0].index) ? 'pointer' : 'default'
+          }
+      },
       plugins: {
           legend: {
               display: false
           },
           tooltip: {
-              // Popup: When the data set is hovered
-              // enabled: false,
-              titleFont: {
-                  size: 10,
-                  weight: 'lighter'
+              enabled: false,
+              external: externalChartTooltip,
+              callbacks: {
+                  afterBody: (items: any[]) => (items.length && caseUrl(cases, items[0].dataIndex) ? ctrans('Click to list these prospects') : ''),
               },
-              bodyFont: {
-                  size: 11,
-                  weight: 'bold'
-              }
           },
       }
-  }
+  })
   
   
   onMounted(() => {
@@ -130,12 +164,12 @@ import { ref } from 'vue'
                           <!-- In Total -->
                           <div class="flex gap-x-2 items-end">
                               {{ locale.number(prospectState.count) }}
-                              <span class="text-sm font-medium leading-4 text-gray-500 ">{{ trans('in total') }}</span>
+                              <span class="text-sm font-medium leading-4 text-gray-500 ">{{ ctrans('in total') }}</span>
                           </div>
   
                           <!-- Statistic -->
                           <div class="text-sm text-gray-500 flex gap-x-5 gap-y-1 items-center flex-wrap">
-                              <template v-for="(dCase, idxCase) in prospectState.cases" :key="idxCase">
+                              <template v-for="(dCase, idxCase, caseIndex) in prospectState.cases" :key="idxCase">
                                   <component
                                     :is="dCase.route?.name ? Link : 'div'"
                                     :href="dCase.route?.name ? route(dCase.route.name, dCase.route.parameters) : null"
@@ -146,7 +180,7 @@ import { ref } from 'vue'
                                     @finish="() => isLoadingVisit = null"
                                 >
                                     <LoadingIcon v-if="isLoadingVisit === idxCase" class="text-gray-500" />
-                                      <FontAwesomeIcon v-else :icon='dCase.icon.icon' :class='dCase.icon.class' fixed-width :title="dCase.icon.tooltip" aria-hidden='true'/>
+                                      <FontAwesomeIcon v-else :icon='dCase.icon.icon' :style="{ color: caseColour(caseIndex) }" fixed-width :title="dCase.icon.tooltip" aria-hidden='true'/>
                                       <span class="font-semibold">
                                           {{ locale.number(dCase.count) }}
                                       </span>
@@ -157,13 +191,7 @@ import { ref } from 'vue'
   
                       <!-- Donut -->
                       <div class="w-20">
-                          <Pie :data="{
-                              labels: Object.entries(prospectState.cases).map(([, value]) => value.label),
-                              datasets: [{
-                                  data: Object.entries(prospectState.cases).map(([, value]) => value.count),
-                                  hoverOffset: 4
-                              }]
-                          }" :options="options"/>
+                          <Pie :data="pieData(prospectState.cases)" :options="pieOptions(prospectState.cases)"/>
                       </div>
   
                   </dd>

@@ -2,6 +2,7 @@ export interface TicketBadgeRow {
     label: string
     count: number
     elements: Record<string, string>
+    section?: "team" | "mine" | "qa"
 }
 
 export interface TicketRecentUpdate {
@@ -17,4 +18,5 @@ export interface TicketBadges {
     mine: Record<string, TicketBadgeRow>
     recent?: TicketRecentUpdate[]
     queue: Record<string, TicketBadgeRow> | null
+    queue_recent?: TicketRecentUpdate[]
 }

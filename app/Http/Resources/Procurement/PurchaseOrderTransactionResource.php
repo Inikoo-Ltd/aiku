@@ -39,6 +39,10 @@ class PurchaseOrderTransactionResource extends JsonResource
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
             'stock_cover'          => $transaction->buying_signals ?? GetOrgStockBuyingSignals::run($orgStock, $supplierProduct),
             'stock_deliveries'     => $transaction->stock_deliveries,
+            'other_open_purchase_orders' => $transaction->other_open_purchase_orders ?? [],
+            'partner_stock'        => $transaction->partner_stock?->stock === null ? null : (float) $transaction->partner_stock->stock,
+            'partner_units_per_carton' => $transaction->partner_stock?->units_per_carton,
+            'hub_name'             => $transaction->partner_stock?->hub_name,
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,
@@ -80,7 +84,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
-            'cancelRoute'          => in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true) ? [
+            'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'       => 'grp.models.purchase-order.transaction.cancel',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -89,5 +93,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
         ];
+    }
+
+    private function isCancellable(PurchaseOrderTransaction $transaction): bool
+    {
+        return match ($transaction->state) {
+            PurchaseOrderTransactionStateEnum::SUBMITTED => true,
+            PurchaseOrderTransactionStateEnum::CONFIRMED => !$transaction->is_on_delivery,
+            default => false,
+        };
     }
 }

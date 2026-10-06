@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import axios from "axios"
 import { useForm, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -13,8 +13,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
+import TicketKeptFiles from "@/Components/Tickets/TicketKeptFiles.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
-import { attachmentIconFor } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import TicketTranslation from "@/Components/Tickets/TicketTranslation.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
@@ -38,7 +38,8 @@ const qaVerdictIcon: Record<string, string> = {
 }
 
 const props = withDefaults(defineProps<{
-    ticket: { id?: number; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
+    ticket: { id?: number; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string; mime?: string | null }[] }
+    contentRoute?: { name: string; parameters: Record<string, unknown> } | null
     comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; type?: string; has_qa_verdict?: string | null; qa_verdict_label?: string | null; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
@@ -78,6 +79,51 @@ const daysAgo = (date: string) => {
     return days === 0 ? ctrans("today") : days === 1 ? ctrans("1 day ago") : ctrans(":days days ago", { days: String(days) })
 }
 
+const isEditingContent = ref(false)
+const isSavingContent = ref(false)
+const contentSubject = ref("")
+const contentDescription = ref("")
+const contentRemovedMedia = ref<string[]>([])
+const contentImages = ref<File[]>([])
+const contentErrors = ref<Record<string, string>>({})
+
+const startContentEdit = () => {
+    contentSubject.value = props.ticket.subject
+    contentDescription.value = props.ticket.description ?? ""
+    contentRemovedMedia.value = []
+    contentImages.value = []
+    contentErrors.value = {}
+    isEditingContent.value = true
+}
+
+onMounted(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get("edit") !== "content") return
+
+    url.searchParams.delete("edit")
+    window.history.replaceState(window.history.state, "", url.toString())
+    if (props.contentRoute) startContentEdit()
+})
+
+const keptContentImages = computed(() => (props.ticket.images ?? []).filter((image) => !image.ulid || !contentRemovedMedia.value.includes(image.ulid)))
+const keptContentAttachments = computed(() => (props.ticket.attachments ?? []).filter((file) => !file.ulid || !contentRemovedMedia.value.includes(file.ulid)))
+
+const saveContent = () => {
+    if (!props.contentRoute) return
+    router.post(
+        route(props.contentRoute.name, props.contentRoute.parameters),
+        { _method: "patch", subject: contentSubject.value, description: contentDescription.value, remove_media: contentRemovedMedia.value, images: contentImages.value },
+        {
+            preserveScroll: true,
+            forceFormData: true,
+            onStart: () => (isSavingContent.value = true),
+            onError: (errors) => (contentErrors.value = errors),
+            onSuccess: () => (isEditingContent.value = false),
+            onFinish: () => (isSavingContent.value = false),
+        }
+    )
+}
+
 const editingId = ref<number | null>(null)
 const editBody = ref("")
 const editRemovedMedia = ref<string[]>([])
@@ -88,13 +134,6 @@ const startEdit = (comment: { id: number; body: string }) => {
     editBody.value = comment.body
     editRemovedMedia.value = []
     editImages.value = []
-}
-
-// Removing a file is only actually sent once Save is pressed, but it is still one-way enough
-// (the undo is Cancel, which throws the whole edit away) to make somebody confirm it first.
-const confirmRemoveMedia = (ulid: string, closeModal: () => void) => {
-    editRemovedMedia.value.push(ulid)
-    closeModal()
 }
 
 // Saving an edit and deleting a comment are both one-way enough, and both change what the
@@ -199,11 +238,39 @@ const submit = () => {
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="ctrans('Raised from Slack')" :icon="faSlack" class="text-gray-500" fixed-width />
             </div>
             <slot name="card-header-footer" />
-            <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
-            <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-[--app-accent-strong] hover:underline">{{ ticket.reference_url }}</a>
-            <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
-            <TicketTranslation v-if="translateRoutes && ticket.id && ticket.description" :translation="translations.description" :is-translating="translatingKey === 'description'" @translate="translateDescription" />
-            <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
+            <form v-if="isEditingContent" class="space-y-3" :aria-busy="isSavingContent" @submit.prevent="saveContent">
+                <div>
+                    <label for="ticket-content-subject" class="mb-1 block text-xs text-gray-500">{{ ctrans("Subject") }}</label>
+                    <input id="ticket-content-subject" v-model="contentSubject" type="text" maxlength="255" class="w-full rounded-md border-gray-300 text-sm font-semibold focus:border-[--app-accent] focus:ring-[--app-accent]" />
+                    <p v-if="contentErrors.subject" class="mt-1 text-xs text-red-600">{{ contentErrors.subject }}</p>
+                </div>
+                <div>
+                    <p class="mb-1 text-xs text-gray-500">{{ ctrans("Description") }}</p>
+                    <TicketComposer v-model:body="contentDescription" v-model:images="contentImages" :rows="6" :mentionable="mentionable" :max-images="Math.max(0, 5 - keptContentImages.length - keptContentAttachments.length)" />
+                    <p v-if="contentErrors.description || contentErrors.images" class="mt-1 text-xs text-red-600">{{ contentErrors.description || contentErrors.images }}</p>
+                </div>
+                <TicketKeptFiles :images="keptContentImages" :attachments="keptContentAttachments" @remove="(ulid) => contentRemovedMedia.push(ulid)" />
+                <p class="text-xs text-gray-400">{{ ctrans("Edits are written to the ticket history. Files on comments stay with their comment.") }}</p>
+                <div class="flex justify-end gap-2">
+                    <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isSavingContent" @click="isEditingContent = false" />
+                    <Button :label="ctrans('Save')" :loading="isSavingContent" :disabled="!contentSubject.trim()" @click="saveContent" />
+                </div>
+            </form>
+            <template v-else>
+                <div class="mb-3 flex items-start justify-between gap-2">
+                    <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
+                    <span class="flex shrink-0 items-center gap-1">
+                        <button v-if="contentRoute" v-tooltip="ctrans('Edit subject, description and files')" type="button" class="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600" @click="startContentEdit">
+                            <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                        </button>
+                        <slot name="subject-actions" />
+                    </span>
+                </div>
+                <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-[--app-accent-strong] hover:underline">{{ ticket.reference_url }}</a>
+                <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
+                <TicketTranslation v-if="translateRoutes && ticket.id && ticket.description" :translation="translations.description" :is-translating="translatingKey === 'description'" @translate="translateDescription" />
+                <p v-else class="text-sm text-gray-400">{{ ctrans("No description") }}</p>
+            </template>
         </div>
 
         <slot name="after-description" />
@@ -269,8 +336,8 @@ const submit = () => {
                         </button>
                         <ModalConfirmation
                             v-if="comment.can_delete"
-                            :title="ctrans('Delete this comment?')"
-                            :description="ctrans('The comment will be removed from the ticket.')">
+                            :title="comment.can_edit ? ctrans('Delete this comment?') : ctrans('Delete :author\'s comment?', { author: comment.author ?? ctrans('this person') })"
+                            :description="comment.can_edit ? ctrans('The comment will be removed from the ticket.') : ctrans('This is not your comment. It will be removed for everyone, including its images and files, and cannot be undone. The ticket history will note that you removed it.')">
                             <template #default="{ changeModel }">
                                 <button v-tooltip="ctrans('Delete')" type="button" class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="changeModel">
                                     <FontAwesomeIcon :icon="deletingId === comment.id ? 'fal fa-spinner' : 'fal fa-trash-alt'" :spin="deletingId === comment.id" fixed-width />
@@ -284,37 +351,7 @@ const submit = () => {
                 </div>
                 <div v-if="editingId === comment.id" class="space-y-2">
                     <TicketComposer class="mt-2" v-model:body="editBody" v-model:images="editImages" :rows="4" :mentionable="mentionable" :max-images="Math.max(0, 5 - keptEditImages(comment).length - keptEditAttachments(comment).length)" />
-                    <div v-if="keptEditImages(comment).length || keptEditAttachments(comment).length" class="flex flex-wrap gap-1.5">
-                        <span v-for="image in keptEditImages(comment)" :key="image.ulid" class="relative">
-                            <img :src="image.original" :alt="image.name" class="h-12 w-12 rounded border border-gray-200 object-cover" />
-                            <ModalConfirmation v-if="image.ulid" :title="ctrans('Remove this image?')" :description="ctrans('It will be gone once you save. Cancelling the edit keeps it.')">
-                                <template #default="{ changeModel }">
-                                    <button v-tooltip="ctrans('Remove')" type="button" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-500 text-white hover:bg-red-500" @click="changeModel">
-                                        <FontAwesomeIcon icon="fal fa-times" class="text-[9px]" fixed-width aria-hidden="true" />
-                                    </button>
-                                </template>
-                                <template #btn-yes="{ closeModal }">
-                                    <Button type="red" :label="ctrans('Remove')" @click="confirmRemoveMedia(image.ulid, closeModal)" />
-                                </template>
-                            </ModalConfirmation>
-                        </span>
-                        <span v-for="file in keptEditAttachments(comment)" :key="file.ulid" class="relative">
-                            <span class="flex h-12 w-12 flex-col items-center justify-center rounded border border-gray-200 bg-gray-50" :class="attachmentIconFor(file).class">
-                                <FontAwesomeIcon :icon="attachmentIconFor(file).icon" class="text-lg" fixed-width aria-hidden="true" />
-                                <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ file.name }}</span>
-                            </span>
-                            <ModalConfirmation v-if="file.ulid" :title="ctrans('Remove this attachment?')" :description="ctrans('It will be gone once you save. Cancelling the edit keeps it.')">
-                                <template #default="{ changeModel }">
-                                    <button v-tooltip="ctrans('Remove')" type="button" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-500 text-white hover:bg-red-500" @click="changeModel">
-                                        <FontAwesomeIcon icon="fal fa-times" class="text-[9px]" fixed-width aria-hidden="true" />
-                                    </button>
-                                </template>
-                                <template #btn-yes="{ closeModal }">
-                                    <Button type="red" :label="ctrans('Remove')" @click="confirmRemoveMedia(file.ulid, closeModal)" />
-                                </template>
-                            </ModalConfirmation>
-                        </span>
-                    </div>
+                    <TicketKeptFiles :images="keptEditImages(comment)" :attachments="keptEditAttachments(comment)" @remove="(ulid) => editRemovedMedia.push(ulid)" />
                     <div class="flex gap-2 justify-end">
                         <Button type="tertiary" :label="ctrans('Cancel')" :disabled="savingEditId === comment.id" @click="editingId = null" />
                         <Button :label="ctrans('Save')" :loading="savingEditId === comment.id" @click="saveEdit(comment.id)" />

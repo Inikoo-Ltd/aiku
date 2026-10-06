@@ -34,6 +34,7 @@ const props = defineProps<{
     },
     showMarkerFeature?: boolean
     tab?: string
+    useTopPagination?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -216,7 +217,7 @@ const setNewMarkerDate = (newVal: Date) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5">
         <template #add-on-button-in-before>
             <DatePicker
                 v-tooltip="isValidMark ? ctrans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : ctrans('Nothing is marked')"

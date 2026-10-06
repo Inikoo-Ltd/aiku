@@ -34,9 +34,11 @@ class PurchaseOrderTransactionsExport implements FromCollection, WithMapping, Wi
     /** @param PurchaseOrderTransaction $row */
     public function map($row): array
     {
+        $isPartner = $this->purchaseOrder->parent_type === 'OrgPartner';
+
         return [
-            $row->supplierProduct?->code,
-            (float) $row->quantity_ordered,
+            $isPartner ? $row->orgStock?->code : $row->supplierProduct?->code,
+            $isPartner ? (float) $row->quantity_ordered / max(1, (int) $row->orgStock?->packed_in) : (float) $row->quantity_ordered,
             $row->supplierProduct?->name,
             $row->orgStock?->code,
             $row->supplierProduct?->units_per_pack,

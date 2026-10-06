@@ -11,6 +11,7 @@ export interface Upload {
     event: string
     channel: string
     required_fields: string[]
+    column_aliases?: Record<string, string[]>
     template: {
         label: string
     }

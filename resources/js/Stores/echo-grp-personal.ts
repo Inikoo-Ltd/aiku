@@ -9,10 +9,9 @@ import type { TaskBadges } from '@/types/TaskBadges'
 import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
-import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
-import { alertOnce, chosenAlertSound } from "@/Composables/useNotificationSound"
+import { alertOnce, chosenAlertSound, showTicketPopup } from "@/Composables/useNotificationSound"
 
 interface ProgressBar {
     [key: string]: {
@@ -132,13 +131,7 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 }
                 if (notification?.reason === 'resolved') {
                     if (notification.title) {
-                        notify({
-                            group: 'ticket-alerts',
-                            title: notification.title,
-                            text: notification.body,
-                            duration: (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000,
-                            data: { url: notification.route },
-                        })
+                        showTicketPopup(notification.title, notification.body, notification.route)
                     }
                     alertOnce({
                         key: `ticket-resolved:${notification.route}`,

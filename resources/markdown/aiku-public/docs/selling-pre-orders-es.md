@@ -52,7 +52,11 @@ El plazo de entrega sale, por este orden: el plazo propio del producto, luego el
 
 ## Qué ve y paga el cliente
 
-En la página del producto y en los listados de productos el cliente ve el tipo y la estimación, por ejemplo "Made to order · Estimated dispatch 9–11 weeks", junto con las condiciones del pedido anticipado. La cesta marca cada línea de pedido anticipado y vuelve a listar las condiciones.
+El cliente solo ve la palabra **Pre-order** (pedido anticipado): back-order y made-to-order se quedan dentro de aiku, donde deciden cómo paga el cliente.
+
+Mientras un producto **tiene stock**, la web muestra su stock normal y ningún mensaje de pedido anticipado. Cuando se **agota**, "Out of stock" se sustituye por "Available to pre-order · Estimated dispatch 13–15 weeks", con lo que se paga ahora ("Pay in full now" o "30% deposit now, balance when the goods arrive") y un enlace a las condiciones del pedido anticipado.
+
+Cuando solo parte de lo que quiere el cliente está en stock, la cesta lo dice en la línea, por ejemplo "2 will be sent now, 3 are pre-ordered (estimated dispatch 13–15 weeks)". El pago y las condiciones del pedido anticipado se aplican solo a las 3 unidades encargadas.
 
 Al pagar, el cliente debe **tick to accept the pre-order terms** (marcar la casilla para aceptar las condiciones del pedido anticipado) antes de que se muestre ningún pago. Las condiciones son las que le corresponden, por ejemplo:
 
@@ -67,7 +71,7 @@ Qué se paga al confirmar el pedido:
 - **Trade, made-to-order** — solo el depósito, o todo cuando el pedido vale menos que el umbral de la tienda.
 - **Dropshipping** — todo, siempre.
 
-Pastpay y el contra reembolso no se ofrecen en una cesta con pedidos anticipados, y la transferencia bancaria no se ofrece cuando hay un depósito pendiente, porque ninguno de los tres puede cobrar un depósito ahora y el resto después.
+Pastpay, el contra reembolso y la transferencia bancaria no se ofrecen en una cesta con pedidos anticipados: un pedido anticipado se paga al confirmar el pedido, completo o el depósito, y ninguno de los tres cobra en ese momento.
 
 Las mismas condiciones se repiten en el correo de confirmación del pedido y en la factura.
 
@@ -75,7 +79,7 @@ Las mismas condiciones se repiten en el correo de confirmación del pedido y en 
 
 Cuando se realiza el pedido, los artículos en stock y los artículos de pedido anticipado se convierten en **dos pedidos**. El pedido en stock va al almacén ahora mismo, con su entrega normal. Los artículos de pedido anticipado forman un pedido propio, con sus propios gastos de envío, que espera hasta que llega la mercancía. Cada pedido muestra una nota que remite al otro.
 
-El cliente puede en su lugar marcar **Hold my order and send everything together** (retener mi pedido y enviarlo todo junto): entonces no se divide nada y todo el pedido espera a la mercancía del pedido anticipado.
+Al pagar, una cesta mixta dice "We'll send your in-stock items now and your pre-order items as soon as they arrive." El cliente puede en su lugar marcar **Hold my order and send everything together** (retener mi pedido y enviarlo todo junto): entonces no se divide nada y todo el pedido espera a la mercancía del pedido anticipado. Una cesta solo con artículos de pedido anticipado dice "We'll dispatch your order as soon as the goods arrive."
 
 El cliente paga una sola vez al confirmar el pedido. La parte de ese pago que corresponde al pedido anticipado se traslada a él a través del saldo de la cuenta del cliente, de modo que el saldo en sí no cambia.
 
@@ -113,6 +117,7 @@ Los clientes no pueden cancelar un pedido anticipado por su cuenta: contactan co
 ### Dónde hacer clic en aiku
 
 - **Activar los pedidos anticipados para una tienda** — abre la tienda, **Settings**, y luego **Pre-orders** › **Enable pre-orders**. Las demás condiciones están en la misma sección.
+- **Cambiar lo que lee el cliente** — abre la tienda, **Settings**, y luego **Pre-order texts**. Ahí está cada texto que ve el cliente, en cada idioma de la tienda: las etiquetas, los mensajes de la página del producto, la cesta y el pago, las condiciones y la casilla, los correos y el texto de la confirmación del pedido y de la factura. Déjalo vacío para usar el texto por defecto que se ve en gris. Las palabras entre llaves, como {weeks}, {deposit_percent}, {balance_due_date} y {order_number}, se rellenan solas. Los pedidos ya hechos conservan las condiciones que aceptó el cliente.
 - **Marcar un producto** — **Masters**, abre el producto maestro, **Edit**, y luego **Pre-order**. El producto propio de una tienda tiene la misma sección en **Edit**.
 - **Fijar el plazo de entrega de un proveedor** — abre el proveedor, **Edit**, y luego **Pre-orders**: **Pre-order lead time**, **Lead time in** (days or weeks) y **Order by date**.
 - **Seguir un pedido anticipado** — abre el pedido. El panel **Pre-order** de arriba tiene **Supplier ordered**, **Goods arrived**, **Pallet quote**, **Change dispatch dates**, **Send to warehouse** y **Cancel pre-order**.

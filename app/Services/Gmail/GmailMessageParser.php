@@ -270,9 +270,19 @@ class GmailMessageParser
      * arrived, a Latin body is bytes Postgres refuses outright, and the whole message was lost
      * with it: the job failed, nothing was written and nothing labelled it, so it stayed unread
      * in the inbox with no sign it had ever been offered to Aiku.
+     *
+     * Senders mislabel UTF-8: Outlook sent Spanish mail marked iso-8859-1 whose bytes were UTF-8,
+     * and converting it again turned "Fátima" into "FÃ¡tima". Valid UTF-8 is therefore kept as it
+     * is and the declared charset only decides bytes that are not UTF-8. The 7-bit encodings
+     * (ISO-2022-JP, UTF-7, HZ) are plain ASCII bytes and always look like valid UTF-8, so they
+     * are always converted from what they declare.
      */
     private static function toUtf8(string $text, ?string $charset): string
     {
+        if (mb_check_encoding($text, 'UTF-8') && ! self::isSevenBitCharset($charset)) {
+            return $text;
+        }
+
         if ($charset !== null && ! in_array(strtolower($charset), ['utf-8', 'utf8', 'us-ascii', 'ascii'], true)) {
             try {
                 $converted = mb_convert_encoding($text, 'UTF-8', $charset);
@@ -285,13 +295,14 @@ class GmailMessageParser
             }
         }
 
-        if (mb_check_encoding($text, 'UTF-8')) {
-            return $text;
-        }
-
         // Last resort for a body that lied about its charset or arrived damaged: readable and
         // stored beats correct and discarded, and Windows-1252 maps every byte to something.
         return mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+    }
+
+    private static function isSevenBitCharset(?string $charset): bool
+    {
+        return $charset !== null && preg_match('/^(iso-2022|utf-7|hz-gb)/i', $charset) === 1;
     }
 
     // ponytail: quoted-reply trimming is a heuristic (first "On ... wrote:" or leading ">" block), good enough until real threads misbehave

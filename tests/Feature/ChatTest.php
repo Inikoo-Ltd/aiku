@@ -1199,7 +1199,12 @@ test('StoreOfflineMessage creates a new session with the offline message', funct
         ->and($chatMessage->metadata['is_offline_message'])->toBeTrue();
 });
 
-test('StoreOfflineMessage reopens a closed session when ulid matches', function () {
+test('StoreOfflineMessage puts a closed session back in the waiting queue, not with the agent who closed it', function () {
+    $agent = ChatAgent::updateOrCreate(
+        ['user_id' => createAdminGuest(createGroup())->getUser()->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0, 'deleted_at' => null]
+    );
+
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
         'status'           => ChatSessionStatusEnum::CLOSED,
@@ -1211,6 +1216,15 @@ test('StoreOfflineMessage reopens a closed session when ulid matches', function 
         'closed_at'        => now(),
         'created_at'       => now(),
         'updated_at'       => now(),
+    ]);
+
+    ChatAssignment::create([
+        'chat_session_id' => $chatSession->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::RESOLVED->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now()->subDay(),
+        'resolved_at'     => now()->subHour(),
     ]);
 
     $modelData = [
@@ -1226,8 +1240,10 @@ test('StoreOfflineMessage reopens a closed session when ulid matches', function 
     $reopenedSession = StoreOfflineMessage::make()->handle($this->shop, $modelData);
 
     expect($reopenedSession->id)->toBe($chatSession->id)
-        ->and($reopenedSession->status)->toBe(ChatSessionStatusEnum::ACTIVE)
-        ->and($reopenedSession->closed_at)->toBeNull();
+        ->and($reopenedSession->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($reopenedSession->closed_at)->toBeNull()
+        ->and($reopenedSession->closed_by)->toBeNull()
+        ->and($chatSession->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->exists())->toBeFalse();
 });
 
 test('StoreGuestProfile stores guest contact metadata and creates a message', function () {
@@ -3032,7 +3048,11 @@ describe('staff messaging archive', function () {
         $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Restock the blue mugs', 'department' => 'warehouse']);
         $conversation = $task->conversation;
 
-        expect((new \App\Http\Resources\Chat\StaffConversationResource($conversation))->resolve()['task']['is_open'])->toBeTrue();
+        $conversationTask = (new \App\Http\Resources\Chat\StaffConversationResource($conversation))->resolve()['task'];
+        expect($conversationTask['is_open'])->toBeTrue()
+            ->and($conversationTask['status'])->toBe('todo')
+            ->and($conversationTask['status_label'])->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::labels()['todo'])
+            ->and($conversationTask['status_icon']['icon'])->not->toBeEmpty();
 
         actingAs($this->user)
             ->get(route('grp.chat.staff.show', $conversation))
@@ -3044,6 +3064,7 @@ describe('staff messaging archive', function () {
             ->assertJsonValidationErrors('conversation');
 
         $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+        expect((new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()))->resolve()['task']['status'])->toBe('done');
 
         actingAs($this->user)
             ->postJson(route('grp.chat.staff.conversations.archive', $conversation))
@@ -3822,6 +3843,47 @@ test('someone taken off a task keeps the chat history up to then, cannot write, 
         ->and($conversation->isActiveParticipant($assignee))->toBeFalse();
 });
 
+test('the person who raised a task edits its subject, description and files, the worker cannot, and the history says so', function () {
+    $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $task   = \App\Actions\Tasks\StoreStaffTask::run($this->user, [
+        'subject'     => 'Count the returns shelf',
+        'description' => 'Shelf B only',
+        'assignee_id' => $worker->id,
+        'images'      => [\Illuminate\Http\UploadedFile::fake()->image('old-photo.png')],
+    ]);
+    $oldPhoto     = $task->getMedia('ticket_images')->first();
+    $contentRoute = route('grp.tasks.content.update', $task->reference);
+
+    actingAs($worker);
+    \Pest\Laravel\patchJson($contentRoute, ['subject' => 'Something else'])->assertForbidden();
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', false));
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_edit_content', false);
+
+    actingAs($this->user);
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_edit_content', true);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_content', true)->where('task.attachments.0.ulid', $oldPhoto->ulid));
+    \Pest\Laravel\post($contentRoute, [
+        '_method'      => 'patch',
+        'subject'      => 'Count the returns shelves',
+        'description'  => 'Shelves B and C',
+        'remove_media' => [$oldPhoto->ulid],
+        'images'       => [\Illuminate\Http\UploadedFile::fake()->image('new-photo.png')],
+    ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.subject', 'Count the returns shelves');
+
+    $task->refresh();
+    expect($task->description)->toBe('Shelves B and C')
+        ->and($task->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($task->getMedia('ticket_images')->first()->ulid)->not->toBe($oldPhoto->ulid);
+
+    $timeline = collect(get(route('grp.tasks.show', $task->reference))->inertiaProps()['timeline']);
+    expect($timeline->firstWhere('text', 'Description edited')['change'])->toBe(['label' => 'Description', 'from' => 'Shelf B only', 'to' => 'Shelves B and C']);
+
+    $history = $timeline->pluck('text');
+    expect($history)->toContain('Subject edited')
+        ->and($history)->toContain('Description edited')
+        ->and($history->first(fn ($text) => str_starts_with($text, 'Removed old-photo')))->toContain(' · Added new-photo');
+});
+
 test('the tasks a person created are counted apart, with the ones waiting for their answer first', function () {
     $worker = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     \App\Models\Tasks\StaffTask::query()->where('requester_id', $this->user->id)->open()->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
@@ -3870,6 +3932,62 @@ test('a task sent to a department tells the people in it', function () {
     $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Someone please check the new range', 'department' => $groupPosition->department]);
 
     expect($member->notifications()->where('data', 'like', '%'.$task->reference.' is waiting for someone from%')->exists())->toBeTrue();
+});
+
+test('a task goes to a person and a department at once, and only the department takes itself off with a reason', function () {
+    $groupPosition = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $this->user->group_id)->whereNull('organisation_id')->whereNotNull('department')
+        ->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)
+        ->whereNotIn('department', \Illuminate\Support\Facades\DB::table('job_positions')->where('slug', 'group-admin')->select('department'))
+        ->first();
+    $newColleague  = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $member        = $newColleague();
+    $worker        = $newColleague();
+    $outsider      = $newColleague();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $member->id, 'job_position_id' => $groupPosition->id, 'group_id' => $member->group_id, 'scopes' => '{}']);
+    $departmentLabel = \App\Models\Tasks\StaffTask::departmentLabel($groupPosition->department);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, [
+        'subject'     => 'Check the new supplier contract',
+        'assignee_id' => $worker->id,
+        'department'  => $groupPosition->department,
+        'due_at'      => now()->addDays(3)->toDateString(),
+    ]);
+    $removal = route('grp.tasks.department.remove', $task->reference);
+
+    expect(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine')->pluck('id'))->toContain($task->id)
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($member, 'department')->pluck('id'))->toContain($task->id);
+
+    foreach ([$this->user, $worker, $outsider] as $notInTheDepartment) {
+        actingAs($notInTheDepartment);
+        \Pest\Laravel\postJson($removal, ['reason' => 'Not ours'])->assertForbidden();
+    }
+    actingAs($this->user);
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $task->reference), ['department' => null])->assertForbidden();
+
+    actingAs($member);
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_remove_department', true));
+    \Pest\Laravel\postJson($removal, ['reason' => ''])->assertUnprocessable();
+    \Pest\Laravel\postJson($removal, ['reason' => 'Contracts go to legal, not to us'])->assertOk();
+
+    $task->refresh();
+    expect($task->department)->toBeNull()
+        ->and($task->assignee_id)->toBe($worker->id)
+        ->and($task->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::TODO)
+        ->and($task->due_at->toDateString())->toBe(now()->addDays(3)->toDateString())
+        ->and($this->user->notifications()->where('data', 'like', '%removed '.$departmentLabel.' from '.$task->reference.'%')->exists())->toBeTrue()
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine')->pluck('id'))->toContain($task->id);
+
+    actingAs($this->user);
+    $removed = collect(get(route('grp.tasks.show', $task->reference))->inertiaProps()['timeline'])->firstWhere('text', 'Removed from '.$departmentLabel.': Contracts go to legal, not to us');
+    expect($removed)->not->toBeNull()
+        ->and($removed['by'])->toBe($member->chatName());
+
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $task->reference), ['department' => $groupPosition->department])->assertOk();
+    expect($task->refresh()->department)->toBe($groupPosition->department);
+
+    $nobodysTask = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Department only', 'department' => $groupPosition->department]);
+    actingAs($member);
+    \Pest\Laravel\postJson(route('grp.tasks.department.remove', $nobodysTask->reference), ['reason' => 'Not ours'])->assertUnprocessable();
 });
 
 test('open tasks are reminded the day before they are due and once they are late, once per due date', function () {
@@ -5310,6 +5428,32 @@ test('an external shop with chat enabled gets chat permissions', function () {
     $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
 
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
+});
+
+test('an external shop offers offline email replies and a customer mailbox only once its chat is enabled', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    actingAs($this->user);
+    $sectionLabels = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $externalShop->slug]))
+            ->assertOk()
+            ->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label');
+
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies')
+        ->and($sections->has('Customer mailbox'))->toBeFalse();
+
+    $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
+
+    $sections = $sectionLabels();
+
+    expect($sections->get('Chat widget')['fields'])->toHaveKey('chat_email_offline_replies')
+        ->and($sections->get('Customer mailbox')['fields'])->toHaveKey('mailbox')
+        ->and($sections->has('Chat'))->toBeFalse();
 });
 
 test('a non external shop with chat disabled loses chat permissions', function () {
@@ -8201,6 +8345,44 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
     outOfHoursTestCleanUp($schedule, [$answered, $closedFirst]);
 });
 
+test('chat closes 15 minutes before work ends unless the shop sets its own chat hours, while reports keep the working hours', function () {
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $shop = $this->shop->fresh();
+    $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+    $at       = fn (string $when) => \Illuminate\Support\Carbon::parse($when, 'Europe/London');
+    $chatOpen = fn (\App\Models\Catalogue\Shop $shop, string $when) => IsWithinWorkingHours::make()->chatHours()->handle($shop, $at($when));
+
+    expect($chatOpen($shop, '2026-09-23 13:40'))->toBeTrue()
+        ->and($chatOpen($shop, '2026-09-23 13:50'))->toBeFalse()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-23 13:50')))->toBeTrue();
+
+    \Illuminate\Support\Carbon::setTestNow($at('2026-09-23 10:30'));
+    $config = GetChatConfig::run($this->web->fresh());
+    expect($config['is_online'])->toBeTrue()
+        ->and($config['schedule']['start'])->toBe('10:00')
+        ->and($config['schedule']['end'])->toBe('13:45');
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['chat_hours_start' => '10:45', 'chat_hours_end' => '13:30']);
+    $shop = $shop->fresh();
+    expect($shop->settings['chat']['hours'])->toEqual(['start' => '10:45', 'end' => '13:30'])
+        ->and($chatOpen($shop, '2026-09-23 10:30'))->toBeFalse()
+        ->and($chatOpen($shop, '2026-09-23 13:35'))->toBeFalse()
+        ->and($chatOpen($shop, '2026-09-23 11:00'))->toBeTrue();
+
+    $config = GetChatConfig::run($this->web->fresh());
+    expect($config['is_online'])->toBeFalse()
+        ->and($config['schedule']['start'])->toBe('10:45')
+        ->and($config['schedule']['end'])->toBe('13:30')
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:45');
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['chat_hours_start' => null]);
+    expect($chatOpen($shop->fresh(), '2026-09-23 10:30'))->toBeTrue();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop->fresh(), ['chat_hours_end' => null]);
+    \Illuminate\Support\Carbon::setTestNow();
+    outOfHoursTestCleanUp($schedule);
+});
+
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
     $schedule = outOfHoursTestSchedule($this->shop);
     $shop = $this->shop->fresh();
@@ -8235,7 +8417,16 @@ test('chat hours come from the work schedule, and the next opening skips closed 
 
     expect($config['is_online'])->toBeFalse()
         ->and($config['offline_info']['next_opening']['day_of_week'])->toBe(2)
-        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00:00');
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['time_format' => '12h_short']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10am');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '12h']);
+    expect(GetChatConfig::run($this->web->fresh())['offline_info']['next_opening']['start'])->toBe('10:00 am')
+        ->and($this->organisation->fresh()->formatClockTime(\Illuminate\Support\Carbon::parse('16:30')))->toBe('4:30 pm');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['time_format' => '24h']);
 
     $closedLine = fn (bool $saidWhatTheyNeed) => \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($shop, true, null, $saidWhatTheyNeed);
 
@@ -12386,4 +12577,129 @@ test('a mailbox whose Gmail access was revoked does not stop the other shops bei
 
     expect(Arr::get($otherShop->fresh()->settings, 'gmail.history_id'))->toBe('2')
         ->and(Arr::get($this->shop->fresh()->settings, 'gmail.history_id'))->toBe('1');
+});
+
+test('staff flag an AI summary of an email or of a chat as wrong, saying why, once per summary', function () {
+    $session = ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::CLOSED,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['ai_summary' => ['summary' => 'Customer asks about an order', 'key_points' => []]],
+    ]);
+    $email = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => 'A long email',
+        'metadata'        => ['ai_summary' => 'Longer than the email itself'],
+    ]);
+    $plain = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => 'Short',
+    ]);
+
+    actingAs($this->user);
+
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$plain->id]), ['reason' => 'x'])->assertNotFound();
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]))->assertUnprocessable()->assertJsonValidationErrors('reason');
+
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]), ['reason' => 'Too long'])->assertOk();
+    expect(Arr::get($email->refresh()->metadata, 'ai_summary_flags.0'))->toMatchArray(['summary' => 'Longer than the email itself', 'reason' => 'Too long', 'user_id' => $this->user->id])
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($email)->resolve())->toMatchArray(['ai_summary_flagged' => true])
+        ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($email)->resolve()['metadata'])->not->toHaveKey('ai_summary_flags');
+    $this->postJson(route('grp.chat.ai.summaries.message.flag', [$email->id]), ['reason' => 'Again'])->assertStatus(422);
+
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Missed the refund'])->assertOk();
+    expect(\App\Actions\Chat\UI\FlagChatAiSummary::isFlagged($session->refresh()))->toBeTrue();
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Again'])->assertStatus(422);
+
+    $session->update(['metadata' => array_merge($session->metadata, ['ai_summary' => ['summary' => 'Customer wants a refund']])]);
+    expect(\App\Actions\Chat\UI\FlagChatAiSummary::isFlagged($session->refresh()))->toBeFalse()
+        ->and(Arr::get($session->metadata, 'ai_summary_flags.0.summary'))->toBe('Customer asks about an order');
+    $this->postJson(route('grp.chat.ai.summaries.session.flag', [$session->ulid]), ['reason' => 'Still wrong'])->assertOk();
+    expect(Arr::get($session->refresh()->metadata, 'ai_summary_flags'))->toHaveCount(2);
+
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp'])->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+421900003676',
+        'status'          => ChatSessionStatusEnum::CLOSED,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+        'metadata'        => ['ai_summary' => ['summary' => 'Customer asks for a catalogue']],
+    ]);
+    $this->postJson(route('grp.chat.ai.summaries.meta_session.flag', [$whatsappSession->ulid]), ['reason' => 'They asked for prices'])->assertOk();
+    expect(\App\Http\Resources\CRM\Livechat\MetaChatSessionListResource::make($whatsappSession->refresh())->resolve()['ai_summary']['flagged'])->toBeTrue();
+    $whatsappSession->delete();
+
+    $email->delete();
+    $plain->delete();
+    $session->delete();
+});
+
+test('email reply attaches files while they fit in 18MB and links the rest', function () {
+    $megabyte = 1024 * 1024;
+    $files    = collect([
+        (object) ['ulid' => 'a', 'size' => 10 * $megabyte],
+        (object) ['ulid' => 'b', 'size' => 27 * $megabyte],
+        (object) ['ulid' => 'c', 'size' => 8 * $megabyte],
+    ]);
+
+    [$attached, $linked] = \App\Actions\Comms\Mailbox\SendChatMessageByGmail::splitByGmailLimit($files);
+
+    expect($attached->pluck('ulid')->all())->toBe(['a', 'c'])
+        ->and($linked->pluck('ulid')->all())->toBe(['b']);
+});
+
+test('customer uploads are capped at 10MB a file and 100MB a day per IP', function () {
+    $ip = '203.0.113.'.random_int(1, 254);
+    \Illuminate\Support\Facades\RateLimiter::clear('chat-customer-upload-bytes:'.$ip);
+    $send = fn (int $kilobytes) => SendChatMessage::make()->customerUploadRefusal(
+        \Illuminate\Http\Request::create('/', 'POST', [], [], ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('a.pdf', $kilobytes)]], ['REMOTE_ADDR' => $ip])
+    );
+
+    expect($send(11 * 1024)['code'])->toBe(422);
+
+    foreach (range(1, 10) as $ignored) {
+        expect($send(10 * 1024))->toBeNull();
+    }
+
+    expect($send(1)['code'])->toBe(429);
+
+    \Illuminate\Support\Facades\RateLimiter::clear('chat-customer-upload-bytes:'.$ip);
+});
+
+test('unauthenticated request cannot post as system', function () {
+    \Illuminate\Support\Facades\Auth::logout();
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_test_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $senderData = (fn () => $this->determineSenderData(['sender_type' => ChatSenderTypeEnum::SYSTEM->value], $chatSession))
+        ->call(SendChatMessage::make());
+
+    expect($senderData['data']['sender_type'] ?? null)->not->toBe(ChatSenderTypeEnum::SYSTEM->value);
+});
+
+test('whatsapp calls ring for customer service agents but not for shop admins', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $shopAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $shopAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->toContain($this->shop->id)
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($shopAdmin)['customer_service_shops'])->not->toContain($this->shop->id);
 });

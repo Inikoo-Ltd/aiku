@@ -20,6 +20,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -57,15 +58,20 @@ class ShowStockDelivery extends OrgAction
 {
     use WithStockDeliveryWeightAndVolume;
     use WithAgentOrganisation;
+    use WithGoodsInBookInAuthorisation;
 
     private bool $canEditPayments = false;
     private bool $canUpdateCosting = false;
+    private bool $canBookIn = false;
+    private bool $canUnreceive = false;
 
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit          = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
         $this->canEditPayments  = $this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit");
         $this->canUpdateCosting = $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting");
+        $this->canBookIn        = $this->authToBookIn($request, 'incoming.%d.edit');
+        $this->canUnreceive     = $this->authToBookIn($request, 'supervisor-incoming.%d');
 
         return true;
     }
@@ -95,6 +101,8 @@ class ShowStockDelivery extends OrgAction
         $this->canEdit          = false;
         $this->canEditPayments  = false;
         $this->canUpdateCosting = false;
+        $this->canBookIn        = false;
+        $this->canUnreceive     = false;
 
         return $this->handle($stockDelivery);
     }
@@ -125,7 +133,7 @@ class ShowStockDelivery extends OrgAction
                             'parameters' => array_values($request->route()->originalParameters()),
                         ],
                     ] : false,
-                    'actions'    => array_merge($this->getUpdateCostingActions($stockDelivery), $this->canEdit ? $this->getActions($stockDelivery) : []),
+                    'actions'    => array_merge($this->getUpdateCostingActions($stockDelivery), $this->getAllowedActions($stockDelivery)),
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
@@ -496,6 +504,26 @@ class ShowStockDelivery extends OrgAction
         }
 
         return array_merge($actions, [$pdfButton]);
+    }
+
+    private function getAllowedActions(StockDelivery $stockDelivery): array
+    {
+        if ($this->canEdit) {
+            return $this->getActions($stockDelivery);
+        }
+
+        if (!$this->canBookIn || $stockDelivery->organisation_id !== $this->organisation->id) {
+            return [];
+        }
+
+        $allowedKeys = $this->canUnreceive
+            ? ['receive_stock_delivery', 'unreceive_stock_delivery', 'action']
+            : ['receive_stock_delivery', 'action'];
+
+        return array_values(array_filter(
+            $this->getActions($stockDelivery),
+            fn (array $action) => in_array($action['key'], $allowedKeys)
+        ));
     }
 
     public function getStateLabels(StockDelivery $stockDelivery): array

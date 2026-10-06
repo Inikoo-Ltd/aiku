@@ -19,6 +19,10 @@ use App\Models\Production\JobOrder;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
+use App\Models\Production\ManufactureTaskSession;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use Illuminate\Support\Collection;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -62,34 +66,44 @@ class ShowJobOrder extends OrgAction
     {
         $warehouse = $this->organisation->warehouses()->first();
 
-        $items = $jobOrder->jobOrderItems()
-            ->with(['artefact.orgStock', 'tasks.manufactureTask'])
-            ->get()
-            ->map(fn (JobOrderItem $item) => [
-                'id'                => $item->id,
-                'artefact_code'     => $item->artefact->code,
-                'artefact_name'     => $item->artefact->name,
-                'quantity'          => (int)$item->quantity,
-                'demand_skos'       => data_get($item->data, 'demand_skos'),
-                'suggested_quantity' => $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size
-                    ? GetOpenJobOrderItemsOffBatch::make()->getSuggestedQuantity($item)
-                    : null,
-                'update_route'      => $this->canEdit && in_array($jobOrder->state, JobOrderStateEnum::open()) && $item->quantity_received == 0 ? [
-                    'name'       => 'grp.models.job-order-item.update',
-                    'parameters' => ['jobOrderItem' => $item->id],
-                ] : null,
-                'produced_quantity' => (float)($item->tasks->last()->quantity_made ?? 0),
-                'waiting_for'       => GetJobOrderItemMissingMixes::run($item),
-                'tasks'             => $item->tasks->map(fn (JobOrderItemTask $task) => [
-                    'id'                => $task->id,
-                    'position'          => $task->position,
-                    'task_name'         => $task->manufactureTask->name,
-                    'state'             => $task->state,
-                    'quantity_required' => (float)$task->quantity_required,
-                    'quantity_made'     => (float)$task->quantity_made,
-                    'quantity_rejected' => (float)$task->quantity_rejected,
-                ])->values(),
-            ]);
+        $isOpen          = in_array($jobOrder->state, JobOrderStateEnum::open());
+        $currencySymbol  = $this->organisation->currency->symbol;
+        $allItems        = $jobOrder->jobOrderItems()
+            ->with(['artefact.orgStock', 'tasks.manufactureTask', 'tasks.sessions', 'employee'])
+            ->orderBy('id')
+            ->get();
+        $subJobsByLine   = $allItems->groupBy(fn (JobOrderItem $item) => $item->split_from_id ?? $item->id);
+
+        $items = $allItems->whereNull('split_from_id')
+            ->map(function (JobOrderItem $item) use ($jobOrder, $subJobsByLine, $isOpen, $currencySymbol) {
+                $subJobs  = $subJobsByLine->get($item->id);
+                $isSplit  = $subJobs->count() > 1 || $item->employee_id;
+                $received = $subJobs->sum('quantity_received') > 0;
+
+                return [
+                    'id'                 => $item->id,
+                    'artefact_code'      => $item->artefact->code,
+                    'artefact_name'      => $item->artefact->name,
+                    'quantity'           => (int)$subJobs->sum('quantity'),
+                    'demand_skos'        => data_get($item->data, 'demand_skos'),
+                    'suggested_quantity' => !$isSplit && $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size
+                        ? GetOpenJobOrderItemsOffBatch::make()->getSuggestedQuantity($item)
+                        : null,
+                    'update_route'       => $this->canEdit && $isOpen && !$isSplit && !$received ? [
+                        'name'       => 'grp.models.job-order-item.update',
+                        'parameters' => ['jobOrderItem' => $item->id],
+                    ] : null,
+                    'split_route'        => $this->canEdit && $isOpen && !$received ? [
+                        'name'       => 'grp.models.job-order-item.split',
+                        'parameters' => ['jobOrderItem' => $item->id],
+                    ] : null,
+                    'produced_quantity'  => (float)$subJobs->sum(fn (JobOrderItem $subJob) => $subJob->tasks->last()->quantity_made ?? 0),
+                    'waiting_for'        => GetJobOrderItemMissingMixes::run($item),
+                    'tasks'              => $this->lineTasks($subJobs),
+                    'sub_jobs'           => $isSplit ? $subJobs->values()->map(fn (JobOrderItem $subJob, int $index) => $this->subJob($jobOrder, $subJob, $index, $currencySymbol))->all() : [],
+                ];
+            })
+            ->values();
 
         $artefactOptions = Artefact::where('production_id', $this->production->id)
             ->whereNot('state', ArtefactStateEnum::DORMANT)
@@ -158,6 +172,68 @@ class ShowJobOrder extends OrgAction
                 ] : null,
             ]
         );
+    }
+
+    /**
+     * The recipe steps of a line, summed over all its sub-jobs.
+     *
+     * @param  Collection<int, JobOrderItem>  $subJobs
+     */
+    private function lineTasks(Collection $subJobs): array
+    {
+        return $subJobs->flatMap(fn (JobOrderItem $subJob) => $subJob->tasks)
+            ->groupBy('manufacture_task_id')
+            ->map(function (Collection $tasks) {
+                /** @var JobOrderItemTask $task */
+                $task  = $tasks->first();
+                $state = JobOrderItemTaskStateEnum::TODO;
+                if ($tasks->every(fn (JobOrderItemTask $task) => $task->state == JobOrderItemTaskStateEnum::DONE)) {
+                    $state = JobOrderItemTaskStateEnum::DONE;
+                } elseif ($tasks->contains(fn (JobOrderItemTask $task) => $task->state != JobOrderItemTaskStateEnum::TODO)) {
+                    $state = JobOrderItemTaskStateEnum::IN_PROGRESS;
+                }
+
+                return [
+                    'id'                => $task->id,
+                    'position'          => $task->position,
+                    'task_name'         => $task->manufactureTask->name,
+                    'state'             => $state,
+                    'quantity_required' => (float)$tasks->sum('quantity_required'),
+                    'quantity_made'     => (float)$tasks->sum('quantity_made'),
+                    'quantity_rejected' => (float)$tasks->sum('quantity_rejected'),
+                ];
+            })
+            ->sortBy('position')
+            ->values()
+            ->all();
+    }
+
+    private function subJob(JobOrder $jobOrder, JobOrderItem $subJob, int $index, string $currencySymbol): array
+    {
+        $lastTask       = $subJob->tasks->last();
+        $closedSessions = $subJob->tasks->flatMap(fn (JobOrderItemTask $task) => $task->sessions)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED);
+
+        $state = 'assigned';
+        if ($lastTask && $lastTask->state == JobOrderItemTaskStateEnum::DONE) {
+            $state = 'complete';
+        } elseif ($subJob->tasks->contains(fn (JobOrderItemTask $task) => $task->state != JobOrderItemTaskStateEnum::TODO)) {
+            $state = 'in_progress';
+        }
+
+        return [
+            'id'              => $subJob->id,
+            'reference'       => $jobOrder->reference.'-'.chr(65 + $index),
+            'employee_id'     => $subJob->employee_id,
+            'artisan'         => $subJob->employee?->contact_name,
+            'quantity'        => (int)$subJob->quantity,
+            'quantity_made'   => (float)($lastTask->quantity_made ?? 0),
+            'quantity_target' => (float)($lastTask->quantity_required ?? $subJob->quantity),
+            'state'           => $state,
+            'seconds'         => (int)round($closedSessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()) * 3600),
+            'reward'          => $currencySymbol.number_format((float)$closedSessions->sum('pay'), 2),
+            'can_remove'      => $subJob->tasks->every(fn (JobOrderItemTask $task) => $task->sessions->isEmpty()),
+        ];
     }
 
     public function getBreadcrumbs(JobOrder $jobOrder, array $routeParameters, $suffix = null): array

@@ -13,11 +13,14 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
 import { capitalize, inject } from 'vue'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 library.add(faArrowRight, faFlask)
 
 const props = defineProps<{
+    data?: {
+        staging_url: string
+    }
 }>()
 
 const emit = defineEmits<{
@@ -56,18 +59,18 @@ const layout = inject('layout', aikuLocaleStructure)
                 </div> -->
 
                 <h1 class="text-pretty text-2xl font-semibold tracking-tight">
-                    {{ trans("Connect to the API") }}
+                    {{ ctrans("Connect to the API") }}
                 </h1>
                 <p class="mt-3 max-w-2xl text-sm text-gray-500">
-                    {{ trans("Connect your own systems directly to your account: browse the product catalogue with live prices, build your portfolio, manage your clients, create and submit orders, follow their progress, and download your product data as CSV or JSON feeds — everything you can do here, automated from your side.") }}
+                    {{ ctrans("Connect your own systems directly to your account: browse the product catalogue with live prices, build your portfolio, manage your clients, create and submit orders, follow their progress, and download your product data as CSV or JSON feeds — everything you can do here, automated from your side.") }}
                 </p>
 
                 <!-- Section: See Documentation -->
                 <div class="mt-6 flex flex-col gap-x-6">
-                    <div class="mb-2 text-sm text-gray-500">{{ trans("Full reference of the available endpoints, parameters and examples:") }}</div>
+                    <div class="mb-2 text-sm text-gray-500">{{ ctrans("Full reference of the available endpoints, parameters and examples:") }}</div>
                     <a :href="layout?.retina?.type === 'fulfilment' ? 'https://documenter.getpostman.com/view/28816137/2sBY4WmwBA' : 'https://documenter.getpostman.com/view/28816137/2sB34Zrjrp'" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
-                            :label="trans('API documentation')"
+                            :label="ctrans('API documentation')"
                             iconRight="fal fa-external-link"
                         >
                         </Button>
@@ -76,15 +79,15 @@ const layout = inject('layout', aikuLocaleStructure)
 
                 <!-- Section: How to use your token -->
                 <div class="mt-6 max-w-2xl rounded-lg border border-purple-300 bg-purple-50 p-4 text-purple-900">
-                    <div class="text-sm font-semibold mb-1">{{ trans("To use the API you need a token") }}</div>
+                    <div class="text-sm font-semibold mb-1">{{ ctrans("To use the API you need a token") }}</div>
                     <ul class="list-disc pl-5 space-y-1 text-sm">
-                        <li>{{ trans("Copy the full token from the popup when you generate it — it is shown only once. The shortened label in the token list is just a reference, not the token itself.") }}</li>
-                        <li>{{ trans("Send it with every request as a header:") }} <code class="bg-purple-100 px-1 rounded">Authorization: Bearer &lt;your token&gt;</code></li>
-                        <li>{{ trans("Base URL:") }} <code class="bg-purple-100 px-1 rounded">https://api.aiku.io</code></li>
+                        <li>{{ ctrans("Copy the full token from the popup when you generate it — it is shown only once. The shortened label in the token list is just a reference, not the token itself.") }}</li>
+                        <li>{{ ctrans("Send it with every request as a header:") }} <code class="bg-purple-100 px-1 rounded">Authorization: Bearer &lt;your token&gt;</code></li>
+                        <li>{{ ctrans("Base URL:") }} <code class="bg-purple-100 px-1 rounded">https://api.aiku.io</code></li>
                     </ul>
                     <Button
                         @click="emit('generateToken')"
-                        :label="trans('Generate API token')"
+                        :label="ctrans('Generate API token')"
                         icon="fal fa-key"
                         type="secondary"
                         class="mt-3"
@@ -95,18 +98,18 @@ const layout = inject('layout', aikuLocaleStructure)
                 <div class="mt-6 max-w-2xl rounded-lg border border-gray-300 bg-gray-50 p-4">
                     <div class="flex items-center gap-x-2 text-sm font-semibold mb-1">
                         <FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" />
-                        {{ trans("Staging") }}
+                        {{ ctrans("Staging") }}
                     </div>
-                    <div class="text-sm text-gray-600 mb-2">{{ trans("Test safely without affecting your real data.") }}</div>
+                    <div class="text-sm text-gray-600 mb-2">{{ ctrans("Test safely without affecting your real data.") }}</div>
                     <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600 mb-3">
-                        <li>{{ trans("Staging is a separate copy of the site. Log in with the same email and password as here.") }}</li>
-                        <li>{{ trans("Every Sunday at 03:00 UTC staging is reset with a fresh copy of production. Anything you created in staging is erased, so start your tests over after each reset.") }}</li>
-                        <li>{{ trans("Production API tokens do not work in staging. Generate a separate token in staging for your tests — it will stop working at the next reset, so generate a new one each week.") }}</li>
-                        <li>{{ trans("The API documentation applies to staging unchanged — the only difference is the base URL:") }} <code class="bg-gray-200 px-1 rounded">https://api.aiku-sandbox.uk</code></li>
+                        <li>{{ ctrans("Staging is a separate copy of the site. Log in with the same email and password as here.") }}</li>
+                        <li>{{ ctrans("Every Sunday at 03:00 UTC staging is reset with a fresh copy of production. Anything you created in staging is erased, so start your tests over after each reset.") }}</li>
+                        <li>{{ ctrans("Production API tokens do not work in staging. Generate a separate token in staging for your tests — it will stop working at the next reset, so generate a new one each week.") }}</li>
+                        <li>{{ ctrans("The API documentation applies to staging unchanged — the only difference is the base URL:") }} <code class="bg-gray-200 px-1 rounded">https://api.aiku-sandbox.uk</code></li>
                     </ul>
-                    <a href="https://canary.aw-dropship.com/app" target="_blank" rel="noopener noreferrer" class="w-fit">
+                    <a :href="data?.staging_url" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
-                            :label="trans('Open staging mirror')"
+                            :label="ctrans('Open staging mirror')"
                             iconRight="fal fa-external-link"
                             type="rainbow"
                         >

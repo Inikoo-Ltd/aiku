@@ -112,7 +112,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'title'      => __('Basket'),
                     'icon'       => 'fal fa-shopping-cart',
                     'afterTitle' => [
-                        'label' => $order ? '#'.$order->slug : ''
+                        'label' => $order ? '#'.$order->reference : ''
                     ]
                 ],
 

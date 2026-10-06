@@ -31,7 +31,7 @@ const props = defineProps<{
     updateRoute: routeType
     state?: string
     readonly?: boolean
-    preOrderLines?: Record<string, { type_label: string, dispatch_label: string, in_stock_quantity: number, pre_order_quantity: number }>
+    preOrderLines?: Record<string, { basket_label: string, in_stock_quantity: number, pre_order_quantity: number }>
 }>()
 
 const layout = inject("layout", {})
@@ -180,9 +180,7 @@ const isOffersData = (offersData: any): boolean => {
                 <div class="text-base"><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units)
                         }}x</span>{{ item.asset_name }}</div>
                 <div v-if="preOrderLines?.[item.id]" class="text-xs text-amber-800">
-                    <Tag :label="preOrderLines[item.id].type_label" no-hover-color :theme="3" size="xxs" />
-                    <span class="ml-1">{{ preOrderLines[item.id].dispatch_label }}</span>
-                    <span v-if="preOrderLines[item.id].in_stock_quantity > 0" class="ml-1 italic">({{ ctrans(':in_stock sent now, :pre_order later', { in_stock: String(preOrderLines[item.id].in_stock_quantity), pre_order: String(preOrderLines[item.id].pre_order_quantity) }) }})</span>
+                    {{ preOrderLines[item.id].basket_label }}
                 </div>
                 <div v-else-if="!item.available_quantity">
                     <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
@@ -279,8 +277,7 @@ const isOffersData = (offersData: any): boolean => {
                                 <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                     <div class="text-xs text-gray-400">{{ item.asset_code }}</div>
                                     <div v-if="preOrderLines?.[item.id]" class="text-xs text-amber-800">
-                                        <Tag :label="preOrderLines[item.id].type_label" no-hover-color :theme="3" size="xxs" />
-                                        <span class="ml-1">{{ preOrderLines[item.id].dispatch_label }}</span>
+                                        {{ preOrderLines[item.id].basket_label }}
                                     </div>
                                     <div v-else-if="!item.available_quantity">
                                         <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />

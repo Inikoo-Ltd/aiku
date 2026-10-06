@@ -504,6 +504,15 @@ const onSuccessBulkMatch = () => {
 	debReloadPage()
 }
 
+const pendingBulkAction = ref<any>(null)
+const confirmPendingBulkAction = () => {
+	const action = pendingBulkAction.value
+	pendingBulkAction.value = null
+	if (action) {
+		submitPortfolioAction(action)
+	}
+}
+
 const submitPortfolioAction = async (action: any) => {
 	loadingAction.value.push(action.label)
 	try {
@@ -524,6 +533,18 @@ const submitPortfolioAction = async (action: any) => {
 
 		if (action.label === "bulk-match") {
 			onSuccessBulkMatch()
+
+			return
+		}
+
+		if (action.label === "bulk-unlink" && response.data?.queued > 0) {
+			selectedProducts.value = []
+			notify({
+				title: ctrans("Removing :count products", { count: response.data.queued }),
+				text: ctrans("They are removed in the background, about one per second. Refresh the page in a few minutes to see the list without them."),
+				type: "success",
+			})
+			debReloadPage()
 
 			return
 		}
@@ -1362,7 +1383,7 @@ const layout = inject("layout", layoutStructure)
 				:loading="loadingAction.includes('bulk-unlink')"
 				@click="
 					() =>
-						submitPortfolioAction({
+						(pendingBulkAction = {
 							label: 'bulk-unlink',
 							name: props.routes.bulk_unlink.name,
 							parameters: { customerSalesChannel: customer_sales_channel.id },
@@ -1383,7 +1404,7 @@ const layout = inject("layout", layoutStructure)
 				:loading="loadingAction.includes('bulk-unlink-only')"
 				@click="
 					() =>
-						submitPortfolioAction({
+						(pendingBulkAction = {
 							label: 'bulk-unlink-only',
 							name: props.routes.bulk_unlink_only.name,
 							parameters: { customerSalesChannel: customer_sales_channel.id },
@@ -1667,6 +1688,36 @@ const layout = inject("layout", layoutStructure)
 				:count_product_not_synced="count_product_not_synced" />
 		</div>
 	</div>
+
+	<Modal :isOpen="!!pendingBulkAction" @onClose="pendingBulkAction = null" width="w-full max-w-lg">
+		<div class="p-2">
+			<h3 class="text-lg font-semibold text-gray-900">
+				{{
+					pendingBulkAction?.label === "bulk-unlink"
+						? ctrans("Remove :count products from My Products?", { count: selectedProducts.length })
+						: ctrans("Unlink :count products from your store?", { count: selectedProducts.length })
+				}}
+			</h3>
+			<p class="mt-3 text-sm text-gray-600">
+				{{
+					pendingBulkAction?.label === "bulk-unlink"
+						? ctrans("Please take a moment before you continue: this cannot be undone. The products will be unlinked from your store and removed from My Products, together with the names, prices and descriptions you set for them. We cannot bring them back for you, so if you change your mind you will need to add them again yourself. The listings stay in your store.")
+						: ctrans("They stay in My Products, but they will no longer be linked to the listings in your store. We cannot undo this for you, so please make sure these are the products you mean.")
+				}}
+			</p>
+			<div class="mt-6 flex justify-end gap-x-3">
+				<Button type="tertiary" :label="ctrans('Cancel')" @click="pendingBulkAction = null" />
+				<Button
+					:type="pendingBulkAction?.label === 'bulk-unlink' ? 'delete' : 'secondary'"
+					:label="
+						pendingBulkAction?.label === 'bulk-unlink'
+							? ctrans('Yes, remove :count products', { count: selectedProducts.length })
+							: ctrans('Yes, unlink :count products', { count: selectedProducts.length })
+					"
+					@click="confirmPendingBulkAction" />
+			</div>
+		</div>
+	</Modal>
 
 	<Modal
 		:isOpen="isOpenModalPortfolios"

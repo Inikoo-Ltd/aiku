@@ -71,6 +71,9 @@ class StoreFamilyFromMasterFamily extends OrgAction
                     'master_product_category_id' => $masterFamily->id,
                     'trade_unit_family_id'       => $masterFamily->trade_unit_family_id,
                     'faq'                        => $masterFamily->faq,
+                    'website_position'           => data_get($shop->settings, 'catalog.family_order_follow_master', true)
+                        ? $masterFamily->website_position
+                        : null,
                 ];
 
                 $family = ProductCategory::where('shop_id', $shop->id)

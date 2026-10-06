@@ -117,6 +117,9 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     ],
                 ],
                 'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
+                ApiTokenRetinaTabsEnum::SHOWCASE->value => [
+                    'staging_url' => 'https://canary.'.$this->website->domain.'/app',
+                ],
                 // 'data'       => [
                 //     // 'route_generate' => [
                 //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',

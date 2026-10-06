@@ -37,7 +37,6 @@ const imageSettings = {
 }
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 const valueForField = computed(() => {
 	const rawVal = get(props.modelValue, ['column_position'])
@@ -66,7 +65,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					isImageLeft ? 'order-1' : 'order-2'
 				]" @click.stop="() => {
 					sendMessageToParent('activeBlock', indexBlock)
-					sendMessageToParent('activeChildBlock', bKeys[0])
+					sendMessageToParent('activeChildBlock', 'image')
 				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
 					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
 					<Image :src="modelValue.image.source" :imageCover="true"
@@ -83,10 +82,10 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					:style="getStyles(modelValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full" @click="() => {
 						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[1])
+						sendMessageToParent('activeChildBlock', 'text_block')
 					}">
 						<Editor v-if="modelValue?.text" v-model="modelValue.text"
-							@focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+							@focus="() => sendMessageToParent('activeChildBlock', 'text_block')"
 							@update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
 								name: webpageData.images_upload_route.name,
 								parameters: {
@@ -99,7 +98,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 								:label="modelValue?.button?.text" @click.stop="() => {
 									sendMessageToParent('activeBlock', indexBlock)
-									sendMessageToParent('activeChildBlock', bKeys[2])
+									sendMessageToParent('activeChildBlock', 'button')
 								}" />
 						</div>
 					</div>

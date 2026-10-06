@@ -13,6 +13,7 @@ import { Dialog, Textarea, Button } from "primevue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
+import { useBoardDropZones } from "@/Composables/useBoardDropZones"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
@@ -172,8 +173,16 @@ const onMoveCheck = (event: { draggedContext: { element: any }; from: HTMLElemen
 const dragging = ref(false)
 let lastDragEndedAt = 0
 
+const { startDrag, endDrag, dropZone } = useBoardDropZones(canDropTask)
+
+const onDragStart = (column: Column, event: { oldIndex: number }) => {
+    dragging.value = true
+    startDrag(column.tasks[event.oldIndex], column.status)
+}
+
 const onDragEnd = () => {
     dragging.value = false
+    endDrag()
     lastDragEndedAt = Date.now()
 }
 
@@ -370,7 +379,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                     <span class="rounded bg-white/70 px-1.5 py-0.5 text-xs tabular-nums text-gray-600">{{ visibleCount(column) }}</span>
                     <span class="text-xs font-medium text-gray-600 [writing-mode:vertical-rl]">{{ column.label }}</span>
                 </button>
-                <div v-else class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2" :class="columnClasses[column.color] ?? columnClasses.gray">
+                <div v-else class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2 transition duration-200" :class="[columnClasses[column.color] ?? columnClasses.gray, dropZone(column.status, column.color).class]" :style="dropZone(column.status, column.color).style">
                     <div class="flex flex-nowrap items-center gap-1.5 whitespace-nowrap px-1 pb-2">
                         <button
                             v-if="column.status === 'cancelled' && !dragging"
@@ -418,13 +427,13 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                         :force-fallback="true"
                         :fallback-tolerance="4"
                         class="thinScrollbar max-h-[70vh] min-h-24 flex-1 space-y-2 overflow-y-auto pr-1"
-                        @start="dragging = true"
+                        @start="onDragStart(column, $event)"
                         @end="onDragEnd"
                         @change="onMoved(column, $event)">
                         <template #item="{ element: task }">
                             <div
                                 v-show="matches(task)"
-                                class="relative cursor-pointer rounded-md border border-gray-200 bg-white p-2.5 pl-7 shadow-sm transition duration-200 hover:border-gray-400"
+                                class="relative cursor-pointer select-none rounded-md border border-gray-200 bg-white p-2.5 pl-7 shadow-sm hover:border-gray-400"
                                 :class="!canDragTask(task) && 'task-card-locked'"
                                 :aria-busy="savingTaskIds.includes(task.id)"
                                 @click="openTask(task, $event)">

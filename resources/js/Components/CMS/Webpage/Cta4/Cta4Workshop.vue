@@ -37,7 +37,6 @@ const imageSettings = {
 }
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 
 
@@ -67,7 +66,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					isImageRight ? 'order-2' : 'order-1'
 				]" :style="getStyles(modelValue.image.properties, screenType)" @click.stop="() => {
 					sendMessageToParent('activeBlock', indexBlock)
-					sendMessageToParent('activeChildBlock', bKeys[0])
+					sendMessageToParent('activeChildBlock', 'image')
 				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)">
 					<Image :src="modelValue.image.source" :imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
@@ -83,10 +82,10 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					:style="getStyles(modelValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full" @click="() => {
 						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[1])
+						sendMessageToParent('activeChildBlock', 'text_block')
 					}">
 						<Editor v-if="modelValue?.text" v-model="modelValue.text"
-							@focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+							@focus="() => sendMessageToParent('activeChildBlock', 'text_block')"
 							@update:modelValue="() => emits('autoSave')" class="mb-4" :uploadImageRoute="{
 								name: webpageData.images_upload_route.name,
 								parameters: {
@@ -99,7 +98,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 								:label="modelValue?.button?.text" @click.stop="() => {
 									sendMessageToParent('activeBlock', indexBlock)
-									sendMessageToParent('activeChildBlock', bKeys[2])
+									sendMessageToParent('activeChildBlock', 'button')
 								}" />
 						</div>
 					</div>
