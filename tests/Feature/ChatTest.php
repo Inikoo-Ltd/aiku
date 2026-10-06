@@ -8995,6 +8995,7 @@ test('a general question is answered from the knowledge base entry jev picks, an
         ],
         isset($questions['ask'])   => ['ask' => ['type' => 'choice', 'choice' => 'ship_to_country', 'probabilities' => ['ship_to_country' => 0.96]]],
         isset($questions['entry']) => ['entry' => ['type' => 'choice', 'choice' => 'e'.$note->id, 'probabilities' => ['e'.$note->id => 0.9, 'none' => 0.1]]],
+        isset($questions['covered']) => ['needs_reply' => ['type' => 'noul', 'noul' => 0.9], 'covered' => ['type' => 'score', 'score' => 3]],
         default                    => null,
     });
     $quote = 'We cannot ship from the UK to Germany because we do not have a LUCID registration.';
@@ -12334,6 +12335,7 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
         'wants_something' => $noul(0.9), 'problem' => $noul(0.97), 'about_existing_order' => $noul(0.95), 'one_question' => $noul(0.2),
         'act'             => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
         'problem_kind'    => ['type' => 'choice', 'choice' => 'damaged', 'probabilities' => ['damaged' => 0.95]],
+        'covered'         => ['type' => 'score', 'score' => 3],
     ]);
 
     $reply = 'Hello, I am sorry two mugs arrived broken. Could you send a photo of each mug and of the box? [[agent: replacement or credit?]]';
