@@ -304,7 +304,6 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->where('purchase_orders.organisation_id', $purchaseOrder->organisation_id)
             ->where('purchase_orders.id', '!=', $purchaseOrder->id)
             ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::IN_PROCESS->value,
                 PurchaseOrderStateEnum::SUBMITTED->value,
                 PurchaseOrderStateEnum::CONFIRMED->value,
             ])
