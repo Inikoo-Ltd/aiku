@@ -9,7 +9,10 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
@@ -17,14 +20,19 @@ use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Models\Catalogue\Product;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,6 +43,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SendPartnerPurchaseOrderToSeller
 {
     use AsAction;
+
+    /** @var array<string, Product|null> */
+    private array $sellingProducts = [];
 
     public static function appliesTo(PurchaseOrder $purchaseOrder): bool
     {
@@ -63,7 +74,7 @@ class SendPartnerPurchaseOrderToSeller
         $transactions = $this->transactions($purchaseOrder);
         $problems     = [];
         foreach ($transactions as $transaction) {
-            if (!GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id])) {
+            if (!$this->sellingProduct($orgPartner, $transaction->stock_id, $shop->id)) {
                 $problems[] = __(':partner does not sell :code', ['partner' => $partner->name, 'code' => $transaction->orgStock->code]);
             }
         }
@@ -75,60 +86,135 @@ class SendPartnerPurchaseOrderToSeller
     }
 
     /**
+     * Runs in short steps that each commit, so no lock on shop or group wide rows is held while
+     * hundreds of lines are added, and a retry carries on from the step that failed: the order is
+     * created, then all its lines are added at once, then it goes to the warehouse and the purchase
+     * order is confirmed. A lock per purchase order keeps a retry from running alongside a slow run.
+     *
      * @throws \Throwable
      */
-    public function handle(PurchaseOrder $purchaseOrder): Order
+    public function handle(PurchaseOrder $purchaseOrder): ?Order
     {
-        if ($problems = $this->problems($purchaseOrder)) {
-            throw ValidationException::withMessages(['purchase_order' => $problems]);
+        return Cache::lock("send-partner-purchase-order:$purchaseOrder->id", 900)
+            ->block(900, fn () => $this->send($purchaseOrder));
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function send(PurchaseOrder $purchaseOrder): ?Order
+    {
+        $purchaseOrder->refresh();
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
+            return null;
         }
 
         /** @var OrgPartner $orgPartner */
-        $orgPartner  = $purchaseOrder->parent;
-        $cherryPick  = CherryPickPartnerShoppingListItems::make();
-        $shop        = Shop::find(Arr::get($orgPartner->partner->settings, 'procurement.shop_id'));
-        $customer    = $cherryPick->resolveIntercompanyCustomer($orgPartner, $shop);
+        $orgPartner = $purchaseOrder->parent;
+        $shop       = Shop::find(Arr::get($orgPartner->partner->settings, 'procurement.shop_id'));
 
-        $order = StoreOrder::make()->action($customer, [
-            'sales_channel_id'   => $cherryPick->intercompanySalesChannel($customer->group_id)->id,
-            'customer_reference' => $purchaseOrder->reference,
-        ]);
+        $order = Order::find(data_get($purchaseOrder->data, 'seller_order_id'));
+        if (!$order || ($order->state === OrderStateEnum::CREATING && !$order->transactions()->exists())) {
+            if ($this->problems($purchaseOrder)) {
+                UpdatePurchaseOrderStateToInProcess::make()->action($purchaseOrder);
 
-        $landedCostLines = [];
-        foreach ($this->transactions($purchaseOrder) as $transaction) {
-            $product        = GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id]);
-            $sellerOrgStock = $product->orgStocks()->first();
-            $unitsPerItem   = (float) $product->pivot->quantity * (float) ($sellerOrgStock?->packed_in ?: 1);
-            $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
-            $amount         = round($quantity * (float) $product->price, 2);
+                return null;
+            }
 
-            $orderTransaction = StoreTransaction::make()->action($order, $product->historicAsset, [
-                'quantity_ordered' => $quantity,
-                'gross_amount'     => $amount,
-                'net_amount'       => $amount,
+            $order ??= $this->storeOrder($purchaseOrder, $orgPartner, $shop);
+            $this->addLines($purchaseOrder, $orgPartner, $shop, $order);
+        }
+
+        $order->refresh();
+        if ($order->state === OrderStateEnum::CREATING) {
+            DB::transaction(fn () => SendPartnerOrderToWarehouse::make()->action($order));
+        }
+
+        DB::transaction(function () use ($purchaseOrder, $order) {
+            $stockDelivery = StockDelivery::whereIn('delivery_note_id', $order->deliveryNotes()->select('delivery_notes.id'))->first();
+            if (!$stockDelivery) {
+                throw new \RuntimeException("Seller order $order->id for $purchaseOrder->reference has no stock delivery");
+            }
+            if (!$stockDelivery->purchaseOrders()->whereKey($purchaseOrder->id)->exists()) {
+                $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
+                $stockDelivery->update(['number_purchase_orders' => 1]);
+            }
+
+            UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+        });
+
+        return $order->refresh();
+    }
+
+    private function addLines(PurchaseOrder $purchaseOrder, OrgPartner $orgPartner, Shop $shop, Order $order): void
+    {
+        DB::transaction(function () use ($purchaseOrder, $orgPartner, $shop, $order) {
+            $order = Order::lockForUpdate()->find($order->id);
+            if ($order->transactions()->exists()) {
+                return;
+            }
+
+            $landedCostLines = [];
+            foreach ($this->transactions($purchaseOrder) as $transaction) {
+                $product        = $this->sellingProduct($orgPartner, $transaction->stock_id, $shop->id);
+                $sellerOrgStock = $product->orgStocks()->first();
+                $unitsPerItem   = (float) $product->pivot->quantity * (float) ($sellerOrgStock?->packed_in ?: 1);
+                $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
+                $amount         = round($quantity * (float) $product->price, 2);
+
+                $orderTransaction = StoreTransaction::make()->action($order, $product->historicAsset, [
+                    'quantity_ordered' => $quantity,
+                    'gross_amount'     => $amount,
+                    'net_amount'       => $amount,
+                ], strict: false);
+
+                if ($sellerOrgStock && (float) $product->price > 0) {
+                    $landedCostLines[$orderTransaction->id] = [$sellerOrgStock->id, (float) $product->pivot->quantity / (float) $product->price];
+                }
+            }
+
+            $order->refresh();
+            OrderHydrateCategoriesData::run($order);
+            CalculateOrderTotalAmounts::run($order);
+            OrderHydrateTransactions::run($order);
+
+            if (GetPartnerLandedCost::appliesTo($orgPartner)) {
+                $this->discountToLandedCost($order, $landedCostLines);
+            }
+
+            $order->update(['at_gate_at' => now()]);
+        });
+    }
+
+    private function sellingProduct(OrgPartner $orgPartner, int $stockId, int $shopId): ?Product
+    {
+        $key = "$orgPartner->id:$stockId:$shopId";
+        if (!array_key_exists($key, $this->sellingProducts)) {
+            $this->sellingProducts[$key] = GetPartnerSellingProduct::run($orgPartner, $stockId, [$shopId]);
+        }
+
+        return $this->sellingProducts[$key];
+    }
+
+    /**
+     * Committed on its own like any basket, together with the link on the purchase order, so the shop
+     * wide counters it bumps are not held locked while the lines are added.
+     */
+    private function storeOrder(PurchaseOrder $purchaseOrder, OrgPartner $orgPartner, Shop $shop): Order
+    {
+        $cherryPick = CherryPickPartnerShoppingListItems::make();
+        $customer   = $cherryPick->resolveIntercompanyCustomer($orgPartner, $shop);
+
+        return DB::transaction(function () use ($purchaseOrder, $customer, $cherryPick) {
+            $order = StoreOrder::make()->action($customer, [
+                'sales_channel_id'   => $cherryPick->intercompanySalesChannel($customer->group_id)->id,
+                'customer_reference' => $purchaseOrder->reference,
             ]);
 
-            if ($sellerOrgStock && (float) $product->price > 0) {
-                $landedCostLines[$orderTransaction->id] = [$sellerOrgStock->id, (float) $product->pivot->quantity / (float) $product->price];
-            }
-        }
+            $purchaseOrder->update(['data' => array_merge($purchaseOrder->data ?? [], ['seller_order_id' => $order->id])]);
 
-        if (GetPartnerLandedCost::appliesTo($orgPartner)) {
-            $this->discountToLandedCost($order, $landedCostLines);
-        }
-
-        $order->update(['at_gate_at' => now()]);
-
-        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($order->refresh());
-        if ($stockDelivery) {
-            $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
-            $stockDelivery->update(['number_purchase_orders' => 1]);
-        }
-
-        $purchaseOrder->update(['data' => array_merge($purchaseOrder->data ?? [], ['seller_order_id' => $order->id])]);
-        UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
-
-        return $order;
+            return $order;
+        });
     }
 
     /**
