@@ -140,6 +140,76 @@ function weeksLabel(days: number): string {
 const scaleDays = computed(() => Math.max(overstockDays.value * 1.25, leadDays.value * 1.5))
 const percent = (days: number) => Math.min(100, (Math.max(0, days) / scaleDays.value) * 100)
 
+const currentCoverTooltip = computed(() =>
+	incoming.value > 0
+		? ctrans("In stock and coming: lasts :time", { time: weeksLabel(daysNow.value) })
+		: ctrans("In stock: lasts :time", { time: weeksLabel(daysNow.value) })
+)
+
+const currentCoverZones = computed(() =>
+	[
+		{
+			key: "before-lead-time",
+			from: 0,
+			to: leadDays.value,
+			explanation: ctrans("First :time: stock needed while waiting for a new order to arrive. If the bar ends here, order now", {
+				time: weeksLabel(leadDays.value),
+			}),
+		},
+		{
+			key: "safe-range",
+			from: leadDays.value,
+			to: overstockDays.value,
+			explanation: ctrans("From :from to :to: safe range. If the bar ends here, there is enough stock for now", {
+				from: weeksLabel(leadDays.value),
+				to: weeksLabel(overstockDays.value),
+			}),
+		},
+		{
+			key: "overstock",
+			from: overstockDays.value,
+			to: Infinity,
+			explanation: ctrans("Beyond :time: overstock. This stock is more than needed", { time: weeksLabel(overstockDays.value) }),
+		},
+	]
+		.map((zone) => ({
+			key: zone.key,
+			left: percent(zone.from),
+			width: Math.max(0, percent(Math.min(daysNow.value, zone.to)) - percent(zone.from)),
+			tooltip: `${currentCoverTooltip.value}. ${zone.explanation}`,
+		}))
+		.filter((zone) => zone.width > 0)
+)
+
+const thisOrderSegment = computed(() => {
+	const added = { added: weeksLabel(Math.max(0, daysAfter.value - daysNow.value)), total: weeksLabel(daysAfter.value) }
+	if (daysAfter.value > overstockDays.value) {
+		return {
+			class: "bg-amber-300 hover:bg-amber-400",
+			tooltip: ctrans("This order adds :added (lasts :total), past the overstock limit", added),
+		}
+	}
+	if (daysAfter.value < leadDays.value) {
+		return {
+			class: "bg-red-300 hover:bg-red-400",
+			tooltip: ctrans("This order adds :added (lasts :total), still runs out before the lead time", added),
+		}
+	}
+
+	return {
+		class: "bg-green-300 hover:bg-green-400",
+		tooltip: ctrans("This order adds :added (lasts :total), within the safe range", added),
+	}
+})
+
+const leadTimeMarkerTooltip = computed(() =>
+	ctrans("Lead time: :time. Stock should last at least this long, until a new order arrives", { time: weeksLabel(leadDays.value) })
+)
+
+const overstockMarkerTooltip = computed(() =>
+	ctrans("Overstock limit: :time. Stock lasting longer than this is too much", { time: weeksLabel(overstockDays.value) })
+)
+
 const formatNumber = (value: number) => locale.number(Math.round(value))
 
 const currentQuarter = (() => {
@@ -213,17 +283,31 @@ function purchaseOrderRoute(slug: string) {
 		</div>
 
 		<div v-if="hasHistory" class="flex items-center gap-3">
-			<div
-				v-tooltip="thisOrder > 0 ? ctrans('With this order: lasts :time', { time: weeksLabel(daysAfter) }) : ctrans('Lead time: :time', { time: weeksLabel(leadDays) })"
-				class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
-				<div class="absolute inset-y-0 left-0 bg-gray-400" :style="{ width: percent(daysNow) + '%' }" />
+			<div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150">
+				<div
+					v-for="zone in currentCoverZones"
+					:key="zone.key"
+					v-tooltip="zone.tooltip"
+					class="absolute inset-y-0 cursor-help bg-gray-400 transition-colors hover:bg-gray-500"
+					:style="{ left: zone.left + '%', width: zone.width + '%' }" />
 				<div
 					v-if="thisOrder > 0"
-					class="absolute inset-y-0 bg-green-300"
-					:class="daysAfter > overstockDays ? 'bg-amber-300' : daysAfter < leadDays ? 'bg-red-300' : 'bg-green-300'"
+					v-tooltip="thisOrderSegment.tooltip"
+					class="absolute inset-y-0 cursor-help transition-colors"
+					:class="thisOrderSegment.class"
 					:style="{ left: percent(daysNow) + '%', width: Math.max(0, percent(daysAfter) - percent(daysNow)) + '%' }" />
-				<div class="absolute inset-y-0 w-0.5 bg-red-500" :style="{ left: percent(leadDays) + '%' }" />
-				<div class="absolute inset-y-0 w-0.5 bg-amber-500" :style="{ left: percent(overstockDays) + '%' }" />
+				<div
+					v-tooltip="leadTimeMarkerTooltip"
+					class="group absolute inset-y-0 z-10 flex w-4 -translate-x-1/2 cursor-help justify-center"
+					:style="{ left: percent(leadDays) + '%' }">
+					<div class="h-full w-1 bg-red-500 transition-all group-hover:w-1 group-hover:bg-red-600" />
+				</div>
+				<div
+					v-tooltip="overstockMarkerTooltip"
+					class="group absolute inset-y-0 z-10 flex w-4 -translate-x-1/2 cursor-help justify-center"
+					:style="{ left: percent(overstockDays) + '%' }">
+					<div class="h-full w-1 bg-amber-500 transition-all group-hover:w-1 group-hover:bg-amber-600" />
+				</div>
 			</div>
 
 			<span v-if="salesPerQuarter !== null" class="shrink-0 text-gray-500">
