@@ -29,9 +29,13 @@ hosts:
     branch: staging
     labels:
       env: staging
-  neon:
+  helio:
+    hostname: 65.109.156.41
+    remote_user: staging
+    ssh_arguments:
+      - '-o UserKnownHostsFile=deploy/known_hosts_helio'
+      - '-o StrictHostKeyChecking=yes'
     environment: 'staging'
-    hostname: neon_staging
     deploy_path: '~/aiku'
     branch: staging
     labels:
