@@ -1,32 +1,30 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue';
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag, faTimes } from "@fal";
-import { faCheckCircle, faTimesCircle } from "@fas";
-import { faCheck } from "@far";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from "laravel-vue-i18n";
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure';
-import InformationIcon from '@/Components/Utils/InformationIcon.vue';
-import { ToggleSwitch } from 'primevue';
+import { computed, inject, ref } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle, faTimes, faEye, faCog } from "@fal"
+import { faCheck } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { ctrans } from "@/Composables/useTrans"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import { ToggleSwitch } from "primevue"
 
-library.add(faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag, faCheckCircle, faTimesCircle, faTimes, faCheck);
-
-const previewToggleValue = ref(false);
+library.add(faInfoCircle, faTimes, faEye, faCog, faCheck)
 
 interface ChargeData {
-    id: number;
-    slug: string;
-    code: string;
-    name: string;
-    label?: string;
-    description?: string;
-    state: string;
-    created_at: string;
-    updated_at: string;
-    amount: string;
-    min_order?: number;
-    currency_code: string;
+    id: number
+    slug: string
+    code: string
+    name: string
+    label?: string
+    description?: string
+    state: string
+    created_at: string
+    updated_at: string
+    amount: string
+    min_order?: number
+    currency_code: string
 }
 
 const props = defineProps<{
@@ -35,183 +33,91 @@ const props = defineProps<{
     }
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject("locale", aikuLocaleStructure)
 
-// Computed properties for better data handling
-const isActive = computed(() => props.data?.charge.state === 'active');
-const formattedAmount = computed(() => {
-    if (!props.data) return '';
-    return locale.currencyFormat(props.data.charge.currency_code, +props.data.charge.amount);
-});
+const previewToggleValue = ref(false)
 
-const formattedMinOrder = computed(() => {
-    if (!props.data?.charge.min_order) return '';
-    return locale.currencyFormat(props.data.charge.currency_code, +props.data.charge.min_order);
-});
+const charge = computed(() => props.data?.charge)
+const isActive = computed(() => charge.value?.state === "active")
+const money = (value: number | string | undefined) => locale.currencyFormat(charge.value.currency_code, +(value ?? 0))
 
-const formattedDate = computed(() => {
-    if (!props.data?.charge.created_at) return '';
-    return new Date(props.data.charge.created_at).toLocaleDateString();
-});
-
-const formattedUpdatedDate = computed(() => {
-    if (!props.data?.charge.updated_at) return '';
-    return new Date(props.data.charge.updated_at).toLocaleDateString();
-});
-
-const stateColor = computed(() => {
-    return isActive.value ? 'text-green-600' : 'text-red-600';
-});
-
-const stateBgColor = computed(() => {
-    return isActive.value ? 'bg-green-100' : 'bg-red-100';
-});
+const rows = computed(() => [
+    { label: ctrans("Code"), value: charge.value.code, mono: true },
+    { label: ctrans("Slug"), value: charge.value.slug, mono: true },
+    { label: ctrans("Label"), value: charge.value.label || "—" },
+    { label: ctrans("Created"), value: charge.value.created_at ? useFormatTime(charge.value.created_at) : "—" },
+    { label: ctrans("Last updated"), value: charge.value.updated_at ? useFormatTime(charge.value.updated_at) : "—" },
+])
 </script>
 
 <template>
-    <div class="p-4">
-        
-        <!-- Customer Preview Section -->
-        <div class="mt-6 border border-dashed border-blue-300 rounded-lg overflow-hidden">
-            <div class="bg-blue-50 px-4 py-2 border-b border-blue-200 flex items-center gap-x-2">
-                <FontAwesomeIcon :icon="faInfoCircle" class="text-blue-500" fixed-width />
-                <span class="text-sm font-semibold text-blue-700">{{ ctrans('Customer view') }}</span>
-                <span class="text-sm text-blue-500">— {{ ctrans('This is exactly what customers see when this charge appears in their basket') }}</span>
-                <span class="opacity-50 text-xs italic">({{ ctrans('Toggle is interactive for preview purposes only') }})</span>
+    <div v-if="charge" class="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div class="rounded-md border border-gray-200 bg-white">
+            <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+                <div class="min-w-0">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Amount") }}</div>
+                    <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">{{ money(charge.amount) }}</div>
+                </div>
+                <span
+                    class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold capitalize"
+                    :class="isActive ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-300 bg-gray-50 text-gray-600'">
+                    <span class="h-1.5 w-1.5 rounded-full" :class="isActive ? 'bg-green-500' : 'bg-gray-400'" />
+                    {{ charge.state }}
+                </span>
             </div>
-            
-            <div class="bg-white px-6 py-4 text-center flex flex-col items-center">
-                <div class="flex gap-4 justify-between md:justify-end pr-2">
-                    <div class="px-2 flex justify-end items-center gap-x-1 relative">
-                        <InformationIcon v-if="data.charge.description" :information="data.charge.description ?? ''" />
-                        {{ data.charge.label ?? data.charge.name }}
-                        <span class="text-gray-400">({{ formattedAmount }})</span>
-                    </div>
-                    <div class="px-2 flex justify-end relative">
-                        <ToggleSwitch v-model="previewToggleValue">
-                            <template #handle="{ checked }">
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </ToggleSwitch>
+
+            <div class="flex items-start gap-3 border-b border-gray-100 px-5 py-3 text-sm">
+                <FontAwesomeIcon icon="fal fa-cog" fixed-width class="mt-0.5 shrink-0 text-[--app-accent-strong]" aria-hidden="true" />
+                <div>
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("When it is applied") }}</div>
+                    <div class="mt-0.5 text-gray-800">
+                        <template v-if="charge.min_order">{{ ctrans("Automatically, to orders below :amount", { amount: money(charge.min_order) }) }}</template>
+                        <template v-else>{{ ctrans("Only when selected on an order") }}</template>
                     </div>
                 </div>
             </div>
+
+            <dl class="divide-y divide-gray-100 px-5 text-sm">
+                <div v-for="row in rows" :key="row.label" class="flex items-center justify-between gap-4 py-2.5">
+                    <dt class="text-gray-500">{{ row.label }}</dt>
+                    <dd class="truncate text-right text-gray-900" :class="row.mono && 'font-mono text-xs'">{{ row.value }}</dd>
+                </div>
+            </dl>
         </div>
 
-        <div v-if="data.charge" class="mt-6 bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-            <!-- Header Section -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <!-- <div class="flex-shrink-0">
-                            <FontAwesomeIcon :icon="faTag" class="w-8 h-8 text-blue-600" />
-                        </div> -->
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-900">{{ data.charge.name }}</h2>
-                            <p class="text-sm text-gray-600">{{ data.charge.code }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span
-                            :class="[stateBgColor, stateColor, 'px-3 py-1 rounded-full text-sm font-medium flex items-center']">
-                            <FontAwesomeIcon :icon="isActive ? faCheckCircle : faTimesCircle" class="w-4 h-4 mr-1" fixed-width />
-                            {{ data.charge.state.charAt(0).toUpperCase() + data.charge.state.slice(1) }}
-                        </span>
-                    </div>
+        <div class="flex flex-col gap-4">
+            <div class="rounded-md border border-gray-200 bg-white">
+                <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
+                    <FontAwesomeIcon icon="fal fa-eye" fixed-width class="text-[--app-accent-strong]" aria-hidden="true" />
+                    <span class="text-sm font-semibold text-gray-800">{{ ctrans("Customer view") }}</span>
+                    <span v-tooltip="ctrans('This is what customers see when this charge appears in their basket. The toggle only works here as a preview.')" class="text-gray-400">
+                        <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
+                <div class="flex items-center justify-center gap-3 bg-gray-50 px-5 py-6 text-sm">
+                    <span class="flex items-center gap-1 text-gray-800">
+                        <InformationIcon v-if="charge.description" :information="charge.description" />
+                        {{ charge.label ?? charge.name }}
+                        <span class="text-gray-400">({{ money(charge.amount) }})</span>
+                    </span>
+                    <ToggleSwitch v-model="previewToggleValue">
+                        <template #handle="{ checked }">
+                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </ToggleSwitch>
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="p-6">
-                <!-- Basic Information Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- Left Column -->
-                    <div class="space-y-4">
-                        <!-- ID & Slug -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
-                                <FontAwesomeIcon :icon="faHashtag" class="w-4 h-4 mr-2 text-gray-500" fixed-width />
-                                {{ ctrans('Identification') }}
-                            </h3>
-                            <div class="space-y-2">
-                                <!-- <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">ID:</span>
-                                    <span class="text-sm font-medium text-gray-900">#{{ data.charge.id }}</span>
-                                </div> -->
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Slug:</span>
-                                    <span class="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{{
-                                        data.charge.slug }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-
-                    </div>
-
-                    <!-- Right Column -->
-                    <div class="space-y-4">
-                        <!-- Amount Information -->
-                        <div class="bg-green-50 rounded-lg p-4">
-                            <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
-                                {{ trans('Amount') }}
-                            </h3>
-                            <div class="text-base font-bold text-green-600">
-                                {{ formattedAmount }}
-                            </div>
-                        </div>
-
-                        <!-- Label (if exists) -->
-                        <div v-if="data.charge.label" class="bg-purple-50 rounded-lg p-4">
-                            <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                                <FontAwesomeIcon :icon="faTag" class="w-4 h-4 mr-2 text-purple-600" fixed-width />
-                                {{ trans('Label') }}
-                            </h3>
-                            <span
-                                class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                                {{ data.charge.label }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Description Section -->
-                <div v-if="data.charge.description" class="mb-6">
-                    <div class="bg-yellow-50 rounded-lg p-4">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                            <FontAwesomeIcon :icon="faInfoCircle" class="w-4 h-4 mr-2 text-yellow-600" fixed-width />
-                            {{ trans('Description') }}
-                        </h3>
-                        <p class="text-sm text-gray-700 leading-relaxed">{{ data.charge.description }}</p>
-                    </div>
-                </div>
-
-                <!-- Settings Section -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                        <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-2 text-gray-600" fixed-width />
-                        {{ trans('When it is applied') }}
-                    </h3>
-                    <div class="bg-white rounded-lg p-3 border border-gray-200">
-                        <div class="text-sm text-gray-900">
-                            <template v-if="data.charge.min_order">
-                                {{ trans('Automatically, to orders below :amount', { amount: formattedMinOrder }) }}
-                            </template>
-                            <template v-else>
-                                {{ trans('Only when selected on an order') }}
-                            </template>
-                        </div>
-                    </div>
-                </div>
+            <div class="rounded-md border border-gray-200 bg-white px-5 py-4">
+                <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Description") }}</div>
+                <p v-if="charge.description" class="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-gray-700">{{ charge.description }}</p>
+                <p v-else class="mt-1.5 text-sm italic text-gray-400">{{ ctrans("No description") }}</p>
             </div>
         </div>
+    </div>
 
-        <!-- Empty State -->
-        <div v-else class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-            <FontAwesomeIcon :icon="faInfoCircle" class="w-12 h-12 text-gray-400 mx-auto mb-4" fixed-width />
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ trans('No Data Available') }}</h3>
-            <p class="text-gray-500">{{ trans('No charge information to display') }}</p>
-        </div>
+    <div v-else class="m-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
+        {{ ctrans("No charge information to display") }}
     </div>
 </template>

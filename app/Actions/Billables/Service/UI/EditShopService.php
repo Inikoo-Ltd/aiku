@@ -43,11 +43,6 @@ class EditShopService extends OrgAction
                 'label'  => __('Properties'),
                 'title'  => __('Edit service'),
                 'fields' => [
-                    'code'        => [
-                        'type'  => 'input',
-                        'label' => __('Code'),
-                        'value' => $service->code
-                    ],
                     'name'        => [
                         'type'  => 'input',
                         'label' => __('Name'),

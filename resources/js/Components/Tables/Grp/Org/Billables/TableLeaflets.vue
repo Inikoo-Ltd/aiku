@@ -45,6 +45,16 @@ const toggleState = (leaflet: { id: number, state: string }, isActive: boolean) 
     )
 }
 
+const leafletShowRoute = (leaflet: { id: number }) => {
+    const params = route().params as Record<string, string>
+
+    return route('grp.org.shops.show.billables.leaflets.show', [
+        params['organisation'],
+        params['shop'],
+        leaflet.id,
+    ])
+}
+
 const leafletEditRoute = (leaflet: { id: number }) => {
     const params = route().params as Record<string, string>
 
@@ -62,7 +72,7 @@ const leafletEditRoute = (leaflet: { id: number }) => {
             <Icon :data="leaflet['state_icon']" />
         </template>
         <template #cell(name)="{ item: leaflet }">
-            <Link :href="leafletEditRoute(leaflet)" class="primaryLink font-medium">
+            <Link :href="leafletShowRoute(leaflet)" class="primaryLink font-medium">
                 {{ leaflet["name"] }}
             </Link>
         </template>

@@ -42,7 +42,7 @@
   
   const locale = useLocaleStore();
   
-  const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+  const TableHistories = defineAsyncComponent(() => import('@/Components/Tables/Grp/Helpers/TableHistories.vue'))
   
   const props = defineProps<{
       title: string,
@@ -52,7 +52,7 @@
           navigation: object;
       }
       showcase?: object,
-  
+      history?: object,
   }>()
   
   let currentTab = ref(props.tabs.current);
@@ -61,7 +61,7 @@
   const component = computed(() => {
   
       const components = {
-          history: ModelChangelog,
+          history: TableHistories,
           showcase: ChargeShowcase,
       };
       return components[currentTab.value];

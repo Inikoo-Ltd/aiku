@@ -49,10 +49,11 @@ class EditPackaging extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.index',
+                                'name'       => 'grp.org.shops.show.billables.packagings.show',
                                 'parameters' => [
                                     $packaging->organisation->slug,
                                     $packaging->shop->slug,
+                                    $packaging->slug,
                                 ]
                             ],
                         ]
