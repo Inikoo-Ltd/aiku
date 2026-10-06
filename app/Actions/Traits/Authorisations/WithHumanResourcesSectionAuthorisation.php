@@ -45,7 +45,8 @@ trait WithHumanResourcesSectionAuthorisation
             return $request->user()->authTo("group-overview");
         }
 
-        $sectionEmployeeIds = GetSectionSupervisedEmployeeIds::run($request->user(), $this->organisation);
+        $sectionAccess      = GetSectionSupervisedEmployeeIds::make();
+        $sectionEmployeeIds = $sectionAccess->handle($request->user(), $this->organisation);
 
         if ($sectionEmployeeIds === null) {
             $this->canEdit = $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]);
@@ -53,7 +54,8 @@ trait WithHumanResourcesSectionAuthorisation
             return true;
         }
 
-        if (empty($sectionEmployeeIds) || !in_array($request->route()->getName(), self::SECTION_SUPERVISOR_ROUTES, true)) {
+        if (!$sectionAccess->getSupervisedSectionPrefixes($request->user(), $this->organisation)
+            || !in_array($request->route()->getName(), self::SECTION_SUPERVISOR_ROUTES, true)) {
             return false;
         }
 
