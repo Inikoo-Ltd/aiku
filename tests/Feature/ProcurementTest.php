@@ -31,6 +31,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDelivere
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
+use App\Actions\Procurement\PurchaseOrder\RepricePartnerPurchaseOrders;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
@@ -4996,6 +4997,11 @@ describe('partner shopping list', function () {
 
         expect($purchaseOrder->currency_id)->toBe($seller->currency_id)
             ->and((float) $line->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2));
+
+        $line->update(['unit_cost' => 99, 'net_amount' => 99 * (float) $line->quantity_ordered]);
+        expect(RepricePartnerPurchaseOrders::make()->handle($purchaseOrder))->toBe(['orders' => 1, 'lines' => 1])
+            ->and((float) $line->refresh()->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2))
+            ->and((float) $purchaseOrder->refresh()->cost_items)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2));
 
         $row = collect($this->getJson(route('grp.json.org-partner.purchase-order-org-stocks', [$this->orgPartner->id, $purchaseOrder->slug]))->assertOk()->json('data'))
             ->firstWhere('id', $this->buyerOrgStock->id);
