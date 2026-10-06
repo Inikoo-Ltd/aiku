@@ -915,7 +915,7 @@ const newEmailBlockedReason = computed<string | null>(() => {
     if (selectedInbox.value?.can_start_email !== true) {
         return ctrans("This shop has no mailbox connected")
     }
-    if (selectedChannel.value !== "email") {
+    if (!carrierView.value && selectedChannel.value !== "email") {
         return ctrans("Select only the Email squares to write a new email")
     }
 
@@ -2226,7 +2226,7 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
-    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" />
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" :to-address="carrierView" />
 
     <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
 

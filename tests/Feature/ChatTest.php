@@ -9965,6 +9965,17 @@ test('a new email to several addresses goes to the first and copies the rest', f
     expect(Arr::get($session->metadata, 'email_from'))->toBe('one@supplier.example.com')
         ->and(array_keys(Arr::get($session->metadata, 'email_participants')))->toBe(['two@supplier.example.com', 'three@supplier.example.com']);
 
+    expect($session->is_carrier)->toBeFalse();
+
+    $courierDomain = \App\Actions\Comms\Mailbox\ProcessInboundEmail::carrierDomains($this->shop->group)[0];
+    $toCourier     = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => "customerrelations@$courierDomain",
+        'subject' => 'Second parcel',
+        'message' => 'When will it arrive?',
+    ]);
+
+    expect($toCourier->is_carrier)->toBeTrue();
+
     \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
         if (!str_ends_with($request->url(), 'users/me/messages/send')) {
             return false;
