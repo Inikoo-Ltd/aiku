@@ -19,13 +19,15 @@ class GetLocationOrgStockQuantity
 {
     use AsAction;
 
-    public function handle(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
+    public function handle(OrgStock $orgStock, Location $location, ?Carbon $date = null, bool $inCurrentTransaction = false): float
     {
+        $connection = $inCurrentTransaction ? null : 'aiku_no_sticky';
+
         if (!$date) {
             $date = now()->endOfDay();
         }
 
-        $lastHelper = OrgStockMovement::on('aiku_no_sticky')->select(['audited_quantity', 'date'])
+        $lastHelper = OrgStockMovement::on($connection)->select(['audited_quantity', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
@@ -33,7 +35,7 @@ class GetLocationOrgStockQuantity
 
         $seedQuantity = $lastHelper?->audited_quantity ?? 0;
 
-        $query = OrgStockMovement::on('aiku_no_sticky')->where('org_stock_id', $orgStock->id)
+        $query = OrgStockMovement::on($connection)->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::MOVEMENT)
             ->where('date', '<=', $date->copy()->format('Y-m-d H:i:s.u'));
