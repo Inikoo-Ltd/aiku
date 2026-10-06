@@ -23,12 +23,16 @@ class StaffConversationResource extends JsonResource
 {
     protected function contextUrl(): ?string
     {
-        $context = $this->context;
+        return self::urlFor($this->context_type, $this->context);
+    }
+
+    public static function urlFor(?string $type, mixed $context): ?string
+    {
         if (!$context) {
             return null;
         }
 
-        return match ($this->context_type) {
+        return match ($type) {
             'DeliveryNote' => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             'Order'        => route('grp.org.shops.show.ordering.orders.show', [$context->organisation->slug, $context->shop->slug, $context->slug]),
             'StaffTask'    => route('grp.tasks.show', $context->reference),
@@ -59,12 +63,16 @@ class StaffConversationResource extends JsonResource
             'assignee_id'      => $task->assignee_id,
             'collaborator_ids' => $task->collaborators->pluck('id')->all(),
             'subtasks'         => $task->data['subtasks'] ?? [],
+            'description'      => $task->description,
+            'model_label'      => $task->model?->reference ?? $task->model?->code ?? $task->model?->name,
+            'model_url'        => self::urlFor($task->model_type, $task->model),
         ];
     }
 
     public function toArray($request): array
     {
-        $myLeftAt     = $this->participants->firstWhere('id', $request->user()?->id)?->pivot?->left_at;
+        $myPivot      = $this->participants->firstWhere('id', $request->user()?->id)?->pivot;
+        $myLeftAt     = $myPivot?->left_at;
         $participants = $this->participants->filter(fn (User $user) => !$user->pivot?->left_at)->map(fn (User $user) => [
             'id'     => $user->id,
             'name'   => $user->chatName(),
@@ -85,6 +93,7 @@ class StaffConversationResource extends JsonResource
             'task'            => $this->task(),
             'participants'    => $participants,
             'my_left_at'      => $myLeftAt ? Carbon::parse($myLeftAt)->toIso8601ZuluString() : null,
+            'is_watching'     => (bool) ($myPivot?->is_watching ?? false),
             'last_message_at' => $this->last_message_at,
             'last_message'    => $this->last_message_body ?? null,
             'unread_count'    => (int) ($this->unread_count ?? 0),

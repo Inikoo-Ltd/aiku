@@ -17,6 +17,7 @@ import Table from "@/Components/Table/Table.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import StaffTaskFilters from "@/Components/Tasks/StaffTaskFilters.vue"
 import StaffTasksSummary from "@/Components/Tasks/StaffTasksSummary.vue"
 import StaffTaskDueBadge from "@/Components/Tasks/StaffTaskDueBadge.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -39,6 +40,8 @@ const props = defineProps<{
         priorities: Option[]
     }
     showRoute: { name: string; parameters: string[] }
+    taskFilterOptions: Record<"organisation" | "assignee" | "department", { value: string; label: string }[]>
+    appliedTaskFilters: { organisation: string | null; assignee: string; department: string | null }
 }>()
 
 const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
@@ -138,6 +141,7 @@ const readOnlyCellClass = "inline-flex items-center gap-1 p-2"
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <StaffTasksSummary :summary="listSummary" class="mb-3" />
+    <StaffTaskFilters :options="taskFilterOptions" :applied="appliedTaskFilters" class="mx-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5" />
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
         <Table :resource="data" class="mt-4 max-md:[&_td.max-w-0]:max-w-none max-md:[&_th.max-w-0]:max-w-none">
             <template #cell(reference)="{ item }">

@@ -52,7 +52,7 @@ class GetFulfilmentNavigation
                             'label'   => __("Comms"),
                             "tooltip" => __("Comms"),
                             "icon"    => ["fal", "fa-satellite-dish"],
-                            "root"    => "grp.org.fulfilments.show.operations.comms.dashboard",
+                            "root"    => "grp.org.fulfilments.show.operations.comms",
                             "route"   => [
                                 "name"       => "grp.org.fulfilments.show.operations.comms.dashboard",
                                 "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug]

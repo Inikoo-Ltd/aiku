@@ -90,13 +90,74 @@ class PartnerShoppingListItem extends Model
         ];
     }
 
+    /**
+     * Partner lines waiting for shelf stock queue per stock, most urgent first, then the one needed
+     * soonest, then the oldest. A line is served only once every line ahead of it is.
+     */
+    private static function queueRankSql(string $items): string
+    {
+        return "row(case $items.priority when 'urgent' then 0 when 'high' then 1 when 'normal' then 2 else 3 end, coalesce($items.needed_by, '9999-12-31'::date), $items.created_at, $items.id)";
+    }
+
+    /** What this line and every line queued ahead of it ask for together. */
+    public static function queuedThroughSql(string $items = 'partner_shopping_list_items'): string
+    {
+        return "(select coalesce(sum(queued.quantity), 0) from partner_shopping_list_items queued
+            where queued.partner_organisation_id = $items.partner_organisation_id
+                and queued.stock_id = $items.stock_id
+                and queued.state = 'open'
+                and queued.pre_picked_at is null
+                and queued.job_order_id is null
+                and queued.preparing_at is null
+                and queued.deleted_at is null
+                and ".self::queueRankSql('queued').' <= '.self::queueRankSql($items).')';
+    }
+
+    /** Shelf stock of the seller nobody has been promised yet. */
+    public static function freeStockSql(string $items = 'partner_shopping_list_items'): string
+    {
+        return "greatest(
+            coalesce((select free.quantity_available from org_stocks free where free.organisation_id = $items.partner_organisation_id and free.stock_id = $items.stock_id limit 1), 0)
+            - ".self::promisedNotStagedSql("$items.partner_organisation_id", "$items.stock_id").',
+            0)';
+    }
+
+    /**
+     * Pre-picked stock still on the shelf: what each buyer was promised minus what already sits in
+     * its bay. Stock in a bay is goods out and has already left quantity_available, while its line
+     * stays open until the partner order is made.
+     */
+    public static function promisedNotStagedSql(string $seller, string $stock): string
+    {
+        return "coalesce((select sum(greatest(0, promised.quantity - coalesce((
+                select sum(staged.quantity) from location_org_stocks staged
+                where staged.org_stock_id = (select seller_stock.id from org_stocks seller_stock where seller_stock.organisation_id = promised.partner_organisation_id and seller_stock.stock_id = promised.stock_id limit 1)
+                    and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'bay_stock.is_cosmetic')." from org_partners to_partner join stocks bay_stock on bay_stock.id = promised.stock_id
+                        where to_partner.organisation_id = promised.partner_organisation_id and to_partner.partner_id = promised.organisation_id limit 1)
+            ), 0)))
+            from (select organisation_id, partner_organisation_id, stock_id, sum(quantity) as quantity from partner_shopping_list_items
+                where partner_organisation_id = $seller
+                    and stock_id = $stock
+                    and state = 'open'
+                    and pre_picked_at is not null
+                    and deleted_at is null
+                group by organisation_id, partner_organisation_id, stock_id) promised), 0)";
+    }
+
+    /** What the free stock cannot cover of this line once the lines ahead of it are served. */
+    public static function shortfallSql(string $items = 'partner_shopping_list_items'): string
+    {
+        return "greatest(0, least($items.quantity, ".self::queuedThroughSql($items).' - '.self::freeStockSql($items).'))';
+    }
+
     public static function whereRoutedToProduction(Builder $query, string $items = 'partner_shopping_list_items', string $orgStocks = 'org_stocks'): Builder
     {
         return $query->whereNull("$items.pre_picked_at")
-            ->where(function ($query) use ($items, $orgStocks) {
+            ->where(function ($query) use ($items) {
                 $query->whereNotNull("$items.job_order_id")
+                    ->orWhereNotNull("$items.preparing_at")
                     ->orWhereNull("$items.partner_organisation_id")
-                    ->orWhereRaw("coalesce($orgStocks.quantity_available, 0) <= 0");
+                    ->orWhereRaw(self::shortfallSql($items)." >= $items.quantity");
             })
             ->where(function ($query) use ($items, $orgStocks) {
                 $query->whereNotNull("$items.job_order_id")

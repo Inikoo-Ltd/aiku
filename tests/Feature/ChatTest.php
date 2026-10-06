@@ -3072,6 +3072,44 @@ describe('staff messaging archive', function () {
 
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->toBeNull();
     });
+
+    test('a participant watches and unwatches a task chat, an outsider cannot', function () {
+        $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Check the courier labels', 'description' => 'Labels on the blue shelf are smudged', 'department' => 'warehouse']);
+        $conversation = $task->conversation;
+
+        $conversationTask = (new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()))->resolve()['task'];
+        expect($conversationTask['description'])->toBe('Labels on the blue shelf are smudged')
+            ->and($conversationTask)->toHaveKeys(['model_label', 'model_url']);
+
+        $isWatching = fn () => (bool) $conversation->participants()->where('users.id', $this->user->id)->first()?->pivot->is_watching;
+
+        expect($isWatching())->toBeFalse();
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => true])
+            ->assertOk()
+            ->assertJson(['is_watching' => true]);
+
+        expect($isWatching())->toBeTrue();
+
+        $listed = actingAs($this->user)->getJson(route('grp.chat.staff.conversations.index'))->assertOk()->json('data');
+        expect(collect($listed)->firstWhere('ulid', $conversation->ulid)['is_watching'] ?? null)->toBeTrue();
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => false])
+            ->assertOk()
+            ->assertJson(['is_watching' => false]);
+
+        expect($isWatching())->toBeFalse();
+
+        $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+        actingAs($outsider)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => true])
+            ->assertForbidden();
+
+        $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+    });
 });
 
 describe('staff messaging gifs', function () {
@@ -4128,6 +4166,45 @@ test('all tasks list counts tasks per status and tells who works on each row', f
         ->where('showRoute.name', 'grp.tasks.show'));
 });
 
+test('all tasks list filters by assignee, including me and unassigned', function () {
+    $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $mine       = \App\Actions\Tasks\StoreStaffTask::run($colleague, ['subject' => 'Check the returns shelf', 'assignee_id' => $this->user->id]);
+    $theirs     = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Label the new pallets', 'assignee_id' => $colleague->id]);
+    $unassigned = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Sweep the loading bay']);
+
+    actingAs($this->user);
+
+    $taskIdsFor = fn (string $assignee) => \Pest\Laravel\getJson(route('grp.tasks.list_all', ['filter' => ['assignee' => $assignee]]))
+        ->assertOk()
+        ->json('data.*.id');
+
+    expect($taskIdsFor('me'))->toContain($mine->id)->not->toContain($theirs->id)->not->toContain($unassigned->id)
+        ->and($taskIdsFor('unassigned'))->toContain($unassigned->id)->not->toContain($mine->id)
+        ->and($taskIdsFor((string) $colleague->id))->toContain($theirs->id)->not->toContain($mine->id);
+
+    get(route('grp.tasks.list_all', ['filter' => ['assignee' => 'me']]))->assertOk();
+    get(route('grp.tasks.list_all', ['filter' => ['organisation' => $this->organisation->slug]]))->assertOk();
+
+    get(route('grp.tasks.board', ['filter' => ['assignee' => 'me', 'department' => 'none']]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('appliedTaskFilters.assignee', 'me')
+            ->where('appliedTaskFilters.department', 'none')
+            ->where('taskFilterOptions.assignee', fn ($options) => collect($options)->take(3)->pluck('value')->all() === ['all', 'me', 'unassigned'])
+            ->where('columns', fn ($columns) => collect($columns)->flatMap(fn ($column) => $column['tasks'])->pluck('id')->diff([$mine->id])->isEmpty()));
+
+    get(route('grp.tasks.list_all'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('appliedTaskFilters.assignee', 'me')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($mine->id) && !collect($rows)->pluck('id')->contains($theirs->id)));
+
+    expect($taskIdsFor('all'))->toContain($mine->id)->toContain($theirs->id)->toContain($unassigned->id);
+
+    \App\Models\Tasks\StaffTask::whereIn('id', [$mine->id, $theirs->id, $unassigned->id])->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+});
+
 test('task page shows the task with its chat and only the people working on it can change it', function () {
     $newColleague = fn (array $positions) => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => $positions]))->getUser();
     $assignee     = $newColleague([['slug' => 'group-admin', 'scopes' => []]]);
@@ -4841,9 +4918,12 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
     $stranger      = $newColleague();
     $supervisor    = $newColleague();
     $engineer      = $newColleague([['slug' => 'gp-hd', 'scopes' => []]]);
+    $helpDeskLead  = $newColleague();
 
     $givePosition($viewer, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'));
     $givePosition($supervisor, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('code', 'like', '%-m')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->value('id'));
+    $givePosition($helpDeskLead, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->where('code', 'like', '%-m')->value('id'));
+    $givePosition($helpDeskLead, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'));
     $otherDepartment = collect(\App\Models\Tasks\StaffTask::departments($groupId))->pluck('value')->first(fn (string $department) => $department !== 'warehouse');
 
     $tasks = collect([
@@ -4860,7 +4940,8 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
 
     expect($visibleTo($viewer))->toBe($taskIds->take(4)->all())
         ->and($visibleTo($supervisor))->toBe($taskIds->all())
-        ->and($visibleTo($engineer))->toBe($taskIds->all());
+        ->and($visibleTo($engineer))->toBe($taskIds->all())
+        ->and($visibleTo($helpDeskLead))->toBe($taskIds->all());
 
     $board = collect(\App\Actions\Tasks\UI\ShowStaffTasksBoard::make()->handle($this->organisation->group, $viewer, 'all'))->flatMap(fn (array $column) => array_column($column['tasks'], 'reference'));
     expect($board)->toContain($tasks->first()->reference)

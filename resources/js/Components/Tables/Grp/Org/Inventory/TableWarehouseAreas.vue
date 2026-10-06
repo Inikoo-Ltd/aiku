@@ -19,6 +19,7 @@ import { ctrans } from "@/Composables/useTrans"
 const props = defineProps<{
     data: object,
     tab?: string
+    canEditPickingPosition?: boolean
 }>();
 
 const routeParams = route().params
@@ -124,6 +125,7 @@ const submitOrderPosition = async () => {
         <template #cell(picking_position)="{ item, proxyItem: warehouseArea }">
             <div class="mx-auto">
                 <Button
+                    v-if="canEditPickingPosition"
                     @click="() => {
                         selectedWarehouseArea = item
                         isOpenModal = true
@@ -134,6 +136,7 @@ const submitOrderPosition = async () => {
                     :icon="item.picking_position ? 'fal fa-pencil' : ''"
                     :label="item.picking_position ? `${item.picking_position}` : ctrans('Set order position')"
                 />
+                <span v-else-if="item.picking_position">{{ item.picking_position }}</span>
             </div>
         </template>
 
@@ -146,7 +149,7 @@ const submitOrderPosition = async () => {
     </Table>
     
     <!-- Modal: Picking Position -->
-    <Modal :isOpen="isOpenModal" width="w-full max-w-lg" @close="isOpenModal = false">
+    <Modal v-if="canEditPickingPosition" :isOpen="isOpenModal" width="w-full max-w-lg" @close="isOpenModal = false">
         <div class="text-center font-semibold text-xl mb-4">
             {{ selectedWarehouseArea?.name }}
         </div>

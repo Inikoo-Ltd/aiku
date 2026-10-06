@@ -72,6 +72,8 @@ class IndexPrePickList extends OrgAction
             ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->whereNull('partner_shopping_list_items.job_order_id')
+            ->whereNull('partner_shopping_list_items.preparing_at')
             ->where('org_stocks.quantity_available', '>', 0);
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
@@ -100,12 +102,34 @@ class IndexPrePickList extends OrgAction
                         and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
                 DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
+                DB::raw(PartnerShoppingListItem::queuedThroughSql().' as queued_through'),
+                DB::raw(PartnerShoppingListItem::freeStockSql().' as free_stock'),
+                DB::raw(PartnerShoppingListItem::shortfallSql().' as shortfall'),
             ])
             ->defaultSort('stock_code')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'buyer_code', 'quantity', 'stock_available', 'can_pick', 'priority', 'needed_by', 'created_at'])
+            ->allowedSorts(['stock_code', 'buyer_code', 'quantity', 'stock_available', 'can_pick', 'shortfall', 'priority', 'needed_by', 'created_at'])
             ->withPaginator(null, $perPage, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($item) {
+                $item->automation_status = self::automationStatus((float) $item->quantity, (float) $item->queued_through, (float) $item->free_stock, (float) $item->shortfall);
+
+                return $item;
+            });
+    }
+
+    /**
+     * Why a line is still here: released lines leave the list, the rest wait for a full line plus
+     * one on the shelf, and only the missing part goes to production.
+     */
+    public static function automationStatus(float $quantity, float $queuedThrough, float $freeStock, float $shortfall): string
+    {
+        return match (true) {
+            $queuedThrough < $freeStock => 'releasing',
+            $shortfall <= 0             => 'held_buffer',
+            $shortfall < $quantity      => 'awaiting_full_stock',
+            default                     => 'to_produce',
+        };
     }
 
     /**
@@ -143,6 +167,8 @@ class IndexPrePickList extends OrgAction
             ->where('partner_shopping_list_items.partner_organisation_id', $this->organisation->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->whereNull('partner_shopping_list_items.job_order_id')
+            ->whereNull('partner_shopping_list_items.preparing_at')
             ->where('org_stocks.quantity_available', '>', 0)
             ->selectRaw("$expression as element, count(*) as total")
             ->groupBy('element')
@@ -184,6 +210,8 @@ class IndexPrePickList extends OrgAction
                 ->column(key: 'quantity', label: __('Asked'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'stock_available', label: __('In stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'can_pick', label: __('Can pick'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'shortfall', label: __('Shortfall'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'automation_status', label: __('Status'), canBeHidden: false)
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->column(key: 'action', label: '', canBeHidden: false, align: 'right')

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -36,6 +36,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
 import type { OrderingLevel } from "@/Composables/useOrderingLevel"
 import { capitalize } from "@/Composables/capitalize"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -80,6 +81,7 @@ const props = defineProps < {
     pageHead: PageHeadingTypes
     data: {
         data: {
+            id: number
             state: string
             state_label: string
             is_partner?: boolean
@@ -176,9 +178,21 @@ const props = defineProps < {
         preview_template: { header: string[], rows: Record<string, string>[] }
         upload_spreadsheet: any
     } | null
+	last_edit: { user: string | null, at: string } | null
 }>()
 
 const locale = useLocaleStore()
+
+const lastEdit = ref(props.last_edit)
+const lastEditChannel = `grp.purchase_order.${props.data.data.id}`
+onMounted(() => {
+	window.Echo?.private(lastEditChannel).listen(".last-edited", (edit: { user: string | null, at: string }) => {
+		if (!lastEdit.value || edit.at >= lastEdit.value.at) {
+			lastEdit.value = edit
+		}
+	})
+})
+onUnmounted(() => window.Echo?.leave(lastEditChannel))
 
 const metrics = computed(() => {
 	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
@@ -339,6 +353,33 @@ const deliveryScopeModalOpen = ref(false)
 const deliveryItemsModalOpen = ref(false)
 const estimatedDeliveryDateAction = ref<any>(null)
 const newStockDeliveryAction = ref<any>(null)
+let partnerOrderPoll: ReturnType<typeof setInterval> | null = null
+const stopPartnerOrderPoll = () => {
+	if (partnerOrderPoll) {
+		clearInterval(partnerOrderPoll)
+		partnerOrderPoll = null
+	}
+}
+watch(
+	() => props.data.data.is_partner && props.data.data.state === "submitted",
+	(isWaitingForPartnerOrder) => {
+		stopPartnerOrderPoll()
+		if (!isWaitingForPartnerOrder) {
+			return
+		}
+		let attempts = 0
+		partnerOrderPoll = setInterval(() => {
+			if (++attempts > 30) {
+				stopPartnerOrderPoll()
+				return
+			}
+			router.reload()
+		}, 4000)
+	},
+	{ immediate: true }
+)
+onUnmounted(stopPartnerOrderPoll)
+
 const selectedDeliveryItemIds = ref<number[]>([])
 
 const formatDate = (date: Date | null): string | null => {
@@ -354,7 +395,8 @@ const formatDate = (date: Date | null): string | null => {
 }
 
 const submitDialogAction = ref<any>(null)
-const sendVia = ref<string | null>(null)
+const doNotSend = "none"
+const sendVia = ref<string>(doNotSend)
 
 const submitPurchaseOrder = (action: any) => {
 	if (action.send_channels?.length && !submitDialogAction.value) {
@@ -363,12 +405,12 @@ const submitPurchaseOrder = (action: any) => {
 		return
 	}
 
-	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value }, {
+	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value === doNotSend ? null : sendVia.value }, {
 		onStart: () => { submitLoading.value = true },
 		onFinish: () => {
 			submitLoading.value = false
 			submitDialogAction.value = null
-			sendVia.value = null
+			sendVia.value = doNotSend
 		},
 		onError: () => {
 			notify({
@@ -461,7 +503,7 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 		message: ctrans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
 		header: ctrans("Confirm Purchase Order"),
 		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: ctrans("Confirm") },
+		acceptProps: { label: ctrans("Yes, confirm"), class: "buttonPrimary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {
 				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
@@ -630,6 +672,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #afterTitle2>
+			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
+				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
+			</span>
+		</template>
 		<template #other>
 			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
 		</template>
@@ -1075,7 +1122,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				</span>
 			</label>
 			<label class="flex cursor-pointer items-start gap-3">
-				<RadioButton v-model="sendVia" :value="null" inputId="purchase-order-send-none" />
+				<RadioButton v-model="sendVia" :value="doNotSend" inputId="purchase-order-send-none" />
 				<span class="text-sm text-gray-700">{{ ctrans("Don't send, I will send it myself") }}</span>
 			</label>
 			<p class="text-xs text-gray-500">{{ ctrans("Replies arrive in the procurement inbox.") }}</p>
@@ -1084,7 +1131,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<template #footer>
 			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
 			<Button
-				:label="sendVia ? ctrans('Submit and send') : ctrans('Submit')"
+				:label="sendVia !== doNotSend ? ctrans('Submit and send email') : ctrans('Submit')"
 				type="save"
 				:icon="faPaperPlane"
 				:loading="submitLoading"

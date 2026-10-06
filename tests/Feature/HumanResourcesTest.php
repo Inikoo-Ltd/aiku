@@ -3507,4 +3507,19 @@ test('a section supervisor sees, read only, only the HR pages of the employees i
     $outsider = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
 
     expect(\App\Actions\HumanResources\Employee\GetSectionSupervisedEmployeeIds::run($outsider, $organisation))->toBe([]);
+
+    $goodsInSupervisor = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    \App\Actions\SysAdmin\User\SyncUserPseudoOrganisationJobPositions::make()->handle(
+        $goodsInSupervisor,
+        $organisation,
+        [JobPosition::where('organisation_id', $organisation->id)->where('code', 'gi-m')->value('id') => ['Warehouse' => [$warehouse->id]]]
+    );
+
+    expect(\App\Actions\HumanResources\Employee\GetSectionSupervisedEmployeeIds::run($goodsInSupervisor->refresh(), $organisation))->toBe([]);
+
+    actingAs($goodsInSupervisor);
+
+    get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
+    get(route('grp.org.hr.employees.show', [$organisation->slug, $warehouseClerk->slug]))->assertForbidden();
+    get(route('grp.org.hr.workplaces.index', $organisation->slug))->assertForbidden();
 });

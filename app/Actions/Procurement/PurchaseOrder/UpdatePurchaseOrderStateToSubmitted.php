@@ -18,7 +18,9 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,7 +56,13 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, ?string $sendVia = null): PurchaseOrder
     {
-        return DB::transaction(fn () => $this->submit($purchaseOrder, $sendVia));
+        $purchaseOrder = DB::transaction(fn () => $this->submit($purchaseOrder, $sendVia));
+
+        if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
+            SendPartnerPurchaseOrderToSeller::dispatch($purchaseOrder);
+        }
+
+        return $purchaseOrder;
     }
 
     private function submit(PurchaseOrder $purchaseOrder, ?string $sendVia): PurchaseOrder
@@ -92,9 +100,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
         if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
-            SendPartnerPurchaseOrderToSeller::run($purchaseOrder);
-
-            return $purchaseOrder->refresh();
+            return $purchaseOrder;
         }
 
         if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($purchaseOrder), 'channel'), true)) {
@@ -126,6 +132,11 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->initialisation($purchaseOrder->organisation, []);
 
         return $this->handle($purchaseOrder);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

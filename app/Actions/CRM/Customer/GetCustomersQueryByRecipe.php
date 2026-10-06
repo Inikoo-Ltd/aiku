@@ -15,6 +15,7 @@ use App\Actions\Comms\Mailshot\Filters\FilterByLocation;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
+use App\Actions\Comms\Mailshot\Filters\FilterByVoucherRecipients;
 use App\Actions\Comms\Mailshot\Filters\FilterDueToReorder;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
 use App\Actions\Comms\Mailshot\Filters\FilterLapsedCustomers;
@@ -78,6 +79,7 @@ class GetCustomersQueryByRecipe
         (new FilterOrderedInPeriod())->apply($query, $filters);
         (new FilterLapsedCustomers())->apply($query, $filters);
         (new FilterTopCustomersByRevenue($shopId))->apply($query, $filters);
+        (new FilterByVoucherRecipients())->apply($query, $filters);
 
         return $query;
     }

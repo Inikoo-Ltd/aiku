@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
@@ -16,6 +16,7 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderItemStockInfo.vue'
+import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSuggestButton.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -24,6 +25,7 @@ import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
+import Toggle from '@/Components/Pure/Toggle.vue'
 
 library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
 
@@ -55,6 +57,13 @@ const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
+const canCancelItems = computed(() => props.state === 'submitted' || props.state === 'confirmed')
+
+const closedStates = ['settled', 'cancelled', 'not_received']
+const arrivedDeliveryStates = ['received', 'checked', 'settled', 'not_received', 'cancelled']
+
+const isTransactionClosed = (item: { state?: string; delivery_state?: string }) =>
+    closedStates.includes(props.state ?? '') || closedStates.includes(item.state ?? '') || arrivedDeliveryStates.includes(item.delivery_state ?? '')
 
 const levels = computed(() => getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'))
 
@@ -168,12 +177,26 @@ function onSavePrice(item: any, form: any) {
 
 const typedSkos = ref<Record<number, number>>({})
 
-function applySuggestion(item: any, skos: number) {
-    typedSkos.value[item.id] = skos
-    onSaveQuantity(item, { quantity: (skos * (Number(item.units_per_pack) || 1)) / unitsPerLevel(item), defaults: () => {} })
+const quantityInputVersion = ref<Record<number, number>>({})
+
+function refreshQuantityInput(item: any, quantityOrdered: number) {
+    item.quantity_ordered = quantityOrdered
+    quantityInputVersion.value[item.id] = (quantityInputVersion.value[item.id] ?? 0) + 1
 }
 
-async function onSaveQuantity(item: any, form: any) {
+async function applySuggestion(item: any, skos: number) {
+    const previousQuantityOrdered = item.quantity_ordered
+    typedSkos.value[item.id] = skos
+    refreshQuantityInput(item, skos * (Number(item.units_per_pack) || 1))
+
+    const isSaved = await onSaveQuantity(item, { quantity: Number(item.quantity_ordered) / unitsPerLevel(item), defaults: () => {} })
+    if (!isSaved) {
+        delete typedSkos.value[item.id]
+        refreshQuantityInput(item, previousQuantityOrdered)
+    }
+}
+
+async function onSaveQuantity(item: any, form: any): Promise<boolean> {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
     const saveRoute = item.saveRoute ?? item.updateRoute
     const method = String(saveRoute?.method ?? 'patch').toLowerCase()
@@ -187,12 +210,16 @@ async function onSaveQuantity(item: any, form: any) {
         form.defaults()
         notify({ title: ctrans('Success'), text: ctrans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
+
+        return true
     } catch (error: any) {
         notify({
             title: ctrans('Something went wrong'),
             text: error?.response?.data?.message || ctrans('Failed to update quantity'),
             type: 'error',
         })
+
+        return false
     } finally {
         savingId.value = null
     }
@@ -200,8 +227,33 @@ async function onSaveQuantity(item: any, form: any) {
 
 const deletingId = ref<number | null>(null)
 
+const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode'
+
+function readBraveMode(): boolean {
+    try {
+        return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === '1'
+    } catch {
+        return false
+    }
+}
+
+const isBraveMode = ref(readBraveMode())
+
+watch(isBraveMode, (value) => {
+    try {
+        localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? '1' : '0')
+    } catch {
+        return
+    }
+})
+
 function confirmDeleteItem(event: MouseEvent, item: any) {
     if (!item.deleteRoute) {
+        return
+    }
+
+    if (isBraveMode.value) {
+        onDeleteItem(item)
         return
     }
 
@@ -238,6 +290,11 @@ const cancellingId = ref<number | null>(null)
 
 function confirmCancelItem(event: MouseEvent, item: any) {
     if (!item.cancelRoute) {
+        return
+    }
+
+    if (isBraveMode.value) {
+        onCancelItem(item)
         return
     }
 
@@ -323,21 +380,33 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess && levels.length > 1" #before-table>
-            <div class="flex items-end gap-1 border-b border-gray-200 px-3 sm:px-4">
-                <button
-                    v-for="item in levels"
-                    :key="item.key"
-                    type="button"
-                    class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
-                    :class="item.key === currentLevel
-                        ? 'border-indigo-500 text-indigo-600 font-medium'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    @click="currentLevel = item.key"
+        <template #before-table>
+            <div class="flex items-end justify-between gap-3 border-b border-gray-200 px-3 sm:px-4">
+                <div class="flex items-end gap-1">
+                    <template v-if="isInProcess && levels.length > 1">
+                        <button
+                            v-for="item in levels"
+                            :key="item.key"
+                            type="button"
+                            class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
+                            :class="item.key === currentLevel
+                                ? 'border-indigo-500 text-indigo-600 font-medium'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            @click="currentLevel = item.key"
+                        >
+                            <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
+                            {{ item.tab }}
+                        </button>
+                    </template>
+                </div>
+                <label
+                    v-tooltip="ctrans('When on, Remove and Cancel act straight away without asking to confirm')"
+                    class="mb-1.5 flex cursor-pointer items-center gap-2 text-sm"
+                    :class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'"
                 >
-                    <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
-                    {{ item.tab }}
-                </button>
+                    <Toggle v-model="isBraveMode" />
+                    {{ ctrans('Brave mode') }}
+                </label>
             </div>
         </template>
 
@@ -465,16 +534,16 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </div>
                 <div v-else-if="item.partner_stock !== null || item.partner_units_per_carton" class="text-xs text-gray-500">
                     <template v-if="item.partner_stock !== null">
-                        {{ ctrans('Partner stock') }}: <span class="font-semibold text-gray-700">{{ locale.number(Math.round(item.partner_stock)) }}</span>
+                        {{ ctrans('Partner stock') }}: <span class="font-semibold text-gray-700">{{ locale.number(Math.round(item.partner_stock)) }}</span> SKOs
                     </template>
                     <span
                         v-if="item.partner_units_per_carton"
                         v-tooltip="ctrans('How the partner buys it from its supplier. Often out of date and different in each organisation: a guide only, check before ordering in cartons')"
                         class="cursor-help">
-                        <template v-if="item.partner_stock !== null">· </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
+                        <template v-if="item.partner_stock !== null"> | </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
                     </span>
                 </div>
-                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
+                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkosById="typedSkos" :isOrderClosed="isTransactionClosed(item)" :isOrderLocked="!!state && state !== 'in_process'" />
             </div>
         </template>
 
@@ -499,9 +568,9 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end items-center">
+            <div v-if="isInProcess" class="flex flex-col items-end">
                 <NumberWithButtonSave
-                    :key="`${item.id}-${currentLevel}`"
+                    :key="`${item.id}-${currentLevel}-${quantityInputVersion[item.id] ?? 0}`"
                     isWithRefreshModel
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
@@ -509,6 +578,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @update:modelValue="(value) => (typedSkos[item.id] = (Number(value) * unitsPerLevel(item)) / (Number(item.units_per_pack) || 1))"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+                <PurchaseOrderSuggestButton :item="item" :isPartner="isPartner" :typedSkosById="typedSkos" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
@@ -528,7 +598,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <Button
-                    v-if="(state === 'submitted' || state === 'confirmed') && item.cancelRoute"
+                    v-if="canCancelItems && item.cancelRoute"
                     :label="ctrans('Cancel')"
                     :tooltip="ctrans('Cancel this item')"
                     icon="fas fa-minus-circle"

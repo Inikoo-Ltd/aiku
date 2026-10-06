@@ -204,11 +204,11 @@ class StaffTask extends Model implements Auditable, HasMedia
     }
 
     /**
-     * Supervisors, engineers and QA see every task, everyone else what they raised, own, help on or was sent to their department.
+     * Supervisors, help desk and group admins see every task, everyone else what they raised, own, help on or was sent to their department.
      */
     public function scopeVisibleTo(Builder $query, User $viewer): Builder
     {
-        if (self::isSupervisor($viewer) || !self::canBeAssigned($viewer)) {
+        if (self::seesEveryTask($viewer)) {
             return $query;
         }
 
@@ -342,6 +342,24 @@ class StaffTask extends Model implements Auditable, HasMedia
      */
     public const string EXCLUDED_DEPARTMENT = 'help-desk';
 
+    public const array SEE_ALL_DEPARTMENTS = [self::EXCLUDED_DEPARTMENT, 'group admin'];
+
+    public static function seesEveryTask(User $user): bool
+    {
+        if (self::isSupervisor($user)) {
+            return true;
+        }
+
+        return DB::table('job_positions')
+            ->whereIn('department', self::SEE_ALL_DEPARTMENTS)
+            ->where(fn ($query) => $query
+                ->whereIn('id', DB::table('user_has_pseudo_job_positions')->where('user_id', $user->id)->select('job_position_id'))
+                ->orWhereIn('id', DB::table('employee_has_job_positions')
+                    ->whereIn('employee_id', DB::table('user_has_models')->where('user_id', $user->id)->where('model_type', 'Employee')->select('model_id'))
+                    ->select('job_position_id')))
+            ->exists();
+    }
+
     /**
      * Engineers and QA get tickets, not tasks: a user whose every job position is help desk sees everything but cannot be assigned.
      */
@@ -436,7 +454,7 @@ class StaffTask extends Model implements Auditable, HasMedia
      */
     public static function isSupervisor(User $user): bool
     {
-        $supervisorPositions = DB::table('job_positions')->where('group_id', $user->group_id)->where('code', 'like', '%-m')->where('department', '!=', self::EXCLUDED_DEPARTMENT)->select('id');
+        $supervisorPositions = DB::table('job_positions')->where('group_id', $user->group_id)->where('code', 'like', '%-m')->where(fn ($query) => $query->whereNull('department')->orWhere('department', '!=', self::EXCLUDED_DEPARTMENT))->select('id');
 
         return DB::table('user_has_pseudo_job_positions')->where('user_id', $user->id)->whereIn('job_position_id', $supervisorPositions)->exists()
             || DB::table('employee_has_job_positions')

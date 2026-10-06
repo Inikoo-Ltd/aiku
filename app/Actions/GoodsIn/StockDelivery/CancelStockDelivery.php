@@ -36,17 +36,35 @@ class CancelStockDelivery extends OrgAction
         StockDeliveryStateEnum::CHECKED,
     ];
 
+    private const CANCELLABLE_WHEN_EMPTY_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS,
+        StockDeliveryStateEnum::CONFIRMED,
+        StockDeliveryStateEnum::READY_TO_SHIP,
+        StockDeliveryStateEnum::DISPATCHED,
+        StockDeliveryStateEnum::BOOKING_IN,
+        StockDeliveryStateEnum::BOOKED_IN,
+    ];
+
     public function afterValidator(Validator $validator): void
     {
         if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
             $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
         }
-        if (!in_array($this->stockDelivery->state, self::CANCELLABLE_STATES, true)) {
+        if (!self::canBeCancelled($this->stockDelivery)) {
             $validator->errors()->add('state', __('You can not cancel this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
         }
         if ($this->stockDelivery->items()->where('unit_quantity_placed', '>', 0)->exists()) {
             $validator->errors()->add('state', __('Some stock of this delivery is already in locations, undo those put-aways before cancelling'));
         }
+    }
+
+    public static function canBeCancelled(StockDelivery $stockDelivery): bool
+    {
+        if (in_array($stockDelivery->state, self::CANCELLABLE_STATES, true)) {
+            return true;
+        }
+
+        return in_array($stockDelivery->state, self::CANCELLABLE_WHEN_EMPTY_STATES, true) && $stockDelivery->hasNoProducts();
     }
 
     public function handle(StockDelivery $stockDelivery): StockDelivery

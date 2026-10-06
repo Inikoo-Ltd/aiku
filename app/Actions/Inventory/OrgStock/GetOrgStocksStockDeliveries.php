@@ -18,10 +18,10 @@ class GetOrgStocksStockDeliveries
     use AsObject;
 
     /**
-     * Stock deliveries still to be placed and the last one received, keyed by org stock id. Quantities are in units.
+     * Stock deliveries still to be placed and the last three received, keyed by org stock id. Quantities are in units.
      *
      * @param  Collection<int, int>  $orgStockIds
-     * @return Collection<int, array{coming: Collection<int, array{slug: string, reference: string, state: string, state_label: string, quantity: float}>, last_received: array{slug: string, reference: string, received_at: string, quantity: float}|null}>
+     * @return Collection<int, array{coming: Collection<int, array{slug: string, reference: string, state: string, state_label: string, quantity: float}>, last_received: array{slug: string, reference: string, received_at: string, quantity: float}|null, recent_received: Collection<int, array{slug: string, reference: string, received_at: string, quantity: float}>}>
      */
     public function handle(Collection $orgStockIds): Collection
     {
@@ -65,8 +65,16 @@ class GetOrgStocksStockDeliveries
         $labels = StockDeliveryStateEnum::labels();
 
         return $lines->map(function (Collection $deliveries) use ($labels) {
-            $lastReceived = $deliveries->filter(fn ($delivery) => in_array($delivery->state, [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value]) || ($delivery->received_at && $delivery->quantity_placed > 0))
-                ->sortByDesc('received_at')->first();
+            $recentReceived = $deliveries->filter(fn ($delivery) => in_array($delivery->state, [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value]) || ($delivery->received_at && $delivery->quantity_placed > 0))
+                ->sortByDesc('received_at')
+                ->take(3)
+                ->map(fn ($delivery) => [
+                    'slug'        => $delivery->slug,
+                    'reference'   => $delivery->reference,
+                    'received_at' => $delivery->received_at,
+                    'quantity'    => (float) ($delivery->quantity_placed ?: $delivery->quantity),
+                ])
+                ->values();
 
             return [
                 'coming'        => $deliveries->whereNotIn('state', [StockDeliveryStateEnum::BOOKED_IN->value, StockDeliveryStateEnum::PLACED->value])
@@ -79,12 +87,8 @@ class GetOrgStocksStockDeliveries
                         'state_label' => $labels[$delivery->state] ?? $delivery->state,
                         'quantity'    => (float) $delivery->quantity_to_place,
                     ])->values(),
-                'last_received' => $lastReceived ? [
-                    'slug'        => $lastReceived->slug,
-                    'reference'   => $lastReceived->reference,
-                    'received_at' => $lastReceived->received_at,
-                    'quantity'    => (float) ($lastReceived->quantity_placed ?: $lastReceived->quantity),
-                ] : null,
+                'last_received'   => $recentReceived->first(),
+                'recent_received' => $recentReceived,
             ];
         });
     }

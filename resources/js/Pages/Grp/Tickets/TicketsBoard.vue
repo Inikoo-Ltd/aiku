@@ -620,7 +620,7 @@ const cancelAssign = () => {
 				× {{ ctrans("Clear") }}
 			</button>
 		</div>
-		<div class="-mx-4 overflow-x-auto px-4 pb-2">
+		<div class="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
@@ -763,6 +763,9 @@ const cancelAssign = () => {
 											@click.stop
 											>{{ element.reference }}</Link
 										>
+										<span v-if="element.priority_icon" v-tooltip="{ content: ctrans('Urgency') + ': ' + element.priority_label, delay: 0 }" class="shrink-0">
+											<Icon :data="element.priority_icon" />
+										</span>
 									</span>
 									<span class="flex items-center gap-1.5 text-[11px]">
 										<span class="text-gray-400" v-tooltip="{ content: ctrans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>

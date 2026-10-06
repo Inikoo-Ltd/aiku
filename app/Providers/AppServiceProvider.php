@@ -27,6 +27,8 @@ use Lorisleiva\Actions\DesignPatterns\CommandDesignPattern;
 use Lorisleiva\Actions\DesignPatterns\ControllerDesignPattern;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
+use App\Events\BroadcastPurchaseOrderLastEdited;
+use OwenIt\Auditing\Events\Audited;
 use Laravel\Nightwatch\Records\QueuedJob;
 use Laravel\Nightwatch\Records\OutgoingRequest;
 use Vemcogroup\Translation\Translation as BaseTranslation;
@@ -123,6 +125,8 @@ class AppServiceProvider extends ServiceProvider
     {
         ini_set('pcre.backtrack_limit', '10000000');
         ini_set('pcre.recursion_limit', '10000000');
+
+        Event::listen(fn (Audited $event) => BroadcastPurchaseOrderLastEdited::fromAudited($event));
 
         Event::listen(function (CommandStarting $event) {
             if (in_array($event->command, [

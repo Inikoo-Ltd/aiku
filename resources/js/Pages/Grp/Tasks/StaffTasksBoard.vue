@@ -14,6 +14,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import { useBoardDropZones } from "@/Composables/useBoardDropZones"
+import StaffTaskFilters from "@/Components/Tasks/StaffTaskFilters.vue"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
@@ -38,6 +39,8 @@ const props = defineProps<{
     showRoute: { name: string; parameters: string[] }
     createdIntervals: Record<string, string>
     createdInterval: string
+    taskFilterOptions: Record<"organisation" | "assignee" | "department", { value: string; label: string }[]>
+    appliedTaskFilters: { organisation: string | null; assignee: string; department: string | null }
 }>()
 
 const taskUrl = (task: { reference: string }) => route(props.showRoute.name, [...props.showRoute.parameters, task.reference])
@@ -134,13 +137,6 @@ const toggleFilter = (key: FilterKey, value: string) => {
     const index = filters[key].indexOf(value)
     index === -1 ? filters[key].push(value) : filters[key].splice(index, 1)
 }
-
-const myName = computed(() => allTasks.value.flatMap((task) => [task.assignee, ...task.collaborators]).find((person) => person?.id === props.me)?.name ?? null)
-const onlyMine = computed(() => filters.assignee_name.length === 1 && filters.assignee_name[0] === myName.value)
-const toggleMine = () => (filters.assignee_name = onlyMine.value || !myName.value ? [] : [myName.value])
-
-const assigneeMenuOpen = ref(false)
-const avatarOf = (name: string) => allTasks.value.find((task) => task.assignee?.name === name)?.assignee?.avatar ?? null
 
 const activeFilters = computed(() => Object.values(filters).reduce((total, values) => total + values.length, 0))
 const clearFilters = () => (Object.keys(filters) as FilterKey[]).forEach((key) => (filters[key] = []))
@@ -311,8 +307,9 @@ const subtaskSummary = (task: any) => task.subtasks?.length
     <div class="min-w-0 p-4">
         <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
 
-        <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
-            <div v-for="key in ['department_label', 'priority_label'] as const" v-show="filterOptions[key].length" :key="key" class="flex flex-wrap items-center gap-1.5">
+        <StaffTaskFilters :options="taskFilterOptions" :applied="appliedTaskFilters" class="mb-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5">
+
+            <div v-for="key in ['priority_label'] as const" v-show="filterOptions[key].length" :key="key" class="flex flex-wrap items-center gap-1.5">
                 <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ filterLabels[key] }}</span>
                 <button
                     v-for="option in filterOptions[key]"
@@ -328,44 +325,10 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                 </button>
             </div>
 
-            <div v-if="filterOptions.assignee_name.length" class="relative flex items-center gap-1.5">
-                <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ filterLabels.assignee_name }}</span>
-                <button
-                    v-if="myName"
-                    type="button"
-                    class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                    :class="onlyMine ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
-                    @click="toggleMine">
-                    {{ ctrans("Me") }}
-                </button>
-                <button
-                    type="button"
-                    class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                    :class="filters.assignee_name.length && !onlyMine ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
-                    @click="assigneeMenuOpen = !assigneeMenuOpen">
-                    <span class="max-w-48 truncate">{{ filters.assignee_name.length && !onlyMine ? filters.assignee_name.join(", ") : ctrans("Everybody") }}</span>
-                    <span class="rounded-full px-1.5 text-xs tabular-nums" :class="filters.assignee_name.length && !onlyMine ? 'bg-white/20' : 'bg-white text-gray-500'">
-                        {{ (!onlyMine && filters.assignee_name.length) || filterOptions.assignee_name.length }}
-                    </span>
-                </button>
-                <div v-if="assigneeMenuOpen" class="fixed inset-0 z-30" @click="assigneeMenuOpen = false" />
-                <div v-if="assigneeMenuOpen" class="absolute left-0 top-8 z-40 max-h-72 w-60 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
-                    <label v-for="option in filterOptions.assignee_name" :key="option.value" class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
-                        <input type="checkbox" :checked="filters.assignee_name.includes(option.value)" @change="toggleFilter('assignee_name', option.value)" />
-                        <TicketUserAvatar :name="option.value" :avatar="avatarOf(option.value)" size="xs" />
-                        <span class="truncate text-sm text-gray-700">{{ option.value }}</span>
-                        <span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
-                    </label>
-                    <button v-if="filters.assignee_name.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="filters.assignee_name = []">
-                        {{ ctrans("Everybody") }}
-                    </button>
-                </div>
-            </div>
-
             <button v-if="activeFilters" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="clearFilters">× {{ ctrans("Clear") }}</button>
-        </div>
+        </StaffTaskFilters>
 
-        <div class="-mx-4 overflow-x-auto px-4 pb-2">
+        <div class="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
             <div class="flex w-max min-w-full gap-3">
                 <template v-for="column in columns" :key="column.status">
                 <button
@@ -379,7 +342,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                     <span class="rounded bg-white/70 px-1.5 py-0.5 text-xs tabular-nums text-gray-600">{{ visibleCount(column) }}</span>
                     <span class="text-xs font-medium text-gray-600 [writing-mode:vertical-rl]">{{ column.label }}</span>
                 </button>
-                <div v-else class="flex min-w-[17rem] flex-1 flex-col rounded-lg p-2 transition duration-200" :class="[columnClasses[column.color] ?? columnClasses.gray, dropZone(column.status, column.color).class]" :style="dropZone(column.status, column.color).style">
+                <div v-else class="flex w-[17rem] shrink-0 flex-col rounded-lg p-2 transition duration-200" :class="[columnClasses[column.color] ?? columnClasses.gray, dropZone(column.status, column.color).class]" :style="dropZone(column.status, column.color).style">
                     <div class="flex flex-nowrap items-center gap-1.5 whitespace-nowrap px-1 pb-2">
                         <button
                             v-if="column.status === 'cancelled' && !dragging"
@@ -461,12 +424,17 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                                             <span v-tooltip="{ content: column.label, delay: 0 }" class="text-gray-500">{{ ageIn(column, task) }}</span>
                                         </span>
                                     </span>
-                                    <span v-if="task.priority !== 'normal'" v-tooltip="{ content: task.priority_label, delay: 0 }" class="mr-4 shrink-0">
+                                    <span v-if="task.priority_icon" v-tooltip="{ content: ctrans('Urgency') + ': ' + task.priority_label, delay: 0 }" class="mr-4 shrink-0">
                                         <Icon :data="task.priority_icon" />
                                     </span>
                                 </div>
 
-                                <p class="mt-1.5 line-clamp-3 break-words text-sm leading-snug">{{ task.subject }}</p>
+                                <p v-tooltip="{ content: task.subject, delay: 500 }" class="mt-1.5 line-clamp-2 break-words text-sm leading-snug">{{ task.subject }}</p>
+
+                                <p v-if="task.department_label" class="mt-1 flex items-center gap-1 truncate text-[11px] text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-building" fixed-width class="shrink-0 text-gray-400" aria-hidden="true" />
+                                    <span class="truncate">{{ task.department_label }}</span>
+                                </p>
 
                                 <div class="mt-2 flex items-end justify-between gap-2 text-xs">
                                     <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-500">
@@ -484,9 +452,6 @@ const subtaskSummary = (task: any) => task.subtasks?.length
                                         class="flex shrink-0 -space-x-1.5">
                                         <TicketUserAvatar v-for="person in cardPeople(task).slice(0, 3)" :key="person.id" :name="person.name" :avatar="person.avatar" size="xs" class="ring-2 ring-white" />
                                         <span v-if="cardPeople(task).length > 3" class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[8px] font-medium text-gray-600 ring-2 ring-white">+{{ cardPeople(task).length - 3 }}</span>
-                                    </span>
-                                    <span v-else-if="task.department_label" v-tooltip="{ content: task.department_label, delay: 0 }" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                                        <FontAwesomeIcon icon="fal fa-building" fixed-width class="text-[9px]" />
                                     </span>
                                 </div>
                             </div>

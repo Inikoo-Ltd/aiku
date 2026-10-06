@@ -5,12 +5,12 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import { usePage, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
@@ -25,7 +25,7 @@ import { Drawer, Popover } from "primevue"
 import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
 import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
@@ -44,6 +44,12 @@ const emit = defineEmits<{
 }>()
 
 const store = useStaffMessaging()
+
+const isDescriptionOpen = ref(false)
+
+const isListedWorkChat = computed(() => !!props.conversation?.context_type && store.conversations.some((listed) => listed.ulid === props.conversation?.ulid))
+const canToggleWatch = computed(() => !props.embedded && isListedWorkChat.value)
+const listedConversation = computed(() => store.conversations.find((listed) => listed.ulid === props.conversation?.ulid))
 const myId = computed(() => usePage().props?.auth?.user?.id)
 const myLanguageId = computed(() => usePage().props?.auth?.user?.language_id ?? null)
 
@@ -242,9 +248,22 @@ const renderBody = (message: StaffMessage, text: string) => {
     )
     const own = message.user_id === myId.value
     const cls = own ? "text-yellow-200" : "text-[--app-accent-strong]"
-    return escapeHtml(text).replace(/@([\p{L}\p{N}._-]+)/gu, (full, handle) =>
+    const linkCls = own
+        ? "text-sky-200 underline decoration-sky-200/60 underline-offset-2 hover:text-sky-100 hover:decoration-sky-100"
+        : "text-sky-600 underline decoration-sky-600/50 underline-offset-2 hover:text-sky-700"
+    const withMentions = (segment: string) => segment.replace(/@([\p{L}\p{N}._-]+)/gu, (full, handle) =>
         handles.has(handle) ? `<span class="font-medium ${cls}">@${escapeHtml(handle)}</span>` : full
     )
+
+    return escapeHtml(text)
+        .split(/(https?:\/\/[^\s<>"']+)/g)
+        .map((segment, index) => {
+            if (index % 2 === 0) return withMentions(segment)
+            const trailing = segment.match(/[.,;:!?)\]]+$/)?.[0] ?? ""
+            const url = trailing ? segment.slice(0, -trailing.length) : segment
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="break-all ${linkCls}">${url}</a>${trailing}`
+        })
+        .join("")
 }
 const pendingImage = ref<File | null>(null)
 const pendingImagePreview = ref<string | null>(null)
@@ -257,6 +276,7 @@ const activeReactionFor = ref<number | null>(null)
 const showGifPicker = ref(false)
 const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
+const gifState = reactive<Record<string, "loaded" | "failed">>({})
 
 const quickReplies = computed(
     () =>
@@ -462,7 +482,7 @@ const onTextareaKeydown = (event: KeyboardEvent) => {
 
 const toggleReaction = async (message: StaffMessage, emoji: string) => {
     activeReactionFor.value = null
-    await store.toggleReaction(message.id, emoji)
+    await store.toggleReaction(message, emoji, myId.value)
 }
 
 const taskDialogOpen = ref(false)
@@ -513,6 +533,16 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                 {{ ctrans("End chat") }}
             </button>
+            <button
+                v-if="embedded && isListedWorkChat"
+                type="button"
+                v-tooltip="listedConversation?.is_watching ? ctrans('Watching: always in your chat list. Click to stop watching') : ctrans('Not watching: only listed when hidden chats are shown. Click to watch')"
+                :aria-pressed="!!listedConversation?.is_watching"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 hover:bg-gray-100"
+                :class="listedConversation?.is_watching ? 'text-[--app-accent-strong]' : 'text-gray-400'"
+                @click="store.toggleWatch(conversation.ulid)">
+                <FontAwesomeIcon :icon="listedConversation?.is_watching ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+            </button>
             <slot name="header-actions" />
             <button
                 v-if="taskInfo && !embedded"
@@ -533,6 +563,51 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
+        </div>
+
+        <div
+            v-if="canToggleWatch"
+            class="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-1 text-xs"
+            :class="fullScreen ? 'border-gray-200 bg-white text-gray-500' : 'border-[var(--chat-line)] bg-[var(--chat-bg)] text-[var(--chat-muted)]'">
+            <span class="truncate">
+                {{ conversation.is_watching ? ctrans("Watching: always in your chat list") : ctrans("Not watching: only listed when hidden chats are shown") }}
+            </span>
+            <button
+                type="button"
+                class="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 ring-1 transition duration-200"
+                :class="conversation.is_watching
+                    ? (fullScreen ? 'bg-[--app-accent] text-[--app-accent-text] ring-transparent' : 'bg-[var(--chat-accent)] text-white ring-transparent')
+                    : (fullScreen ? 'ring-gray-200 hover:bg-gray-50' : 'ring-[var(--chat-line)] hover:text-[var(--chat-text)]')"
+                @click="store.toggleWatch(conversation.ulid)">
+                <FontAwesomeIcon :icon="conversation.is_watching ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+                {{ conversation.is_watching ? ctrans("Watching") : ctrans("Watch") }}
+            </button>
+        </div>
+
+        <div
+            v-if="taskInfo && !embedded && (taskInfo.description || taskInfo.model_label)"
+            class="shrink-0 border-b text-xs"
+            :class="fullScreen ? 'border-gray-200 bg-white text-gray-600' : 'border-[var(--chat-line)] bg-[var(--chat-bg)] text-[var(--chat-muted)]'">
+            <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-1 text-left"
+                :aria-expanded="isDescriptionOpen"
+                @click="isDescriptionOpen = !isDescriptionOpen">
+                <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width class="shrink-0 text-[10px] transition-transform" :class="isDescriptionOpen && 'rotate-90'" aria-hidden="true" />
+                <span class="shrink-0 font-medium" :class="fullScreen ? 'text-gray-700' : 'text-[var(--chat-text)]'">{{ ctrans("Description") }}</span>
+                <span v-if="!isDescriptionOpen" class="min-w-0 truncate opacity-80">{{ taskInfo.description || taskInfo.model_label }}</span>
+            </button>
+            <div v-if="isDescriptionOpen" class="max-h-40 overflow-y-auto px-3 pb-2 pl-8 [scrollbar-width:thin]">
+                <p v-if="taskInfo.description" class="whitespace-pre-line break-words" :class="fullScreen ? 'text-gray-700' : 'text-[var(--chat-text)]'">{{ taskInfo.description }}</p>
+                <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <a v-if="taskInfo.model_label" :href="taskInfo.model_url ?? undefined" class="inline-flex items-center gap-1" :class="taskInfo.model_url ? (fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline') : ''">
+                        <FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" />{{ taskInfo.model_label }}
+                    </a>
+                    <a v-if="conversation.context_url" :href="conversation.context_url" class="inline-flex items-center gap-1" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">
+                        <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />{{ ctrans("Open :reference", { reference: taskInfo.reference }) }}
+                    </a>
+                </div>
+            </div>
         </div>
 
         <div v-if="isTaskClosed && !embedded" class="flex shrink-0 items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600">
@@ -602,7 +677,22 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             <span v-tooltip="message.user_name" class="cursor-default">{{ shortSenderName(message.user_name) }}</span>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
-                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
+                        <div v-if="message.gif_url" class="relative">
+                            <div
+                                v-if="gifState[message.gif_url] !== 'loaded'"
+                                class="flex h-[150px] w-[200px] max-w-full items-center justify-center rounded text-xs"
+                                :class="[gifState[message.gif_url] === 'failed' ? 'bg-black/5' : 'animate-pulse', message.user_id === myId ? 'bg-white/20' : 'bg-gray-200']">
+                                <span v-if="gifState[message.gif_url] === 'failed'" class="opacity-70">{{ ctrans("GIF unavailable") }}</span>
+                            </div>
+                            <img
+                                v-if="gifState[message.gif_url] !== 'failed'"
+                                :src="message.gif_url"
+                                alt="GIF"
+                                class="max-w-full rounded max-h-[240px]"
+                                :class="gifState[message.gif_url] !== 'loaded' && 'pointer-events-none absolute inset-0 opacity-0'"
+                                @load="gifState[message.gif_url] = 'loaded'"
+                                @error="gifState[message.gif_url] = 'failed'" />
+                        </div>
                         <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words" v-html="renderBody(message, messageText(message))" />
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
@@ -613,10 +703,12 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             {{ showOriginal[message.id] ? ctrans('translated') : ctrans('original') }}
                         </button>
 
-                        <div v-if="activeReactionFor === message.id" class="absolute flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full mt-1' : '-top-9']">
-                            <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
-                                {{ emoji }}
-                            </button>
+                        <div v-if="activeReactionFor === message.id" class="absolute z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full pt-1.5' : 'bottom-full pb-1.5']">
+                            <div class="flex gap-x-1 rounded-full border border-gray-200 bg-white px-2 py-1 shadow">
+                                <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
+                                    {{ emoji }}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -628,16 +720,19 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     </button>
                 </div>
 
-                <div v-if="reactionEntries(message).length" class="flex gap-x-1 mt-0.5">
-                    <span
+                <TransitionGroup tag="div" name="reaction-pop" class="flex gap-x-1 mt-0.5 empty:hidden">
+                    <button
                         v-for="[emoji, userIds] in reactionEntries(message)"
                         :key="emoji"
-                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5"
+                        type="button"
+                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5 transition hover:border-[--app-accent]"
                         :class="hasMyReaction(message, emoji) ? 'bg-[--app-accent-soft] border-[--app-accent]' : 'bg-gray-50 border-gray-200'"
+                        :title="hasMyReaction(message, emoji) ? ctrans('Remove reaction') : ctrans('React with :emoji', { emoji })"
+                        @click="toggleReaction(message, emoji)"
                     >
                         {{ emoji }} {{ (userIds as number[]).length }}
-                    </span>
-                </div>
+                    </button>
+                </TransitionGroup>
 
                 <div v-if="showsMessageMeta(message, messageIndex)" class="mt-0.5 flex items-center gap-1 text-xxs text-gray-400">
                     <template v-if="message.client_status === 'failed'">
@@ -823,3 +918,29 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
         </Drawer>
     </div>
 </template>
+
+<style scoped>
+.reaction-pop-enter-active {
+    animation: reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-pop-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.reaction-pop-leave-to {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+@keyframes reaction-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>

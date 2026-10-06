@@ -429,6 +429,57 @@ test('supplier product sheet with mistakes creates nothing and lists every mista
 })->depends('create supplier in agent');
 
 
+test('v7 supplier product sheet with notes above the headings saves SKO description, barcodes, weights and sizes', function ($supplier) {
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->fromArray([
+        ['AW new supplier parts - upload template v7'],
+        ['AW', 'Supplier'],
+        ['Id: Supplier Part Key', 'Supplier', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'SKO description (picking aid)', 'Unit label', 'Units per SKO', 'SKOs per carton', 'Unit cost (Sup Cur)', 'Unit Est True Extra costs %', 'Unit recommended price (£)', 'Unit recommended price (€)', 'SKO Barcode', 'Carton barcode', 'Unit weight (kg)', 'Unit net weight (kg)', 'SKO weight (kg)', 'SKO dimensions (l x w x h) in cm', 'Expected Duty rate'],
+        ['NEW', 'UCS', 'V7-BAG', 'V7B-01', 'V7B-01', 'Forest Bag', 'Pack of 2 Forest Bags', 'bag', 2, 40, 520, 0.4, 8.5, 10.2, 'V7B-01-SKO', 'V7B-01-CTN', 0.25, 0.21, 0.5, '28x17x8', 0.03],
+        ['NEW', 'UCS', 'V7-BAG', 'V7B-02', 'V7B-02', 'Mini Backpack', null, 'bag', 1, 40, 560, 0.4, 11, 13.2, 'auto', null, 0.285, null, null, null, null],
+    ]);
+    $path = sys_get_temp_dir().'/supplier_products_v7_'.uniqid().'.xlsx';
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+    $upload = Upload::create([
+        'group_id'          => $this->group->id,
+        'organisation_id'   => $this->organisation->id,
+        'model'             => 'SupplierProduct',
+        'parent_type'       => $supplier->getMorphClass(),
+        'parent_id'         => $supplier->id,
+        'original_filename' => 'nepal.xlsx',
+        'filename'          => 'nepal.xlsx',
+        'filesize'          => 0,
+    ]);
+    Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+    $upload->refresh();
+
+    expect($upload->number_success)->toBe(2)
+        ->and($upload->number_fails)->toBe(0)
+        ->and($upload->records()->orderBy('row_number')->pluck('row_number')->all())->toBe([4, 5]);
+
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'V7B-01')->first();
+    expect((float)$supplierProduct->cost)->toBe(520.0)
+        ->and((float)$supplierProduct->extra_costs)->toBe(0.4)
+        ->and($supplierProduct->units_per_carton)->toBe(80);
+
+    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-01')->first();
+    expect($tradeUnit->gross_weight)->toBe(250)
+        ->and($tradeUnit->net_weight)->toBe(210);
+
+    $stock = $tradeUnit->stocks()->first();
+    expect($stock->name)->toBe('Pack of 2 Forest Bags')
+        ->and($stock->barcode)->toBe('V7B-01-SKO')
+        ->and($stock->carton_barcode)->toBe('V7B-01-CTN')
+        ->and($stock->gross_weight)->toBe(500)
+        ->and($stock->data['dimensions'])->toEqual(['l' => 28, 'w' => 17, 'h' => 8]);
+
+    $secondStock = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->first()->stocks()->first();
+    expect($secondStock->name)->toBe('bag')
+        ->and($secondStock->barcode)->toBeNull()
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->value('net_weight'))->toBe(285);
+})->depends('create supplier in agent');
+
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.suppliers.supplier_products.show', [
@@ -868,6 +919,17 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
             ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
                 ->where('ribbons.0.reference', $purchaseOrder->reference)
                 ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done')));
+
+    $partial = $this->withHeaders([
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => \Illuminate\Support\Facades\Vite::manifestHash('grp'),
+        'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainPurchaseOrderJourney',
+        'X-Inertia-Partial-Data'      => 'filters,active,summary,blockages,quickStats,ribbons,pagination',
+    ])->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'page' => 1]));
+
+    $partial->assertOk();
+    expect($partial->json('props'))->toHaveKeys(['filters', 'active', 'summary', 'blockages', 'quickStats', 'ribbons', 'pagination'])
+        ->and($partial->json('deferredProps'))->toBeNull();
 })->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {

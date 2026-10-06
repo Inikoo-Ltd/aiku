@@ -30,9 +30,13 @@ class OfferCampaignHydrateOrders implements ShouldBeUnique
     public function handle(OfferCampaign $offerCampaign): void
     {
         $stats = [
-            'number_orders' => TransactionHasOfferAllowance::query()
+            'number_orders'    => TransactionHasOfferAllowance::query()
                 ->where('offer_campaign_id', $offerCampaign->id)
                 ->count(DB::raw('DISTINCT order_id')),
+            'number_customers' => TransactionHasOfferAllowance::query()
+                ->join('orders', 'orders.id', '=', 'transaction_has_offer_allowances.order_id')
+                ->where('transaction_has_offer_allowances.offer_campaign_id', $offerCampaign->id)
+                ->count(DB::raw('DISTINCT orders.customer_id')),
         ];
 
         $offerCampaign->stats()->update($stats);

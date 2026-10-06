@@ -71,6 +71,15 @@ Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, i
     return $user->employees()->where('id', $employeeID)->exists();
 });
 
+Broadcast::channel('grp.purchase_order.{purchaseOrderId}', function (User $user, int $purchaseOrderId) {
+    $purchaseOrder = \App\Models\Procurement\PurchaseOrder::find($purchaseOrderId);
+
+    return $purchaseOrder && $user->authTo([
+        'procurement.'.$purchaseOrder->organisation_id.'.view',
+        'supply-chain.view',
+    ]);
+});
+
 Broadcast::channel('grp.production.{productionId}.floor', function (User $user, int $productionId) {
     $production = \App\Models\Production\Production::find($productionId);
 

@@ -125,8 +125,8 @@ class ShowEmployee extends OrgAction
                 ],
                 'employee_id'   => $employee->id,
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
-                    fn () => GetEmployeeShowcase::run($employee)
-                    : Inertia::optional(fn () => GetEmployeeShowcase::run($employee)),
+                    fn () => [...GetEmployeeShowcase::run($employee), 'can_edit' => $this->canEdit]
+                    : Inertia::optional(fn () => [...GetEmployeeShowcase::run($employee), 'can_edit' => $this->canEdit]),
                 EmployeeTabsEnum::HISTORY->value => $this->tab == EmployeeTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))),

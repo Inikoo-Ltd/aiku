@@ -50,11 +50,11 @@ class EditLeaflet extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.index',
+                                'name'       => 'grp.org.shops.show.billables.leaflets.show',
                                 'parameters' => [
                                     'organisation' => $leaflet->organisation->slug,
                                     'shop'         => $leaflet->shop->slug,
-                                    'tab'          => 'leaflets',
+                                    'leaflet'      => $leaflet->id,
                                 ]
                             ],
                         ]
