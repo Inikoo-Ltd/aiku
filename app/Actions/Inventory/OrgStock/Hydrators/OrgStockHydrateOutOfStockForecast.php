@@ -8,8 +8,14 @@
 
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\OrgPartner;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +55,9 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     private const float TIMESFM_MINIMUM_IN_STOCK_SHARE = 0.7;
 
     private const float IN_STOCK_RATE_CAP_MULTIPLE = 2.0;
+
+    /** @var array<int, int> */
+    private array $partnerLeadTimeDays = [];
 
     public function __construct()
     {
@@ -98,10 +107,10 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
-     * Units to reorder now: enough to cover the supplier lead time plus one review period at
-     * the forecast rate, plus a safety buffer sized by demand variability, minus what is on
-     * the shelf and already on order — rounded up to the supplier's pack size.
-     * ponytail: lead time is a 14-day constant; observed per-supplier lead times are the upgrade
+     * SKOs to reorder now: enough to cover the lead time plus one review period at the forecast
+     * rate, plus a safety buffer sized by demand variability, minus what is on the shelf and
+     * already on order (purchase orders and partner shopping list lines) — rounded up to the
+     * supplier's pack size.
      */
     private function recommendedOrderQuantity(OrgStock $orgStock, ?float $dailyUsage, ?float $sigma): ?float
     {
@@ -109,35 +118,93 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
             return null;
         }
 
-        $leadTimeDays = 14;
+        $packedIn            = max(1.0, (float) $orgStock->packed_in);
+        $activeSupplierProduct = $orgStock->orgSupplierProducts
+            ->first(fn ($orgSupplierProduct) => $orgSupplierProduct->pivot->status)
+            ?->supplierProduct;
+
+        $leadTimeDays = $this->leadTimeDays($orgStock, $activeSupplierProduct);
         $reviewDays   = 30;
 
         $safety = $sigma !== null
             ? 1.28 * $sigma * sqrt($leadTimeDays)
             : 0.2 * $dailyUsage * $leadTimeDays;
 
-        $onOrder = (float) DB::table('purchase_order_transactions')
+        $onOrderUnits = (float) DB::table('purchase_order_transactions')
             ->where('org_stock_id', $orgStock->id)
+            ->whereNull('deleted_at')
             ->whereIn('state', ['in_process', 'submitted', 'confirmed'])
-            ->sum('quantity_ordered');
+            ->sum(DB::raw('coalesce(quantity_ordered, 0) - coalesce(quantity_cancelled, 0)'));
 
         $need = $dailyUsage * ($leadTimeDays + $reviewDays) + $safety
             - (float) $orgStock->quantity_available
-            - $onOrder;
+            - $onOrderUnits / $packedIn
+            - $this->onPartnerShoppingLists($orgStock);
 
         if ($need <= 0) {
             return 0;
         }
 
-        $pack = $orgStock->orgSupplierProducts
-            ->first(fn ($orgSupplierProduct) => $orgSupplierProduct->pivot->status)
-            ?->supplierProduct?->units_per_pack;
-
-        if ($pack > 1) {
-            $need = ceil($need / $pack) * $pack;
+        $skosPerSupplierPack = (float) $activeSupplierProduct?->units_per_pack / $packedIn;
+        if ($skosPerSupplierPack > 1) {
+            $need = ceil($need / $skosPerSupplierPack) * $skosPerSupplierPack;
         }
 
         return round($need, 3);
+    }
+
+    /**
+     * Days from ordering to booked in for this SKO: its own measured history, then its active
+     * supplier product, then the manufacturing hub partner that makes it, then 14 days.
+     */
+    private function leadTimeDays(OrgStock $orgStock, ?SupplierProduct $supplierProduct): int
+    {
+        $days = $orgStock->measured_lead_time_days
+            ?? $orgStock->estimated_lead_time_days
+            ?? $supplierProduct?->measured_lead_time_days
+            ?? $supplierProduct?->estimated_lead_time_days;
+
+        if ($days) {
+            return (int) $days;
+        }
+
+        $hubPartner = OrgPartner::where('org_partners.organisation_id', $orgStock->organisation_id)
+            ->join('organisations as hubs', 'hubs.id', 'org_partners.partner_id')
+            ->where('hubs.is_manufacturing_hub', true)
+            ->whereExists(fn ($query) => $query->from('org_stocks as hub_org_stocks')
+                ->whereColumn('hub_org_stocks.organisation_id', 'org_partners.partner_id')
+                ->where('hub_org_stocks.stock_id', $orgStock->stock_id)
+                ->where('hub_org_stocks.state', OrgStockStateEnum::ACTIVE->value))
+            ->select('org_partners.*')
+            ->first();
+
+        if (!$hubPartner) {
+            return GetPartnerLeadTime::DEFAULT_DAYS;
+        }
+
+        return $this->partnerLeadTimeDays[$hubPartner->id] ??= GetPartnerLeadTime::run($hubPartner)['days'];
+    }
+
+    /**
+     * SKOs already asked of a partner and not yet on a purchase order: open lines sent to the partner,
+     * and lines the partner picked into an order it has not dispatched.
+     */
+    private function onPartnerShoppingLists(OrgStock $orgStock): float
+    {
+        return (float) DB::table('partner_shopping_list_items')
+            ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->leftJoin('orders', 'orders.id', 'transactions.order_id')
+            ->where('partner_shopping_list_items.org_stock_id', $orgStock->id)
+            ->whereNull('partner_shopping_list_items.deleted_at')
+            ->where(function ($query) {
+                $query->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                    ->orWhere(function ($query) {
+                        $query->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED->value)
+                            ->whereNull('transactions.deleted_at')
+                            ->whereIn('orders.state', [OrderStateEnum::CREATING->value, OrderStateEnum::SUBMITTED->value]);
+                    });
+            })
+            ->sum('partner_shopping_list_items.quantity');
     }
 
     /**

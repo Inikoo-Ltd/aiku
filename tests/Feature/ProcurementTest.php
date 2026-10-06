@@ -5567,18 +5567,29 @@ describe('partner shopping list', function () {
         DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     });
 
-    test('out of stock forecast hydrator fills stats', function () {
+    test('the reorder recommendation counts SKOs on order and on the partner list against the real lead time', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
         $orgStock = $this->buyerOrgStock;
+        $orgStock->orgSupplierProducts()->detach();
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'packed_in' => 4, 'quantity_available' => 10, 'measured_lead_time_days' => null, 'estimated_lead_time_days' => 60]);
+        $orgStock->stats->update(['demand_forecast' => ['from' => now()->toDateString(), 'weeks' => array_fill(0, 6, [7, 0])]]);
 
-        OrgStockHydrateOutOfStockForecast::run($orgStock);
-        $stats = $orgStock->stats->refresh();
+        $recommendation = function () use ($orgStock) {
+            OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
 
-        if ((float) $orgStock->quantity_available <= 0) {
-            expect((float) $stats->days_of_cover)->toBe(0.0)
-                ->and($stats->predicted_out_of_stock_at)->not->toBeNull();
-        } else {
-            expect($stats->days_of_cover === null || $stats->days_of_cover >= 0)->toBeTrue();
-        }
+            return (float) $orgStock->stats->refresh()->recommended_order_quantity;
+        };
+
+        expect($recommendation())->toBe(80.0);
+
+        StorePurchaseOrderTransaction::make()->addPartnerOrgStock(StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []), $orgStock->fresh(), ['quantity_ordered' => 40]);
+        expect($recommendation())->toBe(70.0);
+
+        $orgStock->update(['estimated_lead_time_days' => null]);
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $this->orgPartner->update(['data' => ['shopping' => ['lead_time_days' => 60]]]);
+        StorePartnerShoppingListItem::make()->action($this->orgPartner->refresh(), $orgStock->fresh(), ['quantity' => 5]);
+        expect($recommendation())->toBe(65.0);
     });
 
     test('intercompany customer resolved by normalised name and mapping persisted', function () {
