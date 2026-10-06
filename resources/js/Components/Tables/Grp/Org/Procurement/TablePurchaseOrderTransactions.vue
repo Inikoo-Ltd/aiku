@@ -176,12 +176,26 @@ function onSavePrice(item: any, form: any) {
 
 const typedSkos = ref<Record<number, number>>({})
 
-function applySuggestion(item: any, skos: number) {
-    typedSkos.value[item.id] = skos
-    onSaveQuantity(item, { quantity: (skos * (Number(item.units_per_pack) || 1)) / unitsPerLevel(item), defaults: () => {} })
+const quantityInputVersion = ref<Record<number, number>>({})
+
+function refreshQuantityInput(item: any, quantityOrdered: number) {
+    item.quantity_ordered = quantityOrdered
+    quantityInputVersion.value[item.id] = (quantityInputVersion.value[item.id] ?? 0) + 1
 }
 
-async function onSaveQuantity(item: any, form: any) {
+async function applySuggestion(item: any, skos: number) {
+    const previousQuantityOrdered = item.quantity_ordered
+    typedSkos.value[item.id] = skos
+    refreshQuantityInput(item, skos * (Number(item.units_per_pack) || 1))
+
+    const isSaved = await onSaveQuantity(item, { quantity: Number(item.quantity_ordered) / unitsPerLevel(item), defaults: () => {} })
+    if (!isSaved) {
+        delete typedSkos.value[item.id]
+        refreshQuantityInput(item, previousQuantityOrdered)
+    }
+}
+
+async function onSaveQuantity(item: any, form: any): Promise<boolean> {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
     const saveRoute = item.saveRoute ?? item.updateRoute
     const method = String(saveRoute?.method ?? 'patch').toLowerCase()
@@ -195,12 +209,16 @@ async function onSaveQuantity(item: any, form: any) {
         form.defaults()
         notify({ title: ctrans('Success'), text: ctrans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
+
+        return true
     } catch (error: any) {
         notify({
             title: ctrans('Something went wrong'),
             text: error?.response?.data?.message || ctrans('Failed to update quantity'),
             type: 'error',
         })
+
+        return false
     } finally {
         savingId.value = null
     }
@@ -519,7 +537,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         <template v-if="item.partner_stock !== null"> | </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
                     </span>
                 </div>
-                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" :isOrderClosed="isTransactionClosed(item)" />
+                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkosById="typedSkos" :isOrderClosed="isTransactionClosed(item)" />
             </div>
         </template>
 
@@ -546,7 +564,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         <template #cell(quantity)="{ item }">
             <div v-if="isInProcess" class="flex flex-col items-end">
                 <NumberWithButtonSave
-                    :key="`${item.id}-${currentLevel}`"
+                    :key="`${item.id}-${currentLevel}-${quantityInputVersion[item.id] ?? 0}`"
                     isWithRefreshModel
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
@@ -554,7 +572,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @update:modelValue="(value) => (typedSkos[item.id] = (Number(value) * unitsPerLevel(item)) / (Number(item.units_per_pack) || 1))"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
-                <PurchaseOrderSuggestButton :item="item" :isPartner="isPartner" :currentSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
+                <PurchaseOrderSuggestButton :item="item" :isPartner="isPartner" :typedSkosById="typedSkos" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>

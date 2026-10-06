@@ -16,7 +16,7 @@ interface QuarterUsage {
 const props = defineProps<{
 	item: any
 	isPartner?: boolean
-	typedSkos?: number | null
+	typedSkosById?: Record<number, number>
 	isOrderClosed?: boolean
 }>()
 
@@ -36,8 +36,10 @@ const thisOrder = computed(() => {
 		return 0
 	}
 
-	return props.typedSkos !== undefined && props.typedSkos !== null
-		? Number(props.typedSkos) || 0
+	const typedSkos = props.typedSkosById?.[props.item.id]
+
+	return typedSkos !== undefined && typedSkos !== null
+		? Number(typedSkos) || 0
 		: (Number(props.item.quantity_ordered) || 0) / pack.value
 })
 

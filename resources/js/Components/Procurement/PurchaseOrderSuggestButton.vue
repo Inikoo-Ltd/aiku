@@ -9,7 +9,7 @@ import { faSparkles, faExclamationTriangle } from "@fas"
 const props = defineProps<{
 	item: any
 	isPartner?: boolean
-	currentSkos?: number | null
+	typedSkosById?: Record<number, number>
 }>()
 
 const emit = defineEmits<{
@@ -23,11 +23,13 @@ const { suggestion, targetDays, leadDays, weeksLabel } = usePurchaseOrderStockCo
 	() => props.isPartner
 )
 
-const orderedSkos = computed(() =>
-	props.currentSkos !== undefined && props.currentSkos !== null
-		? Number(props.currentSkos) || 0
+const orderedSkos = computed(() => {
+	const typedSkos = props.typedSkosById?.[props.item.id]
+
+	return typedSkos !== undefined && typedSkos !== null
+		? Number(typedSkos) || 0
 		: (Number(props.item.quantity_ordered) || 0) / (Number(props.item.units_per_pack) || 1)
-)
+})
 
 const isApplied = computed(() => suggestion.value !== null && Math.round(orderedSkos.value) === suggestion.value)
 
