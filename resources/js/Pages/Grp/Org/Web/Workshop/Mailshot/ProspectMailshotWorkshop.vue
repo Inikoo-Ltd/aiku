@@ -442,7 +442,7 @@ onMounted(() => {
     <!-- email workshop -->
     <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
         :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->

@@ -11,7 +11,8 @@ import EmailWorkshopSection from './EmailWorkshopSection.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
-    EmailBody, EmailModule, EmailRow, MODULE_TYPES, createIconItem, getModuleText, isUnsubscribeModule, moduleTextToggles, setModuleText,
+    EmailBody, EmailModule, EmailRow, MODULE_TYPES, addTableColumn, addTableRow, createIconItem, getModuleText, isTableModule, isUnsubscribeModule,
+    moduleTextToggles, removeTableColumn, removeTableRow, setModuleText, tableColumnCount,
     videoThumbnailFromUrl, vimeoVideoId,
 } from './emailWorkshopBlocks'
 
@@ -319,7 +320,7 @@ const contentSectionTitle = computed(() => ({
     [MODULE_TYPES.social]: ctrans('Social options'),
     [MODULE_TYPES.icons]: ctrans('Icons options'),
     [MODULE_TYPES.video]: ctrans('Video options'),
-    [MODULE_TYPES.html]: isUnsubscribeModule(props.module) ? ctrans('Unsubscribe options') : ctrans('HTML options'),
+    [MODULE_TYPES.html]: isUnsubscribeModule(props.module) ? ctrans('Unsubscribe options') : (isTableModule(props.module) ? ctrans('Table options') : ctrans('HTML options')),
     [MODULE_TYPES.mergeContent]: ctrans('Dynamic content'),
 }[moduleType.value] ?? ctrans('Content options')))
 </script>
@@ -511,6 +512,44 @@ const contentSectionTitle = computed(() => ({
                         <EmailWorkshopField v-model="descriptor.video.iconColor2" type="color" :label="ctrans('Play button color')" />
                         <EmailWorkshopField v-model="descriptor.video.iconColor1" type="color" :label="ctrans('Play icon color')" />
                     </template>
+                </template>
+
+                <template v-else-if="isTableModule(module)">
+                    <p class="my-2 rounded bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)] px-3 py-2 text-[12px] text-gray-700">
+                        {{ ctrans('Type into the cells directly in the canvas.') }}
+                    </p>
+                    <div class="flex items-center justify-between border-b border-gray-100 py-2.5">
+                        <span class="text-[13px] text-gray-600">{{ ctrans('Size') }}</span>
+                        <span class="text-[13px] text-gray-800">{{ descriptor.aikuTable.rows.length }} × {{ tableColumnCount(descriptor.aikuTable) }}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 border-b border-gray-100 py-2.5">
+                        <button type="button" class="rounded border border-gray-300 py-1.5 text-[12px] text-gray-700 hover:border-[var(--theme-color-4)] hover:text-[var(--theme-color-4)]"
+                            @click="addTableRow(descriptor.aikuTable)">+ {{ ctrans('Add row') }}</button>
+                        <button type="button" class="rounded border border-gray-300 py-1.5 text-[12px] text-gray-700 hover:border-[var(--theme-color-4)] hover:text-[var(--theme-color-4)]"
+                            @click="addTableColumn(descriptor.aikuTable)">+ {{ ctrans('Add column') }}</button>
+                        <button type="button" class="rounded border border-gray-300 py-1.5 text-[12px] text-gray-700 hover:border-red-400 hover:text-red-500 disabled:opacity-40"
+                            :disabled="descriptor.aikuTable.rows.length <= 1"
+                            @click="removeTableRow(descriptor.aikuTable, descriptor.aikuTable.rows.length - 1)">− {{ ctrans('Remove last row') }}</button>
+                        <button type="button" class="rounded border border-gray-300 py-1.5 text-[12px] text-gray-700 hover:border-red-400 hover:text-red-500 disabled:opacity-40"
+                            :disabled="tableColumnCount(descriptor.aikuTable) <= 1"
+                            @click="removeTableColumn(descriptor.aikuTable, tableColumnCount(descriptor.aikuTable) - 1)">− {{ ctrans('Remove last column') }}</button>
+                    </div>
+                    <EmailWorkshopField v-model="descriptor.aikuTable.hasHeader" type="toggle" :label="ctrans('Header row')" />
+                    <template v-if="descriptor.aikuTable.hasHeader">
+                        <EmailWorkshopField v-model="descriptor.aikuTable.headerBackgroundColor" type="color" :label="ctrans('Header background')" />
+                        <EmailWorkshopField v-model="descriptor.aikuTable.headerTextColor" type="color" :label="ctrans('Header text color')" />
+                        <EmailWorkshopField v-model="descriptor.aikuTable.headerBold" type="toggle" :label="ctrans('Bold header')" />
+                    </template>
+                    <EmailWorkshopField v-model="descriptor.aikuTable.backgroundColor" type="color" :label="ctrans('Cell background')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.striped" type="toggle" :label="ctrans('Striped rows')" />
+                    <EmailWorkshopField v-if="descriptor.aikuTable.striped" v-model="descriptor.aikuTable.stripeColor" type="color" :label="ctrans('Stripe color')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.textColor" type="color" :label="ctrans('Text color')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.fontFamily" type="select" :options="fontFamilyOptions" :label="ctrans('Font')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.fontSize" type="px" :label="ctrans('Font size')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.align" type="align" :label="ctrans('Text align')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.cellPadding" type="px" :label="ctrans('Cell padding')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.borderWidth" type="px" :label="ctrans('Border width')" />
+                    <EmailWorkshopField v-model="descriptor.aikuTable.borderColor" type="color" :label="ctrans('Border color')" />
                 </template>
 
                 <template v-else-if="isUnsubscribeModule(module)">

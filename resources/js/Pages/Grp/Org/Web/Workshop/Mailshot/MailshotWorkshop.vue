@@ -398,7 +398,7 @@ onMounted(() => {
     </Dialog>
 
     <template v-if="builder == 'beefree'">
-       <!--  <Beetree :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+        <!-- <Beetree :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
@@ -411,7 +411,7 @@ onMounted(() => {
         <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
-            @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
+            @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
             :mailshot="mailshotData" :updateMailshotRoute="updateMailshotRoute" @mailshotSaved="onMailshotSaved"
             ref="_emailWorkshop">
             <template #toolbar>

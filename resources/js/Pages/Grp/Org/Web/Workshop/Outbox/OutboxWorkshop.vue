@@ -314,7 +314,7 @@ const schedulePublish = async () => {
     <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
         @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->

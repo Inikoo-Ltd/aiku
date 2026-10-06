@@ -84,6 +84,7 @@ export const INLINE_EDITABLE_TYPES: string[] = [
 
 export const UNSUBSCRIBE_BLOCK = 'aiku-unsubscribe'
 export const UNSUBSCRIBE_URL_TAG = '[Unsubscribe Url]'
+export const TABLE_BLOCK = 'aiku-table'
 
 export const DEFAULT_FONT_FAMILY = 'Arial, Helvetica Neue, Helvetica, sans-serif'
 export const DEFAULT_MESSAGE_WIDTH = '650px'
@@ -297,6 +298,7 @@ export const paletteModuleTypes: Array<{ type: string, label: string, icon: stri
     { type: MODULE_TYPES.social, label: 'Social', icon: 'fal fa-share-alt' },
     { type: MODULE_TYPES.video, label: 'Video', icon: 'fal fa-video' },
     { type: MODULE_TYPES.icons, label: 'Icons', icon: 'fal fa-icons' },
+    { type: TABLE_BLOCK, label: 'Table', icon: 'fal fa-table' },
     { type: MODULE_TYPES.html, label: 'HTML', icon: 'fal fa-code' },
     { type: UNSUBSCRIBE_BLOCK, label: 'Unsubscribe', icon: 'fal fa-user-slash' },
 ]
@@ -313,8 +315,109 @@ export const rowLayouts: number[][] = [
 export const isUnsubscribeModule = (module: EmailModule | null | undefined): boolean =>
     module?.type === MODULE_TYPES.html && !!module.descriptor?.aikuUnsubscribe
 
-export const moduleDisplayName = (module: EmailModule): string =>
-    isUnsubscribeModule(module) ? 'unsubscribe' : shortModuleType(module.type).replace('-', ' ')
+export const isTableModule = (module: EmailModule | null | undefined): boolean =>
+    module?.type === MODULE_TYPES.html && !!module.descriptor?.aikuTable
+
+export const moduleDisplayName = (module: EmailModule): string => {
+    if (isUnsubscribeModule(module)) {
+        return 'unsubscribe'
+    }
+    if (isTableModule(module)) {
+        return 'table'
+    }
+
+    return shortModuleType(module.type).replace('-', ' ')
+}
+
+export interface EmailTableSettings {
+    hasHeader: boolean
+    header: string[]
+    rows: string[][]
+    fontFamily: string
+    fontSize: string
+    textColor: string
+    backgroundColor: string
+    headerBackgroundColor: string
+    headerTextColor: string
+    headerBold: boolean
+    borderColor: string
+    borderWidth: string
+    cellPadding: string
+    striped: boolean
+    stripeColor: string
+    align: string
+}
+
+export const createTableModule = (): EmailModule => ({
+    type: MODULE_TYPES.html,
+    uuid: uuidv4(),
+    locked: false,
+    descriptor: {
+        html: { html: '' },
+        style: defaultPadding(),
+        aikuTable: {
+            hasHeader: true,
+            header: ['Product', 'Quantity', 'Price'],
+            rows: [
+                ['Item 1', '1', '£10.00'],
+                ['Item 2', '2', '£20.00'],
+            ],
+            fontFamily: 'Arial, Helvetica Neue, Helvetica, sans-serif',
+            fontSize: '14px',
+            textColor: '#374151',
+            backgroundColor: '#ffffff',
+            headerBackgroundColor: '#f3f4f6',
+            headerTextColor: '#111827',
+            headerBold: true,
+            borderColor: '#e5e7eb',
+            borderWidth: '1px',
+            cellPadding: '8px',
+            striped: false,
+            stripeColor: '#f9fafb',
+            align: 'left',
+        } satisfies EmailTableSettings,
+        computedStyle: { hideContentOnMobile: false, hideContentOnDesktop: false },
+    },
+})
+
+export const tableColumnCount = (table: EmailTableSettings): number =>
+    Math.max(table.header?.length ?? 0, ...(table.rows ?? []).map((row) => row.length), 1)
+
+export const addTableRow = (table: EmailTableSettings): void => {
+    table.rows.push(Array.from({ length: tableColumnCount(table) }, () => ''))
+}
+
+export const removeTableRow = (table: EmailTableSettings, index: number): void => {
+    if (table.rows.length > 1) {
+        table.rows.splice(index, 1)
+    }
+}
+
+export const addTableColumn = (table: EmailTableSettings): void => {
+    const columnCount = tableColumnCount(table)
+    table.header = [...Array.from({ length: columnCount }, (_, index) => table.header?.[index] ?? ''), `Column ${columnCount + 1}`]
+    table.rows = table.rows.map((row) => [...Array.from({ length: columnCount }, (_, index) => row[index] ?? ''), ''])
+}
+
+export const removeTableColumn = (table: EmailTableSettings, index: number): void => {
+    if (tableColumnCount(table) <= 1) {
+        return
+    }
+    table.header.splice(index, 1)
+    table.rows.forEach((row) => row.splice(index, 1))
+}
+
+export const isUnsubscribeMergeContent = (module: EmailModule): boolean =>
+    module?.type === MODULE_TYPES.mergeContent && /^\s*\[unsubscribe\]\s*$/i.test(String(module.descriptor?.mergeContent?.value ?? ''))
+
+export const isUnsubscribeMergeTag = (tag: { value?: string } | null | undefined): boolean =>
+    /^\[unsubscribe\]$/i.test(String(tag?.value ?? ''))
+
+export const emailHasUnsubscribeBlock = (email: EmailJson): boolean =>
+    email.page.rows.some((row) => row.columns.some((column) => column.modules.some(isUnsubscribeModule)))
+
+export const rowHasUnsubscribeBlock = (row: EmailRow): boolean =>
+    row.columns.some((column) => column.modules.some(isUnsubscribeModule))
 
 export const createUnsubscribeModule = (): EmailModule => ({
     type: MODULE_TYPES.html,
@@ -342,6 +445,9 @@ export const createUnsubscribeModule = (): EmailModule => ({
 export const createModule = (type: string): EmailModule => {
     if (type === UNSUBSCRIBE_BLOCK) {
         return createUnsubscribeModule()
+    }
+    if (type === TABLE_BLOCK) {
+        return createTableModule()
     }
 
     return {
@@ -465,10 +571,15 @@ export const normaliseEmailJson = (source: any): EmailJson => {
             column.uuid ??= uuidv4()
             column.style ??= {}
             column.modules = Array.isArray(column.modules) ? column.modules : []
-            for (const module of column.modules) {
+            column.modules = column.modules.map((module) => {
+                if (isUnsubscribeMergeContent(module)) {
+                    return { ...createUnsubscribeModule(), uuid: module.uuid ?? uuidv4() }
+                }
                 module.uuid ??= uuidv4()
                 module.descriptor ??= {}
-            }
+
+                return module
+            })
         }
     }
 
@@ -523,5 +634,46 @@ export const setModuleText = (module: EmailModule, html: string): void => {
         case MODULE_TYPES.button:
             descriptor.button.label = html
             break
+    }
+}
+
+export interface ModulePlaceholder {
+    icon: string
+    title: string
+    hint: string
+    size: 'large' | 'small'
+}
+
+const isBlankHtml = (html: unknown): boolean =>
+    String(html ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === ''
+
+export const modulePlaceholder = (module: EmailModule): ModulePlaceholder | null => {
+    const descriptor = module.descriptor ?? {}
+
+    switch (module.type) {
+        case MODULE_TYPES.image:
+            return descriptor.image?.src ? null : { icon: 'fal fa-image', title: 'Image', hint: 'Upload or browse an image', size: 'large' }
+        case MODULE_TYPES.video:
+            return descriptor.video?.thumbSrc || descriptor.video?.src ? null : { icon: 'fal fa-video', title: 'Video', hint: 'Add a YouTube or Vimeo link', size: 'large' }
+        case MODULE_TYPES.heading:
+        case MODULE_TYPES.paragraph:
+        case MODULE_TYPES.text:
+        case MODULE_TYPES.list:
+            return isBlankHtml(getModuleText(module)) ? { icon: 'fal fa-text', title: 'Text', hint: 'Click to start writing', size: 'small' } : null
+        case MODULE_TYPES.html:
+            if (isUnsubscribeModule(module) || isTableModule(module)) {
+                return null
+            }
+            return isBlankHtml(descriptor.html?.html) && !/<(img|table|iframe)/i.test(String(descriptor.html?.html ?? ''))
+                ? { icon: 'fal fa-code', title: 'HTML', hint: 'Add your own HTML', size: 'small' }
+                : null
+        case MODULE_TYPES.social:
+            return descriptor.iconsList?.icons?.length ? null : { icon: 'fal fa-share-alt', title: 'Social', hint: 'Add social links', size: 'small' }
+        case MODULE_TYPES.icons:
+            return descriptor.iconsList?.icons?.length ? null : { icon: 'fal fa-icons', title: 'Icons', hint: 'Add icon items', size: 'small' }
+        case MODULE_TYPES.mergeContent:
+            return String(descriptor.mergeContent?.value ?? '').trim() ? null : { icon: 'fal fa-puzzle-piece', title: 'Dynamic content', hint: 'Pick products or a dynamic block', size: 'small' }
+        default:
+            return null
     }
 }

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
+import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
-    faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash,
+    faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
+    faSpinnerThird, faExclamationTriangle, faCheck,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -15,18 +17,22 @@ import BeefreeDynamicBlocks from '../BeefreeDynamicBlocks.vue'
 import EmailWorkshopProperties from './EmailWorkshopProperties.vue'
 import EmailWorkshopSettings from './EmailWorkshopSettings.vue'
 import EmailWorkshopInlineEditor from './EmailWorkshopInlineEditor.vue'
+import EmailWorkshopTableEditor from './EmailWorkshopTableEditor.vue'
+import EmailWorkshopPlaceholder from './EmailWorkshopPlaceholder.vue'
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     createMergeContentModule, createModule, createRow, duplicateWithNewUuids, normaliseEmailJson,
-    UNSUBSCRIBE_BLOCK, moduleDisplayName, paletteModuleTypes, rowLayouts,
+    UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
+    rowHasUnsubscribeBlock, rowLayouts,
 } from './emailWorkshopBlocks'
 import { columnWidth, createRenderContext, messageWidth, renderEmailHtml, renderModuleHtml, styleToString, withDerivedHtml } from './renderEmailHtml'
 
 library.add(
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
-    faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash,
+    faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
+    faSpinnerThird, faExclamationTriangle, faCheck,
 )
 
 const props = withDefaults(defineProps<{
@@ -42,6 +48,7 @@ const props = withDefaults(defineProps<{
     builderType?: string
     mailshot?: MailshotMetadata | null
     updateMailshotRoute?: routeType
+    autoSaveRoute?: routeType
 }>(), {
     builderType: 'email',
 })
@@ -55,7 +62,8 @@ const emits = defineEmits<{
     (e: 'mailshotSaved', value: MailshotMetadata): void
 }>()
 
-const AUTOSAVE_INTERVAL_MS = 20000
+const AUTOSAVE_DEBOUNCE_MS = 3000
+const AUTOSAVE_MAX_WAIT_MS = 20000
 const HISTORY_DEBOUNCE_MS = 400
 const HISTORY_LIMIT = 50
 const MOBILE_CANVAS_WIDTH = 375
@@ -66,6 +74,30 @@ const selectedRowUuid = ref<string | null>(null)
 const sidebarTab = ref<'content' | 'rows' | 'settings'>('content')
 const device = ref<'desktop' | 'mobile'>('desktop')
 const isDirty = ref(false)
+const autoSaveStatus = ref<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle')
+const lastSavedAt = ref<Date | null>(null)
+const lastSavedTime = computed(() => lastSavedAt.value
+    ? lastSavedAt.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '')
+const STRUCTURE_VISIBILITY_STORAGE_KEY = 'email-workshop-show-structure'
+
+const readStructureVisibility = (): boolean => {
+    try {
+        return localStorage.getItem(STRUCTURE_VISIBILITY_STORAGE_KEY) === '1'
+    } catch {
+        return false
+    }
+}
+
+const isStructureVisible = ref(readStructureVisibility())
+
+watch(isStructureVisible, (isVisible) => {
+    try {
+        localStorage.setItem(STRUCTURE_VISIBILITY_STORAGE_KEY, isVisible ? '1' : '0')
+    } catch {
+        return
+    }
+})
 const editorRevision = ref(0)
 const canvasTextRevision = ref(0)
 const panelTextRevision = ref(0)
@@ -86,7 +118,10 @@ const scheduleTextSync = (target: 'canvas' | 'panel') => {
 }
 let isLoadingEmail = true
 let isApplyingHistory = false
-let autosaveTimer: ReturnType<typeof setInterval> | null = null
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingChangesSince: number | null = null
+let isAutoSaveRunning = false
+let hasChangesDuringAutoSave = false
 let historyTimer: ReturnType<typeof setTimeout> | null = null
 
 const sidebarTabs = [
@@ -189,6 +224,9 @@ const addRow = (gridColumns: number[]) => {
 }
 
 const duplicateRow = (row: EmailRow) => {
+    if (rowHasUnsubscribeBlock(row)) {
+        return
+    }
     const index = email.value.page.rows.indexOf(row)
     const copy = duplicateWithNewUuids(row)
     email.value.page.rows.splice(index + 1, 0, copy)
@@ -197,7 +235,7 @@ const duplicateRow = (row: EmailRow) => {
 
 const deleteRow = (row: EmailRow) => {
     const index = email.value.page.rows.indexOf(row)
-    if (index === -1) {
+    if (index === -1 || rowHasUnsubscribeBlock(row)) {
         return
     }
     email.value.page.rows.splice(index, 1)
@@ -230,7 +268,7 @@ const insertModule = (module: EmailModule) => {
 
 const duplicateSelectedModule = () => {
     const location = findModuleLocation(selectedModuleUuid.value)
-    if (!location) {
+    if (!location || isUnsubscribeModule(location.module)) {
         return
     }
     const copy = duplicateWithNewUuids(location.module)
@@ -240,12 +278,16 @@ const duplicateSelectedModule = () => {
 
 const deleteSelectedModule = () => {
     const location = findModuleLocation(selectedModuleUuid.value)
-    if (!location) {
+    if (!location || isUnsubscribeModule(location.module)) {
         return
     }
     location.column.modules.splice(location.index, 1)
     selectedModuleUuid.value = null
 }
+
+const isSelectionLocked = computed(() => selectedModule.value
+    ? isUnsubscribeModule(selectedModule.value)
+    : !!selectedRow.value && rowHasUnsubscribeBlock(selectedRow.value))
 
 const duplicateSelection = () => {
     if (selectedModule.value) {
@@ -325,7 +367,7 @@ const applyHistory = async (index: number) => {
     historyIndex.value = index
     email.value = JSON.parse(history.value[index])
     editorRevision.value += 1
-    isDirty.value = true
+    markDirty()
     await nextTick()
     isApplyingHistory = false
 }
@@ -339,7 +381,15 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
 }
 
 const onKeydown = (event: KeyboardEvent) => {
-    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' || isTypingTarget(event.target)) {
+    if (!(event.ctrlKey || event.metaKey)) {
+        return
+    }
+    if (event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        saveDraftNow()
+        return
+    }
+    if (event.key.toLowerCase() !== 'z' || isTypingTarget(event.target)) {
         return
     }
     event.preventDefault()
@@ -355,33 +405,104 @@ const exportFiles = () => ({
     htmlFile: renderEmailHtml(email.value),
 })
 
-const hasUnsubscribeMergeTag = computed(() => (props.mergeTags ?? []).some((tag) => /^\[unsubscribe\]$/i.test(String(tag?.value ?? ''))))
+const hasUnsubscribeMergeTag = computed(() => (props.mergeTags ?? []).some(isUnsubscribeMergeTag))
+
+const editorMergeTags = computed(() => (props.mergeTags ?? []).filter((tag) => !isUnsubscribeMergeTag(tag)))
 
 const availablePaletteModuleTypes = computed(() =>
-    paletteModuleTypes.filter((item) => item.type !== UNSUBSCRIBE_BLOCK || hasUnsubscribeMergeTag.value)
+    paletteModuleTypes.filter((item) => item.type !== UNSUBSCRIBE_BLOCK || (hasUnsubscribeMergeTag.value && !emailHasUnsubscribeBlock(email.value)))
 )
 
-const save = () => {
+const clearAutoSaveTimer = () => {
+    if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer)
+        autoSaveTimer = null
+    }
+}
+
+const persistDraft = async () => {
+    clearAutoSaveTimer()
+    if (!isDirty.value) {
+        return
+    }
+    if (!props.autoSaveRoute) {
+        isDirty.value = false
+        pendingChangesSince = null
+        emits('autoSave', JSON.stringify(withDerivedHtml(email.value)))
+        return
+    }
+    if (isAutoSaveRunning) {
+        hasChangesDuringAutoSave = true
+        return
+    }
+
+    isAutoSaveRunning = true
     isDirty.value = false
+    pendingChangesSince = null
+    autoSaveStatus.value = 'saving'
+    try {
+        await axios.patch(route(props.autoSaveRoute.name, props.autoSaveRoute.parameters), { layout: withDerivedHtml(email.value) })
+        lastSavedAt.value = new Date()
+        autoSaveStatus.value = isDirty.value ? 'pending' : 'saved'
+    } catch {
+        isDirty.value = true
+        autoSaveStatus.value = 'error'
+    } finally {
+        isAutoSaveRunning = false
+        if (hasChangesDuringAutoSave) {
+            hasChangesDuringAutoSave = false
+            scheduleAutoSave()
+        }
+    }
+}
+
+const scheduleAutoSave = () => {
+    clearAutoSaveTimer()
+    pendingChangesSince ??= Date.now()
+    if (autoSaveStatus.value !== 'saving') {
+        autoSaveStatus.value = 'pending'
+    }
+    const waitedFor = Date.now() - pendingChangesSince
+    autoSaveTimer = setTimeout(persistDraft, Math.max(0, Math.min(AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_MAX_WAIT_MS - waitedFor)))
+}
+
+const markDirty = () => {
+    isDirty.value = true
+    if (isAutoSaveRunning) {
+        hasChangesDuringAutoSave = true
+        return
+    }
+    scheduleAutoSave()
+}
+
+const saveDraftNow = () => {
+    if (isDirty.value) {
+        persistDraft()
+    }
+}
+
+const onBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (isDirty.value || isAutoSaveRunning) {
+        event.preventDefault()
+        event.returnValue = ''
+    }
+}
+
+const save = () => {
+    clearAutoSaveTimer()
+    isDirty.value = false
+    pendingChangesSince = null
     emits('onSave', exportFiles())
 }
 
 const sendTest = () => emits('sendTest', exportFiles())
 const saveAsTemplate = () => emits('saveTemplate', exportFiles())
 
-const autoSave = () => {
-    if (!isDirty.value) {
-        return
-    }
-    isDirty.value = false
-    emits('autoSave', JSON.stringify(withDerivedHtml(email.value)))
-}
-
 watch(email, () => {
     if (isLoadingEmail || isApplyingHistory) {
         return
     }
-    isDirty.value = true
+    markDirty()
     if (historyTimer) {
         clearTimeout(historyTimer)
     }
@@ -400,7 +521,7 @@ watch(
         clearSelection()
         await nextTick()
         isLoadingEmail = false
-        isDirty.value = true
+        markDirty()
         resetHistory()
     },
     { deep: true },
@@ -417,15 +538,13 @@ onMounted(async () => {
     if (wrapperRef.value) {
         wrapperTop.value = Math.round(wrapperRef.value.getBoundingClientRect().top)
     }
-    autosaveTimer = setInterval(autoSave, AUTOSAVE_INTERVAL_MS)
     window.addEventListener('keydown', onKeydown)
+    window.addEventListener('beforeunload', onBeforeUnload)
     emits('ready', true)
 })
 
 onBeforeUnmount(() => {
-    if (autosaveTimer) {
-        clearInterval(autosaveTimer)
-    }
+    persistDraft()
     if (historyTimer) {
         clearTimeout(historyTimer)
     }
@@ -433,10 +552,12 @@ onBeforeUnmount(() => {
         clearTimeout(textSyncTimer)
     }
     window.removeEventListener('keydown', onKeydown)
+    window.removeEventListener('beforeunload', onBeforeUnload)
 })
 
 defineExpose({
     save,
+    saveDraftNow,
     email,
 })
 </script>
@@ -467,7 +588,33 @@ defineExpose({
                             <FontAwesomeIcon icon="fal fa-mobile" fixed-width aria-hidden="true" />
                         </button>
                     </div>
-                    <span v-if="isDirty" class="ml-3 text-xs text-gray-400">{{ ctrans('Unsaved changes') }}</span>
+                    <button type="button" class="ml-2 flex h-8 items-center gap-x-1.5 rounded px-2.5 text-[13px] transition"
+                        :class="isStructureVisible ? 'bg-[color-mix(in_srgb,var(--theme-color-4)_12%,white)] text-[var(--theme-color-4)]' : 'text-gray-600 hover:bg-gray-100'"
+                        :aria-pressed="isStructureVisible" v-tooltip="ctrans('Show the outline of every row, column and block')"
+                        @click="isStructureVisible = !isStructureVisible">
+                        <FontAwesomeIcon :icon="isStructureVisible ? 'fal fa-eye-slash' : 'fal fa-eye'" fixed-width aria-hidden="true" />
+                        {{ ctrans('Show structure') }}
+                    </button>
+                    <span v-if="autoSaveRoute" class="ml-3 flex items-center gap-x-1.5 text-xs" aria-live="polite">
+                        <template v-if="autoSaveStatus === 'saving'">
+                            <FontAwesomeIcon icon="fal fa-spinner-third" spin class="text-gray-400" fixed-width aria-hidden="true" />
+                            <span class="text-gray-500">{{ ctrans('Saving') }}…</span>
+                        </template>
+                        <template v-else-if="autoSaveStatus === 'error'">
+                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
+                            <span class="text-red-600">{{ ctrans('Autosave failed') }}</span>
+                            <button type="button" class="font-medium text-[var(--theme-color-4)] hover:underline" @click="saveDraftNow">{{ ctrans('Retry') }}</button>
+                        </template>
+                        <template v-else-if="autoSaveStatus === 'pending' || isDirty">
+                            <span class="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            <span class="text-gray-500" v-tooltip="ctrans('Saved automatically in a few seconds, or press Ctrl+S')">{{ ctrans('Unsaved changes') }}</span>
+                        </template>
+                        <template v-else-if="autoSaveStatus === 'saved'">
+                            <FontAwesomeIcon icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                            <span class="text-gray-500">{{ ctrans('Draft saved') }} {{ lastSavedTime }}</span>
+                        </template>
+                    </span>
+                    <span v-else-if="isDirty" class="ml-3 text-xs text-gray-400">{{ ctrans('Unsaved changes') }}</span>
                 </div>
 
                 <div class="flex items-center gap-x-1">
@@ -486,11 +633,11 @@ defineExpose({
             </div>
 
             <div class="flex min-h-0 flex-1">
-                <main class="min-h-0 flex-1 overflow-auto py-8" :style="{ backgroundColor: bodyBackground }" @click.self="clearSelection">
+                <main class="min-h-0 flex-1 overflow-auto py-8" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop' }" :style="{ backgroundColor: bodyBackground }" @click.self="clearSelection">
                     <div :style="bodyStyle">
                         <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="opacity-40" class="min-h-[200px]">
                             <template #item="{ element: row }">
-                                <div class="group/row relative"
+                                <div class="email-row group/row relative"
                                     :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', isHiddenOnCurrentDevice(row.content?.computedStyle) ? 'opacity-40' : '']"
                                     :style="styleToString(row.container?.style)"
                                     @click.self="selectRow(row)">
@@ -501,29 +648,36 @@ defineExpose({
                                     </div>
 
                                     <div v-if="isRowSelected(row)" class="absolute bottom-0 right-0 z-10 flex overflow-hidden rounded-tl bg-[var(--theme-color-4)] text-[var(--theme-color-5)]">
-                                        <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteRow(row)">
-                                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                        </button>
-                                        <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateRow(row)">
-                                            <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                        </button>
+                                        <template v-if="!rowHasUnsubscribeBlock(row)">
+                                            <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteRow(row)">
+                                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                            </button>
+                                            <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateRow(row)">
+                                                <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                            </button>
+                                        </template>
+                                        <span v-else class="px-2 py-1" v-tooltip="ctrans('This row holds the unsubscribe block, so it cannot be deleted or duplicated')">
+                                            <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
+                                        </span>
                                     </div>
 
                                     <div class="mx-auto flex transition-[width]" :class="isStackedOnMobile(row) ? 'flex-col' : ''" :style="rowContentStyle(row)" @click.self="selectRow(row)">
-                                        <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="min-w-0">
+                                        <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="email-column relative min-w-0">
                                             <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="opacity-40" class="min-h-[40px]"
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
                                                 @add="(event: any) => selectModule(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
-                                                    <div class="group/module relative cursor-pointer"
+                                                    <div class="email-module group/module relative cursor-pointer"
                                                         :class="[selectedModuleUuid === module.uuid ? 'z-[2] outline outline-2 -outline-offset-1 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-1 hover:-outline-offset-1 hover:outline-[var(--theme-color-4)]', isHiddenOnCurrentDevice(module.descriptor?.computedStyle) ? 'opacity-40' : '']"
                                                         @click.stop="selectModule(module, row)">
                                                         <div v-if="module.type === MODULE_TYPES.empty" class="p-4 text-center text-xs text-gray-400">
                                                             {{ ctrans('Empty block') }}
                                                         </div>
+                                                        <EmailWorkshopTableEditor v-else-if="selectedModuleUuid === module.uuid && isTableModule(module)" :module="module" />
                                                         <EmailWorkshopInlineEditor v-else-if="isInlineEditing(module)" :key="`${module.uuid}-${editorRevision}-${canvasTextRevision}`"
-                                                            :module="module" :linkColor="bodyLinkColor" :mergeTags="mergeTags"
+                                                            :module="module" :linkColor="bodyLinkColor" :mergeTags="editorMergeTags"
                                                             @edited="scheduleTextSync('panel')" />
+                                                        <EmailWorkshopPlaceholder v-else-if="modulePlaceholder(module)" :placeholder="modulePlaceholder(module)!" />
                                                         <div v-else class="pointer-events-none" v-html="modulePreviewHtml(row, column, module)" />
 
                                                         <span class="absolute left-0 top-0 hidden -translate-y-full rounded-t bg-[var(--theme-color-4)] px-1.5 py-0.5 text-[10px] capitalize text-[var(--theme-color-5)] group-hover/module:block"
@@ -532,12 +686,17 @@ defineExpose({
                                                         </span>
 
                                                         <div v-if="selectedModuleUuid === module.uuid" class="absolute bottom-0 right-0 z-10 flex overflow-hidden rounded-tl bg-[var(--theme-color-4)] text-[11px] text-[var(--theme-color-5)]">
-                                                            <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteSelectedModule">
-                                                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                                            </button>
-                                                            <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateSelectedModule">
-                                                                <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                                            </button>
+                                                            <template v-if="!isUnsubscribeModule(module)">
+                                                                <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteSelectedModule">
+                                                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                                                </button>
+                                                                <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateSelectedModule">
+                                                                    <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                                                </button>
+                                                            </template>
+                                                            <span v-else class="px-1.5 py-0.5" v-tooltip="ctrans('The unsubscribe block is required and cannot be deleted')">
+                                                                <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
+                                                            </span>
                                                             <span class="cursor-grab px-1.5 py-0.5" v-tooltip="ctrans('Drag to move')">
                                                                 <FontAwesomeIcon icon="fal fa-arrows-alt" fixed-width aria-hidden="true" />
                                                             </span>
@@ -573,12 +732,17 @@ defineExpose({
                         <div class="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 px-4">
                             <span class="text-[13px] font-semibold text-gray-800">{{ propertiesTitle }}</span>
                             <div class="flex items-center gap-x-1 text-gray-500">
-                                <button type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
-                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                </button>
-                                <button type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
-                                    <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                </button>
+                                <template v-if="!isSelectionLocked">
+                                    <button type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
+                                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <button type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
+                                        <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                    </button>
+                                </template>
+                                <span v-else class="flex h-7 w-7 items-center justify-center text-gray-400" v-tooltip="ctrans('Required for unsubscribe, cannot be deleted')">
+                                    <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
+                                </span>
                                 <button type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Close')" @click="clearSelection">
                                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                                 </button>
@@ -586,7 +750,7 @@ defineExpose({
                         </div>
                         <div class="min-h-0 flex-1 overflow-y-auto">
                             <EmailWorkshopProperties :module="selectedModule" :row="selectedModule ? null : selectedRow" :body="email.page.body"
-                                :imagesUploadRoute="imagesUploadRoute" :mergeTags="mergeTags" :textRevision="editorRevision + panelTextRevision"
+                                :imagesUploadRoute="imagesUploadRoute" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
                                 @textEdited="scheduleTextSync('canvas')"
                                 @replaceDynamicContent="openDynamicContentChooser(true)" />
                         </div>
@@ -682,3 +846,64 @@ defineExpose({
         </Dialog>
     </div>
 </template>
+
+<style scoped>
+.show-structure .email-row::after,
+.show-structure .email-column::after,
+.show-structure .email-module::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.show-structure .email-row::after {
+    border: 1px dashed #9ca3af;
+}
+
+.show-structure .email-column::after {
+    border: 1px dashed #c7d2fe;
+}
+
+.show-structure .email-module::after {
+    border: 1px dotted #d1d5db;
+}
+
+.desktop-canvas :deep(.merge_content_block .desktop_hide),
+.desktop-canvas :deep(.merge_content_block .desktop_hide table) {
+    display: none !important;
+}
+
+.mobile-canvas :deep(.row-content) {
+    width: 100% !important;
+}
+
+.mobile-canvas :deep(.stack .column),
+.mobile-canvas :deep(.product-cell),
+.mobile-canvas :deep(.icons-stack .icon-item) {
+    display: block !important;
+    width: 100% !important;
+}
+
+.mobile-canvas :deep(.icons-stack .icons-row),
+.mobile-canvas :deep(.icons-stack .icons-row tbody),
+.mobile-canvas :deep(.icons-stack .icons-row tr) {
+    display: block !important;
+    width: 100% !important;
+}
+
+.mobile-canvas :deep(.merge_content_block .mobile_hide) {
+    display: none !important;
+}
+
+.mobile-canvas :deep(.merge_content_block .desktop_hide),
+.mobile-canvas :deep(.merge_content_block .desktop_hide table) {
+    display: table !important;
+    max-height: none !important;
+}
+
+.mobile-canvas :deep(img) {
+    max-width: 100%;
+    height: auto;
+}
+</style>

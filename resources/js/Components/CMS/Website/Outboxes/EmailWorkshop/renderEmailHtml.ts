@@ -8,7 +8,9 @@ import {
     EmailRow,
     MODULE_TYPES,
     UNSUBSCRIBE_URL_TAG,
+    isTableModule,
     isUnsubscribeModule,
+    tableColumnCount,
 } from './emailWorkshopBlocks'
 
 const PADDING_KEYS = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']
@@ -372,8 +374,14 @@ const renderVideo = (module: EmailModule, context: RenderContext): string => {
     )
 }
 
+export const makeFixedWidthRowsFluid = (html: string): string =>
+    html.replace(/<table\b[^>]*\bclass="[^"]*\brow-content\b[^"]*"[^>]*>/gi, (tableTag) =>
+        tableTag
+            .replace(/\swidth="\d+"/i, ' width="100%"')
+            .replace(/(?<![-\w])width\s*:\s*(\d+)px/i, 'width:100%;max-width:$1px'))
+
 const renderMergeContent = (module: EmailModule, context: RenderContext): string =>
-    blockTable('merge_content_block', module, context, module.descriptor?.mergeContent?.value ?? '')
+    blockTable('merge_content_block', module, context, makeFixedWidthRowsFluid(module.descriptor?.mergeContent?.value ?? ''))
 
 export const renderUnsubscribeContent = (module: EmailModule): string => {
     const settings = module.descriptor?.aikuUnsubscribe ?? {}
@@ -398,7 +406,38 @@ export const renderUnsubscribeContent = (module: EmailModule): string => {
     return `<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" bgcolor="${background}" style="${MSO_TABLE};background-color:${background}"><tr><td align="${align}" style="${padding};${textStyle}">${intro}${link}</td></tr></table>`
 }
 
+export const tableCellStyles = (settings: Record<string, any>) => {
+    const border = `${settings.borderWidth ?? '1px'} solid ${settings.borderColor ?? '#e5e7eb'}`
+    const base = `padding:${settings.cellPadding ?? '8px'};border:${border};text-align:${settings.align ?? 'left'};vertical-align:top`
+
+    return {
+        table: `border-collapse:collapse;width:100%;font-family:${settings.fontFamily ?? 'Arial, Helvetica, sans-serif'};font-size:${settings.fontSize ?? '14px'};color:${settings.textColor ?? '#374151'};background-color:${settings.backgroundColor ?? '#ffffff'}`,
+        header: `${base};background-color:${settings.headerBackgroundColor ?? '#f3f4f6'};color:${settings.headerTextColor ?? '#111827'};font-weight:${settings.headerBold === false ? 'normal' : 'bold'}`,
+        cell: (rowIndex: number) => `${base}${settings.striped && rowIndex % 2 === 1 ? `;background-color:${settings.stripeColor ?? '#f9fafb'}` : ''}`,
+    }
+}
+
+export const renderTableContent = (module: EmailModule): string => {
+    const settings = module.descriptor?.aikuTable ?? {}
+    const columnCount = tableColumnCount(settings)
+    const columnWidth = `${(100 / columnCount).toFixed(2)}%`
+    const styles = tableCellStyles(settings)
+    const cells = (values: string[], render: (value: string) => string) =>
+        Array.from({ length: columnCount }, (_, index) => render(values?.[index] ?? '')).join('')
+    const headerRow = settings.hasHeader
+        ? `<tr>${cells(settings.header, (value) => `<th width="${columnWidth}" style="${escapeAttribute(styles.header)}">${escapeHtmlText(value) || '&nbsp;'}</th>`)}</tr>`
+        : ''
+    const bodyRows = (settings.rows ?? []).map((row: string[], rowIndex: number) =>
+        `<tr>${cells(row, (value) => `<td width="${columnWidth}" style="${escapeAttribute(styles.cell(rowIndex))}">${escapeHtmlText(value) || '&nbsp;'}</td>`)}</tr>`
+    ).join('')
+
+    return `<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="${MSO_TABLE};${escapeAttribute(styles.table)}">${headerRow}${bodyRows}</table>`
+}
+
 const renderHtml = (module: EmailModule, context: RenderContext): string => {
+    if (isTableModule(module)) {
+        return blockTable('table_block', module, context, renderTableContent(module))
+    }
     if (isUnsubscribeModule(module)) {
         return `<table class="unsubscribe_block block-${context.moduleIndex} ${visibilityClasses(module)}" ${PRESENTATION_TABLE} style="${MSO_TABLE}"><tr><td>${renderUnsubscribeContent(module)}</td></tr></table>`
     }
@@ -413,6 +452,9 @@ export const withDerivedHtml = (email: EmailJson): EmailJson => {
             for (const module of column.modules) {
                 if (isUnsubscribeModule(module)) {
                     module.descriptor.html = { html: renderUnsubscribeContent(module) }
+                }
+                if (isTableModule(module)) {
+                    module.descriptor.html = { html: renderTableContent(module) }
                 }
             }
         }
@@ -513,7 +555,7 @@ ${email.page.favicon ? `<link rel="icon" href="${escapeAttribute(email.page.favi
 ${webFontLinks(email)}
 <style>
 *{box-sizing:border-box}body{margin:0;padding:0}a[x-apple-data-detectors]{color:inherit!important;text-decoration:inherit!important}#MessageViewBody a{color:inherit;text-decoration:none}p{line-height:inherit}.button p{margin:0}.desktop_hide,.desktop_hide table{mso-hide:all;display:none;max-height:0;overflow:hidden}
-@media (max-width:${width + 20}px){.icons-stack .icons-row,.icons-stack .icons-row tbody,.icons-stack .icons-row tr{display:block!important;width:100%!important}.icons-stack .icon-item{display:block!important;width:100%!important}.row-content{width:100%!important}.stack .column{width:100%;display:block}.mobile_hide{min-height:0;max-height:0;max-width:0;overflow:hidden;font-size:0;display:none}.desktop_hide,.desktop_hide table{display:table!important;max-height:none!important}${context.mobileRules.join('')}}
+@media (max-width:${width + 20}px){.product-cell{display:block!important;width:100%!important}.icons-stack .icons-row,.icons-stack .icons-row tbody,.icons-stack .icons-row tr{display:block!important;width:100%!important}.icons-stack .icon-item{display:block!important;width:100%!important}.row-content{width:100%!important}.stack .column{width:100%;display:block}.mobile_hide{min-height:0;max-height:0;max-width:0;overflow:hidden;font-size:0;display:none}.desktop_hide,.desktop_hide table{display:table!important;max-height:none!important}${context.mobileRules.join('')}}
 </style>
 </head>
 <body class="body" style="background-color:${bodyBackground};margin:0;padding:0;-webkit-text-size-adjust:none;text-size-adjust:none">
