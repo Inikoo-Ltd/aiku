@@ -104,6 +104,7 @@ use App\Actions\Comms\SubscriptionEvent\UpdateSubscriptionEvent;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\SysAdmin\Group\Seeders\SeedEmailSocialIcons;
+use App\Actions\Maintenance\Comms\RepairEmailSocialIcons;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
@@ -786,6 +787,45 @@ test('seed email social icons stores each icon once in our own media', function 
         ->and($socialIcons['circle-color/facebook'])->toBeString()->not->toContain('getbee.io')
         ->and(SeedEmailSocialIcons::run($this->group))->toBe(0);
 });
+
+test('repair email social icons swaps only beefree social icons for our seeded icons', function (Mailshot $mailShot) {
+    SeedEmailSocialIcons::run($this->group);
+    $beefreeIcon   = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png';
+    $unknownIcon   = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-white/facebook@2x.png';
+    $externalImage = 'https://example.com/banner.jpg';
+
+    $email = StoreEmail::make()->action($mailShot, null, [
+        'subject'               => 'Social icons repair',
+        'body'                  => 'Social icons repair',
+        'layout'                => [
+            'icons'  => [
+                ['image' => ['src' => $beefreeIcon]],
+                ['image' => ['src' => $unknownIcon]],
+            ],
+            'banner' => ['src' => $externalImage],
+        ],
+        'compiled_layout'       => "<img src=\"$beefreeIcon\"><img src=\"$externalImage\">",
+        'state'                 => 'active',
+        'builder'               => EmailBuilderEnum::BEEFREE,
+        'snapshot_state'        => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable'   => true,
+        'snapshot_first_commit' => true,
+    ], strict: false);
+    $mailShot->update(['email_id' => $email->id]);
+
+    $result = RepairEmailSocialIcons::run($email->liveSnapshot);
+
+    $ownIcon  = GetEmailSocialIcons::run($this->group)['circle-color/facebook'];
+    $snapshot = $email->refresh()->liveSnapshot;
+    expect($result['replaced'])->toBe(1)
+        ->and($result['missing'])->toBe([$unknownIcon])
+        ->and($snapshot->layout['icons'][0])->toMatchArray(['image' => ['src' => $ownIcon], 'iconSet' => 'circle-color', 'name' => 'facebook'])
+        ->and($snapshot->layout['icons'][1]['image']['src'])->toBe($unknownIcon)
+        ->and($snapshot->layout['banner']['src'])->toBe($externalImage)
+        ->and($snapshot->compiled_layout)->toBe("<img src=\"$ownIcon\"><img src=\"$externalImage\">");
+
+    $this->artisan('repair:email-social-icons')->assertSuccessful();
+})->depends('update mailshot');
 
 test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
