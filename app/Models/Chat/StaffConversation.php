@@ -52,7 +52,7 @@ class StaffConversation extends Model
     public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'staff_conversation_participants')
-            ->withPivot('last_read_at', 'left_at')
+            ->withPivot('last_read_at', 'left_at', 'is_watching')
             ->withTimestamps();
     }
 
@@ -79,6 +79,34 @@ class StaffConversation extends Model
             ->whereIn('user_id', $userIds)
             ->whereNotNull('left_at')
             ->update(['left_at' => null]);
+    }
+
+    /**
+     * People told about a work chat (asked for help, sent a new ETA) start watching it, joining it if they were never in it.
+     * Someone taken off the chat is left out.
+     *
+     * @param array<int, int> $userIds
+     */
+    public function watchFor(array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+        if (!$userIds) {
+            return;
+        }
+
+        $knownUserIds = $this->participants()->newPivotStatement()
+            ->where('staff_conversation_id', $this->id)
+            ->whereIn('user_id', $userIds)
+            ->pluck('user_id')
+            ->all();
+
+        $this->addParticipants(array_diff($userIds, $knownUserIds));
+
+        $this->participants()->newPivotStatement()
+            ->where('staff_conversation_id', $this->id)
+            ->whereIn('user_id', $userIds)
+            ->whereNull('left_at')
+            ->update(['is_watching' => true]);
     }
 
     /**

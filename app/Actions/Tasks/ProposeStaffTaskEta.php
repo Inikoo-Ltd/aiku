@@ -54,6 +54,9 @@ class ProposeStaffTaskEta
         $title = __(':name suggests a new ETA for :reference: :date', ['name' => $proposer->chatName(), 'reference' => $task->reference, 'date' => Carbon::parse($dueAt)->isoFormat('D MMM')]);
 
         if ($task->conversation) {
+            if ($task->requester_id !== $proposer->id) {
+                $task->conversation->watchFor([$task->requester_id]);
+            }
             SendStaffMessage::run($task->conversation, $proposer, ['body' => $title."\n".trim($modelData['reason'])]);
         }
 

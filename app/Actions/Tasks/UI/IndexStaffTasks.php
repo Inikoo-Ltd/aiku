@@ -86,12 +86,13 @@ class IndexStaffTasks extends OrgAction
                 AllowedFilter::callback('created_since', fn ($query, $value) => $query->where('staff_tasks.created_at', '>=', $value)),
                 AllowedFilter::callback('created_before', fn ($query, $value) => $query->where('staff_tasks.created_at', '<', $value)),
                 AllowedFilter::callback('closed_since', fn ($query, $value) => $query->where('staff_tasks.closed_at', '>=', $value)),
-                AllowedFilter::callback('assignee', fn ($query, $value) => $query->where('staff_tasks.assignee_id', (int) $value)),
+                AllowedFilter::callback('organisation', fn ($query) => $query),
+                AllowedFilter::callback('assignee', fn ($query, $value) => $this->applyAssigneeFilter($query, $viewer, $value)),
                 AllowedFilter::callback('has_assignee', fn ($query, $value) => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? $query->whereNotNull('staff_tasks.assignee_id') : $query),
                 AllowedFilter::callback('collaborator', fn ($query, $value) => $query->whereIn('staff_tasks.id', $collaboratingOn($value))),
                 AllowedFilter::callback('involved', fn ($query, $value) => $query->where(fn ($involved) => $involved->where('staff_tasks.assignee_id', (int) $value)->orWhereIn('staff_tasks.id', $collaboratingOn($value)))),
                 AllowedFilter::callback('requester', fn ($query, $value) => $query->where('staff_tasks.requester_id', (int) $value)),
-                AllowedFilter::callback('department', fn ($query, $value) => $value === 'none' ? $query->whereNull('staff_tasks.department') : $query->whereIn('staff_tasks.department', (array) $value)),
+                AllowedFilter::callback('department', fn ($query, $value) => $this->applyDepartmentFilter($query, $value)),
                 AllowedFilter::callback('unassigned', fn ($query, $value) => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? $query->whereNull('staff_tasks.assignee_id') : $query),
                 AllowedFilter::callback('overdue', fn ($query, $value) => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? $query->where('staff_tasks.due_at', '<', today()) : $query),
             ])
@@ -116,6 +117,15 @@ class IndexStaffTasks extends OrgAction
                     default: $key === 'status' ? StaffTaskStatusEnum::TODO->value.','.StaffTaskStatusEnum::IN_PROGRESS->value : null
                 );
             }
+
+            $organisationOptions = $this->organisationFilterOptions($viewer);
+            if (count($organisationOptions) > 1) {
+                $table->selectFilter('organisation', $organisationOptions, __('Organisation'), null, true, __('Whole group'));
+            }
+
+            $table
+                ->selectFilter('assignee', $this->assigneeFilterOptions($parent, $viewer), __('Assignee'), null, true, __('All'))
+                ->selectFilter('department', $this->departmentFilterOptions($parent), __('Department'), null, true, __('All'));
 
             $table
                 ->withGlobalSearch(__('Search tasks'))
@@ -149,11 +159,10 @@ class IndexStaffTasks extends OrgAction
                     'icon'  => ['fal', 'fa-tasks'],
                 ],
                 'data'        => StaffTasksResource::collection($staffTasks),
-                'listSummary' => $this->listSummary($this->tasksParent(), $request->user()),
-                'options'     => $this->staffTaskEditOptions(),
+                'listSummary' => $this->listSummary($this->tasksListParent(), $request->user()),                'options'     => $this->staffTaskEditOptions(),
                 'showRoute'   => $this->tasksRoute('show'),
             ]
-        )->table($this->tableStructure($this->tasksParent(), $request->user()));
+        )->table($this->tableStructure($this->tasksListParent(), $request->user()));
     }
 
     /**
@@ -191,20 +200,20 @@ class IndexStaffTasks extends OrgAction
     {
         $this->initialisationFromTasksScope($request);
 
-        return $this->handle($this->tasksParent(), $request->user());
+        return $this->handle($this->tasksListParent(), $request->user());
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromTasksScope($request, $organisation);
 
-        return $this->handle($this->tasksParent(), $request->user());
+        return $this->handle($this->tasksListParent(), $request->user());
     }
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromTasksScope($request, $organisation, $shop);
 
-        return $this->handle($this->tasksParent(), $request->user());
+        return $this->handle($this->tasksListParent(), $request->user());
     }
 }

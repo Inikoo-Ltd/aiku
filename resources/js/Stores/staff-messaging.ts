@@ -60,6 +60,7 @@ export interface StaffConversation {
     context_url?: string | null
     task?: StaffConversationTask | null
     my_left_at?: string | null
+    is_watching?: boolean
 }
 
 export interface StaffConversationTask {
@@ -72,6 +73,9 @@ export interface StaffConversationTask {
     assignee_id: number | null
     collaborator_ids: number[]
     subtasks: { title: string; status: "todo" | "in_progress" | "done" }[]
+    description?: string | null
+    model_label?: string | null
+    model_url?: string | null
 }
 
 export interface StaffCoworker {
@@ -125,6 +129,18 @@ export const isWorkThread = (conversation: StaffConversation) => !!conversation.
 
 export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
 
+export const isHiddenChat = (conversation: StaffConversation) => isWorkThread(conversation) && !conversation.is_watching
+
+const SHOW_HIDDEN_CHATS_KEY = "staff-messaging-show-hidden-chats"
+
+const readShowHiddenChats = () => {
+    try {
+        return localStorage.getItem(SHOW_HIDDEN_CHATS_KEY) === "1"
+    } catch {
+        return false
+    }
+}
+
 export const isAlerting = (conversation: StaffConversation) => conversation.has_mention || (conversation.type === "dm" && !isWorkThread(conversation))
 
 export const useStaffMessaging = defineStore("staff-messaging", {
@@ -140,6 +156,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         fetched: false,
         maxVisible: 1,
         instantlyMinimised: [] as string[],
+        showHiddenChats: readShowHiddenChats(),
     }),
 
     getters: {
@@ -272,6 +289,26 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const index = this.conversations.findIndex((c) => c.ulid === e.conversation_ulid)
             if (index !== -1) {
                 this.conversations.splice(index, 1)
+            }
+        },
+
+        toggleShowHiddenChats() {
+            this.showHiddenChats = !this.showHiddenChats
+            try {
+                localStorage.setItem(SHOW_HIDDEN_CHATS_KEY, this.showHiddenChats ? "1" : "0")
+            } catch { }
+        },
+
+        async toggleWatch(ulid: string) {
+            const conversation = this.conversationByUlid(ulid)
+            if (!conversation) return
+
+            const isWatching = !conversation.is_watching
+            conversation.is_watching = isWatching
+            try {
+                await axios.post(route("grp.chat.staff.conversations.watch", ulid), { is_watching: isWatching })
+            } catch {
+                conversation.is_watching = !isWatching
             }
         },
 
@@ -529,6 +566,10 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                     }
                 })
                 return
+            }
+
+            if (isHiddenChat(conversation) && message.user_id !== myId) {
+                this.fetchConversations().catch(() => { })
             }
 
             const list = this.messagesByUlid[ulid]
