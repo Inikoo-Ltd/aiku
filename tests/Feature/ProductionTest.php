@@ -3050,6 +3050,7 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
     $artefact = StoreArtefact::make()->action($this->production, ['code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
     $artefact->update(['org_stock_id' => $orgStock->id]);
 
@@ -3073,7 +3074,7 @@ test('to produce board lists each artisan and their share of a split job order',
         ['employee_id' => $artisanB->id, 'quantity' => 400],
     ]])->assertSessionHasNoErrors();
 
-    \App\Models\Procurement\PartnerShoppingListItem::create([
+    $boardLine = \App\Models\Procurement\PartnerShoppingListItem::create([
         'group_id'        => $this->group->id,
         'organisation_id' => $this->organisation->id,
         'stock_id'        => $orgStock->stock_id,
@@ -3091,6 +3092,9 @@ test('to produce board lists each artisan and their share of a split job order',
         [$jobOrder->reference.'-A', $artisanA->contact_name, 600.0],
         [$jobOrder->reference.'-B', $artisanB->contact_name, 400.0],
     ]);
+
+    $boardLine->forceDelete();
+    $artefact->update(['org_stock_id' => null]);
 });
 
 test('to produce queue only shows lines with an artefact in this factory', function () {
@@ -4873,6 +4877,7 @@ test('a batch size change flags open jobs raised with the old one and their quan
         'recommended_batch_size' => 360,
     ]);
     $artefact->update(['org_stock_id' => $orgStock->id]);
+    $artefact->refresh();
 
     $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
         ['artefact' => $artefact, 'quantity' => 40, 'batch_code' => null, 'expiry_date' => null],

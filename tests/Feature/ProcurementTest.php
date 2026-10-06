@@ -5611,6 +5611,8 @@ describe('partner shopping list', function () {
         $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
         $orgStock = $this->buyerOrgStock;
         $orgStock->orgSupplierProducts()->detach();
+        DB::table('partner_shopping_list_items')->where('org_stock_id', $orgStock->id)->update(['deleted_at' => now()]);
+        DB::table('purchase_order_transactions')->where('org_stock_id', $orgStock->id)->update(['deleted_at' => now()]);
         $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'packed_in' => 4, 'quantity_available' => 10, 'measured_lead_time_days' => null, 'estimated_lead_time_days' => 60]);
         $orgStock->stats->update(['demand_forecast' => ['from' => now()->toDateString(), 'weeks' => array_fill(0, 6, [7, 0])]]);
 
@@ -5622,7 +5624,8 @@ describe('partner shopping list', function () {
 
         expect($recommendation())->toBe(80.0);
 
-        StorePurchaseOrderTransaction::make()->addPartnerOrgStock(StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []), $orgStock->fresh(), ['quantity_ordered' => 40]);
+        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $orgStock->fresh(), ['quantity_ordered' => 40]);
         expect($recommendation())->toBe(70.0);
 
         $orgStock->update(['estimated_lead_time_days' => null]);
@@ -5636,6 +5639,9 @@ describe('partner shopping list', function () {
 
         $orgStock->update(['quantity_available' => 200]);
         expect($recommendation())->toBe(0.0);
+
+        $purchaseOrder->purchaseOrderTransactions()->delete();
+        $purchaseOrder->delete();
     });
 
     test('intercompany customer resolved by normalised name and mapping persisted', function () {
@@ -5838,7 +5844,7 @@ describe('partner shopping list', function () {
         $item->refresh();
         expect($orders)->toHaveCount(1)
             ->and($orders[0]->refresh()->state)->not->toBe(OrderStateEnum::CREATING)
-            ->and((float) $orders[0]->net_amount)->toBe(round(4 * $pricePerSko, 2))
+            ->and((float) $orders[0]->net_amount)->toBe(round(4 * $pricePerSko * GetPartnerBuyingPriceFactor::run($this->orgPartner), 2))
             ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
             ->and((float) $item->quantity)->toBe(4.0)
             ->and((float) $item->children()->where('state', ShoppingListItemStateEnum::OPEN)->sum('quantity'))->toBe(1.0);

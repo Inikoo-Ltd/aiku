@@ -5209,7 +5209,7 @@ test('adds from the customer dashboard are logged per section and counted as ord
     $website = createWebsite($this->shop);
     $website->update(['status' => true]);
     $customer = freshCustomerLike($this->shop, $this->customer);
-    $webUser  = createWebUser($customer);
+    $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, ['username' => 'dash'.$customer->id, 'email' => 'dash'.$customer->id.'@testmail.com', 'password' => 'test']);
     [, $bulk] = createProduct($this->shop);
     [$suggested, $repeated] = collect(range(1, 2))->map(fn () => StoreProduct::make()->action($bulk->family, array_merge(
         Product::factory()->definition(),
