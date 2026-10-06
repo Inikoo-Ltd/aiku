@@ -200,6 +200,25 @@ test('create offer', function () {
     return $offer;
 });
 
+test('offer orders table has a state filter', function (Offer $offer) {
+    $tableStructure = new \App\InertiaTable\InertiaTable(request());
+    \App\Actions\Ordering\Order\UI\IndexOrders::make()->tableStructure(parent: $offer, prefix: 'orders', bucket: 'offer')($tableStructure);
+
+    $elementGroups = (fn () => $this->elementGroups)->call($tableStructure);
+
+    expect($elementGroups->has('state'))->toBeTrue();
+})->depends('create offer');
+
+test('offer showcase data', function (Offer $offer) {
+    $showcase = \App\Actions\Discounts\Offer\UI\GetOfferShowcaseData::make()->forOffer($offer);
+
+    expect($showcase['totals']['redemptions'])->toBe(0)
+        ->and($showcase['totals']['return_on_discount'])->toEqual(0)
+        ->and($showcase['first_used_at'])->toBeNull()
+        ->and($showcase['benchmark']['offer_type'])->toBe($offer->type)
+        ->and($showcase['trend'])->toBe([]);
+})->depends('create offer');
+
 test('update offer', function ($offer) {
     $offer = UpdateOffer::make()->action($offer, ['name' => 'New Name A']);
     expect($offer->name)->toBe('New Name A');
