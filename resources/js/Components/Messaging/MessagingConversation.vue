@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import { usePage, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
@@ -276,6 +276,7 @@ const activeReactionFor = ref<number | null>(null)
 const showGifPicker = ref(false)
 const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
+const gifState = reactive<Record<string, "loaded" | "failed">>({})
 
 const quickReplies = computed(
     () =>
@@ -481,7 +482,7 @@ const onTextareaKeydown = (event: KeyboardEvent) => {
 
 const toggleReaction = async (message: StaffMessage, emoji: string) => {
     activeReactionFor.value = null
-    await store.toggleReaction(message.id, emoji)
+    await store.toggleReaction(message, emoji, myId.value)
 }
 
 const taskDialogOpen = ref(false)
@@ -676,7 +677,22 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             <span v-tooltip="message.user_name" class="cursor-default">{{ shortSenderName(message.user_name) }}</span>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
-                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
+                        <div v-if="message.gif_url" class="relative">
+                            <div
+                                v-if="gifState[message.gif_url] !== 'loaded'"
+                                class="flex h-[150px] w-[200px] max-w-full items-center justify-center rounded text-xs"
+                                :class="[gifState[message.gif_url] === 'failed' ? 'bg-black/5' : 'animate-pulse', message.user_id === myId ? 'bg-white/20' : 'bg-gray-200']">
+                                <span v-if="gifState[message.gif_url] === 'failed'" class="opacity-70">{{ ctrans("GIF unavailable") }}</span>
+                            </div>
+                            <img
+                                v-if="gifState[message.gif_url] !== 'failed'"
+                                :src="message.gif_url"
+                                alt="GIF"
+                                class="max-w-full rounded max-h-[240px]"
+                                :class="gifState[message.gif_url] !== 'loaded' && 'pointer-events-none absolute inset-0 opacity-0'"
+                                @load="gifState[message.gif_url] = 'loaded'"
+                                @error="gifState[message.gif_url] = 'failed'" />
+                        </div>
                         <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words" v-html="renderBody(message, messageText(message))" />
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
@@ -687,10 +703,12 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             {{ showOriginal[message.id] ? ctrans('translated') : ctrans('original') }}
                         </button>
 
-                        <div v-if="activeReactionFor === message.id" class="absolute flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full mt-1' : '-top-9']">
-                            <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
-                                {{ emoji }}
-                            </button>
+                        <div v-if="activeReactionFor === message.id" class="absolute z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full pt-1.5' : 'bottom-full pb-1.5']">
+                            <div class="flex gap-x-1 rounded-full border border-gray-200 bg-white px-2 py-1 shadow">
+                                <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
+                                    {{ emoji }}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -702,16 +720,19 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     </button>
                 </div>
 
-                <div v-if="reactionEntries(message).length" class="flex gap-x-1 mt-0.5">
-                    <span
+                <TransitionGroup tag="div" name="reaction-pop" class="flex gap-x-1 mt-0.5 empty:hidden">
+                    <button
                         v-for="[emoji, userIds] in reactionEntries(message)"
                         :key="emoji"
-                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5"
+                        type="button"
+                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5 transition hover:border-[--app-accent]"
                         :class="hasMyReaction(message, emoji) ? 'bg-[--app-accent-soft] border-[--app-accent]' : 'bg-gray-50 border-gray-200'"
+                        :title="hasMyReaction(message, emoji) ? ctrans('Remove reaction') : ctrans('React with :emoji', { emoji })"
+                        @click="toggleReaction(message, emoji)"
                     >
                         {{ emoji }} {{ (userIds as number[]).length }}
-                    </span>
-                </div>
+                    </button>
+                </TransitionGroup>
 
                 <div v-if="showsMessageMeta(message, messageIndex)" class="mt-0.5 flex items-center gap-1 text-xxs text-gray-400">
                     <template v-if="message.client_status === 'failed'">
@@ -897,3 +918,29 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
         </Drawer>
     </div>
 </template>
+
+<style scoped>
+.reaction-pop-enter-active {
+    animation: reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-pop-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.reaction-pop-leave-to {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+@keyframes reaction-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>

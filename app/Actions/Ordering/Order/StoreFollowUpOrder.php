@@ -41,7 +41,9 @@ class StoreFollowUpOrder extends OrgAction
         }
 
         return DB::transaction(function () use ($order) {
-            $followUpOrder = StoreOrder::make()->action($order->customerClient ?? $order->customer, []);
+            $followUpOrder = StoreOrder::make()->action($order->customerClient ?? $order->customer, array_filter([
+                'sales_channel_id' => $order->sales_channel_id,
+            ]));
 
             $this->shipTogether($followUpOrder, $order);
             $this->shipTogether($order, $followUpOrder);

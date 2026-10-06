@@ -176,7 +176,7 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 useStaffMessaging().replaceMessage(message)
             })
             .listen('.staff-message-reaction', (message) => {
-                useStaffMessaging().replaceMessage(message)
+                useStaffMessaging().applyReactionBroadcast(message)
             })
             .listen('.staff-conversation-archived', (e: {conversation_ulid: string; user_id: number; user_name: string}) => {
                 useStaffMessaging().handleArchived(e)

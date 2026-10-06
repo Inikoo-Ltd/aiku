@@ -152,7 +152,13 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+
+function artisansOf(item: BoardItem): string[] {
+    return item.job_order_sub_jobs?.length
+        ? [...new Set(item.job_order_sub_jobs.map(subJob => subJob.artisan ?? ""))]
+        : [item.job_order_artisan ?? ""]
+}
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -395,7 +401,7 @@ const boardFilterOptions = computed(() => {
         family: counted(items.map(item => item.family ?? "")),
         requester: counted(items.map(requesterOf)),
         priority: counted(items.map(item => item.priority)),
-        artisan: counted(items.map(item => item.job_order_artisan ?? "")),
+        artisan: counted(items.flatMap(artisansOf)),
     }
 })
 
@@ -411,7 +417,7 @@ const filteredGroups = computed(() =>
             (!boardFilters.family.length || boardFilters.family.includes(item.family ?? ""))
             && (!boardFilters.requester.length || boardFilters.requester.includes(requesterOf(item)))
             && (!boardFilters.priority.length || boardFilters.priority.includes(item.priority))
-            && (laneIndex < LANE_ASSIGNED || !boardFilters.artisan.length || boardFilters.artisan.includes(item.job_order_artisan ?? ""))
+            && (laneIndex < LANE_ASSIGNED || !boardFilters.artisan.length || artisansOf(item).some(artisan => boardFilters.artisan.includes(artisan)))
         ),
     }))
 )
@@ -503,7 +509,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <div v-if="item.needed_for" class="truncate text-gray-400" :title="item.needed_for.join(', ')">{{ ctrans("for") }} {{ item.needed_for.join(", ") }}</div>
                         <div v-if="item.job_order_slug" class="flex items-center gap-1 text-gray-600">
                             <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
-                            {{ item.job_order_artisan ?? ctrans("No artisan") }}
+                            <span v-if="item.job_order_sub_jobs?.length" class="truncate" :title="item.job_order_sub_jobs.map((subJob: { artisan: string | null, quantity: number }) => `${subJob.artisan ?? ctrans('No artisan')} ${subJob.quantity}`).join(', ')">
+                                {{ item.job_order_sub_jobs.map((subJob: { artisan: string | null, quantity: number }) => `${subJob.artisan ?? ctrans("No artisan")} ${subJob.quantity.toLocaleString()}`).join(" · ") }}
+                            </span>
+                            <template v-else>{{ item.job_order_artisan ?? ctrans("No artisan") }}</template>
                             <Link :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                         </div>
                         <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
@@ -832,7 +841,14 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             </template>
                         </div>
                     </div>
-                    <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="ctrans('Change artisan')" @click.stop="openReassign(item, $event)">
+                    <div v-if="item.job_order_sub_jobs?.length" class="space-y-0.5 text-gray-600">
+                        <div v-for="subJob in item.job_order_sub_jobs" :key="subJob.reference" class="flex items-center gap-1" :title="subJob.reference">
+                            <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
+                            <span class="truncate">{{ subJob.artisan ?? ctrans("No artisan") }}</span>
+                            <span class="ml-auto shrink-0 tabular-nums text-gray-500">{{ subJob.quantity.toLocaleString() }}</span>
+                        </div>
+                    </div>
+                    <button v-else-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="ctrans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
                         {{ item.job_order_artisan ?? ctrans("No artisan") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="text-[9px] text-gray-300" fixed-width />

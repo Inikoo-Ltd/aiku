@@ -316,16 +316,22 @@ trait WithWixExternalShopApi
         return $choices ? $productName.' - '.implode(' / ', $choices) : $productName;
     }
 
-    public function setWixVariantInventory(WixUser $wixUser, string $productId, string $variantId, int $quantity): array
+    /**
+     * @param array<string, int> $variantQuantities quantity keyed by Wix variant id
+     */
+    public function setWixProductInventory(WixUser $wixUser, string $productId, array $variantQuantities): array
     {
         return match ($this->getWixCatalogVersion($wixUser)) {
-            self::WIX_CATALOG_V3 => $this->setWixV3VariantInventory($wixUser, $productId, $variantId, $quantity),
-            self::WIX_CATALOG_V1 => $this->setWixV1VariantInventory($wixUser, $productId, $variantId, $quantity),
+            self::WIX_CATALOG_V3 => $this->setWixV3ProductInventory($wixUser, $productId, $variantQuantities),
+            self::WIX_CATALOG_V1 => $this->setWixV1ProductInventory($wixUser, $productId, $variantQuantities),
             default => ['message' => __('Wix Stores is not installed on this site.')],
         };
     }
 
-    protected function setWixV1VariantInventory(WixUser $wixUser, string $productId, string $variantId, int $quantity): array
+    /**
+     * @param array<string, int> $variantQuantities
+     */
+    protected function setWixV1ProductInventory(WixUser $wixUser, string $productId, array $variantQuantities): array
     {
         $inventoryItemId = Arr::get($this->wixRequest($wixUser, 'POST', '/stores/v2/inventoryItems/query', [
             'query' => [
@@ -341,15 +347,34 @@ trait WithWixExternalShopApi
         return $this->wixRequest($wixUser, 'PATCH', "/stores/v2/inventoryItems/$inventoryItemId", [
             'inventoryItem' => [
                 'trackQuantity' => true,
-                'variants'      => [
-                    [
+                'variants'      => collect($variantQuantities)
+                    ->map(fn (int $quantity, string $variantId) => [
                         'variantId' => $variantId,
                         'inStock'   => $quantity > 0,
                         'quantity'  => $quantity,
-                    ],
-                ],
+                    ])
+                    ->values()
+                    ->all(),
             ],
         ]);
+    }
+
+    /**
+     * @param array<string, int> $variantQuantities
+     */
+    protected function setWixV3ProductInventory(WixUser $wixUser, string $productId, array $variantQuantities): array
+    {
+        $errors = [];
+
+        foreach ($variantQuantities as $variantId => $quantity) {
+            $result = $this->setWixV3VariantInventory($wixUser, $productId, (string) $variantId, $quantity);
+
+            if (Arr::has($result, 'message')) {
+                $errors[] = Arr::get($result, 'message');
+            }
+        }
+
+        return $errors ? ['message' => implode('; ', $errors)] : [];
     }
 
     protected function setWixV3VariantInventory(WixUser $wixUser, string $productId, string $variantId, int $quantity): array

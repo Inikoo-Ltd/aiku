@@ -504,8 +504,45 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             if (participant) participant.last_read_at = e.last_read_at
         },
 
-        async toggleReaction(messageId: number, emoji: string) {
-            await axios.post(route("grp.chat.staff.messages.reactions.toggle", messageId), { emoji })
+        async toggleReaction(message: StaffMessage, emoji: string, userId: number) {
+            const isAdding = !(message.reactions?.[emoji] ?? []).includes(userId)
+            this.setOwnReaction(message.conversation_ulid, message.id, emoji, userId, isAdding)
+
+            try {
+                await axios.post(route("grp.chat.staff.messages.reactions.toggle", message.id), { emoji })
+            } catch {
+                this.setOwnReaction(message.conversation_ulid, message.id, emoji, userId, !isAdding)
+                notify({ title: isAdding ? ctrans("Could not add reaction") : ctrans("Could not remove reaction"), type: "error" })
+            }
+        },
+
+        setOwnReaction(ulid: string, messageId: number, emoji: string, userId: number, isPresent: boolean) {
+            const message = this.messageListOf(ulid).find((m) => m.id === messageId)
+            if (!message) return
+
+            const reactors = (message.reactions?.[emoji] ?? []).filter((id) => id !== userId)
+            const reactions = { ...(message.reactions ?? {}), [emoji]: isPresent ? [...reactors, userId] : reactors }
+            if (!reactions[emoji].length) delete reactions[emoji]
+            message.reactions = reactions
+        },
+
+        applyReactionBroadcast(incoming: StaffMessage) {
+            const userId = currentUserId()
+            const local = this.messagesByUlid[incoming.conversation_ulid]?.find((m) => m.id === incoming.id)
+            if (!local || !userId) {
+                this.replaceMessage(incoming)
+                return
+            }
+
+            const emojis = new Set([...Object.keys(local.reactions ?? {}), ...Object.keys(incoming.reactions ?? {})])
+            const reactions: StaffMessageReactions = {}
+            emojis.forEach((emoji) => {
+                const others = (incoming.reactions?.[emoji] ?? []).filter((id) => id !== userId)
+                const reactors = (local.reactions?.[emoji] ?? []).includes(userId) ? [...others, userId] : others
+                if (reactors.length) reactions[emoji] = reactors
+            })
+
+            this.replaceMessage({ ...incoming, reactions })
         },
 
         async markRead(ulid: string) {

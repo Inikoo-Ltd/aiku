@@ -40,6 +40,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
 import type { OrderingLevel } from "@/Composables/useOrderingLevel"
 import { capitalize } from "@/Composables/capitalize"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -84,6 +85,7 @@ const props = defineProps < {
     pageHead: PageHeadingTypes
     data: {
         data: {
+            id: number
             state: string
             state_label: string
             is_partner?: boolean
@@ -181,9 +183,21 @@ const props = defineProps < {
         preview_template: { header: string[], rows: Record<string, string>[] }
         upload_spreadsheet: any
     } | null
+	last_edit: { user: string | null, at: string } | null
 }>()
 
 const locale = useLocaleStore()
+
+const lastEdit = ref(props.last_edit)
+const lastEditChannel = `grp.purchase_order.${props.data.data.id}`
+onMounted(() => {
+	window.Echo?.private(lastEditChannel).listen(".last-edited", (edit: { user: string | null, at: string }) => {
+		if (!lastEdit.value || edit.at >= lastEdit.value.at) {
+			lastEdit.value = edit
+		}
+	})
+})
+onUnmounted(() => window.Echo?.leave(lastEditChannel))
 
 const metrics = computed(() => {
 	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
@@ -677,6 +691,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #afterTitle2>
+			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
+				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
+			</span>
+		</template>
 		<template #other>
 			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
 		</template>

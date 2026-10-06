@@ -1063,6 +1063,46 @@ test('iris variant products list sends the offers and step discount each variant
         ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
 });
 
+test('a variant leader is searchable by the codes of its other options', function () {
+    [, $leader] = createProduct($this->shop);
+    $leader->updateQuietly(['is_for_sale' => true]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $leader->group_id,
+        'code'     => $leader->code,
+        'data'     => ['products' => []],
+    ]);
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $leader->group_id,
+        'organisation_id'   => $leader->organisation_id,
+        'shop_id'           => $leader->shop_id,
+        'family_id'         => $leader->family_id,
+        'code'              => $leader->code,
+        'leader_id'         => $leader->id,
+        'data'              => ['products' => []],
+    ]);
+
+    $options = collect(['RED', 'BLUE', 'GONE'])->map(function (string $suffix) use ($leader, $variant) {
+        $option = $leader->replicate(['slug', 'webpage_id', 'is_variant_leader']);
+        $option->forceFill([
+            'code'              => $leader->code.'-'.$suffix,
+            'slug'              => strtolower($leader->slug.'-'.$suffix),
+            'name'              => 'Option '.$suffix,
+            'variant_id'        => $variant->id,
+            'is_variant_leader' => false,
+            'is_minion_variant' => true,
+            'is_for_sale'       => $suffix !== 'GONE',
+        ])->saveQuietly();
+
+        return $option;
+    });
+    $leader->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    expect($leader->fresh()->toSearchableArray()['variant_codes'])->toBe($leader->code.'-BLUE Option BLUE | '.$leader->code.'-RED Option RED')
+        ->and($options->first()->fresh()->toSearchableArray()['variant_codes'])->toBe('');
+});
+
 test('iris product lists name the first variant axis so the choose button can read choose size', function () {
     [, $product] = createProduct($this->shop);
     $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
