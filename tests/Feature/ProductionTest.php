@@ -1177,11 +1177,11 @@ test('recipe steps consume raw materials', function () {
 
     AttachRawMaterialToRecipeStep::make()->action($step, [
         'raw_material_id'   => $this->rawMaterial->id,
-        'quantity_per_unit' => 0.5,
+        'quantity_per_unit' => 0.0000738,
     ]);
 
     expect($step->rawMaterials()->count())->toBe(1)
-        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.5);
+        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.0000738);
 
     DetachRawMaterialFromRecipeStep::make()->action($step, $this->rawMaterial);
 
@@ -2580,6 +2580,23 @@ describe('reward sheet import', function () {
         expect((float) $this->rewardTask->refresh()->standard_rate)->toBe(round(13.00 / 0.05, 4))
             ->and($this->rewardTask->target_override_reason)->not->toBeNull()
             ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->count())->toBe(6);
+    });
+
+    test('without a file only the pay bands are seeded, with the sheet target multipliers', function () {
+        \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->delete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production' => $this->production->slug,
+        ])->assertSuccessful();
+
+        $multipliers = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)
+            ->where('effective_from', now()->startOfYear())
+            ->pluck('target_multiplier', 'code')
+            ->map(fn ($multiplier) => $multiplier === null ? null : (float) $multiplier)
+            ->all();
+
+        expect($this->rewardTask->refresh()->standard_rate)->toBeNull()
+            ->and($multipliers)->toEqual(['0' => 1.0, '1' => 1.025, '2' => 1.105, '3' => 1.185, 'D' => null, 'DG' => null]);
     });
 
     test('create-missing with dry-run creates nothing', function () {
