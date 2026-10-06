@@ -22,6 +22,8 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faStore } from '@fal'
 import ModalCreateVoucherOffers from '@/Components/Offers/ModalCreateVoucherOffers.vue'
+import ModalCreateCustomerListVoucher from '@/Components/Offers/ModalCreateCustomerListVoucher.vue'
+import CustomerListVouchers from '@/Components/Offers/CustomerListVouchers.vue'
 
 library.add(faCommentDollar, faInfoCircle, faStore)
 
@@ -45,6 +47,10 @@ const props = defineProps<{
         organisation: string
         offercampaign: string
     }
+    customer_list_vouchers: {
+        vouchers: []
+        can_edit: boolean
+    }
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -65,9 +71,18 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <ModalCreateVoucherOffers :shop_data="props.shop_data" />
+            <div class="flex gap-x-2">
+                <ModalCreateCustomerListVoucher :shop_data="props.shop_data" />
+                <ModalCreateVoucherOffers :shop_data="props.shop_data" />
+            </div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <CustomerListVouchers
+        v-if="currentTab === 'overview'"
+        :vouchers="customer_list_vouchers.vouchers"
+        :canEdit="customer_list_vouchers.can_edit"
+        :currencyCode="shop_data.currency_code"
+    />
 </template>

@@ -57,6 +57,7 @@ const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
+const canCancelItems = computed(() => props.state === 'submitted' || props.state === 'confirmed')
 
 const closedStates = ['settled', 'cancelled', 'not_received']
 const arrivedDeliveryStates = ['received', 'checked', 'settled', 'not_received', 'cancelled']
@@ -292,6 +293,11 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         return
     }
 
+    if (isBraveMode.value) {
+        onCancelItem(item)
+        return
+    }
+
     confirm.require({
         target: event.currentTarget as HTMLElement,
         message: props.state === 'confirmed'
@@ -374,10 +380,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess" #before-table>
+        <template #before-table>
             <div class="flex items-end justify-between gap-3 border-b border-gray-200 px-3 sm:px-4">
                 <div class="flex items-end gap-1">
-                    <template v-if="levels.length > 1">
+                    <template v-if="isInProcess && levels.length > 1">
                         <button
                             v-for="item in levels"
                             :key="item.key"
@@ -394,7 +400,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </template>
                 </div>
                 <label
-                    v-tooltip="ctrans('When on, Remove deletes the product straight away without asking to confirm')"
+                    v-tooltip="ctrans('When on, Remove and Cancel act straight away without asking to confirm')"
                     class="mb-1.5 flex cursor-pointer items-center gap-2 text-sm"
                     :class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'"
                 >
@@ -592,7 +598,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <Button
-                    v-if="(state === 'submitted' || state === 'confirmed') && item.cancelRoute"
+                    v-if="canCancelItems && item.cancelRoute"
                     :label="ctrans('Cancel')"
                     :tooltip="ctrans('Cancel this item')"
                     icon="fas fa-minus-circle"

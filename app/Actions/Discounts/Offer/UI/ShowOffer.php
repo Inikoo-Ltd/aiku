@@ -27,6 +27,7 @@ use App\Enums\UI\Discounts\OfferTabsEnum;
 use App\Http\Resources\Catalogue\OfferAllowanceResource;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Discounts\OfferCustomerListResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Product;
@@ -150,6 +151,27 @@ class ShowOffer extends OrgAction
                 : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($offer, OfferTabsEnum::HISTORY->value))),
         ];
 
+        if ($offer->hasCustomerList()) {
+            $tabComponentData[OfferTabsEnum::VOUCHERS->value] = $this->tab == OfferTabsEnum::VOUCHERS->value
+                ? fn () => OfferCustomerListResource::collection(IndexOfferCustomerList::run($offer, OfferTabsEnum::VOUCHERS->value))
+                : Inertia::optional(fn () => OfferCustomerListResource::collection(IndexOfferCustomerList::run($offer, OfferTabsEnum::VOUCHERS->value)));
+
+            if ($offer->state !== OfferStateEnum::FINISHED && $request->user()->authTo("discounts.{$offer->shop_id}.edit")) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-envelope',
+                    'label'   => __('Email customers'),
+                    'tooltip' => __('Create a mailshot to the customers on this voucher'),
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.offer.customer_list_mailshot.store',
+                        'parameters' => ['offer' => $offer->id],
+                    ],
+                ];
+            }
+        }
+
         return Inertia::render(
             $vueComponent,
             [
@@ -169,10 +191,7 @@ class ShowOffer extends OrgAction
                 ],
                 'tabs'          => [
                     'current'    => $this->tab,
-                    'navigation' => OfferTabsEnum::navigationExcept([
-                        OfferTabsEnum::VOUCHERS,
-                        OfferTabsEnum::SETTINGS,
-                    ]),
+                    'navigation' => OfferTabsEnum::navigationExcept($this->getExcludedTabs($offer)),
                 ],
                 'url_master'    => $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
                     'name'       => 'grp.masters.master_shops.show.master_families.edit',
@@ -189,15 +208,23 @@ class ShowOffer extends OrgAction
         )
         ->table(IndexCustomers::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::CUSTOMERS->value))
         ->table(IndexOrders::make()->tableStructure(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))
-        ->table(IndexHistory::make()->tableStructure(OfferTabsEnum::HISTORY->value));
+        ->table(IndexHistory::make()->tableStructure(OfferTabsEnum::HISTORY->value))
+        ->table(IndexOfferCustomerList::make()->tableStructure($offer, OfferTabsEnum::VOUCHERS->value));
+    }
+
+    /**
+     * @return array<int, OfferTabsEnum>
+     */
+    private function getExcludedTabs(Offer $offer): array
+    {
+        return $offer->hasCustomerList()
+            ? [OfferTabsEnum::SETTINGS]
+            : [OfferTabsEnum::VOUCHERS, OfferTabsEnum::SETTINGS];
     }
 
     public function asController(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): Offer
     {
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }
@@ -205,10 +232,7 @@ class ShowOffer extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }
@@ -233,10 +257,7 @@ class ShowOffer extends OrgAction
         }
 
 
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }
@@ -245,10 +266,7 @@ class ShowOffer extends OrgAction
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Offer $offer, ActionRequest $request): Offer
     {
         $this->parent = $family;
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }
@@ -257,10 +275,7 @@ class ShowOffer extends OrgAction
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, Offer $offer, ActionRequest $request): Offer
     {
         $this->parent = $department;
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }
@@ -269,10 +284,7 @@ class ShowOffer extends OrgAction
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Offer $offer, ActionRequest $request): Offer
     {
         $this->parent = $subDepartment;
-        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept([
-            OfferTabsEnum::VOUCHERS,
-            OfferTabsEnum::SETTINGS,
-        ]));
+        $this->initialisationFromShop($shop, $request)->withTab(OfferTabsEnum::valuesExcept($this->getExcludedTabs($offer)));
 
         return $this->handle($offer);
     }

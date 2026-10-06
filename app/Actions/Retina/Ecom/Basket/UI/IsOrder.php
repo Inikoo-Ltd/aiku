@@ -513,7 +513,7 @@ trait IsOrder
                 'estimated_weight' => $estWeight,
             ],
             'cart_gross_amount'  => $order?->gross_amount ?? 0,
-            'voucher' => GetVoucherData::run($order->offer_voucher_id),
+            'voucher' => GetVoucherData::run($order->offer_voucher_id, $order->customer_id),
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency),
             'external_shop' => $order->shop->type == ShopTypeEnum::EXTERNAL ? [
