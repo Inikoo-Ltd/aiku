@@ -9212,3 +9212,34 @@ test('purchase orders export downloads only the purchase orders of the organisat
         ->toContain($ownPurchaseOrder->slug)
         ->not->toContain($otherPurchaseOrder->slug);
 });
+
+test('raw material unit cost follows the preferred supplier cost per unit when the supplier cost changes', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->updateQuietly(['packed_in' => 25, 'sku_value' => 15.5]);
+    DB::table('org_stock_has_org_supplier_products')->insert([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $this->orgSupplierProduct->supplier_product_id]),
+        'org_stock_id'            => $orgStock->id,
+        'org_supplier_product_id' => $this->orgSupplierProduct->id,
+        'status'                  => true,
+        'local_priority'          => 10,
+        'created_at'              => now(),
+        'updated_at'              => now(),
+    ]);
+    $production  = Production::where('organisation_id', $this->organisation->id)->first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'RMCOST', 'name' => 'Raw material cost factory']);
+    $rawMaterial = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, [
+        'type'         => \App\Enums\Production\RawMaterial\RawMaterialTypeEnum::STOCK->value,
+        'code'         => 'RMCOST-'.$orgStock->id,
+        'description'  => 'Bicarb',
+        'unit'         => \App\Enums\Production\RawMaterial\RawMaterialUnitEnum::KILOGRAM->value,
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $supplierProduct = $this->orgSupplierProduct->supplierProduct;
+    $originalCost    = $supplierProduct->cost;
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => 0.43, 'extra_costs' => 0]);
+
+    expect((float)$rawMaterial->refresh()->unit_cost)->toBe(0.43);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $originalCost]);
+});
