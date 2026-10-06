@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
+import Popover from "primevue/popover"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle } from "@fal"
 import { usePurchaseOrderStockCover } from "@/Composables/usePurchaseOrderStockCover"
 
 interface QuarterUsage {
@@ -24,7 +23,7 @@ const props = defineProps<{
 const locale = useLocaleStore()
 const routeParams = route().params
 
-const { MAX_DAYS, pack, cover, dailyUsage, leadDays, overstockDays, stock, comingDeliveries, otherOrders, incoming, coverDays, hasHistory, suggestion, weeksLabel } =
+const { pack, cover, dailyUsage, leadDays, overstockDays, stock, comingDeliveries, otherOrders, incoming, coverDays, hasHistory, suggestion, weeksLabel } =
 	usePurchaseOrderStockCover(
 		() => props.item,
 		() => props.isPartner
@@ -205,40 +204,21 @@ const salesPerQuarter = computed(() =>
 )
 const daysOutOfStock = computed(() => lastQuarters.value.reduce((total, record) => total + (Number(record.days_out_of_stock) || 0), 0))
 
-const salesPerQuarterTooltip = computed(() =>
-	ctrans("Average sales per quarter (3 months): about :quantity SKOs, based on the last :count completed quarters", {
-		quantity: formatNumber(salesPerQuarter.value ?? 0),
-		count: String(lastQuarters.value.length),
-	})
-)
+const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 })
+const formatCompact = (value: number) => compactNumber.format(Math.round(Number(value) || 0))
 
-const daysOutOfStockTooltip = computed(() =>
-	ctrans(
-		"This product was out of stock for :days days in the last :count completed quarters. Sales were lost on those days, so real demand is likely higher than the average shown",
-		{ days: String(daysOutOfStock.value), count: String(lastQuarters.value.length) }
-	)
-)
-
-const quarterMonths = ["Jan–Mar", "Apr–Jun", "Jul–Sep", "Oct–Dec"]
-
-const quarterLabel = (period: string) => {
+const quarterShortLabel = (period: string) => {
 	const [year, quarter] = period.split("Q")
-	const months = quarterMonths[Number(quarter) - 1]
 
-	return months ? `${months} ${year}` : period
+	return quarter ? `Q${quarter} '${year.slice(-2)}` : period
 }
 
-const quarterTooltip = (record: QuarterUsage) =>
-	[
-		record.period === currentQuarter
-			? ctrans("Sold in :quarter (this quarter, so far): :quantity SKOs.", { quarter: quarterLabel(record.period), quantity: formatNumber(record.sales) })
-			: ctrans("Sold in :quarter: :quantity SKOs.", { quarter: quarterLabel(record.period), quantity: formatNumber(record.sales) }),
-		record.days_out_of_stock ? ctrans("Out of stock for :days days (red dot).", { days: String(record.days_out_of_stock) }) : "",
-	]
-		.filter(Boolean)
-		.join(" ")
+const quarterBarHeight = (record: QuarterUsage) => Math.max(4, (Number(record.sales) / quarterMax.value) * 100)
 
-const quarterChartTooltip = ctrans("Sales per quarter, oldest on the left. The lighter bar is the current quarter. A red dot means the product ran out of stock that quarter")
+const quarterChartPopover = ref()
+
+const showQuarterChart = (event: MouseEvent) => quarterChartPopover.value?.show(event, event.currentTarget)
+const hideQuarterChart = () => quarterChartPopover.value?.hide()
 
 const stockTooltip = computed(() => {
 	const lines: string[] = []
@@ -316,28 +296,59 @@ function purchaseOrderRoute(slug: string) {
 				</div>
 			</div>
 
-			<span v-if="salesPerQuarter !== null" class="shrink-0 text-gray-500">
-				<span v-tooltip="salesPerQuarterTooltip" class="cursor-help">~{{ formatNumber(salesPerQuarter) }}/{{ ctrans("qtr") }}</span>
-				<span v-if="daysOutOfStock" v-tooltip="daysOutOfStockTooltip" class="cursor-help text-red-600">
-					· {{ ctrans(":days d out of stock", { days: String(daysOutOfStock) }) }}
-				</span>
-			</span>
 
-			<div v-if="quarters.length" class="flex items-end">
-				<div
-					v-for="record in quarters"
-					:key="record.period"
-					v-tooltip="quarterTooltip(record)"
-					class="group flex h-6 w-3 cursor-help items-end justify-center rounded-sm px-0.5 pt-1.5 hover:bg-gray-200">
-					<div
-						class="relative w-full rounded-sm transition-colors"
-						:class="record.period === currentQuarter ? 'bg-gray-300 group-hover:bg-gray-400' : 'bg-gray-500 group-hover:bg-gray-700'"
-						:style="{ height: Math.max(8, (Number(record.sales) / quarterMax) * 100) + '%' }">
-						<span v-if="record.days_out_of_stock" class="absolute -top-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-red-500" />
+			<div
+				v-if="quarters.length"
+				class="flex cursor-help items-end gap-0.5 rounded-sm px-0.5 hover:bg-gray-200"
+				@mouseenter="showQuarterChart"
+				@mouseleave="hideQuarterChart">
+				<div v-for="record in quarters" :key="record.period" class="flex w-4 flex-col items-center">
+					<span class="text-[8px] leading-none text-gray-500">{{ formatCompact(record.sales) }}</span>
+					<div class="relative mt-0.5 flex h-5 w-2.5 items-end ">
+						<div
+							class="w-full rounded-sm"
+							:class="record.period === currentQuarter ? 'bg-gray-300' : 'bg-gray-500'"
+							:style="{ height: quarterBarHeight(record) + '%' }" />
+						<span v-if="record.days_out_of_stock" class="absolute left-1/2 -translate-x-1/2 top-0 h-1 w-1 rounded-full bg-red-500 ring-1 ring-white" />
 					</div>
 				</div>
-				<FontAwesomeIcon v-tooltip="quarterChartTooltip" :icon="faInfoCircle" class="ml-0.5 cursor-help self-start text-[10px] text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 			</div>
+			<Popover ref="quarterChartPopover" class="pointer-events-none">
+				<div class="w-80 text-xs">
+					<div class="mb-2 font-semibold text-gray-800">{{ ctrans("Sales per quarter") }}</div>
+					<div class="flex h-36 items-end gap-2 border-b border-gray-200 pb-1">
+						<div v-for="record in quarters" :key="record.period" class="flex h-full flex-1 flex-col items-center justify-end">
+							<span class="mb-0.5 font-semibold text-gray-700">{{ formatNumber(record.sales) }}</span>
+							<div
+								class="relative w-full max-w-[2.5rem] rounded-t"
+								:class="record.period === currentQuarter ? 'bg-gray-300' : 'bg-gray-500'"
+								:style="{ height: quarterBarHeight(record) * 0.8 + '%' }">
+								<span v-if="record.days_out_of_stock" class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-red-500 ring-2 ring-white" />
+							</div>
+						</div>
+					</div>
+					<div class="mt-1 flex gap-2">
+						<div v-for="record in quarters" :key="record.period" class="flex-1 text-center leading-tight">
+							<div class="text-gray-600">{{ quarterShortLabel(record.period) }}</div>
+							<div v-if="record.period === currentQuarter" class="text-[10px] text-gray-400">{{ ctrans("so far") }}</div>
+							<div v-if="record.days_out_of_stock" class="text-[10px] text-red-600">{{ ctrans(":days d out", { days: String(record.days_out_of_stock) }) }}</div>
+						</div>
+					</div>
+					<div class="mt-3 space-y-1 border-t border-gray-100 pt-2 text-gray-500">
+						<div v-if="salesPerQuarter !== null">
+							{{ ctrans("Average: :quantity SKOs per quarter (last :count completed quarters)", { quantity: formatNumber(salesPerQuarter), count: String(lastQuarters.length) }) }}
+						</div>
+						<div v-if="daysOutOfStock" class="text-red-600">
+							⚠ {{ ctrans("Out of stock for :days days in the last :count quarters. Sales were lost on those days, so real demand is likely higher than shown.", { days: String(daysOutOfStock), count: String(lastQuarters.length) }) }}
+						</div>
+						<div class="mt-2 pt-2 border-t border-dashed border-gray-400 flex flex-wrap gap-x-3">
+							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-500" />{{ ctrans("Completed quarter") }}</span>
+							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-300" />{{ ctrans("Current quarter") }}</span>
+							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500" />{{ ctrans("Ran out of stock") }}</span>
+						</div>
+					</div>
+				</div>
+			</Popover>
 		</div>
 
 		<div v-if="thisOrder > 0 && hasHistory" class="flex items-center gap-x-2 text-gray-500">
@@ -357,14 +368,14 @@ function purchaseOrderRoute(slug: string) {
 			</span>
 		</div>
 
-		<div v-if="recentDeliveries.length" class="flex flex-col flex-wrap gap-x-2 text-gray-500 w-fit">
+		<div v-if="recentDeliveries.length" class="!mt-2 flex flex-col flex-wrap gap-x-2 text-gray-500 w-fit text-xxs">
 			<span>{{ ctrans("Last deliveries") }}:</span><br />
-			<div class="flex flex-col">
+			<div class="flex flex-col gap-y-1">
 				<span
 					v-for="(delivery, index) in recentDeliveries"
 					:key="delivery.slug"
 					v-tooltip="ctrans(':reference arrived on :date with :quantity SKOs', { reference: delivery.reference, date: useFormatTime(delivery.received_at), quantity: formatNumber(Number(delivery.quantity) / pack) })">
-					<Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
+					• <Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
 					<span class="text-gray-700"> {{ useFormatTime(delivery.received_at) }}</span>
 					({{ formatNumber(Number(delivery.quantity) / pack) }})
 				</span>
