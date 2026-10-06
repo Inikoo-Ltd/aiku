@@ -84,7 +84,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
-            'cancelRoute'          => in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true) ? [
+            'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'       => 'grp.models.purchase-order.transaction.cancel',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -93,5 +93,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
         ];
+    }
+
+    private function isCancellable(PurchaseOrderTransaction $transaction): bool
+    {
+        return match ($transaction->state) {
+            PurchaseOrderTransactionStateEnum::SUBMITTED => true,
+            PurchaseOrderTransactionStateEnum::CONFIRMED => !$transaction->is_on_delivery,
+            default => false,
+        };
     }
 }

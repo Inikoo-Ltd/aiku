@@ -54,6 +54,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 ->select('delivery_note_item_id')
                 ->selectRaw('sum(quantity) as total_quantity')
                 ->selectRaw('count(*) as packings_count')
+                ->where('delivery_note_id', $parent->id)
                 ->groupBy('delivery_note_item_id'),
             'item_packings',
             'item_packings.delivery_note_item_id',

@@ -56,7 +56,7 @@ Route::middleware('verify.shopify.webhook')->prefix('shopify/{shopifyUser:id}')-
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
-    Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted');
+    Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted')->withTrashed()->missing(fn () => response()->noContent(200));
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 });
 

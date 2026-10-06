@@ -36,6 +36,7 @@ class SetArtefactsRecipe extends OrgAction
      *         manufacture_task_id: int,
      *         position: int,
      *         units_per_artefact: float|int|string,
+ *         standard_rate?: float|int|string|null,
      *         raw_materials?: array<int, array{raw_material_id: int, quantity_per_unit: float|int|string}>,
      *         artefact_raw_materials?: array<int, array{
      *             artefact_id: int,
@@ -65,6 +66,7 @@ class SetArtefactsRecipe extends OrgAction
             $step['manufacture_task_id'] => [
                 'position'           => $step['position'],
                 'units_per_artefact' => $step['units_per_artefact'],
+                'standard_rate'      => $step['standard_rate'] ?? null,
             ],
         ])->all();
 
@@ -121,6 +123,7 @@ class SetArtefactsRecipe extends OrgAction
             ],
             'steps.*.position'                                                   => ['required', 'integer', 'min:1'],
             'steps.*.units_per_artefact'                                         => ['required', 'numeric', 'gt:0'],
+            'steps.*.standard_rate'                                              => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'steps.*.raw_materials'                                              => ['sometimes', 'array'],
             'steps.*.raw_materials.*.raw_material_id'                            => [
                 'required',

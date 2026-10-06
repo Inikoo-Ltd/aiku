@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faMusic, faPencil, faPhotoVideo, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
@@ -69,11 +70,11 @@ const isModalGallery = ref(false)
    Helpers
 ---------------------------- */
 function notifySuccess(msg: string) {
-    notify({ title: trans("Success"), text: msg, type: "success" })
+    notify({ title: ctrans("Success"), text: msg, type: "success" })
 }
 
 function notifyError(msg: string) {
-    notify({ title: trans("Error"), text: msg, type: "error" })
+    notify({ title: ctrans("Error"), text: msg, type: "error" })
 }
 
 /* ---------------------------
@@ -93,12 +94,12 @@ function onSubmitImage(payload: any, categoryBox: any) {
             onSuccess: () => {
                 router.reload({ only: ["images"] })
                 notifySuccess(
-                    trans("Successfully set image for :category", { category: categoryBox.label })
+                    ctrans("Successfully set image for :category", { category: categoryBox.label })
                 )
             },
             onError: (e) => {
                 console.error(e)
-                notifyError(trans("Failed to set image"))
+                notifyError(ctrans("Failed to set image"))
             },
             onFinish: () => (loadingSubmit.value = null),
         }
@@ -137,8 +138,8 @@ function onSubmitVideoUrl() {
             onStart: () => (loadingSubmit.value = "video"),
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully saved the video URL"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully saved the video URL"),
                     type: "success",
                 })
                 router.reload({ only: ["images"] })
@@ -146,8 +147,8 @@ function onSubmitVideoUrl() {
             },
             onError: () => {
                 notify({
-                    title: trans("Error"),
-                    text: trans("Failed to save video URL"),
+                    title: ctrans("Error"),
+                    text: ctrans("Failed to save video URL"),
                     type: "error",
                 })
             },
@@ -256,28 +257,54 @@ function onEndDrag(event: DragEvent) {
 /* ---------------------------
    File Upload / Delete
 ---------------------------- */
+const { maxBatchBytes } = useUploadLimits()
+
+function batchesUnderPostLimit(files: File[]): File[][] {
+    const batches: File[][] = []
+    let current: File[] = []
+    let currentBytes = 0
+
+    for (const file of files) {
+        if (current.length && maxBatchBytes.value && currentBytes + file.size > maxBatchBytes.value) {
+            batches.push(current)
+            current = []
+            currentBytes = 0
+        }
+        current.push(file)
+        currentBytes += file.size
+    }
+
+    if (current.length) {
+        batches.push(current)
+    }
+
+    return batches
+}
+
 async function uploadFiles(files: FileList | File[], loadingKey: string = "upload") {
     if (!files?.length || !editable.value) return
-
-    const formData = new FormData()
-    Array.from(files).forEach((file) => formData.append("images[]", file))
 
     try {
         loadingSubmit.value = loadingKey
 
-        await axios.post(
-            route(props.data.upload_images_route.name, props.data.upload_images_route.parameters),
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" } }
-        )
+        for (const batch of batchesUnderPostLimit(Array.from(files))) {
+            const formData = new FormData()
+            batch.forEach((file) => formData.append("images[]", file))
 
-        notifySuccess(trans("Image(s) uploaded successfully"))
-        router.reload({ only: ["images"] })
+            await axios.post(
+                route(props.data.upload_images_route.name, props.data.upload_images_route.parameters),
+                formData,
+                { headers: { "Content-Type": "multipart/form-data" } }
+            )
+        }
+
+        notifySuccess(ctrans("Image(s) uploaded successfully"))
     } catch (e: any) {
         console.error(e)
-        notifyError(e?.response?.status === 422 ? trans("Only JPG, PNG or GIF images are allowed") : trans("Failed to upload image(s)"))
+        notifyError(e?.response?.status === 422 ? ctrans("Only JPG, PNG or GIF images are allowed") : ctrans("Failed to upload image(s)"))
     } finally {
         loadingSubmit.value = null
+        router.reload({ only: ["images"] })
     }
 }
 
@@ -307,12 +334,12 @@ async function onPickGalleryImages(selectedImages: any[]) {
             images: selectedImages.map((image) => image.id),
         })
 
-        notifySuccess(trans("Image(s) added successfully"))
+        notifySuccess(ctrans("Image(s) added successfully"))
         isModalGallery.value = false
         router.reload({ only: ["images"] })
     } catch (e) {
         console.error(e)
-        notifyError(trans("Failed to add image(s) from gallery"))
+        notifyError(ctrans("Failed to add image(s) from gallery"))
     } finally {
         loadingSubmit.value = null
     }
@@ -333,11 +360,11 @@ async function uploadAudioFile(event: Event) {
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
         )
-        notifySuccess(trans("Sound sample uploaded successfully"))
+        notifySuccess(ctrans("Sound sample uploaded successfully"))
         router.reload({ only: ["images"] })
     } catch (e) {
         console.error(e)
-        notifyError(trans("Failed to upload sound sample"))
+        notifyError(ctrans("Failed to upload sound sample"))
     } finally {
         loadingSubmit.value = null
         input.value = ""
@@ -372,11 +399,11 @@ function onSubmitAlt() {
             preserveState: true,
             onStart: () => (loadingSubmit.value = "alt"),
             onSuccess: () => {
-                notifySuccess(trans("Alt text updated"))
+                notifySuccess(ctrans("Alt text updated"))
                 router.reload({ only: ["images"] })
                 isModalEditAlt.value = false
             },
-            onError: () => notifyError(trans("Failed to update alt text")),
+            onError: () => notifyError(ctrans("Failed to update alt text")),
             onFinish: () => (loadingSubmit.value = null),
         }
     )
@@ -396,10 +423,10 @@ function onDeleteFilesInList(categoryBox: any) {
             only: ["images_category_box"],
             onStart: () => (loadingSubmit.value = categoryBox.column_in_db ?? categoryBox.id),
             onSuccess: () => {
-                notifySuccess(trans("File deleted successfully"))
+                notifySuccess(ctrans("File deleted successfully"))
                 router.reload({ only: ["images"] })
             },
-            onError: () => notifyError(trans("Failed to delete file")),
+            onError: () => notifyError(ctrans("Failed to delete file")),
             onFinish: () => (loadingSubmit.value = null),
         }
     )
@@ -411,12 +438,12 @@ function onDeleteFilesInList(categoryBox: any) {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
         <div v-if="!editable" class="lg:col-span-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {{ trans("Images are inherited from the trade unit, so they can't be edited here. Upload them on the trade unit, or turn off \"follow trade unit media\" on this product to manage them here.") }}
+            {{ ctrans("Images are inherited from the trade unit, so they can't be edited here. Upload them on the trade unit, or turn off \"follow trade unit media\" on this product to manage them here.") }}
         </div>
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
-                {{ trans("Media") }}
+                {{ ctrans("Media") }}
                 <FontAwesomeIcon v-if="data.bucket_images" :icon="faStarChristmas" class="text-yellow-400"
                     v-tooltip="'Use images bucket'" fixed-width />
             </h3>
@@ -453,17 +480,17 @@ function onDeleteFilesInList(categoryBox: any) {
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width />
                             <label v-if="categoryBox.type == 'audio' && editable && data.upload_audio_route"
-                                class="cursor-pointer" v-tooltip="trans('Upload sound sample')">
+                                class="cursor-pointer" v-tooltip="ctrans('Upload sound sample')">
                                 <FontAwesomeIcon :icon="faUpload" class="text-gray-400 hover:text-gray-600" fixed-width />
                                 <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
                                     @change="uploadAudioFile($event)" />
                             </label>
                             <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
                                 :icon="faUnlink" @click.stop="() => onDeleteFilesInList(categoryBox)" class="text-xs"
-                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete audio')" fixed-width />
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="ctrans('Delete audio')" fixed-width />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)" class="text-xs"
-                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete image')" fixed-width />
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="ctrans('Delete image')" fixed-width />
                         </div>
                     </div>
 
@@ -476,13 +503,13 @@ function onDeleteFilesInList(categoryBox: any) {
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :alt="categoryBox.label" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" fixed-width />
-                            <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
+                            <span class="text-[12px] font-medium">{{ ctrans('Drop image here') }}</span>
                         </div>
 
                         <div v-if="loadingSubmit === categoryBox.column_in_db"
                             class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-white/70 backdrop-blur-sm text-blue-500">
                             <LoadingIcon />
-                            <span class="text-[11px] font-medium">{{ trans('Processing') }}</span>
+                            <span class="text-[11px] font-medium">{{ ctrans('Processing') }}</span>
                         </div>
                     </div>
 
@@ -492,7 +519,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <label v-else class="flex flex-col items-center justify-center text-gray-400"
                             :class="editable && data.upload_audio_route ? 'cursor-pointer' : ''">
                             <FontAwesomeIcon :icon="faMusic" class="mb-1 text-2xl" fixed-width />
-                            <span class="text-[12px] font-medium">{{ trans('Upload sound sample') }}</span>
+                            <span class="text-[12px] font-medium">{{ ctrans('Upload sound sample') }}</span>
                             <input v-if="editable && data.upload_audio_route" type="file"
                                 accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
                                 @change="uploadAudioFile($event)" />
@@ -515,7 +542,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">
-                                {{ trans("Click to edit video here") }}
+                                {{ ctrans("Click to edit video here") }}
                             </span>
                         </div>
 
@@ -536,13 +563,13 @@ function onDeleteFilesInList(categoryBox: any) {
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-semibold text-gray-700">
-                    {{ trans("Image List") }}
+                    {{ ctrans("Image List") }}
                 </h3>
                 <div class="flex items-center gap-2">
                     <Button v-if="editable && data.attach_images_route" :loading="loadingSubmit === 'gallery'"
-                        type="tertiary" :label="trans('Gallery')" :icon="faPhotoVideo"
-                        v-tooltip="trans('Pick from uploaded or stock images')" @click="isModalGallery = true" />
-                    <Button v-if="editable" :loading="loadingSubmit === 'upload'" type="create" :label="trans('Upload')"
+                        type="tertiary" :label="ctrans('Gallery')" :icon="faPhotoVideo"
+                        v-tooltip="ctrans('Pick from uploaded or stock images')" @click="isModalGallery = true" />
+                    <Button v-if="editable" :loading="loadingSubmit === 'upload'" type="create" :label="ctrans('Upload')"
                         :icon="faUpload" @click="$refs.fileInput.click()" />
                     <input ref="fileInput" type="file" accept="image/*" multiple class="hidden"
                         @change="onUploadFile($event)" />
@@ -552,8 +579,8 @@ function onDeleteFilesInList(categoryBox: any) {
             <div v-if="editable" class="mb-2 rounded px-2 py-1 text-[11px]"
                 :class="selectedImageToPlace ? 'bg-blue-50 text-blue-700' : 'text-gray-400'">
                 {{ selectedImageToPlace
-                    ? trans("Now pick the media box for this image, or click it again to cancel")
-                    : trans("Drag an image to a media box, or click it to place it without dragging") }}
+                    ? ctrans("Now pick the media box for this image, or click it again to cancel")
+                    : ctrans("Drag an image to a media box, or click it to place it without dragging") }}
             </div>
 
             <!-- Drop Zone -->
@@ -565,20 +592,20 @@ function onDeleteFilesInList(categoryBox: any) {
                 <div v-if="isDragOver && editable" class="absolute inset-0 z-10 flex flex-col items-center justify-center
              bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
                     <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" fixed-width />
-                    <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
+                    <p class="text-sm font-medium">{{ ctrans("Drop files to upload") }}</p>
                 </div>
 
                 <!-- Loader -->
                 <div v-if="loadingSubmit === 'list'" class="flex justify-center p-6 text-gray-500">
                     <FontAwesomeIcon icon="fal fa-spinner-third" class="animate-spin mr-2" fixed-width />
-                    {{ trans("Loading images...") }}
+                    {{ ctrans("Loading images...") }}
                 </div>
 
                 <!-- List of images -->
                 <div v-else>
                     <div v-if="!props.data.images || props.data.images.length === 0"
                         class="p-4 text-center text-sm text-gray-500 italic">
-                        {{ trans("No images available") }}
+                        {{ ctrans("No images available") }}
                     </div>
 
                     <!-- if has gambar -->
@@ -604,7 +631,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                 <div class="flex items-center gap-2">
                                     <p class="truncate max-w-[140px] text-sm font-medium text-gray-800"
                                         :title="item?.name">
-                                        {{ item?.name || trans("Unnamed product") }}
+                                        {{ item?.name || ctrans("Unnamed product") }}
                                     </p>
                                     <!-- Tag PrimeVue untuk sub_scope -->
                                     <Tag v-if="item?.sub_scope"
@@ -615,15 +642,15 @@ function onDeleteFilesInList(categoryBox: any) {
                                 <div class="flex items-center gap-1 mt-0.5">
                                     <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
                                         :class="item?.alt ? 'text-gray-500' : 'text-gray-400'"
-                                        :title="item?.alt || trans('Not set')">
-                                        {{ trans('Alt') }}: 
+                                        :title="item?.alt || ctrans('Not set')">
+                                        {{ ctrans('Alt') }}: 
                                         <template v-if="item?.alt">{{ item?.alt }}</template>
-                                        <span v-else class="not-italic">- {{ trans('not set') }}</span>
+                                        <span v-else class="not-italic">- {{ ctrans('not set') }}</span>
                                     </span>                                    
                                     <button v-if="data?.update_image_alt_route" type="button"
                                         @click.stop="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
-                                        v-tooltip="trans('Edit alt text')">
+                                        v-tooltip="ctrans('Edit alt text')">
                                         <FontAwesomeIcon :icon="faPencil" class="text-[10px]" fixed-width />
                                     </button>
                                 </div>
@@ -644,7 +671,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click.stop="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="trans('Delete')">
+                        <button v-if="editable" @click.stop="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="ctrans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" fixed-width />
                         </button>
                     </article>
@@ -657,7 +684,7 @@ function onDeleteFilesInList(categoryBox: any) {
     </div>
 
 
-    <Dialog v-model:visible="isModalGallery" modal :header="trans('Select Images')" class="w-full max-w-5xl"
+    <Dialog v-model:visible="isModalGallery" modal :header="ctrans('Select Images')" class="w-full max-w-5xl"
         dismissableMask>
         <GalleryManagement :tabs="['images_uploaded', 'stock_images']"
             @submitSelectedImages="onPickGalleryImages" />
@@ -678,24 +705,24 @@ function onDeleteFilesInList(categoryBox: any) {
 
         <!-- Footer -->
         <template #footer>
-            <Button type="cancel" :label="trans('Cancel')" @click="isModalEditVideo = false" />
-            <Button :loading="loadingSubmit === 'video'" type="create" :label="trans('Save')"
+            <Button type="cancel" :label="ctrans('Cancel')" @click="isModalEditVideo = false" />
+            <Button :loading="loadingSubmit === 'video'" type="create" :label="ctrans('Save')"
                 @click="onSubmitVideoUrl()" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="isModalEditAlt" modal :header="trans('Edit Alt Text')" :style="{ width: '32rem' }">
+    <Dialog v-model:visible="isModalEditAlt" modal :header="ctrans('Edit Alt Text')" :style="{ width: '32rem' }">
         <div class="space-y-3">
             <p class="text-xs text-gray-500">
-                {{ trans('Alt text describes the image for SEO and screen readers.') }}
+                {{ ctrans('Alt text describes the image for SEO and screen readers.') }}
             </p>
             
-            <InputText v-model="altInput" :placeholder="trans('Describe the image for SEO & accessibility')" class="w-full" />
+            <InputText v-model="altInput" :placeholder="ctrans('Describe the image for SEO & accessibility')" class="w-full" />
         </div>
 
         <template #footer>
-            <Button type="cancel" :label="trans('Cancel')" @click="isModalEditAlt = false" />
-            <Button :loading="loadingSubmit === 'alt'" type="create" :label="trans('Save')"
+            <Button type="cancel" :label="ctrans('Cancel')" @click="isModalEditAlt = false" />
+            <Button :loading="loadingSubmit === 'alt'" type="create" :label="ctrans('Save')"
                 @click="onSubmitAlt()" />
         </template>
     </Dialog>

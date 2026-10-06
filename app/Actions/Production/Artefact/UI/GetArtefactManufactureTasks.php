@@ -9,7 +9,9 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Models\Production\Artefact;
+use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTask;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetArtefactManufactureTasks
@@ -18,7 +20,14 @@ class GetArtefactManufactureTasks
 
     public function handle(Artefact $artefact): array
     {
-        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) {
+        $bands = ManufacturePayBand::effectiveAt($artefact->production_id, now())
+            ->whereNotNull('target_multiplier')
+            ->get()
+            ->unique('code')
+            ->sortBy('target_multiplier')
+            ->values();
+
+        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($bands) {
             $rawMaterials = $task->pivot->rawMaterials()->with('rawMaterial')->get()
                 ->map(fn ($recipeStepRawMaterial) => [
                     'raw_material_id'    => $recipeStepRawMaterial->raw_material_id,
@@ -35,9 +44,11 @@ class GetArtefactManufactureTasks
                 'slug'               => $task->slug,
                 'code'               => $task->code,
                 'name'               => $task->name,
-                'task_work_cost'     => $task->task_work_cost,
+                'task_standard_rate' => $task->standard_rate,
                 'position'           => $task->pivot->position,
                 'units_per_artefact' => $task->pivot->units_per_artefact,
+                'standard_rate'      => $task->pivot->standard_rate,
+                'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands),
                 'raw_materials'      => $rawMaterials,
             ];
         })->values()->all();
@@ -76,5 +87,22 @@ class GetArtefactManufactureTasks
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, hourly_rate: float, units_per_hour: float}>
+     */
+    private function targets(float|string|null $standardRate, Collection $bands): array
+    {
+        if ($standardRate === null) {
+            return [];
+        }
+
+        return $bands->map(fn (ManufacturePayBand $band) => [
+            'code'           => $band->code,
+            'name'           => $band->name,
+            'hourly_rate'    => (float) $band->hourly_rate,
+            'units_per_hour' => round((float) $standardRate * (float) $band->target_multiplier, 1),
+        ])->all();
     }
 }

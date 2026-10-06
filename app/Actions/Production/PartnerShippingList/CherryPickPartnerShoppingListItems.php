@@ -135,6 +135,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                         'priority',
                         'needed_by',
                         'notes',
+                        'transaction_id',
                         'added_by_user_id',
                         'pre_picked_at',
                         'job_order_id',

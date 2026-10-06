@@ -78,7 +78,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
             ->first();
 
         $workingOnBy = ManufactureTaskSession::where('production_id', $production->id)
@@ -93,17 +93,18 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+            ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
             ->where(function ($query) {
                 $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                     ->orWhere(function ($query) {
                         $query->where('job_orders.state', JobOrderStateEnum::IN_PROCESS)
-                            ->where('job_orders.employee_id', $this->employee?->id ?? 0);
+                            ->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]);
                     });
             })
-            ->when(!$canPickOpenJobs, fn ($query) => $query->where('job_orders.employee_id', $this->employee?->id ?? 0))
+            ->when(!$canPickOpenJobs, fn ($query) => $query->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->orderBy('job_order_item_tasks.id')
@@ -220,7 +221,7 @@ class ShowManufactureFloor extends OrgAction
 
     protected function bandFeedback(ManufactureTaskSession $session): ?array
     {
-        $standardRate = $session->manufactureTask?->standard_rate;
+        $standardRate = $session->recipeStandardRate();
         if ($standardRate === null) {
             return null;
         }
@@ -296,8 +297,8 @@ class ShowManufactureFloor extends OrgAction
             'artefact_code'       => $task->jobOrderItem->artefact->code,
             'artefact_name'       => $task->jobOrderItem->artefact->name,
             'job_order_reference' => $task->jobOrder->reference,
-            'artisan'             => $task->jobOrder->employee?->contact_name,
-            'is_mine'             => $this->employee && $task->jobOrder->employee_id == $this->employee->id,
+            'artisan'             => $task->jobOrderItem->artisan()?->contact_name,
+            'is_mine'             => $this->employee && $task->jobOrderItem->artisanId() == $this->employee->id,
             'waiting_for'         => $this->missingMixes[$task->job_order_item_id] ??= array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
             'quantity_required'   => (float)$task->quantity_required,
             'quantity_made'       => (float)$task->quantity_made,

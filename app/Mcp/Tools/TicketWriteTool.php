@@ -27,12 +27,12 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with a QA username or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with a QA username or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Anyone can raise a HELP ticket and comment on tickets they raised; every other change is for engineers, lead engineers and QA.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
     {
-        return Ticket::canUseAssistant($request->user());
+        return $request->user() !== null;
     }
 
     public function handle(Request $request): Response
@@ -63,6 +63,14 @@ class TicketWriteTool extends Tool
         ]);
 
         $user = $request->user();
+
+        $isStaffReporter = !Ticket::canUseAssistant($user);
+        if ($isStaffReporter && $request->hasAny(['acting_as', 'subject', 'description', 'status', 'priority', 'kind', 'module', 'assignee', 'tags', 'internal', 'post_mortem', 'ask_qa', 'commit', 'type']) && $request->filled('reference')) {
+            return Response::error('On a ticket you raised you can add comments and attachments. Changing tickets is for engineers and QA.');
+        }
+        if ($isStaffReporter && $request->filled('acting_as')) {
+            return Response::error('Only a help desk supervisor can act as another user.');
+        }
 
         if ($request->filled('acting_as')) {
             if (!Ticket::canBeAssignedBy($user)) {
@@ -99,6 +107,9 @@ class TicketWriteTool extends Tool
         $ticket = Ticket::where('group_id', $user->group_id)->visibleTo($user)->where('reference', strtoupper($request->string('reference')))->first();
         if (!$ticket) {
             return Response::error('Ticket not found or not visible to you.');
+        }
+        if ($isStaffReporter && !$ticket->isReportedBy($user)) {
+            return Response::error('You can only comment on tickets you raised.');
         }
         if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description'])) {
             return Response::error('Only the help desk or the reporter can change the subject or description. You can comment on it.');
@@ -188,7 +199,7 @@ class TicketWriteTool extends Tool
         }
 
         if (($request->filled('comment') || $attachments) && !$isClosingAfterDeployment && !$isAskingQa) {
-            if (!$ticket->assignee_id) {
+            if (!$ticket->assignee_id && !$isStaffReporter) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
             StoreTicketComment::make()->action($ticket, $user, [

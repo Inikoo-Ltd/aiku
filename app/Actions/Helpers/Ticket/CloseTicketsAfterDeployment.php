@@ -27,7 +27,7 @@ class CloseTicketsAfterDeployment
 
         Ticket::where('status', TicketStatusEnum::PENDING_DEPLOY)->cursor()->each(function (Ticket $ticket) use (&$closed, $deployedCommit) {
             $fixCommit = data_get($ticket->data, 'deploy_commit');
-            if ($fixCommit && $deployedCommit && !$this->isDeployed($fixCommit, $deployedCommit)) {
+            if ($fixCommit && $deployedCommit && !$this->isDeployed($fixCommit, $deployedCommit) && !$this->wasRewrittenAndDeployed($ticket, $fixCommit)) {
                 return;
             }
 
@@ -58,5 +58,17 @@ class CloseTicketsAfterDeployment
         $process->run();
 
         return $process->isSuccessful();
+    }
+
+    private function wasRewrittenAndDeployed(Ticket $ticket, string $fixCommit): bool
+    {
+        if (empty(data_get($ticket->data, 'commits'))) {
+            return false;
+        }
+
+        $process = new Process(['git', 'cat-file', '-e', $fixCommit.'^{commit}'], base_path());
+        $process->run();
+
+        return !$process->isSuccessful();
     }
 }

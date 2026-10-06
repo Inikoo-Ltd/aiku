@@ -51,6 +51,7 @@ The window has the steps on the left and the artefacts you ticked on the right.
 
 - **Task**: the piece of work, picked from the factory's manufacture tasks. Type to search by name or code.
 - **Units per artefact**: how many units of that task one artefact needs. A job order for 10 artefacts at 2 units per artefact asks the artisan for 20 units of work.
+- **Target units per hour**: how many units an artisan is expected to make in an hour on this step, at the base pay rate. Leave it empty to use the task's own figure. More on this below.
 - **Raw materials**: what the step uses up for each unit of work, with a quantity for each.
 
 Press **Add step** for another card. The arrows on a card move it up or down, and the bin removes it. The steps are numbered in the order they are done, step 1 first, and artisans on the floor see them in that order. A task can only be used once in the list. If the task you need is not there yet, the **Task missing? Create a manufacture task** link takes you to the page where tasks are made.
@@ -72,6 +73,14 @@ An artefact with its own materials gets an **Own materials** tag in the list, an
 The window reminds you of this in a yellow box above the buttons. The save button stays greyed out until you tick **I understand the existing steps will be replaced**. The button says how many artefacts it will change, for example **Replace steps on 5 artefacts**.
 
 **Job orders already running.** Job orders that are still open pick up the new steps. A step that has been removed disappears from those job orders only if nobody has started it yet. Work already recorded against it on the floor is kept.
+
+## Targets and pay tiers
+
+The **Target units per hour** on a step is the lower target for that product. Artisans are paid by the hour, and the rate goes up as they make more per hour: the factory's pay tiers (Tier 0 to Tier 3) each start at a multiple of this target. On an artefact's **Manufacture tasks** tab, every step with a target lists the units per hour needed for each tier and the hourly rate it pays. The tiers and their rates are the same for the whole factory, so the target is the only figure to set per product.
+
+The target can be set on one artefact from its **Manufacture tasks** tab, or for a whole range at once in the unified window above. Tasks themselves no longer carry costs, targets or rewards: a task is just the name of a piece of work.
+
+**Runs below target.** When an artisan finishes a step and their units per hour are below the step's target, the entry is marked **Under target / action required** on the **Performance** tab. A production manager opens it with **Log reason**, picks why (machine breakdown, material shortage, quality or rework, operator training, other) and can add a note. Tick **Under target only** above the list to see just those entries. Each worker's line shows how many of theirs still need a reason.
 
 ## What discontinuing does and does not do
 

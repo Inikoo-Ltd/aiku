@@ -882,6 +882,21 @@ test('assistant asks a QA user to check a ticket through MCP, with the comment a
     UpdateTicket::make()->action($ticket, ['qa_status' => null]);
 });
 
+test('any staff user raises and comments on their own help ticket through MCP but cannot change tickets', function () {
+    $staff = User::factory()->create(['group_id' => $this->group->id]);
+
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['subject' => 'Label printer offline'])->assertOk();
+    $ticket = Ticket::where('subject', 'Label printer offline')->firstOrFail();
+
+    expect($ticket->reporter_id)->toBe($staff->id);
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'resolved'])->assertHasErrors();
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'It is the one in bay 3'])->assertOk();
+    expect($ticket->comments()->where('body', 'like', '%bay 3%')->count())->toBe(1);
+
+    $otherStaff = User::factory()->create(['group_id' => $this->group->id]);
+    AikuServer::actingAs($otherStaff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Me too'])->assertHasErrors();
+});
+
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
     $created = AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Picking screen freezes', 'module' => 'dispatching', 'priority' => 'high']);
     $created->assertOk();
@@ -1305,8 +1320,8 @@ test('list and board show only tickets created in the chosen interval', function
     $old->update(['created_at' => now()->subYear()->subMonth()]);
 
     $fresh->update(['created_at' => now()->subHours(2)]);
-    get(route('grp.tickets.list', ['created' => '1h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
-    get(route('grp.tickets.list', ['created' => '3h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '1h', 'perPage' => 1000]))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '3h', 'perPage' => 1000]))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
 
     get(route('grp.tickets.board', ['created' => '24h']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
         $references = collect($page->toArray()['props']['columns'])->flatMap(fn ($column) => $column['tickets'])->pluck('reference');
@@ -4046,4 +4061,21 @@ test('the project tools let a team member run a project through the AI assistant
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
     expect($task->fresh()->ticket_project_id)->toBe($project->id);
+});
+
+test('a deployment closes a pending deploy ticket whose fix commit was rewritten by a rebase once a commit naming it is deployed', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rebased fix']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'deadbeef00', 'comment' => 'Live now'])->assertOk();
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY);
+
+    $ticket->update(['data' => array_merge($ticket->fresh()->data, ['commits' => [['hash' => '5f525f2033']]])]);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
 });

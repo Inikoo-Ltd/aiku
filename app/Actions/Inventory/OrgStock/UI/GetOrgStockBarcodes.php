@@ -16,7 +16,7 @@ class GetOrgStockBarcodes
     use AsObject;
 
     /**
-     * Both cards are always returned, with a null number when the org stock has no barcode yet, so
+     * All three cards are always returned, with a null number when the org stock has no barcode yet, so
      * the page can offer the placeholder that lets warehouse staff type or scan one in.
      *
      * The unit card's number is editable only when the org stock is a single trade unit, because it
@@ -50,6 +50,17 @@ class GetOrgStockBarcodes
                 'dimensions' => $tradeUnit?->marketing_dimensions,
                 'packs'      => null,
                 'editable'   => (bool) $tradeUnit,
+                'warning'    => null,
+            ],
+            [
+                'level'      => 'carton',
+                'label'      => 'Carton (supplier outer box, same in every organisation)',
+                'number'     => $orgStock->stock?->carton_barcode,
+                'quantity'   => null,
+                'weight'     => null,
+                'dimensions' => null,
+                'packs'      => null,
+                'editable'   => (bool) $orgStock->stock_id,
                 'warning'    => null,
             ],
         ];

@@ -18,6 +18,7 @@ use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
+use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -805,6 +806,15 @@ class Kernel extends ConsoleKernel
                 name: 'GetFaireProductsAllShops',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SyncDispatchedFaireOrdersTax::makeJob())->dailyAt('03:40')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SyncDispatchedFaireOrdersTax',
+                ),
+                name: 'SyncDispatchedFaireOrdersTax',
+                type: 'job',
+                scheduledAt: '03:40'
             );
 
             $this->logSchedule(

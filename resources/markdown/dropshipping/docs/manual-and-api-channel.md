@@ -1,7 +1,7 @@
 ---
 title: The Manual/API channel
 summary: Create a Manual/API channel to sell from your own website, marketplace or app, place orders by hand or send them to us through our API.
-date: 2026-09-25
+date: 2026-10-05
 tags: manual, api, sales channel, own website, api token, integration
 category: sales-channels
 series: manual
@@ -79,6 +79,8 @@ Open <b>API</b> under your channel. The page has these tabs:
 - <b>API calls</b>: the requests your system made.
 - <b>History</b>: changes made on your account.
 
+Start with clients: every API order belongs to a client, so your system creates the client first. [Creating clients with the API](/docs/creating-clients-with-the-api) has a complete example request and answer, every field and what each error means.
+
 ### Get a token
 
 1. Press <b>Generate API token</b>.
@@ -106,6 +108,7 @@ If neither your balance nor your cards cover the order, the order is marked <b>U
 - <b>My orders are not arriving by themselves.</b> A Manual/API channel never collects orders from a website. Create them on the client page, or send them from your system through the API. If you sell on a platform shown on the <b>Add Sales Channel</b> page, connect that platform as its own channel.
 - <b>My products are not on my website.</b> We do not upload anything from a Manual/API channel. Load them into your website yourself, with the CSV download on <b>My Products</b> or through the API.
 - <b>I lost my API token.</b> It cannot be shown again. Generate a new token, put it in your system and delete the old one.
+- <b>The API refuses to create a client.</b> Send the address inside an <b>address</b> object, with the country as an ISO code in <b>country_code</b>, for example <b>GB</b>. See [Creating clients with the API](/docs/creating-clients-with-the-api).
 - <b>The API answers that I cannot create or change orders.</b> The token is read only. Generate a token without <b>Read only</b> ticked.
 - <b>The API refuses my requests for a short while.</b> Each token can make up to 120 requests a minute. Slow down your system and try again after a minute.
 - <b>The API says "This order has no products yet".</b> Add at least one product to the order before you submit it.

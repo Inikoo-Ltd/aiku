@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Client;
 
+use App\Actions\Api\Retina\Client\WithApiClientAddress;
 use App\Actions\Api\Retina\Dropshipping\Resource\CustomerClientApiResource;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\RetinaApiAction;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateApiCustomerClient extends RetinaApiAction
 {
+    use WithApiClientAddress;
+
     private CustomerClient $customerClient;
     /**
      * @throws \Throwable
@@ -58,7 +61,7 @@ class UpdateApiCustomerClient extends RetinaApiAction
             'address'        => ['sometimes', new ValidAddress()],
         ];
 
-        return $rules;
+        return array_merge($rules, $this->apiAddressRules());
     }
 
     /**

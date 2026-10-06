@@ -21,9 +21,14 @@ class CreateShopifyWebhooks extends OrgAction
 
 
     /**
+     * PRODUCTS_UPDATE stays off: it fires on every change to the store's products, including each
+     * stock and price update we push, and its handler calls Shopify inside the request (Nov 2025 load).
+     *
+     * @param  array<int, string>|null  $onlyTopics  register just these topics, e.g. to add one to stores connected before it existed
+     *
      * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser): array
+    public function handle(ShopifyUser $shopifyUser, ?array $onlyTopics = null): array
     {
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
@@ -39,13 +44,13 @@ class CreateShopifyWebhooks extends OrgAction
                     'format' => 'JSON',
                 ]
             ],
-//            [
-//                'topic'               => 'PRODUCTS_DELETE',
-//                'webhookSubscription' => [
-//                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
-//                    'format' => 'JSON',
-//                ]
-//            ],
+            [
+                'topic'               => 'PRODUCTS_DELETE',
+                'webhookSubscription' => [
+                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
+                    'format' => 'JSON',
+                ]
+            ],
 //            [
 //                'topic'               => 'PRODUCTS_UPDATE',
 //                'webhookSubscription' => [
@@ -55,6 +60,10 @@ class CreateShopifyWebhooks extends OrgAction
 //            ],
         ];
 
+
+        if ($onlyTopics !== null) {
+            $webhooks = array_values(array_filter($webhooks, fn (array $webhook) => in_array($webhook['topic'], $onlyTopics, true)));
+        }
 
         $results = [];
         $success = true;

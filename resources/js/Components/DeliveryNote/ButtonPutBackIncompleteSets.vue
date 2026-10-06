@@ -21,13 +21,14 @@ defineProps<{
     <ModalConfirmation
         :routeYes="action.route"
         :body="{}"
-        :title="ctrans('Are these parts back on the shelf?')"
+        :title="action.parts.length ? ctrans('Are these parts back on the shelf?') : ctrans('Mark the other parts of the set as not picked?')"
         :noLabel="ctrans('Not yet')">
         <template #description>
             <div class="mt-2 space-y-3 text-sm text-gray-500">
                 <p>
                     {{ ctrans('A part of a set sold only complete was not found, so the whole product can not be sent and the customer is refunded for it.') }}
                 </p>
+                <template v-if="action.parts.length">
                 <p class="font-medium text-gray-700">
                     {{ ctrans('Before you confirm, put these parts back on the shelf:') }}
                 </p>
@@ -46,12 +47,16 @@ defineProps<{
                 <p class="text-xs">
                     {{ ctrans('Confirming takes these parts off the delivery note and returns them to stock, so only confirm once they really are back on the shelf.') }}
                 </p>
+                </template>
+                <p v-else class="font-medium text-gray-700">
+                    {{ ctrans('None of its other parts were picked, so there is nothing to put back. Confirming marks them as not picked.') }}
+                </p>
             </div>
         </template>
         <template #btn-yes="{ isLoadingdelete, clickYes }">
             <Button
                 :loading="isLoadingdelete"
-                :label="ctrans('Yes, they are back on the shelf')"
+                :label="action.parts.length ? ctrans('Yes, they are back on the shelf') : ctrans('Yes, mark them not picked')"
                 type="save"
                 @click="clickYes" />
         </template>

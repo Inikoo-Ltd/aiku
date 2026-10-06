@@ -113,6 +113,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
                         'priority',
                         'needed_by',
                         'notes',
+                        'transaction_id',
                         'added_by_user_id',
                     ]),
                     'parent_id'  => $item->id,

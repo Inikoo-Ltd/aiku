@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
 import axios from "axios"
 import { Link, router } from "@inertiajs/vue3"
@@ -32,7 +31,7 @@ interface ArtefactShowcaseData {
         name: string
         position: number
         units_per_artefact: number | string
-        task_work_cost: number | string
+        standard_rate: number | string | null
     }[]
 }
 
@@ -51,10 +50,10 @@ const onSaveBatchSize = async () => {
             route(props.data.update_route.name, props.data.update_route.parameters),
             { recommended_batch_size: Number(batchSize.value) }
         )
-        notify({ title: trans("Updated"), text: trans("Recommended batch size saved"), type: "success" })
+        notify({ title: ctrans("Updated"), text: ctrans("Recommended batch size saved"), type: "success" })
         router.reload()
     } catch (error: any) {
-        notify({ title: trans("Something went wrong"), text: error.message, type: "error" })
+        notify({ title: ctrans("Something went wrong"), text: error.message, type: "error" })
     } finally {
         isSavingBatchSize.value = false
     }
@@ -86,12 +85,12 @@ const onSaveBatchSize = async () => {
                 class="mb-6 flex items-baseline gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3"
                 role="group"
                 aria-labelledby="artefact-recommended-batch-size-label">
-                <span id="artefact-recommended-batch-size-label" class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Recommended batch size') }}</span>
+                <span id="artefact-recommended-batch-size-label" class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Recommended batch size') }}</span>
                 <span class="text-2xl font-semibold leading-none" aria-describedby="artefact-recommended-batch-size-label">{{ data.recommended_batch_size }}</span>
                 <span v-if="data.batch_pack" class="text-xs text-gray-500">
-                    {{ trans('is') }} {{ data.batch_pack.batch_in_skos }} {{ trans('SKOs of') }} {{ data.batch_pack.packed_in }}
+                    {{ ctrans('is') }} {{ data.batch_pack.batch_in_skos }} {{ ctrans('SKOs of') }} {{ data.batch_pack.packed_in }}
                     <template v-if="data.batch_pack.suggested_batch_size">
-                        &middot; {{ trans('whole SKOs at') }} {{ data.batch_pack.suggested_batch_size }}
+                        &middot; {{ ctrans('whole SKOs at') }} {{ data.batch_pack.suggested_batch_size }}
                     </template>
                 </span>
             </div>
@@ -101,8 +100,8 @@ const onSaveBatchSize = async () => {
                 role="alert"
                 aria-labelledby="artefact-missing-batch-size-title"
                 aria-describedby="artefact-missing-batch-size-description">
-                <div id="artefact-missing-batch-size-title" class="text-sm font-semibold text-red-700">{{ trans('No recommended batch size') }}</div>
-                <div id="artefact-missing-batch-size-description" class="text-xs text-red-600 mb-2">{{ trans('Set how many units are usually made in one go, so job orders can be prefilled.') }}</div>
+                <div id="artefact-missing-batch-size-title" class="text-sm font-semibold text-red-700">{{ ctrans('No recommended batch size') }}</div>
+                <div id="artefact-missing-batch-size-description" class="text-xs text-red-600 mb-2">{{ ctrans('Set how many units are usually made in one go, so job orders can be prefilled.') }}</div>
                 <div class="flex items-center gap-2">
                     <input
                         v-model="batchSize"
@@ -110,14 +109,14 @@ const onSaveBatchSize = async () => {
                         min="1"
                         name="recommended_batch_size"
                         class="w-32 rounded border border-red-200 px-2 py-1 text-sm"
-                        :placeholder="trans('Units')"
+                        :placeholder="ctrans('Units')"
                         :aria-label="ctrans('Recommended batch size in units')"
                         aria-describedby="artefact-missing-batch-size-description"
                         aria-required="true"
                         @keyup.enter="onSaveBatchSize" />
                     <Button
                         type="save"
-                        :label="trans('Save')"
+                        :label="ctrans('Save')"
                         :aria-label="ctrans('Save recommended batch size')"
                         :aria-busy="isSavingBatchSize"
                         :loading="isSavingBatchSize"
@@ -127,8 +126,8 @@ const onSaveBatchSize = async () => {
             </div>
 
             <div v-if="data.jobs_off_batch.length" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3" role="alert">
-                <div class="text-sm font-semibold text-amber-700">{{ trans('Open jobs raised with a different batch size') }}</div>
-                <div class="text-xs text-amber-700 mb-2">{{ trans('They keep the quantity they were raised with. Nothing is made yet, so it can still be changed on the job order.') }}</div>
+                <div class="text-sm font-semibold text-amber-700">{{ ctrans('Open jobs raised with a different batch size') }}</div>
+                <div class="text-xs text-amber-700 mb-2">{{ ctrans('They keep the quantity they were raised with. Nothing is made yet, so it can still be changed on the job order.') }}</div>
                 <ul class="text-sm">
                     <li v-for="job in data.jobs_off_batch" :key="job.id">
                         <Link :href="route(job.route.name, job.route.parameters)" class="primaryLink">{{ job.job_order_reference }}</Link>
@@ -140,15 +139,15 @@ const onSaveBatchSize = async () => {
 
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" :aria-label="ctrans('Artefact details')">
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('State') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('State') }}</dt>
                     <dd class="text-sm">{{ data.state_label }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Family') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Family') }}</dt>
                     <dd class="text-sm">{{ data.artefact_department?.name || '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Tags') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Tags') }}</dt>
                     <dd class="text-sm">
                         <ul v-if="data.tags?.length" class="flex flex-wrap gap-1" :aria-label="ctrans('Tags')">
                             <li v-for="tag in data.tags" :key="tag" class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">#{{ tag }}</li>
@@ -157,11 +156,11 @@ const onSaveBatchSize = async () => {
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Trade unit') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Trade unit') }}</dt>
                     <dd class="text-sm">{{ data.trade_unit ? `${data.trade_unit.code} - ${data.trade_unit.name}` : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Stock (SKU)') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Stock (SKU)') }}</dt>
                     <dd class="text-sm">
                         <Link
                             v-if="data.org_stock?.route"
@@ -174,20 +173,20 @@ const onSaveBatchSize = async () => {
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Quantity in locations') }}</dt>
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Quantity in locations') }}</dt>
                     <dd class="text-sm">{{ data.org_stock ? data.org_stock.quantity_in_locations : '-' }}</dd>
                 </div>
             </dl>
 
             <section class="mt-8" v-if="data.manufacture_tasks.length" aria-labelledby="artefact-recipe-steps-title">
-                <h3 id="artefact-recipe-steps-title" class="text-sm font-semibold mb-3">{{ trans('Recipe steps') }}</h3>
+                <h3 id="artefact-recipe-steps-title" class="text-sm font-semibold mb-3">{{ ctrans('Recipe steps') }}</h3>
                 <table class="w-full text-sm" aria-labelledby="artefact-recipe-steps-title">
                     <thead>
                         <tr class="text-left text-xs text-gray-500 uppercase tracking-wide">
-                            <th scope="col" class="pb-2">{{ trans('Position') }}</th>
-                            <th scope="col" class="pb-2">{{ trans('Task') }}</th>
-                            <th scope="col" class="pb-2">{{ trans('Units per artefact') }}</th>
-                            <th scope="col" class="pb-2">{{ trans('Work cost') }}</th>
+                            <th scope="col" class="pb-2">{{ ctrans('Position') }}</th>
+                            <th scope="col" class="pb-2">{{ ctrans('Task') }}</th>
+                            <th scope="col" class="pb-2">{{ ctrans('Units per artefact') }}</th>
+                            <th scope="col" class="pb-2">{{ ctrans('Target per hour') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -195,7 +194,7 @@ const onSaveBatchSize = async () => {
                             <td class="py-2">{{ task.position }}</td>
                             <td class="py-2">{{ task.code }} - {{ task.name }}</td>
                             <td class="py-2">{{ task.units_per_artefact }}</td>
-                            <td class="py-2">{{ task.task_work_cost }}</td>
+                            <td class="py-2">{{ task.standard_rate === null ? '-' : Number(task.standard_rate) }}</td>
                         </tr>
                     </tbody>
                 </table>

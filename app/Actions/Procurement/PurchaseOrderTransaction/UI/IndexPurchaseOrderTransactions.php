@@ -26,6 +26,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -130,7 +131,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->leftJoin('org_stocks as os', 'os.id', '=', 'purchase_order_transactions.org_stock_id')
             ->select('purchase_order_transactions.*')
             ->selectSub($weight, 'weight')
-            ->selectRaw('round(sp.cbm * purchase_order_transactions.quantity_ordered / nullif(sp.units_per_carton, 0), 2) as volume');
+            ->selectRaw('round(sp.cbm * purchase_order_transactions.quantity_ordered / nullif(sp.units_per_carton, 0), 2) as volume')
+            ->selectSub(
+                StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction(DB::query())->selectRaw('count(*) > 0'),
+                'is_on_delivery'
+            );
 
         if ($parent instanceof PurchaseOrder) {
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
@@ -264,7 +269,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
 
-                if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+                if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
                     $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
                 }
             }

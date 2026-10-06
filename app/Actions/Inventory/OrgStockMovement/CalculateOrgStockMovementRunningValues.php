@@ -50,7 +50,7 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
         }
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['id', 'type', 'class', 'location_id', 'quantity', 'audited_quantity', 'cost_per_sku', 'org_amount', 'date'])
+            ->select(['id', 'type', 'class', 'location_id', 'quantity', 'audited_quantity', 'cost_per_sku', 'org_amount', 'date', 'source_id'])
             ->where('org_stock_id', $orgStock->id)
             ->orderBy('date')
             ->orderBy('id')

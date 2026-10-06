@@ -8,8 +8,11 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
@@ -17,6 +20,7 @@ use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
@@ -90,17 +94,27 @@ class SendPartnerPurchaseOrderToSeller
             'customer_reference' => $purchaseOrder->reference,
         ]);
 
+        $landedCostLines = [];
         foreach ($this->transactions($purchaseOrder) as $transaction) {
-            $product      = GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id]);
-            $unitsPerItem = (float) $product->pivot->quantity * (float) ($product->orgStocks()->first()?->packed_in ?: 1);
-            $quantity     = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
-            $amount       = round($quantity * (float) $product->price, 2);
+            $product        = GetPartnerSellingProduct::run($orgPartner, $transaction->stock_id, [$shop->id]);
+            $sellerOrgStock = $product->orgStocks()->first();
+            $unitsPerItem   = (float) $product->pivot->quantity * (float) ($sellerOrgStock?->packed_in ?: 1);
+            $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
+            $amount         = round($quantity * (float) $product->price, 2);
 
-            StoreTransaction::make()->action($order, $product->historicAsset, [
+            $orderTransaction = StoreTransaction::make()->action($order, $product->historicAsset, [
                 'quantity_ordered' => $quantity,
                 'gross_amount'     => $amount,
                 'net_amount'       => $amount,
             ]);
+
+            if ($sellerOrgStock && (float) $product->price > 0) {
+                $landedCostLines[$orderTransaction->id] = [$sellerOrgStock->id, (float) $product->pivot->quantity / (float) $product->price];
+            }
+        }
+
+        if (GetPartnerLandedCost::appliesTo($orgPartner)) {
+            $this->discountToLandedCost($order, $landedCostLines);
         }
 
         $order->update(['at_gate_at' => now()]);
@@ -115,6 +129,31 @@ class SendPartnerPurchaseOrderToSeller
         UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
 
         return $order;
+    }
+
+    /**
+     * The line keeps the product's list price as gross, so the historic asset, sales and invoices stay
+     * as for any order, and a discretionary discount takes it down to what the stock cost the seller.
+     *
+     * @param  array<int, array{0: int, 1: float}>  $landedCostLines  order transaction id => [seller org stock id, SKOs per unit of list price]
+     */
+    private function discountToLandedCost(Order $order, array $landedCostLines): void
+    {
+        $landedCosts = GetPartnerLandedCost::run(array_unique(array_column($landedCostLines, 0)));
+
+        foreach ($landedCostLines as $transactionId => [$sellerOrgStockId, $skosPerPrice]) {
+            if (!isset($landedCosts[$sellerOrgStockId])) {
+                continue;
+            }
+
+            Transaction::where('id', $transactionId)->update([
+                'discretionary_offer'       => round(max(0.0, min(1.0, 1 - $landedCosts[$sellerOrgStockId] * $skosPerPrice)), 4),
+                'discretionary_offer_label' => __('Intercompany at landed cost'),
+            ]);
+        }
+
+        OrderHydrateDiscretionaryOffersData::run($order);
+        CalculateOrderDiscounts::run($order->refresh());
     }
 
     private function transactions(PurchaseOrder $purchaseOrder): \Illuminate\Database\Eloquent\Collection
