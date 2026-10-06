@@ -3,9 +3,11 @@
 namespace App\Actions\Maintenance\Comms;
 
 use App\Actions\Comms\Email\GetEmailSocialIcons;
+use App\Models\Comms\Email;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Helpers\Snapshot;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairEmailSocialIcons
@@ -87,7 +89,7 @@ class RepairEmailSocialIcons
 
     public string $commandSignature = 'repair:email-social-icons';
 
-    public string $commandDescription = 'Replace Beefree social icon urls in email snapshots and email templates with our own seeded icons';
+    public string $commandDescription = 'Replace Beefree social icon urls in the live and unpublished email snapshots and in email templates with our own seeded icons';
 
     public function asCommand(Command $command): int
     {
@@ -97,30 +99,44 @@ class RepairEmailSocialIcons
             return 1;
         }
 
-        $queries = [
-            'email snapshots' => Snapshot::where('parent_type', 'Email'),
-            'email templates' => EmailTemplate::query(),
-        ];
+        $replaced = 0;
+        $missing  = [];
+        $repair   = function (Snapshot|EmailTemplate $model) use (&$replaced, &$missing) {
+            $result   = $this->handle($model);
+            $replaced += $result['replaced'];
+            $missing  = array_merge($missing, $result['missing']);
+        };
 
-        foreach ($queries as $label => $query) {
-            $query->whereRaw('layout::text LIKE ?', ['%'.self::BEEFREE_ICON_PATH.'%']);
+        $command->info('Email snapshots in use');
+        $progressBar = $command->getOutput()->createProgressBar(Email::count());
+        Email::select(['id', 'live_snapshot_id', 'unpublished_snapshot_id'])->chunkById(500, function ($emails) use ($repair, $progressBar) {
+            $this->snapshotsWithBeefreeIcons($emails->pluck('live_snapshot_id')->merge($emails->pluck('unpublished_snapshot_id'))->filter()->unique()->all())
+                ->each($repair);
+            $progressBar->advance($emails->count());
+        });
+        $progressBar->finish();
+        $command->newLine();
 
-            $total    = $query->clone()->count();
-            $replaced = 0;
-            $missing  = [];
+        $command->info('Email templates');
+        EmailTemplate::whereRaw('layout::text LIKE ?', ['%'.self::BEEFREE_ICON_PATH.'%'])->lazyById()->each($repair);
 
-            foreach ($query->lazyById() as $model) {
-                $result   = $this->handle($model);
-                $replaced += $result['replaced'];
-                $missing  = array_merge($missing, $result['missing']);
-            }
-
-            $command->info("$label: $total checked, $replaced icon urls replaced");
-            foreach (array_unique($missing) as $url) {
-                $command->warn("  not in our icon set, left as is: $url");
-            }
+        $command->info("Done: $replaced icon urls replaced");
+        foreach (array_unique($missing) as $url) {
+            $command->warn("Not in our icon set, left as is: $url");
         }
 
         return 0;
+    }
+
+    /**
+     * @param  array<int, int>  $snapshotIds
+     *
+     * @return Collection<int, Snapshot>
+     */
+    private function snapshotsWithBeefreeIcons(array $snapshotIds): Collection
+    {
+        return Snapshot::whereIn('id', $snapshotIds)
+            ->whereRaw('layout::text LIKE ?', ['%'.self::BEEFREE_ICON_PATH.'%'])
+            ->get();
     }
 }
