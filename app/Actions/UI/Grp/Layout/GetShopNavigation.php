@@ -63,6 +63,7 @@ class GetShopNavigation
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
+                        "root"    => "grp.org.shops.show.dashboard.comms",
                         "route"   => [
                             "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
                             "parameters" => [$shop->organisation->slug, $shop->slug],

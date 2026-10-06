@@ -66,6 +66,16 @@ const setAsDefault = (packaging: { id: number, is_default: boolean }) => {
     )
 }
 
+const packagingShowRoute = (packaging: { slug: string }) => {
+    const params = route().params as Record<string, string>
+
+    return route('grp.org.shops.show.billables.packagings.show', [
+        params['organisation'],
+        params['shop'],
+        packaging.slug,
+    ])
+}
+
 const packagingEditRoute = (packaging: { slug: string }) => {
     const params = route().params as Record<string, string>
 
@@ -83,7 +93,7 @@ const packagingEditRoute = (packaging: { slug: string }) => {
             <Icon :data="packaging['state_icon']" />
         </template>
         <template #cell(code)="{ item: packaging }">
-            <Link :href="packagingEditRoute(packaging)" class="primaryLink font-medium">
+            <Link :href="packagingShowRoute(packaging)" class="primaryLink font-medium">
                 {{ packaging["code"] }}
             </Link>
         </template>

@@ -37,6 +37,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
@@ -8230,6 +8231,24 @@ test('a stock delivery with stock already in locations can not be cancelled', fu
     expect(fn () => CancelStockDelivery::make()->action($stockDelivery->fresh()))->toThrow(ValidationException::class)
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CHECKED)
         ->and((float) $locationOrgStock->fresh()->quantity)->toBe(4.0);
+});
+
+test('a dispatched stock delivery with no products can not be received and is cancelled instead', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'EMPTY-DISPATCHED', []);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.key', 'cancel_stock_delivery')
+            ->where('pageHead.actions', fn ($actions) => collect($actions)->pluck('key')->doesntContain('receive_stock_delivery')));
+
+    expect(fn () => ReceiveStockDelivery::make()->action($stockDelivery->fresh()))->toThrow(ValidationException::class);
+
+    CancelStockDelivery::make()->action($stockDelivery->fresh());
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CANCELLED);
 });
 
 test('a put away can not be undone once the delivery is booked in', function () {
