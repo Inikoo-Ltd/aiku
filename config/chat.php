@@ -39,8 +39,9 @@ return [
     // Hiding a real customer is worse than showing a junk mail, so the bar is low.
     'spam_rescue_min_probability' => (float) env('CHAT_SPAM_RESCUE_MIN_PROBABILITY', 0.3),
 
-    // An email from Gmail spam that came in anyway is tagged a possible scam only when a scam is probable.
-    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.5),
+    // An email from Gmail spam that came in anyway is tagged a possible scam from this score. On the 74 brought in up to
+    // 6 Oct no genuine email scored above 0.16, while a customer's hijacked account sending an invitation scored 0.88.
+    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.3),
 
     'urgent_model' => env('CHAT_URGENT_MODEL', 'openai/gpt-5.6-luna'),
 

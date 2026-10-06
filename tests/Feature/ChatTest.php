@@ -12067,7 +12067,7 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
                 'kind'      => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
             ]])
-            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'account_warning', 'probabilities' => ['account_warning' => 0.7, 'none' => 0.3]]]])
+            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['link_to_details' => 0.35, 'none' => 0.65]]]])
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.35, 'vague_buyer' => 0.3, 'customer_request' => 0.05]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.9]],
