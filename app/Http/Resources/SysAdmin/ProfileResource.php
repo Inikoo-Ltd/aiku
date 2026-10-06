@@ -27,7 +27,6 @@ class ProfileResource extends JsonResource
             'contact_name'  => $user->contact_name,
             'nickname'      => $user->nickname,
             'avatar'        => $user->imageSources(300, 300),
-            'email'         => $user->email,
             'created_at'    => $user->created_at,
             'status'        => match ($user->status) {
                 true => [

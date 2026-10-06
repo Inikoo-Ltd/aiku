@@ -2,7 +2,7 @@
 title: Remover produtos de um canal
 summary: Retira um produto de Meus Produtos, ou apenas quebra a sua ligação com a tua loja, e sabe o que acontece ao anúncio na tua loja em cada caso.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: produtos, meus produtos, remover, apagar, desvincular, descontinuado
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ Num canal manual prime a cruz vermelha, <b>Remove product from list</b> ("Remove
 
 Isto funciona nos canais de plataforma, não num canal manual.
 
-1. Marca os produtos na lista.
+1. Marca os produtos na lista. Para marcar todos os produtos da página, marca a caixa no topo da coluna das caixas. Para trabalhares mais depressa, mostra mais linhas por página com o seletor por baixo da lista, até 150.
 2. Prime um dos botões que aparecem acima da lista:
    - <b>Unlink (...)</b> ("Desvincular (...)"): quebra a ligação com a tua loja. Os produtos mantêm-se em <b>Meus Produtos</b> e os anúncios mantêm-se na tua loja.
    - <b>Unlink & Delete (...)</b> ("Desvincular e apagar (...)"): quebra a ligação e remove os produtos de <b>Meus Produtos</b>. Os anúncios mantêm-se na tua loja, por isso apaga-os lá se já não os quiseres.
 
-Não há janela de confirmação para estes dois botões. Verifica o que marcaste antes de premir.
+Os dois botões abrem uma janela que mostra quantos produtos marcaste e pede-te que confirmes. Lê-a antes de premir <b>Yes</b>: nenhuma das duas ações pode ser desfeita. Depois de <b>Unlink & Delete</b>, os produtos, com os nomes, preços e descrições que definiste para eles, desaparecem de <b>Meus Produtos</b>, e tens de os voltar a adicionar tu próprio se mudares de ideias.
+
+Para limpar centenas de produtos, por exemplo depois de importares demasiados por engano, repete estes passos página a página: mostra 150 linhas, marca a caixa no topo, prime <b>Unlink & Delete (...)</b> e os produtos seguintes sobem para a página. Quando removes mais de 20 produtos de uma vez, removemo-los em segundo plano, cerca de um por segundo: atualiza a página passados alguns minutos para ver a lista sem eles.
 
 ## Remover um bundle
 

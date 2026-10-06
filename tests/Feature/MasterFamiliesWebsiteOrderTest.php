@@ -162,12 +162,16 @@ test('a shop that does not follow the master order keeps its own positions', fun
 });
 
 test('reordering a shop department is refused while it follows the master order', function () {
-    [, $product] = createProduct($this->shop);
-    $department = $product->department;
+    createProduct($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
 
     $familyData = ProductCategory::factory()->definition();
     data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
     $family = StoreProductCategory::make()->action($department, $familyData);
+
+    $settings = $this->shop->settings;
+    data_set($settings, 'catalog.family_order_follow_master', true);
+    $this->shop->updateQuietly(['settings' => $settings]);
 
     expect(fn () => ReorderFamiliesInDepartment::make()->action($department->refresh(), [
         'families' => [$family->id],
@@ -175,8 +179,8 @@ test('reordering a shop department is refused while it follows the master order'
 });
 
 test('a shop department that has opted out orders its own families', function () {
-    [, $product] = createProduct($this->shop);
-    $department = $product->department;
+    createProduct($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
 
     $families = [];
     foreach (['first', 'second'] as $label) {
@@ -249,9 +253,14 @@ test('the families order lists the families brought in by the active collections
 });
 
 test('a shop department lists the families of its collections after its own families on the order tab and the website', function () {
-    [, $product] = createProduct($this->shop);
-    $department  = $product->department;
-    $ownFamily   = $product->family;
+    createWebsite($this->shop);
+    $departmentData = ProductCategory::factory()->definition();
+    data_set($departmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $department = StoreProductCategory::make()->action($this->shop, $departmentData);
+
+    $ownFamilyData = ProductCategory::factory()->definition();
+    data_set($ownFamilyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+    $ownFamily = StoreProductCategory::make()->action($department, $ownFamilyData);
 
     $otherDepartmentData = ProductCategory::factory()->definition();
     data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);

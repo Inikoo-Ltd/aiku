@@ -25,6 +25,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -67,62 +68,68 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ]);
         }
 
-        $purchaseOrderTransactionsQuery = self::transactionsAwaitingDelivery($purchaseOrder)
-            ->with(['historicSupplierProduct', 'orgStock']);
+        $stockDelivery = DB::transaction(function () use ($purchaseOrder, $modelData) {
+            PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
 
-        if (array_key_exists('purchase_order_transaction_ids', $modelData)) {
-            $purchaseOrderTransactionsQuery->whereIn('id', $modelData['purchase_order_transaction_ids']);
-        }
+            $purchaseOrderTransactionsQuery = self::transactionsAwaitingDelivery($purchaseOrder)
+                ->with(['historicSupplierProduct', 'orgStock']);
 
-        $purchaseOrderTransactions = $purchaseOrderTransactionsQuery->get();
+            if (array_key_exists('purchase_order_transaction_ids', $modelData)) {
+                $purchaseOrderTransactionsQuery->whereIn('id', $modelData['purchase_order_transaction_ids']);
+            }
 
-        if ($purchaseOrderTransactions->isEmpty()) {
-            throw ValidationException::withMessages([
-                'purchase_order_transaction_ids' => __('Select at least one purchase order item'),
-            ]);
-        }
+            $purchaseOrderTransactions = $purchaseOrderTransactionsQuery->get();
 
-        $stockDelivery = StoreStockDelivery::make()->action(
-            $purchaseOrder->parent,
-            array_merge([
-                'reference'   => $this->newProcurementReference($purchaseOrder->parent, SerialReferenceModelEnum::STOCK_DELIVERY),
-                'state'       => StockDeliveryStateEnum::IN_PROCESS,
-                'date'        => now(),
-                'currency_id' => $purchaseOrder->currency_id,
-                'data'        => $this->getStockDeliveryData($purchaseOrder),
-            ], $this->getExchanges($purchaseOrder)),
-            strict: false
-        );
+            if ($purchaseOrderTransactions->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'purchase_order_transaction_ids' => __('Select at least one purchase order item'),
+                ]);
+            }
 
-        $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
-        $stockDelivery->update([
-            'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
-        ]);
-
-        $purchaseOrder->update([
-            'delivery_state' => PurchaseOrderDeliveryStateEnum::from($stockDelivery->state->value),
-        ]);
-
-        foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
-            StoreStockDeliveryItem::run(
-                $stockDelivery,
-                $purchaseOrderTransaction->historicSupplierProduct,
-                $purchaseOrderTransaction->orgStock,
+            $stockDelivery = StoreStockDelivery::make()->action(
+                $purchaseOrder->parent,
                 array_merge([
-                    'state'         => StockDeliveryItemStateEnum::IN_PROCESS,
-                    'unit_quantity' => $purchaseOrderTransaction->quantity_ordered,
-                    'net_amount'    => $purchaseOrderTransaction->net_amount,
-                    'data'          => [
-                        'purchase_order_transaction_id' => $purchaseOrderTransaction->id,
-                    ],
-                ], $this->getExchanges($purchaseOrderTransaction))
+                    'reference'   => $this->newProcurementReference($purchaseOrder->parent, SerialReferenceModelEnum::STOCK_DELIVERY),
+                    'state'       => StockDeliveryStateEnum::IN_PROCESS,
+                    'date'        => now(),
+                    'currency_id' => $purchaseOrder->currency_id,
+                    'data'        => $this->getStockDeliveryData($purchaseOrder),
+                ], $this->getExchanges($purchaseOrder)),
+                strict: false
             );
-        }
 
-        $purchaseOrder->purchaseOrderTransactions()
-            ->whereIn('id', $purchaseOrderTransactions->modelKeys())
-            ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
-            ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
+            $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
+            $stockDelivery->update([
+                'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
+            ]);
+
+            $purchaseOrder->update([
+                'delivery_state' => PurchaseOrderDeliveryStateEnum::from($stockDelivery->state->value),
+            ]);
+
+            foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
+                StoreStockDeliveryItem::run(
+                    $stockDelivery,
+                    $purchaseOrderTransaction->historicSupplierProduct,
+                    $purchaseOrderTransaction->orgStock,
+                    array_merge([
+                        'state'         => StockDeliveryItemStateEnum::IN_PROCESS,
+                        'unit_quantity' => $purchaseOrderTransaction->quantity_ordered,
+                        'net_amount'    => $purchaseOrderTransaction->net_amount,
+                        'data'          => [
+                            'purchase_order_transaction_id' => $purchaseOrderTransaction->id,
+                        ],
+                    ], $this->getExchanges($purchaseOrderTransaction))
+                );
+            }
+
+            $purchaseOrder->purchaseOrderTransactions()
+                ->whereIn('id', $purchaseOrderTransactions->modelKeys())
+                ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+                ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
+
+            return $stockDelivery;
+        });
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
@@ -135,12 +142,15 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     {
         return $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
-            ->whereNotExists(
-                fn (Builder $items) => self::deliveryItemsOfTransaction($items)
-                    ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.stock_delivery_id', 'stock_delivery_items.stock_delivery_id')
-                    ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
-                    ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
-            );
+            ->whereNotExists(fn (Builder $items) => self::liveDeliveryItemsOfTransaction($items));
+    }
+
+    public static function liveDeliveryItemsOfTransaction(Builder $items): Builder
+    {
+        return self::deliveryItemsOfTransaction($items)
+            ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.stock_delivery_id', 'stock_delivery_items.stock_delivery_id')
+            ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
+            ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value]);
     }
 
     public static function deliveryItemsOfTransaction(Builder $items): Builder

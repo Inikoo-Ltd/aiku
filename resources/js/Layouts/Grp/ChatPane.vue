@@ -65,7 +65,7 @@ const openFullView = () => {
             v-if="chatPaneUrl"
             ref="pane"
             class="fixed inset-y-0 right-0 z-[21] w-full md:w-[var(--chat-pane)] flex flex-col bg-white border-l border-gray-200 shadow-xl"
-            :class="layout.messagingSidebar.show ? 'md:right-56' : (layout.messagingSidebar.micro ? 'md:right-4' : 'md:right-12')">
+            :class="layout.messagingSidebar.show ? 'md:right-56' : (layout.messagingSidebar.micro ? 'md:right-6' : 'md:right-12')">
             <div class="absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize hover:bg-[--app-accent] md:block" @pointerdown="startResize" />
             <div class="flex items-center justify-between gap-2 h-10 px-3 border-b border-gray-200 shrink-0">
                 <span class="text-sm font-semibold text-gray-700">{{ ctrans("Customer chats") }}</span>

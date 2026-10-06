@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\Log;
 class VerifyShopifyWebhook
 {
     /**
+     * Routes subscribed after signatures were checked from the start have no unsigned traffic to
+     * break, so they always refuse a bad signature. A forged products-deleted call would unlink a
+     * merchant's products.
+     */
+    private const array ALWAYS_ENFORCED_ROUTES = [
+        'webhooks.shopify.products_deleted',
+    ];
+
+    /**
      * Shopify signs every webhook body with the app secret. Routes that were never given this
      * middleware accepted anonymous callers, so while app.enforce_webhook_signatures is off an
      * unsigned call is recorded and allowed through: the log says whether any real traffic would
@@ -27,7 +36,7 @@ class VerifyShopifyWebhook
             return $next($request);
         }
 
-        if (!config('app.enforce_webhook_signatures')) {
+        if (!config('app.enforce_webhook_signatures') && !in_array($request->route()?->getName(), self::ALWAYS_ENFORCED_ROUTES, true)) {
             Log::warning('Unverified Shopify webhook allowed', [
                 'reason' => $refusal,
                 'route'  => $request->route()?->getName(),
@@ -52,6 +61,12 @@ class VerifyShopifyWebhook
         $shopifyUser = $request->route('shopifyUser');
 
         if (!$shopifyUser instanceof ShopifyUser) {
+            return true;
+        }
+
+        /* Deleting a shopify user renames it to a ulid, so a store that left can no longer match;
+           the signature still proves Shopify sent it, and the handler answers it with a 200. */
+        if ($shopifyUser->trashed()) {
             return true;
         }
 

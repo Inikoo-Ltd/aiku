@@ -22,7 +22,6 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
-use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
@@ -44,6 +43,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct as WorkshopGetWebBlockP
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -699,7 +699,7 @@ test('families that sold the same are listed newest first', function () {
 
         DB::table('product_categories')->where('id', $family->id)->update([
             'created_at'      => now()->subDays($daysAgo),
-            'state'           => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE->value,
+            'state'           => ProductCategoryStateEnum::ACTIVE->value,
             'show_in_website' => true,
         ]);
 
@@ -739,7 +739,7 @@ test('the families block leads with the hand picked order and falls back to late
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo), 'state' => ProductCategoryStateEnum::ACTIVE->value]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),
@@ -783,7 +783,7 @@ test('the top families block keeps ranking by sales and ignores the hand picked 
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo), 'state' => ProductCategoryStateEnum::ACTIVE->value]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),
@@ -820,7 +820,7 @@ test('the families overview block leads with the hand picked order too', functio
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo), 'state' => ProductCategoryStateEnum::ACTIVE->value]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),
@@ -861,7 +861,7 @@ test('the families under a department page default to the hand picked order', fu
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo), 'state' => ProductCategoryStateEnum::ACTIVE->value]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),
@@ -1248,6 +1248,7 @@ test('department families list takes collection families only from active collec
         ]);
         DB::table('collections')->where('id', $collection->id)->update(['state' => $state]);
 
+        DB::table('model_has_collections')->where('collection_id', $collection->id)->delete();
         DB::table('model_has_collections')->insert([
             'collection_id' => $collection->id,
             'model_type'    => $attachedModelType,

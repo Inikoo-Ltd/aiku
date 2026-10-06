@@ -13,6 +13,8 @@ const props = defineProps<{
 
 const rowHref = (row: TaskBadgeRow) => tasksRoute("list_all", { filter: row.filter, elements: { status: row.status } })
 
+const recentTooltip = (item: { title: string; body: string }) => [item.title, item.body].filter(Boolean).join(' — ')
+
 const todayTotal = computed(() => props.badges.today.done + props.badges.today.open)
 const todayPercent = computed(() => (todayTotal.value ? Math.round((props.badges.today.done / todayTotal.value) * 100) : 0))
 </script>
@@ -37,18 +39,21 @@ const todayPercent = computed(() => (todayTotal.value ? Math.round((props.badges
             </span>
         </div>
 
-        <ul class="divide-y divide-gray-100">
+        <ul>
             <li v-for="(row, key) in badges.mine" :key="key">
-                <Link :href="rowHref(row)" class="flex justify-between rounded px-1 py-1.5 hover:bg-gray-50" :class="row.count ? '' : 'text-gray-400'" @click="close()">
+                <Link :href="rowHref(row)" class="flex items-center justify-between gap-x-3 rounded px-1 py-1.5 hover:bg-gray-50" :class="row.count ? 'text-gray-800' : 'text-gray-400'" @click="close()">
                     <span>{{ row.label }}</span>
-                    <span class="font-medium tabular-nums" :class="key === 'overdue' && row.count ? 'text-red-600' : ''">{{ row.count }}</span>
+                    <span class="min-w-6 rounded-full px-1.5 text-center text-xs font-semibold tabular-nums"
+                        :class="row.count ? (key === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700') : 'text-gray-300'">
+                        {{ row.count }}
+                    </span>
                 </Link>
             </li>
         </ul>
 
         <div v-if="badges.recent.length" class="mt-3 border-t border-gray-200 pt-2">
             <div class="mb-1 text-xs text-gray-500">{{ ctrans("Recent") }}</div>
-            <Link v-for="item in badges.recent" :key="item.id" :href="item.route" class="block rounded px-1 py-1 transition duration-200 hover:bg-gray-50" @click="close()">
+            <Link v-for="item in badges.recent" :key="item.id" v-tooltip="recentTooltip(item)" :href="item.route" class="block rounded px-1 py-1 transition duration-200 hover:bg-gray-50" @click="close()">
                 <div class="flex justify-between gap-2">
                     <span class="flex min-w-0 items-center gap-1.5">
                         <span v-if="!item.read" class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" :title="ctrans('Not opened yet')" />

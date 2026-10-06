@@ -2,7 +2,7 @@
 title: Il canale Manual/API
 summary: Crea un canale Manual/API per vendere dal tuo sito, marketplace o app, inserire ordini a mano o inviarceli tramite la nostra API.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: manuale, api, canale di vendita, sito personale, token api, integrazione
 category: sales-channels
 series: manual
@@ -78,6 +78,8 @@ Apri <b>API</b> sotto il tuo canale. La pagina ha queste schede:
 - <b>API calls</b>: le richieste fatte dal tuo sistema.
 - <b>History</b>: le modifiche fatte sul tuo account.
 
+Parti dai clienti: ogni ordine API appartiene a un cliente, quindi il tuo sistema crea prima il cliente. [Creare clienti con l'API](/docs/creating-clients-with-the-api) ha un esempio completo di richiesta e risposta, ogni campo e il significato di ogni errore.
+
 ### Ottenere un token
 
 1. Premi <b>Generate API token</b>.
@@ -105,6 +107,7 @@ Se né il tuo saldo né le tue carte coprono l'ordine, l'ordine viene segnato <b
 - <b>I miei ordini non arrivano da soli.</b> Un canale Manual/API non raccoglie mai ordini da un sito. Creali nella pagina del cliente, oppure inviali dal tuo sistema tramite l'API. Se vendi su una piattaforma mostrata nella pagina <b>Add Sales Channel</b>, collega quella piattaforma come canale a sé.
 - <b>I miei prodotti non sono sul mio sito.</b> Non carichiamo nulla da un canale Manual/API. Caricali tu stesso nel tuo sito, con lo scarico CSV in <b>My Products</b> o tramite l'API.
 - <b>Ho perso il mio token API.</b> Non può essere mostrato di nuovo. Genera un nuovo token, mettilo nel tuo sistema ed elimina quello vecchio.
+- <b>L'API rifiuta di creare un cliente.</b> Invia l'indirizzo dentro un oggetto <b>address</b>, con il paese come codice ISO in <b>country_code</b>, per esempio <b>GB</b>. Vedi [Creare clienti con l'API](/docs/creating-clients-with-the-api).
 - <b>L'API risponde che non posso creare o cambiare ordini.</b> Il token è di sola lettura. Genera un token senza <b>Read only</b> spuntato.
 - <b>L'API rifiuta le mie richieste per un po'.</b> Ogni token può fare fino a 120 richieste al minuto. Rallenta il tuo sistema e riprova dopo un minuto.
 - <b>L'API dice "This order has no products yet".</b> Aggiungi almeno un prodotto all'ordine prima di inviarlo.

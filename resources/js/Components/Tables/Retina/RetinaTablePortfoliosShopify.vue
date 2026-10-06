@@ -567,7 +567,7 @@ onMounted(() => {
     </Message>
 
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onChecked="(item) => onChangeCheked(true, item)"
-        @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
+        @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'
         :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table"
         :rowColorFunction="(item) => {
             if (disableButtons(item)) {

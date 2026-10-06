@@ -67,6 +67,12 @@ class UpdateShippingFaireOrder extends OrgAction
                         'msg'    => Arr::get($result, 'error.message')
                     ];
                 } else {
+                    try {
+                        UpdateFaireOrder::make()->syncFaireTax($order);
+                    } catch (\Throwable $e) {
+                        Sentry::captureException($e);
+                    }
+
                     return [
                         'status' => 'success',
                         'msg'    => __('Faire order updated successfully')

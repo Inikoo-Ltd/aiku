@@ -69,6 +69,26 @@ class CreateExternalShop extends OrgAction
                     ]
                 ]
             ],
+            ShopEngineEnum::WIX->value => [
+                [
+                    'title'  => __('Detail'),
+                    'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'required' => true,
+                            'value'    => '',
+                        ],
+                        'name' => [
+                            'type'        => 'input',
+                            'label'       => __('Name'),
+                            'required'    => true,
+                            'value'       => '',
+                            'information' => __('After saving, the Wix app installer opens in a new tab. Install the app on the Wix site to connect it to this shop.'),
+                        ]
+                    ]
+                ]
+            ],
             default => []
         };
 

@@ -1324,7 +1324,8 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $ownLine   = $basketLine($ownChannel->customer);
     $otherLine = $basketLine($otherChannel->customer);
 
-    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $website = LaunchWebsite::make()->action(createWebsite($this->shop));
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
     $username = 'guard-'.Str::lower(Str::random(8));
     actingAs(StoreWebUser::make()->action($ownChannel->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
     MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->once();
@@ -1336,7 +1337,8 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($otherChannel->customer)->slug))->assertForbidden();
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $ownPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertSuccessful();
-    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk();
+    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('showcase.staging_url', 'https://canary.'.$website->domain.'/app'));
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();
     $this->getJson(route('retina.json.basket_transaction_product_data', $ownLine->id))->assertOk()->assertJsonPath('transaction_id', $ownLine->id);
 });
@@ -2000,6 +2002,29 @@ test('the stock push still sends stock to an archived listing and logs that it i
         ->and($responses[$active->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, null])
         ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
         ->and($responses[$deleted->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'This product is no longer in your Shopify store']);
+});
+
+test('a size the merchant added as a variant of another size listing goes to the product whose code the line carries, not to the listing (HELP-3711)', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'product-merchant-size-variant')->customerSalesChannel;
+    $newProduct = fn () => \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+
+    $small = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $small->update(['platform_product_id' => 'gid://shopify/Product/7800', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8800']);
+    $large = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $large->update(['platform_product_id' => 'gid://shopify/Product/7801', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8801']);
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7800', 'gid://shopify/ProductVariant/8899', Str::lower($large->item_code))?->id)->toBe($large->id)
+        ->and($large->refresh()->platform_product_id)->toBe('gid://shopify/Product/7801')
+        ->and($large->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8801')
+        ->and($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7800', 'gid://shopify/ProductVariant/8899', 'merchant-own-sku', false)?->id)->toBe($small->id);
+
+    $small->update(['platform_product_variant_id' => null]);
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7800', 'gid://shopify/ProductVariant/8899', Str::lower($large->item_code), false)?->id)->toBe($small->id);
 });
 
 test('two products linked to one shopify listing: orders go to the product whose code the line carries, never move another product onto it, and only one product sends it stock', function () {

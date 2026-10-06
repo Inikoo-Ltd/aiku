@@ -2,7 +2,7 @@
 title: Retirer des produits d'un canal
 summary: Retirez un produit de Mes produits, ou rompez seulement son lien avec votre boutique, et sachez ce qui arrive à la fiche de votre boutique dans chaque cas.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: produits, mes produits, retirer, supprimer, délier, arrêté
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ Sur un canal manuel, appuyez sur la croix rouge, <b>Remove product from list</b>
 
 Cela fonctionne sur les canaux de plateforme, pas sur un canal manuel.
 
-1. Cochez les produits dans la liste.
+1. Cochez les produits dans la liste. Pour cocher tous les produits de la page, cochez la case en haut de la colonne des cases. Pour aller plus vite, affichez plus de lignes par page avec le sélecteur sous la liste, jusqu'à 150.
 2. Appuyez sur l'un des boutons qui apparaissent au-dessus de la liste :
    - <b>Unlink (...)</b> : rompt le lien avec votre boutique. Les produits restent dans <b>Mes produits</b> et les fiches restent dans votre boutique.
    - <b>Unlink & Delete (...)</b> : rompt le lien et retire les produits de <b>Mes produits</b>. Les fiches restent dans votre boutique, supprimez-les donc là-bas si vous n'en voulez plus.
 
-Il n'y a pas de fenêtre de confirmation pour ces deux boutons. Vérifiez ce que vous avez coché avant d'appuyer.
+Les deux boutons ouvrent une fenêtre qui indique combien de produits vous avez cochés et vous demande de confirmer. Lisez-la avant d'appuyer sur <b>Yes</b> : aucune des deux actions ne peut être annulée. Après <b>Unlink & Delete</b>, les produits, avec les noms, prix et descriptions que vous leur avez donnés, disparaissent de <b>Mes produits</b>, et vous devrez les ajouter de nouveau vous-même si vous changez d'avis.
+
+Pour vider des centaines de produits, par exemple après en avoir importé trop par erreur, répétez ces étapes page par page : affichez 150 lignes, cochez la case en haut, appuyez sur <b>Unlink & Delete (...)</b>, et les produits suivants remontent dans la page. Lorsque vous retirez plus de 20 produits à la fois, nous les retirons en arrière-plan, environ un par seconde : actualisez la page après quelques minutes pour voir la liste sans eux.
 
 ## Retirer un lot
 

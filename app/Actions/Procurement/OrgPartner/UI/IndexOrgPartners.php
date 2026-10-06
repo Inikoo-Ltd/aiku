@@ -66,6 +66,7 @@ class IndexOrgPartners extends OrgAction
                 ? [
                     'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
                     'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
+                    'rescuable'                      => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
                 ]
                 : $this->sisterStats($orgPartner),
         ];

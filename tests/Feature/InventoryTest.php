@@ -1119,6 +1119,17 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
+test("UI Org Stock Family stocks sortable by cover", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+
+    get(route("grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStockFamily->slug
+    ]).'?index_sort=-stock_cover')->assertOk();
+})->depends('create org stock family');
+
 test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {
     $warehouse = Warehouse::first();
 
@@ -2606,6 +2617,21 @@ test('set org stock unit_barcode does not touch independent_barcode', function (
 
     $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => null]);
     expect($orgStock->unit_barcode)->toBeNull();
+});
+
+test('org stock carton barcode is kept once on the stock and shown as the third barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    UpdateOrgStock::make()->action($orgStock, ['carton_barcode' => ' 5050000000062C ']);
+    expect($stock->refresh()->carton_barcode)->toBe('5050000000062C')
+        ->and(collect(\App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes::run($orgStock->refresh()))->pluck('number', 'level')->get('carton'))->toBe('5050000000062C')
+        ->and(collect(\App\Actions\Goods\Stock\UI\GetStockShowcase::run($stock)['barcodes'])->pluck('level')->all())->toBe(['sko', 'unit', 'carton']);
+
+    UpdateOrgStock::make()->action($orgStock->refresh(), ['carton_barcode' => '']);
+    expect($stock->refresh()->carton_barcode)->toBeNull();
 });
 
 test('scan ignores the unit_barcode and matches only the sko barcode', function () {

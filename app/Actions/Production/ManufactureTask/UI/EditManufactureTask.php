@@ -10,8 +10,6 @@ namespace App\Actions\Production\ManufactureTask\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
-use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
-use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
@@ -97,29 +95,11 @@ class EditManufactureTask extends OrgAction
                                     'value'    => $manufactureTask->name,
                                     'required' => true
                                 ],
-                                'task_materials_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task materials cost'),
-                                    'value'    => $manufactureTask->task_materials_cost,
-                                    'required' => true
-                                ],
-                                'task_energy_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task energy cost'),
-                                    'value'    => $manufactureTask->task_energy_cost,
-                                    'required' => true
-                                ],
-                                'task_other_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task other cost'),
-                                    'value'    => $manufactureTask->task_other_cost,
-                                    'required' => true
-                                ],
-                                'task_work_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task work cost'),
-                                    'value'    => $manufactureTask->task_work_cost,
-                                    'required' => true
+                                'description' => [
+                                    'type'     => 'textarea',
+                                    'label'    => __('Description'),
+                                    'value'    => $manufactureTask->description,
+                                    'required' => false
                                 ],
                                 'is_piece_rate' => [
                                     'type'        => 'toggle',
@@ -130,40 +110,8 @@ class EditManufactureTask extends OrgAction
                                 ],
                                 'status' => [
                                     'type'     => 'toggle',
-                                    'label'    => __('status'),
+                                    'label'    => __('Active'),
                                     'value'    => $manufactureTask->status,
-                                    'required' => true
-                                ],
-                                'task_lower_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task lower target'),
-                                    'value'    => $manufactureTask->task_lower_target,
-                                    'required' => true
-                                ],
-                                'task_upper_target' => [
-                                    'type'     => 'input',
-                                    'label'    => __('task upper target'),
-                                    'value'    => $manufactureTask->task_upper_target,
-                                    'required' => true
-                                ],
-                                'operative_reward_terms' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardTermsEnum::values(),
-                                    'label'     => __('operative reward terms'),
-                                    'value'     => $manufactureTask->operative_reward_terms,
-                                    'required'  => true
-                                ],
-                                'operative_reward_allowance_type' => [
-                                    'type'      => 'select',
-                                    'options'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::values(),
-                                    'label'     => __('operative reward allowance type'),
-                                    'value'     => $manufactureTask->operative_reward_allowance_type,
-                                    'required'  => true
-                                ],
-                                'operative_reward_amount' => [
-                                    'type'     => 'input',
-                                    'label'    => __('operative reward amount'),
-                                    'value'    => $manufactureTask->operative_reward_amount,
                                     'required' => true
                                 ],
                                 // 'type' => [

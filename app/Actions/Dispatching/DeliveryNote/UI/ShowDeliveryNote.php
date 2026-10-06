@@ -279,8 +279,10 @@ class ShowDeliveryNote extends OrgAction
         return [
             'type'    => 'button',
             'style'   => 'save',
-            'label'   => __('Parts put back'),
-            'tooltip' => __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts->pluck('code')->filter()->implode(', ')]),
+            'label'   => $parts->isEmpty() ? __('Mark set parts not picked') : __('Parts put back'),
+            'tooltip' => $parts->isEmpty()
+                ? __('A part of a set sold only complete was not found. Press this to mark its other parts as not picked')
+                : __('A part of a set sold only complete was not found. Put back :parts on the shelf, then press this', ['parts' => $parts->pluck('code')->filter()->implode(', ')]),
             'parts'   => $parts->all(),
             'key'     => 'put-back-incomplete-sets',
             'route'   => [

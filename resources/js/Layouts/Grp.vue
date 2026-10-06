@@ -69,7 +69,7 @@ const isDesktop = useMediaQuery("(min-width: 1024px)")
 const isTablet = useMediaQuery("(min-width: 768px)")
 const maxAlertPopups = computed(() => isDesktop.value ? 5 : (isTablet.value ? 2 : 3))
 const { width: windowWidth } = useWindowSize()
-const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro ? 16 : 48))
+const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro || !isTablet.value ? 24 : 48))
 const alertPopupsWidth = computed(() => Math.min(340, windowWidth.value - alertPopupsRightPx.value - 8))
 const alertPopupsStyle = computed(() => ({ top: "3.5rem", right: `${alertPopupsRightPx.value}px` }))
 
@@ -285,8 +285,8 @@ const safeTheme = computed(() => {
             :class="[
 				usePage().component === 'Tickets/Ticket' ? 'pb-0' : usePage().component === 'Tasks/StaffTask' ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				'mr-4',
-				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
+				'mr-6',
+				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-6' : 'md:mr-12'),
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />

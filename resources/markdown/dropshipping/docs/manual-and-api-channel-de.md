@@ -2,7 +2,7 @@
 title: Der Manual/API-Kanal
 summary: Erstellen Sie einen Manual/API-Kanal, um von Ihrer eigenen Website, einem Marktplatz oder einer App aus zu verkaufen, Bestellungen von Hand aufzugeben oder sie über unsere API an uns zu senden.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: Manuell, API, Vertriebskanal, Eigene Website, API-Token, Integration
 category: sales-channels
 series: manual
@@ -78,6 +78,8 @@ Die API lässt Ihre Website oder App selbst tun, was Sie auf den Kanalseiten tun
 - <b>API calls</b>: die von Ihrem System gestellten Anfragen.
 - <b>History</b>: Änderungen an Ihrem Konto.
 
+Beginnen Sie mit den Kunden: Jede API-Bestellung gehört zu einem Kunden, daher legt Ihr System zuerst den Kunden an. [Creating clients with the API](/docs/creating-clients-with-the-api) enthält eine vollständige Beispielanfrage mit Antwort, jedes Feld und die Bedeutung jedes Fehlers.
+
 ### Ein Token erhalten
 
 1. Drücken Sie <b>Generate API token</b>.
@@ -105,6 +107,7 @@ Decken weder Ihr Guthaben noch Ihre Karten die Bestellung, wird sie als <b>Unpai
 - <b>My orders are not arriving by themselves.</b> Ein Manual/API-Kanal sammelt nie Bestellungen von einer Website. Erstellen Sie sie auf der Kundenseite, oder senden Sie sie über die API von Ihrem System aus. Verkaufen Sie auf einer auf der Seite <b>Add Sales Channel</b> gezeigten Plattform, verbinden Sie diese Plattform als eigenen Kanal.
 - <b>My products are not on my website.</b> Von einem Manual/API-Kanal laden wir nichts hoch. Laden Sie sie selbst in Ihre Website, mit dem CSV-Download unter <b>My Products</b> oder über die API.
 - <b>I lost my API token.</b> Es kann nicht erneut angezeigt werden. Erzeugen Sie ein neues Token, tragen Sie es in Ihr System ein und löschen Sie das alte.
+- <b>The API refuses to create a client.</b> Senden Sie die Adresse innerhalb eines <b>address</b>-Objekts, mit dem Land als ISO-Code in <b>country_code</b>, zum Beispiel <b>GB</b>. Siehe [Creating clients with the API](/docs/creating-clients-with-the-api).
 - <b>The API answers that I cannot create or change orders.</b> Das Token ist nur lesend. Erzeugen Sie ein Token ohne angehaktes <b>Read only</b>.
 - <b>The API refuses my requests for a short while.</b> Jedes Token kann bis zu 120 Anfragen pro Minute stellen. Verlangsamen Sie Ihr System und versuchen Sie es nach einer Minute erneut.
 - <b>The API says "This order has no products yet".</b> Fügen Sie der Bestellung mindestens ein Produkt hinzu, bevor Sie sie absenden.

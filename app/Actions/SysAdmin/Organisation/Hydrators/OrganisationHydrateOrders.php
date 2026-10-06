@@ -8,12 +8,10 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,7 +19,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class OrganisationHydrateOrders implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
 
     public string $jobQueue = 'urgent';
 
@@ -30,54 +27,26 @@ class OrganisationHydrateOrders implements ShouldBeUnique
         return $organisation->id;
     }
 
-
     public function handle(Organisation $organisation): void
     {
+        $groups = DB::table('orders')
+            ->selectRaw('state, status, handing_type, deleted_at is null as is_live, count(*) as total')
+            ->where('organisation_id', $organisation->id)
+            ->groupByRaw('1, 2, 3, 4')
+            ->get();
+
+        $liveGroups = $groups->where('is_live', true);
+
         $stats = [
-            'number_orders' => DB::table('orders')->where('organisation_id', $organisation->id)->count(),
+            'number_orders' => (int) $groups->sum('total'),
         ];
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'orders',
-                field: 'state',
-                enum: OrderStateEnum::class,
-                models: Order::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
-                }
-            )
-        );
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'orders',
-                field: 'status',
-                enum: OrderStatusEnum::class,
-                models: Order::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
-                }
-            )
-        );
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'orders',
-                field: 'handing_type',
-                enum: OrderHandingTypeEnum::class,
-                models: Order::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
-                }
-            )
-        );
+        foreach (['state' => OrderStateEnum::class, 'status' => OrderStatusEnum::class, 'handing_type' => OrderHandingTypeEnum::class] as $field => $enum) {
+            foreach ($enum::cases() as $case) {
+                $stats["number_orders_{$field}_".$case->snake()] = (int) $liveGroups->where($field, $case->value)->sum('total');
+            }
+        }
 
         $organisation->orderingStats()->update($stats);
     }
-
-
 }

@@ -2,7 +2,7 @@
 title: Rimuovere prodotti da un canale
 summary: Togli un prodotto da My Products, oppure interrompi solo il suo collegamento con il tuo negozio, e sappi cosa succede all'inserzione nel tuo negozio in ogni caso.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: prodotti, my products, rimuovi, elimina, scollega, fuori produzione
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ Su un canale manuale premi la croce rossa, <b>Remove product from list</b>. Non 
 
 Funziona sui canali di piattaforma, non su un canale manuale.
 
-1. Spunta i prodotti nell'elenco.
+1. Spunta i prodotti nell'elenco. Per spuntare tutti i prodotti della pagina, spunta la casella in cima alla colonna delle caselle. Per lavorare più in fretta, mostra più righe per pagina con il selettore sotto l'elenco, fino a 150.
 2. Premi uno dei pulsanti che compaiono sopra l'elenco:
    - <b>Unlink (...)</b>: interrompe il collegamento con il tuo negozio. I prodotti restano in <b>My Products</b> e le inserzioni restano nel tuo negozio.
    - <b>Unlink & Delete (...)</b>: interrompe il collegamento e rimuove i prodotti da <b>My Products</b>. Le inserzioni restano nel tuo negozio, quindi eliminale lì se non le vuoi più.
 
-Non c'è nessuna finestra di conferma per questi due pulsanti. Controlla cosa hai spuntato prima di premere.
+Entrambi i pulsanti aprono una finestra che mostra quanti prodotti hai spuntato e ti chiede di confermare. Leggila prima di premere <b>Yes</b>: nessuna delle due azioni può essere annullata. Dopo <b>Unlink & Delete</b>, i prodotti, con i nomi, i prezzi e le descrizioni che hai impostato per loro, spariscono da <b>My Products</b>, e dovrai aggiungerli di nuovo tu stesso se cambi idea.
+
+Per eliminare centinaia di prodotti, ad esempio dopo averne importati troppi per errore, ripeti questi passaggi pagina per pagina: mostra 150 righe, spunta la casella in cima, premi <b>Unlink & Delete (...)</b> e i prodotti successivi salgono nella pagina. Quando rimuovi più di 20 prodotti alla volta, li rimuoviamo in background, circa uno al secondo: aggiorna la pagina dopo qualche minuto per vedere l'elenco senza di essi.
 
 ## Rimuovere un pacchetto
 

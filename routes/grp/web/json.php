@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
+use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
@@ -266,6 +267,7 @@ Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-pro
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 Route::get('org-partner/{orgPartner}/purchase-order/{purchaseOrder}/org-stocks', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgPartner'])->name('org-partner.purchase-order-org-stocks');
 Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
+Route::get('partner-shopping-list-recent-uploads/{orgPartner:id}', IndexRecentPartnerShoppingListUploads::class)->name('org_partner.shopping_list.recent_uploads');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 

@@ -39,8 +39,6 @@ class IndexPartnerRescueItems extends OrgAction
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): LengthAwarePaginator
     {
-        abort_if($orgPartner->partner->is_manufacturing_hub, 404);
-
         $this->orgPartner = $orgPartner;
         $this->initialisation($organisation, $request);
 
@@ -49,30 +47,35 @@ class IndexPartnerRescueItems extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
-        $title = __('What :partner can rescue', ['partner' => $this->orgPartner->partner->name]);
+        $isHub = $this->orgPartner->partner->is_manufacturing_hub;
+        $title = $isHub
+            ? __('What to order from :partner', ['partner' => $this->orgPartner->partner->name])
+            : __('What :partner can rescue', ['partner' => $this->orgPartner->partner->name]);
+        $label = $isHub ? __('To order') : __('Rescue');
 
         return Inertia::render(
             'Procurement/PartnerRescueItems',
             [
-                'breadcrumbs'   => ShowOrgPartner::make()->getBreadcrumbs($this->orgPartner, $request->route()->originalParameters(), __('Rescue')),
+                'breadcrumbs'   => ShowOrgPartner::make()->getBreadcrumbs($this->orgPartner, $request->route()->originalParameters(), $label),
                 'title'         => $title,
                 'pageHead'      => [
                     'icon'          => [
-                        'icon'  => ['fal', 'fa-life-ring'],
-                        'title' => __('Rescue'),
+                        'icon'  => ['fal', $isHub ? 'fa-clipboard-list' : 'fa-life-ring'],
+                        'title' => $label,
                     ],
                     'model'         => $this->orgPartner->partner->name,
-                    'title'         => __('Rescue'),
+                    'title'         => $label,
                     'subNavigation' => $this->getOrgPartnerNavigation($this->orgPartner),
                 ],
                 'currency_code' => $this->orgPartner->organisation->currency->code,
                 'can_create_purchase_orders' => $this->canEdit,
                 'orgPartner'    => [
-                    'id'   => $this->orgPartner->id,
-                    'name' => $this->orgPartner->partner->name,
+                    'id'     => $this->orgPartner->id,
+                    'name'   => $this->orgPartner->partner->name,
+                    'is_hub' => $this->orgPartner->partner->is_manufacturing_hub,
                 ],
                 'rescueBuckets' => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0)['buckets'],
-                'draftReference' => $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->value('reference'),
+                'draftReference' => $this->orgPartner->partner->is_manufacturing_hub ? null : $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->value('reference'),
                 'items'         => $items,
             ]
         );

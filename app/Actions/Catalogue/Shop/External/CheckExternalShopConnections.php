@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Shop\External;
 
 use App\Actions\Catalogue\Shop\External\Faire\CheckExternalShopFaireConnection;
+use App\Actions\Catalogue\Shop\External\Wix\CheckExternalShopWixConnection;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use Lorisleiva\Actions\Concerns\AsCommand;
@@ -28,6 +29,8 @@ class CheckExternalShopConnections extends RetinaAction
     {
         if ($shop->engine == ShopEngineEnum::FAIRE) {
             CheckExternalShopFaireConnection::run($shop);
+        } elseif ($shop->engine == ShopEngineEnum::WIX) {
+            CheckExternalShopWixConnection::run($shop);
         } elseif ($shop->engine == ShopEngineEnum::SHOPIFY) {
             // TODO. The file below is not done yet anyway
             // CheckExternalShopShopifyConnection::run($shop);

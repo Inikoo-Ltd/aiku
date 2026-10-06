@@ -62,6 +62,24 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
         return $purchaseOrder;
     }
 
+    public function rules(): array
+    {
+        if ($this->asAction) {
+            return [];
+        }
+
+        return [
+            'counterparty_informed' => ['required', 'string', 'in:yes,Yes,YES'],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'counterparty_informed.*' => __('Type yes to confirm you have informed the supplier, agent or partner that this order is cancelled.'),
+        ];
+    }
+
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($purchaseOrder->organisation, $request);

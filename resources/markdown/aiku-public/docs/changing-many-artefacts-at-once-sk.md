@@ -51,6 +51,7 @@ Okno má kroky vľavo a zaškrtnuté artefakty vpravo.
 
 - **Task** (úloha): samotná práca, vybraná z výrobných úloh továrne. Písaním hľadáte podľa názvu alebo kódu.
 - **Units per artefact** (jednotky na artefakt): koľko jednotiek tejto úlohy potrebuje jeden artefakt. Pracovný príkaz na 10 artefaktov pri 2 jednotkách na artefakt žiada od remeselníka 20 jednotiek práce.
+- **Target units per hour** (cieľ jednotiek za hodinu): koľko jednotiek má remeselník na tomto kroku urobiť za hodinu pri základnej sadzbe. Ak ostane prázdne, použije sa údaj samotnej úlohy. Viac nižšie.
 - **Raw materials** (suroviny): čo krok spotrebuje na každú jednotku práce, s množstvom pre každú.
 
 Stlačte <b>Add step</b> (pridať krok) pre ďalšiu kartu. Šípky na karte ju posunú hore alebo dole a kôš ju odstráni. Kroky sú očíslované v poradí, v akom sa robia, krok 1 prvý, a remeselníci ich v tomto poradí vidia na výrobnej ploche. Úlohu možno v zozname použiť len raz. Ak úloha, ktorú potrebujete, ešte neexistuje, odkaz <b>Task missing? Create a manufacture task</b> (chýba úloha? vytvoriť výrobnú úlohu) vás zavedie na stránku, kde sa úlohy vytvárajú.
@@ -72,6 +73,14 @@ Artefakt s vlastnými surovinami dostane v zozname štítok <b>Own materials</b>
 Okno vám to pripomenie v žltom rámčeku nad tlačidlami. Tlačidlo na uloženie zostane sivé, kým nezaškrtnete <b>I understand the existing steps will be replaced</b> (rozumiem, že existujúce kroky budú nahradené). Tlačidlo hovorí, koľko artefaktov zmení, napríklad <b>Replace steps on 5 artefacts</b> (nahradiť kroky na 5 artefaktoch).
 
 **Pracovné príkazy, ktoré už bežia.** Pracovné príkazy, ktoré sú ešte otvorené, dostanú nové kroky. Odstránený krok z nich zmizne len vtedy, ak ho ešte nikto nezačal. Práca už zaznamenaná na výrobnej ploche zostáva.
+
+## Ciele a platové stupne
+
+**Target units per hour** pri kroku je dolný cieľ pre daný produkt. Remeselníci sú platení za hodinu a sadzba rastie s tým, koľko urobia za hodinu: každý platový stupeň výroby (Tier 0 až Tier 3) začína na násobku tohto cieľa. Na karte **Manufacture tasks** artefaktu každý krok s cieľom ukazuje počet jednotiek za hodinu potrebný pre každý stupeň a hodinovú sadzbu, ktorú platí. Stupne a ich sadzby sú rovnaké pre celú výrobu, takže cieľ je jediný údaj, ktorý sa nastavuje pre každý produkt.
+
+Cieľ sa dá nastaviť na jednom artefakte na jeho karte **Manufacture tasks** alebo pre celý sortiment naraz v jednotnom okne opísanom vyššie. Úlohy už nenesú náklady, ciele ani odmeny: úloha je len názov druhu práce.
+
+**Práca pod cieľom.** Keď remeselník dokončí krok a jeho počet jednotiek za hodinu je pod cieľom kroku, záznam sa na karte **Performance** označí ako **Under target / action required**. Vedúci výroby ho otvorí cez **Log reason**, vyberie dôvod (porucha stroja, nedostatok materiálu, kvalita alebo prepracovanie, zaškolenie pracovníka, iné) a môže pridať poznámku. Zaškrtnutím **Under target only** nad zoznamom uvidíte len tieto záznamy. Riadok každého pracovníka ukazuje, koľko jeho záznamov ešte čaká na dôvod.
 
 ## Čo vyradenie z prevádzky robí a nerobí
 

@@ -27,6 +27,8 @@ class SendChatMessageByGmail
 {
     use AsAction;
 
+    public const int MAX_ATTACHED_BYTES = 18 * 1024 * 1024;
+
     /**
      * @return array<int, object>
      */
@@ -191,9 +193,16 @@ class SendChatMessageByGmail
             $signature = $agent?->signature ?: '';
         }
 
-        $bodyPart = $this->bodyPart($chatMessage->message_text ?? '', $signature);
+        [$attachments, $linkedFiles] = self::splitByGmailLimit($chatMessage->attachedFiles());
 
-        $attachments = $chatMessage->attachedFiles();
+        $messageText = $chatMessage->message_text ?? '';
+
+        foreach ($linkedFiles as $linkedFile) {
+            $messageText .= "\n\n📎 ".($linkedFile->name ?: $linkedFile->file_name).' ('.round($linkedFile->size / 1024 / 1024, 1).'MB): '
+                .route('grp.api.chats.chat.attachment.download', ['ulid' => $linkedFile->ulid]);
+        }
+
+        $bodyPart = $this->bodyPart(trim($messageText), $signature);
 
         if ($attachments->isEmpty()) {
             return implode("\r\n", [...$headers, ...$bodyPart]);
@@ -226,6 +235,26 @@ class SendChatMessageByGmail
         $lines[] = "--{$boundary}--";
 
         return implode("\r\n", $lines);
+    }
+
+    /**
+     * Gmail refuses a mail over 25MB once base64 has grown it by a third, so files are attached
+     * in order while they fit in 18MB and the rest go as download links in the body.
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: \Illuminate\Support\Collection}
+     */
+    public static function splitByGmailLimit(\Illuminate\Support\Collection $files): array
+    {
+        $attachedBytes = 0;
+
+        return $files->partition(function ($file) use (&$attachedBytes) {
+            if ($attachedBytes + $file->size > self::MAX_ATTACHED_BYTES) {
+                return false;
+            }
+            $attachedBytes += $file->size;
+
+            return true;
+        })->map->values()->all();
     }
 
     /**
