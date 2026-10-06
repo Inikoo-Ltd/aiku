@@ -45,8 +45,15 @@ class OfferHydrateOrders implements ShouldBeUnique
             ->distinct('order_id')
             ->count('order_id');
 
+        $numberCustomers = DB::connection('aiku_no_sticky')->table('transaction_has_offer_allowances')
+            ->join('orders', 'orders.id', '=', 'transaction_has_offer_allowances.order_id')
+            ->where('transaction_has_offer_allowances.offer_id', $offer->id)
+            ->distinct('orders.customer_id')
+            ->count('orders.customer_id');
+
         $stats = [
-            'number_orders' => $numberOrders
+            'number_orders'    => $numberOrders,
+            'number_customers' => $numberCustomers,
         ];
 
         $offer->stats()->update($stats);

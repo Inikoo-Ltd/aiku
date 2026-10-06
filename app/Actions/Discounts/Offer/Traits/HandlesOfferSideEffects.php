@@ -31,7 +31,7 @@ trait HandlesOfferSideEffects
         ShopHydrateOffersData::run($offer->shop_id);
 
 
-        if ($offer->voucher) {
+        if ($offer->voucher || $offer->hasCustomerList()) {
             CleanFinishedVouchers::run($offer->id);
         }
 

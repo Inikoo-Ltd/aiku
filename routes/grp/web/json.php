@@ -39,6 +39,7 @@ use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
+use App\Actions\Discounts\Offer\Json\GetVoucherCustomerListPreview;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInShop;
@@ -224,6 +225,7 @@ Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNo
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
+Route::get('shop/{shop:id}/voucher-customer-list-preview', GetVoucherCustomerListPreview::class)->name('shop.voucher_customer_list_preview');
 
 
 Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');

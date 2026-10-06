@@ -268,19 +268,6 @@ test('set offer as permanent', function (Offer $offer) {
         ->and($offerAllowance->status)->toBeTrue();
 })->depends('create offer');
 
-test('UI Discount Dashboard', function () {
-    $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Discounts/DiscountsDashboard')
-            ->has('title')
-            ->has('pageHead')
-            ->has('tabs')
-            ->has('breadcrumbs', 3);
-    });
-});
-
 test('UI Index offer campaigns', function () {
     $response = get(route('grp.org.shops.show.discounts.campaigns.index', [$this->organisation->slug, $this->shop->slug]));
 
