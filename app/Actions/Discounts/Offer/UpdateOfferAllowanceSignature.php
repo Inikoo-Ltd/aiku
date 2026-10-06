@@ -54,6 +54,9 @@ class UpdateOfferAllowanceSignature extends OrgAction
                 } else {
                     $allowanceSignature .= Arr::get($offerAllowance->data, 'percentage_off', 'error');
                 }
+                if ($categoryIds = Arr::get($offerAllowance->data, 'category_ids')) {
+                    $allowanceSignature .= '@'.implode(',', $categoryIds);
+                }
             } elseif ($offerAllowance->type == OfferAllowanceType::GIFT) {
                 $allowanceSignature .= Arr::get($offerAllowance->data, 'product_id', 'error');
             } elseif ($offerAllowance->type == OfferAllowanceType::AMOUNT_OFF) {

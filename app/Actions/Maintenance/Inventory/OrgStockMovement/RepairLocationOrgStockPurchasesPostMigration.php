@@ -10,8 +10,7 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Maintenance\Inventory\OrgStockMovement\Traits\CanRepairOrgStockMovements;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -72,16 +71,8 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
         if (!$dryRun) {
             $orgStock->refresh();
 
-            foreach ($orgStock->locations as $location) {
-                $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
-                $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
-
-                UpdateLocationOrgStock::run(
-                    $locationOrgStock,
-                    [
-                        'quantity' => $stockQuantity
-                    ]
-                );
+            foreach ($orgStock->locationOrgStocks as $locationOrgStock) {
+                SyncLocationOrgStockQuantityFromMovements::run($locationOrgStock);
             }
 
             $orgStock->refresh();

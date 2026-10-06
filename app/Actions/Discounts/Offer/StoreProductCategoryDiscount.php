@@ -42,6 +42,21 @@ class StoreProductCategoryDiscount extends OrgAction
             Arr::wrap(Arr::pull($modelData, 'product_category_ids') ?? Arr::pull($modelData, 'product_category_id'))
         );
 
+        if (Arr::pull($modelData, 'combine') && count($productCategoryIds) > 1) {
+            if (ProductCategory::whereIn('id', $productCategoryIds)->distinct()->count('type') > 1) {
+                throw ValidationException::withMessages([
+                    'product_category_ids' => __('Categories counted together must all be departments, all sub-departments or all families'),
+                ]);
+            }
+
+            $offer = $this->handle(array_merge($modelData, [
+                'product_category_id' => Arr::first($productCategoryIds),
+                'category_ids'        => array_values($productCategoryIds),
+            ]));
+
+            return ['offers' => array_filter([$offer]), 'skipped' => $offer ? 0 : 1];
+        }
+
         $offers  = [];
         $skipped = 0;
 
@@ -72,6 +87,8 @@ class StoreProductCategoryDiscount extends OrgAction
     public function handle(array $modelData): ?Offer
     {
         $productCategory = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
+        $categoryIds     = Arr::pull($modelData, 'category_ids', []);
+        $categoryCodes   = $categoryIds ? ProductCategory::whereIn('id', $categoryIds)->pluck('code')->all() : [$productCategory->code];
 
         $targetCategory = $productCategory;
         if ($targetCategoryId = Arr::pull($modelData, 'target_product_category_id')) {
@@ -106,7 +123,7 @@ class StoreProductCategoryDiscount extends OrgAction
         );
 
 
-        $code = Str::lower($offerCampaign->code.'-'.$productCategory->code);
+        $code = Str::lower($offerCampaign->code.'-'.implode('-', $categoryCodes));
         data_set($modelData, 'code', $code, false);
 
         if (!Arr::has($modelData, 'name')) {
@@ -114,7 +131,7 @@ class StoreProductCategoryDiscount extends OrgAction
             data_set(
                 $modelData,
                 'name',
-                Translate::run('Category Discount', $english, $productCategory->shop->language, 'catalogue').' '.$productCategory->code
+                Translate::run('Category Discount', $english, $productCategory->shop->language, 'catalogue').' '.implode(', ', $categoryCodes)
             );
         }
 
@@ -139,6 +156,19 @@ class StoreProductCategoryDiscount extends OrgAction
             );
         }
 
+        $allowanceData = [
+            'percentage_off' => $percentageOff,
+            'category_type'  => $targetCategory->type,
+            'category_id'    => $targetCategory->id
+        ];
+
+        if ($categoryIds) {
+            data_set($modelData, 'trigger_data.category_ids', $categoryIds);
+            if ($targetCategory->is($productCategory)) {
+                $allowanceData['category_ids'] = $categoryIds;
+            }
+        }
+
         $targetType = match ($targetCategory->type) {
             ProductCategoryTypeEnum::DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
             ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
@@ -154,11 +184,7 @@ class StoreProductCategoryDiscount extends OrgAction
                     'target_type' => $targetType,
                     'target_id'   => $targetCategory->id,
                     'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                    'data'        => [
-                        'percentage_off' => $percentageOff,
-                        'category_type'  => $targetCategory->type,
-                        'category_id'    => $targetCategory->id
-                    ]
+                    'data'        => $allowanceData
                 ]
             ]
         );
@@ -214,6 +240,7 @@ class StoreProductCategoryDiscount extends OrgAction
             'product_category_id'        => ['required_without:product_category_ids', 'integer', 'exists:product_categories,id'],
             'product_category_ids'       => ['required_without:product_category_id', 'array', 'min:1'],
             'product_category_ids.*'     => ['integer', 'exists:product_categories,id'],
+            'combine'                    => ['sometimes', 'boolean'],
             'target_product_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
         ];
     }

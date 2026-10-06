@@ -9064,6 +9064,7 @@ test('a general question is answered from the knowledge base entry jev picks, an
         ],
         isset($questions['ask'])   => ['ask' => ['type' => 'choice', 'choice' => 'ship_to_country', 'probabilities' => ['ship_to_country' => 0.96]]],
         isset($questions['entry']) => ['entry' => ['type' => 'choice', 'choice' => 'e'.$note->id, 'probabilities' => ['e'.$note->id => 0.9, 'none' => 0.1]]],
+        isset($questions['covered']) => ['needs_reply' => ['type' => 'noul', 'noul' => 0.9], 'covered' => ['type' => 'score', 'score' => 3]],
         default                    => null,
     });
     $quote = 'We cannot ship from the UK to Germany because we do not have a LUCID registration.';
@@ -12093,7 +12094,7 @@ test('a website guest on a test email domain is put in spam by rule', function (
         ->and($rule)->toBeNull();
 });
 
-test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice', function () {
+test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice, vague buyers and replies to conversations put aside included', function () {
     Bus::fake();
     config()->set('services.openrouter.api_key', 'or-key');
 
@@ -12108,9 +12109,9 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
     $this->shop->update(['settings' => $settings]);
 
     $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
-    $message = fn (string $id, string $from, string $subject, array $extraHeaders = []) => \Illuminate\Support\Facades\Http::response([
+    $message = fn (string $id, string $from, string $subject, array $extraHeaders = [], ?string $threadId = null) => \Illuminate\Support\Facades\Http::response([
         'id'       => $id,
-        'threadId' => "t$id",
+        'threadId' => $threadId ?? "t$id",
         'labelIds' => ['SPAM', 'UNREAD'],
         'payload'  => [
             'mimeType' => 'multipart/mixed',
@@ -12129,12 +12130,14 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp2*' => $message('sp2', 'Deals <deals@promo.example.net>', 'Grow your SEO', [['name' => 'List-Unsubscribe', 'value' => '<mailto:x@promo.example.net>']]),
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp3*' => $message('sp3', 'New Shop <owner@newshop.example.net>', 'Wholesale account'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp4*' => $message('sp4', 'Prince <prince@scam.example.net>', 'Urgent transfer'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp5*' => $message('sp5', 'Sourcing <buyer@sourcing.example.net>', 'Send your price list'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp6*' => $message('sp6', 'New Shop <owner@newshop.example.net>', 'Re: Wholesale account', [], 'tsp3'),
         'openrouter.ai/api/alpha/decisions'                    => \Illuminate\Support\Facades\Http::sequence()
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
             ]])
-            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'account_warning', 'probabilities' => ['account_warning' => 0.7, 'none' => 0.3]]]])
+            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['link_to_details' => 0.35, 'none' => 0.65]]]])
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.35, 'vague_buyer' => 0.3, 'customer_request' => 0.05]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.9]],
@@ -12142,6 +12145,10 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.6, 'scam' => 0.4]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'payment_copy', 'probabilities' => ['payment_copy' => 0.7, 'none' => 0.3]],
+            ]])
+            ->push(['answers' => [
+                'kind'      => ['type' => 'choice', 'choice' => 'vague_buyer', 'probabilities' => ['vague_buyer' => 0.5, 'prospect' => 0.4]],
+                'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
             ]]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LI', 'name' => 'aiku/imported'],
@@ -12177,7 +12184,14 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::PROSPECT)
         ->and($stranger->is_possible_scam)->toBeFalse()
         ->and($fromCustomer->spam_rescue_kind)->toBeNull()
-        ->and($inbound::run($this->shop, 'sp4'))->toBeNull();
+        ->and($inbound::run($this->shop, 'sp4'))->toBeNull()
+        ->and($inbound::run($this->shop, 'sp5'))->toBeNull();
+
+    $stranger->chatSession->update(['is_spam' => true]);
+    $askedBeforeReply = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->count();
+
+    expect($inbound::run($this->shop, 'sp6'))->toBeNull()
+        ->and(\Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->count())->toBe($askedBeforeReply);
 
     $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
         ->map(fn ($pair) => $pair[0]->data())->first();
@@ -12186,7 +12200,9 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($filed('sp3'))->toBe(['addLabelIds' => ['LU'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
         ->and($filed('sp0'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
         ->and($filed('sp2'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
-        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
+        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp5'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp6'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
 
     \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop->fresh());
 
@@ -12388,6 +12404,7 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
         'wants_something' => $noul(0.9), 'problem' => $noul(0.97), 'about_existing_order' => $noul(0.95), 'one_question' => $noul(0.2),
         'act'             => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
         'problem_kind'    => ['type' => 'choice', 'choice' => 'damaged', 'probabilities' => ['damaged' => 0.95]],
+        'covered'         => ['type' => 'score', 'score' => 3],
     ]);
 
     $reply = 'Hello, I am sorry two mugs arrived broken. Could you send a photo of each mug and of the box? [[agent: replacement or credit?]]';

@@ -382,7 +382,23 @@ const irisOffersData = computed(() => {
                         </div>
 
                         <!-- Product Category -->
-                        <div v-if="data.offer.data_allowance_signature?.product_category" class="flex justify-between gap-4">
+                        <div v-if="data.offer.trigger_categories?.length" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Product categories") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%] flex flex-col items-end">
+                                <Link
+                                    v-for="category in data.offer.trigger_categories"
+                                    :key="category.slug"
+                                    :href="getCategoryLink(category)"
+                                    class="secondaryLink"
+                                >
+                                    {{ category.name }}
+                                </Link>
+                            </dd>
+                        </div>
+
+                        <div v-else-if="data.offer.data_allowance_signature?.product_category" class="flex justify-between gap-4">
                             <dt class="text-gray-500">
                                 {{ ctrans("Product category") }}
                             </dt>

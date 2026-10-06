@@ -32,6 +32,7 @@ class ArtefactsResource extends JsonResource
             'artefact_family_slug' => $this->artefact_family_slug,
             'recommended_batch_size' => $this->recommended_batch_size,
             'packed_in'              => $this->packed_in,
+            'org_stock_code'         => $this->org_stock_code,
             'batch_in_skos'          => $this->recommended_batch_size && $this->packed_in
                 ? round($this->recommended_batch_size / $this->packed_in, 2)
                 : null,
