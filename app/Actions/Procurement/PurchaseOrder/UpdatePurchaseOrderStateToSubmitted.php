@@ -18,7 +18,9 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -130,6 +132,11 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->initialisation($purchaseOrder->organisation, []);
 
         return $this->handle($purchaseOrder);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

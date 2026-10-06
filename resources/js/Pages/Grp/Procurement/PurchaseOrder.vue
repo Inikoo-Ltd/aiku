@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -339,6 +339,33 @@ const deliveryScopeModalOpen = ref(false)
 const deliveryItemsModalOpen = ref(false)
 const estimatedDeliveryDateAction = ref<any>(null)
 const newStockDeliveryAction = ref<any>(null)
+let partnerOrderPoll: ReturnType<typeof setInterval> | null = null
+const stopPartnerOrderPoll = () => {
+	if (partnerOrderPoll) {
+		clearInterval(partnerOrderPoll)
+		partnerOrderPoll = null
+	}
+}
+watch(
+	() => props.data.data.is_partner && props.data.data.state === "submitted",
+	(isWaitingForPartnerOrder) => {
+		stopPartnerOrderPoll()
+		if (!isWaitingForPartnerOrder) {
+			return
+		}
+		let attempts = 0
+		partnerOrderPoll = setInterval(() => {
+			if (++attempts > 30) {
+				stopPartnerOrderPoll()
+				return
+			}
+			router.reload()
+		}, 4000)
+	},
+	{ immediate: true }
+)
+onUnmounted(stopPartnerOrderPoll)
+
 const selectedDeliveryItemIds = ref<number[]>([])
 
 const formatDate = (date: Date | null): string | null => {

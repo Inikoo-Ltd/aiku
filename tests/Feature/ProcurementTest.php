@@ -5028,6 +5028,9 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
 
+        expect((float) $line->refresh()->net_amount)->toBe((float) $order->transactions()->first()->net_amount)
+            ->and((float) $purchaseOrder->cost_items)->toBe((float) $order->transactions()->first()->net_amount);
+
         $sellerOrdersBefore = \App\Models\Ordering\Order::where('customer_reference', $purchaseOrder->reference)->count();
         expect(SendPartnerPurchaseOrderToSeller::run($purchaseOrder))->toBeNull()
             ->and(\App\Models\Ordering\Order::where('customer_reference', $purchaseOrder->reference)->count())->toBe($sellerOrdersBefore)
