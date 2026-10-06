@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
@@ -25,6 +25,7 @@ import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
+import Toggle from '@/Components/Pure/Toggle.vue'
 
 library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
 
@@ -207,8 +208,33 @@ async function onSaveQuantity(item: any, form: any) {
 
 const deletingId = ref<number | null>(null)
 
+const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode'
+
+function readBraveMode(): boolean {
+    try {
+        return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === '1'
+    } catch {
+        return false
+    }
+}
+
+const isBraveMode = ref(readBraveMode())
+
+watch(isBraveMode, (value) => {
+    try {
+        localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? '1' : '0')
+    } catch {
+        return
+    }
+})
+
 function confirmDeleteItem(event: MouseEvent, item: any) {
     if (!item.deleteRoute) {
+        return
+    }
+
+    if (isBraveMode.value) {
+        onDeleteItem(item)
         return
     }
 
@@ -330,21 +356,33 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess && levels.length > 1" #before-table>
-            <div class="flex items-end gap-1 border-b border-gray-200 px-3 sm:px-4">
-                <button
-                    v-for="item in levels"
-                    :key="item.key"
-                    type="button"
-                    class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
-                    :class="item.key === currentLevel
-                        ? 'border-indigo-500 text-indigo-600 font-medium'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    @click="currentLevel = item.key"
+        <template v-if="isInProcess" #before-table>
+            <div class="flex items-end justify-between gap-3 border-b border-gray-200 px-3 sm:px-4">
+                <div class="flex items-end gap-1">
+                    <template v-if="levels.length > 1">
+                        <button
+                            v-for="item in levels"
+                            :key="item.key"
+                            type="button"
+                            class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
+                            :class="item.key === currentLevel
+                                ? 'border-indigo-500 text-indigo-600 font-medium'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            @click="currentLevel = item.key"
+                        >
+                            <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
+                            {{ item.tab }}
+                        </button>
+                    </template>
+                </div>
+                <label
+                    v-tooltip="ctrans('When on, Remove deletes the product straight away without asking to confirm')"
+                    class="mb-1.5 flex cursor-pointer items-center gap-2 text-sm"
+                    :class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'"
                 >
-                    <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
-                    {{ item.tab }}
-                </button>
+                    <Toggle v-model="isBraveMode" />
+                    {{ ctrans('Brave mode') }}
+                </label>
             </div>
         </template>
 
