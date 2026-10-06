@@ -676,9 +676,9 @@ interface SelectedAttachment {
 }
 
 const selectedFiles = ref<SelectedAttachment[]>([])
-useComposerAttachmentDraft(() => props.session?.ulid, selectedFiles, () => [])
+useComposerAttachmentDraft("chat-selectedFiles", () => props.session?.ulid, selectedFiles, () => [])
 const isEmailNotif = ref(false)
-useComposerAttachmentDraft(() => props.session?.ulid, isEmailNotif, () => false)
+useComposerAttachmentDraft("chat-isEmailNotif", () => props.session?.ulid, isEmailNotif, () => false)
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 

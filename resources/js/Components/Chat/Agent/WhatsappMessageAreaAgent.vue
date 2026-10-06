@@ -334,9 +334,9 @@ const { rejectionFor } = useUploadLimits()
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
-useComposerAttachmentDraft(() => props.session?.ulid, selectedFile, () => null)
-useComposerAttachmentDraft(() => props.session?.ulid, previewUrl, () => null)
-useComposerAttachmentDraft(() => props.session?.ulid, previewType, () => null)
+useComposerAttachmentDraft("whatsapp-selectedFile", () => props.session?.ulid, selectedFile, () => null)
+useComposerAttachmentDraft("whatsapp-previewUrl", () => props.session?.ulid, previewUrl, () => null)
+useComposerAttachmentDraft("whatsapp-previewType", () => props.session?.ulid, previewType, () => null)
 
 const handleImageSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement)?.files?.[0]
