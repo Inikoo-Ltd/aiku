@@ -91,7 +91,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
 
             $wanted = round(min((float) ($line['quantity'] ?? $item->quantity), (float) $item->quantity, $available), 3);
             if ($wanted <= 0) {
-                $skipped[] = ['id' => $item->id, 'reason' => 'no stock available to pre-pick'];
+                $skipped[] = ['id' => $item->id, 'reason' => 'no free stock: the shelf is already promised to earlier pre-picks'];
                 continue;
             }
 
@@ -200,8 +200,17 @@ class PrePickPartnerShoppingListItems extends OrgAction
         return $this->handle($seller, $this->validatedData['lines'], $wholeLinesOnly);
     }
 
-    public function htmlResponse(): RedirectResponse
+    /** @param array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>} $result */
+    public function htmlResponse(array $result): RedirectResponse
     {
-        return Redirect::back();
+        if ($result['skipped'] === []) {
+            return Redirect::back();
+        }
+
+        return Redirect::back()->with('notification', [
+            'status'      => $result['pre_picked'] ? 'warning' : 'error',
+            'title'       => __(':count lines not pre-picked', ['count' => count($result['skipped'])]),
+            'description' => collect($result['skipped'])->pluck('reason')->unique()->map(fn (string $reason) => __($reason))->implode('; '),
+        ]);
     }
 }

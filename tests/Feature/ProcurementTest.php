@@ -6661,6 +6661,32 @@ test('pre-pick list only shows partner lines that have stock behind them', funct
     expect($props['data']['data'])->toBe([]);
 });
 
+test('pre-pick list caps can pick at stock not already promised and says why a pre-pick is refused', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $withStock   = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $withStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$withStock->stock])[0];
+    $sellerStock->update(['quantity_available' => 12]);
+
+    submittedPartnerShoppingListItem($this->orgPartner, $withStock, ['quantity' => 12])->update(['pre_picked_at' => now()]);
+    $waiting = submittedPartnerShoppingListItem($this->orgPartner, $withStock, ['quantity' => 5]);
+
+    $props = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
+        ->assertOk()->viewData('page')['props'];
+
+    expect((float) collect($props['data']['data'])->firstWhere('id', $waiting->id)['can_pick'])->toBe(0.0);
+
+    $this->post(route('grp.org.productions.show.pre_pick.pick', [$seller->slug, $production->slug]), ['lines' => [['id' => $waiting->id, 'quantity' => 5]]])
+        ->assertRedirect()
+        ->assertSessionHas('notification', fn (array $notification) => $notification['status'] === 'error' && str_contains($notification['description'], 'already promised'));
+
+    expect($waiting->fresh()->pre_picked_at)->toBeNull();
+});
+
 test('production queue counts feed the sidebar and ignore deleted lines', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $seller     = $this->orgPartner->partner;
