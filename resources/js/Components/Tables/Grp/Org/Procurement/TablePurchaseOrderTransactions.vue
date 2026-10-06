@@ -16,6 +16,7 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderItemStockInfo.vue'
+import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSuggestButton.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -471,16 +472,16 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </div>
                 <div v-else-if="item.partner_stock !== null || item.partner_units_per_carton" class="text-xs text-gray-500">
                     <template v-if="item.partner_stock !== null">
-                        {{ ctrans('Partner stock') }}: <span class="font-semibold text-gray-700">{{ locale.number(Math.round(item.partner_stock)) }}</span>
+                        {{ ctrans('Partner stock') }}: <span class="font-semibold text-gray-700">{{ locale.number(Math.round(item.partner_stock)) }}</span> SKOs
                     </template>
                     <span
                         v-if="item.partner_units_per_carton"
                         v-tooltip="ctrans('How the partner buys it from its supplier. Often out of date and different in each organisation: a guide only, check before ordering in cartons')"
                         class="cursor-help">
-                        <template v-if="item.partner_stock !== null">· </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
+                        <template v-if="item.partner_stock !== null"> | </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
                     </span>
                 </div>
-                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" :isOrderClosed="isTransactionClosed(item)" @suggest="(skos) => applySuggestion(item, skos)" />
+                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" :isOrderClosed="isTransactionClosed(item)" />
             </div>
         </template>
 
@@ -505,7 +506,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end items-center">
+            <div v-if="isInProcess" class="flex flex-col items-end">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
                     isWithRefreshModel
@@ -515,6 +516,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @update:modelValue="(value) => (typedSkos[item.id] = (Number(value) * unitsPerLevel(item)) / (Number(item.units_per_pack) || 1))"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+                <PurchaseOrderSuggestButton :item="item" :isPartner="isPartner" :currentSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>

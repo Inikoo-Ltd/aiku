@@ -6,6 +6,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
+import { usePurchaseOrderStockCover } from "@/Composables/usePurchaseOrderStockCover"
 
 interface QuarterUsage {
 	period: string
@@ -20,29 +21,16 @@ const props = defineProps<{
 	isOrderClosed?: boolean
 }>()
 
-const emit = defineEmits<{
-	(e: "suggest", skos: number): void
-}>()
-
 const locale = useLocaleStore()
 const routeParams = route().params
 
-const MAX_DAYS = 730
+const { MAX_DAYS, pack, cover, dailyUsage, leadDays, overstockDays, stock, comingDeliveries, otherOrders, incoming, coverDays, hasHistory, suggestion, weeksLabel } =
+	usePurchaseOrderStockCover(
+		() => props.item,
+		() => props.isPartner
+	)
 
-const pack = computed(() => Number(props.item.units_per_pack) || 1)
-const cover = computed(() => props.item.stock_cover ?? null)
-const dailyUsage = computed(() => Number(cover.value?.daily_usage) || 0)
-const leadDays = computed(() => Number(cover.value?.lead_time_days) || 14)
-const overstockDays = computed(() => Number(cover.value?.overstock_days) || 120)
-const stock = computed(() => Math.max(0, Number(props.item.stock_in_locations) || 0))
-
-const comingDeliveries = computed<any[]>(() => props.item.stock_deliveries?.coming ?? [])
-const otherOrders = computed<any[]>(() => props.item.other_open_purchase_orders ?? [])
-const incoming = computed(
-	() =>
-		comingDeliveries.value.reduce((total, delivery) => total + Number(delivery.quantity || 0), 0) / pack.value +
-		otherOrders.value.reduce((total, order) => total + Number(order.quantity_ordered || 0), 0) / pack.value
-)
+const recentDeliveries = computed<any[]>(() => props.item.stock_deliveries?.recent_received ?? [])
 
 const thisOrder = computed(() => {
 	if (props.isOrderClosed) {
@@ -52,60 +40,6 @@ const thisOrder = computed(() => {
 	return props.typedSkos !== undefined && props.typedSkos !== null
 		? Number(props.typedSkos) || 0
 		: (Number(props.item.quantity_ordered) || 0) / pack.value
-})
-
-const weeklyForecast = computed<number[]>(() => cover.value?.weekly_forecast ?? [])
-
-function coverDays(amount: number): number {
-	let left = amount
-	let days = 0
-	for (const week of weeklyForecast.value) {
-		if (week <= 0) {
-			days += 7
-			continue
-		}
-		if (left < week) {
-			return days + (left / week) * 7
-		}
-		left -= week
-		days += 7
-	}
-	if (dailyUsage.value <= 0) {
-		return MAX_DAYS
-	}
-
-	return Math.min(MAX_DAYS, days + left / dailyUsage.value)
-}
-
-function demandOver(targetDays: number): number {
-	let demand = 0
-	let days = 0
-	for (const week of weeklyForecast.value) {
-		if (days + 7 > targetDays) {
-			return demand + (week * (targetDays - days)) / 7
-		}
-		demand += week
-		days += 7
-	}
-
-	return demand + dailyUsage.value * Math.max(0, targetDays - days)
-}
-
-const hasHistory = computed(() => dailyUsage.value > 0 || weeklyForecast.value.some((week) => week > 0))
-
-const targetDays = computed(() =>
-	Math.min(Math.max(leadDays.value + 30, 2 * leadDays.value), Math.max(leadDays.value + 14, overstockDays.value - 7))
-)
-
-const cartonSkos = computed(() => (props.isPartner ? 1 : Math.max(1, (Number(props.item.units_per_carton) || 1) / pack.value)))
-
-const suggestion = computed(() => {
-	if (!hasHistory.value) {
-		return null
-	}
-	const need = demandOver(targetDays.value) - stock.value - incoming.value
-
-	return need <= 0 ? 0 : Math.ceil(need / cartonSkos.value) * cartonSkos.value
 })
 
 const daysNow = computed(() => coverDays(stock.value + incoming.value))
@@ -181,20 +115,6 @@ const verdict = computed(() => {
 	}
 })
 
-function weeksLabel(days: number): string {
-	if (days >= MAX_DAYS) {
-		return ctrans("2+ years")
-	}
-	if (days < 14) {
-		const count = Math.max(0, Math.round(days))
-		return count === 1 ? ctrans("1 day") : ctrans(":count days", { count: String(count) })
-	}
-	if (days < 120) {
-		return ctrans(":count wk", { count: String(Math.round(days / 7)) })
-	}
-
-	return ctrans(":count months", { count: String(Math.round(days / 30)) })
-}
 
 const scaleDays = computed(() => Math.max(overstockDays.value * 1.25, leadDays.value * 1.5))
 const percent = (days: number) => Math.min(100, (Math.max(0, days) / scaleDays.value) * 100)
@@ -418,16 +338,6 @@ function purchaseOrderRoute(slug: string) {
 				</div>
 				<FontAwesomeIcon v-tooltip="quarterChartTooltip" :icon="faInfoCircle" class="ml-0.5 cursor-help self-start text-[10px] text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 			</div>
-
-			<button
-				v-if="!isOrderClosed && suggestion !== null && suggestion > 0"
-				type="button"
-				v-tooltip="ctrans('Enough for :time after it arrives, counting what is in stock and coming. Click to set quantity order to :quantityOrder.', { time: weeksLabel(targetDays - leadDays), quantityOrder: formatNumber(suggestion) })"
-				class="shrink-0 rounded border px-1.5 py-0.5 font-medium"
-				:class="Math.round(thisOrder) === suggestion ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-				@click="emit('suggest', suggestion)">
-				{{ ctrans("Suggest") }} {{ formatNumber(suggestion) }}
-			</button>
 		</div>
 
 		<div v-if="thisOrder > 0 && hasHistory" class="flex items-center gap-x-2 text-gray-500">
@@ -445,6 +355,20 @@ function purchaseOrderRoute(slug: string) {
 				<Link :href="purchaseOrderRoute(order.slug)" class="primaryLink">{{ order.reference }}</Link>
 				({{ formatNumber(Number(order.quantity_ordered) / pack) }})
 			</span>
+		</div>
+
+		<div v-if="recentDeliveries.length" class="flex flex-col flex-wrap gap-x-2 text-gray-500 w-fit">
+			<span>{{ ctrans("Last deliveries") }}:</span><br />
+			<div class="flex flex-col">
+				<span
+					v-for="(delivery, index) in recentDeliveries"
+					:key="delivery.slug"
+					v-tooltip="ctrans(':reference arrived on :date with :quantity SKOs', { reference: delivery.reference, date: useFormatTime(delivery.received_at), quantity: formatNumber(Number(delivery.quantity) / pack) })">
+					<Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
+					<span class="text-gray-700"> {{ useFormatTime(delivery.received_at) }}</span>
+					({{ formatNumber(Number(delivery.quantity) / pack) }})
+				</span>
+			</div>
 		</div>
 	</div>
 </template>
