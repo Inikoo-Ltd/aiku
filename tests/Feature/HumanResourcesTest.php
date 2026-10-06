@@ -3410,6 +3410,17 @@ test('shopkeeper clerks are merged into the supervisor position on all the shops
 
     expect($scopesOf($clerk))->toBe(['hr-c' => [], 'shk-m' => ['Shop' => [1, 2]]])
         ->and($scopesOf($mixed))->toBe(['shk-m' => ['Shop' => [1, 2, 3]]]);
+
+    $customerServiceIds = JobPosition::where('organisation_id', $this->organisation->id)->whereIn('code', ['cus-m', 'cus-c'])->pluck('id', 'code');
+    $supervisor         = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($supervisor, [$customerServiceIds['cus-m'] => ['Shop' => [1, 2]]]);
+
+    \App\Actions\HumanResources\JobPosition\RepairMergeJobPositions::make()->handle('cus-m', 'cus-c,cus-call');
+
+    expect($scopesOf($supervisor))->toBe(['cus-c' => ['Shop' => [1, 2]], 'cus-call' => ['Shop' => [1, 2]]]);
 });
 
 test('every non-shop department has a view-only position that gives way to a higher grade', function () {

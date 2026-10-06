@@ -3206,6 +3206,7 @@ describe('aurora provisional cost fix', function () {
 });
 
 test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
+    ensureFirstWarehouseHasCountry($this->organisation);
     $group  = $this->organisation->group;
     $stocks = createStocks($group);
     $empty  = $stocks[0];
