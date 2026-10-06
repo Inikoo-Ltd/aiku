@@ -94,6 +94,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
+use App\Actions\Procurement\PurchaseOrder\SendPartnerPurchaseOrderToSeller;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
@@ -5026,6 +5027,11 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
 
+        $sellerOrdersBefore = \App\Models\Ordering\Order::where('customer_reference', $purchaseOrder->reference)->count();
+        expect(SendPartnerPurchaseOrderToSeller::run($purchaseOrder))->toBeNull()
+            ->and(\App\Models\Ordering\Order::where('customer_reference', $purchaseOrder->reference)->count())->toBe($sellerOrdersBefore)
+            ->and($stockDelivery->purchaseOrders()->count())->toBe(1);
+
         $fifoPerSko = 0.4 * (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
         $originalSupplierCost = $sellerOrgStock->current_supplier_sku_cost;
         $sellerOrgStock->update(['current_supplier_sku_cost' => round($fifoPerSko * 8, 2)]);
@@ -5038,6 +5044,19 @@ describe('partner shopping list', function () {
 
         DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->delete();
         DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
+
+        $blockedPurchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, []);
+        StorePurchaseOrderTransaction::make()->addPartnerOrgStock($blockedPurchaseOrder, $this->buyerOrgStock->refresh(), ['quantity_ordered' => $unitsPerProduct]);
+        $blockedPurchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+        $sellerSettings = $seller->settings;
+        $seller->update(['settings' => array_replace_recursive($sellerSettings, ['procurement' => ['shop_id' => null]])]);
+
+        expect(SendPartnerPurchaseOrderToSeller::run($blockedPurchaseOrder))->toBeNull()
+            ->and($blockedPurchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+            ->and(data_get($blockedPurchaseOrder->data, 'seller_order_id'))->toBeNull();
+
+        $seller->update(['settings' => $sellerSettings]);
+        $blockedPurchaseOrder->delete();
 
         $seller->update(['is_manufacturing_hub' => true]);
         expect(fn () => StorePurchaseOrder::make()->action($this->orgPartner, []))->toThrow(ValidationException::class);
