@@ -51,6 +51,7 @@ const props = defineProps<{
     pagespeed?: any
     engagement?: any
     seo?: any
+    structured_data_source?: any
     webpage_canonical_url?: string
     redirected_to?: {}
     closed?: { closed_at: string | null, closed_by: string | null } | null
@@ -60,7 +61,7 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current)
 const deferredPropsOfTab = {
-    showcase: ['pagespeed', 'engagement'],
+    showcase: ['pagespeed', 'engagement', 'structured_data_source'],
     analytics: ['pagespeed'],
 }
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
@@ -107,5 +108,5 @@ onUnmounted(() => {
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <WebpageLockBanner v-if="lock" :lock="lock" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :engagement="engagement" :seo="seo" :redirected_to="redirected_to" :closed="closed" :editable="lock?.can_edit ?? true"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :engagement="engagement" :seo="seo" :structured_data_source="structured_data_source" :redirected_to="redirected_to" :closed="closed" :editable="lock?.can_edit ?? true"></component>
 </template>
