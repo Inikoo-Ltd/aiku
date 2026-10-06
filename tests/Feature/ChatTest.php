@@ -12690,3 +12690,16 @@ test('unauthenticated request cannot post as system', function () {
 
     expect($senderData['data']['sender_type'] ?? null)->not->toBe(ChatSenderTypeEnum::SYSTEM->value);
 });
+
+test('whatsapp calls ring for customer service agents but not for shop admins', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $shopAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $shopAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->toContain($this->shop->id)
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($shopAdmin)['customer_service_shops'])->not->toContain($this->shop->id);
+});

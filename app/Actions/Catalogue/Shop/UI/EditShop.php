@@ -171,6 +171,12 @@ class EditShop extends OrgAction
                             'value'    => $shop->name,
                             'required' => true,
                         ],
+                        'short_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Short name'),
+                            'information' => __('Shown where space is tight, like the permissions grid'),
+                            'value'       => $shop->short_name,
+                        ],
                         "image" => [
                             "type"  => "avatar",
                             "label" => __("Logo"),
