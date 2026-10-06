@@ -18,6 +18,7 @@ const props = defineProps<{
 	isPartner?: boolean
 	typedSkosById?: Record<number, number>
 	isOrderClosed?: boolean
+	isOrderLocked?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -267,10 +268,10 @@ function purchaseOrderRoute(slug: string) {
 					· {{ ctrans("lasts") }} <span class="font-semibold text-gray-800">{{ weeksLabel(daysNow) }}</span>
 				</template>
 			</span>
-			<span v-if="!isOrderClosed && !(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
+			<span v-if="!isOrderClosed && !isOrderLocked && !(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
-		<div v-if="hasHistory" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+		<div v-if="hasHistory && !isOrderLocked" class="flex flex-wrap items-center gap-x-3 gap-y-1">
 			<div class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
 				<div
 					v-for="zone in currentCoverZones"
@@ -353,7 +354,7 @@ function purchaseOrderRoute(slug: string) {
 			</Popover>
 		</div>
 
-		<div v-if="thisOrder > 0 && hasHistory" class="flex items-center gap-x-2 text-gray-500">
+		<div v-if="thisOrder > 0 && hasHistory && !isOrderLocked" class="flex items-center gap-x-2 text-gray-500">
 			<span>{{ ctrans("With this order: lasts :time", { time: weeksLabel(daysAfter) }) }}</span>
 			<span v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>

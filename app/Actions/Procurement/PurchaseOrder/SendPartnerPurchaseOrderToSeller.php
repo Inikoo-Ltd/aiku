@@ -155,6 +155,7 @@ class SendPartnerPurchaseOrderToSeller
             }
 
             $landedCostLines = [];
+            $orderLines      = [];
             foreach ($this->transactions($purchaseOrder) as $transaction) {
                 $product        = $this->sellingProduct($orgPartner, $transaction->stock_id, $shop->id);
                 $sellerOrgStock = $product->orgStocks()->first();
@@ -167,6 +168,7 @@ class SendPartnerPurchaseOrderToSeller
                     'gross_amount'     => $amount,
                     'net_amount'       => $amount,
                 ], strict: false);
+                $orderLines[$transaction->id] = $orderTransaction->id;
 
                 if ($sellerOrgStock && (float) $product->price > 0) {
                     $landedCostLines[$orderTransaction->id] = [$sellerOrgStock->id, (float) $product->pivot->quantity / (float) $product->price];
@@ -182,8 +184,38 @@ class SendPartnerPurchaseOrderToSeller
                 $this->discountToLandedCost($order, $landedCostLines);
             }
 
+            $this->matchPurchaseOrderToSellerOrder($purchaseOrder, $order, $orderLines);
+
             $order->update(['at_gate_at' => now()]);
         });
+    }
+
+    /**
+     * The seller invoices its order, so once it is priced each purchase order line takes the amount
+     * the seller charges for it, and the purchase order total is what will be paid.
+     *
+     * @param  array<int, int>  $orderLines  purchase order transaction id => seller order transaction id
+     */
+    private function matchPurchaseOrderToSellerOrder(PurchaseOrder $purchaseOrder, Order $order, array $orderLines): void
+    {
+        if ($order->currency_id !== $purchaseOrder->currency_id) {
+            return;
+        }
+
+        $sellerNetAmounts = Transaction::whereIn('id', $orderLines)->pluck('net_amount', 'id');
+        foreach ($this->transactions($purchaseOrder) as $transaction) {
+            $netAmount = $sellerNetAmounts[$orderLines[$transaction->id] ?? null] ?? null;
+            if ($netAmount === null || (float) $transaction->quantity_ordered <= 0) {
+                continue;
+            }
+
+            $transaction->update([
+                'net_amount' => $netAmount,
+                'unit_cost'  => round((float) $netAmount / (float) $transaction->quantity_ordered, 6),
+            ]);
+        }
+
+        CalculatePurchaseOrderTotalAmounts::make()->handle($purchaseOrder);
     }
 
     private function sellingProduct(OrgPartner $orgPartner, int $stockId, int $shopId): ?Product
