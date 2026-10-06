@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -141,7 +142,7 @@ class ShowCustomer extends OrgAction
                     'next'     => $this->getNext($customer, $request),
                 ],
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
-                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
+                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
                 'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
                 'customer_email'     => $customer->email,
                 'emailCustomerRoute' => [
