@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -110,7 +111,9 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
      * SKOs to reorder now: enough to cover the lead time plus one review period at the forecast
      * rate, plus a safety buffer sized by demand variability, minus what is on the shelf and
      * already on order (purchase orders and partner shopping list lines) — rounded up to the
-     * supplier's pack size.
+     * supplier's pack size. A SKO that would run out within three lead times (the stock cover
+     * buckets' danger edge) with what is held and coming orders at least a month of sales, the
+     * same floor a rescue order uses.
      */
     private function recommendedOrderQuantity(OrgStock $orgStock, ?float $dailyUsage, ?float $sigma): ?float
     {
@@ -136,10 +139,15 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
             ->whereIn('state', ['in_process', 'submitted', 'confirmed'])
             ->sum(DB::raw('coalesce(quantity_ordered, 0) - coalesce(quantity_cancelled, 0)'));
 
-        $need = $dailyUsage * ($leadTimeDays + $reviewDays) + $safety
-            - (float) $orgStock->quantity_available
-            - $onOrderUnits / $packedIn
-            - $this->onPartnerShoppingLists($orgStock);
+        $heldAndComing = (float) $orgStock->quantity_available
+            + $onOrderUnits / $packedIn
+            + $this->onPartnerShoppingLists($orgStock);
+
+        $need = $dailyUsage * ($leadTimeDays + $reviewDays) + $safety - $heldAndComing;
+
+        if ($heldAndComing / $dailyUsage <= 3 * $leadTimeDays) {
+            $need = max($need, $dailyUsage * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS);
+        }
 
         if ($need <= 0) {
             return 0;

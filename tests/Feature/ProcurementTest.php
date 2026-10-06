@@ -5590,6 +5590,12 @@ describe('partner shopping list', function () {
         $this->orgPartner->update(['data' => ['shopping' => ['lead_time_days' => 60]]]);
         StorePartnerShoppingListItem::make()->action($this->orgPartner->refresh(), $orgStock->fresh(), ['quantity' => 5]);
         expect($recommendation())->toBe(65.0);
+
+        $orgStock->update(['quantity_available' => 150]);
+        expect($recommendation())->toBe(30.0);
+
+        $orgStock->update(['quantity_available' => 200]);
+        expect($recommendation())->toBe(0.0);
     });
 
     test('intercompany customer resolved by normalised name and mapping persisted', function () {
