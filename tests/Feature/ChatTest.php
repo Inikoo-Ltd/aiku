@@ -6939,6 +6939,22 @@ test('a request to cancel or change the delivery address goes first in the queue
         ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBeNull();
 });
 
+test('a safe place or leave-it instruction for an order on its way is flagged as a delivery instruction, not a change of address', function () {
+    $urgent = fn (array $probabilities) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => $probabilities]]);
+
+    expect($urgent(['delivery_instruction' => 0.7, 'change_address' => 0.2]))->toBe('delivery_instruction')
+        ->and($urgent(['change_address' => 0.5, 'delivery_instruction' => 0.4]))->toBe('change_address')
+        ->and($urgent(['cancel_all' => 0.45, 'delivery_instruction' => 0.45]))->toBe('cancel_order')
+        ->and($urgent(['delivery_instruction' => 0.3, 'none' => 0.7]))->toBeNull();
+
+    \Illuminate\Support\Facades\Http::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"request": "delivery_instruction"}');
+    $session = noiseTestEmailSession($this->shop, 'safe-place@example.com', 'Order 1234', 'Fab thanks. Its just my shop address wouldnt be safe to leave it there if no ones open');
+
+    expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session))->toBe('delivery_instruction')
+        ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($session->refresh()))->toBe('delivery_instruction');
+});
+
 test('with jev the urgent flag and the dropshipping queue come from the cascade, and no chat model is asked', function () {
     \Illuminate\Support\Facades\Http::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->never();

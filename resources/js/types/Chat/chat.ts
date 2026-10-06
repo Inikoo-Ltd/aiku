@@ -133,7 +133,7 @@ export interface Contact {
 	customer_suggestion?: { label: string; basis: string | null; customer: { name: string | null; email: string | null; reference: string | null } | null; hint: string | null } | null
 	noise?: { label: string; note: string | null; source: string | null; automatic: boolean } | null
 	promise?: { at: string; overdue: boolean } | null
-	urgent?: "cancel_order" | "change_address" | null
+	urgent?: "cancel_order" | "change_address" | "delivery_instruction" | null
 	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
