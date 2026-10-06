@@ -32,6 +32,7 @@ class ProductResource extends JsonResource
                 'org_stock_id'   => $orgStock->id,
                 'org_stock_code' => $orgStock->code,
                 'org_stock_name' => $orgStock->name,
+                'barcode'        => $orgStock->barcode,
                 'note'           => $orgStock->pivot->note,
                 'is_on_demand'   => $orgStock->is_on_demand,
                 'units_per_sku'  => $orgStock->packed_in,
