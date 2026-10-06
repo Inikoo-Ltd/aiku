@@ -3456,3 +3456,55 @@ test('every non-shop department has a view-only position that gives way to a hig
 
     expect($scopes)->toBe(['hr-v' => [], 'wah-sc' => ['Warehouse' => [1]], 'wah-v' => ['Warehouse' => [2]]]);
 });
+
+test('a section supervisor sees, read only, only the HR pages of the employees in their section', function () {
+    $warehouse    = createWarehouse();
+    $organisation = $warehouse->organisation;
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($organisation);
+
+    $positions = JobPosition::where('organisation_id', $organisation->id)->whereIn('code', ['wah-m', 'wah-sc', 'acc-c'])->get()->keyBy('code');
+
+    $newEmployee = function () use ($organisation) {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $organisation->id,
+            'group_id'        => $organisation->group_id,
+            'state'           => EmployeeStateEnum::WORKING,
+        ]);
+        $employee->stats()->create();
+
+        return $employee;
+    };
+
+    $warehouseClerk = $newEmployee();
+    SyncEmployeeJobPositions::make()->handle($warehouseClerk, [$positions['wah-sc']->id => ['Warehouse' => [$warehouse->id]]]);
+
+    $accountingClerk = $newEmployee();
+    SyncEmployeeJobPositions::make()->handle($accountingClerk, [$positions['acc-c']->id => []]);
+
+    $supervisor = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    \App\Actions\SysAdmin\User\SyncUserPseudoOrganisationJobPositions::make()->handle($supervisor, $organisation, [$positions['wah-m']->id => ['Warehouse' => [$warehouse->id]]]);
+    $supervisor->refresh();
+
+    $visibleEmployeeIds = \App\Actions\HumanResources\Employee\GetSectionSupervisedEmployeeIds::run($supervisor, $organisation);
+
+    expect($visibleEmployeeIds)->toContain($warehouseClerk->id)
+        ->not->toContain($accountingClerk->id);
+
+    actingAs($supervisor);
+
+    get(route('grp.org.hr.dashboard', $organisation->slug))->assertOk();
+    get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
+    get(route('grp.org.hr.employees.show', [$organisation->slug, $warehouseClerk->slug]))->assertOk();
+    get(route('grp.org.hr.employees.show', [$organisation->slug, $accountingClerk->slug]))->assertForbidden();
+    get(route('grp.org.hr.employees.edit', [$organisation->slug, $warehouseClerk->slug]))->assertForbidden();
+    get(route('grp.org.hr.timesheets.index', $organisation->slug))->assertOk();
+    get(route('grp.org.hr.clockings.index', $organisation->slug))->assertOk();
+    get(route('grp.org.hr.workplaces.index', $organisation->slug))->assertForbidden();
+    get(route('grp.org.hr.job_positions.index', $organisation->slug))->assertForbidden();
+
+    $outsider = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+
+    expect(\App\Actions\HumanResources\Employee\GetSectionSupervisedEmployeeIds::run($outsider, $organisation))->toBe([]);
+});
