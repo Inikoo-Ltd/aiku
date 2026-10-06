@@ -56,7 +56,11 @@ const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
 
-const isTransactionClosed = (item: { state?: string }) => ['settled', 'cancelled', 'not_received'].includes(item.state ?? '')
+const closedStates = ['settled', 'cancelled', 'not_received']
+const arrivedDeliveryStates = ['received', 'checked', 'settled', 'not_received', 'cancelled']
+
+const isTransactionClosed = (item: { state?: string; delivery_state?: string }) =>
+    closedStates.includes(props.state ?? '') || closedStates.includes(item.state ?? '') || arrivedDeliveryStates.includes(item.delivery_state ?? '')
 
 const levels = computed(() => getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'))
 

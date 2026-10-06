@@ -4,6 +4,8 @@ import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle } from "@fal"
 
 interface QuarterUsage {
 	period: string
@@ -164,7 +166,7 @@ const verdict = computed(() => {
 			: {
 					label: ctrans("Not needed"),
 					class: "text-gray-400",
-					tooltip: ctrans("Stock already lasts :time, more than the :overstock overstock limit. No need to order this product", times),
+					tooltip: ctrans("No need to order this for now, the stock is more than enough (lasts :time, beyond the :overstock overstock limit)", times),
 				}
 	}
 
@@ -296,14 +298,26 @@ const daysOutOfStockTooltip = computed(() =>
 	)
 )
 
+const quarterMonths = ["Jan–Mar", "Apr–Jun", "Jul–Sep", "Oct–Dec"]
+
+const quarterLabel = (period: string) => {
+	const [year, quarter] = period.split("Q")
+	const months = quarterMonths[Number(quarter) - 1]
+
+	return months ? `${months} ${year}` : period
+}
+
 const quarterTooltip = (record: QuarterUsage) =>
 	[
-		`${record.period}: ${formatNumber(record.sales)} ${ctrans("SKOs")}`,
-		record.period === currentQuarter ? ctrans("so far") : "",
-		record.days_out_of_stock ? ctrans(":days days out of stock", { days: String(record.days_out_of_stock) }) : "",
+		record.period === currentQuarter
+			? ctrans("Sold in :quarter (this quarter, so far): :quantity SKOs.", { quarter: quarterLabel(record.period), quantity: formatNumber(record.sales) })
+			: ctrans("Sold in :quarter: :quantity SKOs.", { quarter: quarterLabel(record.period), quantity: formatNumber(record.sales) }),
+		record.days_out_of_stock ? ctrans("Out of stock for :days days (red dot).", { days: String(record.days_out_of_stock) }) : "",
 	]
 		.filter(Boolean)
-		.join(" · ")
+		.join(" ")
+
+const quarterChartTooltip = ctrans("Sales per quarter, oldest on the left. The lighter bar is the current quarter. A red dot means the product ran out of stock that quarter")
 
 const stockTooltip = computed(() => {
 	const lines: string[] = []
@@ -341,6 +355,7 @@ function purchaseOrderRoute(slug: string) {
 	<div v-if="item.stock_in_locations !== undefined && item.stock_in_locations !== null" class="mt-1 max-w-md space-y-1 text-xs">
 		<div class="flex flex-wrap items-center gap-x-2 text-gray-600">
 			<span v-tooltip="stockTooltip" class="cursor-help">
+				<span v-if="isOrderClosed" class="text-gray-500">{{ ctrans("Stock today") }}: </span>
 				<span class="font-semibold text-gray-800">{{ formatNumber(stock) }}</span> {{ ctrans("in stock") }}
 				<template v-if="incoming > 0">
 					+ <span class="font-semibold text-gray-800">{{ formatNumber(incoming) }}</span> {{ ctrans("coming") }}
@@ -349,11 +364,11 @@ function purchaseOrderRoute(slug: string) {
 					· {{ ctrans("lasts") }} <span class="font-semibold text-gray-800">{{ weeksLabel(daysNow) }}</span>
 				</template>
 			</span>
-			<span v-if="!(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
+			<span v-if="!isOrderClosed && !(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
-		<div v-if="hasHistory" class="flex items-center gap-3">
-			<div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
+		<div v-if="hasHistory" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			<div class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
 				<div
 					v-for="zone in currentCoverZones"
 					:key="zone.key"
@@ -387,16 +402,20 @@ function purchaseOrderRoute(slug: string) {
 				</span>
 			</span>
 
-			<div v-if="quarters.length" class="flex h-4 items-end gap-0.5">
+			<div v-if="quarters.length" class="flex items-end">
 				<div
 					v-for="record in quarters"
 					:key="record.period"
 					v-tooltip="quarterTooltip(record)"
-					class="relative w-1.5 rounded-sm"
-					:class="record.period === currentQuarter ? 'bg-gray-300' : 'bg-gray-500'"
-					:style="{ height: Math.max(8, (Number(record.sales) / quarterMax) * 100) + '%' }">
-					<span v-if="record.days_out_of_stock" class="absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-red-500" />
+					class="group flex h-6 w-3 cursor-help items-end justify-center rounded-sm px-0.5 pt-1.5 hover:bg-gray-200">
+					<div
+						class="relative w-full rounded-sm transition-colors"
+						:class="record.period === currentQuarter ? 'bg-gray-300 group-hover:bg-gray-400' : 'bg-gray-500 group-hover:bg-gray-700'"
+						:style="{ height: Math.max(8, (Number(record.sales) / quarterMax) * 100) + '%' }">
+						<span v-if="record.days_out_of_stock" class="absolute -top-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-red-500" />
+					</div>
 				</div>
+				<FontAwesomeIcon v-tooltip="quarterChartTooltip" :icon="faInfoCircle" class="ml-0.5 cursor-help self-start text-[10px] text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
 			</div>
 
 			<button
