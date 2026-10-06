@@ -10,7 +10,7 @@ namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
@@ -33,7 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexEmployees extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
 
     private Organisation|JobPosition|Group $parent;
 
@@ -108,6 +108,7 @@ class IndexEmployees extends OrgAction
             $queryBuilder->where('employees.group_id', $parent->id);
         }
         $queryBuilder->leftjoin('organisations', 'employees.organisation_id', '=', 'organisations.id');
+        $this->restrictToSectionEmployees($queryBuilder, 'employees.id');
 
         if ($parent instanceof Organisation && !$this->hasExplicitStateFilter($prefix)) {
             $queryBuilder->where('employees.state', EmployeeStateEnum::WORKING->value);

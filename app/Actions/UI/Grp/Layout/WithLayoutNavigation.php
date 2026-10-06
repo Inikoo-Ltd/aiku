@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\HumanResources\Employee\GetSectionSupervisedEmployeeIds;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -142,8 +143,48 @@ trait WithLayoutNavigation
         return $navigation;
     }
 
+    private function getSectionSupervisorHumanResourcesNav(Organisation $organisation): array
+    {
+        $subSection = fn (string $label, array $icon, string $root, string $routeName) => [
+            'label'   => $label,
+            'tooltip' => $label,
+            'icon'    => $icon,
+            'root'    => $root,
+            'route'   => [
+                'name'       => $routeName,
+                'parameters' => [$organisation->slug],
+            ],
+        ];
+
+        return [
+            'label'   => __('Human Resources'),
+            'icon'    => ['fal', 'fa-user-hard-hat'],
+            'root'    => 'grp.org.hr',
+            'route'   => [
+                'name'       => 'grp.org.hr.dashboard',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    $subSection(__('Dashboard'), ['fal', 'fa-chart-network'], 'grp.org.hr.dashboard', 'grp.org.hr.dashboard'),
+                    $subSection(__('Employees'), ['fal', 'fa-users'], 'grp.org.hr.employees.', 'grp.org.hr.employees.index'),
+                    $subSection(__('Timesheets'), ['fal', 'fa-stopwatch'], 'grp.org.hr.timesheets.', 'grp.org.hr.timesheets.index'),
+                    $subSection(__('Clockings'), ['fal', 'fa-chess-clock'], 'grp.org.hr.clockings.', 'grp.org.hr.clockings.index'),
+                    $subSection(__('Overtime'), ['fal', 'fa-stopwatch'], 'grp.org.hr.overtime.', 'grp.org.hr.overtime.index'),
+                    $subSection(__('Leave Requests'), ['fas', 'fa-house-leave'], 'grp.org.hr.leaves.', 'grp.org.hr.leaves.index'),
+                ],
+            ],
+        ];
+    }
+
     public function getHumanResourcesNavs(User $user, Organisation $organisation, array $navigation): array
     {
+        if (!$user->authTo("human-resources.$organisation->id.view") && GetSectionSupervisedEmployeeIds::make()->getSupervisedSectionPrefixes($user, $organisation)) {
+            $navigation['hr'] = $this->getSectionSupervisorHumanResourcesNav($organisation);
+
+            return $navigation;
+        }
+
         if ($user->authTo("human-resources.$organisation->id.view")) {
             $navigation['hr'] = [
                 'label'   => __('Human Resources'),
