@@ -6,7 +6,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { useComposerDraft } from "@/Composables/useComposerDraft"
+import { useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -334,6 +334,9 @@ const { rejectionFor } = useUploadLimits()
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
+useComposerAttachmentDraft(() => props.session?.ulid, selectedFile, () => null)
+useComposerAttachmentDraft(() => props.session?.ulid, previewUrl, () => null)
+useComposerAttachmentDraft(() => props.session?.ulid, previewType, () => null)
 
 const handleImageSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement)?.files?.[0]

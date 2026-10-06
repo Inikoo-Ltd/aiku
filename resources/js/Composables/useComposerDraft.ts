@@ -41,3 +41,19 @@ export const useComposerDraft = (key: () => string | null | undefined, text: Ref
         }
     }
 }
+
+export const useComposerAttachmentDraft = <T>(key: () => string | null | undefined, state: Ref<T>, empty: () => T) => {
+    const stashed = new Map<string, T>()
+
+    watch(key, (currentKey, previousKey) => {
+        if (previousKey) {
+            stashed.set(previousKey, state.value)
+        }
+
+        const restored = currentKey ? stashed.get(currentKey) : undefined
+        if (currentKey) {
+            stashed.delete(currentKey)
+        }
+        state.value = restored === undefined ? empty() : restored
+    })
+}
