@@ -12445,12 +12445,9 @@ test('a weak suggestion is rewritten by the rewrite model from the critic notes,
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     [$covered, $reviews, $prompts] = [1, -10, []];
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
-    $cheapOnly = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
 
-    expect(data_get($cheapOnly?->facts, 'model'))->toBe('openai/gpt-5.6-luna')
-        ->and(collect($prompts)->where(0, 'anthropic/claude-sonnet-5.5'))->toBeEmpty();
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
 
-    $cheapOnly->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $needsReply = 0.1;
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Chat session has been closed by agent']);
 
@@ -12691,8 +12688,11 @@ test('unauthenticated request cannot post as system', function () {
     expect($senderData['data']['sender_type'] ?? null)->not->toBe(ChatSenderTypeEnum::SYSTEM->value);
 });
 
-test('whatsapp calls ring for customer service agents but not for shop admins', function () {
+test('whatsapp calls ring for staff with the calls position but not for chat agents or shop admins', function () {
     setPermissionsTeamId($this->user->group_id);
+
+    $caller = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $caller->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CALLER->value, $this->shop));
 
     $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
@@ -12700,6 +12700,7 @@ test('whatsapp calls ring for customer service agents but not for shop admins', 
     $shopAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $shopAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
 
-    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->toContain($this->shop->id)
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($caller)['customer_service_shops'])->toContain($this->shop->id)
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->not->toContain($this->shop->id)
         ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($shopAdmin)['customer_service_shops'])->not->toContain($this->shop->id);
 });

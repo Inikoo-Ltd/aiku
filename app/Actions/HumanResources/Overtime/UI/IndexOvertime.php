@@ -3,7 +3,7 @@
 namespace App\Actions\HumanResources\Overtime\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\InertiaTable\InertiaTable;
@@ -21,7 +21,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOvertime extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
     use WithOvertimeSubNavigation;
 
     public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
@@ -45,6 +45,7 @@ class IndexOvertime extends OrgAction
             ->leftJoin('employees as approver', 'approver.id', '=', 'overtime_requests.approved_by_employee_id')
             ->leftJoin('employees as recorder', 'recorder.id', '=', 'overtime_requests.recorded_by_employee_id')
             ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('overtime_requests.employee_id', $this->sectionEmployeeIds))
             ->select([
                 'overtime_requests.id',
                 'overtime_requests.employee_id',
@@ -210,7 +211,7 @@ class IndexOvertime extends OrgAction
                         'title' => __('Overtime')
                     ],
                     'title'         => __('Overtime'),
-                    'actions'       => [
+                    'actions'       => $this->isRestrictedToSection() ? [] : [
                         [
                             'type'  => 'button',
                             'style' => 'create',
@@ -219,12 +220,14 @@ class IndexOvertime extends OrgAction
                             'icon'  => ['fal', 'fa-plus'],
                         ],
                     ],
-                    'subNavigation' => $this->getOvertimeSubNavigation($request),
+                    'subNavigation' => $this->isRestrictedToSection() ? [] : $this->getOvertimeSubNavigation($request),
                 ],
                 'data'               => $overtimeRequests,
+                'can_edit'           => $this->canEdit,
                 'employeeOptions'    => $this->organisation->employees()
                     ->orderBy('contact_name')
                     ->where('state', 'working')
+                    ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('employees.id', $this->sectionEmployeeIds))
                     ->get()
                     ->map(fn (Employee $employee) => [
                         'value' => $employee->id,

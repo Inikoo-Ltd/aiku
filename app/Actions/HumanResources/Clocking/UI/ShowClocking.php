@@ -12,7 +12,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\ClockingTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -31,7 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowClocking extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
 
     private Organisation|Workplace|ClockingMachine $parent;
 
@@ -44,6 +44,9 @@ class ShowClocking extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(ClockingTabsEnum::values());
+        if ($this->isRestrictedToSection()) {
+            abort_unless($clocking->subject_type === 'Employee' && $this->canSeeEmployee($clocking->subject_id), 403);
+        }
 
         return $this->handle($clocking);
     }
@@ -218,7 +221,8 @@ class ShowClocking extends OrgAction
                 default:
                     //
             }
-        })->orderBy('id', 'desc')->first();
+        })->when($this->isRestrictedToSection(), fn ($query) => $query->where('subject_type', 'Employee')->whereIn('subject_id', $this->sectionEmployeeIds))
+            ->orderBy('id', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
@@ -237,7 +241,8 @@ class ShowClocking extends OrgAction
                 default:
                     //
             }
-        })->orderBy('id')->first();
+        })->when($this->isRestrictedToSection(), fn ($query) => $query->where('subject_type', 'Employee')->whereIn('subject_id', $this->sectionEmployeeIds))
+            ->orderBy('id')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }

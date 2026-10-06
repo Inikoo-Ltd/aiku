@@ -876,3 +876,14 @@ it('shows nightowl telemetry graphs, top tables, request, job and command waterf
         Cache::forget('devops-telemetry-24h');
     }
 });
+
+test('warm telemetry fills the flexible cache so the dashboard never builds it inline', function () {
+    $telemetry = Mockery::mock(App\Actions\DevOps\UI\GetNightOwlTelemetry::class)->makePartial();
+    $telemetry->shouldReceive('build')->times(3)->andReturnUsing(fn (string $range) => ['range' => $range, 'warmed' => true]);
+    app()->instance(App\Actions\DevOps\UI\GetNightOwlTelemetry::class, $telemetry);
+
+    App\Actions\DevOps\WarmNightOwlTelemetry::run();
+
+    expect($telemetry->overview('1h'))->toBe(['range' => '1h', 'warmed' => true])
+        ->and($telemetry->overview('7d'))->toBe(['range' => '7d', 'warmed' => true]);
+});
