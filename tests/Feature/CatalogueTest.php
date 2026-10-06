@@ -1576,6 +1576,48 @@ test('faire case size change flags the product for units review until its trade 
         ->and(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::make()->handle())->toBe(0);
 });
 
+test('remodelling a seeder product sends its faire copies to case size review', function () {
+    $seederShop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    [, $seederProduct] = createProduct($seederShop);
+    SyncProductTradeUnits::run($seederProduct, [['id' => $this->tradeUnit1->id, 'quantity' => 12]]);
+    $seederProduct->updateQuietly(['units' => 12]);
+
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $faireShop->updateQuietly(['seeder_shop_id' => $seederShop->id]);
+    $faireCopy = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), [
+        'code'        => $seederProduct->code,
+        'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 12]],
+        'price'       => 10,
+    ]));
+    $faireCopy->updateQuietly(['units' => 12, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+    $flagger = \App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::make();
+
+    UpdateProduct::make()->action($seederProduct, ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 12]]]);
+    expect($faireCopy->refresh()->units_review)->toBeNull();
+    $alreadyAdrift = $flagger->flagCopiesOfRemodelledSeederProducts(dryRun: true);
+
+    $seederProduct->updateQuietly(['units' => 1]);
+    SyncProductTradeUnits::run($seederProduct, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    expect($flagger->flagCopiesOfRemodelledSeederProducts(dryRun: true))->toBe($alreadyAdrift + 1);
+    $faireCopy->updateQuietly(['units_review' => null]);
+    UpdateProduct::make()->action($seederProduct, ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]]]);
+    expect($faireCopy->refresh()->units_review)->toBeNull();
+    $flagger->flagCopiesOfRemodelledSeederProducts();
+    expect($faireCopy->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET)
+        ->and($faireCopy->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+
+    $faireCopy->updateQuietly(['units_review' => null]);
+    UpdateProduct::make()->action($seederProduct, ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 2]], 'has_independent_units' => true]);
+    expect($faireCopy->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+
+    $faireCopy->updateQuietly(['units_review' => null]);
+    UpdateProduct::make()->action($seederProduct, ['units' => 3], strict: false);
+    expect($faireCopy->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+});
+
 test('a product faire no longer returns is discontinued and comes back when republished', function () {
     $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
         'type'   => ShopTypeEnum::EXTERNAL->value,
