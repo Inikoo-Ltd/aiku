@@ -20,15 +20,17 @@ class DropLowerGradeJobPositionScopes
      */
     private const array GRADES = [
         [['agt-m'], ['agt-c']],
-        [['hr-m'], ['hr-c']],
-        [['acc-m'], ['acc-c']],
+        [['hr-m'], ['hr-c'], ['hr-v']],
+        [['acc-m'], ['acc-c'], ['acc-v']],
+        [['buy'], ['buy-v']],
         [['shk-m'], ['shk-c']],
         [['mrk-m'], ['mrk-c']],
         [['cus-m'], ['cus-c', 'cus-call'], ['cus-v']],
-        [['wah-m'], ['wah-sc']],
-        [['dist-m'], ['dist-pik', 'dist-excp-pick', 'dist-pak']],
-        [['prod-m'], ['prod-p', 'prod-d', 'prod-c']],
-        [['ful-m'], ['ful-wc', 'ful-c']],
+        [['wah-m'], ['wah-sc'], ['wah-v']],
+        [['gi-m'], ['gi-c'], ['gi-v']],
+        [['dist-m'], ['dist-pik', 'dist-excp-pick', 'dist-pak'], ['dist-v']],
+        [['prod-m'], ['prod-p', 'prod-d', 'prod-c'], ['prod-v']],
+        [['ful-m'], ['ful-wc', 'ful-c'], ['ful-v']],
     ];
 
     /**

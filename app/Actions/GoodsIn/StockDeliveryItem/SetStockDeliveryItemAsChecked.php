@@ -8,14 +8,14 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemAsChecked extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     public function handle(StockDeliveryItem $stockDeliveryItem): StockDeliveryItem
     {
         return SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, [

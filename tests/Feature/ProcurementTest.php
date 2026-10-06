@@ -24,12 +24,14 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
+use App\Actions\Procurement\PurchaseOrder\RepricePartnerPurchaseOrders;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
@@ -3263,6 +3265,47 @@ test('UI placed stock delivery costing tab shows every item on one page', functi
             ->has(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cost_per_sko_org'));
 });
 
+test('goods in workers book in stock deliveries and only goods in supervisors unmark them as received', function () {
+    $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+
+    $stockDelivery     = createStockDeliveryWithItems($this, 'GOODS-IN-BOOK-IN', [10]);
+    $stockDeliveryItem = $stockDelivery->items()->firstOrFail();
+    $this->withoutVite();
+
+    $worker = User::factory()->create(['group_id' => $warehouse->group_id]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::GOODS_IN_CLERK->value, $warehouse));
+    $supervisor = User::factory()->create(['group_id' => $warehouse->group_id]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::GOODS_IN_SUPERVISOR->value, $warehouse));
+
+    $showRoute   = route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]);
+    $actionKeys  = fn (User $user) => $this->actingAs($user)->get($showRoute)->assertOk()->viewData('page')['props']['pageHead']['actions'];
+    $keys        = fn (array $actions) => collect($actions)->pluck('key')->filter()->values()->all();
+
+    $this->actingAs($worker)
+        ->get(route('grp.org.warehouses.show.incoming.stock_deliveries.index', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk();
+
+    expect($keys($actionKeys($worker)))->toBe(['receive_stock_delivery', 'action']);
+
+    $this->actingAs($worker)->patch(route('grp.models.stock-delivery.receive', $stockDelivery->id))->assertRedirect();
+    expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::RECEIVED)
+        ->and($keys($actionKeys($worker)))->toBe(['action'])
+        ->and($keys($actionKeys($supervisor)))->toBe(['unreceive_stock_delivery', 'action']);
+
+    $this->actingAs($worker)->patch(route('grp.models.stock-delivery.unreceive', $stockDelivery->id))->assertForbidden();
+    $this->actingAs($supervisor)->patch(route('grp.models.stock-delivery.unreceive', $stockDelivery->id))->assertRedirect();
+    expect($stockDelivery->refresh()->state)->not->toBe(StockDeliveryStateEnum::RECEIVED);
+
+    $this->actingAs($worker)->patch(route('grp.models.stock-delivery.receive', $stockDelivery->id))->assertRedirect();
+    $checkResponse = $this->actingAs($worker)->patch(route('grp.models.stock-delivery-item.set-checked', $stockDeliveryItem->id), ['unit_quantity_checked' => 10]);
+    expect($checkResponse->status())->not->toBe(403)
+        ->and($stockDeliveryItem->refresh()->state)->toBe(StockDeliveryItemStateEnum::CHECKED);
+
+    actingAs($this->adminGuest->getUser());
+});
+
 function createStockDeliveryWithItems($test, string $code, array $unitQuantities): StockDelivery
 {
     $supplier    = StoreSupplier::make()->action(parent: $test->group, modelData: Supplier::factory()->definition());
@@ -4954,6 +4997,11 @@ describe('partner shopping list', function () {
 
         expect($purchaseOrder->currency_id)->toBe($seller->currency_id)
             ->and((float) $line->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2));
+
+        $line->update(['unit_cost' => 99, 'net_amount' => 99 * (float) $line->quantity_ordered]);
+        expect(RepricePartnerPurchaseOrders::make()->handle($purchaseOrder))->toBe(['orders' => 1, 'lines' => 1])
+            ->and((float) $line->refresh()->net_amount)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2))
+            ->and((float) $purchaseOrder->refresh()->cost_items)->toBe(round(1.2 * (float) $this->sellerProduct->price, 2));
 
         $row = collect($this->getJson(route('grp.json.org-partner.purchase-order-org-stocks', [$this->orgPartner->id, $purchaseOrder->slug]))->assertOk()->json('data'))
             ->firstWhere('id', $this->buyerOrgStock->id);
@@ -7842,6 +7890,16 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and(Arr::only($item['stock_cover'], array_keys($stockCover)))->toEqual($stockCover)
         ->and($item['stock_cover']['overstock_days'])->toBe(GetOrganisationStockCoverBuckets::EXCESS_DAYS)
         ->and($item['stock_cover']['lead_time_days'])->toBeInt();
+
+    DB::table('stock_delivery_items')->where('stock_delivery_id', $comingStockDelivery->id)->update(['unit_quantity_checked' => 20, 'unit_quantity_placed' => 20]);
+    DB::table('stock_deliveries')->where('id', $comingStockDelivery->id)->update(['state' => StockDeliveryStateEnum::BOOKED_IN->value, 'received_at' => now()]);
+
+    $items = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'items']))
+        ->assertOk()->viewData('page')['props']['items']['data'];
+    $item  = collect($items)->firstWhere('id', $transaction->id);
+
+    expect(collect($item['stock_deliveries']['coming'])->pluck('reference'))->not->toContain($comingStockDelivery->reference)
+        ->and($item['stock_deliveries']['last_received']['reference'])->toBe($comingStockDelivery->reference);
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('quantity_in_locations', 0)->delete();

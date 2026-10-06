@@ -2,7 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemCheckedQuantity extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     use WithActionUpdate;
 
     private StockDeliveryItem $stockDeliveryItem;

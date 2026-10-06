@@ -159,12 +159,12 @@ trait WithAuroraHumanResourcesParsers
             23 => $isSupervisor ? 'acc-m' : 'acc-c',
             24 => 'dist-pik',
             25 => 'dist-pak',
-            16 => 'cus-m',
+            16 => 'cus-c',
             2 => 'cus-c',
             18 => 'shk-m',
-            9, 26 => 'shk-c',
+            9, 26 => 'shk-m',
             30 => 'mkt-m',
-            29 => 'mkt-c',
+            29 => 'mkt-m',
             32 => 'ful-m',
             default => null
         };
@@ -180,10 +180,10 @@ trait WithAuroraHumanResourcesParsers
             'OHADM' => 'dist-m',
             'PRODM' => 'prod-m',
             'PRODO' => 'prod-w',
-            'CUSM' => 'cus-m',
+            'CUSM' => 'cus-c',
             'CUS' => 'cus-c',
-            'MRK' => $isSupervisor ? 'mrk-m' : 'mrk-c',
-            'WEB' => $isSupervisor ? 'shk-m' : 'shk-c',
+            'MRK' => 'mrk-m',
+            'WEB' => 'shk-m',
             'HR' => $isSupervisor ? 'hr-m' : 'hr-c',
             default => strtolower($sourceCode)
         };

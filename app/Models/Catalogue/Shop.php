@@ -119,6 +119,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string $slug
  * @property string $code
  * @property string $name
+ * @property string|null $short_name
  * @property string|null $company_name
  * @property string|null $contact_name
  * @property string|null $email

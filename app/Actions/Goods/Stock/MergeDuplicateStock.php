@@ -10,7 +10,9 @@ namespace App\Actions\Goods\Stock;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
@@ -103,6 +105,8 @@ class MergeDuplicateStock
 
             $from->update(['state' => StockStateEnum::DISCONTINUED]);
 
+            $this->moveOpenProcurementLines($from, $to);
+
             /*
              * Orphans are retired rather than deleted: they carry the history of what was
              * picked against them, and nothing sells from a discontinued org stock.
@@ -178,6 +182,40 @@ class MergeDuplicateStock
         $command->info('Merged.');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Deliveries and purchase orders still on their way would otherwise book the goods into the retired
+     * org stock (HELP-3728), so they follow the survivor's org stock in the same organisation.
+     */
+    private function moveOpenProcurementLines(Stock $from, Stock $to): void
+    {
+        $survivorOrgStockIds = OrgStock::where('stock_id', $to->id)->pluck('id', 'organisation_id');
+
+        OrgStock::where('stock_id', $from->id)->get()->each(function (OrgStock $retiredOrgStock) use ($survivorOrgStockIds) {
+            $survivorOrgStockId = $survivorOrgStockIds->get($retiredOrgStock->organisation_id);
+            if (!$survivorOrgStockId) {
+                return;
+            }
+
+            DB::table('stock_delivery_items')
+                ->where('org_stock_id', $retiredOrgStock->id)
+                ->whereIn('stock_delivery_id', DB::table('stock_deliveries')->whereNotIn('state', [
+                    StockDeliveryStateEnum::PLACED->value,
+                    StockDeliveryStateEnum::CANCELLED->value,
+                    StockDeliveryStateEnum::NOT_RECEIVED->value,
+                ])->select('id'))
+                ->update(['org_stock_id' => $survivorOrgStockId]);
+
+            DB::table('purchase_order_transactions')
+                ->where('org_stock_id', $retiredOrgStock->id)
+                ->whereIn('purchase_order_id', DB::table('purchase_orders')->whereNotIn('state', [
+                    PurchaseOrderStateEnum::SETTLED->value,
+                    PurchaseOrderStateEnum::CANCELLED->value,
+                    PurchaseOrderStateEnum::NOT_RECEIVED->value,
+                ])->select('id'))
+                ->update(['org_stock_id' => $survivorOrgStockId]);
+        });
     }
 
     private function resolveStock(?string $identifier): ?Stock

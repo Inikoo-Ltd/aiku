@@ -165,7 +165,7 @@ class StorePurchaseOrderTransaction extends OrgAction
         });
     }
 
-    private function partnerLandedUnitCost(OrgPartner $orgPartner, OrgStock $orgStock): ?float
+    public function partnerLandedUnitCost(OrgPartner $orgPartner, OrgStock $orgStock): ?float
     {
         if (!GetPartnerLandedCost::appliesTo($orgPartner)) {
             return null;

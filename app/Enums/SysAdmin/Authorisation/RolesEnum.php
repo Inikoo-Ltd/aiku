@@ -106,7 +106,12 @@ enum RolesEnum: string
 
     case WAREHOUSE_ADMIN = 'warehouse-admin';
     case WAREHOUSE_VIEWER = 'warehouse-viewer';
-
+    case GOODS_IN_VIEWER = 'goods-in-viewer';
+    case DISPATCH_VIEWER = 'dispatch-viewer';
+    case ACCOUNTING_VIEWER = 'accounting-viewer';
+    case PROCUREMENT_VIEWER = 'procurement-viewer';
+    case MANUFACTURING_VIEWER = 'production-viewer';
+    case FULFILMENT_SHOP_VIEWER = 'fulfilment-shop-viewer';
     case STOCK_CONTROLLER = 'stock-controller';
 
     // Digital agency roles
@@ -187,7 +192,7 @@ enum RolesEnum: string
             RolesEnum::DISCOUNTS_SUPERVISOR => __('Discounts supervisor'),
             RolesEnum::MARKETING_CLERK => __('Marketing clerk'),
             RolesEnum::MARKETING_SUPERVISOR => __('Marketing supervisor'),
-            RolesEnum::CUSTOMER_SERVICE_VIEWER => __('Customer service viewer'),
+            RolesEnum::CUSTOMER_SERVICE_VIEWER => __('Shop viewer'),
             RolesEnum::ACCOUNTING_ORDERS => __('Accounting orders'),
             RolesEnum::MANUFACTURING_ADMIN => __('Production admin'),
             RolesEnum::MANUFACTURING_ORCHESTRATOR => __('Production orchestrator'),
@@ -199,6 +204,12 @@ enum RolesEnum: string
             RolesEnum::GOODS_IN_CLERK => __('Goods in clerk'),
             RolesEnum::RETURNS_CLERK => __('Returns clerk'),
             RolesEnum::SHOP_PPC => __('Shop PPC'),
+            RolesEnum::GOODS_IN_VIEWER => __('Goods in viewer'),
+            RolesEnum::DISPATCH_VIEWER => __('Dispatching viewer'),
+            RolesEnum::ACCOUNTING_VIEWER => __('Accounting viewer'),
+            RolesEnum::PROCUREMENT_VIEWER => __('Procurement viewer'),
+            RolesEnum::MANUFACTURING_VIEWER => __('Production viewer'),
+            RolesEnum::FULFILMENT_SHOP_VIEWER => __('Fulfilment viewer'),
         };
     }
 
@@ -415,6 +426,31 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::STOCKS_VIEW,
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
             ],
+            RolesEnum::GOODS_IN_VIEWER => [
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
+                WarehousePermissionsEnum::INCOMING_VIEW,
+                OrganisationPermissionsEnum::INVENTORY_VIEW
+            ],
+            RolesEnum::DISPATCH_VIEWER => [
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
+                WarehousePermissionsEnum::DISPATCHING_VIEW,
+                OrganisationPermissionsEnum::INVENTORY_VIEW
+            ],
+            RolesEnum::ACCOUNTING_VIEWER => [
+                OrganisationPermissionsEnum::ACCOUNTING_VIEW,
+            ],
+            RolesEnum::PROCUREMENT_VIEWER => [
+                OrganisationPermissionsEnum::PROCUREMENT_VIEW,
+                OrganisationPermissionsEnum::INVENTORY_VIEW,
+            ],
+            RolesEnum::MANUFACTURING_VIEWER => [
+                ProductionPermissionsEnum::PRODUCTION_OPERATIONS_VIEW,
+                ProductionPermissionsEnum::PRODUCTION_RD_VIEW,
+                ProductionPermissionsEnum::PRODUCTION_PROCUREMENT_VIEW,
+            ],
+            RolesEnum::FULFILMENT_SHOP_VIEWER => [
+                FulfilmentPermissionsEnum::FULFILMENT_SHOP_VIEW,
+            ],
             RolesEnum::STOCK_CONTROLLER => [
                 WarehousePermissionsEnum::STOCKS,
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
@@ -488,8 +524,7 @@ enum RolesEnum: string
                 ShopPermissionsEnum::CRM_VIEW,
                 ShopPermissionsEnum::CRM_PROSPECTS,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
-                ShopPermissionsEnum::WEB_EDIT,
-                ShopPermissionsEnum::SUPERVISOR_WEB,
+                ShopPermissionsEnum::ORDERS,
             ],
             RolesEnum::MARKETING_CLERK => [
                 ShopPermissionsEnum::MARKETING,
@@ -505,8 +540,7 @@ enum RolesEnum: string
                 ShopPermissionsEnum::CRM_VIEW,
                 ShopPermissionsEnum::CRM_PROSPECTS,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
-                ShopPermissionsEnum::WEB_EDIT,
-                ShopPermissionsEnum::SUPERVISOR_WEB,
+                ShopPermissionsEnum::ORDERS,
             ],
             RolesEnum::CUSTOMER_SERVICE_CLERK => [
                 ShopPermissionsEnum::CHAT,
@@ -542,6 +576,7 @@ enum RolesEnum: string
             RolesEnum::CUSTOMER_SERVICE_VIEWER => [
                 ShopPermissionsEnum::CHAT_VIEW,
                 ShopPermissionsEnum::CRM_VIEW,
+                ShopPermissionsEnum::CRM_PROSPECTS_VIEW,
                 ShopPermissionsEnum::ORDERS_VIEW,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
                 ShopPermissionsEnum::WEB_VIEW,
@@ -641,6 +676,8 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_WAREHOUSE_WORKER,
             RolesEnum::WAREHOUSE_ADMIN,
             RolesEnum::WAREHOUSE_VIEWER,
+            RolesEnum::GOODS_IN_VIEWER,
+            RolesEnum::DISPATCH_VIEWER,
             RolesEnum::DISPATCH_CLERK,
             RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,
@@ -655,11 +692,11 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_OPERATOR,
             RolesEnum::MANUFACTURING_PREPARER,
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
-
-
+            RolesEnum::MANUFACTURING_VIEWER,
             => 'Production',
             RolesEnum::FULFILMENT_SHOP_SUPERVISOR,
             RolesEnum::FULFILMENT_SHOP_CLERK,
+            RolesEnum::FULFILMENT_SHOP_VIEWER,
             => 'Fulfilment',
             default => 'Organisation'
         };
@@ -678,6 +715,8 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_OPERATOR,
             RolesEnum::MANUFACTURING_PREPARER,
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
+            RolesEnum::MANUFACTURING_VIEWER,
+            RolesEnum::FULFILMENT_SHOP_VIEWER,
             RolesEnum::SHOP_PPC
             => [OrganisationTypeEnum::SHOP],
 
@@ -698,6 +737,8 @@ enum RolesEnum: string
 
             RolesEnum::PROCUREMENT_CLERK,
             RolesEnum::PROCUREMENT_SUPERVISOR,
+            RolesEnum::PROCUREMENT_VIEWER,
+            RolesEnum::DISPATCH_VIEWER,
             RolesEnum::DISPATCH_CLERK,
             RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,

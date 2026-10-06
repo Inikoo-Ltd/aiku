@@ -247,14 +247,14 @@ test('create production by command', function () {
 
     expect($organisation->manufactureStats->number_productions)->toBe(3)
         ->and($organisation->group->manufactureStats->number_productions)->toBe(3)
-        ->and($production->roles()->count())->toBe(6);
+        ->and($production->roles()->count())->toBe(7);
 });
 
 test('seed production permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('production:seed-permissions')->assertExitCode(0);
     $production = Production::where('code', 'AA')->first();
-    expect($production->roles()->count())->toBe(6);
+    expect($production->roles()->count())->toBe(7);
 });
 
 test('can store a raw material', function (Production $production) {

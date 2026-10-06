@@ -2,7 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReceiveStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     use AsAction;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
