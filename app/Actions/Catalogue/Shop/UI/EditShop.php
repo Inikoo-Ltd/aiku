@@ -106,6 +106,9 @@ class EditShop extends OrgAction
 
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
+        $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
+        $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
+
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
         $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
@@ -799,8 +802,24 @@ class EditShop extends OrgAction
                                     'type'        => 'input',
                                     'disabled'    => true,
                                     'label'       => __('Wix connect link'),
-                                    'value'       => AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop),
+                                    'value'       => $wixInstallUrl,
                                     'information' => __('Open this link to connect or reconnect a Wix site to this shop. It is valid for 2 hours.'),
+                                ],
+                                'wix__connect'        => [
+                                    'type'        => 'action',
+                                    'label'       => __('Wix site'),
+                                    'information' => $isWixConnected
+                                        ? __('Connected to :site.', ['site' => Arr::get($shop->settings, 'wix.site_url', '')])
+                                        : __('Not connected yet.'),
+                                    'action'      => [
+                                        'type'  => 'button',
+                                        'style' => $isWixConnected ? 'tertiary' : 'save',
+                                        'label' => $isWixConnected ? __('Reconnect Wix site') : __('Connect Wix site'),
+                                        'route' => [
+                                            'url'       => $wixInstallUrl,
+                                            'openBlank' => true,
+                                        ],
+                                    ],
                                 ],
                                 'wix_order_from_days' => [
                                     'type'  => 'input',

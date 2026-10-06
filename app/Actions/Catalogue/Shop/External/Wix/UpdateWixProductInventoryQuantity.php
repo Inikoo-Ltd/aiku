@@ -39,7 +39,7 @@ class UpdateWixProductInventoryQuantity extends OrgAction
             $wixUser,
             $product->marketplace_second_id,
             $product->marketplace_id,
-            (int) floor($product->available_quantity * $product->units)
+            (int) floor($product->available_quantity)
         );
 
         if (Arr::has($result, 'message')) {

@@ -5,7 +5,7 @@ namespace App\Actions\Catalogue\Shop\External\Wix;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\Maintenance\Catalogue\SetTradeUnitsForFaireShops;
+use App\Actions\Maintenance\Catalogue\SetTradeUnitsForWixShops;
 use App\Actions\Catalogue\Shop\Traits\WithWixExternalShopApi;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -116,7 +116,7 @@ class GetWixProducts extends OrgAction
                 'state'        => ProductStateEnum::IN_PROCESS,
             ], strict: false);
 
-            SetTradeUnitsForFaireShops::run($product);
+            SetTradeUnitsForWixShops::run($product);
             $command?->info('Product added: '.$product->slug);
 
             return $product;
