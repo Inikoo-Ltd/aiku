@@ -358,7 +358,7 @@ class ProcessInboundEmail
         foreach ($named as $person) {
             $key = strtolower($person['address']);
 
-            if ($mailboxAddress && $key === strtolower($mailboxAddress)) {
+            if (SendChatMessageByGmail::deliversToMailbox($key, $mailboxAddress)) {
                 continue;
             }
 

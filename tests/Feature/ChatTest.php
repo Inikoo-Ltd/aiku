@@ -11766,7 +11766,7 @@ test('an email reply goes to whoever wrote last and copies the colleagues the th
         'gmail.googleapis.com/gmail/v1/users/me/messages/cc1*'   => $gmailMessage('cc1', [
             ['name' => 'From', 'value' => 'Anna Buyer <anna@bigaccount.test>'],
             ['name' => 'To', 'value' => 'Care <care@shop.test>'],
-            ['name' => 'Cc', 'value' => '"Doe, Jane" <jane@bigaccount.test>, ops@bigaccount.test'],
+            ['name' => 'Cc', 'value' => '"Doe, Jane" <jane@bigaccount.test>, ops@bigaccount.test, Shop <hello@shop.test>'],
             ['name' => 'Subject', 'value' => 'Big order'],
             ['name' => 'Message-ID', 'value' => '<cc1@bigaccount.test>'],
         ]),
@@ -11790,6 +11790,10 @@ test('an email reply goes to whoever wrote last and copies the colleagues the th
 
     $agentUser = createAdminGuest($this->organisation->group)->getUser();
     $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+
+    $session->update(['metadata' => array_merge($session->metadata, [
+        'email_participants' => Arr::get($session->metadata, 'email_participants') + ['old@shop.test' => ['address' => 'old@shop.test', 'name' => null]],
+    ])]);
 
     $reply = SendChatMessage::make()->handle($session, [
         'message_text'      => 'Sent today',
