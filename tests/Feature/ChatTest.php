@@ -12445,12 +12445,9 @@ test('a weak suggestion is rewritten by the rewrite model from the critic notes,
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     [$covered, $reviews, $prompts] = [1, -10, []];
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
-    $cheapOnly = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
 
-    expect(data_get($cheapOnly?->facts, 'model'))->toBe('openai/gpt-5.6-luna')
-        ->and(collect($prompts)->where(0, 'anthropic/claude-sonnet-5.5'))->toBeEmpty();
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
 
-    $cheapOnly->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $needsReply = 0.1;
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Chat session has been closed by agent']);
 

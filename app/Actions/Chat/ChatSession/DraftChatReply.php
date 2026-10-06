@@ -220,7 +220,7 @@ class DraftChatReply implements ShouldBeUnique
         $judge  = JudgeChatSuggestion::make();
         $before = $judge->before($text, $weSaid, $facts, $examples);
 
-        if ($before && $before['needs_reply'] < 0.5) {
+        if (!$before || $before['needs_reply'] < 0.5 || $before['covered'] < (float) config('chat.suggestion_min_covered')) {
             return null;
         }
 
