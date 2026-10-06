@@ -1567,6 +1567,15 @@ test('UI show job order', function () {
     });
 });
 
+test('job order prints a job list pdf', function () {
+    $jobOrder = JobOrder::first();
+    get(route('grp.org.productions.show.operations.job-orders.pdf', [
+        $this->organisation->slug,
+        $this->production->slug,
+        $jobOrder->slug,
+    ]))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+});
+
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
     $response = get(route('grp.org.productions.show.artisans.payroll.export', [
         $this->organisation->slug,
